@@ -1,0 +1,146 @@
+{
+  "profilingConfig": {
+    "continuousProfiling": {
+      "enabled": true,
+      "sampleRate": 100,
+      "duration": 60,
+      "services": [
+        "order-service",
+        "payment-service",
+        "inventory-service"
+      ]
+    },
+    "memoryProfiling": {
+      "enabled": true,
+      "heapDumpInterval": 3600,
+      "gcStats": true,
+      "memoryLeakDetection": true
+    },
+    "cpuProfiling": {
+      "enabled": true,
+      "profileDuration": 30,
+      "triggerThreshold": 80
+    },
+    "customProfiling": {
+      "endpoints": [
+        "/api/orders",
+        "/api/payments/process",
+        "/api/inventory/stock"
+      ],
+      "sampleSize": 1000,
+      "reportInterval": 300
+    }
+  },
+  "alertingConfig": {
+    "alerts": [
+      {
+        "name": "High Response Time",
+        "condition": "response_time_p95 > 500",
+        "severity": "warning",
+        "channels": [
+          "slack",
+          "email"
+        ],
+        "cooldown": 300
+      },
+      {
+        "name": "High Error Rate",
+        "condition": "error_rate > 5",
+        "severity": "critical",
+        "channels": [
+          "slack",
+          "pagerduty"
+        ],
+        "cooldown": 60
+      },
+      {
+        "name": "SLO Breach",
+        "condition": "slo_status == \"breach\"",
+        "severity": "critical",
+        "channels": [
+          "slack",
+          "pagerduty",
+          "email"
+        ],
+        "cooldown": 600
+      },
+      {
+        "name": "High Resource Utilization",
+        "condition": "cpu_utilization > 90 OR memory_utilization > 90",
+        "severity": "warning",
+        "channels": [
+          "slack"
+        ],
+        "cooldown": 300
+      },
+      {
+        "name": "Slow Database Query",
+        "condition": "query_execution_time > 1000",
+        "severity": "warning",
+        "channels": [
+          "slack"
+        ],
+        "cooldown": 600
+      }
+    ],
+    "escalation": {
+      "primary": {
+        "delay": 300,
+        "channels": [
+          "slack"
+        ]
+      },
+      "secondary": {
+        "delay": 1800,
+        "channels": [
+          "pagerduty"
+        ]
+      },
+      "executive": {
+        "delay": 3600,
+        "channels": [
+          "sms",
+          "email"
+        ]
+      }
+    }
+  },
+  "scalingConfig": {
+    "horizontalPodAutoscaler": {
+      "order-service": {
+        "minReplicas": 3,
+        "maxReplicas": 20,
+        "targetCPUUtilizationPercentage": 70,
+        "targetMemoryUtilizationPercentage": 80
+      },
+      "inventory-service": {
+        "minReplicas": 2,
+        "maxReplicas": 10,
+        "targetCPUUtilizationPercentage": 60,
+        "targetMemoryUtilizationPercentage": 70
+      },
+      "payment-service": {
+        "minReplicas": 5,
+        "maxReplicas": 15,
+        "targetCPUUtilizationPercentage": 75,
+        "targetMemoryUtilizationPercentage": 85
+      }
+    },
+    "clusterAutoscaler": {
+      "enabled": true,
+      "minNodes": 5,
+      "maxNodes": 50,
+      "scaleUpThreshold": 80,
+      "scaleDownThreshold": 30,
+      "scaleUpCooldown": 300,
+      "scaleDownCooldown": 600
+    },
+    "predictiveScaling": {
+      "enabled": true,
+      "lookAheadWindow": 3600,
+      "historicalDataWindow": 604800,
+      "confidenceThreshold": 0.8
+    }
+  },
+  "timestamp": "2025-12-30T01:33:58.086Z"
+}

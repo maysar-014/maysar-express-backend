@@ -1,0 +1,306 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Maysar E-commerce - SLO Monitoring Dashboard",
+    "tags": ["maysar", "slo", "monitoring", "ecommerce"],
+    "timezone": "Africa/Dar_es_Salaam",
+    "panels": [
+      {
+        "id": 1,
+        "title": "SLO Availability Overview",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"2..\"}[5m])) / sum(rate(http_requests_total[5m])) * 100",
+            "legendFormat": "Availability %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "orange", "value": 99.9 },
+                { "color": "green", "value": 99.95 }
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+      },
+      {
+        "id": 2,
+        "title": "Error Budget Burn Rate",
+        "type": "bargauge",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"5..\"}[1h])) / (1 - 0.9995) * 100",
+            "legendFormat": "Error Budget Burn %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": 0 },
+                { "color": "orange", "value": 50 },
+                { "color": "red", "value": 100 }
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+      },
+      {
+        "id": 3,
+        "title": "P95 Latency by Service",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{service=\"$service\"}[5m]))",
+            "legendFormat": "{{service}} P95 Latency"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "seconds",
+            "custom": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 1 },
+                  { "color": "red", "value": 5 }
+                ]
+              }
+            }
+          }
+        },
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 }
+      },
+      {
+        "id": 4,
+        "title": "Request Rate by Service",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{service=\"$service\"}[5m])) by (service)",
+            "legendFormat": "{{service}} requests/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps"
+          }
+        },
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 }
+      },
+      {
+        "id": 5,
+        "title": "Error Rate by Service",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"5..\",service=\"$service\"}[5m])) by (service) / sum(rate(http_requests_total{service=\"$service\"}[5m])) by (service) * 100",
+            "legendFormat": "{{service}} error rate %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "custom": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 1 },
+                  { "color": "red", "value": 5 }
+                ]
+              }
+            }
+          }
+        },
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 }
+      },
+      {
+        "id": 6,
+        "title": "Database Connection Pool Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(prisma_datasource_connections_active{service=\"$service\"}) by (service)",
+            "legendFormat": "{{service}} active connections"
+          },
+          {
+            "expr": "sum(prisma_datasource_connections_idle{service=\"$service\"}) by (service)",
+            "legendFormat": "{{service}} idle connections"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 }
+      },
+      {
+        "id": 7,
+        "title": "Event Processing Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(eventbus_events_published_total{service=\"$service\"}[5m])) by (service)",
+            "legendFormat": "{{service}} events/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "events/sec"
+          }
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 }
+      },
+      {
+        "id": 8,
+        "title": "Event Processing Latency",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(eventbus_event_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "Event Processing P95"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "seconds"
+          }
+        },
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 40 }
+      },
+      {
+        "id": 9,
+        "title": "Business Metrics - Orders per Minute",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(rate(order_created_total[5m])) * 60",
+            "legendFormat": "Orders/min"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "orders/min"
+          }
+        },
+        "gridPos": { "h": 8, "w": 8, "x": 0, "y": 48 }
+      },
+      {
+        "id": 10,
+        "title": "Business Metrics - Revenue per Minute",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(rate(order_total_amount_sum[5m])) / sum(rate(order_created_total[5m]))",
+            "legendFormat": "Avg Order Value"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD"
+          }
+        },
+        "gridPos": { "h": 8, "w": 8, "x": 8, "y": 48 }
+      },
+      {
+        "id": 11,
+        "title": "Business Metrics - Payment Success Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(rate(payment_succeeded_total[5m])) / sum(rate(payment_attempted_total[5m])) * 100",
+            "legendFormat": "Payment Success %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "orange", "value": 95 },
+                { "color": "green", "value": 99 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 8, "w": 8, "x": 16, "y": 48 }
+      },
+      {
+        "id": 12,
+        "title": "System Health Overview",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "up{service=~\"$service\"}",
+            "legendFormat": "{{service}} Status"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": 0 },
+                  { "color": "green", "value": 1 }
+                ]
+              }
+            }
+          }
+        },
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 56 }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {},
+    "templating": {
+      "list": [
+        {
+          "name": "service",
+          "type": "query",
+          "query": "label_values(service)",
+          "label": "Service",
+          "multi": true,
+          "includeAll": true
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Deployments",
+          "datasource": "Prometheus",
+          "expr": "deployment_marker{environment=\"$environment\"}",
+          "iconColor": "blue",
+          "type": "annotation"
+        },
+        {
+          "name": "Incidents",
+          "datasource": "Prometheus",
+          "expr": "incident_marker{severity=\"critical\"}",
+          "iconColor": "red",
+          "type": "annotation"
+        }
+      ]
+    },
+    "refresh": "30s",
+    "schemaVersion": 27,
+    "version": 0,
+    "links": []
+  }
+}

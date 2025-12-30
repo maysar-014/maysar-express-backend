@@ -1,0 +1,216 @@
+// Admin Service Database Schema
+// Administrative operations, audit trails, and compliance management
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions = [uuid_ossp(map: "uuid-ossp")]
+}
+
+// Admin user management
+model Admin {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  email         String   @unique @db.VarChar(255)
+  firstName     String   @db.VarChar(100)
+  lastName      String   @db.VarChar(100)
+  role          AdminRole @default(support)
+  status        AdminStatus @default(active)
+  permissions   Json     // Granular permissions
+  lastLoginAt   DateTime? @db.Timestamp(6)
+  mfaEnabled    Boolean  @default(false)
+  mfaSecret     String?  @db.VarChar(255)
+  ipWhitelist   String[] // Allowed IP addresses
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime @updatedAt @db.Timestamp(6)
+
+  // Relations
+  auditLogs     AuditLog[]
+
+  @@map("admins")
+}
+
+// Complete audit trail (append-only)
+model AuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  adminId       String   @db.Uuid
+  action        String   @db.VarChar(100)
+  entityType    String   @db.VarChar(50) // user, order, product, etc.
+  entityId      String   @db.Uuid
+  oldValues     Json?
+  newValues     Json?
+  reason        String?  @db.VarChar(500)
+  ipAddress     String?  @db.VarChar(45)
+  userAgent     String?  @db.VarChar(500)
+  metadata      Json?
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  admin         Admin @relation(fields: [adminId], references: [id])
+
+  @@map("audit_logs")
+}
+
+// Two-person approval workflow
+model ApprovalRequest {
+  id            String   @id @default(uuid()) @db.Uuid
+  type          ApprovalType
+  status        ApprovalStatus @default(pending)
+  requesterId   String   @db.Uuid
+  reviewerId    String?  @db.Uuid
+  entityType    String   @db.VarChar(50)
+  entityId      String   @db.Uuid
+  action        String   @db.VarChar(100)
+  description   String   @db.VarChar(500)
+  riskLevel     RiskLevel @default(medium)
+  justification String   @db.VarChar(1000)
+  approvedAt    DateTime? @db.Timestamp(6)
+  rejectedAt    DateTime? @db.Timestamp(6)
+  rejectionReason String?
+  expiresAt     DateTime @db.Timestamp(6)
+  metadata      Json?
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime @updatedAt @db.Timestamp(6)
+
+  @@map("approval_requests")
+}
+
+// Admin action queue for asynchronous processing
+model AdminAction {
+  id            String   @id @default(uuid()) @db.Uuid
+  type          AdminActionType
+  status        ActionStatus @default(pending)
+  adminId       String   @db.Uuid
+  entityType    String   @db.VarChar(50)
+  entityId      String   @db.Uuid
+  parameters    Json
+  result        Json?
+  errorMessage  String?
+  retryCount    Int      @default(0)
+  maxRetries    Int      @default(3)
+  scheduledAt   DateTime? @db.Timestamp(6)
+  executedAt    DateTime? @db.Timestamp(6)
+  completedAt   DateTime? @db.Timestamp(6)
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime @updatedAt @db.Timestamp(6)
+
+  @@map("admin_actions")
+}
+
+// System configuration and feature flags
+model SystemConfig {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique @db.VarChar(255)
+  value       Json
+  type        ConfigType @default(feature_flag)
+  description String?  @db.VarChar(500)
+  isActive    Boolean  @default(true)
+  updatedBy   String   @db.Uuid
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime @updatedAt @db.Timestamp(6)
+
+  @@map("system_configs")
+}
+
+// Bulk operations tracking
+model BulkOperation {
+  id            String   @id @default(uuid()) @db.Uuid
+  type          BulkOperationType
+  status        BulkStatus @default(pending)
+  adminId       String   @db.Uuid
+  entityType    String   @db.VarChar(50)
+  totalItems    Int
+  processedItems Int     @default(0)
+  failedItems   Int      @default(0)
+  parameters    Json
+  results       Json?
+  errorSummary  String?
+  startedAt     DateTime? @db.Timestamp(6)
+  completedAt   DateTime? @db.Timestamp(6)
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+
+  @@map("bulk_operations")
+}
+
+// Enums
+enum AdminRole {
+  support
+  moderator
+  manager
+  admin
+  super_admin
+}
+
+enum AdminStatus {
+  active
+  suspended
+  deactivated
+}
+
+enum ApprovalType {
+  financial
+  user_action
+  system_change
+  emergency
+}
+
+enum ApprovalStatus {
+  pending
+  approved
+  rejected
+  expired
+  cancelled
+}
+
+enum RiskLevel {
+  low
+  medium
+  high
+  critical
+}
+
+enum AdminActionType {
+  user_suspend
+  user_activate
+  order_cancel
+  order_refund
+  product_update
+  seller_verify
+  system_config
+}
+
+enum ActionStatus {
+  pending
+  processing
+  completed
+  failed
+  cancelled
+}
+
+enum ConfigType {
+  feature_flag
+  system_setting
+  rate_limit
+  maintenance_mode
+}
+
+enum BulkOperationType {
+  user_export
+  user_update
+  product_update
+  order_export
+  notification_send
+}
+
+enum BulkStatus {
+  pending
+  processing
+  completed
+  failed
+  cancelled
+}

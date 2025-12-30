@@ -1,0 +1,42 @@
+[
+  {
+    "serviceName": "order-service",
+    "endpoint": "/api/orders",
+    "sloType": "latency",
+    "target": 99,
+    "window": "30d",
+    "currentValue": 98.5,
+    "status": "warning",
+    "lastUpdated": "2025-12-30T01:33:58.131Z"
+  },
+  {
+    "serviceName": "order-service",
+    "endpoint": "/api/orders",
+    "sloType": "availability",
+    "target": 99.9,
+    "window": "30d",
+    "currentValue": 99.95,
+    "status": "healthy",
+    "lastUpdated": "2025-12-30T01:33:58.131Z"
+  },
+  {
+    "serviceName": "payment-service",
+    "endpoint": "/api/payments/process",
+    "sloType": "latency",
+    "target": 99.5,
+    "window": "7d",
+    "currentValue": 98.2,
+    "status": "breach",
+    "lastUpdated": "2025-12-30T01:33:58.131Z"
+  },
+  {
+    "serviceName": "inventory-service",
+    "endpoint": "/api/inventory/stock",
+    "sloType": "availability",
+    "target": 99.95,
+    "window": "30d",
+    "currentValue": 99.98,
+    "status": "healthy",
+    "lastUpdated": "2025-12-30T01:33:58.131Z"
+  }
+]

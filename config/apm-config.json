@@ -1,0 +1,12 @@
+{
+  "provider": "datadog",
+  "apiKey": "your-datadog-api-key",
+  "applicationId": "maysar-platform",
+  "environment": "production",
+  "serviceName": "maysar-platform",
+  "customTags": {
+    "team": "platform",
+    "application": "maysar",
+    "version": "1.0.0"
+  }
+}

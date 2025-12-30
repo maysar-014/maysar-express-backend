@@ -1,0 +1,99 @@
+// Auth Service Database Schema
+// Complete user authentication and session management
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions = [uuid_ossp(map: "uuid-ossp")]
+}
+
+// User management with comprehensive profiles
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique @db.VarChar(255)
+  emailVerified Boolean   @default(false)
+  passwordHash  String    @db.VarChar(255)
+  firstName     String?   @db.VarChar(100)
+  lastName      String?   @db.VarChar(100)
+  phoneNumber   String?   @db.VarChar(20)
+  dateOfBirth   Date?
+  avatarUrl     String?   @db.VarChar(500)
+  status        UserStatus @default(active)
+  role          UserRole  @default(customer)
+  lastLoginAt   DateTime? @db.Timestamp(6)
+  failedLoginAttempts Int @default(0)
+  lockedUntil   DateTime? @db.Timestamp(6)
+  preferences   Json?
+  metadata      Json?
+  createdAt     DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime  @updatedAt @db.Timestamp(6)
+
+  // Relations
+  sessions      Session[]
+  otps          Otp[]
+
+  @@map("users")
+}
+
+// Session management with device tracking
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  token        String   @unique @db.VarChar(500)
+  refreshToken String   @unique @db.VarChar(500)
+  deviceInfo   Json?    // Browser, OS, IP, location
+  expiresAt    DateTime @db.Timestamp(6)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now()) @db.Timestamp(6)
+  revokedAt    DateTime? @db.Timestamp(6)
+
+  // Relations
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// OTP management for verification
+model Otp {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  code      String   @db.VarChar(10)
+  type      OtpType
+  purpose   String   @db.VarChar(100) // email_verification, password_reset, etc.
+  expiresAt DateTime @db.Timestamp(6)
+  usedAt    DateTime? @db.Timestamp(6)
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("otps")
+}
+
+// Enums
+enum UserStatus {
+  active
+  suspended
+  deactivated
+  pending_verification
+}
+
+enum UserRole {
+  customer
+  seller
+  admin
+  support
+  super_admin
+}
+
+enum OtpType {
+  email
+  sms
+  app
+}

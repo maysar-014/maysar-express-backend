@@ -1,0 +1,123 @@
+// Catalog Service Database Schema
+// Complete product catalog management with categories and variants
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions = [uuid_ossp(map: "uuid-ossp")]
+}
+
+// Hierarchical category system
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  parentId    String?  @db.Uuid
+  name        String   @db.VarChar(255)
+  slug        String   @unique @db.VarChar(255)
+  description String?
+  imageUrl    String?  @db.VarChar(500)
+  displayOrder Integer  @default(0)
+  isActive    Boolean  @default(true)
+  seoMetadata Json?
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryHierarchy")
+  products    Product[]
+
+  @@map("categories")
+}
+
+// Product management with SEO
+model Product {
+  id          String   @id @default(uuid()) @db.Uuid
+  sellerId    String   @db.Uuid
+  title       String   @db.VarChar(255)
+  description String?
+  categoryId  String   @db.Uuid
+  brand       String?  @db.VarChar(100)
+  model       String?  @db.VarChar(100)
+  status      ProductStatus @default(draft)
+  visibility  Visibility @default(public)
+  seoMetadata Json?
+  tags        String[]
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime @updatedAt @db.Timestamp(6)
+
+  // Relations
+  category    Category @relation(fields: [categoryId], references: [id])
+  variants    ProductVariant[]
+
+  @@map("products")
+}
+
+// Product variants with inventory policy
+model ProductVariant {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid
+  sku             String   @unique @db.VarChar(100)
+  name            String?  @db.VarChar(255)
+  price           Decimal  @db.Decimal(10, 2)
+  compareAtPrice  Decimal? @db.Decimal(10, 2)
+  costPrice       Decimal? @db.Decimal(10, 2)
+  inventoryPolicy InventoryPolicy @default(deny)
+  weight          Decimal? @db.Decimal(8, 3)
+  dimensions      Json?
+  attributes      Json?    // color, size, material, etc.
+  images          Json?
+  status          VariantStatus @default(active)
+  createdAt       DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  product         Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_variants")
+}
+
+// Media management for products and categories
+model MediaRef {
+  id           String   @id @default(uuid()) @db.Uuid
+  entityType   String   @db.VarChar(50) // product, category, seller
+  entityId     String   @db.Uuid
+  mediaType    String   @db.VarChar(50) // image, video, document
+  url          String   @db.VarChar(500)
+  altText      String?  @db.VarChar(255)
+  displayOrder Integer  @default(0)
+  isPrimary    Boolean  @default(false)
+  metadata     Json?
+  uploadedBy   String   @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamp(6)
+
+  @@map("media_refs")
+}
+
+// Enums
+enum ProductStatus {
+  draft
+  pending
+  published
+  suspended
+  archived
+}
+
+enum Visibility {
+  public
+  private
+  unlisted
+}
+
+enum InventoryPolicy {
+  deny   // Don't allow sales when out of stock
+  allow  // Allow backorders
+}
+
+enum VariantStatus {
+  active
+  inactive
+  discontinued
+}

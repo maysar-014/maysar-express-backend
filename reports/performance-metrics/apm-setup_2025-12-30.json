@@ -1,0 +1,56 @@
+{
+  "apmConfig": {
+    "provider": "datadog",
+    "apiKey": "your-datadog-api-key",
+    "applicationId": "maysar-platform",
+    "environment": "production",
+    "serviceName": "maysar-platform",
+    "customTags": {
+      "team": "platform",
+      "application": "maysar",
+      "version": "1.0.0"
+    }
+  },
+  "tracingConfig": {
+    "sampling": {
+      "rate": 0.1,
+      "rules": [
+        {
+          "service": "payment-service",
+          "rate": 1
+        },
+        {
+          "service": "order-service",
+          "rate": 0.5
+        }
+      ]
+    },
+    "propagation": {
+      "formats": [
+        "w3c",
+        "b3",
+        "jaeger"
+      ],
+      "extractors": [
+        "headers",
+        "query_params"
+      ],
+      "injectors": [
+        "response_headers"
+      ]
+    },
+    "exporters": [
+      {
+        "type": "otlp",
+        "endpoint": "https://api.datadoghq.com/api/v2/otlp",
+        "headers": {}
+      }
+    ],
+    "processors": [
+      "batch",
+      "resource-detection",
+      "attributes"
+    ]
+  },
+  "timestamp": "2025-12-30T01:33:58.079Z"
+}

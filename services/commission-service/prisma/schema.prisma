@@ -1,0 +1,101 @@
+// Commission Service Database Schema
+// Revenue sharing, referrals, and loyalty rewards management
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions = [uuid_ossp(map: "uuid-ossp")]
+}
+
+// Commission calculations and payouts
+model Commission {
+  id       String   @id @default(uuid()) @db.Uuid
+  orderId  String   @db.Uuid
+  sellerId String   @db.Uuid
+  amount   Decimal  @db.Decimal(10, 2)
+  rate     Decimal  @db.Decimal(5, 4)
+  type     CommissionType
+  status   CommissionStatus @default(pending)
+  paidAt   DateTime? @db.Timestamp(6)
+  payoutId String?  @db.Uuid
+  metadata Json?
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+
+  @@map("commissions")
+}
+
+// Referral program management
+model Referral {
+  id            String   @id @default(uuid()) @db.Uuid
+  referrerId    String   @db.Uuid
+  refereeId     String   @db.Uuid
+  referralCode  String   @unique @db.VarChar(50)
+  status        ReferralStatus @default(pending)
+  rewardAmount  Decimal? @db.Decimal(8, 2)
+  rewardPaid    Boolean  @default(false)
+  completedAt   DateTime? @db.Timestamp(6)
+  expiresAt     DateTime @db.Timestamp(6)
+  metadata      Json?
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+
+  @@map("referrals")
+}
+
+// Loyalty rewards and bonuses
+model Reward {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  type       RewardType
+  amount     Decimal  @db.Decimal(8, 2)
+  description String?
+  status     RewardStatus @default(earned)
+  expiresAt  DateTime? @db.Timestamp(6)
+  redeemedAt DateTime? @db.Timestamp(6)
+  referenceId String? @db.Uuid // order_id, referral_id, etc.
+  createdAt  DateTime @default(now()) @db.Timestamp(6)
+
+  @@map("rewards")
+}
+
+// Enums
+enum CommissionType {
+  sale
+  referral
+  bonus
+  adjustment
+}
+
+enum CommissionStatus {
+  pending
+  approved
+  paid
+  rejected
+  cancelled
+}
+
+enum ReferralStatus {
+  pending
+  completed
+  expired
+  cancelled
+}
+
+enum RewardType {
+  referral
+  loyalty
+  bonus
+  milestone
+  promotional
+}
+
+enum RewardStatus {
+  earned
+  redeemed
+  expired
+  cancelled
+}

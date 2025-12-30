@@ -1,0 +1,159 @@
+{
+  "appMetrics": [
+    {
+      "serviceName": "order-service",
+      "endpoint": "/api/orders",
+      "method": "POST",
+      "responseTime": {
+        "p50": 125,
+        "p95": 350,
+        "p99": 850,
+        "avg": 180
+      },
+      "throughput": 45.2,
+      "errorRate": 0.8,
+      "apdexScore": 0.92,
+      "timestamp": "2025-12-30T01:33:58.082Z"
+    },
+    {
+      "serviceName": "inventory-service",
+      "endpoint": "/api/inventory/stock",
+      "method": "GET",
+      "responseTime": {
+        "p50": 45,
+        "p95": 120,
+        "p99": 280,
+        "avg": 65
+      },
+      "throughput": 120.5,
+      "errorRate": 0.2,
+      "apdexScore": 0.98,
+      "timestamp": "2025-12-30T01:33:58.082Z"
+    },
+    {
+      "serviceName": "payment-service",
+      "endpoint": "/api/payments/process",
+      "method": "POST",
+      "responseTime": {
+        "p50": 200,
+        "p95": 550,
+        "p99": 1200,
+        "avg": 320
+      },
+      "throughput": 25.8,
+      "errorRate": 1.2,
+      "apdexScore": 0.85,
+      "timestamp": "2025-12-30T01:33:58.082Z"
+    }
+  ],
+  "dbMetrics": [
+    {
+      "serviceName": "order-service",
+      "queryType": "select",
+      "tableName": "orders",
+      "executionTime": 45,
+      "rowsAffected": 1,
+      "slowQuery": false,
+      "connectionPoolUtilization": 65,
+      "timestamp": "2025-12-30T01:33:58.082Z"
+    },
+    {
+      "serviceName": "inventory-service",
+      "queryType": "update",
+      "tableName": "inventory",
+      "executionTime": 1200,
+      "rowsAffected": 1,
+      "slowQuery": true,
+      "connectionPoolUtilization": 72,
+      "lockWaitTime": 800,
+      "timestamp": "2025-12-30T01:33:58.082Z"
+    },
+    {
+      "serviceName": "analytics-service",
+      "queryType": "select",
+      "tableName": "order_items",
+      "executionTime": 2500,
+      "rowsAffected": 50000,
+      "slowQuery": true,
+      "connectionPoolUtilization": 45,
+      "timestamp": "2025-12-30T01:33:58.082Z"
+    }
+  ],
+  "resourceMetrics": [
+    {
+      "serviceName": "order-service",
+      "resourceType": "cpu",
+      "utilization": 68,
+      "limit": 2000,
+      "usage": 1360,
+      "timestamp": "2025-12-30T01:33:58.082Z"
+    },
+    {
+      "serviceName": "order-service",
+      "resourceType": "memory",
+      "utilization": 72,
+      "limit": 2048,
+      "usage": 1475,
+      "timestamp": "2025-12-30T01:33:58.082Z"
+    },
+    {
+      "serviceName": "inventory-service",
+      "resourceType": "cpu",
+      "utilization": 45,
+      "limit": 1000,
+      "usage": 450,
+      "timestamp": "2025-12-30T01:33:58.082Z"
+    },
+    {
+      "serviceName": "payment-service",
+      "resourceType": "cpu",
+      "utilization": 85,
+      "limit": 1500,
+      "usage": 1275,
+      "timestamp": "2025-12-30T01:33:58.082Z"
+    }
+  ],
+  "slos": [
+    {
+      "serviceName": "order-service",
+      "endpoint": "/api/orders",
+      "sloType": "latency",
+      "target": 99,
+      "window": "30d",
+      "currentValue": 98.5,
+      "status": "warning",
+      "lastUpdated": "2025-12-30T01:33:58.082Z"
+    },
+    {
+      "serviceName": "order-service",
+      "endpoint": "/api/orders",
+      "sloType": "availability",
+      "target": 99.9,
+      "window": "30d",
+      "currentValue": 99.95,
+      "status": "healthy",
+      "lastUpdated": "2025-12-30T01:33:58.082Z"
+    },
+    {
+      "serviceName": "payment-service",
+      "endpoint": "/api/payments/process",
+      "sloType": "latency",
+      "target": 99.5,
+      "window": "7d",
+      "currentValue": 98.2,
+      "status": "breach",
+      "lastUpdated": "2025-12-30T01:33:58.082Z"
+    },
+    {
+      "serviceName": "inventory-service",
+      "endpoint": "/api/inventory/stock",
+      "sloType": "availability",
+      "target": 99.95,
+      "window": "30d",
+      "currentValue": 99.98,
+      "status": "healthy",
+      "lastUpdated": "2025-12-30T01:33:58.082Z"
+    }
+  ],
+  "timestamp": "2025-12-30T01:33:58.084Z"
+}
