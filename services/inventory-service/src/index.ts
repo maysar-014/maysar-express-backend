@@ -39,16 +39,10 @@ app.get('/health', (req, res) => {
 
 // API Routes
 const apiRouter = express.Router();
-apiRouter.use('/stock', (req, res, next) => {
-  // Stock API routes
-  if (req.method === 'GET' && req.path === '/:variantId') {
-    return stockApi.getStockLevel(req, res);
-  }
-  if (req.method === 'PUT' && req.path === '/:variantId/:warehouseId') {
-    return stockApi.adjustStock(req, res);
-  }
-  next();
-});
+
+// Stock Management Routes
+apiRouter.get('/stock/:variantId', stockApi.getStockLevel);
+apiRouter.put('/stock/:variantId/:warehouseId', stockApi.adjustStock);
 
 apiRouter.post('/reservations', (req, res) => stockApi.createReservation(req, res));
 apiRouter.delete('/reservations/:orderId', (req, res) => stockApi.cancelReservation(req, res));
