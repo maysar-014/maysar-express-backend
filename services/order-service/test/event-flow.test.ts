@@ -226,11 +226,13 @@ describe('Event Flow Testing - Complete Order Lifecycle', () => {
         items: [
           {
             productId: 'product-1',
+            productVariantId: 'variant-1',
             price: 100,
             quantity: 2
           },
           {
             productId: 'product-2',
+            productVariantId: 'variant-2',
             price: 50,
             quantity: 1
           }
@@ -288,7 +290,7 @@ describe('Event Flow Testing - Complete Order Lifecycle', () => {
       expect(order?.status).toBe('delivered');
 
       // Verify all items are delivered
-      expect(order?.items.every(item => item.status === 'delivered')).toBe(true);
+      expect((order as any)?.items.every((item: any) => item.status === 'delivered')).toBe(true);
     });
   });
 
@@ -302,6 +304,7 @@ describe('Event Flow Testing - Complete Order Lifecycle', () => {
         sellerId: 'seller-012',
         items: [{
           productId: 'product-3',
+          productVariantId: 'variant-3',
           price: 75,
           quantity: 1
         }],
@@ -346,6 +349,7 @@ describe('Event Flow Testing - Complete Order Lifecycle', () => {
           sellerId: `seller-concurrent-${index}`,
           items: [{
             productId: `product-concurrent-${index}`,
+            productVariantId: `variant-concurrent-${index}`,
             price: 100 + index * 10,
             quantity: 1
           }],
@@ -394,6 +398,7 @@ describe('Event Flow Testing - Complete Order Lifecycle', () => {
         sellerId: 'seller-chaos',
         items: [{
           productId: 'product-chaos',
+          productVariantId: 'variant-chaos',
           price: 200,
           quantity: 1
         }],
@@ -428,6 +433,7 @@ describe('Event Flow Testing - Complete Order Lifecycle', () => {
         sellerId: 'seller-perf',
         items: [{
           productId: 'product-perf',
+          productVariantId: 'variant-perf',
           price: 150,
           quantity: 1
         }],

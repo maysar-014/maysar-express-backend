@@ -1,11 +1,15 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
+import helmet from 'helmet';
+import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import { StockManager } from './modules/stock/stockManager';
 import { ReservationEngine } from './modules/reservation/reservationEngine';
 import { WarehouseManager } from './modules/warehouse/warehouseManager';
 import { StockApi } from './modules/api/stockApi';
 import { InventoryEventHandlers } from './modules/events/eventHandlers';
 import { eventBus } from './shared/events/eventBus';
+import { requireAuth } from './middleware/auth';
 
 // Initialize dependencies
 const prisma = new PrismaClient();
@@ -23,9 +27,24 @@ const stockApi = new StockApi(prisma, stockManager, reservationEngine, warehouse
 const app = express();
 const PORT = process.env.PORT || 3005;
 
-// Middleware
-app.use(express.json());
+// Security middleware
+app.use(helmet());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || '*',
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
+}));
+app.use(express.json({ limit: process.env.BODY_LIMIT || '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Global rate limiter (configurable via env)
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_WINDOW_MS || '900000', 10),
+  max: parseInt(process.env.RATE_MAX || '100', 10),
+  standardHeaders: true,
+  legacyHeaders: false
+});
+app.use(limiter);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -37,8 +56,9 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Routes
+// API routes get a dedicated router with auth middleware applied
 const apiRouter = express.Router();
+apiRouter.use(requireAuth);
 
 // Stock Management Routes
 apiRouter.get('/stock/:variantId', stockApi.getStockLevel);
@@ -59,7 +79,7 @@ apiRouter.get('/analytics/stock-levels', (req, res) => stockApi.getStockAnalytic
 // Mount API routes
 app.use('/api/v1', apiRouter);
 
-// Error handling middleware
+// Error handling
 app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Unhandled error:', error);
   res.status(500).json({
@@ -74,49 +94,20 @@ process.on('SIGTERM', async () => {
   await prisma.$disconnect();
   process.exit(0);
 });
-
 process.on('SIGINT', async () => {
   console.log('SIGINT received, shutting down gracefully');
   await prisma.$disconnect();
   process.exit(0);
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Inventory Service running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔗 API endpoints: http://localhost:${PORT}/api/v1`);
-
-  // Start background tasks
-  startBackgroundTasks();
-});
-
-/**
- * Start background tasks for inventory management
- */
-function startBackgroundTasks(): void {
-  // Clean up expired reservations every 5 minutes
-  setInterval(async () => {
-    try {
-      await eventHandlers.cleanupExpiredReservations();
-    } catch (error) {
-      console.error('Error in expired reservations cleanup:', error);
-    }
-  }, 5 * 60 * 1000); // 5 minutes
-
-  // Monitor low stock levels every 10 minutes
-  setInterval(async () => {
-    try {
-      // This would typically scan all stock items and emit alerts
-      // For now, just log that the monitor is running
-      console.log('Running low stock monitoring...');
-    } catch (error) {
-      console.error('Error in low stock monitoring:', error);
-    }
-  }, 10 * 60 * 1000); // 10 minutes
-
-  console.log('🔄 Background tasks started');
+// Start server only if not worker-only
+if (process.env.WORKER_ONLY !== 'true') {
+  app.listen(PORT, () => {
+    console.log(`Inventory Service (http) running on port ${PORT}`);
+    console.log(`Health check: http://localhost:${PORT}/health`);
+    console.log(`API endpoints: http://localhost:${PORT}/api/v1`);
+  });
 }
 
-// Export for testing
+// Export objects for testing
 export { app, prisma, stockManager, reservationEngine, warehouseManager, eventHandlers };

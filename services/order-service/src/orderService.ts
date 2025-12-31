@@ -27,6 +27,7 @@ export class OrderService {
     sellerId: string;
     items: Array<{
       productId: string;
+      productVariantId: string;
       price: number;
       quantity: number;
     }>;
@@ -58,6 +59,7 @@ export class OrderService {
         items: {
           create: orderData.items.map(item => ({
             productId: item.productId,
+            productVariantId: item.productVariantId,
             price: item.price,
             quantity: item.quantity,
             status: 'pending'
@@ -333,7 +335,21 @@ export class OrderService {
   async getOrder(orderId: string) {
     return this.prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: true }
+      include: {
+        items: {
+          select: {
+            id: true,
+            orderId: true,
+            productId: true,
+            productVariantId: true,
+            price: true,
+            quantity: true,
+            status: true,
+            shippedAt: true,
+            deliveredAt: true
+          }
+        }
+      }
     });
   }
 

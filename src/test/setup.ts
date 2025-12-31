@@ -60,16 +60,16 @@ jest.mock('ioredis', () => {
     setex: jest.fn(),
     del: jest.fn(),
     expire: jest.fn(),
-    ping: jest.fn().mockResolvedValue('PONG'),
+    ping: jest.fn(),
     quit: jest.fn(),
     pipeline: jest.fn().mockReturnValue({
       get: jest.fn().mockReturnThis(),
       set: jest.fn().mockReturnThis(),
       setex: jest.fn().mockReturnThis(),
       del: jest.fn().mockReturnThis(),
-      exec: jest.fn().mockResolvedValue([]),
+      exec: jest.fn(),
     }),
-  } as any));
+  })) as any;
 });
 
 // Mock Winston logger
