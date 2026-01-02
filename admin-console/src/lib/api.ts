@@ -363,6 +363,51 @@ export const apiService = {
       }),
   },
 
+  // Admin User Management
+  admin: {
+    getAdmins: (params?: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      role?: string;
+      search?: string;
+    }) =>
+      apiClient.get('/admin/admins', { params }),
+
+    getAdminById: (id: string) =>
+      apiClient.get(`/admin/admins/${id}`),
+
+    createAdmin: (adminData: {
+      email: string;
+      firstName: string;
+      lastName: string;
+      role: 'support' | 'moderator' | 'manager' | 'admin' | 'super_admin';
+    }) =>
+      apiClient.post('/admin/admins', adminData),
+
+    updateAdmin: (id: string, adminData: Partial<{
+      firstName: string;
+      lastName: string;
+      role: 'support' | 'moderator' | 'manager' | 'admin' | 'super_admin';
+      status: 'active' | 'suspended' | 'deactivated';
+      permissions: Record<string, any>;
+      ipWhitelist: string[];
+    }>) =>
+      apiClient.patch(`/admin/admins/${id}`, adminData),
+
+    deleteAdmin: (id: string) =>
+      apiClient.delete(`/admin/admins/${id}`),
+
+    enableMFA: (id: string) =>
+      apiClient.post(`/admin/admins/${id}/mfa/enable`),
+
+    disableMFA: (id: string) =>
+      apiClient.post(`/admin/admins/${id}/mfa/disable`),
+
+    updateIPWhitelist: (id: string, ipWhitelist: string[]) =>
+      apiClient.patch(`/admin/admins/${id}/ip-whitelist`, { ipWhitelist }),
+  },
+
   // Fraud Detection & Monitoring
   fraud: {
     getAlerts: (params?: {

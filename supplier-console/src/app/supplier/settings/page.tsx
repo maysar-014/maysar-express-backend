@@ -243,7 +243,7 @@ export default function SettingsPage() {
             <div className="flex space-x-2">
               <input
                 type={apiSettings.apiKeyVisible ? 'text' : 'password'}
-                value="sk_test_••••••••••••••••••••••••"
+                value="sk_live_••••••••••••••••••••••••••••••••••••••••••••••••••••••"
                 readOnly
                 className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
               />

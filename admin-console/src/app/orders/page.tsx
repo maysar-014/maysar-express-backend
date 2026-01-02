@@ -1,6 +1,8 @@
 // Professional Orders Management Page
 // Complete order lifecycle management with advanced filtering and bulk operations
 
+"use client";
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -347,7 +349,7 @@ export default function OrdersPage() {
                 Completed
               </dt>
               <dd className="text-lg font-semibold text-gray-900 dark:text-white">
-                {orders.filter(o => o.status === 'delivered').length}
+                {orders.filter((o: Order) => o.status === 'delivered').length}
               </dd>
             </div>
           </div>
@@ -365,7 +367,7 @@ export default function OrdersPage() {
                 In Transit
               </dt>
               <dd className="text-lg font-semibold text-gray-900 dark:text-white">
-                {orders.filter(o => o.status === 'shipped').length}
+                {orders.filter((o: Order) => o.status === 'shipped').length}
               </dd>
             </div>
           </div>
@@ -383,7 +385,7 @@ export default function OrdersPage() {
                 Cancelled
               </dt>
               <dd className="text-lg font-semibold text-gray-900 dark:text-white">
-                {orders.filter(o => o.status === 'cancelled').length}
+                {orders.filter((o: Order) => o.status === 'cancelled').length}
               </dd>
             </div>
           </div>

@@ -1,6 +1,8 @@
 // Professional Inventory Management Page
 // Complete inventory tracking with warehouse visualization and real-time updates
 
+"use client";
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -253,7 +255,7 @@ export default function InventoryPage() {
 
       {/* Warehouse Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {warehouses.slice(0, 4).map((warehouse: Warehouse) => {
+        {warehouses.slice(0, 4).map((warehouse) => {
           const utilization = getWarehouseUtilization(warehouse);
           return (
             <div key={warehouse.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -327,7 +329,7 @@ export default function InventoryPage() {
               className="rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             >
               <option value="all">All Warehouses</option>
-              {warehouses.map(warehouse => (
+              {warehouses.map((warehouse: Warehouse) => (
                 <option key={warehouse.id} value={warehouse.id}>
                   {warehouse.name} - {warehouse.location}
                 </option>
