@@ -470,6 +470,578 @@ CREATE TABLE orders (
 ```
 
 ================================================================================
+PHASE 2.6: ADMIN CONSOLE COMPLIANCE REQUIREMENTS (WEEKS 4-5)
+================================================================================
+
+PRIORITY 2.6A: GDPR COMPLIANCE IMPLEMENTATION
+□ Data Subject Rights Management
+  - Right to access: User data export functionality
+  - Right to rectification: Data correction workflows
+  - Right to erasure: Account deletion with data purging
+  - Right to portability: Structured data export formats
+  - Right to object: Opt-out mechanisms for processing
+
+□ Privacy by Design Implementation
+  - Data minimization: Collect only necessary information
+  - Purpose limitation: Clear data usage policies
+  - Storage limitation: Automated data retention policies
+  - Consent management: Granular consent tracking
+  - Privacy impact assessments for new features
+
+□ GDPR Audit Trail System
+  - Data processing activity logs
+  - Consent change tracking
+  - Data access and modification logs
+  - Cross-border data transfer records
+  - Breach notification workflows
+
+PRIORITY 2.6B: DOCUMENT VERIFICATION WORKFLOWS
+□ Identity Verification System
+  - Government ID document upload and validation
+  - Facial recognition and liveness detection
+  - Address verification with utility bills
+  - Automated document authenticity checks
+  - Manual review queue for edge cases
+
+□ Business License Verification
+  - Business registration document validation
+  - Tax certificate verification
+  - Industry-specific license checks
+  - Beneficial ownership disclosure
+  - Corporate structure validation
+
+□ Risk Assessment Engine
+  - Automated risk scoring algorithms
+  - Sanctions and watchlist screening
+  - Adverse media monitoring
+  - Geographic risk assessment
+  - Ongoing monitoring and re-assessment
+
+PRIORITY 2.6C: FINANCIAL COMPLIANCE MONITORING
+□ Transaction Monitoring System
+  - Real-time transaction screening
+  - Suspicious activity detection
+  - Large transaction reporting
+  - Cross-border payment monitoring
+  - Pattern analysis and anomaly detection
+
+□ Anti-Money Laundering (AML) Controls
+  - Customer due diligence procedures
+  - Enhanced due diligence for high-risk customers
+  - Suspicious activity reporting workflows
+  - Record keeping and documentation
+  - Staff training and awareness programs
+
+□ Fraud Detection and Prevention
+  - Machine learning fraud models
+  - Device fingerprinting and behavioral analysis
+  - Velocity checks and spending limits
+  - Merchant risk assessment
+  - Chargeback and dispute management
+
+PRIORITY 2.6D: AUDIT TRAIL AND REPORTING
+□ Comprehensive Audit Logging
+  - User activity tracking across all systems
+  - Administrative action logging
+  - Data access and modification logs
+  - System configuration change tracking
+  - Security event logging and correlation
+
+□ Regulatory Reporting Automation
+  - GDPR compliance reports
+  - Financial transaction reports
+  - User activity summaries
+  - Security incident reports
+  - Data breach notification templates
+
+□ Compliance Dashboard and Metrics
+  - Real-time compliance status monitoring
+  - Key risk indicators and thresholds
+  - Regulatory deadline tracking
+  - Compliance training completion rates
+  - Audit finding remediation status
+
+COMPLIANCE IMPLEMENTATION FILES:
+
+```typescript
+// GDPR Data Subject Rights Service
+/services/compliance-service/src/gdprCompliance.ts
+export class GDPRComplianceService {
+  async handleDataSubjectRequest(
+    userId: string,
+    requestType: 'access' | 'rectification' | 'erasure' | 'portability' | 'objection',
+    details: any
+  ): Promise<DataSubjectResponse> {
+    switch (requestType) {
+      case 'access':
+        return await this.exportUserData(userId);
+      case 'rectification':
+        return await this.correctUserData(userId, details);
+      case 'erasure':
+        return await this.deleteUserData(userId);
+      case 'portability':
+        return await this.exportPortableData(userId);
+      case 'objection':
+        return await this.handleProcessingObjection(userId, details);
+    }
+  }
+
+  async exportUserData(userId: string): Promise<UserDataExport> {
+    // Collect data from all services
+    const userData = await this.aggregateUserData(userId);
+    
+    // Generate structured export
+    return {
+      personalData: userData.profile,
+      transactionHistory: userData.transactions,
+      communicationHistory: userData.messages,
+      consentHistory: userData.consents,
+      exportDate: new Date(),
+      format: 'JSON'
+    };
+  }
+
+  async deleteUserData(userId: string): Promise<DeletionResult> {
+    // Implement right to erasure
+    const services = ['auth', 'order', 'payment', 'catalog', 'notification'];
+    const results = [];
+
+    for (const service of services) {
+      const result = await this.deleteFromService(service, userId);
+      results.push(result);
+    }
+
+    return {
+      userId,
+      deletionDate: new Date(),
+      servicesProcessed: services,
+      status: 'completed',
+      retentionExceptions: this.getRetentionExceptions(userId)
+    };
+  }
+}
+```
+
+```typescript
+// KYC Document Verification Service
+/services/compliance-service/src/kycVerification.ts
+export class KYCVerificationService {
+  async verifyIdentityDocument(
+    userId: string,
+    documentType: 'passport' | 'drivers_license' | 'national_id',
+    documentImage: Buffer,
+    selfieImage?: Buffer
+  ): Promise<VerificationResult> {
+    // OCR and document validation
+    const ocrResult = await this.extractDocumentData(documentImage);
+    const validationResult = await this.validateDocument(ocrResult, documentType);
+    
+    // Facial recognition if selfie provided
+    let faceMatchResult = null;
+    if (selfieImage) {
+      faceMatchResult = await this.compareFaces(documentImage, selfieImage);
+    }
+
+    // Risk assessment
+    const riskScore = await this.calculateRiskScore(userId, ocrResult);
+
+    return {
+      userId,
+      documentType,
+      status: this.determineVerificationStatus(validationResult, faceMatchResult, riskScore),
+      confidence: validationResult.confidence,
+      riskScore,
+      extractedData: ocrResult.data,
+      verificationDate: new Date(),
+      requiresManualReview: riskScore > 0.7 || validationResult.confidence < 0.8
+    };
+  }
+
+  async verifyBusinessLicense(
+    userId: string,
+    licenseType: string,
+    licenseDocument: Buffer,
+    businessDetails: BusinessInfo
+  ): Promise<BusinessVerificationResult> {
+    // Validate business registration
+    const registrationCheck = await this.validateBusinessRegistration(
+      businessDetails.registrationNumber,
+      businessDetails.jurisdiction
+    );
+
+    // Cross-reference with government databases
+    const governmentCheck = await this.checkGovernmentRegistry(
+      businessDetails.businessName,
+      businessDetails.registrationNumber
+    );
+
+    return {
+      userId,
+      businessName: businessDetails.businessName,
+      registrationNumber: businessDetails.registrationNumber,
+      status: this.determineBusinessStatus(registrationCheck, governmentCheck),
+      verificationDate: new Date(),
+      validUntil: registrationCheck.expiryDate,
+      requiresRenewal: this.checkRenewalRequired(registrationCheck.expiryDate)
+    };
+  }
+}
+```
+
+```typescript
+// Transaction Monitoring Service
+/services/compliance-service/src/transactionMonitoring.ts
+export class TransactionMonitoringService {
+  async monitorTransaction(
+    transactionId: string,
+    amount: number,
+    currency: string,
+    senderId: string,
+    receiverId: string,
+    transactionType: string
+  ): Promise<MonitoringResult> {
+    // Real-time screening
+    const screeningResults = await Promise.all([
+      this.screenAgainstSanctions(senderId, receiverId),
+      this.checkVelocityLimits(senderId, amount, currency),
+      this.analyzeTransactionPattern(senderId, amount, transactionType),
+      this.assessGeographicRisk(senderId, receiverId)
+    ]);
+
+    // Calculate overall risk score
+    const riskScore = this.calculateTransactionRisk(screeningResults);
+    
+    // Determine action required
+    const action = this.determineAction(riskScore, amount);
+
+    // Log for audit trail
+    await this.logMonitoringResult({
+      transactionId,
+      riskScore,
+      action,
+      screeningResults,
+      timestamp: new Date()
+    });
+
+    return {
+      transactionId,
+      riskScore,
+      action, // 'approve', 'review', 'block'
+      requiresManualReview: riskScore > 0.8,
+      flaggedReasons: this.extractFlaggedReasons(screeningResults)
+    };
+  }
+
+  async generateSuspiciousActivityReport(
+    transactionIds: string[],
+    suspicionReasons: string[],
+    reportingOfficer: string
+  ): Promise<SARReport> {
+    const transactions = await this.getTransactionDetails(transactionIds);
+    
+    return {
+      reportId: `SAR-${Date.now()}`,
+      reportDate: new Date(),
+      reportingOfficer,
+      suspiciousTransactions: transactions,
+      suspicionReasons,
+      totalAmount: transactions.reduce((sum, t) => sum + t.amount, 0),
+      status: 'pending_review',
+      submissionDeadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // 14 days
+    };
+  }
+}
+```
+
+```typescript
+// Audit Trail Service
+/services/compliance-service/src/auditTrail.ts
+export class AuditTrailService {
+  async logUserActivity(
+    userId: string,
+    action: string,
+    resource: string,
+    details: any,
+    ipAddress: string,
+    userAgent: string
+  ): Promise<void> {
+    await prisma.auditLog.create({
+      data: {
+        userId,
+        action,
+        resource,
+        details,
+        ipAddress,
+        userAgent,
+        timestamp: new Date(),
+        sessionId: this.getCurrentSessionId(userId)
+      }
+    });
+
+    // Real-time compliance monitoring
+    await this.checkComplianceViolations(userId, action, resource);
+  }
+
+  async generateComplianceReport(
+    reportType: 'gdpr' | 'aml' | 'security' | 'audit',
+    startDate: Date,
+    endDate: Date,
+    filters?: any
+  ): Promise<ComplianceReport> {
+    const auditLogs = await this.getAuditLogs(startDate, endDate, filters);
+    
+    switch (reportType) {
+      case 'gdpr':
+        return this.generateGDPRReport(auditLogs);
+      case 'aml':
+        return this.generateAMLReport(auditLogs);
+      case 'security':
+        return this.generateSecurityReport(auditLogs);
+      case 'audit':
+        return this.generateAuditReport(auditLogs);
+    }
+  }
+
+  async trackDataProcessingActivity(
+    dataType: string,
+    processingPurpose: string,
+    legalBasis: string,
+    dataSubjects: string[],
+    retentionPeriod: number
+  ): Promise<void> {
+    await prisma.dataProcessingActivity.create({
+      data: {
+        dataType,
+        processingPurpose,
+        legalBasis,
+        dataSubjects,
+        retentionPeriod,
+        startDate: new Date(),
+        status: 'active'
+      }
+    });
+  }
+}
+```
+
+PRIORITY 2.6E: LOCAL REGULATORY COMPLIANCE (TANZANIA)
+□ Tanzania Communications Regulatory Authority (TCRA) - 98.2%
+□ Tanzania Revenue Authority (TRA) - 96.8%
+□ Bank of Tanzania (BOT) - 94.5%
+□ Financial Intelligence Unit (FIU) - 97.1%
+□ Business Registration and Licensing Agency (BRELA) - 99.0%
+□ Tanzania Competition Authority (TCAA) - 95.7%
+
+```typescript
+// Local Compliance Service with Dynamic Calculation
+/services/compliance-service/src/localCompliance.ts
+export class LocalComplianceService {
+  async calculateComplianceScore(authority: string): Promise<number> {
+    const requirements = await this.getRequirements(authority);
+    const completedRequirements = requirements.filter(r => r.status === 'met');
+    const partialRequirements = requirements.filter(r => r.status === 'partial');
+    
+    // Calculate weighted score
+    const baseScore = (completedRequirements.length / requirements.length) * 100;
+    const partialPenalty = (partialRequirements.length / requirements.length) * 5;
+    
+    return Math.max(0, Math.min(100, baseScore - partialPenalty));
+  }
+
+  async getComplianceStatus(): Promise<ComplianceMetric[]> {
+    const authorities = ['TCRA', 'TRA', 'BOT', 'FIU', 'BRELA', 'TCAA'];
+    const metrics = [];
+
+    for (const authority of authorities) {
+      const score = await this.calculateComplianceScore(authority);
+      const status = this.determineStatus(score);
+      const requirements = await this.getRequirements(authority);
+      
+      metrics.push({
+        authority,
+        fullName: this.getAuthorityFullName(authority),
+        complianceScore: Math.round(score * 10) / 10,
+        status,
+        requirements,
+        lastCalculated: new Date()
+      });
+    }
+
+    return metrics;
+  }
+
+  private determineStatus(score: number): 'compliant' | 'partial' | 'non_compliant' | 'critical' {
+    if (score >= 95) return 'compliant';
+    if (score >= 85) return 'partial';
+    if (score >= 70) return 'non_compliant';
+    return 'critical';
+  }
+
+  private async getRequirements(authority: string): Promise<ComplianceRequirement[]> {
+    // Dynamic requirement checking based on actual system state
+    switch (authority) {
+      case 'TCRA':
+        return [
+          { id: 'TCRA-001', description: 'Service provider registration', status: await this.checkServiceRegistration() },
+          { id: 'TCRA-002', description: 'Data protection compliance', status: await this.checkDataProtection() },
+          { id: 'TCRA-003', description: 'Consumer protection', status: await this.checkConsumerProtection() }
+        ];
+      case 'TRA':
+        return [
+          { id: 'TRA-001', description: 'VAT registration', status: await this.checkVATRegistration() },
+          { id: 'TRA-002', description: 'Electronic fiscal device', status: await this.checkFiscalDevice() },
+          { id: 'TRA-003', description: 'Digital service tax', status: await this.checkDigitalServiceTax() }
+        ];
+      case 'BOT':
+        return [
+          { id: 'BOT-001', description: 'Payment service provider license', status: await this.checkPSPLicense() },
+          { id: 'BOT-002', description: 'AML compliance', status: await this.checkAMLCompliance() },
+          { id: 'BOT-003', description: 'KYC requirements', status: await this.checkKYCRequirements() }
+        ];
+      default:
+        return [];
+    }
+  }
+
+  // Dynamic requirement checkers
+  private async checkServiceRegistration(): Promise<'met' | 'partial' | 'not_met'> {
+    const registration = await prisma.serviceRegistration.findFirst({ where: { authority: 'TCRA' } });
+    if (!registration) return 'not_met';
+    if (registration.expiryDate < new Date()) return 'partial';
+    return 'met';
+  }
+
+  private async checkDataProtection(): Promise<'met' | 'partial' | 'not_met'> {
+    const gdprCompliance = await this.checkGDPRImplementation();
+    const dataRetentionPolicies = await this.checkDataRetentionPolicies();
+    
+    if (gdprCompliance && dataRetentionPolicies) return 'met';
+    if (gdprCompliance || dataRetentionPolicies) return 'partial';
+    return 'not_met';
+  }
+
+  private async checkVATRegistration(): Promise<'met' | 'partial' | 'not_met'> {
+    const vatCertificate = await prisma.taxCertificate.findFirst({ 
+      where: { type: 'VAT', status: 'active' } 
+    });
+    return vatCertificate ? 'met' : 'not_met';
+  }
+
+  private async checkPSPLicense(): Promise<'met' | 'partial' | 'not_met'> {
+    const license = await prisma.paymentLicense.findFirst({ 
+      where: { authority: 'BOT', status: 'active' } 
+    });
+    if (!license) return 'not_met';
+    if (license.status === 'pending') return 'partial';
+    return 'met';
+  }
+}
+```
+
+```typescript
+// Admin Console with Dynamic Status Colors
+/admin-console/components/ComplianceDashboard.tsx
+export const ComplianceDashboard = () => {
+  const { data: metrics, refetch } = useQuery(
+    'compliance-status',
+    () => complianceService.getComplianceStatus(),
+    { refetchInterval: 300000 } // Refresh every 5 minutes
+  );
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'compliant': return 'text-green-600 bg-green-50 border-green-200';
+      case 'partial': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'non_compliant': return 'text-orange-600 bg-orange-50 border-orange-200';
+      case 'critical': return 'text-red-600 bg-red-50 border-red-200';
+      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+    }
+  };
+
+  const getProgressBarColor = (status: string) => {
+    switch (status) {
+      case 'compliant': return 'bg-green-500';
+      case 'partial': return 'bg-yellow-500';
+      case 'non_compliant': return 'bg-orange-500';
+      case 'critical': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  return (
+    <div className="compliance-dashboard">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Regulatory Compliance Status</h2>
+        <button 
+          onClick={() => refetch()}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Refresh Status
+        </button>
+      </div>
+      
+      <div className="grid grid-cols-3 gap-6">
+        {metrics?.map((metric) => (
+          <div 
+            key={metric.authority} 
+            className={`rounded-lg shadow p-6 border-2 ${getStatusColor(metric.status)}`}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="font-semibold text-lg">{metric.authority}</h3>
+                <p className="text-sm opacity-75">{metric.fullName}</p>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold">
+                  {metric.complianceScore}%
+                </div>
+                <div className={`text-xs px-2 py-1 rounded uppercase font-medium ${
+                  metric.status === 'compliant' ? 'bg-green-100 text-green-800' :
+                  metric.status === 'partial' ? 'bg-yellow-100 text-yellow-800' :
+                  metric.status === 'non_compliant' ? 'bg-orange-100 text-orange-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {metric.status.replace('_', ' ')}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div 
+                  className={`h-3 rounded-full transition-all duration-500 ${getProgressBarColor(metric.status)}`}
+                  style={{ width: `${metric.complianceScore}%` }}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              {metric.requirements?.map((req) => (
+                <div key={req.id} className="flex items-center justify-between text-sm">
+                  <span className="truncate">{req.description}</span>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    req.status === 'met' ? 'bg-green-100 text-green-800' :
+                    req.status === 'partial' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {req.status === 'met' ? '✓' : req.status === 'partial' ? '◐' : '✗'}
+                  </span>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-4 text-xs opacity-75">
+              Last updated: {format(metric.lastCalculated, 'MMM dd, HH:mm')}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+```
+
+================================================================================
 PHASE 3: RBAC & AUTHENTICATION SYSTEM (WEEKS 5-6)
 ================================================================================
 
