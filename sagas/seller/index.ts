@@ -28,6 +28,19 @@ import {
   PerformanceMonitoringSaga 
 } from './salesAnalyticsSaga';
 
+// Marketing Campaign Sagas
+import { 
+  PricingManagementSaga, 
+  PromotionalCampaignSaga 
+} from './marketingCampaignSaga';
+
+// Additional Seller Sagas
+import { EnablerCollaborationSaga } from './enablerCollaborationSaga';
+import { PaymentManagementSaga } from './paymentManagementSaga';
+import { SellerKYCSaga } from './sellerKYCSaga';
+import { SellerSettingsSaga } from './sellerSettingsSaga';
+import { SellerSupportSaga } from './sellerSupportSaga';
+
 export class SellerSagaRegistry {
   static initialize(): void {
     // Product Catalog & Inventory Sagas
@@ -50,11 +63,24 @@ export class SellerSagaRegistry {
     sagaOrchestrator.registerSaga('SalesAnalytics', new SalesAnalyticsSaga());
     sagaOrchestrator.registerSaga('PerformanceMonitoring', new PerformanceMonitoringSaga());
 
+    // Marketing & Campaign Sagas
+    sagaOrchestrator.registerSaga('PricingManagement', new PricingManagementSaga());
+    sagaOrchestrator.registerSaga('PromotionalCampaign', new PromotionalCampaignSaga());
+
+    // Additional Seller Sagas
+    sagaOrchestrator.registerSaga('EnablerCollaboration', new EnablerCollaborationSaga());
+    sagaOrchestrator.registerSaga('PaymentManagement', new PaymentManagementSaga());
+    sagaOrchestrator.registerSaga('SellerKYC', new SellerKYCSaga());
+    sagaOrchestrator.registerSaga('SellerSettings', new SellerSettingsSaga());
+    sagaOrchestrator.registerSaga('SellerSupport', new SellerSupportSaga());
+
     console.log('Seller Console Sagas registered:', sagaOrchestrator.listSagas().filter(name => 
       ['ProductCatalogManagement', 'InventoryManagement', 'BulkProductOperations',
        'OrderProcessing', 'ShippingFulfillment', 'ReturnProcessing',
        'CustomerRelationship', 'ReviewManagement', 'CustomerSupportTicket',
-       'SellerDashboardAnalytics', 'SalesAnalytics', 'PerformanceMonitoring'].includes(name)
+       'SellerDashboardAnalytics', 'SalesAnalytics', 'PerformanceMonitoring',
+       'PricingManagement', 'PromotionalCampaign', 'EnablerCollaboration',
+       'PaymentManagement', 'SellerKYC', 'SellerSettings', 'SellerSupport'].includes(name)
     ));
   }
 
@@ -108,6 +134,36 @@ export class SellerSagaRegistry {
 
   static async executePerformanceMonitoring(data: any): Promise<string> {
     return await sagaOrchestrator.executeSaga('PerformanceMonitoring', data);
+  }
+
+  // Marketing & Campaigns
+  static async executePricingManagement(data: any): Promise<string> {
+    return await sagaOrchestrator.executeSaga('PricingManagement', data);
+  }
+
+  static async executePromotionalCampaign(data: any): Promise<string> {
+    return await sagaOrchestrator.executeSaga('PromotionalCampaign', data);
+  }
+
+  // Additional Seller Operations
+  static async executeEnablerCollaboration(data: any): Promise<string> {
+    return await sagaOrchestrator.executeSaga('EnablerCollaboration', data);
+  }
+
+  static async executePaymentManagement(data: any): Promise<string> {
+    return await sagaOrchestrator.executeSaga('PaymentManagement', data);
+  }
+
+  static async executeSellerKYC(data: any): Promise<string> {
+    return await sagaOrchestrator.executeSaga('SellerKYC', data);
+  }
+
+  static async executeSellerSettings(data: any): Promise<string> {
+    return await sagaOrchestrator.executeSaga('SellerSettings', data);
+  }
+
+  static async executeSellerSupport(data: any): Promise<string> {
+    return await sagaOrchestrator.executeSaga('SellerSupport', data);
   }
 }
 

@@ -1,16 +1,244 @@
-// Order Service Implementation with Transactional Outbox Pattern
-// Complete order lifecycle management with guaranteed event publishing
-
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { TransactionalOutbox } from '../../shared/outbox/outboxPattern';
 import { EventEnvelope, OrderCreatedPayload, EventFactory } from '../../events';
+import { eventBus } from '../../shared/events/eventBus';
 
 export class OrderService {
   private outbox: TransactionalOutbox;
 
   constructor(private prisma: PrismaClient) {
     this.outbox = new TransactionalOutbox(prisma);
+    this.initializeEventHandlers();
+    this.initializeSupplierOrderHandlers();
+    this.initializeSellerSagaHandlers();
+  }
+
+  private initializeSellerSagaHandlers() {
+    // Order Processing Saga Events
+    eventBus.subscribe('OrderReceived', async (event) => {
+      const { orderId, sellerId, customerId } = event.data;
+      
+      await eventBus.publish({
+        type: 'InventoryCheckRequested',
+        data: { orderId, sellerId, customerId, sagaId: event.sagaId }
+      });
+    });
+
+    eventBus.subscribe('InventoryReserved', async (event) => {
+      const { orderId } = event.data;
+      
+      await eventBus.publish({
+        type: 'PaymentVerificationRequested',
+        data: { orderId, sagaId: event.sagaId }
+      });
+    });
+
+    eventBus.subscribe('PaymentVerified', async (event) => {
+      const { orderId } = event.data;
+      
+      await eventBus.publish({
+        type: 'OrderFulfillmentStarted',
+        data: { orderId, startedAt: new Date(), sagaId: event.sagaId }
+      });
+    });
+
+    eventBus.subscribe('OrderFulfilled', async (event) => {
+      const { orderId } = event.data;
+      
+      await eventBus.publish({
+        type: 'ShippingLabelGenerated',
+        data: { orderId, trackingNumber: `TRK${Date.now()}`, sagaId: event.sagaId }
+      });
+    });
+
+    // Shipping Fulfillment Saga Events
+    eventBus.subscribe('ShippingRequested', async (event) => {
+      const { orderId, shippingMethod } = event.data;
+      
+      const carrier = shippingMethod === 'express' ? 'FedEx' : 'UPS';
+      
+      await eventBus.publish({
+        type: 'CarrierSelected',
+        data: { orderId, carrier, estimatedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), sagaId: event.sagaId }
+      });
+    });
+
+    eventBus.subscribe('CarrierSelected', async (event) => {
+      const { orderId } = event.data;
+      
+      await eventBus.publish({
+        type: 'ShippingLabelGenerated',
+        data: { orderId, labelUrl: `https://labels.example.com/${orderId}.pdf`, sagaId: event.sagaId }
+      });
+    });
+
+    eventBus.subscribe('ShippingLabelGenerated', async (event) => {
+      const { orderId } = event.data;
+      
+      await eventBus.publish({
+        type: 'TrackingSetup',
+        data: { orderId, trackingNumber: `TRK${Date.now()}`, trackingUrl: `https://tracking.example.com/TRK${Date.now()}`, sagaId: event.sagaId }
+      });
+    });
+
+    eventBus.subscribe('TrackingSetup', async (event) => {
+      const { orderId } = event.data;
+      
+      await eventBus.publish({
+        type: 'DeliveryMonitoringStarted',
+        data: { orderId, monitoringStarted: new Date(), sagaId: event.sagaId }
+      });
+    });
+
+    // Return Processing Saga Events
+    eventBus.subscribe('ReturnRequested', async (event) => {
+      const { returnId, orderId, reason } = event.data;
+      
+      await eventBus.publish({
+        type: 'ReturnApproved',
+        data: { returnId, orderId, approvedAt: new Date(), sagaId: event.sagaId }
+      });
+    });
+
+    eventBus.subscribe('ReturnApproved', async (event) => {
+      const { returnId } = event.data;
+      
+      await eventBus.publish({
+        type: 'ReturnShippingLabelGenerated',
+        data: { returnId, returnTrackingNumber: `RTN${Date.now()}`, sagaId: event.sagaId }
+      });
+    });
+
+    eventBus.subscribe('ReturnShippingLabelGenerated', async (event) => {
+      const { returnId, orderId } = event.data;
+      
+      await eventBus.publish({
+        type: 'RefundProcessed',
+        data: { returnId, orderId, refundAmount: 150.00, processedAt: new Date(), sagaId: event.sagaId }
+      });
+    });
+  }
+
+  private initializeSupplierOrderHandlers() {
+    // Bulk Order Fulfillment Events
+    eventBus.subscribe('BulkOrderReceived', async (event) => {
+      const { supplierId, bulkOrderId, orderDetails } = event.data;
+      
+      const capacityAvailable = await this.validateBulkOrderCapacity(supplierId, orderDetails);
+      
+      await eventBus.publish({
+        type: 'BulkOrderCapacityValidated',
+        data: { supplierId, bulkOrderId, capacityAvailable, sagaId: event.sagaId }
+      });
+    });
+
+    eventBus.subscribe('BulkOrderCapacityValidated', async (event) => {
+      const { supplierId, bulkOrderId, capacityAvailable } = event.data;
+      
+      if (capacityAvailable) {
+        const productionStartDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        
+        await eventBus.publish({
+          type: 'BulkOrderProductionScheduled',
+          data: { supplierId, bulkOrderId, productionStartDate, sagaId: event.sagaId }
+        });
+      }
+    });
+
+    eventBus.subscribe('BulkOrderProductionScheduled', async (event) => {
+      const { supplierId, bulkOrderId } = event.data;
+      
+      await eventBus.publish({
+        type: 'BulkOrderManufacturingStarted',
+        data: { supplierId, bulkOrderId, sagaId: event.sagaId }
+      });
+    });
+
+    eventBus.subscribe('BulkOrderManufacturingStarted', async (event) => {
+      const { supplierId, bulkOrderId } = event.data;
+      
+      const qualityPassed = await this.performBulkQualityCheck(bulkOrderId);
+      
+      await eventBus.publish({
+        type: 'BulkOrderQualityChecked',
+        data: { supplierId, bulkOrderId, qualityPassed, sagaId: event.sagaId }
+      });
+    });
+
+    eventBus.subscribe('BulkOrderQualityChecked', async (event) => {
+      const { supplierId, bulkOrderId, qualityPassed } = event.data;
+      
+      if (qualityPassed) {
+        const trackingNumber = `BULK-${Date.now()}`;
+        
+        await eventBus.publish({
+          type: 'BulkOrderShipped',
+          data: { supplierId, bulkOrderId, trackingNumber, sagaId: event.sagaId }
+        });
+      }
+    });
+
+    // Bulk Shipping Coordination Events
+    eventBus.subscribe('BulkShippingPlanned', async (event) => {
+      const { supplierId, bulkOrderId, shippingPlan } = event.data;
+      
+      const carrier = await this.coordinateWithCarrier(bulkOrderId, shippingPlan);
+      
+      await eventBus.publish({
+        type: 'BulkShippingCarrierCoordinated',
+        data: { supplierId, bulkOrderId, carrier, sagaId: event.sagaId }
+      });
+    });
+
+    eventBus.subscribe('BulkShippingCarrierCoordinated', async (event) => {
+      const { supplierId, bulkOrderId, carrier } = event.data;
+      
+      const loadingTime = new Date();
+      
+      await eventBus.publish({
+        type: 'BulkShippingLoadingCompleted',
+        data: { supplierId, bulkOrderId, loadingTime, sagaId: event.sagaId }
+      });
+    });
+
+    eventBus.subscribe('BulkShippingLoadingCompleted', async (event) => {
+      const { supplierId, bulkOrderId } = event.data;
+      
+      const trackingUrl = `https://track.example.com/BULK-${bulkOrderId}`;
+      
+      await eventBus.publish({
+        type: 'BulkShippingTrackingSetup',
+        data: { supplierId, bulkOrderId, trackingUrl, sagaId: event.sagaId }
+      });
+    });
+
+    eventBus.subscribe('BulkShippingTrackingSetup', async (event) => {
+      const { supplierId, bulkOrderId } = event.data;
+      
+      const deliveredAt = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+      
+      await eventBus.publish({
+        type: 'BulkShippingDelivered',
+        data: { supplierId, bulkOrderId, deliveredAt, sagaId: event.sagaId }
+      });
+    });
+  }
+
+  private async validateBulkOrderCapacity(supplierId: string, orderDetails: any): Promise<boolean> {
+    return true; // Simplified validation
+  }
+
+  private async performBulkQualityCheck(bulkOrderId: string): Promise<boolean> {
+    return Math.random() > 0.1; // 90% pass rate
+  }
+
+  private async coordinateWithCarrier(bulkOrderId: string, shippingPlan: any) {
+    return {
+      name: 'FreightCorp',
+      contactInfo: 'freight@example.com',
+      estimatedPickup: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    };
   }
 
   async createOrder(orderData: {

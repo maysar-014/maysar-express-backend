@@ -1,28 +1,62 @@
 {
   "name": "maysar-express-backend",
   "version": "1.0.0",
-  "main": "dist/index.js",
+  "description": "Maysar Digital Community Trade Network - Enterprise E-Commerce Platform Backend",
+  "main": "index.js",
   "scripts": {
-    "dev": "ts-node src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
+    "dev": "concurrently \"npm run dev:services\" \"npm run dev:consoles\"",
+    "dev:services": "concurrently \"npm run dev:auth\" \"npm run dev:order\" \"npm run dev:catalog\" \"npm run dev:payment\" \"npm run dev:inventory\"",
+    "dev:consoles": "concurrently \"npm run dev:admin\" \"npm run dev:seller\" \"npm run dev:courier\" \"npm run dev:supplier\" \"npm run dev:enabler\"",
+    "dev:auth": "cd services/auth-service && npm run dev",
+    "dev:order": "cd services/order-service && npm run dev",
+    "dev:catalog": "cd services/catalog-service && npm run dev",
+    "dev:payment": "cd services/payment-service && npm run dev",
+    "dev:inventory": "cd services/inventory-service && npm run dev",
+    "dev:admin": "cd admin-console && npm run dev",
+    "dev:seller": "cd seller-console && npm run dev",
+    "dev:courier": "cd courier-console && npm run dev",
+    "dev:supplier": "cd supplier-console && npm run dev",
+    "dev:enabler": "cd enabler-console && npm run dev",
+    "build": "npm run build:services && npm run build:consoles",
+    "build:services": "concurrently \"npm run build:auth\" \"npm run build:order\" \"npm run build:catalog\" \"npm run build:payment\" \"npm run build:inventory\"",
+    "build:consoles": "concurrently \"npm run build:admin\" \"npm run build:seller\" \"npm run build:courier\" \"npm run build:supplier\" \"npm run build:enabler\"",
+    "build:auth": "cd services/auth-service && npm run build",
+    "build:order": "cd services/order-service && npm run build",
+    "build:catalog": "cd services/catalog-service && npm run build",
+    "build:payment": "cd services/payment-service && npm run build",
+    "build:inventory": "cd services/inventory-service && npm run build",
+    "build:admin": "cd admin-console && npm run build",
+    "build:seller": "cd seller-console && npm run build",
+    "build:courier": "cd courier-console && npm run build",
+    "build:supplier": "cd supplier-console && npm run build",
+    "build:enabler": "cd enabler-console && npm run build",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:integration": "jest --testPathPattern=integration",
-    "test:load": "artillery run artillery.yml",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix"
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "db:migrate": "ts-node scripts/migrate.ts migrate",
+    "db:seed": "ts-node scripts/migrate.ts seed",
+    "db:reset": "ts-node scripts/migrate.ts reset",
+    "db:fresh": "ts-node scripts/migrate.ts fresh",
+    "db:status": "ts-node scripts/migrate.ts status",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:reset": "supabase db reset",
+    "supabase:generate-types": "supabase gen types typescript --local > shared/supabase/types.ts",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "health:check": "ts-node scripts/health-check.ts",
+    "setup:dev": "npm install && npm run db:fresh && npm run supabase:generate-types"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
     "@aws-sdk/client-cloudfront": "^3.713.0",
     "@aws-sdk/client-s3": "^3.713.0",
     "@aws-sdk/s3-request-presigner": "^3.713.0",
     "@prisma/client": "^5.22.0",
+    "@supabase/supabase-js": "^2.89.0",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.6",
     "@types/ioredis": "^4.28.10",
@@ -50,5 +84,39 @@
     "jest": "^30.2.0",
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.6"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AbdallahRahams/maysar-express-backend.git"
+  },
+  "keywords": [
+    "e-commerce",
+    "microservices",
+    "supabase",
+    "typescript",
+    "express",
+    "sagas",
+    "event-driven"
+  ],
+  "author": "Maysar Team",
+  "license": "MIT",
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "npm test"
+    }
   }
 }
