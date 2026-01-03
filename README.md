@@ -33,7 +33,7 @@ An enterprise-grade e-commerce platform built with microservices architecture, d
 **Purpose**: Central governance and system administration  
 **Key Features**:
 - Multi-role user management (admins, sellers, suppliers, enablers, customers)
-- KYC and compliance monitoring (PCI DSS, GDPR, SOX)
+- KYC and compliance monitoring (GDPR)
 - Financial oversight and dispute resolution
 - System health monitoring and security management
 - Real-time analytics and audit trails
@@ -251,7 +251,7 @@ kubectl get services
 ### Security Implementation
 - Comprehensive vulnerability scanning and remediation
 - Security testing and penetration testing procedures
-- Compliance frameworks: PCI DSS, GDPR, SOX
+- Compliance frameworks: GDPR
 - Incident response procedures and monitoring
 - Automated security operations and access management
 
@@ -304,9 +304,7 @@ Each console has detailed documentation:
 - Disaster recovery planning and implementation
 
 ### Regulatory Compliance
-- PCI DSS Level 1: Payment card industry compliance for secure transactions
 - GDPR Compliance: European data protection regulation adherence
-- SOX Compliance: Financial reporting and audit trail requirements
 - ISO 27001: Information security management system standards
 
 ### Enterprise Security
@@ -341,7 +339,7 @@ Each console has detailed documentation:
 - **Auth Service** (Port 3001): JWT authentication, user management, role-based access
 - **Order Service** (Port 3002): Complete order lifecycle from creation to fulfillment
 - **Inventory Service** (Port 3003): Real-time stock management, reservations, warehouse operations
-- **Payment Service** (Port 3004): PCI DSS compliant payment processing, fraud detection
+- **Payment Service** (Port 3004): Secure payment processing, fraud detection
 - **Catalog Service** (Port 3005): Product catalog, search, variants, seller management
 
 ### Business Support Services
@@ -354,7 +352,7 @@ Each console has detailed documentation:
 ### Analytics & Admin Services
 - **Analytics Service** (Port 3011): Business intelligence, real-time dashboards, custom reports
 - **Community Service** (Port 3012): Social features, posts, comments, user engagement
-- **Compliance Service** (Port 3013): GDPR, PCI DSS, SOX compliance automation
+- **Compliance Service** (Port 3013): GDPR compliance automation
 - **Admin Service** (Port 3014): Administrative operations, system health, audit logs
 
 ### Database Architecture
@@ -655,7 +653,7 @@ All services maintain strict Service Level Objectives:
 - **Penetration Testing**: Zero critical vulnerabilities (3 high, 2 medium addressed)
 - **Vulnerability Scanning**: 95%+ automated coverage with remediation tracking
 - **Security Score**: 85/100 overall security posture
-- **Compliance Frameworks**: PCI DSS (98.5%), GDPR (96.8%), SOX (95.2%)
+- **Compliance Frameworks**: GDPR (96.8%)
 
 ### Automated Security Operations
 
@@ -845,7 +843,7 @@ curl https://api.maysar.com/health
 #### Security Testing & Compliance
 - **Penetration Testing**: OSCP/OSCE certified testers, zero critical vulnerabilities
 - **Vulnerability Scanning**: 95%+ automated coverage (SAST, DAST, SCA)
-- **Compliance Auditing**: PCI DSS (98.5%), GDPR (96.8%) with external validation
+- **Compliance Auditing**: GDPR (96.8%) with external validation
 - **Incident Response**: 75-minute average MTTR with automated escalation
 
 ### 🚀 Deployment & Operations
@@ -896,7 +894,7 @@ curl https://api.maysar.com/health
 
 #### Operational Excellence
 - **99.9% Inventory Accuracy**: Real-time tracking with automated reordering
-- **Complete Audit Trails**: SOX compliance with comprehensive logging
+- **Complete Audit Trails**: Regulatory compliance with comprehensive logging
 - **Multi-Channel Support**: Email, SMS, push notifications with delivery tracking
 
 ## Monitoring & Observability

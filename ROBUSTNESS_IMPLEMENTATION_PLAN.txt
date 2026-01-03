@@ -960,7 +960,7 @@ Admin Services:
 - Multi-role user lifecycle (registration, verification, suspension, deletion)
 - Document verification with automated and manual review workflows
 - Real-time transaction monitoring with fraud detection algorithms
-- Compliance automation for PCI DSS, GDPR, SOX requirements
+- Compliance automation for GDPR requirements
 - System health monitoring with automated incident response
 - Complete audit trails for regulatory compliance and investigations
 
