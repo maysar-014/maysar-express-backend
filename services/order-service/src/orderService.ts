@@ -1,27 +1,18 @@
-// Order Service Implementation
-// Complete order lifecycle management with event publishing
+// Order Service Implementation with Transactional Outbox Pattern
+// Complete order lifecycle management with guaranteed event publishing
 
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import { EventBus } from './shared/events/eventBus';
-import {
-  OrderCreatedEvent,
-  OrderPaidEvent,
-  OrderShippedEvent,
-  OrderDeliveredEvent,
-  OrderCancelledEvent,
-  OrderRefundedEvent
-} from './events/orderEvents';
+import { TransactionalOutbox } from '../../shared/outbox/outboxPattern';
+import { EventEnvelope, OrderCreatedPayload, EventFactory } from '../../events';
 
 export class OrderService {
-  constructor(
-    private prisma: PrismaClient,
-    private eventBus: EventBus
-  ) {}
+  private outbox: TransactionalOutbox;
 
-  /**
-   * Create a new order and publish OrderCreated event
-   */
+  constructor(private prisma: PrismaClient) {
+    this.outbox = new TransactionalOutbox(prisma);
+  }
+
   async createOrder(orderData: {
     buyerId: string;
     sellerId: string;
@@ -35,73 +26,72 @@ export class OrderService {
     billingAddress?: any;
     notes?: string;
   }): Promise<{ orderId: string; orderNumber: string }> {
-    // Generate order number
     const orderNumber = this.generateOrderNumber();
-
-    // Calculate totals
     const totalAmount = orderData.items.reduce(
       (sum, item) => sum + (item.price * item.quantity),
       0
     );
 
-    // Create order in database
-    const order = await this.prisma.order.create({
-      data: {
+    // Use transaction to ensure atomicity
+    return await this.prisma.$transaction(async (tx) => {
+      // Create order in database
+      const order = await tx.order.create({
+        data: {
+          orderNumber,
+          buyerId: orderData.buyerId,
+          sellerId: orderData.sellerId,
+          status: 'pending',
+          totalAmount,
+          currency: 'TZS',
+          shippingAddress: orderData.shippingAddress,
+          billingAddress: orderData.billingAddress,
+          notes: orderData.notes,
+          items: {
+            create: orderData.items.map(item => ({
+              productId: item.productId,
+              productVariantId: item.productVariantId,
+              price: item.price,
+              quantity: item.quantity,
+              status: 'pending'
+            }))
+          }
+        },
+        include: { items: true }
+      });
+
+      // Create event envelope
+      const eventPayload = EventFactory.createOrderCreated({
+        orderId: order.id,
         orderNumber,
         buyerId: orderData.buyerId,
         sellerId: orderData.sellerId,
-        status: 'pending',
-        totalAmount,
-        currency: 'TZS',
-        shippingAddress: orderData.shippingAddress,
-        billingAddress: orderData.billingAddress,
-        notes: orderData.notes,
-        items: {
-          create: orderData.items.map(item => ({
-            productId: item.productId,
-            productVariantId: item.productVariantId,
-            price: item.price,
-            quantity: item.quantity,
-            status: 'pending'
-          }))
-        }
-      },
-      include: {
-        items: true
-      }
-    });
-
-    // Publish OrderCreated event
-    const orderCreatedEvent: OrderCreatedEvent = {
-      eventId: randomUUID(),
-      eventType: 'OrderCreated.v1',
-      eventVersion: 1,
-      producer: 'order-service',
-      timestamp: new Date().toISOString(),
-      entityType: 'order',
-      entityId: order.id,
-      userId: orderData.buyerId,
-      payload: {
-        orderId: order.id,
-        orderNumber,
-        userId: orderData.buyerId,
-        totalAmount,
-        currency: 'TZS',
         items: orderData.items.map(item => ({
-          productVariantId: item.productId, // Using productId as productVariantId for now
-          sellerId: orderData.sellerId,
+          productVariantId: item.productVariantId,
           quantity: item.quantity,
           unitPrice: item.price,
           totalPrice: item.price * item.quantity
         })),
+        totalAmount,
+        currency: 'TZS',
         shippingAddress: orderData.shippingAddress,
         billingAddress: orderData.billingAddress
-      }
-    };
+      });
 
-    await this.eventBus.publish(orderCreatedEvent);
+      const envelope: EventEnvelope<OrderCreatedPayload> = {
+        eventId: randomUUID(),
+        eventType: 'order.created.v1',
+        timestamp: new Date().toISOString(),
+        correlationId: randomUUID(),
+        producer: 'order-service',
+        version: 'v1',
+        payload: eventPayload
+      };
 
-    return { orderId: order.id, orderNumber };
+      // Save event to outbox in same transaction
+      await this.outbox.saveEvent(envelope, tx);
+
+      return { orderId: order.id, orderNumber };
+    });
   }
 
   /**

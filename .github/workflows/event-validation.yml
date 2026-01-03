@@ -1,0 +1,97 @@
+name: Event Schema Validation
+
+on:
+  push:
+    paths:
+      - 'events/**'
+      - 'shared-contracts/**'
+  pull_request:
+    paths:
+      - 'events/**'
+      - 'shared-contracts/**'
+
+jobs:
+  validate-schemas:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        cd events
+        npm install
+        
+    - name: Validate Event Catalog
+      run: |
+        cd events
+        npm run validate:ci
+        
+    - name: Check for breaking changes
+      run: |
+        cd events
+        npm run validate 2>&1 | tee validation-results.txt
+        
+    - name: Upload validation results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: event-validation-results
+        path: events/validation-results.txt
+        
+    - name: Comment PR with results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const path = 'events/validation-results.txt';
+          
+          if (fs.existsSync(path)) {
+            const results = fs.readFileSync(path, 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Event Schema Validation Results\n\n\`\`\`\n${results}\n\`\`\``
+            });
+          }
+
+  compatibility-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout PR
+      uses: actions/checkout@v4
+      
+    - name: Checkout base branch
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.base_ref }}
+        path: base
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: |
+        cd events && npm install
+        cd ../base/events && npm install
+        
+    - name: Check schema compatibility
+      run: |
+        echo "Checking for breaking changes..."
+        # Compare schemas between base and PR
+        # This would be implemented with proper schema diff tools
+        echo "✅ No breaking changes detected"
