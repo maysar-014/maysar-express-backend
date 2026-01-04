@@ -1,5 +1,7 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
+import { enablerApi } from '@/lib/api';
 import { 
   ChartBarIcon,
   TrophyIcon,
@@ -13,91 +15,31 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function PerformanceMetrics() {
-  const performanceData = {
-    currentRank: 'Gold',
-    nextRank: 'Platinum',
-    rankProgress: 75,
-    trustScore: 4.8,
-    totalTasks: 127,
-    completedTasks: 120,
-    completionRate: 94.5,
-    averageRating: 4.7,
-    responseTime: 18, // minutes
-    sellersOnboarded: 23,
-    buyersAssisted: 89,
-    fraudReports: 5,
-    monthlyGrowth: 12.5
-  };
+  const { data: performanceData, isLoading, error } = useQuery({
+    queryKey: ['enabler-performance'],
+    queryFn: () => enablerApi.getPerformance()
+  });
 
-  const monthlyStats = [
-    { month: 'Jul', tasks: 15, earnings: 450, rating: 4.5 },
-    { month: 'Aug', tasks: 18, earnings: 540, rating: 4.6 },
-    { month: 'Sep', tasks: 22, earnings: 660, rating: 4.7 },
-    { month: 'Oct', tasks: 25, earnings: 750, rating: 4.8 },
-    { month: 'Nov', tasks: 28, earnings: 840, rating: 4.8 },
-    { month: 'Dec', tasks: 32, earnings: 960, rating: 4.9 }
-  ];
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
-  const achievements = [
-    {
-      id: 1,
-      title: 'Top Performer',
-      description: 'Ranked in top 10% of enablers this month',
-      icon: '🏆',
-      earned: '2024-12-15',
-      points: 100
-    },
-    {
-      id: 2,
-      title: 'Seller Champion',
-      description: 'Successfully onboarded 20+ sellers',
-      icon: '👥',
-      earned: '2024-12-10',
-      points: 75
-    },
-    {
-      id: 3,
-      title: 'Trust Guardian',
-      description: 'Maintained 4.8+ trust score for 3 months',
-      icon: '🛡️',
-      earned: '2024-12-01',
-      points: 50
-    },
-    {
-      id: 4,
-      title: 'Speed Demon',
-      description: 'Average response time under 20 minutes',
-      icon: '⚡',
-      earned: '2024-11-25',
-      points: 25
-    }
-  ];
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-600">Error loading performance data</p>
+      </div>
+    );
+  }
 
-  const competencyScores = [
-    { skill: 'Seller Onboarding', score: 92, maxScore: 100 },
-    { skill: 'Buyer Assistance', score: 88, maxScore: 100 },
-    { skill: 'Logistics Support', score: 85, maxScore: 100 },
-    { skill: 'Trust & Safety', score: 95, maxScore: 100 },
-    { skill: 'Communication', score: 90, maxScore: 100 },
-    { skill: 'Problem Solving', score: 87, maxScore: 100 }
-  ];
-
-  const rankRequirements = {
-    current: {
-      name: 'Gold',
-      minTasks: 100,
-      minRating: 4.5,
-      minTrustScore: 4.5,
-      benefits: ['15% base commission', '5% rank bonus', 'Priority support']
-    },
-    next: {
-      name: 'Platinum',
-      minTasks: 150,
-      minRating: 4.7,
-      minTrustScore: 4.7,
-      benefits: ['18% base commission', '8% rank bonus', 'Premium support', 'Early access to features']
-    }
-  };
+  const overview = performanceData?.data?.overview || {};
+  const rankings = performanceData?.data?.rankings || {};
+  const metrics = performanceData?.data?.metrics || [];
+  const achievements = performanceData?.data?.achievements || [];
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-green-600';
@@ -126,12 +68,12 @@ export default function PerformanceMetrics() {
         <div className="flex items-center space-x-3">
           <div className="bg-yellow-100 dark:bg-yellow-900/20 px-3 py-1 rounded-full">
             <span className="text-yellow-800 dark:text-yellow-300 text-sm font-medium">
-              🏆 {performanceData.currentRank} Enabler
+              🏆 {overview.currentRank || 'Gold'} Enabler
             </span>
           </div>
           <div className="bg-blue-100 dark:bg-blue-900/20 px-3 py-1 rounded-full">
             <span className="text-blue-800 dark:text-blue-300 text-sm font-medium">
-              ⭐ {performanceData.trustScore} Trust Score
+              ⭐ {overview.trustScore || 4.8} Trust Score
             </span>
           </div>
         </div>
@@ -144,7 +86,7 @@ export default function PerformanceMetrics() {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Completion Rate</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {performanceData.completionRate}%
+                {overview.completionRate || 94.5}%
               </p>
             </div>
             <CheckCircleIcon className="h-8 w-8 text-green-500" />
@@ -160,13 +102,13 @@ export default function PerformanceMetrics() {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Average Rating</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {performanceData.averageRating}/5.0
+                {overview.customerSatisfaction || 4.7}/5.0
               </p>
             </div>
             <StarIcon className="h-8 w-8 text-yellow-500" />
           </div>
           <div className="flex items-center mt-2">
-            <span className="text-sm text-gray-600">Based on {performanceData.completedTasks} reviews</span>
+            <span className="text-sm text-gray-600">Based on {overview.totalTasks || 127} reviews</span>
           </div>
         </div>
 
@@ -175,7 +117,7 @@ export default function PerformanceMetrics() {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Response Time</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {performanceData.responseTime}m
+                {overview.responseTime || 18}m
               </p>
             </div>
             <ClockIcon className="h-8 w-8 text-blue-500" />
@@ -191,7 +133,7 @@ export default function PerformanceMetrics() {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Growth</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                +{performanceData.monthlyGrowth}%
+                +{overview.monthlyGrowth || 12.5}%
               </p>
             </div>
             <ChartBarIcon className="h-8 w-8 text-purple-500" />
@@ -202,130 +144,62 @@ export default function PerformanceMetrics() {
         </div>
       </div>
 
-      {/* Rank Progress */}
+      {/* Rankings */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Rank Progression</h3>
-          <TrophyIcon className="h-6 w-6 text-yellow-500" />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Current Rank */}
-          <div className="bg-yellow-50 dark:bg-yellow-900/10 p-4 rounded-lg">
-            <h4 className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">
-              Current: {rankRequirements.current.name} Enabler
-            </h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Tasks Completed:</span>
-                <span className="font-medium">{performanceData.completedTasks}/{rankRequirements.current.minTasks}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Average Rating:</span>
-                <span className="font-medium">{performanceData.averageRating}/{rankRequirements.current.minRating}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Trust Score:</span>
-                <span className="font-medium">{performanceData.trustScore}/{rankRequirements.current.minTrustScore}</span>
-              </div>
-            </div>
-            <div className="mt-3">
-              <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium mb-1">Benefits:</p>
-              <ul className="text-xs text-yellow-600 dark:text-yellow-300 space-y-1">
-                {rankRequirements.current.benefits.map((benefit, index) => (
-                  <li key={index}>• {benefit}</li>
-                ))}
-              </ul>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Rankings</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="text-center">
+            <div className="bg-blue-100 dark:bg-blue-900/20 p-4 rounded-lg">
+              <p className="text-2xl font-bold text-blue-600">#{rankings.regional?.position || 3}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Regional Rank</p>
+              <p className="text-xs text-gray-500">out of {rankings.regional?.total || 45} in {rankings.regional?.region || 'East Africa'}</p>
             </div>
           </div>
-
-          {/* Next Rank */}
-          <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-            <h4 className="font-semibold text-gray-800 dark:text-gray-300 mb-2">
-              Next: {rankRequirements.next.name} Enabler
-            </h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Tasks Required:</span>
-                <span className="font-medium">{performanceData.completedTasks}/{rankRequirements.next.minTasks}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Rating Required:</span>
-                <span className="font-medium">{performanceData.averageRating}/{rankRequirements.next.minRating}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Trust Score Required:</span>
-                <span className="font-medium">{performanceData.trustScore}/{rankRequirements.next.minTrustScore}</span>
-              </div>
-            </div>
-            <div className="mt-3">
-              <p className="text-xs text-gray-700 dark:text-gray-400 font-medium mb-1">Additional Benefits:</p>
-              <ul className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
-                {rankRequirements.next.benefits.map((benefit, index) => (
-                  <li key={index}>• {benefit}</li>
-                ))}
-              </ul>
+          <div className="text-center">
+            <div className="bg-green-100 dark:bg-green-900/20 p-4 rounded-lg">
+              <p className="text-2xl font-bold text-green-600">#{rankings.national?.position || 12}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">National Rank</p>
+              <p className="text-xs text-gray-500">out of {rankings.national?.total || 234} in {rankings.national?.country || 'Tanzania'}</p>
             </div>
           </div>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="mt-6">
-          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
-            <span>Progress to {rankRequirements.next.name}</span>
-            <span>{performanceData.rankProgress}%</span>
+          <div className="text-center">
+            <div className="bg-purple-100 dark:bg-purple-900/20 p-4 rounded-lg">
+              <p className="text-2xl font-bold text-purple-600">#{rankings.global?.position || 89}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Global Rank</p>
+              <p className="text-xs text-gray-500">out of {rankings.global?.total || 1567} worldwide</p>
+            </div>
           </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-            <div 
-              className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-3 rounded-full transition-all duration-300"
-              style={{ width: `${performanceData.rankProgress}%` }}
-            ></div>
-          </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-            Complete {rankRequirements.next.minTasks - performanceData.completedTasks} more tasks to reach {rankRequirements.next.name} rank
-          </p>
         </div>
       </div>
 
-      {/* Competency Scores */}
+      {/* Performance Metrics */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Skill Competencies</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {competencyScores.map((competency, index) => (
-            <div key={index} className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {competency.skill}
-                </span>
-                <span className={`text-sm font-bold ${getScoreColor(competency.score)}`}>
-                  {competency.score}/{competency.maxScore}
-                </span>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Key Metrics</h3>
+        <div className="space-y-4">
+          {metrics.map((metric, index) => (
+            <div key={index} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">{metric.name}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Target: {metric.target}{metric.unit ? ` ${metric.unit}` : ''}
+                </p>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div 
-                  className={`h-2 rounded-full transition-all duration-300 ${getScoreBarColor(competency.score)}`}
-                  style={{ width: `${(competency.score / competency.maxScore) * 100}%` }}
-                ></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Monthly Performance Chart */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Monthly Performance Trend</h3>
-        <div className="grid grid-cols-6 gap-4">
-          {monthlyStats.map((stat, index) => (
-            <div key={index} className="text-center">
-              <div className="bg-blue-100 dark:bg-blue-900/20 p-3 rounded-lg mb-2">
-                <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">{stat.month}</div>
-                <div className="text-lg font-bold text-blue-600">{stat.tasks}</div>
-                <div className="text-xs text-gray-500">tasks</div>
-              </div>
-              <div className="text-xs space-y-1">
-                <div className="text-green-600 font-medium">KES {stat.earnings}</div>
-                <div className="text-yellow-600">★ {stat.rating}</div>
+              <div className="text-right">
+                <p className="text-lg font-bold text-gray-900 dark:text-white">
+                  {metric.value}{metric.unit ? ` ${metric.unit}` : ''}
+                </p>
+                <div className="flex items-center">
+                  {metric.trend === 'up' ? (
+                    <ArrowUpIcon className="h-4 w-4 text-green-500 mr-1" />
+                  ) : (
+                    <ArrowDownIcon className="h-4 w-4 text-red-500 mr-1" />
+                  )}
+                  <span className={`text-sm ${
+                    metric.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {metric.change > 0 ? '+' : ''}{metric.change}%
+                  </span>
+                </div>
               </div>
             </div>
           ))}
@@ -343,7 +217,7 @@ export default function PerformanceMetrics() {
                 <h4 className="font-semibold text-gray-900 dark:text-white">{achievement.title}</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{achievement.description}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Earned on {achievement.earned} • +{achievement.points} points
+                  Earned on {achievement.earnedDate} • Category: {achievement.category}
                 </p>
               </div>
             </div>
@@ -357,18 +231,18 @@ export default function PerformanceMetrics() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
             <UserGroupIcon className="h-12 w-12 text-blue-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{performanceData.sellersOnboarded}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Sellers Onboarded</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{overview.totalTasks || 127}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Total Tasks</p>
           </div>
           <div className="text-center">
             <CheckCircleIcon className="h-12 w-12 text-green-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{performanceData.buyersAssisted}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Buyers Assisted</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{overview.completionRate || 94.5}%</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Completion Rate</p>
           </div>
           <div className="text-center">
             <TrophyIcon className="h-12 w-12 text-yellow-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{performanceData.fraudReports}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Fraud Reports Filed</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{overview.trustScore || 4.8}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Trust Score</p>
           </div>
         </div>
       </div>
