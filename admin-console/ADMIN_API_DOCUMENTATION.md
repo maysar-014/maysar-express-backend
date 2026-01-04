@@ -234,6 +234,33 @@ PATCH /admin/admins/{id}
 }
 ```
 
+#### Delete Admin User
+```http
+DELETE /admin/admins/{id}
+```
+
+#### Enable MFA
+```http
+POST /admin/admins/{id}/mfa/enable
+```
+
+#### Disable MFA
+```http
+POST /admin/admins/{id}/mfa/disable
+```
+
+#### Update IP Whitelist
+```http
+PATCH /admin/admins/{id}/ip-whitelist
+```
+
+**Request Schema**:
+```typescript
+{
+  ipWhitelist: string[];
+}
+```
+
 ### 3. Platform Users Management
 
 #### Get Platform Users
@@ -324,6 +351,44 @@ POST /admin/users/{id}/suspend
 }
 ```
 
+#### Activate User
+```http
+POST /admin/users/{id}/activate
+```
+
+#### Reset User Password
+```http
+POST /admin/users/{id}/reset-password
+```
+
+#### Delete User
+```http
+DELETE /admin/users/{id}
+```
+
+**Request Schema**:
+```typescript
+{
+  reason: string;
+}
+```
+
+#### Update User
+```http
+PATCH /admin/users/{id}
+```
+
+**Request Schema**:
+```typescript
+{
+  name?: string;
+  email?: string;
+  phone?: string;
+  status?: 'Active' | 'Inactive' | 'Suspended';
+  kycLevel?: 'Level 0' | 'Level 1' | 'Level 2' | 'Level 3';
+}
+```
+
 ### 4. Sellers Management
 
 #### Get All Sellers
@@ -391,6 +456,35 @@ POST /admin/sellers/{id}/verify
 {
   decision: 'approve' | 'reject';
   notes?: string;
+}
+```
+
+#### Update Seller Commission
+```http
+PATCH /admin/sellers/{id}/commission
+```
+
+**Request Schema**:
+```typescript
+{
+  commissionRate: number;
+}
+```
+
+#### Activate Seller
+```http
+POST /admin/sellers/{id}/activate
+```
+
+#### Suspend Seller
+```http
+POST /admin/sellers/{id}/suspend
+```
+
+**Request Schema**:
+```typescript
+{
+  reason: string;
 }
 ```
 
@@ -680,6 +774,60 @@ GET /admin/kyc
 }
 ```
 
+#### Bulk KYC Actions
+```http
+POST /admin/kyc/bulk-actions
+```
+
+**Request Schema**:
+```typescript
+{
+  action: 'approve' | 'reject' | 'flag' | 'suspend';
+  userIds: number[];
+}
+```
+
+#### Approve KYC
+```http
+PUT /admin/kyc/{id}/approve
+```
+
+#### Reject KYC
+```http
+PUT /admin/kyc/{id}/reject
+```
+
+**Request Schema**:
+```typescript
+{
+  reason: string;
+}
+```
+
+#### Flag KYC
+```http
+PUT /admin/kyc/{id}/flag
+```
+
+**Request Schema**:
+```typescript
+{
+  reason: string;
+}
+```
+
+#### Suspend KYC
+```http
+PUT /admin/kyc/{id}/suspend
+```
+
+**Request Schema**:
+```typescript
+{
+  reason: string;
+}
+```
+
 ### 10. Audit Logs
 
 #### Get Audit Logs
@@ -756,6 +904,50 @@ GET /admin/system/config
     categories: string[];
   };
 }
+```
+
+#### Update Configuration
+```http
+PUT /admin/system/config/{key}
+```
+
+**Request Schema**:
+```typescript
+{
+  value: string;
+}
+```
+
+#### Create Feature Flag
+```http
+POST /admin/system/feature-flags
+```
+
+**Request Schema**:
+```typescript
+{
+  name: string;
+  description: string;
+  enabled: boolean;
+  rolloutPercentage?: number;
+}
+```
+
+#### Toggle Feature Flag
+```http
+PUT /admin/system/feature-flags/{id}
+```
+
+**Request Schema**:
+```typescript
+{
+  enabled: boolean;
+}
+```
+
+#### Restart Service
+```http
+POST /admin/system/services/{serviceName}/restart
 ```
 
 ### 12. System Health & Monitoring

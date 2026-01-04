@@ -134,6 +134,49 @@ GET /seller/products
 }
 ```
 
+#### Create Product
+```http
+POST /seller/products
+```
+
+**Request Schema**:
+```typescript
+{
+  name: string;
+  description: string;
+  category: string;
+  price: number;
+  stock: number;
+  sku?: string;
+  images: string[];
+  specifications?: Record<string, any>;
+}
+```
+
+#### Update Product
+```http
+PUT /seller/products/{id}
+```
+
+**Request Schema**:
+```typescript
+{
+  name?: string;
+  description?: string;
+  category?: string;
+  price?: number;
+  stock?: number;
+  status?: 'active' | 'inactive' | 'out_of_stock';
+  images?: string[];
+  specifications?: Record<string, any>;
+}
+```
+
+#### Delete Product
+```http
+DELETE /seller/products/{id}
+```
+
 **Product Status Values**:
 - `active`: Product is live and available for purchase
 - `inactive`: Product is hidden from customers
@@ -182,6 +225,21 @@ GET /seller/inventory
 }
 ```
 
+#### Update Stock
+```http
+PATCH /seller/inventory/stock
+```
+
+**Request Schema**:
+```typescript
+{
+  productId: string;
+  quantity: number;
+  operation: 'set' | 'add' | 'subtract';
+  reason?: string;
+}
+```
+
 ### 4. Orders API
 
 #### Get All Orders
@@ -226,6 +284,33 @@ GET /seller/orders
 }
 ```
 
+#### Update Order Status
+```http
+PATCH /seller/orders/{id}/status
+```
+
+**Request Schema**:
+```typescript
+{
+  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  trackingNumber?: string;
+  notes?: string;
+}
+```
+
+#### Cancel Order
+```http
+POST /seller/orders/{id}/cancel
+```
+
+**Request Schema**:
+```typescript
+{
+  reason: string;
+  refundAmount?: number;
+}
+```
+
 ### 5. Customers API
 
 #### Get All Customers
@@ -267,6 +352,32 @@ GET /seller/customers
 }
 ```
 
+#### Add Customer Note
+```http
+POST /seller/customers/{id}/notes
+```
+
+**Request Schema**:
+```typescript
+{
+  note: string;
+  isPrivate: boolean;
+}
+```
+
+#### Update Customer Status
+```http
+PATCH /seller/customers/{id}/status
+```
+
+**Request Schema**:
+```typescript
+{
+  status: 'active' | 'inactive' | 'blocked';
+  reason?: string;
+}
+```
+
 ### 6. Reviews API
 
 #### Get Product Reviews
@@ -303,6 +414,32 @@ GET /seller/reviews
       };
     };
   };
+}
+```
+
+#### Respond to Review
+```http
+POST /seller/reviews/{id}/respond
+```
+
+**Request Schema**:
+```typescript
+{
+  response: string;
+  isPublic: boolean;
+}
+```
+
+#### Report Review
+```http
+POST /seller/reviews/{id}/report
+```
+
+**Request Schema**:
+```typescript
+{
+  reason: 'inappropriate' | 'fake' | 'spam' | 'offensive';
+  details?: string;
 }
 ```
 
@@ -503,6 +640,105 @@ GET /seller/kyc
 }
 ```
 
+#### Submit KYC Information
+```http
+POST /seller/kyc/submit
+```
+
+**Request Schema**:
+```typescript
+{
+  personalInfo: {
+    fullName: string;
+    nationalId: string;
+    dateOfBirth: string; // ISO 8601 date
+    phoneNumber: string;
+    email: string;
+    address: string;
+    city: string;
+    region: string;
+  };
+  businessInfo: {
+    businessName: string;
+    businessType: string;
+    businessRegistration: string;
+    tinNumber: string;
+    businessAddress: string;
+    businessPhone: string;
+    businessEmail: string;
+    website?: string;
+    yearEstablished: string;
+    numberOfEmployees: string;
+  };
+  bankDetails: {
+    bankName: string;
+    accountNumber: string;
+    accountName: string;
+    branchCode: string;
+    swiftCode: string;
+  };
+}
+```
+
+#### Update KYC Information
+```http
+PUT /seller/kyc/update
+```
+
+**Request Schema**:
+```typescript
+{
+  personalInfo?: {
+    fullName?: string;
+    nationalId?: string;
+    dateOfBirth?: string; // ISO 8601 date
+    phoneNumber?: string;
+    email?: string;
+    address?: string;
+    city?: string;
+    region?: string;
+  };
+  businessInfo?: {
+    businessName?: string;
+    businessType?: string;
+    businessRegistration?: string;
+    tinNumber?: string;
+    businessAddress?: string;
+    businessPhone?: string;
+    businessEmail?: string;
+    website?: string;
+    yearEstablished?: string;
+    numberOfEmployees?: string;
+  };
+  bankDetails?: {
+    bankName?: string;
+    accountNumber?: string;
+    accountName?: string;
+    branchCode?: string;
+    swiftCode?: string;
+  };
+}
+```
+
+#### Upload KYC Document
+```http
+POST /seller/kyc/documents
+```
+
+**Request Schema**:
+```typescript
+{
+  documentType: 'National ID Front' | 'National ID Back' | 'Business License' | 'TIN Certificate' | 'Bank Statement' | 'Business Permit';
+  file: File; // Multipart form data
+  description?: string;
+}
+```
+
+#### Delete KYC Document
+```http
+DELETE /seller/kyc/documents/{documentId}
+```
+
 ### 10. Settings API
 
 #### Get Account Settings
@@ -536,6 +772,36 @@ GET /seller/settings
       currency: string;
       timezone: string;
     };
+  };
+}
+```
+
+#### Update Settings
+```http
+PUT /seller/settings
+```
+
+**Request Schema**:
+```typescript
+{
+  profile?: {
+    businessName?: string;
+    ownerName?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    businessType?: string;
+    taxId?: string;
+  };
+  preferences?: {
+    notifications?: {
+      email?: boolean;
+      sms?: boolean;
+      push?: boolean;
+    };
+    language?: string;
+    currency?: string;
+    timezone?: string;
   };
 }
 ```
@@ -586,6 +852,50 @@ GET /seller/promotions
     }>;
   };
 }
+```
+
+#### Create Promotion
+```http
+POST /seller/promotions
+```
+
+**Request Schema**:
+```typescript
+{
+  name: string;
+  description: string;
+  discountType: 'percentage' | 'fixed' | 'buy_one_get_one';
+  discountValue: number;
+  startDate: string; // ISO 8601
+  endDate: string; // ISO 8601
+  minOrderValue?: number;
+  maxDiscount?: number;
+  usageLimit?: number;
+  products?: string[]; // Product IDs
+}
+```
+
+#### Update Promotion
+```http
+PUT /seller/promotions/{id}
+```
+
+**Request Schema**:
+```typescript
+{
+  name?: string;
+  description?: string;
+  status?: 'active' | 'scheduled' | 'ended' | 'paused';
+  discountValue?: number;
+  startDate?: string; // ISO 8601
+  endDate?: string; // ISO 8601
+  usageLimit?: number;
+}
+```
+
+#### Delete Promotion
+```http
+DELETE /seller/promotions/{id}
 ```
 
 ### 12. Shipping API
