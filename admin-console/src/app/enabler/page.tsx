@@ -39,12 +39,16 @@ interface RecentActivity {
 }
 
 export default function EnablerDashboard() {
-  const [currentTime, setCurrentTime] = useState(new Date());
+    const [page1, setPage1] = useState(0);
+  const [page2, setPage2] = useState(0);
+const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   // Update clock every second
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+  const [cardPage1, setCardPage1] = useState(0);
+
     return () => clearInterval(timer);
   }, []);
 
@@ -234,7 +238,7 @@ export default function EnablerDashboard() {
             </div>
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {pendingTasks.slice(0, 8).map((task) => (
+            {pendingTasks.slice(page1 * 2, (page1 + 1) * 2).map((task) => (
               <div
                 key={task.id}
                 className="p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"

@@ -1,112 +1,111 @@
 "use client";
 
 import React from 'react';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { apiService } from '@/lib/api';
-import { formatDate, formatCurrency } from '@/lib/utils';
-
-interface DashboardMetrics {
-  totalUsers: number;
-  activeUsers: number;
-  totalRevenue: number;
-  monthlyRevenue: number;
-  totalOrders: number;
-  pendingOrders: number;
-  systemHealth: {
-    status: 'healthy' | 'warning' | 'critical';
-    uptime: string;
-    responseTime: number;
-  };
-  recentActivity: Array<{
-    id: string;
-    type: string;
-    description: string;
-    timestamp: string;
-    user?: string;
-  }>;
-  topProducts: Array<{
-    id: string;
-    name: string;
-    sales: number;
-    revenue: number;
-    growth: number;
-  }>;
-  alerts: Array<{
-    id: string;
-    type: 'info' | 'warning' | 'error';
-    title: string;
-    message: string;
-    timestamp: string;
-  }>;
-}
+import { formatDate, formatCurrencyForCard } from '@/lib/utils';
 
 export default function AdminDashboard() {
-  // Fetch dashboard data
-  const { data: dashboardData, isLoading } = useQuery({
+  const [page1, setPage1] = useState(0);
+  const [cardPage1, setCardPage1] = useState(0);
+  
+  // Fetch dashboard data with error handling
+  const { data: dashboardData, isLoading, error } = useQuery({
     queryKey: ['admin-dashboard'],
-    queryFn: () => apiService.getDashboardData(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchInterval: 30 * 1000, // 30 seconds
+    queryFn: async () => {
+      console.log('Making API request to:', `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/dashboard`);
+      const response = await apiService.getDashboardData();
+      console.log('API Response:', response);
+      return response;
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 30 * 1000,
+    retry: 1,
+    onError: (err) => {
+      console.error('Query Error:', err);
+    },
+    onSuccess: (data) => {
+      console.log('Query Success:', data);
+    }
   });
 
-  const metrics: DashboardMetrics = dashboardData?.data || {
-    totalUsers: 0,
-    activeUsers: 0,
-    totalRevenue: 0,
-    monthlyRevenue: 0,
-    totalOrders: 0,
-    pendingOrders: 0,
+  // Remove direct API test and fix the data access
+  const metrics = dashboardData?.data?.data || null;
+
+  // Show raw data for debugging
+  console.log('Raw API Response:', dashboardData);
+  console.log('Extracted metrics:', metrics);
+  console.log('Error state:', error);
+  console.log('Loading state:', isLoading);
+
+  const defaultMetrics = {
+    totalUsers: { count: 0, growth: 0 },
+    activeUsers: { count: 0, growth: 0 },
+    totalRevenue: { amount: 0, formatted: 'TSh 0.00', growth: 0 },
+    monthlyRevenue: { amount: 0, formatted: 'TSh 0.00', growth: 0 },
+    totalOrders: { count: 0, growth: 0 },
+    pendingOrders: { count: 0, growth: 0 },
     systemHealth: {
-      status: 'healthy',
-      uptime: '99.9%',
-      responseTime: 120,
+      status: 'Unknown',
+      uptime: 'N/A',
+      responseTime: 0,
+      activeServices: { active: 0, total: 0 }
     },
     recentActivity: [],
-    topProducts: [],
-    alerts: [],
+    topPerformingProducts: { summary: 'No data available' },
+    systemAlerts: { critical: 0, warnings: 0, info: 0 },
+    performanceOverview: {
+      apiUptime: { value: 0 },
+      avgResponseTime: { value: 0 },
+      cacheEfficiency: { value: 0 }
+    }
   };
+
+  const finalMetrics = metrics || defaultMetrics;
 
   const kpiCards = [
     {
       title: 'Total Users',
-      value: metrics.totalUsers.toLocaleString(),
-      change: '+12.5%',
+      value: (finalMetrics.totalUsers?.count || 0).toLocaleString(),
+      change: `+${finalMetrics.totalUsers?.growth || 0}%`,
       changeType: 'positive' as const,
       color: 'bg-blue-500',
     },
     {
       title: 'Active Users',
-      value: metrics.activeUsers.toLocaleString(),
-      change: '+8.2%',
+      value: (finalMetrics.activeUsers?.count || 0).toLocaleString(),
+      change: `+${finalMetrics.activeUsers?.growth || 0}%`,
       changeType: 'positive' as const,
       color: 'bg-green-500',
     },
     {
       title: 'Total Revenue',
-      value: formatCurrency(metrics.totalRevenue),
-      change: '+15.3%',
+      value: formatCurrencyForCard(finalMetrics.totalRevenue?.amount || 0),
+      change: `+${finalMetrics.totalRevenue?.growth || 0}%`,
       changeType: 'positive' as const,
       color: 'bg-purple-500',
     },
     {
       title: 'Monthly Revenue',
-      value: formatCurrency(metrics.monthlyRevenue),
-      change: '+22.1%',
+      value: formatCurrencyForCard(finalMetrics.monthlyRevenue?.amount || 0),
+      change: `+${finalMetrics.monthlyRevenue?.growth || 0}%`,
       changeType: 'positive' as const,
       color: 'bg-indigo-500',
     },
     {
       title: 'Total Orders',
-      value: metrics.totalOrders.toLocaleString(),
-      change: '+18.7%',
+      value: (finalMetrics.totalOrders?.count || 0).toLocaleString(),
+      change: `+${finalMetrics.totalOrders?.growth || 0}%`,
       changeType: 'positive' as const,
       color: 'bg-orange-500',
     },
     {
       title: 'Pending Orders',
-      value: metrics.pendingOrders.toLocaleString(),
-      change: '-5.2%',
-      changeType: 'negative' as const,
+      value: (finalMetrics.pendingOrders?.count || 0).toLocaleString(),
+      change: `${finalMetrics.pendingOrders?.growth || 0}%`,
+      changeType: (finalMetrics.pendingOrders?.growth || 0) >= 0 ? 'positive' : 'negative' as const,
       color: 'bg-yellow-500',
     },
   ];
@@ -115,6 +114,18 @@ export default function AdminDashboard() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Show error message if API fails
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">API Connection Failed</div>
+          <div className="text-sm text-gray-500">Check console for details</div>
+        </div>
       </div>
     );
   }
@@ -134,7 +145,7 @@ export default function AdminDashboard() {
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
                   {card.title}
                 </p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white mb-2 truncate">
                   {card.value}
                 </p>
                 <div className="flex items-center">
@@ -160,20 +171,20 @@ export default function AdminDashboard() {
               System Health
             </h3>
             <div className={`flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-              metrics.systemHealth.status === 'healthy'
+              finalMetrics.systemHealth?.status === 'Healthy'
                 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                : metrics.systemHealth.status === 'warning'
+                : finalMetrics.systemHealth?.status === 'warning'
                 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
                 : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
             }`}>
               <div className={`w-2 h-2 rounded-full mr-2 ${
-                metrics.systemHealth.status === 'healthy'
+                finalMetrics.systemHealth?.status === 'Healthy'
                   ? 'bg-green-500'
-                  : metrics.systemHealth.status === 'warning'
+                  : finalMetrics.systemHealth?.status === 'warning'
                   ? 'bg-yellow-500'
                   : 'bg-red-500'
               }`}></div>
-              {metrics.systemHealth.status.charAt(0).toUpperCase() + metrics.systemHealth.status.slice(1)}
+              {finalMetrics.systemHealth?.status || 'Unknown'}
             </div>
           </div>
 
@@ -181,18 +192,20 @@ export default function AdminDashboard() {
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600 dark:text-gray-400">Uptime</span>
               <span className="font-semibold text-gray-900 dark:text-white">
-                {metrics.systemHealth.uptime}
+                {finalMetrics.systemHealth?.uptime || 'N/A'}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600 dark:text-gray-400">Response Time</span>
               <span className="font-semibold text-gray-900 dark:text-white">
-                {metrics.systemHealth.responseTime}ms
+                {finalMetrics.systemHealth?.responseTime || 0}ms
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600 dark:text-gray-400">Active Services</span>
-              <span className="font-semibold text-gray-900 dark:text-white">12/12</span>
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {finalMetrics.systemHealth?.activeServices?.active || 0}/{finalMetrics.systemHealth?.activeServices?.total || 0}
+              </span>
             </div>
           </div>
 
@@ -215,7 +228,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="space-y-4">
-            {metrics.recentActivity.slice(0, 5).map((activity) => (
+            {(finalMetrics.recentActivity || []).slice(0, 5).map((activity) => (
               <div key={activity.id} className="flex items-start space-x-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -227,6 +240,11 @@ export default function AdminDashboard() {
                 </div>
               </div>
             ))}
+            {(!finalMetrics.recentActivity || finalMetrics.recentActivity.length === 0) && (
+              <div className="text-center py-8">
+                <p className="text-sm text-gray-500 dark:text-gray-400">No recent activity</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -237,21 +255,29 @@ export default function AdminDashboard() {
           </h3>
 
           <div className="grid grid-cols-2 gap-3">
-            <button className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-              <span className="text-xs font-medium text-gray-900 dark:text-white">Add User</span>
-            </button>
+            <Link href="/admin/users" className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+              <span className="text-xs font-medium text-gray-900 dark:text-white">Manage Users</span>
+            </Link>
 
-            <button className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-              <span className="text-xs font-medium text-gray-900 dark:text-white">New Order</span>
-            </button>
+            <Link href="/admin/sellers" className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+              <span className="text-xs font-medium text-gray-900 dark:text-white">Sellers</span>
+            </Link>
 
-            <button className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-              <span className="text-xs font-medium text-gray-900 dark:text-white">Analytics</span>
-            </button>
+            <Link href="/admin/kyc" className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+              <span className="text-xs font-medium text-gray-900 dark:text-white">KYC Review</span>
+            </Link>
 
-            <button className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-              <span className="text-xs font-medium text-gray-900 dark:text-white">Security</span>
-            </button>
+            <Link href="/admin/finance" className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+              <span className="text-xs font-medium text-gray-900 dark:text-white">Finance</span>
+            </Link>
+
+            <Link href="/admin/compliance" className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+              <span className="text-xs font-medium text-gray-900 dark:text-white">Compliance</span>
+            </Link>
+
+            <Link href="/admin/audit" className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+              <span className="text-xs font-medium text-gray-900 dark:text-white">Audit Logs</span>
+            </Link>
           </div>
         </div>
       </div>
@@ -269,32 +295,11 @@ export default function AdminDashboard() {
           </div>
 
           <div className="space-y-4">
-            {metrics.topProducts.slice(0, 5).map((product, index) => (
-              <div key={product.id} className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                      {index + 1}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {product.name}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {product.sales} sales • {formatCurrency(product.revenue)}
-                    </p>
-                  </div>
-                </div>
-                <div className={`flex items-center ${
-                  product.growth > 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  <span className="text-sm font-medium">
-                    {product.growth > 0 ? '+' : ''}{product.growth}%
-                  </span>
-                </div>
-              </div>
-            ))}
+            <div className="text-center py-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {finalMetrics.topPerformingProducts?.summary || 'No product data available'}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -308,49 +313,24 @@ export default function AdminDashboard() {
               <div className="flex items-center">
                 <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
                 <span className="text-xs text-gray-600 dark:text-gray-400">
-                  {metrics.alerts.filter(a => a.type === 'error').length} Critical
+                  {finalMetrics.systemAlerts?.critical || 0} Critical
                 </span>
               </div>
               <div className="flex items-center">
                 <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
                 <span className="text-xs text-gray-600 dark:text-gray-400">
-                  {metrics.alerts.filter(a => a.type === 'warning').length} Warnings
+                  {finalMetrics.systemAlerts?.warnings || 0} Warnings
                 </span>
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            {metrics.alerts.slice(0, 5).map((alert) => (
-              <div key={alert.id} className="flex items-start space-x-3">
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                  alert.type === 'error'
-                    ? 'bg-red-100 dark:bg-red-900'
-                    : alert.type === 'warning'
-                    ? 'bg-yellow-100 dark:bg-yellow-900'
-                    : 'bg-blue-100 dark:bg-blue-900'
-                }`}>
-                  <div className={`w-2 h-2 rounded-full ${
-                    alert.type === 'error'
-                      ? 'bg-red-600'
-                      : alert.type === 'warning'
-                      ? 'bg-yellow-600'
-                      : 'bg-blue-600'
-                  }`}></div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {alert.title}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {alert.message}
-                  </p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    {formatDate(alert.timestamp)}
-                  </p>
-                </div>
-              </div>
-            ))}
+            <div className="text-center py-8">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                No active alerts
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -379,15 +359,15 @@ export default function AdminDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
-            <div className="text-3xl font-bold text-green-600 mb-2">98.5%</div>
+            <div className="text-3xl font-bold text-green-600 mb-2">{finalMetrics.performanceOverview?.apiUptime?.value || 0}%</div>
             <div className="text-sm text-gray-600 dark:text-gray-400">API Uptime</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600 mb-2">245ms</div>
+            <div className="text-3xl font-bold text-blue-600 mb-2">{finalMetrics.performanceOverview?.avgResponseTime?.value || 0}ms</div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Avg Response Time</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600 mb-2">94.2%</div>
+            <div className="text-3xl font-bold text-purple-600 mb-2">{finalMetrics.performanceOverview?.cacheEfficiency?.value || 0}%</div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Cache Efficiency</div>
           </div>
         </div>

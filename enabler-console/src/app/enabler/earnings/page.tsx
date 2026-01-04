@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { enablerApi } from '@/lib/api';
 import { 
   CurrencyDollarIcon,
   ArrowUpIcon,
@@ -16,85 +18,30 @@ export default function EarningsWallet() {
   const [selectedPeriod, setSelectedPeriod] = useState('this-month');
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
 
-  const walletData = {
-    availableBalance: 2450.75,
-    pendingEarnings: 185.50,
-    totalEarnings: 12750.25,
-    thisMonthEarnings: 850.25,
-    lastPayoutDate: '2024-12-15',
-    nextPayoutDate: '2025-01-15',
-    commissionRate: 15, // percentage
-    rank: 'Gold',
-    rankBonus: 5 // additional percentage
-  };
+  const { data: earningsData, isLoading, error } = useQuery({
+    queryKey: ['enabler-earnings'],
+    queryFn: () => enablerApi.getEarnings()
+  });
 
-  const transactions = [
-    {
-      id: 'TXN-001',
-      type: 'earning',
-      description: 'Seller Verification - TechStore KE',
-      amount: 30.00,
-      status: 'completed',
-      date: '2024-12-29',
-      taskId: 'TSK-001',
-      commission: 15
-    },
-    {
-      id: 'TXN-002',
-      type: 'earning',
-      description: 'Buyer Payment Assistance',
-      amount: 20.00,
-      status: 'completed',
-      date: '2024-12-29',
-      taskId: 'TSK-002',
-      commission: 15
-    },
-    {
-      id: 'TXN-003',
-      type: 'payout',
-      description: 'Monthly Payout to M-Pesa',
-      amount: -1200.00,
-      status: 'completed',
-      date: '2024-12-15',
-      payoutMethod: 'M-Pesa',
-      reference: 'MP-2024-12-001'
-    },
-    {
-      id: 'TXN-004',
-      type: 'earning',
-      description: 'Trust Report Investigation',
-      amount: 40.00,
-      status: 'pending',
-      date: '2024-12-28',
-      taskId: 'TSK-004',
-      commission: 15
-    },
-    {
-      id: 'TXN-005',
-      type: 'bonus',
-      description: 'Gold Rank Performance Bonus',
-      amount: 50.00,
-      status: 'completed',
-      date: '2024-12-25',
-      bonusType: 'rank'
-    },
-    {
-      id: 'TXN-006',
-      type: 'earning',
-      description: 'Logistics Support - Order Delivery',
-      amount: 25.00,
-      status: 'completed',
-      date: '2024-12-28',
-      taskId: 'TSK-003',
-      commission: 15
-    }
-  ];
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
-  const payoutMethods = [
-    { id: 'mpesa', name: 'M-Pesa', number: '254712345678', primary: true },
-    { id: 'bank', name: 'KCB Bank', account: '****5678', primary: false },
-    { id: 'paypal', name: 'PayPal', email: 'sarah@example.com', primary: false }
-  ];
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-600">Error loading earnings data</p>
+      </div>
+    );
+  }
+
+  const walletData = earningsData?.data?.wallet || {};
+  const transactions = earningsData?.data?.transactions || [];
+  const payoutMethods = earningsData?.data?.payoutMethods || [];
 
   const getTransactionIcon = (type: string, status: string) => {
     if (type === 'payout') {
@@ -149,7 +96,7 @@ export default function EarningsWallet() {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Available Balance</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                KES {walletData.availableBalance.toLocaleString()}
+                KES {(walletData.availableBalance || 0).toLocaleString()}
               </p>
             </div>
             <CurrencyDollarIcon className="h-8 w-8 text-green-500" />
@@ -164,7 +111,7 @@ export default function EarningsWallet() {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Earnings</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                KES {walletData.pendingEarnings.toLocaleString()}
+                KES {(walletData.pendingEarnings || 0).toLocaleString()}
               </p>
             </div>
             <ClockIcon className="h-8 w-8 text-yellow-500" />
@@ -179,7 +126,7 @@ export default function EarningsWallet() {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">This Month</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                KES {walletData.thisMonthEarnings.toLocaleString()}
+                KES {(walletData.thisMonthEarnings || 0).toLocaleString()}
               </p>
             </div>
             <CalendarIcon className="h-8 w-8 text-blue-500" />
@@ -195,7 +142,7 @@ export default function EarningsWallet() {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Lifetime</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                KES {walletData.totalEarnings.toLocaleString()}
+                KES {(walletData.totalEarnings || 0).toLocaleString()}
               </p>
             </div>
             <BanknotesIcon className="h-8 w-8 text-purple-500" />
@@ -214,19 +161,19 @@ export default function EarningsWallet() {
             <div className="bg-yellow-100 dark:bg-yellow-900/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
               <span className="text-2xl">🏆</span>
             </div>
-            <h4 className="font-semibold text-gray-900 dark:text-white">{walletData.rank} Enabler</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">{walletData.rank || 'Gold'} Enabler</h4>
             <p className="text-sm text-gray-600 dark:text-gray-400">Current Rank</p>
           </div>
           <div className="text-center">
             <div className="bg-green-100 dark:bg-green-900/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-              <span className="text-xl font-bold text-green-600">{walletData.commissionRate}%</span>
+              <span className="text-xl font-bold text-green-600">{walletData.commissionRate || 15}%</span>
             </div>
             <h4 className="font-semibold text-gray-900 dark:text-white">Base Commission</h4>
             <p className="text-sm text-gray-600 dark:text-gray-400">Per completed task</p>
           </div>
           <div className="text-center">
             <div className="bg-blue-100 dark:bg-blue-900/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-              <span className="text-xl font-bold text-blue-600">+{walletData.rankBonus}%</span>
+              <span className="text-xl font-bold text-blue-600">+{walletData.rankBonus || 5}%</span>
             </div>
             <h4 className="font-semibold text-gray-900 dark:text-white">Rank Bonus</h4>
             <p className="text-sm text-gray-600 dark:text-gray-400">Additional earnings</p>
@@ -240,12 +187,12 @@ export default function EarningsWallet() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Last Payout</p>
-            <p className="text-lg font-semibold text-gray-900 dark:text-white">{walletData.lastPayoutDate}</p>
+            <p className="text-lg font-semibold text-gray-900 dark:text-white">{walletData.lastPayoutDate || 'N/A'}</p>
             <p className="text-sm text-green-600">KES 1,200.00 paid to M-Pesa</p>
           </div>
           <div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Next Scheduled Payout</p>
-            <p className="text-lg font-semibold text-gray-900 dark:text-white">{walletData.nextPayoutDate}</p>
+            <p className="text-lg font-semibold text-gray-900 dark:text-white">{walletData.nextPayoutDate || 'N/A'}</p>
             <p className="text-sm text-blue-600">Monthly automatic payout</p>
           </div>
         </div>
@@ -349,12 +296,12 @@ export default function EarningsWallet() {
                 </label>
                 <input 
                   type="number" 
-                  max={walletData.availableBalance}
+                  max={walletData.availableBalance || 0}
                   className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Enter amount"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Available: KES {walletData.availableBalance.toLocaleString()}
+                  Available: KES {(walletData.availableBalance || 0).toLocaleString()}
                 </p>
               </div>
               <div>

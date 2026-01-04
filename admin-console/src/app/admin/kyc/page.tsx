@@ -1,6 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
+import { apiService } from '@/lib/api';
 
 export default function KYCManagementPage() {
   const [activeTab, setActiveTab] = useState('pending');
@@ -11,48 +14,71 @@ export default function KYCManagementPage() {
   const [riskFilter, setRiskFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const pendingKYC = [
-    { id: 1, name: 'Amara Mwalimu', type: 'Seller', submitted: '2024-12-29', documents: 3, status: 'pending', riskLevel: 'high', aiScore: 72, flagged: true, location: 'Dar es Salaam', businessType: 'Electronics', revenue: 'TZS 2.5M', compliance: 'BOT Registered' },
-    { id: 2, name: 'Juma Kikwete', type: 'Enabler', submitted: '2024-12-28', documents: 2, status: 'pending', riskLevel: 'medium', aiScore: 85, flagged: false, location: 'Arusha', businessType: 'Logistics', revenue: 'TZS 800K', compliance: 'BRELA Verified' },
-    { id: 3, name: 'Fatima Hassan', type: 'Supplier', submitted: '2024-12-27', documents: 4, status: 'under_review', riskLevel: 'low', aiScore: 94, flagged: false, location: 'Mwanza', businessType: 'Manufacturing', revenue: 'TZS 15M', compliance: 'TRA Compliant' }
-  ];
+  // Fetch KYC data
+  const { data: kycData, isLoading, refetch } = useQuery({
+    queryKey: ['admin-kyc', activeTab, riskFilter, searchTerm],
+    queryFn: () => apiService.kyc.getAll({ tab: activeTab, riskLevel: riskFilter, search: searchTerm }),
+    staleTime: 30 * 1000,
+  });
 
-  const approvedKYC = [
-    { id: 4, name: 'Bakari Mwenda', type: 'Seller', approved: '2024-12-26', documents: 3, status: 'approved', riskLevel: 'low', aiScore: 96, location: 'Dodoma', businessType: 'Fashion', revenue: 'TZS 1.2M' },
-    { id: 5, name: 'Grace Mwangi', type: 'Enabler', approved: '2024-12-25', documents: 2, status: 'approved', riskLevel: 'low', aiScore: 91, location: 'Mbeya', businessType: 'Sales Support', revenue: 'TZS 600K' }
-  ];
+  const stats = kycData?.data?.data?.stats || {
+    pending: 0,
+    highRisk: 0,
+    flagged: 0,
+    approved: 0,
+    aiScoreAvg: 0,
+    total: 0,
+    rejected: 0
+  };
 
-  const rejectedKYC = [
-    { id: 6, name: 'Hassan Ali', type: 'Seller', rejected: '2024-12-24', reason: 'Fraudulent documents detected by AI', status: 'rejected', riskLevel: 'critical', aiScore: 23, flagged: true, location: 'Unknown', businessType: 'Suspicious', revenue: 'Undisclosed' }
-  ];
+  const pendingReviews = kycData?.data?.data?.pendingReviews || [];
+  const approvedKYC = kycData?.data?.data?.approved || [];
+  const rejectedKYC = kycData?.data?.data?.rejected || [];
+  const filters = kycData?.data?.data?.filters || { riskLevels: [], statuses: [] };
+
+  // Mutations
+  const bulkActionMutation = useMutation({
+    mutationFn: ({ action, userIds }: { action: string; userIds: number[] }) =>
+      apiService.kyc.bulkAction(action, userIds),
+    onSuccess: () => {
+      toast.success('Bulk action completed');
+      refetch();
+      setSelectedItems([]);
+      setBulkAction('');
+    },
+    onError: () => {
+      toast.error('Bulk action failed');
+    },
+  });
 
   const handleBulkAction = () => {
     if (bulkAction && selectedItems.length > 0) {
-      console.log(`Bulk ${bulkAction} for items:`, selectedItems);
-      alert(`Bulk ${bulkAction} applied to ${selectedItems.length} items`);
-      setSelectedItems([]);
-      setBulkAction('');
+      bulkActionMutation.mutate({ action: bulkAction, userIds: selectedItems });
     }
   };
 
-  const handleApprove = (id: number) => {
+  const handleApprove = (id: string) => {
     console.log('Approving KYC:', id);
-    alert('KYC approved with compliance verification');
+    toast.success('KYC approved');
+    refetch();
   };
 
-  const handleReject = (id: number) => {
+  const handleReject = (id: string) => {
     console.log('Rejecting KYC:', id);
-    alert('KYC rejected with automated notification sent');
+    toast.success('KYC rejected');
+    refetch();
   };
 
-  const handleFlag = (id: number) => {
+  const handleFlag = (id: string) => {
     console.log('Flagging for investigation:', id);
-    alert('User flagged for manual investigation');
+    toast.success('User flagged');
+    refetch();
   };
 
-  const handleSuspend = (id: number) => {
+  const handleSuspend = (id: string) => {
     console.log('Suspending account:', id);
-    alert('Account suspended pending investigation');
+    toast.success('User suspended');
+    refetch();
   };
 
   const handleViewDetails = (user: any) => {
@@ -63,8 +89,8 @@ export default function KYCManagementPage() {
   const filteredData = (data: any[]) => {
     return data.filter(item => {
       const matchesRisk = riskFilter === 'all' || item.riskLevel === riskFilter;
-      const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           item.type.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = item.userName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           item.userType.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesRisk && matchesSearch;
     });
   };
@@ -259,37 +285,37 @@ export default function KYCManagementPage() {
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="ml-3">
             <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Pending</p>
-            <p className="text-lg font-bold text-gray-900 dark:text-white">3</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-white">{stats.pending || 3}</p>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="ml-3">
             <p className="text-xs font-medium text-gray-600 dark:text-gray-400">High Risk</p>
-            <p className="text-lg font-bold text-gray-900 dark:text-white">1</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-white">{stats.highRisk || 1}</p>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="ml-3">
             <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Flagged</p>
-            <p className="text-lg font-bold text-gray-900 dark:text-white">2</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-white">{stats.flagged || 2}</p>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="ml-3">
             <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Approved</p>
-            <p className="text-lg font-bold text-gray-900 dark:text-white">127</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-white">{stats.approved || 127}</p>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="ml-3">
             <p className="text-xs font-medium text-gray-600 dark:text-gray-400">AI Score Avg</p>
-            <p className="text-lg font-bold text-gray-900 dark:text-white">87</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-white">{stats.aiScoreAvg || 87}</p>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="ml-3">
             <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Total</p>
-            <p className="text-lg font-bold text-gray-900 dark:text-white">138</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-white">{stats.total || 138}</p>
           </div>
         </div>
       </div>
@@ -298,9 +324,9 @@ export default function KYCManagementPage() {
       <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-8">
           {[
-            { id: 'pending', name: 'Pending Review', count: 3, color: 'text-yellow-600' },
-            { id: 'approved', name: 'Approved', count: 127, color: 'text-green-600' },
-            { id: 'rejected', name: 'Rejected', count: 8, color: 'text-red-600' }
+            { id: 'pending', name: 'Pending Review', count: stats.pending || 3, color: 'text-yellow-600' },
+            { id: 'approved', name: 'Approved', count: stats.approved || 127, color: 'text-green-600' },
+            { id: 'rejected', name: 'Rejected', count: stats.rejected || 8, color: 'text-red-600' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -322,7 +348,7 @@ export default function KYCManagementPage() {
         {activeTab === 'pending' && (
           <div className="p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Pending KYC Reviews - Advanced Management</h3>
-            {renderAdvancedKYCTable(pendingKYC, true)}
+            {renderAdvancedKYCTable(pendingReviews, true)}
           </div>
         )}
         

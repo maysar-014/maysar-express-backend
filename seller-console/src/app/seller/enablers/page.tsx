@@ -1,40 +1,37 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { apiService } from '@/lib/api';
+import { getSeller } from '@/lib/permissions';
 
 export default function EnablersPage() {
+  const seller = getSeller();
   const [selectedProduct, setSelectedProduct] = useState('');
-  const [minRank, setMinRank] = useState('associate');
+  const [minRank, setMinRank] = useState('');
   const [supportTypes, setSupportTypes] = useState({
     sales: true,
     logistics: false
   });
   const [commissions, setCommissions] = useState({
-    sales: 5,
-    logistics: 3
+    sales: 0,
+    logistics: 0
   });
   const [terminationConditions, setTerminationConditions] = useState({
-    performanceBelow: 80,
-    missedDeadlines: 3,
-    customerComplaints: 2
+    performanceBelow: 0,
+    missedDeadlines: 0,
+    customerComplaints: 0
   });
 
-  const products = [
-    { id: '1', name: 'Samsung Galaxy A54', price: 850000, category: 'Electronics', stock: 25 },
-    { id: '2', name: 'Nike Air Max 270', price: 320000, category: 'Fashion', stock: 15 },
-    { id: '3', name: 'MacBook Air M2', price: 2800000, category: 'Electronics', stock: 8 },
-    { id: '4', name: 'Adidas Ultraboost 22', price: 280000, category: 'Fashion', stock: 20 }
-  ];
+  const { data: enablersData } = useQuery({
+    queryKey: ['enablers', seller?.id],
+    queryFn: () => apiService.getEnablers(),
+    staleTime: 30 * 1000,
+    enabled: !!seller?.id,
+  });
 
-  const enablerRanks = [
-    { value: 'trainee', label: 'Trainee', color: 'gray' },
-    { value: 'associate', label: 'Associate', color: 'blue' },
-    { value: 'specialist', label: 'Specialist', color: 'green' },
-    { value: 'senior', label: 'Senior', color: 'yellow' },
-    { value: 'expert', label: 'Expert', color: 'orange' },
-    { value: 'master', label: 'Master', color: 'red' },
-    { value: 'director', label: 'Director', color: 'purple' }
-  ];
+  const products = enablersData?.data?.data?.products || [];
+  const enablerRanks = enablersData?.data?.data?.enablerRanks || [];
 
   const selectedProductData = products.find(p => p.id === selectedProduct);
   const productPrice = selectedProductData?.price || 0;
@@ -43,6 +40,19 @@ export default function EnablersPage() {
   const logisticsEarnings = supportTypes.logistics ? Math.round(productPrice * (commissions.logistics / 100)) : 0;
   const totalEnablerEarnings = salesEarnings + logisticsEarnings;
   const sellerEarnings = productPrice - totalEnablerEarnings;
+
+  // Calculate minimum rank based on commission amounts
+  const getMinimumRank = (totalCommission: number) => {
+    if (totalCommission >= 500000) return 'director';   // 500k+ TZS
+    if (totalCommission >= 200000) return 'master';     // 200k+ TZS
+    if (totalCommission >= 100000) return 'expert';     // 100k+ TZS
+    if (totalCommission >= 50000) return 'senior';      // 50k+ TZS
+    if (totalCommission >= 20000) return 'specialist';  // 20k+ TZS
+    return 'associate';                                  // Below 20k TZS
+  };
+
+  const calculatedMinRank = getMinimumRank(totalEnablerEarnings);
+  const suggestedRank = enablerRanks.find(r => r.value === calculatedMinRank)?.label || 'Associate';
 
   const handleSupportTypeChange = (type: 'sales' | 'logistics') => {
     if (type === 'logistics' && !supportTypes.sales) {
@@ -132,19 +142,19 @@ export default function EnablersPage() {
             {/* Minimum Rank */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Minimum Rank Required
+                Suggested Minimum Rank
               </label>
-              <select
-                value={minRank}
-                onChange={(e) => setMinRank(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              >
-                {enablerRanks.map((rank) => (
-                  <option key={rank.value} value={rank.value}>
-                    {rank.label}
-                  </option>
-                ))}
-              </select>
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-300">
+                  {suggestedRank}
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
+                  Based on total commission: TZS {totalEnablerEarnings.toLocaleString()}
+                </p>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                Only enablers of this rank or higher can accept this offer
+              </p>
             </div>
 
             {/* Support Types & Commissions */}
@@ -174,7 +184,7 @@ export default function EnablersPage() {
                   </p>
                   <div>
                     <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                      Commission: {commissions.sales}%
+                      Commission: TZS {salesEarnings.toLocaleString()} ({commissions.sales}%)
                     </label>
                     <input
                       type="range"
@@ -207,7 +217,7 @@ export default function EnablersPage() {
                   {supportTypes.logistics && (
                     <div>
                       <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                        Commission: {commissions.logistics}%
+                        Commission: TZS {logisticsEarnings.toLocaleString()} ({commissions.logistics}%)
                       </label>
                       <input
                         type="range"

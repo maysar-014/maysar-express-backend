@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import { apiService } from '@/lib/api';
+import { apiService, apiClient } from '@/lib/api';
 import { formatDate, formatCurrency, capitalize } from '@/lib/utils';
 
 interface User {
@@ -76,30 +76,33 @@ export default function UserManagementPage() {
 
   // Fetch users
   const { data: usersData, isLoading: usersLoading, refetch: refetchUsers } = useQuery({
-    queryKey: ['platform-users', filters],
-    queryFn: () => apiService.users.getUsers(filters),
+    queryKey: ['platform-users', activeTab, filters],
+    queryFn: () => apiClient.get('/admin/platform-users', { params: { tab: activeTab, ...filters } }),
     staleTime: 30 * 1000,
   });
 
   // Fetch security events
   const { data: securityData, isLoading: securityLoading, refetch: refetchSecurity } = useQuery({
-    queryKey: ['security-events'],
-    queryFn: () => apiService.users.getSecurityEvents(),
+    queryKey: ['platform-users', 'security'],
+    queryFn: () => apiClient.get('/admin/platform-users', { params: { tab: 'security' } }),
     staleTime: 30 * 1000,
     refetchInterval: 60 * 1000,
+    enabled: activeTab === 'security',
   });
 
   // Fetch active sessions
   const { data: sessionsData, isLoading: sessionsLoading, refetch: refetchSessions } = useQuery({
-    queryKey: ['user-sessions'],
-    queryFn: () => apiService.users.getActiveSessions(),
+    queryKey: ['platform-users', 'sessions'],
+    queryFn: () => apiClient.get('/admin/platform-users', { params: { tab: 'sessions' } }),
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
+    enabled: activeTab === 'sessions',
   });
 
-  const users = usersData?.data || [];
-  const securityEvents = securityData?.data || [];
-  const sessions = sessionsData?.data || [];
+  const users = usersData?.data?.data?.users || [];
+  const securityEvents = securityData?.data?.data?.securityEvents || [];
+  const sessions = sessionsData?.data?.data?.sessions || [];
+  const stats = usersData?.data?.data?.stats || {};
 
   // Mutations
   const suspendUserMutation = useMutation({
@@ -191,11 +194,11 @@ export default function UserManagementPage() {
       render: (value) => (
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${value.email ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+            <div className={`w-2 h-2 rounded-full ${value?.email ? 'bg-green-500' : 'bg-gray-300'}`}></div>
             <span className="text-xs">Email</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${value.identity ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+            <div className={`w-2 h-2 rounded-full ${value?.identity ? 'bg-green-500' : 'bg-gray-300'}`}></div>
             <span className="text-xs">Identity</span>
           </div>
         </div>
@@ -266,10 +269,10 @@ export default function UserManagementPage() {
       render: (value, row) => (
         <div>
           <div className="text-sm text-gray-900 dark:text-white">
-            {value ? formatDate(value) : 'Never'}
+            {value && value !== 'Never' ? formatDate(value) : 'Never'}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">
-            {row.activeSessions} active sessions
+            {row.activeSessions || 0} active sessions
           </div>
         </div>
       ),
@@ -322,7 +325,7 @@ export default function UserManagementPage() {
       sortable: true,
       render: (value) => (
         <span className="font-mono text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-          {value.replace('_', ' ')}
+          {value ? value.replace('_', ' ') : 'Unknown'}
         </span>
       ),
     },
@@ -510,7 +513,7 @@ export default function UserManagementPage() {
               Total Users
             </dt>
             <dd className="text-lg font-semibold text-gray-900 dark:text-white">
-              {users.length}
+              {stats.totalUsers || 0}
             </dd>
           </div>
         </div>
@@ -521,7 +524,7 @@ export default function UserManagementPage() {
               Active Users
             </dt>
             <dd className="text-lg font-semibold text-green-600">
-              {users.filter((user: User) => user.status === 'active').length}
+              {stats.activeUsers || 0}
             </dd>
           </div>
         </div>
@@ -532,7 +535,7 @@ export default function UserManagementPage() {
               Suspended
             </dt>
             <dd className="text-lg font-semibold text-red-600">
-              {users.filter((user: User) => user.status === 'suspended').length}
+              {stats.suspended || 0}
             </dd>
           </div>
         </div>
@@ -543,7 +546,7 @@ export default function UserManagementPage() {
               Active Sessions
             </dt>
             <dd className="text-lg font-semibold text-gray-900 dark:text-white">
-              {sessions.filter((session: UserSession) => session.isActive).length}
+              {stats.activeSessions || 0}
             </dd>
           </div>
         </div>
@@ -554,7 +557,7 @@ export default function UserManagementPage() {
               Security Events
             </dt>
             <dd className="text-lg font-semibold text-orange-600">
-              {securityEvents.filter((event: SecurityEvent) => !event.resolved).length}
+              {stats.securityEvents || 0}
             </dd>
           </div>
         </div>

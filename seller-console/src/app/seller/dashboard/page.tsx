@@ -1,39 +1,30 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { apiService } from '@/lib/api';
 import { getSeller, hasPermission, TIER_INFO } from '@/lib/permissions';
 
 export default function SellerDashboard() {
   const seller = getSeller();
   const tierInfo = TIER_INFO[seller.tier];
+  const [recentOrdersPage, setRecentOrdersPage] = useState(0);
+  const [stockAlertsPage, setStockAlertsPage] = useState(0);
 
-  // Mock business data
-  const businessStats = {
-    totalRevenue: 2450000,
-    monthlyRevenue: 850000,
-    totalOrders: 1247,
-    pendingOrders: 23,
-    activeProducts: 156,
-    lowStockItems: 8,
-    conversionRate: 3.2,
-    averageOrderValue: 125000,
-    customerRating: 4.8,
-    totalCustomers: 892,
-    returnsRate: 2.1,
-    fulfillmentRate: 98.5
-  };
+  // Fetch dashboard data from API
+  const { data: dashboardData, isLoading, error } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: () => apiService.getDashboard(),
+    staleTime: 30 * 1000,
+  });
 
-  const recentOrders = [
-    { id: 'ORD-2024-5678', customer: 'John Mwalimu', amount: 125000, status: 'processing', date: '2024-12-30 10:30' },
-    { id: 'ORD-2024-5679', customer: 'Amina Hassan', amount: 89000, status: 'shipped', date: '2024-12-30 09:15' },
-    { id: 'ORD-2024-5680', customer: 'Peter Mwanga', amount: 156000, status: 'delivered', date: '2024-12-29 16:45' },
-    { id: 'ORD-2024-5681', customer: 'Grace Mbwana', amount: 78000, status: 'pending', date: '2024-12-29 14:20' }
-  ];
+  console.log('Dashboard data:', dashboardData);
+  console.log('Loading:', isLoading);
+  console.log('Error:', error);
 
-  const lowStockProducts = [
-    { id: 'PRD-001', name: 'Samsung Galaxy A54', currentStock: 3, minStock: 10, category: 'Smartphones' },
-    { id: 'PRD-002', name: 'HP Laptop 15-inch', currentStock: 1, minStock: 5, category: 'Laptops' },
-    { id: 'PRD-003', name: 'Wireless Earbuds', currentStock: 5, minStock: 15, category: 'Accessories' }
-  ];
+  const businessStats = dashboardData?.data?.data?.stats || {};
+  const recentOrders = dashboardData?.data?.data?.recentOrders || [];
+  const lowStockProducts = dashboardData?.data?.data?.lowStockProducts || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -55,12 +46,12 @@ export default function SellerDashboard() {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Revenue</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                TZS {businessStats.monthlyRevenue.toLocaleString()}
+                TZS {businessStats.monthlyRevenue?.toLocaleString() || '0'}
               </p>
             </div>
           </div>
           <div className="flex items-center mt-2">
-            <span className="text-sm text-green-600">+15.3% from last month</span>
+            <span className="text-sm text-green-600">{businessStats.monthlyGrowth || '+0%'} from last month</span>
           </div>
         </div>
 
@@ -68,11 +59,11 @@ export default function SellerDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Orders</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{businessStats.totalOrders}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{businessStats.totalOrders || 0}</p>
             </div>
           </div>
           <div className="flex items-center mt-2">
-            <span className="text-sm text-gray-600">{businessStats.pendingOrders} pending</span>
+            <span className="text-sm text-gray-600">{businessStats.pendingOrders || 0} pending</span>
           </div>
         </div>
 
@@ -96,7 +87,7 @@ export default function SellerDashboard() {
             </div>
           </div>
           <div className="flex items-center mt-2">
-            <span className="text-sm text-green-600">+0.8% this week</span>
+            <span className="text-sm text-green-600">{businessStats.conversionGrowth || '+0%'} this week</span>
           </div>
         </div>
       </div>
@@ -126,9 +117,27 @@ export default function SellerDashboard() {
         </div>
 
         <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Orders</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Orders</h3>
+            <div className="flex space-x-2">
+              <button 
+                onClick={() => setRecentOrdersPage(Math.max(0, recentOrdersPage - 1))}
+                disabled={recentOrdersPage === 0}
+                className="px-2 py-1 text-sm border rounded disabled:opacity-50 text-gray-700 dark:text-gray-300"
+              >
+                Prev
+              </button>
+              <button 
+                onClick={() => setRecentOrdersPage(recentOrdersPage + 1)}
+                disabled={(recentOrdersPage + 1) * 2 >= recentOrders.length}
+                className="px-2 py-1 text-sm border rounded disabled:opacity-50 text-gray-700 dark:text-gray-300"
+              >
+                Next
+              </button>
+            </div>
+          </div>
           <div className="space-y-3">
-            {recentOrders.map((order) => (
+            {recentOrders.slice(recentOrdersPage * 2, (recentOrdersPage + 1) * 2).map((order) => (
               <div key={order.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg">
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{order.id}</p>
@@ -142,6 +151,9 @@ export default function SellerDashboard() {
                 </div>
               </div>
             ))}
+            {recentOrders.length === 0 && (
+              <p className="text-sm text-gray-500 text-center py-4">No recent orders</p>
+            )}
           </div>
           <button className="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
             View All Orders
@@ -149,9 +161,27 @@ export default function SellerDashboard() {
         </div>
 
         <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Stock Alerts</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Stock Alerts</h3>
+            <div className="flex space-x-2">
+              <button 
+                onClick={() => setStockAlertsPage(Math.max(0, stockAlertsPage - 1))}
+                disabled={stockAlertsPage === 0}
+                className="px-2 py-1 text-sm border rounded disabled:opacity-50 text-gray-700 dark:text-gray-300"
+              >
+                Prev
+              </button>
+              <button 
+                onClick={() => setStockAlertsPage(stockAlertsPage + 1)}
+                disabled={(stockAlertsPage + 1) * 2 >= lowStockProducts.length}
+                className="px-2 py-1 text-sm border rounded disabled:opacity-50 text-gray-700 dark:text-gray-300"
+              >
+                Next
+              </button>
+            </div>
+          </div>
           <div className="space-y-3">
-            {lowStockProducts.map((product) => (
+            {lowStockProducts.slice(stockAlertsPage * 2, (stockAlertsPage + 1) * 2).map((product) => (
               <div key={product.id} className="p-3 bg-orange-50 dark:bg-orange-900/10 rounded-lg border border-orange-200 dark:border-orange-800">
                 <div className="flex justify-between items-start">
                   <div>
@@ -172,6 +202,9 @@ export default function SellerDashboard() {
                 </div>
               </div>
             ))}
+            {lowStockProducts.length === 0 && (
+              <p className="text-sm text-gray-500 text-center py-4">No stock alerts</p>
+            )}
           </div>
           <button className="w-full mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
             Restock Items

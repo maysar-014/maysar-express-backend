@@ -1,4 +1,8 @@
+'use client';
+
 import { ReactNode } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState } from 'react';
 import { getEnabler, hasPermission, TIER_INFO } from '@/lib/permissions';
 
 interface EnablerLayoutProps {
@@ -6,11 +10,13 @@ interface EnablerLayoutProps {
 }
 
 export default function EnablerLayout({ children }: EnablerLayoutProps) {
+  const [queryClient] = useState(() => new QueryClient());
   const enabler = getEnabler();
   const tierInfo = TIER_INFO[enabler.tier];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <QueryClientProvider client={queryClient}>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Enabler Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -147,5 +153,6 @@ export default function EnablerLayout({ children }: EnablerLayoutProps) {
         </main>
       </div>
     </div>
+    </QueryClientProvider>
   );
 }

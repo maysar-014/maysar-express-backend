@@ -1,74 +1,47 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { enablerApi } from '@/lib/api';
 import { getEnabler, hasPermission } from '@/lib/permissions';
 
 export default function TasksPage() {
   const [filter, setFilter] = useState('available');
   const enabler = getEnabler();
 
-  const taskRequests = [
-    {
-      id: 'TR-001',
-      seller: 'TechStore Tanzania',
-      product: { name: 'Samsung Galaxy A54', price: 850000, category: 'Electronics' },
-      supportTypes: { sales: true, logistics: true },
-      commissions: { sales: 8, logistics: 5 },
-      minRank: 'specialist',
-      postedTime: '2 hours ago',
-      status: 'available',
-      urgency: 'high',
-      location: 'Dar es Salaam'
-    },
-    {
-      id: 'TR-002',
-      seller: 'Fashion Hub TZ',
-      product: { name: 'Nike Air Max 270', price: 320000, category: 'Fashion' },
-      supportTypes: { sales: true, logistics: false },
-      commissions: { sales: 12, logistics: 0 },
-      minRank: 'associate',
-      postedTime: '4 hours ago',
-      status: 'available',
-      urgency: 'medium',
-      location: 'Arusha'
-    },
-    {
-      id: 'TR-003',
-      seller: 'Electronics Plus',
-      product: { name: 'MacBook Air M2', price: 2800000, category: 'Electronics' },
-      supportTypes: { sales: true, logistics: true },
-      commissions: { sales: 6, logistics: 4 },
-      minRank: 'expert',
-      postedTime: '1 day ago',
-      status: 'available',
-      urgency: 'low',
-      location: 'Mwanza'
-    },
-    {
-      id: 'TR-004',
-      seller: 'Sports World TZ',
-      product: { name: 'Adidas Ultraboost 22', price: 280000, category: 'Fashion' },
-      supportTypes: { sales: true, logistics: true },
-      commissions: { sales: 10, logistics: 6 },
-      minRank: 'senior',
-      postedTime: '30 mins ago',
-      status: 'accepted',
-      urgency: 'high',
-      location: 'Dodoma',
-      acceptedBy: enabler.id
-    }
-  ];
+  const { data: tasksData, isLoading, error } = useQuery({
+    queryKey: ['enabler-tasks'],
+    queryFn: () => enablerApi.getTasks()
+  });
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-600">Error loading tasks data</p>
+      </div>
+    );
+  }
+
+  const activeTasks = tasksData?.data?.activeTasks || [];
+  const completedTasks = tasksData?.data?.completedTasks || [];
+  const availableTasks = tasksData?.data?.availableTasks || [];
+
+  const allTasks = [...activeTasks, ...availableTasks];
   const rankHierarchy = ['trainee', 'associate', 'specialist', 'senior', 'expert', 'master', 'director'];
-  const enablerRankIndex = rankHierarchy.indexOf(enabler.rank.toLowerCase());
+  const enablerRankIndex = rankHierarchy.indexOf(enabler.tier.toLowerCase());
 
-  const filteredTasks = taskRequests.filter(task => {
-    const taskRankIndex = rankHierarchy.indexOf(task.minRank);
-    const isEligible = enablerRankIndex >= taskRankIndex;
-    
-    if (filter === 'available') return task.status === 'available' && isEligible;
-    if (filter === 'accepted') return task.status === 'accepted' && task.acceptedBy === enabler.id;
-    if (filter === 'eligible') return isEligible;
+  const filteredTasks = allTasks.filter(task => {
+    if (filter === 'available') return task.status === 'pending' || task.status === 'available';
+    if (filter === 'accepted') return task.status === 'in_progress';
+    if (filter === 'eligible') return true;
     return true;
   });
 
@@ -115,9 +88,9 @@ export default function TasksPage() {
       <div className="bg-white dark:bg-gray-800 p-1 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="flex space-x-1">
           {[
-            { key: 'available', label: 'Available Tasks', count: filteredTasks.filter(t => t.status === 'available').length },
-            { key: 'accepted', label: 'My Tasks', count: filteredTasks.filter(t => t.status === 'accepted').length },
-            { key: 'eligible', label: 'All Eligible', count: filteredTasks.length }
+            { key: 'available', label: 'Available Tasks', count: availableTasks.length },
+            { key: 'accepted', label: 'My Tasks', count: activeTasks.length },
+            { key: 'eligible', label: 'All Tasks', count: allTasks.length }
           ].map((tab) => (
             <button
               key={tab.key}
@@ -142,72 +115,51 @@ export default function TasksPage() {
           </div>
         ) : (
           filteredTasks.map((task) => {
-            const salesEarnings = task.supportTypes.sales ? Math.round(task.product.price * (task.commissions.sales / 100)) : 0;
-            const logisticsEarnings = task.supportTypes.logistics ? Math.round(task.product.price * (task.commissions.logistics / 100)) : 0;
-            const totalEarnings = salesEarnings + logisticsEarnings;
+            const salesEarnings = 0;
+            const logisticsEarnings = 0;
+            const totalEarnings = task.earnings || 0;
 
             return (
               <div key={task.id} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{task.product.name}</h3>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getUrgencyColor(task.urgency)}`}>
-                        {task.urgency} priority
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{task.title}</h3>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getUrgencyColor(task.priority || 'medium')}`}>
+                        {task.priority || 'medium'} priority
                       </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRankColor(task.minRank)}`}>
-                        Min: {task.minRank}
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {task.type}
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                      Seller: {task.seller} • {task.location}
+                      {task.description}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Product Price: TZS {task.product.price.toLocaleString()} • Posted {task.postedTime}
+                      {task.location} • {task.estimatedTime}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-green-600">TZS {totalEarnings.toLocaleString()}</p>
+                    <p className="text-lg font-bold text-green-600">TZS {(task.earnings || 0).toLocaleString()}</p>
                     <p className="text-xs text-gray-500">Total Earnings</p>
                   </div>
                 </div>
 
-                {/* Support Types & Commissions */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  {task.supportTypes.sales && (
-                    <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-sm font-medium text-orange-900 dark:text-orange-300">Sales Support</p>
-                          <p className="text-xs text-orange-700 dark:text-orange-400">Customer inquiries & sales</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-orange-900 dark:text-orange-300">
-                            TZS {salesEarnings.toLocaleString()}
-                          </p>
-                          <p className="text-xs text-orange-700 dark:text-orange-400">{task.commissions.sales}%</p>
-                        </div>
-                      </div>
+                {/* Task Progress */}
+                {task.progress !== undefined && (
+                  <div className="mb-4">
+                    <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      <span>Progress</span>
+                      <span>{task.progress}%</span>
                     </div>
-                  )}
-                  
-                  {task.supportTypes.logistics && (
-                    <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-sm font-medium text-purple-900 dark:text-purple-300">Logistics Support</p>
-                          <p className="text-xs text-purple-700 dark:text-purple-400">Delivery & coordination</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-purple-900 dark:text-purple-300">
-                            TZS {logisticsEarnings.toLocaleString()}
-                          </p>
-                          <p className="text-xs text-purple-700 dark:text-purple-400">{task.commissions.logistics}%</p>
-                        </div>
-                      </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${task.progress}%` }}
+                      ></div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="flex justify-between items-center">
@@ -220,25 +172,25 @@ export default function TasksPage() {
                     </button>
                   </div>
                   
-                  {task.status === 'available' ? (
+                  {task.status === 'pending' || task.status === 'available' ? (
                     <button
                       onClick={() => handleAcceptTask(task.id)}
                       className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
                     >
                       Accept Task
                     </button>
-                  ) : task.status === 'accepted' && task.acceptedBy === enabler.id ? (
+                  ) : task.status === 'in_progress' ? (
                     <div className="flex space-x-2">
                       <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-                        Start Work
+                        Continue Work
                       </button>
                       <button className="px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors">
-                        Cancel
+                        Pause
                       </button>
                     </div>
                   ) : (
                     <span className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-sm rounded-lg">
-                      Not Available
+                      {task.status}
                     </span>
                   )}
                 </div>
@@ -253,7 +205,7 @@ export default function TasksPage() {
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Available Tasks</h3>
           <p className="text-3xl font-bold text-blue-600">
-            {taskRequests.filter(t => t.status === 'available' && rankHierarchy.indexOf(t.minRank) <= enablerRankIndex).length}
+            {availableTasks.length}
           </p>
           <p className="text-sm text-gray-600 dark:text-gray-400">Tasks you can accept</p>
         </div>
@@ -261,13 +213,8 @@ export default function TasksPage() {
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Potential Earnings</h3>
           <p className="text-3xl font-bold text-green-600">
-            TZS {taskRequests
-              .filter(t => t.status === 'available' && rankHierarchy.indexOf(t.minRank) <= enablerRankIndex)
-              .reduce((sum, t) => {
-                const sales = t.supportTypes.sales ? Math.round(t.product.price * (t.commissions.sales / 100)) : 0;
-                const logistics = t.supportTypes.logistics ? Math.round(t.product.price * (t.commissions.logistics / 100)) : 0;
-                return sum + sales + logistics;
-              }, 0)
+            TZS {availableTasks
+              .reduce((sum, t) => sum + (t.earnings || 0), 0)
               .toLocaleString()}
           </p>
           <p className="text-sm text-gray-600 dark:text-gray-400">From available tasks</p>
@@ -276,7 +223,7 @@ export default function TasksPage() {
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Active Tasks</h3>
           <p className="text-3xl font-bold text-orange-600">
-            {taskRequests.filter(t => t.status === 'accepted' && t.acceptedBy === enabler.id).length}
+            {activeTasks.length}
           </p>
           <p className="text-sm text-gray-600 dark:text-gray-400">Currently working on</p>
         </div>

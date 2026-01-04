@@ -4,23 +4,19 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import { apiService } from '@/lib/api';
+import { apiService, apiClient } from '@/lib/api';
 import { formatDate, getStatusColor, capitalize } from '@/lib/utils';
 
 interface AdminUser {
   id: string;
-  userId: string;
+  name: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  role: 'support' | 'moderator' | 'manager' | 'admin' | 'super_admin';
-  status: 'active' | 'suspended' | 'deactivated';
-  permissions: Record<string, unknown>;
-  lastLoginAt?: string;
-  mfaEnabled: boolean;
+  role: string;
+  status: string;
+  mfa: boolean;
   ipWhitelist: string[];
+  lastLogin: string;
   createdAt: string;
-  updatedAt: string;
 }
 
 export default function AdminUsersPage() {
@@ -34,11 +30,12 @@ export default function AdminUsersPage() {
   // Fetch admin users
   const { data: adminsData, isLoading, refetch } = useQuery({
     queryKey: ['admin-users'],
-    queryFn: () => apiService.admin.getAdmins(),
-    staleTime: 30 * 1000, // 30 seconds
+    queryFn: () => apiClient.get('/admin/admin-users'),
+    staleTime: 30 * 1000,
   });
 
-  const admins = adminsData?.data || [];
+  const admins = adminsData?.data?.data?.admins || [];
+  const stats = adminsData?.data?.data?.stats || {};
 
   // Mutations
   const createAdminMutation = useMutation({
@@ -93,7 +90,7 @@ export default function AdminUsersPage() {
         <div>
           <div className="font-medium text-gray-900 dark:text-white">{value}</div>
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            {row.firstName} {row.lastName}
+            {row.name}
           </div>
         </div>
       ),
@@ -104,13 +101,13 @@ export default function AdminUsersPage() {
       sortable: true,
       render: (value) => (
         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          value === 'super_admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
-          value === 'admin' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
-          value === 'manager' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
-          value === 'moderator' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+          value === 'Super Admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
+          value === 'Admin' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
+          value === 'Manager' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
+          value === 'Moderator' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
           'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
         }`}>
-          {capitalize(value.replace('_', ' '))}
+          {value}
         </span>
       ),
     },
@@ -119,13 +116,17 @@ export default function AdminUsersPage() {
       header: 'Status',
       sortable: true,
       render: (value) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(value)}`}>
-          {capitalize(value)}
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          value === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+          value === 'Suspended' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
+          'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
+        }`}>
+          {value}
         </span>
       ),
     },
     {
-      key: 'mfaEnabled',
+      key: 'mfa',
       header: 'MFA',
       render: (value) => (
         <div className="flex items-center">
@@ -147,7 +148,7 @@ export default function AdminUsersPage() {
       ),
     },
     {
-      key: 'lastLoginAt',
+      key: 'lastLogin',
       header: 'Last Login',
       sortable: true,
       render: (value) => value ? formatDate(value) : 'Never',
@@ -170,10 +171,10 @@ export default function AdminUsersPage() {
             Edit
           </button>
           <button
-            onClick={() => handleMFAToggle(row.id, !row.mfaEnabled)}
+            onClick={() => handleMFAToggle(row.id, !row.mfa)}
             className="text-green-600 hover:text-green-900 text-sm font-medium"
           >
-            {row.mfaEnabled ? 'Disable MFA' : 'Enable MFA'}
+            {row.mfa ? 'Disable MFA' : 'Enable MFA'}
           </button>
         </div>
       ),
@@ -294,7 +295,7 @@ export default function AdminUsersPage() {
                 Total Admins
               </dt>
               <dd className="text-lg font-semibold text-gray-900 dark:text-white">
-                {admins.length}
+                {stats.totalAdmins || admins.length}
               </dd>
             </div>
           </div>
@@ -307,7 +308,7 @@ export default function AdminUsersPage() {
                 Active Admins
               </dt>
               <dd className="text-lg font-semibold text-gray-900 dark:text-white">
-                {admins.filter((a: AdminUser) => a.status === 'active').length}
+                {stats.activeAdmins || admins.filter((a: AdminUser) => a.status === 'Active').length}
               </dd>
             </div>
           </div>
@@ -320,7 +321,7 @@ export default function AdminUsersPage() {
                 MFA Enabled
               </dt>
               <dd className="text-lg font-semibold text-gray-900 dark:text-white">
-                {admins.filter((admin: AdminUser) => admin.mfaEnabled).length}
+                {stats.mfaEnabled || admins.filter((admin: AdminUser) => admin.mfa).length}
               </dd>
             </div>
           </div>
@@ -333,7 +334,7 @@ export default function AdminUsersPage() {
                 Super Admins
               </dt>
               <dd className="text-lg font-semibold text-gray-900 dark:text-white">
-                {admins.filter((admin: AdminUser) => admin.role === 'super_admin').length}
+                {stats.superAdmins || admins.filter((admin: AdminUser) => admin.role === 'Super Admin').length}
               </dd>
             </div>
           </div>

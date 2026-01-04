@@ -1,10 +1,26 @@
+'use client';
+
 import { ReactNode } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 interface EnablerLayoutProps {
   children: ReactNode;
 }
 
 export default function EnablerLayout({ children }: EnablerLayoutProps) {
+  const pathname = usePathname();
+
+  const navItems = [
+    { href: '/enabler', label: 'Dashboard' },
+    { href: '/enabler/orders', label: 'Order Management' },
+    { href: '/enabler/customers', label: 'Customer Support' },
+    { href: '/enabler/returns', label: 'Returns & Refunds' },
+    { href: '/enabler/disputes', label: 'Dispute Resolution' },
+    { href: '/enabler/quality', label: 'Quality Assurance' },
+    { href: '/enabler/reports', label: 'Performance Reports' },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Enabler Header */}
@@ -37,62 +53,23 @@ export default function EnablerLayout({ children }: EnablerLayoutProps) {
               Operations
             </h2>
             <ul className="space-y-2">
-              <li>
-                <a
-                  href="/enabler"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
-                >
-                  Dashboard
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/enabler/orders"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
-                >
-                  Order Management
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/enabler/customers"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
-                >
-                  Customer Support
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/enabler/returns"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
-                >
-                  Returns & Refunds
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/enabler/disputes"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
-                >
-                  Dispute Resolution
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/enabler/quality"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
-                >
-                  Quality Assurance
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/enabler/reports"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
-                >
-                  Performance Reports
-                </a>
-              </li>
+              {navItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`block px-3 py-2 text-sm rounded-md transition-colors ${
+                        isActive
+                          ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </nav>

@@ -80,7 +80,9 @@ interface TransactionMonitor {
 }
 
 export default function FraudPage() {
-  const [selectedTimeframe, setSelectedTimeframe] = useState('24h');
+    const [page1, setPage1] = useState(0);
+  const [page2, setPage2] = useState(0);
+const [selectedTimeframe, setSelectedTimeframe] = useState('24h');
   const [selectedAlert, setSelectedAlert] = useState<FraudAlert | null>(null);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [alertFilter, setAlertFilter] = useState('all');
@@ -93,7 +95,10 @@ export default function FraudPage() {
   const patternsLoading = false;
   const transactionsLoading = false;
 
-  const refetchMetrics = () => {};
+  const refetchMetrics = () => {
+  const [cardPage1, setCardPage1] = useState(0);
+  const [cardPage2, setCardPage2] = useState(0);
+};
 
   const fraudMetrics: FraudMetrics = {
     totalAlerts: 47,

@@ -33,11 +33,12 @@ export default function AuditTrailPage() {
   // Fetch audit logs
   const { data: auditData, isLoading, refetch } = useQuery({
     queryKey: ['audit-logs', filters],
-    queryFn: () => apiService.audit.getLogs(filters),
+    queryFn: () => fetch('http://localhost:3001/api/admin/audit/logs').then(res => res.json()),
     staleTime: 30 * 1000,
   });
 
-  const auditLogs = auditData?.data || [];
+  console.log('Audit data:', auditData);
+  const auditLogs = Array.isArray(auditData?.data?.logs) ? auditData.data.logs : Array.isArray(auditData?.data) ? auditData.data : [];
 
   // Table columns
   const columns: Column<AuditLog>[] = [

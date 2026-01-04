@@ -1,412 +1,177 @@
-import { Saga, SagaStep, SagaContext } from '../../shared/sagaFramework';
-import { eventBus } from '../../shared/events/eventBus';
+import { BaseSaga, SagaStep } from '../BaseSaga';
+import { EventBus } from '../../events/EventBus';
 
-export interface DocumentVerificationData {
+export interface KYCWorkflowSagaData {
+  kycId: string;
   userId: string;
-  documentType: 'identity' | 'business_license' | 'tax_certificate' | 'bank_statement';
-  documentUrl: string;
-  metadata: any;
+  adminId: string;
+  action: 'REVIEW' | 'APPROVE' | 'REJECT' | 'REQUEST_ADDITIONAL';
+  documents?: string[];
+  rejectionReason?: string;
+  additionalRequirements?: string[];
 }
 
-export class DocumentVerificationWorkflowSaga extends Saga {
-  constructor() {
-    super('DocumentVerificationWorkflow');
-  }
-
-  async execute(context: SagaContext<DocumentVerificationData>): Promise<void> {
-    await this.addStep(new DocumentUploadValidationStep());
-    await this.addStep(new AutomatedValidationStep());
-    await this.addStep(new ManualReviewStep());
-    await this.addStep(new ApprovalDecisionStep());
-    await this.addStep(new NotificationStep());
-  }
-}
-
-class DocumentUploadValidationStep extends SagaStep {
-  async execute(context: SagaContext<DocumentVerificationData>): Promise<void> {
-    const { userId, documentType, documentUrl } = context.data;
-    
-    await eventBus.publish('DocumentUploadValidationStarted.v1', {
-      userId,
-      documentType,
-      documentUrl,
-      sagaId: context.sagaId
-    });
-
-    await this.validateDocument(documentUrl, documentType);
-  }
-
-  private async validateDocument(documentUrl: string, documentType: string): Promise<void> {
-    // Validate file format, size, and basic integrity
-    const allowedTypes = ['pdf', 'jpg', 'png', 'jpeg'];
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    
-    // Mock validation logic
-    if (!documentUrl || !documentType) {
-      throw new Error('Invalid document data');
-    }
-  }
-
-  async compensate(context: SagaContext<DocumentVerificationData>): Promise<void> {
-    await eventBus.publish('DocumentUploadValidationCancelled.v1', {
-      userId: context.data.userId,
-      sagaId: context.sagaId
-    });
-  }
-}
-
-class AutomatedValidationStep extends SagaStep {
-  async execute(context: SagaContext<DocumentVerificationData>): Promise<void> {
-    const { userId, documentType, documentUrl } = context.data;
-    
-    await eventBus.publish('AutomatedValidationStarted.v1', {
-      userId,
-      documentType,
-      documentUrl,
-      sagaId: context.sagaId
-    });
-
-    const validationResult = await this.performAutomatedValidation(documentType, documentUrl);
-    
-    await eventBus.publish('AutomatedValidationCompleted.v1', {
-      userId,
-      documentType,
-      validationResult,
-      sagaId: context.sagaId
-    });
-  }
-
-  private async performAutomatedValidation(documentType: string, documentUrl: string): Promise<any> {
-    // Mock automated validation (OCR, document authenticity, etc.)
-    return {
-      confidence: 0.85,
-      extractedData: {
-        name: 'John Doe',
-        documentNumber: 'ID123456789',
-        expiryDate: '2025-12-31'
+export class KYCWorkflowSaga extends BaseSaga<KYCWorkflowSagaData> {
+  protected steps: SagaStep<KYCWorkflowSagaData>[] = [
+    {
+      name: 'VALIDATE_KYC_DOCUMENTS',
+      execute: async (data) => {
+        await EventBus.publish({
+          type: 'KYCDocumentValidationRequested',
+          payload: {
+            kycId: data.kycId,
+            userId: data.userId,
+            documents: data.documents,
+            adminId: data.adminId
+          },
+          correlationId: this.correlationId
+        });
       },
-      flags: []
+      compensate: async () => {
+        await EventBus.publish({
+          type: 'KYCDocumentValidationCancelled',
+          payload: { kycId: this.data.kycId },
+          correlationId: this.correlationId
+        });
+      }
+    },
+    {
+      name: 'PERFORM_COMPLIANCE_CHECK',
+      execute: async (data) => {
+        await EventBus.publish({
+          type: 'ComplianceCheckRequested',
+          payload: {
+            kycId: data.kycId,
+            userId: data.userId,
+            checkType: 'KYC_VERIFICATION',
+            adminId: data.adminId
+          },
+          correlationId: this.correlationId
+        });
+      },
+      compensate: async () => {
+        await EventBus.publish({
+          type: 'ComplianceCheckCancelled',
+          payload: { kycId: this.data.kycId },
+          correlationId: this.correlationId
+        });
+      }
+    },
+    {
+      name: 'EXECUTE_KYC_DECISION',
+      execute: async (data) => {
+        const eventType = this.getKYCEventType(data.action);
+        await EventBus.publish({
+          type: eventType,
+          payload: {
+            kycId: data.kycId,
+            userId: data.userId,
+            adminId: data.adminId,
+            decision: data.action,
+            rejectionReason: data.rejectionReason,
+            additionalRequirements: data.additionalRequirements
+          },
+          correlationId: this.correlationId
+        });
+      },
+      compensate: async (data) => {
+        await EventBus.publish({
+          type: 'KYCDecisionReverted',
+          payload: {
+            kycId: data.kycId,
+            userId: data.userId,
+            adminId: data.adminId
+          },
+          correlationId: this.correlationId
+        });
+      }
+    },
+    {
+      name: 'UPDATE_USER_STATUS',
+      execute: async (data) => {
+        if (data.action === 'APPROVE') {
+          await EventBus.publish({
+            type: 'UserKYCStatusUpdated',
+            payload: {
+              userId: data.userId,
+              kycStatus: 'APPROVED',
+              adminId: data.adminId
+            },
+            correlationId: this.correlationId
+          });
+        }
+      },
+      compensate: async (data) => {
+        await EventBus.publish({
+          type: 'UserKYCStatusReverted',
+          payload: {
+            userId: data.userId,
+            adminId: data.adminId
+          },
+          correlationId: this.correlationId
+        });
+      }
+    },
+    {
+      name: 'NOTIFY_USER_KYC_RESULT',
+      execute: async (data) => {
+        await EventBus.publish({
+          type: 'KYCResultNotificationRequested',
+          payload: {
+            userId: data.userId,
+            kycId: data.kycId,
+            decision: data.action,
+            rejectionReason: data.rejectionReason,
+            additionalRequirements: data.additionalRequirements,
+            notificationChannels: ['email', 'push']
+          },
+          correlationId: this.correlationId
+        });
+      },
+      compensate: async () => {
+        await EventBus.publish({
+          type: 'KYCResultNotificationCancelled',
+          payload: { kycId: this.data.kycId },
+          correlationId: this.correlationId
+        });
+      }
+    },
+    {
+      name: 'LOG_KYC_AUDIT_TRAIL',
+      execute: async (data) => {
+        await EventBus.publish({
+          type: 'KYCAuditTrailLogged',
+          payload: {
+            kycId: data.kycId,
+            userId: data.userId,
+            adminId: data.adminId,
+            action: data.action,
+            timestamp: new Date().toISOString(),
+            details: {
+              rejectionReason: data.rejectionReason,
+              additionalRequirements: data.additionalRequirements
+            }
+          },
+          correlationId: this.correlationId
+        });
+      },
+      compensate: async () => {
+        await EventBus.publish({
+          type: 'KYCAuditTrailCancelled',
+          payload: { correlationId: this.correlationId },
+          correlationId: this.correlationId
+        });
+      }
+    }
+  ];
+
+  private getKYCEventType(action: string): string {
+    const eventMap = {
+      'REVIEW': 'KYCReviewStarted',
+      'APPROVE': 'KYCApproved',
+      'REJECT': 'KYCRejected',
+      'REQUEST_ADDITIONAL': 'KYCAdditionalDocumentsRequested'
     };
-  }
-
-  async compensate(context: SagaContext<DocumentVerificationData>): Promise<void> {
-    await eventBus.publish('AutomatedValidationCancelled.v1', {
-      userId: context.data.userId,
-      sagaId: context.sagaId
-    });
-  }
-}
-
-class ManualReviewStep extends SagaStep {
-  async execute(context: SagaContext<DocumentVerificationData>): Promise<void> {
-    const { userId, documentType } = context.data;
-    
-    await eventBus.publish('ManualReviewQueued.v1', {
-      userId,
-      documentType,
-      sagaId: context.sagaId,
-      queuedAt: new Date()
-    });
-
-    // Wait for manual review completion
-    await this.waitForEvent('ManualReviewCompleted.v1', { userId, sagaId: context.sagaId });
-  }
-
-  async compensate(context: SagaContext<DocumentVerificationData>): Promise<void> {
-    await eventBus.publish('ManualReviewCancelled.v1', {
-      userId: context.data.userId,
-      sagaId: context.sagaId
-    });
-  }
-}
-
-class ApprovalDecisionStep extends SagaStep {
-  async execute(context: SagaContext<DocumentVerificationData>): Promise<void> {
-    const { userId, documentType } = context.data;
-    
-    // Get review results and make decision
-    const decision = await this.makeApprovalDecision(userId, documentType);
-    
-    await eventBus.publish('DocumentVerificationDecisionMade.v1', {
-      userId,
-      documentType,
-      decision,
-      sagaId: context.sagaId,
-      decidedAt: new Date()
-    });
-  }
-
-  private async makeApprovalDecision(userId: string, documentType: string): Promise<string> {
-    // Mock decision logic based on automated and manual review results
-    return 'approved'; // or 'rejected' or 'requires_additional_info'
-  }
-
-  async compensate(context: SagaContext<DocumentVerificationData>): Promise<void> {
-    await eventBus.publish('DocumentVerificationDecisionReverted.v1', {
-      userId: context.data.userId,
-      sagaId: context.sagaId
-    });
-  }
-}
-
-class NotificationStep extends SagaStep {
-  async execute(context: SagaContext<DocumentVerificationData>): Promise<void> {
-    const { userId, documentType } = context.data;
-    
-    await eventBus.publish('DocumentVerificationNotificationSent.v1', {
-      userId,
-      documentType,
-      sagaId: context.sagaId,
-      notifiedAt: new Date()
-    });
-  }
-
-  async compensate(context: SagaContext<DocumentVerificationData>): Promise<void> {
-    // No compensation needed for notifications
-  }
-}
-
-export class RiskAssessmentSaga extends Saga {
-  constructor() {
-    super('RiskAssessment');
-  }
-
-  async execute(context: SagaContext<{ userId: string; assessmentType: string }>): Promise<void> {
-    await this.addStep(new DataCollectionStep());
-    await this.addStep(new RiskScoringStep());
-    await this.addStep(new ComplianceCheckStep());
-    await this.addStep(new RiskDecisionStep());
-  }
-}
-
-class DataCollectionStep extends SagaStep {
-  async execute(context: SagaContext<any>): Promise<void> {
-    const { userId, assessmentType } = context.data;
-    
-    await eventBus.publish('RiskDataCollectionStarted.v1', {
-      userId,
-      assessmentType,
-      sagaId: context.sagaId
-    });
-
-    const riskData = await this.collectRiskData(userId);
-    
-    await eventBus.publish('RiskDataCollected.v1', {
-      userId,
-      riskData,
-      sagaId: context.sagaId
-    });
-  }
-
-  private async collectRiskData(userId: string): Promise<any> {
-    return {
-      transactionHistory: [],
-      geographicRisk: 'low',
-      industryRisk: 'medium',
-      documentQuality: 'high'
-    };
-  }
-
-  async compensate(context: SagaContext<any>): Promise<void> {
-    await eventBus.publish('RiskDataCollectionCancelled.v1', {
-      userId: context.data.userId,
-      sagaId: context.sagaId
-    });
-  }
-}
-
-class RiskScoringStep extends SagaStep {
-  async execute(context: SagaContext<any>): Promise<void> {
-    const { userId } = context.data;
-    
-    const riskScore = await this.calculateRiskScore(userId);
-    
-    await eventBus.publish('RiskScoreCalculated.v1', {
-      userId,
-      riskScore,
-      sagaId: context.sagaId
-    });
-  }
-
-  private async calculateRiskScore(userId: string): Promise<number> {
-    // Mock risk scoring algorithm
-    return Math.random() * 100;
-  }
-
-  async compensate(context: SagaContext<any>): Promise<void> {
-    await eventBus.publish('RiskScoreReverted.v1', {
-      userId: context.data.userId,
-      sagaId: context.sagaId
-    });
-  }
-}
-
-class ComplianceCheckStep extends SagaStep {
-  async execute(context: SagaContext<any>): Promise<void> {
-    const { userId } = context.data;
-    
-    const complianceResult = await this.performComplianceCheck(userId);
-    
-    await eventBus.publish('ComplianceCheckCompleted.v1', {
-      userId,
-      complianceResult,
-      sagaId: context.sagaId
-    });
-  }
-
-  private async performComplianceCheck(userId: string): Promise<any> {
-    return {
-      sanctionsCheck: 'clear',
-      pepCheck: 'clear',
-      adverseMediaCheck: 'clear'
-    };
-  }
-
-  async compensate(context: SagaContext<any>): Promise<void> {
-    await eventBus.publish('ComplianceCheckCancelled.v1', {
-      userId: context.data.userId,
-      sagaId: context.sagaId
-    });
-  }
-}
-
-class RiskDecisionStep extends SagaStep {
-  async execute(context: SagaContext<any>): Promise<void> {
-    const { userId } = context.data;
-    
-    const riskDecision = await this.makeRiskDecision(userId);
-    
-    await eventBus.publish('RiskDecisionMade.v1', {
-      userId,
-      riskDecision,
-      sagaId: context.sagaId,
-      decidedAt: new Date()
-    });
-  }
-
-  private async makeRiskDecision(userId: string): Promise<string> {
-    // Mock risk decision logic
-    return 'accept'; // or 'reject' or 'enhanced_due_diligence'
-  }
-
-  async compensate(context: SagaContext<any>): Promise<void> {
-    await eventBus.publish('RiskDecisionReverted.v1', {
-      userId: context.data.userId,
-      sagaId: context.sagaId
-    });
-  }
-}
-
-export class ComplianceReportingSaga extends Saga {
-  constructor() {
-    super('ComplianceReporting');
-  }
-
-  async execute(context: SagaContext<{ reportType: string; period: any; filters: any }>): Promise<void> {
-    await this.addStep(new ReportDataCollectionStep());
-    await this.addStep(new ReportGenerationStep());
-    await this.addStep(new ReportValidationStep());
-    await this.addStep(new ReportDistributionStep());
-  }
-}
-
-class ReportDataCollectionStep extends SagaStep {
-  async execute(context: SagaContext<any>): Promise<void> {
-    const { reportType, period, filters } = context.data;
-    
-    await eventBus.publish('ComplianceReportDataCollectionStarted.v1', {
-      reportType,
-      period,
-      filters,
-      sagaId: context.sagaId
-    });
-
-    const reportData = await this.collectReportData(reportType, period, filters);
-    
-    await eventBus.publish('ComplianceReportDataCollected.v1', {
-      reportType,
-      reportData,
-      sagaId: context.sagaId
-    });
-  }
-
-  private async collectReportData(reportType: string, period: any, filters: any): Promise<any> {
-    return {
-      totalUsers: 1000,
-      verifiedUsers: 850,
-      pendingVerifications: 150,
-      rejectedApplications: 50
-    };
-  }
-
-  async compensate(context: SagaContext<any>): Promise<void> {
-    await eventBus.publish('ComplianceReportDataCollectionCancelled.v1', {
-      sagaId: context.sagaId
-    });
-  }
-}
-
-class ReportGenerationStep extends SagaStep {
-  async execute(context: SagaContext<any>): Promise<void> {
-    const { reportType } = context.data;
-    
-    const reportId = await this.generateReport(reportType);
-    
-    await eventBus.publish('ComplianceReportGenerated.v1', {
-      reportType,
-      reportId,
-      sagaId: context.sagaId,
-      generatedAt: new Date()
-    });
-  }
-
-  private async generateReport(reportType: string): Promise<string> {
-    return `report_${reportType}_${Date.now()}`;
-  }
-
-  async compensate(context: SagaContext<any>): Promise<void> {
-    await eventBus.publish('ComplianceReportGenerationCancelled.v1', {
-      sagaId: context.sagaId
-    });
-  }
-}
-
-class ReportValidationStep extends SagaStep {
-  async execute(context: SagaContext<any>): Promise<void> {
-    const { reportType } = context.data;
-    
-    await this.validateReport(reportType);
-    
-    await eventBus.publish('ComplianceReportValidated.v1', {
-      reportType,
-      sagaId: context.sagaId,
-      validatedAt: new Date()
-    });
-  }
-
-  private async validateReport(reportType: string): Promise<void> {
-    // Mock report validation logic
-  }
-
-  async compensate(context: SagaContext<any>): Promise<void> {
-    await eventBus.publish('ComplianceReportValidationCancelled.v1', {
-      sagaId: context.sagaId
-    });
-  }
-}
-
-class ReportDistributionStep extends SagaStep {
-  async execute(context: SagaContext<any>): Promise<void> {
-    const { reportType } = context.data;
-    
-    await eventBus.publish('ComplianceReportDistributed.v1', {
-      reportType,
-      sagaId: context.sagaId,
-      distributedAt: new Date()
-    });
-  }
-
-  async compensate(context: SagaContext<any>): Promise<void> {
-    // No compensation needed for distribution
+    return eventMap[action] || 'KYCActionRequested';
   }
 }

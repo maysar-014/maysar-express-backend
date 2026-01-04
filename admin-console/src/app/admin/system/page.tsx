@@ -37,21 +37,21 @@ export default function SystemConfigPage() {
   const [showCreateFlag, setShowCreateFlag] = useState(false);
 
   // Fetch feature flags
-  const { data: flagsData, isLoading: flagsLoading, refetch: refetchFlags } = useQuery({
-    queryKey: ['feature-flags'],
-    queryFn: () => apiService.system.getFeatureFlags(),
-    staleTime: 30 * 1000,
-  });
+  // const { data: flagsData, isLoading: flagsLoading, refetch: refetchFlags } = useQuery({
+  //   queryKey: ['feature-flags'],
+  //   queryFn: () => apiService.system.getFeatureFlags(),
+  //   staleTime: 30 * 1000,
+  // });
 
   // Fetch system config
   const { data: configData, isLoading: configLoading, refetch: refetchConfig } = useQuery({
     queryKey: ['system-config'],
-    queryFn: () => apiService.system.getConfig(),
+    queryFn: () => fetch('http://localhost:3001/api/admin/system/config').then(res => res.json()),
     staleTime: 30 * 1000,
   });
 
-  const featureFlags = flagsData?.data || [];
-  const systemConfig = configData?.data || [];
+  const featureFlags = configData?.data?.featureFlags || [];
+  const systemConfig = configData?.data?.configs || [];
 
   // Feature flag mutations
   const toggleFlagMutation = useMutation({
@@ -59,7 +59,7 @@ export default function SystemConfigPage() {
       apiService.system.toggleFeatureFlag(id, enabled),
     onSuccess: () => {
       toast.success('Feature flag updated successfully');
-      refetchFlags();
+      refetchConfig();
     },
     onError: () => {
       toast.error('Failed to update feature flag');
@@ -71,7 +71,7 @@ export default function SystemConfigPage() {
       apiService.system.createFeatureFlag(flagData),
     onSuccess: () => {
       toast.success('Feature flag created successfully');
-      refetchFlags();
+      refetchConfig();
       setShowCreateFlag(false);
     },
     onError: () => {
@@ -348,7 +348,7 @@ export default function SystemConfigPage() {
               pageSize: 15,
               showInfo: true,
             }}
-            loading={flagsLoading}
+            loading={configLoading}
             emptyMessage="No feature flags found"
             className="shadow-sm"
           />

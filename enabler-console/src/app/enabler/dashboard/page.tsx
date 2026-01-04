@@ -1,37 +1,33 @@
 'use client';
 
-import { getEnabler, hasPermission, TIER_INFO } from '@/lib/permissions';
+import { useQuery } from '@tanstack/react-query';
+import { enablerApi } from '@/lib/api';
 
 export default function EnablerDashboard() {
-  const enabler = getEnabler();
-  const tierInfo = TIER_INFO[enabler.tier];
+  const { data: dashboardData, isLoading, error } = useQuery({
+    queryKey: ['enabler-dashboard'],
+    queryFn: () => enablerApi.getDashboard()
+  });
 
-  // Mock data with tier-based filtering
-  const enablerStats = {
-    totalEarnings: 2450750,
-    monthlyEarnings: 850250,
-    tasksCompleted: 127,
-    activeTasks: 8,
-    deliveriesCompleted: 89,
-    salesAssisted: 45,
-    rank: 'Gold',
-    rankProgress: 75,
-    trustScore: 4.8,
-    completionRate: 94.5
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
-  const recentTasks = [
-    { id: 1, type: 'Delivery Coordination', order: 'ORD-2024-5678', status: 'completed', earnings: 25000, time: '2 hours ago' },
-    { id: 2, type: 'Sales Consultation', seller: 'TechStore TZ', status: 'in-progress', earnings: 15000, time: '30 mins ago' },
-    { id: 3, type: 'Delivery Confirmation', order: 'ORD-2024-5679', status: 'pending', earnings: 10000, time: '1 hour ago' },
-    { id: 4, type: 'Sales Support', seller: 'Fashion Hub TZ', status: 'completed', earnings: 20000, time: '3 hours ago' }
-  ];
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-600">Error loading dashboard data</p>
+      </div>
+    );
+  }
 
-  const upcomingTasks = [
-    { id: 5, type: 'Delivery Pickup', priority: 'high', deadline: '2 hours', earnings: 30000 },
-    { id: 6, type: 'Sales Meeting', priority: 'medium', deadline: '4 hours', earnings: 20000 },
-    { id: 7, type: 'Logistics Coordination', priority: 'low', deadline: '1 day', earnings: 15000 }
-  ];
+  const enablerStats = dashboardData?.data?.stats || {};
+  const recentTasks = dashboardData?.data?.recentTasks || [];
+  const upcomingTasks = dashboardData?.data?.upcomingTasks || [];
 
   return (
     <div className="space-y-8">
@@ -42,7 +38,7 @@ export default function EnablerDashboard() {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Earnings</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                TZS {enablerStats.totalEarnings.toLocaleString()}
+                TZS {(enablerStats.totalEarnings || 0).toLocaleString()}
               </p>
             </div>
           </div>
@@ -55,11 +51,11 @@ export default function EnablerDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Tasks Completed</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{enablerStats.tasksCompleted}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{enablerStats.tasksCompleted || 0}</p>
             </div>
           </div>
           <div className="flex items-center mt-2">
-            <span className="text-sm text-gray-600">{enablerStats.completionRate}% completion rate</span>
+            <span className="text-sm text-gray-600">{(enablerStats.completionRate || 0)}% completion rate</span>
           </div>
         </div>
 
@@ -67,7 +63,7 @@ export default function EnablerDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Deliveries Completed</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{enablerStats.deliveriesCompleted}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{enablerStats.deliveriesCompleted || 0}</p>
             </div>
           </div>
           <div className="flex items-center mt-2">
@@ -79,7 +75,7 @@ export default function EnablerDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Tasks</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{enablerStats.activeTasks}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{enablerStats.activeTasks || 0}</p>
             </div>
           </div>
           <div className="flex items-center mt-2">
@@ -97,12 +93,12 @@ export default function EnablerDashboard() {
           <div className="flex-1">
             <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
               <span>Gold Enabler</span>
-              <span>{enablerStats.rankProgress}% to Platinum</span>
+              <span>{(enablerStats.rankProgress || 0)}% to Platinum</span>
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div 
                 className="bg-yellow-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${enablerStats.rankProgress}%` }}
+                style={{ width: `${enablerStats.rankProgress || 0}%` }}
               ></div>
             </div>
           </div>

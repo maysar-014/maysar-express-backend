@@ -4,101 +4,65 @@ import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import { apiService } from '@/lib/api';
+import { apiService, apiClient } from '@/lib/api';
 import { formatDate, formatCurrency, capitalize } from '@/lib/utils';
 
 interface Seller {
   id: string;
   businessName: string;
-  contactEmail: string;
-  contactName: string;
+  ownerName: string;
+  email: string;
   phone: string;
-  businessType: 'individual' | 'corporation' | 'partnership' | 'llc';
-  status: 'pending' | 'under_review' | 'approved' | 'suspended' | 'rejected' | 'deactivated';
-  kycStatus: 'not_started' | 'in_progress' | 'pending_review' | 'approved' | 'rejected';
-  riskScore: number;
-  complianceScore: number;
-  performanceScore: number;
-  badges: string[];
-  registeredAt: string;
-  approvedAt?: string;
-  lastActiveAt?: string;
-  totalProducts: number;
-  totalSales: number;
-  totalRevenue: number;
-  averageRating: number;
-  totalReviews: number;
-  suspensionReason?: string;
-  documents: {
-    businessLicense: { status: string; uploadedAt?: string; };
-    taxId: { status: string; uploadedAt?: string; };
-    bankStatement: { status: string; uploadedAt?: string; };
-    identity: { status: string; uploadedAt?: string; };
+  businessType: string;
+  tier: string;
+  status: string;
+  kycStatus: string;
+  joinedAt: string;
+  location: string;
+  metrics: {
+    totalOrders: number;
+    monthlyOrders: number;
+    revenue: number;
+    monthlyRevenue: number;
+    rating: number;
+    products: number;
+    activeProducts: number;
+    fulfillmentRate: number;
+    responseTime: number;
+    disputes: number;
+    returns: number;
   };
 }
 
-interface KYCDocument {
-  id: string;
-  sellerId: string;
-  type: string;
-  fileName: string;
-  status: 'pending' | 'approved' | 'rejected';
-  uploadedAt: string;
-  reviewedAt?: string;
-  reviewedBy?: string;
-  rejectionReason?: string;
+interface TierDistribution {
+  starter: { count: number; revenue: number; avgRating: number };
+  growth: { count: number; revenue: number; avgRating: number };
+  premium: { count: number; revenue: number; avgRating: number };
+  elite: { count: number; revenue: number; avgRating: number };
+  partner: { count: number; revenue: number; avgRating: number };
 }
 
 export default function SellerOversightPage() {
-  const [activeTab, setActiveTab] = useState<'applications' | 'kyc' | 'performance' | 'compliance'>('applications');
+  const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'operations' | 'compliance'>('overview');
   const [selectedSeller, setSelectedSeller] = useState<Seller | null>(null);
-  const [showKYCModal, setShowKYCModal] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<KYCDocument | null>(null);
 
-  // Fetch sellers
+  // Fetch sellers data based on active tab
   const { data: sellersData, isLoading: sellersLoading, refetch: refetchSellers } = useQuery({
-    queryKey: ['sellers'],
-    queryFn: () => apiService.sellers.getSellers(),
+    queryKey: ['admin-sellers', activeTab],
+    queryFn: () => apiClient.get('/admin/sellers', { params: { tab: activeTab } }),
     staleTime: 30 * 1000,
   });
 
-  // Fetch KYC documents
-  const { data: kycData, isLoading: kycLoading, refetch: refetchKYC } = useQuery({
-    queryKey: ['kyc-documents'],
-    queryFn: () => apiService.sellers.getKYCDocuments(),
-    staleTime: 30 * 1000,
-  });
-
-  const sellers = sellersData?.data || [];
-  const kycDocuments = kycData?.data || [];
+  const sellers = sellersData?.data?.data?.sellers || [];
+  const tierDistribution: TierDistribution = sellersData?.data?.data?.tierDistribution || {};
+  const analytics = sellersData?.data?.data?.analytics;
+  const operations = sellersData?.data?.data?.operations;
+  const compliance = sellersData?.data?.data?.compliance;
 
   // Mutations
-  const approveSellerMutation = useMutation({
-    mutationFn: (sellerId: string) => apiService.sellers.approveSeller(sellerId),
-    onSuccess: () => {
-      toast.success('Seller approved successfully');
-      refetchSellers();
-    },
-    onError: () => {
-      toast.error('Failed to approve seller');
-    },
-  });
-
-  const rejectSellerMutation = useMutation({
-    mutationFn: ({ sellerId, reason }: { sellerId: string; reason: string }) =>
-      apiService.sellers.rejectSeller(sellerId, reason),
-    onSuccess: () => {
-      toast.success('Seller rejected');
-      refetchSellers();
-    },
-    onError: () => {
-      toast.error('Failed to reject seller');
-    },
-  });
-
   const suspendSellerMutation = useMutation({
     mutationFn: ({ sellerId, reason }: { sellerId: string; reason: string }) =>
-      apiService.sellers.suspendSeller(sellerId, reason),
+      apiService.sellers.suspend(sellerId, reason),
     onSuccess: () => {
       toast.success('Seller suspended');
       refetchSellers();
@@ -108,33 +72,8 @@ export default function SellerOversightPage() {
     },
   });
 
-  const approveDocumentMutation = useMutation({
-    mutationFn: (documentId: string) => apiService.sellers.approveDocument(documentId),
-    onSuccess: () => {
-      toast.success('Document approved');
-      refetchKYC();
-      setSelectedDocument(null);
-    },
-    onError: () => {
-      toast.error('Failed to approve document');
-    },
-  });
-
-  const rejectDocumentMutation = useMutation({
-    mutationFn: ({ documentId, reason }: { documentId: string; reason: string }) =>
-      apiService.sellers.rejectDocument(documentId, reason),
-    onSuccess: () => {
-      toast.success('Document rejected');
-      refetchKYC();
-      setSelectedDocument(null);
-    },
-    onError: () => {
-      toast.error('Failed to reject document');
-    },
-  });
-
-  // Application columns (for new/pending sellers)
-  const applicationColumns: Column<Seller>[] = [
+  // Overview columns
+  const overviewColumns: Column<Seller>[] = [
     {
       key: 'businessName',
       header: 'Business',
@@ -142,8 +81,8 @@ export default function SellerOversightPage() {
       render: (value, row) => (
         <div>
           <div className="font-medium text-gray-900 dark:text-white">{value}</div>
-          <div className="text-sm text-gray-500 dark:text-gray-400">{row.contactName}</div>
-          <div className="text-xs text-gray-400 dark:text-gray-500">{row.contactEmail}</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">{row.ownerName}</div>
+          <div className="text-xs text-gray-400 dark:text-gray-500">{row.email}</div>
         </div>
       ),
     },
@@ -153,189 +92,15 @@ export default function SellerOversightPage() {
       sortable: true,
       render: (value) => (
         <span className="text-sm text-gray-600 dark:text-gray-400">
-          {capitalize(value)}
+          {value}
         </span>
       ),
     },
     {
-      key: 'status',
-      header: 'Status',
-      sortable: true,
-      render: (value) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          value === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
-          value === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
-          value === 'under_review' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
-          value === 'suspended' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
-          'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
-        }`}>
-          {capitalize(value.replace('_', ' '))}
-        </span>
-      ),
-    },
-    {
-      key: 'kycStatus',
-      header: 'KYC Status',
-      sortable: true,
-      render: (value) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          value === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
-          value === 'pending_review' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
-          value === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
-          value === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
-          'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
-        }`}>
-          {capitalize(value.replace('_', ' '))}
-        </span>
-      ),
-    },
-    {
-      key: 'registeredAt',
-      header: 'Registered',
-      sortable: true,
-      render: (value) => formatDate(value),
-    },
-    {
-      key: 'actions',
-      header: 'Actions',
-      render: (_, row) => (
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setSelectedSeller(row)}
-            className="text-blue-600 hover:text-blue-900 text-sm font-medium"
-          >
-            Review
-          </button>
-          {row.status === 'pending' && (
-            <>
-              <button
-                onClick={() => approveSellerMutation.mutate(row.id)}
-                className="text-green-600 hover:text-green-900 text-sm font-medium"
-              >
-                Approve
-              </button>
-              <button
-                onClick={() => {
-                  const reason = prompt('Rejection reason:');
-                  if (reason) rejectSellerMutation.mutate({ sellerId: row.id, reason });
-                }}
-                className="text-red-600 hover:text-red-900 text-sm font-medium"
-              >
-                Reject
-              </button>
-            </>
-          )}
-        </div>
-      ),
-    },
-  ];
-
-  // Seller columns (for approved/active sellers)
-  const sellerColumns: Column<Seller>[] = [
-    {
-      key: 'businessName',
-      header: 'Business',
-      sortable: true,
-      render: (value, row) => (
-        <div>
-          <div className="font-medium text-gray-900 dark:text-white">{value}</div>
-          <div className="text-sm text-gray-500 dark:text-gray-400">{row.contactName}</div>
-          <div className="text-xs text-gray-400 dark:text-gray-500">{row.contactEmail}</div>
-        </div>
-      ),
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      sortable: true,
-      render: (value) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          value === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
-          value === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
-          value === 'under_review' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
-          value === 'suspended' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
-          'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
-        }`}>
-          {capitalize(value.replace('_', ' '))}
-        </span>
-      ),
-    },
-    {
-      key: 'kycStatus',
-      header: 'KYC Status',
-      sortable: true,
-      render: (value) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          value === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
-          value === 'pending_review' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
-          value === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
-          value === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
-          'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
-        }`}>
-          {capitalize(value.replace('_', ' '))}
-        </span>
-      ),
-    },
-    {
-      key: 'riskScore',
-      header: 'Risk Score',
-      sortable: true,
-      render: (value) => (
-        <div className="flex items-center">
-          <span className={`font-medium ${
-            value >= 80 ? 'text-red-600' :
-            value >= 60 ? 'text-orange-600' :
-            value >= 40 ? 'text-yellow-600' :
-            'text-green-600'
-          }`}>
-            {value}
-          </span>
-          <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
-            <div
-              className={`h-2 rounded-full ${
-                value >= 80 ? 'bg-red-500' :
-                value >= 60 ? 'bg-orange-500' :
-                value >= 40 ? 'bg-yellow-500' :
-                'bg-green-500'
-              }`}
-              style={{ width: `${value}%` }}
-            ></div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'performanceScore',
-      header: 'Performance',
-      sortable: true,
-      render: (value, row) => (
-        <div>
-          <div className="font-medium text-gray-900 dark:text-white">{value}/100</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            ⭐ {row.averageRating.toFixed(1)} ({row.totalReviews})
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'totalRevenue',
-      header: 'Revenue',
-      sortable: true,
-      render: (value, row) => (
-        <div>
-          <div className="font-medium text-gray-900 dark:text-white">
-            {formatCurrency(value)}
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            {row.totalSales} sales
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'badges',
+      key: 'tier',
       header: 'Tier',
-      render: (_, row) => {
+      sortable: true,
+      render: (value) => {
         const tierColors = {
           'Starter': 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
           'Growth': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
@@ -344,15 +109,60 @@ export default function SellerOversightPage() {
           'Partner': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
         };
         return (
-          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${tierColors[row.tier as keyof typeof tierColors] || 'bg-gray-100 text-gray-800'}`}>
-            {row.tier || 'Starter'}
+          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${tierColors[value as keyof typeof tierColors] || 'bg-gray-100 text-gray-800'}`}>
+            {value}
           </span>
         );
       },
     },
     {
-      key: 'registeredAt',
-      header: 'Registered',
+      key: 'status',
+      header: 'Status',
+      sortable: true,
+      render: (value) => (
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          value === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+          value === 'Inactive' ? 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300' :
+          'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+        }`}>
+          {value}
+        </span>
+      ),
+    },
+    {
+      key: 'kycStatus',
+      header: 'KYC',
+      sortable: true,
+      render: (value) => (
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          value === 'Verified' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+          value === 'Pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
+          'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+        }`}>
+          {value}
+        </span>
+      ),
+    },
+    {
+      key: 'metrics',
+      header: 'Performance',
+      render: (_, row) => (
+        <div>
+          <div className="text-sm font-medium text-gray-900 dark:text-white">
+            TSh {row.metrics.revenue.toLocaleString()}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {row.metrics.totalOrders} orders • ⭐ {row.metrics.rating}
+          </div>
+          <div className="text-xs text-gray-400 dark:text-gray-500">
+            {row.metrics.fulfillmentRate}% fulfillment
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'joinedAt',
+      header: 'Joined',
       sortable: true,
       render: (value) => formatDate(value),
     },
@@ -365,28 +175,9 @@ export default function SellerOversightPage() {
             onClick={() => setSelectedSeller(row)}
             className="text-blue-600 hover:text-blue-900 text-sm font-medium"
           >
-            Review
+            View
           </button>
-          {row.status === 'pending' && (
-            <>
-              <button
-                onClick={() => approveSellerMutation.mutate(row.id)}
-                className="text-green-600 hover:text-green-900 text-sm font-medium"
-              >
-                Approve
-              </button>
-              <button
-                onClick={() => {
-                  const reason = prompt('Rejection reason:');
-                  if (reason) rejectSellerMutation.mutate({ sellerId: row.id, reason });
-                }}
-                className="text-red-600 hover:text-red-900 text-sm font-medium"
-              >
-                Reject
-              </button>
-            </>
-          )}
-          {row.status === 'approved' && (
+          {row.status === 'Active' && (
             <button
               onClick={() => {
                 const reason = prompt('Suspension reason:');
@@ -401,98 +192,6 @@ export default function SellerOversightPage() {
       ),
     },
   ];
-
-  // KYC document columns
-  const kycColumns: Column<KYCDocument>[] = [
-    {
-      key: 'uploadedAt',
-      header: 'Uploaded',
-      sortable: true,
-      render: (value) => formatDate(value),
-    },
-    {
-      key: 'sellerId',
-      header: 'Seller',
-      render: (value) => {
-        const seller = sellers.find((s: Seller) => s.id === value);
-        return seller ? (
-          <div>
-            <div className="font-medium text-gray-900 dark:text-white">{seller.businessName}</div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">{seller.contactEmail}</div>
-          </div>
-        ) : (
-          <span className="text-gray-500">Unknown Seller</span>
-        );
-      },
-    },
-    {
-      key: 'type',
-      header: 'Document Type',
-      sortable: true,
-      render: (value) => (
-        <span className="font-mono text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-          {value.replace('_', ' ')}
-        </span>
-      ),
-    },
-    {
-      key: 'fileName',
-      header: 'File Name',
-      render: (value) => (
-        <span className="text-sm text-gray-900 dark:text-white">{value}</span>
-      ),
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      sortable: true,
-      render: (value) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          value === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
-          value === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
-          'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-        }`}>
-          {capitalize(value)}
-        </span>
-      ),
-    },
-    {
-      key: 'actions',
-      header: 'Actions',
-      render: (_, row) => (
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setSelectedDocument(row)}
-            className="text-blue-600 hover:text-blue-900 text-sm font-medium"
-          >
-            Review
-          </button>
-          {row.status === 'pending' && (
-            <>
-              <button
-                onClick={() => approveDocumentMutation.mutate(row.id)}
-                className="text-green-600 hover:text-green-900 text-sm font-medium"
-              >
-                Approve
-              </button>
-              <button
-                onClick={() => {
-                  const reason = prompt('Rejection reason:');
-                  if (reason) rejectDocumentMutation.mutate({ documentId: row.id, reason });
-                }}
-                className="text-red-600 hover:text-red-900 text-sm font-medium"
-              >
-                Reject
-              </button>
-            </>
-          )}
-        </div>
-      ),
-    },
-  ];
-
-  const pendingSellers = sellers.filter((seller: Seller) => seller.status === 'pending');
-  const pendingKYC = kycDocuments.filter((doc: KYCDocument) => doc.status === 'pending');
 
   return (
     <div className="space-y-6">
@@ -509,10 +208,7 @@ export default function SellerOversightPage() {
 
         <div className="flex items-center space-x-3">
           <button
-            onClick={() => {
-              refetchSellers();
-              refetchKYC();
-            }}
+            onClick={() => refetchSellers()}
             className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
           >
             Refresh
@@ -524,29 +220,27 @@ export default function SellerOversightPage() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Seller Tier Distribution</h3>
         <div className="grid grid-cols-5 gap-4">
-          {['Starter', 'Growth', 'Premium', 'Elite', 'Partner'].map(tier => {
-            const tierSellers = sellers.filter((s: Seller) => s.tier === tier);
+          {Object.entries(tierDistribution).map(([tier, data]) => {
             const tierColors = {
-              'Starter': 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
-              'Growth': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-              'Premium': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-              'Elite': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
-              'Partner': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+              'starter': 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
+              'growth': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+              'premium': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+              'elite': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+              'partner': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
             };
-            const totalRevenue = tierSellers.reduce((sum: number, s: Seller) => sum + s.totalRevenue, 0);
             return (
               <div key={tier} className="text-center">
                 <div className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${tierColors[tier as keyof typeof tierColors]}`}>
-                  {tier}
+                  {capitalize(tier)}
                 </div>
                 <div className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
-                  {tierSellers.length}
+                  {data.count}
                 </div>
                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                  {formatCurrency(totalRevenue)}
+                  TSh {data.revenue.toLocaleString()}
                 </div>
                 <div className="text-xs text-gray-400 dark:text-gray-500">
-                  {tierSellers.length > 0 ? (totalRevenue / tierSellers.length).toFixed(0) : '0'} avg
+                  {data.avgRating} avg
                 </div>
               </div>
             );
@@ -558,34 +252,34 @@ export default function SellerOversightPage() {
       <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-8">
           <button
-            onClick={() => setActiveTab('applications')}
+            onClick={() => setActiveTab('overview')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'applications'
+              activeTab === 'overview'
                 ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
             }`}
           >
-            Applications ({pendingSellers.length})
+            Overview ({sellers.length})
           </button>
           <button
-            onClick={() => setActiveTab('kyc')}
+            onClick={() => setActiveTab('analytics')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'kyc'
+              activeTab === 'analytics'
                 ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
             }`}
           >
-            KYC Documents ({pendingKYC.length})
+            Analytics
           </button>
           <button
-            onClick={() => setActiveTab('performance')}
+            onClick={() => setActiveTab('operations')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'performance'
+              activeTab === 'operations'
                 ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
             }`}
           >
-            Performance Analytics
+            Operations
           </button>
           <button
             onClick={() => setActiveTab('compliance')}
@@ -595,48 +289,16 @@ export default function SellerOversightPage() {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
             }`}
           >
-            Compliance Monitoring
+            Compliance
           </button>
         </nav>
       </div>
 
       {/* Content */}
-      {activeTab === 'applications' && (
+      {activeTab === 'overview' && (
         <DataTable
-          data={sellers.filter((s: Seller) => ['pending', 'under_review'].includes(s.status))}
-          columns={applicationColumns}
-          searchable={true}
-          searchPlaceholder="Search applications by business name or email..."
-          pagination={{
-            pageSize: 15,
-            showInfo: true,
-          }}
-          loading={sellersLoading}
-          emptyMessage="No pending applications found"
-          className="shadow-sm"
-        />
-      )}
-
-      {activeTab === 'kyc' && (
-        <DataTable
-          data={kycDocuments}
-          columns={kycColumns}
-          searchable={true}
-          searchPlaceholder="Search KYC documents..."
-          pagination={{
-            pageSize: 15,
-            showInfo: true,
-          }}
-          loading={kycLoading}
-          emptyMessage="No KYC documents found"
-          className="shadow-sm"
-        />
-      )}
-
-      {activeTab === 'performance' && (
-        <DataTable
-          data={sellers.filter((s: Seller) => s.status === 'approved')}
-          columns={sellerColumns}
+          data={sellers}
+          columns={overviewColumns}
           searchable={true}
           searchPlaceholder="Search sellers by business name or email..."
           pagination={{
@@ -644,19 +306,139 @@ export default function SellerOversightPage() {
             showInfo: true,
           }}
           loading={sellersLoading}
-          emptyMessage="No active sellers found"
+          emptyMessage="No sellers found"
           className="shadow-sm"
         />
       )}
 
-      {activeTab === 'compliance' && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            Compliance Monitoring
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400">
-            Compliance monitoring and risk assessment tools coming soon...
-          </p>
+      {activeTab === 'analytics' && analytics && (
+        <div className="space-y-6">
+          {/* Performance Metrics */}
+          <div className="grid grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Fulfillment Rate</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{analytics.performanceMetrics.avgFulfillmentRate}%</div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Response Time</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{analytics.performanceMetrics.avgResponseTime}h</div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Rating</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">⭐ {analytics.performanceMetrics.avgRating}</div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Disputes</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{analytics.performanceMetrics.totalDisputes}</div>
+            </div>
+          </div>
+
+          {/* Top Performers */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Top Performers</h3>
+            <div className="space-y-3">
+              {analytics.topPerformers.map((seller: any, index: number) => (
+                <div key={seller.sellerId} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">#{index + 1}</div>
+                    <div>
+                      <div className="font-medium text-gray-900 dark:text-white">{seller.businessName}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">⭐ {seller.rating} • {seller.orders} orders</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-gray-900 dark:text-white">TSh {seller.revenue.toLocaleString()}</div>
+                    <div className="text-sm text-green-600 dark:text-green-400">+{seller.growth}%</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'operations' && operations && (
+        <div className="space-y-6">
+          {/* Active Orders */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Active Orders</h3>
+            <div className="space-y-3">
+              {operations.activeOrders.map((order: any) => (
+                <div key={order.orderId} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-white">{order.orderId}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{order.businessName}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-gray-900 dark:text-white">TSh {order.amount.toLocaleString()}</div>
+                    <div className="text-sm text-blue-600 dark:text-blue-400">{order.status}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Inventory Alerts */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Inventory Alerts</h3>
+            <div className="space-y-3">
+              {operations.inventoryAlerts.map((alert: any, index: number) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-white">{alert.productName}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{alert.businessName}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-yellow-600 dark:text-yellow-400">{alert.currentStock} left</div>
+                    <div className="text-sm text-yellow-600 dark:text-yellow-400">{alert.alertType}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'compliance' && compliance && (
+        <div className="space-y-6">
+          {/* KYC Overview */}
+          <div className="grid grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Verified</div>
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">{compliance.kycOverview.verified}</div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending</div>
+              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{compliance.kycOverview.pending}</div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Rejected</div>
+              <div className="text-2xl font-bold text-red-600 dark:text-red-400">{compliance.kycOverview.rejected}</div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Not Started</div>
+              <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">{compliance.kycOverview.notStarted}</div>
+            </div>
+          </div>
+
+          {/* Violations */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Policy Violations</h3>
+            <div className="space-y-3">
+              {compliance.violations.map((violation: any, index: number) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-white">{violation.businessName}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{violation.description}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-red-600 dark:text-red-400">{violation.severity}</div>
+                    <div className="text-sm text-red-600 dark:text-red-400">{violation.status}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

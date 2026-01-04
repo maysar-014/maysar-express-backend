@@ -4,24 +4,23 @@ import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import { apiService } from '@/lib/api';
+import { apiService, apiClient } from '@/lib/api';
 import { formatDate, formatCurrency, capitalize } from '@/lib/utils';
 
 interface Enabler {
   id: string;
   name: string;
   email: string;
-  tier: 'Trainee' | 'Associate' | 'Specialist' | 'Senior' | 'Expert' | 'Master' | 'Director';
-  specializations: string[];
-  ordersProcessed: number;
-  avgResolutionTime: number;
-  customerRating: number;
-  commissionEarned: number;
-  status: 'active' | 'inactive' | 'suspended' | 'training';
+  phone: string;
+  tier: string;
+  performance: number;
+  orders: number;
+  rating: number;
+  earnings: number;
+  status: string;
+  territory: string;
   joinedAt: string;
   lastActive: string;
-  performanceScore: number;
-  certifications: string[];
 }
 
 export default function EnablersPage() {
@@ -30,7 +29,7 @@ export default function EnablersPage() {
 
   const { data: enablersData, isLoading, refetch } = useQuery({
     queryKey: ['enablers'],
-    queryFn: () => apiService.admin.getEnablers(),
+    queryFn: () => apiClient.get('/admin/enablers'),
     staleTime: 30 * 1000,
   });
 
@@ -47,7 +46,8 @@ export default function EnablersPage() {
     },
   });
 
-  const enablers = enablersData?.data || [];
+  const enablers = enablersData?.data?.data?.enablers || [];
+  const stats = enablersData?.data?.data?.stats || {};
 
   const tierColors = {
     'Trainee': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
@@ -64,100 +64,106 @@ export default function EnablersPage() {
       key: 'name',
       header: 'Enabler',
       sortable: true,
-      render: (value, row) => (
-        <div>
-          <div className="font-medium text-gray-900 dark:text-white">{value}</div>
-          <div className="text-sm text-gray-500 dark:text-gray-400">{row.email}</div>
-        </div>
-      ),
+      render: (value: unknown, row: Enabler) => {
+        const nameValue = value as string;
+        return (
+          <div>
+            <div className="font-medium text-gray-900 dark:text-white">{nameValue}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{row.email}</div>
+          </div>
+        );
+      },
     },
     {
       key: 'tier',
       header: 'Tier',
       sortable: true,
-      render: (value) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${tierColors[value]}`}>
-          {value}
-        </span>
-      ),
+      render: (value: unknown) => {
+        const tierValue = value as string;
+        return (
+          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${tierColors[tierValue as keyof typeof tierColors] || 'bg-gray-100 text-gray-800'}`}>
+            {tierValue}
+          </span>
+        );
+      },
     },
     {
-      key: 'performanceScore',
+      key: 'performance',
       header: 'Performance',
       sortable: true,
-      render: (value) => (
-        <div className="flex items-center">
-          <span className={`font-medium ${
-            value >= 90 ? 'text-green-600' :
-            value >= 75 ? 'text-yellow-600' :
-            'text-red-600'
-          }`}>
-            {value}%
-          </span>
-          <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
-            <div
-              className={`h-2 rounded-full ${
-                value >= 90 ? 'bg-green-500' :
-                value >= 75 ? 'bg-yellow-500' :
-                'bg-red-500'
-              }`}
-              style={{ width: `${value}%` }}
-            ></div>
+      render: (value: unknown) => {
+        const numValue = value as number;
+        return (
+          <div className="flex items-center">
+            <span className={`font-medium ${
+              numValue >= 90 ? 'text-green-600' :
+              numValue >= 75 ? 'text-yellow-600' :
+              'text-red-600'
+            }`}>
+              {numValue}%
+            </span>
+            <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full ${
+                  numValue >= 90 ? 'bg-green-500' :
+                  numValue >= 75 ? 'bg-yellow-500' :
+                  'bg-red-500'
+                }`}
+                style={{ width: `${numValue}%` }}
+              ></div>
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
-      key: 'ordersProcessed',
+      key: 'orders',
       header: 'Orders',
       sortable: true,
-      render: (value, row) => (
+      render: (value: unknown) => (
         <div>
-          <div className="font-medium text-gray-900 dark:text-white">{value.toLocaleString()}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            {row.avgResolutionTime}h avg
-          </div>
+          <div className="font-medium text-gray-900 dark:text-white">{(value as number).toLocaleString()}</div>
         </div>
       ),
     },
     {
-      key: 'customerRating',
+      key: 'rating',
       header: 'Rating',
       sortable: true,
-      render: (value) => (
+      render: (value: unknown) => (
         <div className="flex items-center">
           <span className="text-yellow-400">★</span>
-          <span className="ml-1 font-medium text-gray-900 dark:text-white">{value.toFixed(1)}</span>
+          <span className="ml-1 font-medium text-gray-900 dark:text-white">{(value as number).toFixed(1)}</span>
         </div>
       ),
     },
     {
-      key: 'commissionEarned',
+      key: 'earnings',
       header: 'Earnings',
       sortable: true,
-      render: (value) => (
-        <span className="font-medium text-green-600">{formatCurrency(value)}</span>
+      render: (value: unknown) => (
+        <span className="font-medium text-green-600">{formatCurrency(value as number)}</span>
       ),
     },
     {
       key: 'status',
       header: 'Status',
       sortable: true,
-      render: (value) => (
+      render: (value: unknown) => (
         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
           value === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
           value === 'training' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
           value === 'suspended' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
           'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
         }`}>
-          {capitalize(value)}
+          {capitalize(value as string)}
         </span>
       ),
     },
     {
       key: 'actions',
       header: 'Actions',
-      render: (_, row) => (
+      render: (_: unknown, row: Enabler) => (
         <div className="flex items-center space-x-2">
           <button
             onClick={() => {
@@ -184,11 +190,11 @@ export default function EnablersPage() {
     return acc;
   }, {});
 
-  const avgPerformance = enablers.length > 0 
-    ? enablers.reduce((sum: number, e: Enabler) => sum + e.performanceScore, 0) / enablers.length 
+  const avgPerformance = enablers.length > 0
+    ? enablers.reduce((sum: number, e: Enabler) => sum + e.performance, 0) / enablers.length
     : 0;
 
-  const totalEarnings = enablers.reduce((sum: number, e: Enabler) => sum + e.commissionEarned, 0);
+  const totalEarnings = enablers.reduce((sum: number, e: Enabler) => sum + e.earnings, 0);
 
   return (
     <div className="space-y-6">
@@ -210,31 +216,31 @@ export default function EnablersPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Enablers</dt>
-          <dd className="text-2xl font-bold text-gray-900 dark:text-white">{enablers.length}</dd>
+          <dd className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalEnablers || enablers.length}</dd>
           <div className="text-sm text-green-600 mt-1">
-            {enablers.filter((e: Enabler) => e.status === 'active').length} active
+            {stats.activeEnablers || enablers.filter((e: Enabler) => e.status === 'active').length} active
           </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Performance</dt>
-          <dd className="text-2xl font-bold text-gray-900 dark:text-white">{avgPerformance.toFixed(1)}%</dd>
-          <div className="text-sm text-green-600 mt-1">+5.2% vs last month</div>
+          <dd className="text-2xl font-bold text-gray-900 dark:text-white">{stats.avgPerformance?.toFixed(1) || avgPerformance.toFixed(1)}%</dd>
+          <div className="text-sm text-green-600 mt-1">Performance tracking</div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Earnings</dt>
-          <dd className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalEarnings)}</dd>
-          <div className="text-sm text-green-600 mt-1">+12.8% vs last month</div>
+          <dd className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(stats.totalEarnings || totalEarnings)}</dd>
+          <div className="text-sm text-green-600 mt-1">Commission earnings</div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Top Tier</dt>
           <dd className="text-2xl font-bold text-gray-900 dark:text-white">
-            {tierStats['Director'] || 0} Directors
+            {stats.topTier?.directors || tierStats['Director'] || 0} Directors
           </dd>
           <div className="text-sm text-blue-600 mt-1">
-            {tierStats['Master'] || 0} Masters
+            {stats.topTier?.masters || tierStats['Master'] || 0} Masters
           </div>
         </div>
       </div>
@@ -281,7 +287,7 @@ export default function EnablersPage() {
                 Promote {selectedEnabler.name}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Current tier: <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${tierColors[selectedEnabler.tier]}`}>
+                Current tier: <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${tierColors[selectedEnabler.tier as keyof typeof tierColors] || 'bg-gray-100 text-gray-800'}`}>
                   {selectedEnabler.tier}
                 </span>
               </p>

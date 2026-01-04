@@ -15,6 +15,7 @@ import { NotificationService } from './modules/notification/notification'
 import { CommunityService } from './modules/community/community'
 import { AnalyticsService } from './modules/analytics/analytics'
 import { AuthMiddleware } from './gateway/authMiddleware'
+import apiRoutes from '../api/routes/index'
 
 const app = express()
 
@@ -69,6 +70,9 @@ app.use('/v1', generalRateLimit)
 app.use('/v2', generalRateLimit)
 app.use('/auth', authRateLimit)
 app.use('/admin', authRateLimit)
+
+// Console API Routes
+app.use('/api', apiRoutes)
 
 // Enhanced Auth Routes
 app.post('/auth/register', async (req, res) => {

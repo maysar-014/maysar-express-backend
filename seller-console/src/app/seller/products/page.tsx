@@ -1,17 +1,21 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { apiService } from '@/lib/api';
 import { getSeller, hasPermission } from '@/lib/permissions';
 
 export default function ProductsPage() {
   const seller = getSeller();
 
-  const products = [
-    { id: 'PRD-001', name: 'Samsung Galaxy A54', category: 'Smartphones', price: 850000, stock: 25, status: 'active', sales: 156 },
-    { id: 'PRD-002', name: 'HP Laptop 15-inch', category: 'Laptops', price: 1200000, stock: 8, status: 'active', sales: 89 },
-    { id: 'PRD-003', name: 'Wireless Earbuds', category: 'Accessories', price: 125000, stock: 45, status: 'active', sales: 234 },
-    { id: 'PRD-004', name: 'iPhone 15 Pro', category: 'Smartphones', price: 2500000, stock: 0, status: 'out_of_stock', sales: 67 },
-    { id: 'PRD-005', name: 'MacBook Air M2', category: 'Laptops', price: 3200000, stock: 12, status: 'active', sales: 45 }
-  ];
+  const { data: productsData, isLoading } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => apiService.getProducts(),
+    staleTime: 30 * 1000,
+  });
+
+  const products = productsData?.data?.data?.products || [];
+  const categories = productsData?.data?.data?.categories || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -44,39 +48,39 @@ export default function ProductsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <p className="text-sm font-medium text-gray-600">Total Products</p>
-          <p className="text-2xl font-bold text-gray-900">{products.length}</p>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Products</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{products.length}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <p className="text-sm font-medium text-gray-600">Active Products</p>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Products</p>
           <p className="text-2xl font-bold text-green-600">{products.filter(p => p.status === 'active').length}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <p className="text-sm font-medium text-gray-600">Out of Stock</p>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Out of Stock</p>
           <p className="text-2xl font-bold text-red-600">{products.filter(p => p.status === 'out_of_stock').length}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <p className="text-sm font-medium text-gray-600">Total Sales</p>
-          <p className="text-2xl font-bold text-blue-600">{products.reduce((sum, p) => sum + p.sales, 0)}</p>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Reviews</p>
+          <p className="text-2xl font-bold text-blue-600">{products.reduce((sum, p) => sum + (p.reviews || 0), 0)}</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-6 border-b">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-900">Product Catalog</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Product Catalog</h3>
             <div className="flex space-x-2">
               <input
                 type="text"
                 placeholder="Search products..."
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
-              <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+              <select className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                 <option>All Categories</option>
-                <option>Smartphones</option>
-                <option>Laptops</option>
-                <option>Accessories</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -84,28 +88,28 @@ export default function ProductsPage() {
         
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sales</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Product</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Price</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Stock</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Reviews</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {products.map((product) => (
-                <tr key={product.id} className="hover:bg-gray-50">
+                <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4">
                     <div>
-                      <p className="font-medium text-gray-900">{product.name}</p>
-                      <p className="text-sm text-gray-500">{product.id}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{product.name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{product.sku}</p>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{product.category}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{product.category}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
                     TZS {product.price.toLocaleString()}
                   </td>
                   <td className="px-6 py-4">
@@ -113,16 +117,16 @@ export default function ProductsPage() {
                       {product.stock} units
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{product.sales}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{product.reviews} ({product.rating}★)</td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(product.status)}`}>
-                      {product.status.replace('_', ' ')}
+                    <span className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusColor(product.status)}`}>
+                      {product.status === 'out_of_stock' ? 'Out of Stock' : product.status.replace('_', ' ')}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex space-x-2">
                       <button className="text-blue-600 hover:text-blue-800 text-sm">Edit</button>
-                      <button className="text-gray-600 hover:text-gray-800 text-sm">View</button>
+                      <button className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm">View</button>
                       <button className="text-red-600 hover:text-red-800 text-sm">Delete</button>
                     </div>
                   </td>

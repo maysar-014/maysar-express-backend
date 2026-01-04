@@ -13,11 +13,11 @@ import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/react';
 import { cn } from '@/lib/utils';
 
 export interface Column<T> {
-  key: keyof T;
+  key: keyof T | string;
   header: string;
   sortable?: boolean;
   filterable?: boolean;
-  render?: (value: any, row: T) => React.ReactNode;
+  render?: (value: unknown, row: T) => React.ReactNode;
   className?: string;
 }
 
@@ -218,7 +218,7 @@ export function DataTable<T extends { id: string }>({
                     column.sortable && 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600',
                     column.className
                   )}
-                  onClick={column.sortable ? () => handleSort(column.key) : undefined}
+                  onClick={column.sortable ? () => handleSort(column.key as keyof T) : undefined}
                 >
                   <div className="flex items-center space-x-1">
                     <span>{column.header}</span>
@@ -278,14 +278,17 @@ export function DataTable<T extends { id: string }>({
                   )}
 
                   {/* Data Columns */}
-                  {columns.map((column) => (
-                    <td key={String(column.key)} className={cn('px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white', column.className)}>
-                      {column.render
-                        ? column.render(row[column.key], row)
-                        : String(row[column.key] || '')
-                      }
-                    </td>
-                  ))}
+                  {columns.map((column) => {
+                    const value = column.key in row ? row[column.key as keyof T] : undefined;
+                    return (
+                      <td key={String(column.key)} className={cn('px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white', column.className)}>
+                        {column.render
+                          ? column.render(value, row)
+                          : String(value || '')
+                        }
+                      </td>
+                    );
+                  })}
 
                   {/* Actions Column */}
                   <td className="px-6 py-4 text-right">

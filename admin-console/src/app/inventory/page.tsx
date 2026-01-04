@@ -61,14 +61,17 @@ interface StockMovement {
 }
 
 export default function InventoryPage() {
-  const [selectedWarehouse, setSelectedWarehouse] = useState<string>('all');
+    const [page1, setPage1] = useState(0);
+const [selectedWarehouse, setSelectedWarehouse] = useState<string>('all');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [showWarehouseModal, setShowWarehouseModal] = useState(false);
   const [showStockModal, setShowStockModal] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch warehouses
-  const { data: warehousesData, isLoading: warehousesLoading } = useQuery({
+  const {
+  const [cardPage1, setCardPage1] = useState(0);
+ data: warehousesData, isLoading: warehousesLoading } = useQuery({
     queryKey: ['warehouses'],
     queryFn: () => apiService.inventory.getWarehouses(),
     staleTime: 5 * 60 * 1000,

@@ -159,6 +159,23 @@ export interface CommissionPaidPayload extends BaseEventPayload {
   paymentMethod: string;
 }
 
+// USER DOMAIN EVENTS
+export interface UserRegisteredEvent extends BaseEventPayload {
+  userId: string;
+  email: string;
+  role: 'buyer' | 'seller' | 'admin' | 'enabler' | 'courier' | 'supplier';
+  registeredAt: string;
+  registrationSource?: string;
+}
+
+export interface UserSuspendedEvent extends BaseEventPayload {
+  userId: string;
+  reason: string;
+  suspendedBy: string;
+  suspendedAt: string;
+  duration?: number; // in days, null for permanent
+}
+
 // TRUST DOMAIN EVENTS
 export interface ReviewSubmittedPayload extends BaseEventPayload {
   reviewId: string;
@@ -212,7 +229,7 @@ export interface EventEnvelope<T = any> {
 }
 
 // EVENT TYPE UNION
-export type EventPayload = 
+export type EventPayload =
   | OrderCreatedPayload
   | OrderCancelledPayload
   | PaymentSucceededPayload
@@ -229,6 +246,8 @@ export type EventPayload =
   | LogisticsDeliveryCompletedPayload
   | CommissionCalculatedPayload
   | CommissionPaidPayload
+  | UserRegisteredEvent
+  | UserSuspendedEvent
   | ReviewSubmittedPayload
   | DisputeOpenedPayload
   | DisputeResolvedPayload

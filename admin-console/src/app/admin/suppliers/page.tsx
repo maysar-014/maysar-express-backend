@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import { apiService } from '@/lib/api';
-import { formatDate, formatCurrency, capitalize } from '@/lib/utils';
+import { apiService, apiClient } from '@/lib/api';
+import { formatDate, formatCurrencyForCard, capitalize } from '@/lib/utils';
 
 interface Supplier {
   id: string;
@@ -31,7 +31,7 @@ export default function SuppliersPage() {
 
   const { data: suppliersData, isLoading, refetch } = useQuery({
     queryKey: ['suppliers'],
-    queryFn: () => apiService.admin.getSuppliers(),
+    queryFn: () => apiClient.get('/admin/suppliers'),
     staleTime: 30 * 1000,
   });
 
@@ -48,7 +48,8 @@ export default function SuppliersPage() {
     },
   });
 
-  const suppliers = suppliersData?.data || [];
+  const suppliers = suppliersData?.data?.data?.suppliers || [];
+  const stats = suppliersData?.data?.data?.stats || {};
 
   const tierColors = {
     'Vendor': 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-300',
@@ -88,20 +89,20 @@ export default function SuppliersPage() {
       render: (value) => (
         <div className="flex items-center">
           <span className={`font-medium ${
-            value >= 95 ? 'text-green-600' :
-            value >= 85 ? 'text-yellow-600' :
+            (value ?? 0) >= 95 ? 'text-green-600' :
+            (value ?? 0) >= 85 ? 'text-yellow-600' :
             'text-red-600'
           }`}>
-            {value}%
+            {value != null ? `${value}%` : 'N/A'}
           </span>
           <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
             <div
               className={`h-2 rounded-full ${
-                value >= 95 ? 'bg-green-500' :
-                value >= 85 ? 'bg-yellow-500' :
+                (value ?? 0) >= 95 ? 'bg-green-500' :
+                (value ?? 0) >= 85 ? 'bg-yellow-500' :
                 'bg-red-500'
               }`}
-              style={{ width: `${value}%` }}
+              style={{ width: `${value ?? 0}%` }}
             ></div>
           </div>
         </div>
@@ -113,7 +114,7 @@ export default function SuppliersPage() {
       sortable: true,
       render: (value, row) => (
         <div>
-          <div className="font-medium text-gray-900 dark:text-white">{formatCurrency(value)}</div>
+          <div className="font-medium text-gray-900 dark:text-white truncate">{formatCurrencyForCard(value ?? 0)}</div>
           <div className="text-xs text-gray-500 dark:text-gray-400">
             {row.productsSupplied} products
           </div>
@@ -126,11 +127,11 @@ export default function SuppliersPage() {
       sortable: true,
       render: (value) => (
         <span className={`font-medium ${
-          value <= 2 ? 'text-green-600' :
-          value <= 5 ? 'text-yellow-600' :
+          (value ?? 0) <= 2 ? 'text-green-600' :
+          (value ?? 0) <= 5 ? 'text-yellow-600' :
           'text-red-600'
         }`}>
-          {value} days
+          {value != null ? `${value} days` : 'N/A'}
         </span>
       ),
     },
@@ -141,7 +142,9 @@ export default function SuppliersPage() {
       render: (value) => (
         <div className="flex items-center">
           <span className="text-yellow-400">★</span>
-          <span className="ml-1 font-medium text-gray-900 dark:text-white">{value.toFixed(1)}</span>
+          <span className="ml-1 font-medium text-gray-900 dark:text-white">
+            {value != null ? value.toFixed(1) : 'N/A'}
+          </span>
         </div>
       ),
     },
@@ -150,7 +153,7 @@ export default function SuppliersPage() {
       header: 'Earnings',
       sortable: true,
       render: (value) => (
-        <span className="font-medium text-green-600">{formatCurrency(value)}</span>
+        <span className="font-medium text-green-600 truncate block">{formatCurrencyForCard(value ?? 0)}</span>
       ),
     },
     {
@@ -199,10 +202,10 @@ export default function SuppliersPage() {
   }, {});
 
   const avgReliability = suppliers.length > 0 
-    ? suppliers.reduce((sum: number, s: Supplier) => sum + s.reliabilityScore, 0) / suppliers.length 
+    ? suppliers.reduce((sum: number, s: Supplier) => sum + (s.reliabilityScore ?? 0), 0) / suppliers.length 
     : 0;
 
-  const totalVolume = suppliers.reduce((sum: number, s: Supplier) => sum + s.totalVolume, 0);
+  const totalVolume = suppliers.reduce((sum: number, s: Supplier) => sum + (s.totalVolume ?? 0), 0);
 
   return (
     <div className="space-y-6">
@@ -224,31 +227,31 @@ export default function SuppliersPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Suppliers</dt>
-          <dd className="text-2xl font-bold text-gray-900 dark:text-white">{suppliers.length}</dd>
+          <dd className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalSuppliers || suppliers.length}</dd>
           <div className="text-sm text-green-600 mt-1">
-            {suppliers.filter((s: Supplier) => s.status === 'active').length} active
+            {stats.activeSuppliers || suppliers.filter((s: Supplier) => s.status === 'active').length} active
           </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Reliability</dt>
-          <dd className="text-2xl font-bold text-gray-900 dark:text-white">{avgReliability.toFixed(1)}%</dd>
-          <div className="text-sm text-green-600 mt-1">+3.8% vs last month</div>
+          <dd className="text-2xl font-bold text-gray-900 dark:text-white">{stats.avgReliability?.toFixed(1) || avgReliability.toFixed(1)}%</dd>
+          <div className="text-sm text-green-600 mt-1">+{stats.reliabilityGrowth || 3.8}% vs last month</div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Supply Volume</dt>
-          <dd className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalVolume)}</dd>
-          <div className="text-sm text-green-600 mt-1">+18.5% vs last month</div>
+          <dd className="text-2xl font-bold text-gray-900 dark:text-white truncate">{formatCurrencyForCard(stats.supplyVolume || totalVolume)}</dd>
+          <div className="text-sm text-green-600 mt-1">+{stats.volumeGrowth || 18.5}% vs last month</div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Top Tier</dt>
           <dd className="text-2xl font-bold text-gray-900 dark:text-white">
-            {tierStats['Alliance'] || 0} Alliance
+            {stats.topTier?.alliance || tierStats['Alliance'] || 0} Alliance
           </dd>
           <div className="text-sm text-blue-600 mt-1">
-            {tierStats['Enterprise'] || 0} Enterprise
+            {stats.topTier?.enterprise || tierStats['Enterprise'] || 0} Enterprise
           </div>
         </div>
       </div>

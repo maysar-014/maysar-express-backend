@@ -132,7 +132,7 @@ export function getSeller() {
     id: 'SEL-2024-001',
     name: 'TechStore Tanzania',
     businessName: 'TechStore Tanzania Ltd',
-    tier: 'gold' as SellerTier,
+    tier: 'silver' as SellerTier,
     trustScore: 4.7,
     totalSales: 2450000,
     monthlyRevenue: 850000,

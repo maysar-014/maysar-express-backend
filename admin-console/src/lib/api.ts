@@ -4,12 +4,12 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
-const API_VERSION = 'v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+const API_VERSION = 'api';
 
 // Create axios instance with default configuration
 const apiClient: AxiosInstance = axios.create({
-  baseURL: `${API_BASE_URL}/api/${API_VERSION}`,
+  baseURL: `${API_BASE_URL}/${API_VERSION}`,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -92,8 +92,10 @@ export const apiService = {
   },
 
   // Dashboard Data
-  getDashboardData: () =>
-    apiClient.get('/admin/dashboard'),
+  getDashboardData: () => {
+    console.log('Making request to:', `${API_BASE_URL}/${API_VERSION}/admin/dashboard`);
+    return apiClient.get('/admin/dashboard');
+  },
 
   getAlerts: () =>
     apiClient.get('/admin/alerts'),
@@ -167,7 +169,7 @@ export const apiService = {
     getById: (id: string) =>
       apiClient.get(`/admin/users/${id}`),
 
-    update: (id: string, userData: any) =>
+    update: (id: string, userData: unknown) =>
       apiClient.patch(`/admin/users/${id}`, userData),
 
     suspend: (id: string, reason: string, duration?: number) =>
@@ -191,6 +193,7 @@ export const apiService = {
       status?: string;
       verificationStatus?: string;
       search?: string;
+      tab?: string;
     }) =>
       apiClient.get('/admin/sellers', { params }),
 
@@ -299,6 +302,21 @@ export const apiService = {
 
     getServices: () =>
       apiClient.get('/admin/system/services'),
+
+    getConfig: (params?: { tab?: string, search?: string }) =>
+      apiClient.get('/admin/system/config', { params }),
+
+    getFeatureFlags: () =>
+      apiClient.get('/admin/system/feature-flags'),
+
+    createFeatureFlag: (flagData: unknown) =>
+      apiClient.post('/admin/system/feature-flags', flagData),
+
+    toggleFeatureFlag: (id: string, enabled: boolean) =>
+      apiClient.put(`/admin/system/feature-flags/${id}`, { enabled }),
+
+    updateConfig: (key: string, value: string) =>
+      apiClient.put(`/admin/system/config/${key}`, { value }),
   },
 
   // Audit Logs
@@ -356,7 +374,7 @@ export const apiService = {
     }) =>
       apiClient.get('/admin/reports/financial', { params }),
 
-    exportReport: (reportType: string, format: 'csv' | 'pdf' | 'xlsx', params?: any) =>
+    exportReport: (reportType: string, format: 'csv' | 'pdf' | 'xlsx', params?: Record<string, unknown>) =>
       apiClient.get(`/admin/reports/export/${reportType}`, {
         params: { ...params, format },
         responseType: 'blob',
@@ -390,7 +408,7 @@ export const apiService = {
       lastName: string;
       role: 'support' | 'moderator' | 'manager' | 'admin' | 'super_admin';
       status: 'active' | 'suspended' | 'deactivated';
-      permissions: Record<string, any>;
+      permissions: Record<string, unknown>;
       ipWhitelist: string[];
     }>) =>
       apiClient.patch(`/admin/admins/${id}`, adminData),
@@ -406,6 +424,20 @@ export const apiService = {
 
     updateIPWhitelist: (id: string, ipWhitelist: string[]) =>
       apiClient.patch(`/admin/admins/${id}/ip-whitelist`, { ipWhitelist }),
+
+    // Enabler Management
+    getEnablers: () =>
+      apiClient.get('/admin/enablers'),
+
+    promoteEnabler: (id: string, newTier: string) =>
+      apiClient.put(`/admin/enablers/${id}/promote`, { tier: newTier }),
+
+    // Supplier Management
+    getSuppliers: () =>
+      apiClient.get('/admin/suppliers'),
+
+    promoteSupplier: (id: string, newTier: string) =>
+      apiClient.put(`/admin/suppliers/${id}/promote`, { tier: newTier }),
   },
 
   // Fraud Detection & Monitoring
@@ -439,6 +471,71 @@ export const apiService = {
     unblockUser: (userId: string) =>
       apiClient.post('/admin/fraud/unblock-user', { userId }),
   },
+
+  // KYC Management
+  kyc: {
+    getAll: (params?: {
+      tab?: string;
+      riskLevel?: string;
+      search?: string;
+      status?: string;
+    }) =>
+      apiClient.get('/admin/kyc', { params }),
+
+    bulkAction: (action: string, userIds: number[]) =>
+      apiClient.post('/admin/kyc/bulk-actions', { action, userIds }),
+
+    approve: (id: string) =>
+      apiClient.put(`/admin/kyc/${id}/approve`),
+
+    reject: (id: string, reason: string) =>
+      apiClient.put(`/admin/kyc/${id}/reject`, { reason }),
+
+    flag: (id: string, reason: string) =>
+      apiClient.put(`/admin/kyc/${id}/flag`, { reason }),
+
+    suspend: (id: string, reason: string) =>
+      apiClient.put(`/admin/kyc/${id}/suspend`, { reason }),
+
+    getDetails: (id: string) =>
+      apiClient.get(`/admin/kyc/${id}/details`),
+  },
+
+  // Compliance Management
+  compliance: {
+    getDashboard: (params?: { tab?: string }) =>
+      apiClient.get('/admin/compliance', { params }),
+
+    getGDPRRequests: () =>
+      apiClient.get('/admin/compliance/gdpr'),
+
+    getAMLAlerts: () =>
+      apiClient.get('/admin/compliance/aml'),
+
+    getComplianceReports: () =>
+      apiClient.get('/admin/compliance/reports'),
+
+    processGDPRRequest: (id: string, action: string, notes?: string) =>
+      apiClient.post(`/admin/compliance/gdpr/${id}/process`, { action, notes }),
+
+    resolveAMLAlert: (id: string, resolution: string, notes: string) =>
+      apiClient.post(`/admin/compliance/aml/${id}/resolve`, { resolution, notes }),
+
+    generateReport: (reportType: string) =>
+      apiClient.post('/admin/compliance/reports/generate', { type: reportType }),
+  },
+
+  // Enabler Management
+  enabler: {
+    getMetrics: () =>
+      apiClient.get('/enabler/metrics'),
+
+    getTasks: () =>
+      apiClient.get('/enabler/tasks'),
+
+    getRecentActivity: () =>
+      apiClient.get('/enabler/activity'),
+  },
 };
 
 // Export axios instance for advanced usage
@@ -459,5 +556,5 @@ export interface ApiResponse<T> {
 export interface ApiError {
   message: string;
   code?: string;
-  details?: any;
+  details?: unknown;
 }

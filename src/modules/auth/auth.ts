@@ -113,7 +113,8 @@ export class AuthService {
     const envelope = eventBus.createEventEnvelope<UserRegisteredEvent>('UserRegistered', {
       userId: user.id,
       email,
-      role
+      role,
+      registeredAt: new Date().toISOString()
     })
 
     eventBus.publish(envelope)
@@ -495,7 +496,9 @@ export class AuthService {
     // Emit UserSuspended event using helper function
     const envelope = eventBus.createEventEnvelope<UserSuspendedEvent>('UserSuspended', {
       userId,
-      reason
+      reason,
+      suspendedBy: adminId,
+      suspendedAt: new Date().toISOString()
     })
 
     eventBus.publish(envelope)

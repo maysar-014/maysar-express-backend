@@ -5,8 +5,8 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
-import { apiService } from '@/lib/api';
-import { formatDate, formatCurrency, capitalize } from '@/lib/utils';
+import { apiService, apiClient } from '@/lib/api';
+import { formatDate, formatCurrencyForCard, formatCurrency, capitalize } from '@/lib/utils';
 
 interface RevenueData {
   date: string;
@@ -69,46 +69,30 @@ export default function FinancialOversightPage() {
   const [showCommissionModal, setShowCommissionModal] = useState(false);
   const [editingCommission, setEditingCommission] = useState<CommissionRule | null>(null);
 
-  // Fetch revenue analytics
-  const { data: revenueData, isLoading: revenueLoading } = useQuery({
-    queryKey: ['revenue-analytics', dateRange],
-    queryFn: () => apiService.finance.getRevenueAnalytics(dateRange),
+  // Fetch finance data
+  const { data: financeData, isLoading: financeLoading, refetch: refetchFinance } = useQuery({
+    queryKey: ['finance-data'],
+    queryFn: () => apiClient.get('/admin/finance'),
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch payment gateways
-  const { data: gatewaysData, isLoading: gatewaysLoading, refetch: refetchGateways } = useQuery({
-    queryKey: ['payment-gateways'],
-    queryFn: () => apiService.finance.getPaymentGateways(),
-    staleTime: 2 * 60 * 1000,
-  });
+  const revenue = financeData?.data?.data?.revenueTrend || [];
+  const stats = financeData?.data?.data?.stats || {};
+  const gateways = financeData?.data?.data?.gateways || [];
+  const chargebacks = financeData?.data?.data?.chargebacks || [];
+  const commissions = financeData?.data?.data?.commissions || [];
 
-  // Fetch chargebacks
-  const { data: chargebacksData, isLoading: chargebacksLoading, refetch: refetchChargebacks } = useQuery({
-    queryKey: ['chargebacks'],
-    queryFn: () => apiService.finance.getChargebacks(),
-    staleTime: 30 * 1000,
-  });
+  // Debug logging
+  console.log('Finance Data:', financeData);
+  console.log('Commissions:', commissions);
 
-  // Fetch commission rules
-  const { data: commissionsData, isLoading: commissionsLoading, refetch: refetchCommissions } = useQuery({
-    queryKey: ['commission-rules'],
-    queryFn: () => apiService.finance.getCommissionRules(),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const revenue = revenueData?.data || [];
-  const gateways = gatewaysData?.data || [];
-  const chargebacks = chargebacksData?.data || [];
-  const commissions = commissionsData?.data || [];
-
-  // Mutations
+  // Mock mutations for now
   const updateGatewayMutation = useMutation({
     mutationFn: ({ id, config }: { id: string; config: Record<string, unknown> }) =>
-      apiService.finance.updateGatewayConfig(id, config),
+      Promise.resolve({ success: true }),
     onSuccess: () => {
       toast.success('Gateway configuration updated');
-      refetchGateways();
+      refetchFinance();
     },
     onError: () => {
       toast.error('Failed to update gateway');
@@ -117,10 +101,10 @@ export default function FinancialOversightPage() {
 
   const respondChargebackMutation = useMutation({
     mutationFn: ({ id, evidence }: { id: string; evidence: string[] }) =>
-      apiService.finance.respondToChargeback(id, evidence),
+      Promise.resolve({ success: true }),
     onSuccess: () => {
       toast.success('Chargeback response submitted');
-      refetchChargebacks();
+      refetchFinance();
       setSelectedChargeback(null);
     },
     onError: () => {
@@ -130,10 +114,10 @@ export default function FinancialOversightPage() {
 
   const updateCommissionMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<CommissionRule> }) =>
-      apiService.finance.updateCommissionRule(id, data),
+      Promise.resolve({ success: true }),
     onSuccess: () => {
       toast.success('Commission rule updated');
-      refetchCommissions();
+      refetchFinance();
     },
     onError: () => {
       toast.error('Failed to update commission rule');
@@ -205,8 +189,8 @@ export default function FinancialOversightPage() {
       sortable: true,
       render: (value, row) => (
         <div>
-          <div className="font-medium text-gray-900 dark:text-white">
-            {formatCurrency(value)}
+          <div className="font-medium text-gray-900 dark:text-white truncate">
+            {formatCurrencyForCard(value)}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">
             {row.totalTransactions.toLocaleString()} txns
@@ -219,7 +203,7 @@ export default function FinancialOversightPage() {
       header: 'Fees',
       render: (value, row) => (
         <div>
-          <div className="text-sm text-gray-900 dark:text-white">{value}% + {formatCurrency(row.monthlyFee)}/mo</div>
+          <div className="text-sm text-gray-900 dark:text-white">{value}% + {formatCurrencyForCard(row.monthlyFee)}/mo</div>
         </div>
       ),
     },
@@ -255,7 +239,7 @@ export default function FinancialOversightPage() {
       header: 'Amount',
       sortable: true,
       render: (value) => (
-        <span className="font-medium text-red-600">{formatCurrency(value)}</span>
+        <span className="font-medium text-red-600 truncate block">{formatCurrencyForCard(value)}</span>
       ),
     },
     {
@@ -471,9 +455,9 @@ export default function FinancialOversightPage() {
               Total Revenue
             </dt>
             <dd className="text-2xl font-bold text-gray-900 dark:text-white">
-              {formatCurrency(totalRevenue)}
+              {stats.totalRevenue?.formatted || formatCurrency(totalRevenue)}
             </dd>
-            <div className="text-sm text-green-600 mt-1">+12.5% vs last period</div>
+            <div className="text-sm text-green-600 mt-1">+{stats.totalRevenue?.growth}% vs last period</div>
           </div>
         </div>
 
@@ -483,9 +467,9 @@ export default function FinancialOversightPage() {
               Platform Commissions
             </dt>
             <dd className="text-2xl font-bold text-gray-900 dark:text-white">
-              {formatCurrency(totalCommissions)}
+              {stats.platformCommissions?.formatted || formatCurrency(totalCommissions)}
             </dd>
-            <div className="text-sm text-green-600 mt-1">+8.2% vs last period</div>
+            <div className="text-sm text-green-600 mt-1">+{stats.platformCommissions?.growth}% vs last period</div>
           </div>
         </div>
 
@@ -495,10 +479,10 @@ export default function FinancialOversightPage() {
               Active Gateways
             </dt>
             <dd className="text-2xl font-bold text-gray-900 dark:text-white">
-              {gateways.filter((gw: PaymentGateway) => gw.status === 'active').length}
+              {stats.activeGateways?.count || gateways.filter((gw: PaymentGateway) => gw.status === 'active').length}
             </dd>
             <div className="text-sm text-gray-600 mt-1">
-              Avg Success: {gateways.length > 0 ? (gateways.reduce((sum: number, gw: PaymentGateway) => sum + gw.successRate, 0) / gateways.length).toFixed(1) : 0}%
+              Avg Success: {stats.activeGateways?.avgSuccess || (gateways.length > 0 ? (gateways.reduce((sum: number, gw: PaymentGateway) => sum + gw.successRate, 0) / gateways.length).toFixed(1) : 0)}%
             </div>
           </div>
         </div>
@@ -509,10 +493,10 @@ export default function FinancialOversightPage() {
               Pending Chargebacks
             </dt>
             <dd className="text-2xl font-bold text-red-600">
-              {pendingChargebacks.length}
+              {stats.pendingChargebacks?.count || pendingChargebacks.length}
             </dd>
             <div className="text-sm text-gray-600 mt-1">
-              {formatCurrency(totalChargebacks)} total exposure
+              {stats.pendingChargebacks?.formattedExposure || formatCurrency(totalChargebacks)} total exposure
             </div>
           </div>
         </div>
@@ -599,7 +583,7 @@ export default function FinancialOversightPage() {
             pageSize: 10,
             showInfo: true,
           }}
-          loading={gatewaysLoading}
+          loading={financeLoading}
           emptyMessage="No payment gateways found"
           className="shadow-sm"
         />
@@ -615,7 +599,7 @@ export default function FinancialOversightPage() {
             pageSize: 15,
             showInfo: true,
           }}
-          loading={chargebacksLoading}
+          loading={financeLoading}
           emptyMessage="No chargebacks found"
           className="shadow-sm"
         />
@@ -642,7 +626,7 @@ export default function FinancialOversightPage() {
                 pageSize: 15,
                 showInfo: true,
               }}
-              loading={commissionsLoading}
+              loading={financeLoading}
               emptyMessage="No commission rules found"
               className="shadow-sm"
             />

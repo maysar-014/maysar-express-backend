@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "start:admin": "node admin-server.js",
+    "dev:admin": "nodemon admin-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

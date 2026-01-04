@@ -1,4 +1,8 @@
+'use client';
+
 import { ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { getSeller, hasPermission, TIER_INFO } from '@/lib/permissions';
 
 interface SellerLayoutProps {
@@ -8,6 +12,9 @@ interface SellerLayoutProps {
 export default function SellerLayout({ children }: SellerLayoutProps) {
   const seller = getSeller();
   const tierInfo = TIER_INFO[seller.tier];
+  const pathname = usePathname();
+
+  const isActive = (path: string) => pathname === path;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -49,126 +56,174 @@ export default function SellerLayout({ children }: SellerLayoutProps) {
             </h2>
             <ul className="space-y-2">
               <li>
-                <a
+                <Link
                   href="/seller/dashboard"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  className={`block px-3 py-2 text-sm rounded-md ${
+                    isActive('/seller/dashboard')
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
                 >
                   Dashboard
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   href="/seller/products"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  className={`block px-3 py-2 text-sm rounded-md ${
+                    isActive('/seller/products')
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
                 >
                   Product Catalog
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   href="/seller/inventory"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  className={`block px-3 py-2 text-sm rounded-md ${
+                    isActive('/seller/inventory')
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
                 >
                   Inventory Management
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   href="/seller/orders"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  className={`block px-3 py-2 text-sm rounded-md ${
+                    isActive('/seller/orders')
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
                 >
                   Customer Orders
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   href="/seller/customers"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  className={`block px-3 py-2 text-sm rounded-md ${
+                    isActive('/seller/customers')
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
                 >
                   Customer Management
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   href="/seller/reviews"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  className={`block px-3 py-2 text-sm rounded-md ${
+                    isActive('/seller/reviews')
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
                 >
                   Reviews & Ratings
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   href="/seller/shipping"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  className={`block px-3 py-2 text-sm rounded-md ${
+                    isActive('/seller/shipping')
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
                 >
                   Shipping & Fulfillment
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   href="/seller/sales-analytics"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  className={`block px-3 py-2 text-sm rounded-md ${
+                    isActive('/seller/sales-analytics')
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
                 >
                   Sales Analytics
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="/seller/pricing"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
-                >
-                  Pricing & Discounts
-                </a>
-              </li>
-              <li>
-                <a
+                <Link
                   href="/seller/enablers"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  className={`block px-3 py-2 text-sm rounded-md ${
+                    isActive('/seller/enablers')
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
                 >
                   Request Enablers
-                </a>
+                </Link>
               </li>
               {hasPermission(seller.tier, 'promotions') && (
                 <li>
-                  <a
+                  <Link
                     href="/seller/promotions"
-                    className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                    className={`block px-3 py-2 text-sm rounded-md ${
+                      isActive('/seller/promotions')
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
                   >
                     Promotions
-                  </a>
+                  </Link>
                 </li>
               )}
               <li>
-                <a
+                <Link
                   href="/seller/payments"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  className={`block px-3 py-2 text-sm rounded-md ${
+                    isActive('/seller/payments')
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
                 >
                   Payments & Payouts
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   href="/seller/kyc"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  className={`block px-3 py-2 text-sm rounded-md ${
+                    isActive('/seller/kyc')
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
                 >
                   KYC Verification
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   href="/seller/settings"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  className={`block px-3 py-2 text-sm rounded-md ${
+                    isActive('/seller/settings')
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
                 >
                   Settings
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   href="/seller/support"
-                  className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  className={`block px-3 py-2 text-sm rounded-md ${
+                    isActive('/seller/support')
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
                 >
                   Support
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

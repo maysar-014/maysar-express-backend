@@ -14,6 +14,46 @@ export function formatCurrency(amount: number, currency = 'TZS'): string {
   }).format(amount);
 }
 
+// Format currency with responsive display (compact for large numbers)
+export function formatCurrencyCompact(amount: number, currency = 'TZS'): string {
+  if (amount >= 1000000) {
+    return new Intl.NumberFormat('en-TZ', {
+      style: 'currency',
+      currency,
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(amount);
+  }
+  return formatCurrency(amount, currency);
+}
+
+// Format currency for cards (responsive based on amount)
+export function formatCurrencyForCard(amount: number, currency = 'TZS'): string {
+  if (amount >= 10000000) { // 10M+
+    return new Intl.NumberFormat('en-TZ', {
+      style: 'currency',
+      currency,
+      notation: 'compact',
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } else if (amount >= 1000000) { // 1M+
+    return new Intl.NumberFormat('en-TZ', {
+      style: 'currency',
+      currency,
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(amount);
+  } else if (amount >= 100000) { // 100K+
+    return new Intl.NumberFormat('en-TZ', {
+      style: 'currency',
+      currency,
+      notation: 'compact',
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }
+  return formatCurrency(amount, currency);
+}
+
 // Format numbers with commas
 export function formatNumber(num: number): string {
   return new Intl.NumberFormat('en-US').format(num);
@@ -21,11 +61,15 @@ export function formatNumber(num: number): string {
 
 // Format dates
 export function formatDate(date: string | Date): string {
+  if (!date) return 'Never';
+  const dateObj = new Date(date);
+  if (isNaN(dateObj.getTime())) return 'Invalid Date';
+  
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-  }).format(new Date(date));
+  }).format(dateObj);
 }
 
 // Format relative time
@@ -81,6 +125,7 @@ export function isEmpty(value: any): boolean {
 
 // Capitalize first letter
 export function capitalize(str: string): string {
+  if (!str) return '';
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 

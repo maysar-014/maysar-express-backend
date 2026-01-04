@@ -7,7 +7,259 @@ const prisma = new PrismaClient();
 
 app.use(express.json());
 
-// Initialize supplier payment handlers
+// ADMIN SAGA EVENT HANDLERS
+
+// Transaction Monitoring Saga Events
+eventBus.subscribe('TransactionDetailsRequested', async (event) => {
+  const { transactionId, adminId, includeRelatedTransactions } = event.payload;
+  
+  try {
+    const transaction = await prisma.transaction.findUnique({
+      where: { id: transactionId },
+      include: {
+        sender: true,
+        receiver: true,
+        order: true
+      }
+    });
+    
+    let relatedTransactions = [];
+    if (includeRelatedTransactions) {
+      relatedTransactions = await prisma.transaction.findMany({
+        where: {
+          OR: [
+            { senderId: transaction.senderId },
+            { receiverId: transaction.receiverId }
+          ]
+        },
+        take: 10
+      });
+    }
+    
+    await eventBus.publish('TransactionDetailsFetched', {
+      transactionId, transaction, relatedTransactions, adminId,
+      correlationId: event.correlationId
+    });
+  } catch (error) {
+    await eventBus.publish('TransactionDetailsFetchFailed', {
+      transactionId, error: error.message,
+      correlationId: event.correlationId
+    });
+  }
+});
+
+eventBus.subscribe('FraudAnalysisRequested', async (event) => {
+  const { transactionId, analysisType, adminId } = event.payload;
+  
+  try {
+    const transaction = await prisma.transaction.findUnique({
+      where: { id: transactionId }
+    });
+    
+    const fraudAnalysis = {
+      velocityCheck: transaction.amount > 10000 ? 'HIGH_RISK' : 'LOW_RISK',
+      patternAnalysis: 'NORMAL',
+      geolocationCheck: 'VERIFIED',
+      deviceFingerprint: 'TRUSTED',
+      riskScore: transaction.amount > 50000 ? 85 : 25,
+      recommendation: transaction.amount > 50000 ? 'MANUAL_REVIEW' : 'APPROVE'
+    };
+    
+    await eventBus.publish('FraudAnalysisCompleted', {
+      transactionId, fraudAnalysis, adminId,
+      correlationId: event.correlationId
+    });
+  } catch (error) {
+    await eventBus.publish('FraudAnalysisFailed', {
+      transactionId, error: error.message,
+      correlationId: event.correlationId
+    });
+  }
+});
+
+eventBus.subscribe('TransactionFlaggedSuspicious', async (event) => {
+  const { transactionId, adminId, flagType, reason } = event.payload;
+  
+  try {
+    await prisma.transaction.update({
+      where: { id: transactionId },
+      data: {
+        status: 'FLAGGED',
+        flaggedAt: new Date(),
+        flaggedBy: adminId,
+        flagReason: reason,
+        flagType: flagType
+      }
+    });
+    
+    await eventBus.publish('TransactionFlagged', {
+      transactionId, adminId, flagType, reason,
+      correlationId: event.correlationId
+    });
+  } catch (error) {
+    await eventBus.publish('TransactionFlaggingFailed', {
+      transactionId, error: error.message,
+      correlationId: event.correlationId
+    });
+  }
+});
+
+eventBus.subscribe('TransactionBlocked', async (event) => {
+  const { transactionId, adminId, reason } = event.payload;
+  
+  try {
+    await prisma.transaction.update({
+      where: { id: transactionId },
+      data: {
+        status: 'BLOCKED',
+        blockedAt: new Date(),
+        blockedBy: adminId,
+        blockReason: reason
+      }
+    });
+    
+    await eventBus.publish('TransactionBlocked', {
+      transactionId, adminId, reason,
+      correlationId: event.correlationId
+    });
+  } catch (error) {
+    await eventBus.publish('TransactionBlockingFailed', {
+      transactionId, error: error.message,
+      correlationId: event.correlationId
+    });
+  }
+});
+
+eventBus.subscribe('TransactionRefundRequested', async (event) => {
+  const { transactionId, adminId, refundAmount } = event.payload;
+  
+  try {
+    const refundId = `REFUND-${Date.now()}`;
+    
+    await prisma.transaction.create({
+      data: {
+        id: refundId,
+        senderId: 'platform',
+        receiverId: event.payload.originalSenderId,
+        amount: refundAmount,
+        currency: 'TZS',
+        transactionType: 'REFUND',
+        status: 'COMPLETED',
+        processedAt: new Date(),
+        relatedTransactionId: transactionId
+      }
+    });
+    
+    await eventBus.publish('TransactionRefundProcessed', {
+      transactionId, refundId, refundAmount, adminId,
+      correlationId: event.correlationId
+    });
+  } catch (error) {
+    await eventBus.publish('TransactionRefundFailed', {
+      transactionId, error: error.message,
+      correlationId: event.correlationId
+    });
+  }
+});
+
+// Dispute Resolution Saga Events
+eventBus.subscribe('DisputeEvidenceGatheringRequested', async (event) => {
+  const { disputeId, adminId, includeOrderHistory, includePaymentHistory } = event.payload;
+  
+  try {
+    const evidence = {
+      orderHistory: includeOrderHistory ? await getOrderHistory(disputeId) : null,
+      paymentHistory: includePaymentHistory ? await getPaymentHistory(disputeId) : null,
+      communicationHistory: await getCommunicationHistory(disputeId),
+      documents: await getDisputeDocuments(disputeId)
+    };
+    
+    await eventBus.publish('DisputeEvidenceGathered', {
+      disputeId, evidence, adminId,
+      correlationId: event.correlationId
+    });
+  } catch (error) {
+    await eventBus.publish('DisputeEvidenceGatheringFailed', {
+      disputeId, error: error.message,
+      correlationId: event.correlationId
+    });
+  }
+});
+
+eventBus.subscribe('DisputeFinancialAdjustmentRequested', async (event) => {
+  const { disputeId, refundAmount, compensationAmount, adminId } = event.payload;
+  
+  try {
+    const adjustments = [];
+    
+    if (refundAmount > 0) {
+      const refundId = `REFUND-${Date.now()}`;
+      await prisma.transaction.create({
+        data: {
+          id: refundId,
+          senderId: 'platform',
+          receiverId: event.payload.buyerId,
+          amount: refundAmount,
+          currency: 'TZS',
+          transactionType: 'DISPUTE_REFUND',
+          status: 'COMPLETED',
+          processedAt: new Date()
+        }
+      });
+      adjustments.push({ type: 'REFUND', id: refundId, amount: refundAmount });
+    }
+    
+    if (compensationAmount > 0) {
+      const compensationId = `COMP-${Date.now()}`;
+      await prisma.transaction.create({
+        data: {
+          id: compensationId,
+          senderId: 'platform',
+          receiverId: event.payload.sellerId,
+          amount: compensationAmount,
+          currency: 'TZS',
+          transactionType: 'DISPUTE_COMPENSATION',
+          status: 'COMPLETED',
+          processedAt: new Date()
+        }
+      });
+      adjustments.push({ type: 'COMPENSATION', id: compensationId, amount: compensationAmount });
+    }
+    
+    await eventBus.publish('DisputeFinancialAdjustmentProcessed', {
+      disputeId, adjustments, adminId,
+      correlationId: event.correlationId
+    });
+  } catch (error) {
+    await eventBus.publish('DisputeFinancialAdjustmentFailed', {
+      disputeId, error: error.message,
+      correlationId: event.correlationId
+    });
+  }
+});
+
+// Helper functions
+async function getOrderHistory(disputeId) {
+  // Implementation to fetch order history
+  return [];
+}
+
+async function getPaymentHistory(disputeId) {
+  // Implementation to fetch payment history
+  return [];
+}
+
+async function getCommunicationHistory(disputeId) {
+  // Implementation to fetch communication history
+  return [];
+}
+
+async function getDisputeDocuments(disputeId) {
+  // Implementation to fetch dispute documents
+  return [];
+}
+
+// Initialize existing handlers
 initializeSupplierPaymentHandlers();
 initializeSellerSagaHandlers();
 initializeEnablerSagaHandlers();
@@ -49,7 +301,7 @@ function initializeEnablerSagaHandlers() {
           senderId: 'platform',
           receiverId: enablerId,
           amount: paymentAmount,
-          currency: 'USD',
+          currency: 'TZS',
           status: 'COMPLETED',
           processedAt: new Date()
         }
@@ -69,7 +321,7 @@ function initializeEnablerSagaHandlers() {
           senderId: 'platform',
           receiverId: enablerId,
           amount: commission,
-          currency: 'USD',
+          currency: 'TZS',
           status: 'COMPLETED',
           processedAt: new Date()
         }
@@ -89,7 +341,7 @@ function initializeEnablerSagaHandlers() {
         senderId: 'platform',
         receiverId: enablerId,
         amount: onboardingFee,
-        currency: 'USD',
+        currency: 'TZS',
         status: 'COMPLETED',
         processedAt: new Date()
       }
@@ -132,7 +384,7 @@ function initializeSellerSagaHandlers() {
         senderId: 'platform',
         receiverId: sellerId,
         amount: 1000,
-        currency: 'USD',
+        currency: 'TZS',
         status: 'COMPLETED',
         processedAt: new Date()
       }
@@ -212,6 +464,75 @@ function initializeSupplierPaymentHandlers() {
 async function validateSupplierPayment(supplierId, bulkOrderId, amount) {
   return amount > 0; // Simplified validation
 }
+
+// ADMIN APIs
+app.get('/api/admin/transactions', async (req, res) => {
+  const { status, flagged, page = 1, limit = 20 } = req.query;
+  
+  try {
+    const where = {};
+    if (status) where.status = status;
+    if (flagged === 'true') where.flaggedAt = { not: null };
+    
+    const transactions = await prisma.transaction.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: parseInt(limit),
+      include: {
+        sender: { select: { id: true, email: true, role: true } },
+        receiver: { select: { id: true, email: true, role: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    res.json({ success: true, transactions });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/admin/transactions/:id/flag', async (req, res) => {
+  const { id } = req.params;
+  const { flagType, reason, adminId } = req.body;
+  
+  try {
+    await prisma.transaction.update({
+      where: { id },
+      data: {
+        status: 'FLAGGED',
+        flaggedAt: new Date(),
+        flaggedBy: adminId,
+        flagReason: reason,
+        flagType: flagType
+      }
+    });
+    
+    await eventBus.publish('AdminTransactionFlagged', {
+      transactionId: id, flagType, reason, adminId
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/admin/disputes', async (req, res) => {
+  const { orderId, buyerId, sellerId, reason, adminId } = req.body;
+  
+  try {
+    const disputeId = `DISPUTE-${Date.now()}`;
+    
+    // Create dispute record (would be in a disputes table)
+    await eventBus.publish('AdminDisputeCreated', {
+      disputeId, orderId, buyerId, sellerId, reason, adminId
+    });
+    
+    res.json({ success: true, disputeId });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
 
 // Transaction Monitoring - TransactionMonitoringSaga Integration
 app.post('/api/payment/process', async (req, res) => {
