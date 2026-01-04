@@ -1,21 +1,35 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { enablerApi } from '@/lib/api';
 
 export default function EnablerProfilePage() {
-  const [profile, setProfile] = useState({
-    shopName: 'Sarah\'s Electronics Hub',
-    shopDescription: 'Premium electronics and gadgets with expert support',
-    businessType: 'Electronics & Technology',
-    location: 'Downtown Business District',
-    contactPhone: '+1 (555) 123-4567',
-    contactEmail: 'sarah.shop@maysar.com',
-    operatingHours: '9:00 AM - 8:00 PM',
-    specialties: ['Smartphones', 'Laptops', 'Gaming Equipment'],
-    certifications: ['Electronics Specialist', 'Customer Service Excellence']
+  const [isEditing, setIsEditing] = useState(false);
+
+  const { data: profileData, isLoading, error } = useQuery({
+    queryKey: ['enabler-profile'],
+    queryFn: () => enablerApi.getProfile()
   });
 
-  const [isEditing, setIsEditing] = useState(false);
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-600">Error loading profile data</p>
+      </div>
+    );
+  }
+
+  const enabler = profileData?.data?.enabler || {};
+  const tierInfo = profileData?.data?.tierInfo || {};
 
   const handleSave = () => {
     setIsEditing(false);
@@ -24,16 +38,16 @@ export default function EnablerProfilePage() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Shop Profile</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Enabler Profile</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Manage your shop identification details for product listings
+          Manage your enabler profile and tier information
         </p>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Shop Information</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Personal Information</h2>
             <div className="flex space-x-3">
               <button
                 onClick={() => isEditing ? handleSave() : setIsEditing(true)}
@@ -42,7 +56,7 @@ export default function EnablerProfilePage() {
                 {isEditing ? 'Save Changes' : 'Edit Profile'}
               </button>
               <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
-                Create New Shop
+                Update Tier
               </button>
             </div>
           </div>
@@ -52,100 +66,154 @@ export default function EnablerProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Shop Name
+                Full Name
               </label>
               {isEditing ? (
                 <input
                   type="text"
-                  value={profile.shopName}
-                  onChange={(e) => setProfile({...profile, shopName: e.target.value})}
+                  value={enabler.name || ''}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               ) : (
-                <p className="text-gray-900 dark:text-white">{profile.shopName}</p>
+                <p className="text-gray-900 dark:text-white">{enabler.name || 'N/A'}</p>
               )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Business Type
-              </label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={profile.businessType}
-                  onChange={(e) => setProfile({...profile, businessType: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              ) : (
-                <p className="text-gray-900 dark:text-white">{profile.businessType}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Contact Phone
-              </label>
-              {isEditing ? (
-                <input
-                  type="tel"
-                  value={profile.contactPhone}
-                  onChange={(e) => setProfile({...profile, contactPhone: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              ) : (
-                <p className="text-gray-900 dark:text-white">{profile.contactPhone}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Contact Email
+                Email Address
               </label>
               {isEditing ? (
                 <input
                   type="email"
-                  value={profile.contactEmail}
-                  onChange={(e) => setProfile({...profile, contactEmail: e.target.value})}
+                  value={enabler.email || ''}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               ) : (
-                <p className="text-gray-900 dark:text-white">{profile.contactEmail}</p>
+                <p className="text-gray-900 dark:text-white">{enabler.email || 'N/A'}</p>
               )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Phone Number
+              </label>
+              {isEditing ? (
+                <input
+                  type="tel"
+                  value={enabler.phone || ''}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              ) : (
+                <p className="text-gray-900 dark:text-white">{enabler.phone || 'N/A'}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Region
+              </label>
+              <p className="text-gray-900 dark:text-white">{enabler.region || 'N/A'}</p>
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Shop Description
+              Address
             </label>
             {isEditing ? (
               <textarea
-                value={profile.shopDescription}
-                onChange={(e) => setProfile({...profile, shopDescription: e.target.value})}
+                value={enabler.address || ''}
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             ) : (
-              <p className="text-gray-900 dark:text-white">{profile.shopDescription}</p>
+              <p className="text-gray-900 dark:text-white">{enabler.address || 'N/A'}</p>
             )}
           </div>
 
+          {/* Tier Information */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Tier Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Current Tier
+                </label>
+                <div className="flex items-center space-x-3">
+                  <span className={`px-4 py-2 rounded-lg font-medium ${tierInfo.color || 'text-gray-600'} bg-opacity-10 border border-current`}>
+                    {tierInfo.name || enabler.tier || 'N/A'}
+                  </span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {tierInfo.commission || 0}% commission rate
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Status
+                </label>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  enabler.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' :
+                  enabler.status === 'inactive' ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300' :
+                  'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
+                }`}>
+                  {enabler.status || 'Unknown'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Languages */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Specialties
+              Languages
             </label>
             <div className="flex flex-wrap gap-2">
-              {profile.specialties.map((specialty, index) => (
+              {(enabler.languages || []).map((language, index) => (
                 <span
                   key={index}
                   className="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 rounded-full text-sm"
+                >
+                  {language}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Specializations */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Specializations
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {(enabler.specializations || []).map((specialty, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300 rounded-full text-sm"
                 >
                   {specialty}
                 </span>
               ))}
             </div>
           </div>
+
+          {/* Tier Benefits */}
+          {tierInfo.benefits && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Tier Benefits
+              </label>
+              <ul className="space-y-2">
+                {tierInfo.benefits.map((benefit, index) => (
+                  <li key={index} className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-gray-900 dark:text-white">{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>

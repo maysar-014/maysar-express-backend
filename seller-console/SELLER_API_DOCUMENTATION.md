@@ -12,25 +12,24 @@ The Seller Console API provides comprehensive endpoints for managing e-commerce 
 
 All API responses follow a consistent format:
 
-### Success Response
-```json
+### Success Response Schema
+```typescript
 {
-  "success": true,
-  "data": {
-    // Response data here
-  }
+  success: boolean;
+  data: T; // Response data type varies by endpoint
 }
 ```
 
-### Error Response
-```json
+### Error Response Schema
+```typescript
 {
-  "success": false,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Error description",
-    "details": {}
-  }
+  success: boolean;
+  error: {
+    code: string;
+    message: string;
+    details?: Record<string, any>;
+    timestamp: string; // ISO 8601
+  };
 }
 ```
 
@@ -56,56 +55,50 @@ GET /seller/dashboard
 
 **Description**: Retrieve comprehensive dashboard statistics and recent activity.
 
-**Response**:
-```json
+**Response Schema**:
+```typescript
 {
-  "success": true,
-  "data": {
-    "stats": {
-      "totalProducts": 156,
-      "activeProducts": 142,
-      "totalOrders": 1247,
-      "pendingOrders": 23,
-      "totalRevenue": 245000,
-      "monthlyRevenue": 18500,
-      "monthlyGrowth": "+12.4%",
-      "totalCustomers": 892,
-      "activeCustomers": 456,
-      "averageRating": 4.7,
-      "totalReviews": 234,
-      "conversionRate": 3.2,
-      "conversionGrowth": "+0.8%",
-      "fulfillmentRate": 98.5,
-      "returnsRate": 2.1,
-      "customerRating": 4.7
-    },
-    "recentOrders": [
-      {
-        "id": "ORD-001",
-        "customer": "John Doe",
-        "amount": 1250,
-        "status": "pending",
-        "date": "2024-01-15T10:30:00Z"
-      }
-    ],
-    "topProducts": [
-      {
-        "id": "PROD-001",
-        "name": "Wireless Headphones",
-        "sales": 45,
-        "revenue": 22500
-      }
-    ],
-    "lowStockProducts": [
-      {
-        "id": "PROD-003",
-        "name": "USB-C Charging Cable",
-        "category": "Accessories",
-        "currentStock": 0,
-        "minStock": 15
-      }
-    ]
-  }
+  success: boolean;
+  data: {
+    stats: {
+      totalProducts: number;
+      activeProducts: number;
+      totalOrders: number;
+      pendingOrders: number;
+      totalRevenue: number;
+      monthlyRevenue: number;
+      monthlyGrowth: string;
+      totalCustomers: number;
+      activeCustomers: number;
+      averageRating: number;
+      totalReviews: number;
+      conversionRate: number;
+      conversionGrowth: string;
+      fulfillmentRate: number;
+      returnsRate: number;
+      customerRating: number;
+    };
+    recentOrders: Array<{
+      id: string;
+      customer: string;
+      amount: number;
+      status: string;
+      date: string; // ISO 8601
+    }>;
+    topProducts: Array<{
+      id: string;
+      name: string;
+      sales: number;
+      revenue: number;
+    }>;
+    lowStockProducts: Array<{
+      id: string;
+      name: string;
+      category: string;
+      currentStock: number;
+      minStock: number;
+    }>;
+  };
 }
 ```
 
@@ -118,28 +111,26 @@ GET /seller/products
 
 **Description**: Retrieve all products with details including stock, pricing, and ratings.
 
-**Response**:
-```json
+**Response Schema**:
+```typescript
 {
-  "success": true,
-  "data": {
-    "products": [
-      {
-        "id": "PROD-001",
-        "name": "Wireless Bluetooth Headphones",
-        "sku": "WBH-001",
-        "category": "Electronics",
-        "price": 500,
-        "stock": 25,
-        "status": "active",
-        "rating": 4.8,
-        "reviews": 45,
-        "image": "/images/headphones.jpg",
-        "createdAt": "2024-01-10T08:00:00Z"
-      }
-    ],
-    "categories": ["Electronics", "Accessories", "Home & Garden", "Fashion", "Sports"]
-  }
+  success: boolean;
+  data: {
+    products: Array<{
+      id: string;
+      name: string;
+      sku: string;
+      category: string;
+      price: number;
+      stock: number;
+      status: 'active' | 'inactive' | 'out_of_stock';
+      rating: number;
+      reviews: number;
+      image: string;
+      createdAt: string; // ISO 8601
+    }>;
+    categories: string[];
+  };
 }
 ```
 
@@ -157,56 +148,39 @@ GET /seller/inventory
 
 **Description**: Retrieve detailed inventory information including stock levels, reservations, and movements.
 
-**Response**:
-```json
+**Response Schema**:
+```typescript
 {
-  "success": true,
-  "data": {
-    "inventory": [
-      {
-        "id": "INV-001",
-        "productId": "PROD-001",
-        "productName": "Wireless Bluetooth Headphones",
-        "sku": "WBH-001",
-        "currentStock": 25,
-        "reservedStock": 5,
-        "availableStock": 20,
-        "reorderLevel": 10,
-        "status": "in_stock",
-        "lastUpdated": "2024-01-15T10:30:00Z"
-      }
-    ],
-    "lowStockAlerts": [
-      {
-        "productId": "PROD-003",
-        "productName": "USB-C Charging Cable",
-        "currentStock": 0,
-        "reorderLevel": 15
-      }
-    ],
-    "stockMovements": [
-      {
-        "id": "MOV-001",
-        "productName": "Wireless Bluetooth Headphones",
-        "type": "adjustment",
-        "quantity": 25,
-        "date": "2024-01-15T10:30:00Z"
-      }
-    ]
-  }
+  success: boolean;
+  data: {
+    inventory: Array<{
+      id: string;
+      productId: string;
+      productName: string;
+      sku: string;
+      currentStock: number;
+      reservedStock: number;
+      availableStock: number;
+      reorderLevel: number;
+      status: 'in_stock' | 'low_stock' | 'out_of_stock';
+      lastUpdated: string; // ISO 8601
+    }>;
+    lowStockAlerts: Array<{
+      productId: string;
+      productName: string;
+      currentStock: number;
+      reorderLevel: number;
+    }>;
+    stockMovements: Array<{
+      id: string;
+      productName: string;
+      type: 'sale' | 'adjustment' | 'restock' | 'return';
+      quantity: number;
+      date: string; // ISO 8601
+    }>;
+  };
 }
 ```
-
-**Inventory Status Values**:
-- `in_stock`: Product has available inventory
-- `low_stock`: Product is below reorder level
-- `out_of_stock`: Product has zero inventory
-
-**Stock Movement Types**:
-- `sale`: Stock reduced due to order
-- `adjustment`: Manual stock adjustment
-- `restock`: Stock added through purchase
-- `return`: Stock added due to return
 
 ### 4. Orders API
 
@@ -217,54 +191,40 @@ GET /seller/orders
 
 **Description**: Retrieve comprehensive order information including customer details, items, and status.
 
-**Response**:
-```json
+**Response Schema**:
+```typescript
 {
-  "success": true,
-  "data": {
-    "orders": [
-      {
-        "id": "ORD-001",
-        "orderNumber": "MYS-2024-001",
-        "customer": {
-          "name": "John Doe",
-          "email": "john@example.com",
-          "phone": "+255123456789"
-        },
-        "items": [
-          {
-            "productId": "PROD-001",
-            "productName": "Wireless Bluetooth Headphones",
-            "quantity": 2,
-            "price": 500,
-            "total": 1000
-          }
-        ],
-        "totalAmount": 1250,
-        "status": "pending",
-        "paymentStatus": "paid",
-        "shippingAddress": "Dar es Salaam, Tanzania",
-        "orderDate": "2024-01-15T10:30:00Z",
-        "estimatedDelivery": "2024-01-18T00:00:00Z"
-      }
-    ]
-  }
+  success: boolean;
+  data: {
+    orders: Array<{
+      id: string;
+      orderNumber: string;
+      customer: {
+        name: string;
+        email: string;
+        phone: string;
+      };
+      items: Array<{
+        productId: string;
+        productName: string;
+        quantity: number;
+        price: number;
+        total: number;
+      }>;
+      totalAmount: number;
+      status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+      paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+      shippingAddress: string;
+      orderDate: string; // ISO 8601
+      estimatedDelivery?: string; // ISO 8601
+      shippedDate?: string; // ISO 8601
+      deliveredDate?: string; // ISO 8601
+      cancelledDate?: string; // ISO 8601
+      trackingNumber?: string;
+    }>;
+  };
 }
 ```
-
-**Order Status Values**:
-- `pending`: Order received, awaiting processing
-- `confirmed`: Order confirmed and being prepared
-- `processing`: Order is being processed
-- `shipped`: Order has been shipped
-- `delivered`: Order successfully delivered
-- `cancelled`: Order was cancelled
-
-**Payment Status Values**:
-- `pending`: Payment not yet processed
-- `paid`: Payment completed successfully
-- `failed`: Payment failed
-- `refunded`: Payment was refunded
 
 ### 5. Customers API
 
@@ -275,49 +235,37 @@ GET /seller/customers
 
 **Description**: Retrieve customer information including purchase history and analytics.
 
-**Response**:
-```json
+**Response Schema**:
+```typescript
 {
-  "success": true,
-  "data": {
-    "customers": [
-      {
-        "id": "CUST-001",
-        "name": "John Doe",
-        "email": "john@example.com",
-        "phone": "+255123456789",
-        "location": "Dar es Salaam, Tanzania",
-        "totalOrders": 12,
-        "totalSpent": 15600,
-        "averageOrderValue": 1300,
-        "lastOrderDate": "2024-01-15T10:30:00Z",
-        "status": "active",
-        "joinedDate": "2023-08-15T00:00:00Z",
-        "customerType": "premium",
-        "notes": "Frequent buyer, prefers express shipping"
-      }
-    ],
-    "stats": {
-      "totalCustomers": 8,
-      "activeCustomers": 7,
-      "newThisMonth": 2,
-      "averageSatisfaction": 4.7,
-      "totalRevenue": 66000,
-      "averageLifetimeValue": 8250
-    }
-  }
+  success: boolean;
+  data: {
+    customers: Array<{
+      id: string;
+      name: string;
+      email: string;
+      phone: string;
+      location: string;
+      totalOrders: number;
+      totalSpent: number;
+      averageOrderValue: number;
+      lastOrderDate: string; // ISO 8601
+      status: 'active' | 'inactive';
+      joinedDate: string; // ISO 8601
+      customerType: 'new' | 'regular' | 'premium' | 'vip';
+      notes?: string;
+    }>;
+    stats: {
+      totalCustomers: number;
+      activeCustomers: number;
+      newThisMonth: number;
+      averageSatisfaction: number;
+      totalRevenue: number;
+      averageLifetimeValue: number;
+    };
+  };
 }
 ```
-
-**Customer Types**:
-- `new`: Recently registered customer
-- `regular`: Standard customer
-- `premium`: High-value customer
-- `vip`: Top-tier customer
-
-**Customer Status**:
-- `active`: Customer has recent activity
-- `inactive`: Customer hasn't ordered recently
 
 ### 6. Reviews API
 
@@ -328,42 +276,35 @@ GET /seller/reviews
 
 **Description**: Retrieve customer reviews and ratings for products.
 
-**Response**:
-```json
+**Response Schema**:
+```typescript
 {
-  "success": true,
-  "data": {
-    "reviews": [
-      {
-        "id": "REV-001",
-        "productId": "PROD-001",
-        "productName": "Wireless Bluetooth Headphones",
-        "customer": "John Doe",
-        "rating": 5,
-        "comment": "Excellent sound quality and comfortable to wear!",
-        "date": "2024-01-14T16:30:00Z",
-        "status": "published"
-      }
-    ],
-    "stats": {
-      "totalReviews": 234,
-      "averageRating": 4.7,
-      "ratingDistribution": {
-        "5": 156,
-        "4": 45,
-        "3": 23,
-        "2": 8,
-        "1": 2
-      }
-    }
-  }
+  success: boolean;
+  data: {
+    reviews: Array<{
+      id: string;
+      productId: string;
+      productName: string;
+      customer: string;
+      rating: number; // 1-5
+      comment: string;
+      date: string; // ISO 8601
+      status: 'published' | 'pending' | 'rejected';
+    }>;
+    stats: {
+      totalReviews: number;
+      averageRating: number;
+      ratingDistribution: {
+        1: number;
+        2: number;
+        3: number;
+        4: number;
+        5: number;
+      };
+    };
+  };
 }
 ```
-
-**Review Status Values**:
-- `published`: Review is visible to customers
-- `pending`: Review awaiting moderation
-- `rejected`: Review was rejected
 
 ### 7. Analytics API
 
@@ -374,37 +315,33 @@ GET /seller/analytics
 
 **Description**: Retrieve comprehensive sales analytics and customer insights.
 
-**Response**:
-```json
+**Response Schema**:
+```typescript
 {
-  "success": true,
-  "data": {
-    "salesData": [
-      {
-        "date": "2024-01-01",
-        "sales": 12500,
-        "orders": 25
-      }
-    ],
-    "topProducts": [
-      {
-        "name": "Wireless Headphones",
-        "sales": 45,
-        "revenue": 22500
-      }
-    ],
-    "customerInsights": {
-      "newCustomers": 23,
-      "returningCustomers": 67,
-      "customerRetentionRate": 74.2,
-      "clvData": {
-        "averageClv": 8250,
-        "newCustomerClv": 3200,
-        "returningCustomerClv": 12400,
-        "retentionRate": 74.2
-      }
-    }
-  }
+  success: boolean;
+  data: {
+    salesData: Array<{
+      date: string; // ISO 8601 date
+      sales: number;
+      orders: number;
+    }>;
+    topProducts: Array<{
+      name: string;
+      sales: number;
+      revenue: number;
+    }>;
+    customerInsights: {
+      newCustomers: number;
+      returningCustomers: number;
+      customerRetentionRate: number;
+      clvData: {
+        averageClv: number;
+        newCustomerClv: number;
+        returningCustomerClv: number;
+        retentionRate: number;
+      };
+    };
+  };
 }
 ```
 
@@ -417,95 +354,73 @@ GET /seller/payments
 
 **Description**: Retrieve payment transactions, balance, and payout information.
 
-**Response**:
-```json
+**Response Schema**:
+```typescript
 {
-  "success": true,
-  "data": {
-    "balance": {
-      "available": 1245000,
-      "pending": 185000,
-      "totalFees": 28500,
-      "successRate": 96.8
-    },
-    "transactions": [
-      {
-        "id": "TXN-001",
-        "orderNumber": "ORD-2024-001",
-        "customer": "John Doe",
-        "amount": 45000,
-        "method": "M-Pesa",
-        "status": "completed",
-        "date": "2024-01-15T10:30:00Z",
-        "fee": 900,
-        "reference": "MP240115001"
-      }
-    ],
-    "payouts": [
-      {
-        "id": "PAYOUT-001",
-        "amount": 450000,
-        "method": "Bank Transfer",
-        "status": "completed",
-        "date": "2024-01-10T00:00:00Z",
-        "reference": "PO-2024-001",
-        "bankAccount": "****1234",
-        "processingFee": 2500
-      }
-    ],
-    "analytics": {
-      "nextPayout": {
-        "date": "2024-01-20T00:00:00Z",
-        "amount": 1245000
-      },
-      "averageTransaction": {
-        "amount": 47333,
-        "growth": 12,
-        "period": "month"
-      },
-      "failedTransactions": {
-        "rate": 3.2,
-        "change": -0.8,
-        "period": "month"
-      },
-      "volumeTrend": [
-        {
-          "date": "2024-01-01",
-          "volume": 125000,
-          "transactions": 28
-        }
-      ]
-    },
-    "stats": {
-      "totalTransactions": 1247,
-      "completedTransactions": 1205,
-      "pendingTransactions": 23,
-      "failedTransactions": 19,
-      "totalVolume": 5890000,
-      "totalFees": 118500,
-      "averageTransactionValue": 47333,
-      "paymentSuccessRate": 96.8
-    }
-  }
+  success: boolean;
+  data: {
+    balance: {
+      available: number;
+      pending: number;
+      totalFees: number;
+      successRate: number;
+    };
+    transactions: Array<{
+      id: string;
+      orderNumber: string;
+      customer: string;
+      amount: number;
+      method: 'M-Pesa' | 'Airtel Money' | 'Bank Transfer' | 'Credit Card';
+      status: 'completed' | 'pending' | 'failed';
+      date: string; // ISO 8601
+      fee: number;
+      reference: string;
+    }>;
+    payouts: Array<{
+      id: string;
+      amount: number;
+      method: 'Bank Transfer' | 'M-Pesa';
+      status: 'completed' | 'processing' | 'scheduled' | 'failed';
+      date: string; // ISO 8601
+      reference: string;
+      bankAccount?: string;
+      phoneNumber?: string;
+      processingFee: number;
+    }>;
+    analytics: {
+      nextPayout: {
+        date: string; // ISO 8601
+        amount: number;
+      };
+      averageTransaction: {
+        amount: number;
+        growth: number;
+        period: string;
+      };
+      failedTransactions: {
+        rate: number;
+        change: number;
+        period: string;
+      };
+      volumeTrend: Array<{
+        date: string; // ISO 8601 date
+        volume: number;
+        transactions: number;
+      }>;
+    };
+    stats: {
+      totalTransactions: number;
+      completedTransactions: number;
+      pendingTransactions: number;
+      failedTransactions: number;
+      totalVolume: number;
+      totalFees: number;
+      averageTransactionValue: number;
+      paymentSuccessRate: number;
+    };
+  };
 }
 ```
-
-**Payment Methods**:
-- `M-Pesa`: Mobile money (Vodacom)
-- `Airtel Money`: Mobile money (Airtel)
-- `Bank Transfer`: Direct bank transfer
-- `Credit Card`: Card payments
-
-**Transaction Status**:
-- `completed`: Transaction successful
-- `pending`: Transaction processing
-- `failed`: Transaction failed
-
-**Payout Status**:
-- `completed`: Payout processed
-- `processing`: Payout in progress
-- `scheduled`: Payout scheduled
-- `failed`: Payout failed
 
 ### 9. KYC API
 
@@ -516,132 +431,77 @@ GET /seller/kyc
 
 **Description**: Retrieve Know Your Customer verification status and requirements.
 
-**Response**:
-```json
+**Response Schema**:
+```typescript
 {
-  "success": true,
-  "data": {
-    "kycStatus": {
-      "level": "Level 2",
-      "status": "verified",
-      "verifiedDate": "2023-12-15T10:00:00Z",
-      "overallProgress": 85,
-      "nextReviewDate": "2024-12-15T00:00:00Z"
-    },
-    "personalInfo": {
-      "fullName": "John Smith",
-      "nationalId": "19851234567890",
-      "dateOfBirth": "1985-06-15",
-      "phoneNumber": "+255712345678",
-      "email": "john.smith@techstore.com",
-      "address": "Plot 123, Msimbazi Street, Kariakoo",
-      "city": "Dar es Salaam",
-      "region": "Dar es Salaam",
-      "verificationStatus": "verified"
-    },
-    "businessInfo": {
-      "businessName": "Tech Electronics Store",
-      "businessType": "Electronics",
-      "businessRegistration": "BRELA-2020-123456",
-      "tinNumber": "TIN-123-456-789",
-      "businessAddress": "Shop 45, Kariakoo Market, Dar es Salaam",
-      "businessPhone": "+255712345679",
-      "businessEmail": "info@techstore.com",
-      "website": "https://www.techstore.com",
-      "yearEstablished": "2020",
-      "numberOfEmployees": "5-10",
-      "verificationStatus": "verified"
-    },
-    "documents": [
-      {
-        "type": "National ID Front",
-        "status": "verified",
-        "uploadDate": "2023-12-10T14:30:00Z",
-        "verifiedDate": "2023-12-11T09:15:00Z",
-        "fileName": "national_id_front.jpg",
-        "required": true
-      }
-    ],
-    "bankDetails": {
-      "bankName": "CRDB Bank",
-      "accountNumber": "0150123456789",
-      "accountName": "Tech Electronics Store",
-      "branchCode": "CRDB001",
-      "swiftCode": "CORUTZTZ",
-      "verificationStatus": "verified",
-      "verifiedDate": "2023-12-13T11:30:00Z"
-    },
-    "complianceChecks": {
-      "amlScreening": {
-        "status": "passed",
-        "checkedDate": "2023-12-15T08:00:00Z",
-        "score": 95
-      },
-      "sanctionsList": {
-        "status": "clear",
-        "checkedDate": "2023-12-15T08:05:00Z"
-      },
-      "pepCheck": {
-        "status": "clear",
-        "checkedDate": "2023-12-15T08:10:00Z"
-      },
-      "creditCheck": {
-        "status": "good",
-        "score": 750,
-        "checkedDate": "2023-12-15T08:15:00Z"
-      }
-    },
-    "requirements": {
-      "currentLevel": "Level 2",
-      "nextLevel": "Level 3",
-      "requiredDocuments": ["Tax Certificate", "Audited Financial Statements"],
-      "benefits": {
-        "current": [
-          "Higher transaction limits (TZS 10M/month)",
-          "Priority customer support",
-          "Access to business loans",
-          "Reduced transaction fees"
-        ],
-        "nextLevel": [
-          "Unlimited transaction limits",
-          "Dedicated account manager",
-          "Advanced analytics tools",
-          "White-label solutions"
-        ]
-      },
-      "transactionLimits": {
-        "daily": 500000,
-        "monthly": 10000000,
-        "perTransaction": 100000
-      }
-    },
-    "riskAssessment": {
-      "overallRisk": "low",
-      "riskScore": 25,
-      "factors": [
-        {
-          "factor": "Business Type",
-          "risk": "low",
-          "score": 10
-        }
-      ],
-      "lastAssessment": "2023-12-15T10:00:00Z",
-      "nextAssessment": "2024-06-15T00:00:00Z"
-    }
-  }
+  success: boolean;
+  data: {
+    kycStatus: {
+      level: 'Level 1' | 'Level 2' | 'Level 3';
+      status: 'verified' | 'pending' | 'rejected';
+      verifiedDate?: string; // ISO 8601
+      overallProgress: number; // 0-100
+      nextReviewDate?: string; // ISO 8601
+    };
+    personalInfo: {
+      fullName: string;
+      nationalId: string;
+      dateOfBirth: string; // ISO 8601 date
+      phoneNumber: string;
+      email: string;
+      address: string;
+      city: string;
+      region: string;
+      verificationStatus: 'verified' | 'pending' | 'rejected';
+    };
+    businessInfo: {
+      businessName: string;
+      businessType: string;
+      businessRegistration: string;
+      tinNumber: string;
+      businessAddress: string;
+      businessPhone: string;
+      businessEmail: string;
+      website?: string;
+      yearEstablished: string;
+      numberOfEmployees: string;
+      verificationStatus: 'verified' | 'pending' | 'rejected';
+    };
+    documents: Array<{
+      type: string;
+      status: 'verified' | 'pending' | 'rejected' | 'not_uploaded';
+      uploadDate?: string; // ISO 8601
+      verifiedDate?: string; // ISO 8601
+      fileName?: string;
+      required: boolean;
+      rejectionReason?: string;
+    }>;
+    bankDetails: {
+      bankName: string;
+      accountNumber: string;
+      accountName: string;
+      branchCode: string;
+      swiftCode: string;
+      verificationStatus: 'verified' | 'pending' | 'rejected';
+      verifiedDate?: string; // ISO 8601
+    };
+    requirements: {
+      currentLevel: string;
+      nextLevel?: string;
+      requiredDocuments: string[];
+      benefits: {
+        current: string[];
+        nextLevel?: string[];
+      };
+      transactionLimits: {
+        daily: number;
+        monthly: number;
+        perTransaction: number;
+      };
+    };
+  };
 }
 ```
-
-**KYC Levels**:
-- `Level 1`: Basic verification
-- `Level 2`: Enhanced verification
-- `Level 3`: Premium verification
-
-**Document Status**:
-- `verified`: Document approved
-- `pending`: Under review
-- `rejected`: Document rejected
-- `not_uploaded`: Document not provided
 
 ### 10. Settings API
 
@@ -652,31 +512,31 @@ GET /seller/settings
 
 **Description**: Retrieve account settings and preferences.
 
-**Response**:
-```json
+**Response Schema**:
+```typescript
 {
-  "success": true,
-  "data": {
-    "profile": {
-      "businessName": "Tech Electronics Store",
-      "ownerName": "John Smith",
-      "email": "john@techstore.com",
-      "phone": "+255123456789",
-      "address": "Dar es Salaam, Tanzania",
-      "businessType": "Electronics",
-      "taxId": "TIN123456789"
-    },
-    "preferences": {
-      "notifications": {
-        "email": true,
-        "sms": true,
-        "push": true
-      },
-      "language": "en",
-      "currency": "TSh",
-      "timezone": "Africa/Dar_es_Salaam"
-    }
-  }
+  success: boolean;
+  data: {
+    profile: {
+      businessName: string;
+      ownerName: string;
+      email: string;
+      phone: string;
+      address: string;
+      businessType: string;
+      taxId: string;
+    };
+    preferences: {
+      notifications: {
+        email: boolean;
+        sms: boolean;
+        push: boolean;
+      };
+      language: string;
+      currency: string;
+      timezone: string;
+    };
+  };
 }
 ```
 
@@ -689,59 +549,44 @@ GET /seller/promotions
 
 **Description**: Retrieve promotional campaigns and discount information.
 
-**Response**:
-```json
+**Response Schema**:
+```typescript
 {
-  "success": true,
-  "data": {
-    "promotions": [
-      {
-        "id": "PROMO-001",
-        "name": "Summer Sale",
-        "discount": "20%",
-        "discountType": "percentage",
-        "discountValue": 20,
-        "status": "active",
-        "products": 15,
-        "startDate": "2024-07-01T00:00:00Z",
-        "endDate": "2024-08-31T23:59:59Z",
-        "createdAt": "2024-06-25T10:00:00Z",
-        "description": "Beat the heat with our summer electronics sale!",
-        "minOrderValue": 50000,
-        "maxDiscount": 100000,
-        "usageLimit": 1000,
-        "usedCount": 234
-      }
-    ],
-    "stats": {
-      "totalPromotions": 3,
-      "activePromotions": 1,
-      "scheduledPromotions": 1,
-      "endedPromotions": 1,
-      "totalSavings": 2450000,
-      "averageDiscount": 20
-    },
-    "tips": [
-      {
-        "title": "Seasonal Sales",
-        "description": "Create promotions around holidays and seasons for maximum impact.",
-        "category": "timing"
-      }
-    ]
-  }
+  success: boolean;
+  data: {
+    promotions: Array<{
+      id: string;
+      name: string;
+      discount: string;
+      discountType: 'percentage' | 'fixed' | 'buy_one_get_one';
+      discountValue: number;
+      status: 'active' | 'scheduled' | 'ended' | 'paused';
+      products: number;
+      startDate: string; // ISO 8601
+      endDate: string; // ISO 8601
+      createdAt: string; // ISO 8601
+      description: string;
+      minOrderValue: number;
+      maxDiscount: number;
+      usageLimit: number;
+      usedCount: number;
+    }>;
+    stats: {
+      totalPromotions: number;
+      activePromotions: number;
+      scheduledPromotions: number;
+      endedPromotions: number;
+      totalSavings: number;
+      averageDiscount: number;
+    };
+    tips: Array<{
+      title: string;
+      description: string;
+      category: string;
+    }>;
+  };
 }
 ```
-
-**Promotion Status**:
-- `active`: Currently running
-- `scheduled`: Scheduled for future
-- `ended`: Promotion completed
-- `paused`: Temporarily paused
-
-**Discount Types**:
-- `percentage`: Percentage discount
-- `fixed`: Fixed amount discount
-- `buy_one_get_one`: BOGO offers
 
 ### 12. Shipping API
 
@@ -752,30 +597,20 @@ GET /seller/shipping
 
 **Description**: Retrieve shipping rates for all Tanzania regions.
 
-**Response**:
-```json
+**Response Schema**:
+```typescript
 {
-  "success": true,
-  "data": {
-    "shippingRates": [
-      {
-        "id": 1,
-        "region": "Arusha",
-        "weightRange": "0-2kg",
-        "rate": 7500,
-        "carrier": "Express",
-        "deliveryDays": "2-3"
-      },
-      {
-        "id": 2,
-        "region": "Dar es Salaam",
-        "weightRange": "0-2kg",
-        "rate": 2500,
-        "carrier": "Standard",
-        "deliveryDays": "Same day"
-      }
-    ]
-  }
+  success: boolean;
+  data: {
+    shippingRates: Array<{
+      id: number;
+      region: string;
+      weightRange: string;
+      rate: number;
+      carrier: 'Express' | 'Standard';
+      deliveryDays: string;
+    }>;
+  };
 }
 ```
 
@@ -786,23 +621,21 @@ GET /seller/shipments
 
 **Description**: Retrieve active shipments and tracking information.
 
-**Response**:
-```json
+**Response Schema**:
+```typescript
 {
-  "success": true,
-  "data": {
-    "shipments": [
-      {
-        "id": 1,
-        "orderNumber": "ORD-2024-001",
-        "customer": "John Doe",
-        "status": "in_transit",
-        "trackingNumber": "TRK123456",
-        "carrier": "DHL",
-        "estimatedDelivery": "2024-01-15"
-      }
-    ]
-  }
+  success: boolean;
+  data: {
+    shipments: Array<{
+      id: number;
+      orderNumber: string;
+      customer: string;
+      status: 'pending' | 'in_transit' | 'delivered' | 'failed' | 'returned';
+      trackingNumber: string;
+      carrier: string;
+      estimatedDelivery: string; // ISO 8601 date
+    }>;
+  };
 }
 ```
 
@@ -813,25 +646,18 @@ GET /seller/shipping-stats
 
 **Description**: Retrieve shipping performance metrics.
 
-**Response**:
-```json
+**Response Schema**:
+```typescript
 {
-  "success": true,
-  "data": {
-    "activeShipments": 24,
-    "deliveredToday": 12,
-    "avgDeliveryTime": "2.3",
-    "shippingCost": 45000
-  }
+  success: boolean;
+  data: {
+    activeShipments: number;
+    deliveredToday: number;
+    avgDeliveryTime: string;
+    shippingCost: number;
+  };
 }
 ```
-
-**Shipment Status**:
-- `pending`: Awaiting pickup
-- `in_transit`: Package in transit
-- `delivered`: Successfully delivered
-- `failed`: Delivery failed
-- `returned`: Package returned
 
 ### 13. Enablers API
 
@@ -842,43 +668,26 @@ GET /seller/enablers
 
 **Description**: Retrieve products available for enabler partnerships and rank information.
 
-**Response**:
-```json
+**Response Schema**:
+```typescript
 {
-  "success": true,
-  "data": {
-    "products": [
-      {
-        "id": "1",
-        "name": "Samsung Galaxy A54",
-        "price": 850000,
-        "category": "Electronics",
-        "stock": 25
-      }
-    ],
-    "enablerRanks": [
-      {
-        "value": "associate",
-        "label": "Associate",
-        "color": "blue"
-      },
-      {
-        "value": "specialist",
-        "label": "Specialist",
-        "color": "green"
-      }
-    ]
-  }
+  success: boolean;
+  data: {
+    products: Array<{
+      id: string;
+      name: string;
+      price: number;
+      category: string;
+      stock: number;
+    }>;
+    enablerRanks: Array<{
+      value: 'associate' | 'specialist' | 'senior' | 'expert' | 'master' | 'director';
+      label: string;
+      color: string;
+    }>;
+  };
 }
 ```
-
-**Enabler Ranks** (in ascending order):
-- `associate`: Entry level
-- `specialist`: Experienced
-- `senior`: Advanced
-- `expert`: Highly skilled
-- `master`: Top performer
-- `director`: Leadership level
 
 ## Error Handling
 
@@ -892,20 +701,19 @@ GET /seller/enablers
 - `429 Too Many Requests`: Rate limit exceeded
 - `500 Internal Server Error`: Server error
 
-### Error Response Format
-
-```json
+### Error Response Schema
+```typescript
 {
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Request validation failed",
-    "details": {
-      "field": "email",
-      "reason": "Invalid email format"
-    },
-    "timestamp": "2024-01-15T10:30:00Z"
-  }
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    details?: {
+      field?: string;
+      reason?: string;
+    };
+    timestamp: string; // ISO 8601
+  };
 }
 ```
 
@@ -919,7 +727,7 @@ GET /seller/enablers
 
 ## SDK Integration
 
-### JavaScript/TypeScript
+### TypeScript SDK Usage
 
 ```typescript
 import { apiService } from '@/lib/api';
@@ -962,7 +770,20 @@ apiClient.interceptors.request.use((config) => {
 GET /health
 ```
 
-**Description**: Test API connectivity and service health.
+**Response Schema**:
+```typescript
+{
+  success: boolean;
+  data: {
+    status: 'healthy' | 'unhealthy';
+    timestamp: string; // ISO 8601
+    services: Array<{
+      name: string;
+      status: 'up' | 'down';
+    }>;
+  };
+}
+```
 
 ### Environment Variables
 ```bash
@@ -970,20 +791,6 @@ API_BASE_URL=http://localhost:3002
 API_VERSION=api
 TIMEOUT=30000
 ```
-
-### Debugging
-- All requests are logged with timestamps
-- Response data is logged for debugging
-- Connection errors provide troubleshooting steps
-- Authentication failures trigger automatic redirects
-
-## Support
-
-For API support and documentation updates:
-- **Email**: api-support@maysar.com
-- **Documentation**: Updated with each release
-- **Status Page**: https://status.maysar.com
-- **GitHub Issues**: Report bugs and feature requests
 
 ---
 

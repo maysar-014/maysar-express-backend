@@ -14,6 +14,7 @@ export const TIER_INFO = {
   platinum: { name: 'Platinum', color: 'text-purple-600', commission: 15 },
 };
 
+// Fallback enabler data - in production this would come from authentication context
 export function getEnabler(): Enabler {
   return {
     id: 'enabler-001',
