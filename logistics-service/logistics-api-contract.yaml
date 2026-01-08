@@ -1,0 +1,2495 @@
+openapi: 3.0.3
+info:
+  title: Logistics Service API Contract
+  version: 1.0.0
+  description: |
+    Comprehensive REST API contract for the Maysar Logistics Service.
+    This service provides delivery management, route optimization, real-time tracking,
+    performance analytics, and earnings calculation for courier operations.
+
+    **Key Features:**
+    - Delivery cost calculation and management
+    - Route optimization with constraints
+    - Real-time courier tracking
+    - Performance analytics and KPIs
+    - Earnings calculation and commission management
+    - Multi-engine architecture with 11 specialized engines
+
+  contact:
+    name: Maysar Development Team
+    email: api@maysar.com
+    url: https://maysar.com/api-docs
+
+  license:
+    name: Proprietary
+    url: https://maysar.com/license
+
+servers:
+  - url: http://localhost:3007
+    description: Local development server
+  - url: https://api-staging.maysar.com/logistics
+    description: Staging server
+  - url: https://api.maysar.com/logistics
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+paths:
+
+  # ==================== HEALTH & STATUS ENDPOINTS ====================
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Service health check
+      description: |
+        Comprehensive health check endpoint that verifies service status,
+        database connectivity, and all engine health.
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ready:
+    get:
+      tags:
+        - Health
+      summary: Service readiness check
+      description: |
+        Readiness check that verifies database and external service connectivity.
+        Used by load balancers and orchestration systems.
+      operationId: getReadiness
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+        '503':
+          description: Service is not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/stats/performance:
+    get:
+      tags:
+        - Monitoring
+      summary: Performance statistics
+      description: |
+        Real-time performance metrics including memory usage, uptime,
+        and system resource statistics.
+      operationId: getPerformanceStats
+      responses:
+        '200':
+          description: Performance statistics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceStatsResponse'
+
+  # ==================== DELIVERY ENDPOINTS ====================
+
+  /api/v1/deliveries/calculate:
+    post:
+      tags:
+        - Deliveries
+      summary: Calculate delivery cost
+      description: |
+        Calculate shipping cost and delivery time based on package details,
+        pickup/delivery addresses, and service requirements.
+      operationId: calculateDeliveryCost
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryCalculationRequest'
+      responses:
+        '200':
+          description: Delivery cost calculated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryCalculationResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Calculation engine error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/deliveries:
+    get:
+      tags:
+        - Deliveries
+      summary: List deliveries
+      description: Retrieve paginated list of deliveries with filtering options.
+      operationId: listDeliveries
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of items per page
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, in_transit, delivered, cancelled]
+          description: Filter by delivery status
+      responses:
+        '200':
+          description: Deliveries retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryListResponse'
+
+  /api/v1/deliveries/{deliveryId}:
+    get:
+      tags:
+        - Deliveries
+      summary: Get delivery details
+      description: Retrieve detailed information about a specific delivery.
+      operationId: getDeliveryDetails
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique delivery identifier
+      responses:
+        '200':
+          description: Delivery details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryDetailsResponse'
+        '404':
+          description: Delivery not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/deliveries/{deliveryId}/history:
+    get:
+      tags:
+        - Deliveries
+      summary: Get delivery history
+      description: Retrieve complete history and status changes for a delivery.
+      operationId: getDeliveryHistory
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique delivery identifier
+      responses:
+        '200':
+          description: Delivery history retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryHistoryResponse'
+        '404':
+          description: Delivery not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== ROUTE ENDPOINTS ====================
+
+  /api/v1/routes:
+    get:
+      tags:
+        - Routes
+      summary: List routes
+      description: Retrieve paginated list of delivery routes.
+      operationId: listRoutes
+      responses:
+        '200':
+          description: Routes retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteListResponse'
+
+    post:
+      tags:
+        - Routes
+      summary: Create route
+      description: Create a new delivery route with stops and constraints.
+      operationId: createRoute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RouteCreateRequest'
+      responses:
+        '201':
+          description: Route created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteCreateResponse'
+        '400':
+          description: Invalid route data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/routes/optimize:
+    post:
+      tags:
+        - Routes
+      summary: Optimize route
+      description: |
+        Calculate optimal delivery route using advanced algorithms
+        considering distance, time, traffic, and delivery constraints.
+      operationId: optimizeRoute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RouteOptimizationRequest'
+      responses:
+        '200':
+          description: Route optimized successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteOptimizationResponse'
+        '400':
+          description: Invalid optimization parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Optimization engine error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/routes/{routeId}:
+    get:
+      tags:
+        - Routes
+      summary: Get route details
+      description: Retrieve detailed information about a specific route.
+      operationId: getRouteDetails
+      parameters:
+        - name: routeId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique route identifier
+      responses:
+        '200':
+          description: Route details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteDetailsResponse'
+        '404':
+          description: Route not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/routes/courier/{courierId}:
+    get:
+      tags:
+        - Routes
+      summary: Get courier routes
+      description: Retrieve all active routes assigned to a specific courier.
+      operationId: getCourierRoutes
+      parameters:
+        - name: courierId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique courier identifier
+      responses:
+        '200':
+          description: Courier routes retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourierRoutesResponse'
+        '404':
+          description: Courier not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== COURIER ENDPOINTS ====================
+
+  /api/v1/couriers:
+    get:
+      tags:
+        - Couriers
+      summary: List couriers
+      description: Retrieve paginated list of all couriers with their status and details.
+      operationId: listCouriers
+      responses:
+        '200':
+          description: Couriers retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourierListResponse'
+
+  /api/v1/couriers/{courierId}:
+    get:
+      tags:
+        - Couriers
+      summary: Get courier details
+      description: Retrieve detailed information about a specific courier including stats and performance.
+      operationId: getCourierDetails
+      parameters:
+        - name: courierId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique courier identifier
+      responses:
+        '200':
+          description: Courier details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourierDetailsResponse'
+        '404':
+          description: Courier not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Couriers
+      summary: Update courier status
+      description: Update the operational status of a courier (active, busy, offline).
+      operationId: updateCourierStatus
+      parameters:
+        - name: courierId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique courier identifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourierStatusUpdateRequest'
+      responses:
+        '200':
+          description: Courier status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourierStatusUpdateResponse'
+        '404':
+          description: Courier not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== TRACKING ENDPOINTS ====================
+
+  /api/v1/tracking/{trackingNumber}:
+    get:
+      tags:
+        - Tracking
+      summary: Get tracking information
+      description: Retrieve current status and location for a tracked delivery.
+      operationId: getTrackingInfo
+      parameters:
+        - name: trackingNumber
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Package tracking number
+      responses:
+        '200':
+          description: Tracking information retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackingInfoResponse'
+        '404':
+          description: Tracking number not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/tracking/location:
+    post:
+      tags:
+        - Tracking
+      summary: Update courier location
+      description: |
+        Update real-time location data for a courier. Used by mobile apps
+        to send GPS coordinates, speed, and heading information.
+      operationId: updateCourierLocation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocationUpdateRequest'
+      responses:
+        '200':
+          description: Location updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationUpdateResponse'
+        '400':
+          description: Invalid location data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/tracking/courier/{courierId}/history:
+    get:
+      tags:
+        - Tracking
+      summary: Get courier location history
+      description: Retrieve historical location data for a courier over a specified period.
+      operationId: getCourierLocationHistory
+      parameters:
+        - name: courierId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique courier identifier
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [hour, day, week, month]
+            default: day
+          description: Time period for location history
+      responses:
+        '200':
+          description: Location history retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationHistoryResponse'
+        '404':
+          description: Courier not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== ANALYTICS ENDPOINTS ====================
+
+  /api/v1/analytics:
+    get:
+      tags:
+        - Analytics
+      summary: Get analytics overview
+      description: Retrieve high-level analytics and KPIs for the logistics service.
+      operationId: getAnalyticsOverview
+      responses:
+        '200':
+          description: Analytics overview retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsOverviewResponse'
+
+  /api/v1/analytics/performance:
+    get:
+      tags:
+        - Analytics
+      summary: Get performance report
+      description: Generate detailed performance analytics report for a specific courier.
+      operationId: getPerformanceReport
+      parameters:
+        - name: courierId
+          in: query
+          schema:
+            type: string
+          description: Optional courier ID to filter report
+      responses:
+        '200':
+          description: Performance report generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceReportResponse'
+
+  /api/v1/analytics/courier/{courierId}:
+    get:
+      tags:
+        - Analytics
+      summary: Get courier analytics
+      description: Retrieve detailed analytics and KPIs for a specific courier.
+      operationId: getCourierAnalytics
+      parameters:
+        - name: courierId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique courier identifier
+      responses:
+        '200':
+          description: Courier analytics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourierAnalyticsResponse'
+        '404':
+          description: Courier not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== EARNINGS ENDPOINTS ====================
+
+  /api/v1/earnings:
+    get:
+      tags:
+        - Earnings
+      summary: Get earnings summary
+      description: Retrieve overall earnings summary across all couriers and deliveries.
+      operationId: getEarningsSummary
+      responses:
+        '200':
+          description: Earnings summary retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EarningsSummaryResponse'
+
+    post:
+      tags:
+        - Earnings
+      summary: Record earning
+      description: Record a new earning entry for a courier delivery.
+      operationId: recordEarning
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EarningRecordRequest'
+      responses:
+        '201':
+          description: Earning recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EarningRecordResponse'
+        '400':
+          description: Invalid earning data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/earnings/courier/{courierId}:
+    get:
+      tags:
+        - Earnings
+      summary: Get courier earnings
+      description: Retrieve earnings data for a specific courier.
+      operationId: getCourierEarnings
+      parameters:
+        - name: courierId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique courier identifier
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [today, week, month, year]
+            default: today
+          description: Time period for earnings data
+      responses:
+        '200':
+          description: Courier earnings retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourierEarningsResponse'
+        '404':
+          description: Courier not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/earnings/calculate:
+    post:
+      tags:
+        - Earnings
+      summary: Calculate commissions
+      description: |
+        Calculate commission fees for multiple deliveries based on
+        distance, time, and service type.
+      operationId: calculateCommissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommissionCalculationRequest'
+      responses:
+        '200':
+          description: Commissions calculated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommissionCalculationResponse'
+        '400':
+          description: Invalid delivery data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/earnings/summary:
+    get:
+      tags:
+        - Earnings
+      summary: Get earnings summary report
+      description: Generate detailed earnings summary report for a specified period.
+      operationId: getEarningsSummaryReport
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [week, month, quarter, year]
+            default: month
+          description: Reporting period
+      responses:
+        '200':
+          description: Earnings summary report generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EarningsSummaryReportResponse'
+
+  # ==================== ENGINE STATUS ENDPOINTS ====================
+
+  /api/v1/engines/status:
+    get:
+      tags:
+        - System
+      summary: Get engine status
+      description: |
+        Retrieve health status of all logistics service engines.
+        Includes 11 specialized engines for different operations.
+      operationId: getEngineStatus
+      responses:
+        '200':
+          description: Engine status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EngineStatusResponse'
+
+  # ==================== TEST ENDPOINTS ====================
+
+  /api/v1/test/all-engines:
+    get:
+      tags:
+        - Testing
+      summary: Test all engines
+      description: |
+        Comprehensive test endpoint that validates all 11 engines
+        are functioning correctly. Used for CI/CD and health monitoring.
+      operationId: testAllEngines
+      responses:
+        '200':
+          description: All engines tested successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EngineTestResponse'
+        '500':
+          description: One or more engines failed testing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for API authentication
+
+  schemas:
+
+    # ==================== COMMON SCHEMAS ====================
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: NOT_FOUND
+            message:
+              type: string
+              example: Resource not found
+            details:
+              type: object
+              additionalProperties: true
+
+    SuccessResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+
+    # ==================== HEALTH SCHEMAS ====================
+
+    HealthResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                service:
+                  type: string
+                  example: logistics-service
+                version:
+                  type: string
+                  example: "1.0.0"
+                timestamp:
+                  type: string
+                  format: date-time
+                uptime:
+                  type: number
+                  format: float
+                  example: 3600.5
+                engines:
+                  type: array
+                  items:
+                    type: string
+                  example: ["logistics", "route-optimization", "real-time-tracking"]
+                engineDetails:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/EngineInfo'
+                dependencies:
+                  $ref: '#/components/schemas/DependencyStatus'
+
+    ReadinessResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [ready, not_ready]
+          example: ready
+        timestamp:
+          type: string
+          format: date-time
+
+    EngineInfo:
+      type: object
+      required:
+        - name
+        - status
+        - version
+      properties:
+        name:
+          type: string
+          example: logistics
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          example: healthy
+        version:
+          type: string
+          example: "1.0.0"
+
+    DependencyStatus:
+      type: object
+      properties:
+        supabase:
+          $ref: '#/components/schemas/ServiceStatus'
+        redis:
+          $ref: '#/components/schemas/ServiceStatus'
+
+    ServiceStatus:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          example: healthy
+        latency:
+          type: number
+          format: float
+          example: 45.2
+        lastChecked:
+          type: string
+          format: date-time
+
+    PerformanceStatsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                service:
+                  type: string
+                  example: logistics-service
+                uptime:
+                  type: number
+                  format: float
+                  example: 3600.5
+                memory:
+                  $ref: '#/components/schemas/MemoryStats'
+                timestamp:
+                  type: string
+                  format: date-time
+
+    MemoryStats:
+      type: object
+      properties:
+        rss:
+          type: integer
+          format: int64
+          example: 9637888
+        heapTotal:
+          type: integer
+          format: int64
+          example: 244588544
+        heapUsed:
+          type: integer
+          format: int64
+          example: 235808592
+        external:
+          type: integer
+          format: int64
+          example: 11175750
+        arrayBuffers:
+          type: integer
+          format: int64
+          example: 7078416
+
+    # ==================== DELIVERY SCHEMAS ====================
+
+    DeliveryCalculationRequest:
+      type: object
+      required:
+        - orderId
+        - pickupAddress
+        - deliveryAddress
+        - packageDetails
+      properties:
+        orderId:
+          type: string
+          example: "ord_123456"
+        pickupAddress:
+          $ref: '#/components/schemas/Address'
+        deliveryAddress:
+          $ref: '#/components/schemas/Address'
+        packageDetails:
+          $ref: '#/components/schemas/PackageDetails'
+        serviceType:
+          type: string
+          enum: [standard, express, same_day]
+          default: standard
+          example: standard
+        priority:
+          type: string
+          enum: [low, normal, high]
+          default: normal
+          example: normal
+        specialInstructions:
+          type: string
+          maxLength: 500
+          example: "Handle with care - fragile items"
+
+    Address:
+      type: object
+      required:
+        - street
+        - city
+        - region
+        - country
+      properties:
+        street:
+          type: string
+          example: "Uhuru Street"
+        city:
+          type: string
+          example: "Dar es Salaam"
+        region:
+          type: string
+          example: "Dar es Salaam"
+        postalCode:
+          type: string
+          example: "11101"
+        country:
+          type: string
+          example: "Tanzania"
+        contactName:
+          type: string
+          example: "John Seller"
+        contactPhone:
+          type: string
+          pattern: '^\+[1-9]\d{1,14}$'
+          example: "+255712345678"
+
+    PackageDetails:
+      type: object
+      required:
+        - weight
+        - dimensions
+        - value
+      properties:
+        weight:
+          type: number
+          format: float
+          minimum: 0.1
+          maximum: 50.0
+          example: 2.5
+        dimensions:
+          type: object
+          required:
+            - length
+            - width
+            - height
+          properties:
+            length:
+              type: number
+              format: float
+              minimum: 1
+              maximum: 200
+              example: 30
+            width:
+              type: number
+              format: float
+              minimum: 1
+              maximum: 200
+              example: 20
+            height:
+              type: number
+              format: float
+              minimum: 1
+              maximum: 200
+              example: 15
+        value:
+          type: number
+          format: float
+          minimum: 0
+          example: 50000
+        fragile:
+          type: boolean
+          default: false
+          example: false
+        perishable:
+          type: boolean
+          default: false
+          example: false
+        hazardous:
+          type: boolean
+          default: false
+          example: false
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PackageItem'
+
+    PackageItem:
+      type: object
+      required:
+        - productId
+        - name
+        - quantity
+      properties:
+        productId:
+          type: string
+          example: "prod_001"
+        name:
+          type: string
+          example: "Wireless Headphones"
+        quantity:
+          type: integer
+          minimum: 1
+          example: 1
+        weight:
+          type: number
+          format: float
+          example: 2.5
+        value:
+          type: number
+          format: float
+          example: 50000
+
+    DeliveryCalculationResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                deliveryId:
+                  type: string
+                  example: "del_abc123"
+                shippingCost:
+                  type: number
+                  format: float
+                  example: 2500.00
+                estimatedDelivery:
+                  type: string
+                  format: date-time
+                processingTime:
+                  type: number
+                  format: float
+                  example: 150
+                route:
+                  $ref: '#/components/schemas/RouteInfo'
+
+    RouteInfo:
+      type: object
+      properties:
+        distance:
+          type: number
+          format: float
+          example: 15.5
+        duration:
+          type: integer
+          example: 45
+        stops:
+          type: integer
+          example: 2
+
+    DeliveryListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                deliveries:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/DeliverySummary'
+                total:
+                  type: integer
+                  example: 150
+                pagination:
+                  $ref: '#/components/schemas/PaginationInfo'
+
+    DeliverySummary:
+      type: object
+      required:
+        - deliveryId
+        - status
+      properties:
+        deliveryId:
+          type: string
+          example: "del_001"
+        orderId:
+          type: string
+          example: "ord_001"
+        status:
+          type: string
+          enum: [pending, in_transit, delivered, cancelled]
+          example: delivered
+        courierId:
+          type: string
+          example: "courier_001"
+        createdAt:
+          type: string
+          format: date-time
+        estimatedDelivery:
+          type: string
+          format: date-time
+
+    PaginationInfo:
+      type: object
+      required:
+        - page
+        - limit
+        - total
+        - totalPages
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 20
+        total:
+          type: integer
+          minimum: 0
+          example: 150
+        totalPages:
+          type: integer
+          minimum: 1
+          example: 8
+
+    DeliveryDetailsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/DeliveryDetails'
+
+    DeliveryDetails:
+      allOf:
+        - $ref: '#/components/schemas/DeliverySummary'
+        - type: object
+          properties:
+            pickupAddress:
+              $ref: '#/components/schemas/Address'
+            deliveryAddress:
+              $ref: '#/components/schemas/Address'
+            packageDetails:
+              $ref: '#/components/schemas/PackageDetails'
+            trackingNumber:
+              type: string
+              example: "TRKDEL001"
+            currentLocation:
+              $ref: '#/components/schemas/Location'
+            statusHistory:
+              type: array
+              items:
+                $ref: '#/components/schemas/StatusUpdate'
+            totalCost:
+              type: number
+              format: float
+              example: 2500.00
+
+    Location:
+      type: object
+      required:
+        - lat
+        - lng
+      properties:
+        lat:
+          type: number
+          format: float
+          minimum: -90
+          maximum: 90
+          example: -6.7924
+        lng:
+          type: number
+          format: float
+          minimum: -180
+          maximum: 180
+          example: 39.2083
+        address:
+          type: string
+          example: "Uhuru Street, Dar es Salaam"
+
+    StatusUpdate:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [created, assigned, picked_up, in_transit, delivered, cancelled]
+          example: picked_up
+        timestamp:
+          type: string
+          format: date-time
+        location:
+          $ref: '#/components/schemas/Location'
+        notes:
+          type: string
+          example: "Package picked up from sender"
+
+    DeliveryHistoryResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                deliveryId:
+                  type: string
+                  example: "del_001"
+                history:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/StatusUpdate'
+
+    # ==================== ROUTE SCHEMAS ====================
+
+    RouteListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                routes:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/RouteSummary'
+                total:
+                  type: integer
+                  example: 25
+
+    RouteSummary:
+      type: object
+      required:
+        - routeId
+        - name
+        - status
+      properties:
+        routeId:
+          type: string
+          example: "route_001"
+        name:
+          type: string
+          example: "Downtown Circuit"
+        status:
+          type: string
+          enum: [active, completed, cancelled]
+          example: active
+        totalDistance:
+          type: number
+          format: float
+          example: 25.5
+        estimatedDuration:
+          type: integer
+          example: 120
+        stops:
+          type: integer
+          example: 5
+        efficiency:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          example: 87.5
+        assignedCourier:
+          type: string
+          example: "courier_001"
+
+    RouteCreateRequest:
+      type: object
+      required:
+        - name
+        - stops
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Downtown Delivery Route"
+        stops:
+          type: array
+          minItems: 2
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/RouteStop'
+        priority:
+          type: string
+          enum: [low, normal, high]
+          default: normal
+          example: normal
+        constraints:
+          $ref: '#/components/schemas/RouteConstraints'
+
+    RouteStop:
+      type: object
+      required:
+        - location
+        - lat
+        - lng
+      properties:
+        location:
+          type: string
+          example: "Uhuru Street Branch"
+        lat:
+          type: number
+          format: float
+          minimum: -90
+          maximum: 90
+          example: -6.7924
+        lng:
+          type: number
+          format: float
+          minimum: -180
+          maximum: 180
+          example: 39.2083
+        deliveryId:
+          type: string
+          example: "del_001"
+        estimatedTime:
+          type: integer
+          example: 15
+        priority:
+          type: string
+          enum: [low, normal, high]
+          default: normal
+
+    RouteConstraints:
+      type: object
+      properties:
+        maxDistance:
+          type: number
+          format: float
+          minimum: 1
+          example: 50.0
+        maxDuration:
+          type: integer
+          minimum: 30
+          example: 240
+        maxStops:
+          type: integer
+          minimum: 1
+          maximum: 50
+          example: 20
+        vehicleType:
+          type: string
+          enum: [motorcycle, van, truck]
+          example: motorcycle
+
+    RouteCreateResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                routeId:
+                  type: string
+                  example: "route_123456"
+                name:
+                  type: string
+                  example: "Downtown Delivery Route"
+                status:
+                  type: string
+                  example: "created"
+                stops:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/RouteStop'
+                priority:
+                  type: string
+                  example: "normal"
+                createdAt:
+                  type: string
+                  format: date-time
+
+    RouteOptimizationRequest:
+      type: object
+      required:
+        - waypoints
+      properties:
+        waypoints:
+          type: array
+          minItems: 2
+          maxItems: 50
+          items:
+            type: object
+            required:
+              - lat
+              - lng
+            properties:
+              lat:
+                type: number
+                format: float
+                minimum: -90
+                maximum: 90
+                example: -6.7924
+              lng:
+                type: number
+                format: float
+                minimum: -180
+                maximum: 180
+                example: 39.2083
+        constraints:
+          $ref: '#/components/schemas/RouteConstraints'
+        optimizationCriteria:
+          type: string
+          enum: [distance, time, cost, efficiency]
+          default: efficiency
+          example: efficiency
+
+    RouteOptimizationResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                optimizedRoute:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      index:
+                        type: integer
+                        example: 0
+                      lat:
+                        type: number
+                        format: float
+                        example: -6.7924
+                      lng:
+                        type: number
+                        format: float
+                        example: 39.2083
+                distance:
+                  type: number
+                  format: float
+                  example: 15.5
+                duration:
+                  type: integer
+                  example: 45
+                efficiency:
+                  type: number
+                  format: float
+                  example: 92.5
+                fuelSavings:
+                  type: number
+                  format: float
+                  example: 12.5
+
+    RouteDetailsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/RouteDetails'
+
+    RouteDetails:
+      allOf:
+        - $ref: '#/components/schemas/RouteSummary'
+        - type: object
+          properties:
+            stops:
+              type: array
+              items:
+                $ref: '#/components/schemas/RouteStop'
+            actualPath:
+              type: array
+              items:
+                $ref: '#/components/schemas/Location'
+            startedAt:
+              type: string
+              format: date-time
+            completedAt:
+              type: string
+              format: date-time
+            performance:
+              $ref: '#/components/schemas/RoutePerformance'
+
+    RoutePerformance:
+      type: object
+      properties:
+        onTimeDelivery:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          example: 95.5
+        averageStopTime:
+          type: integer
+          example: 8
+        fuelEfficiency:
+          type: number
+          format: float
+          example: 85.5
+        customerSatisfaction:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+          example: 4.7
+
+    CourierRoutesResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                courierId:
+                  type: string
+                  example: "courier_001"
+                activeRoutes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      routeId:
+                        type: string
+                        example: "route_001"
+                      status:
+                        type: string
+                        enum: [assigned, in_progress, completed]
+                        example: in_progress
+                      progress:
+                        type: number
+                        format: float
+                        minimum: 0
+                        maximum: 100
+                        example: 60.5
+                      currentStop:
+                        type: integer
+                        example: 3
+                      nextStop:
+                        type: string
+                        example: "Samora Avenue Branch"
+                      estimatedCompletion:
+                        type: string
+                        format: date-time
+
+    # ==================== COURIER SCHEMAS ====================
+
+    CourierListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                couriers:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CourierSummary'
+                total:
+                  type: integer
+                  example: 25
+
+    CourierSummary:
+      type: object
+      required:
+        - courierId
+        - name
+        - status
+      properties:
+        courierId:
+          type: string
+          example: "courier_001"
+        name:
+          type: string
+          example: "John Mwangi"
+        phone:
+          type: string
+          pattern: '^\+[1-9]\d{1,14}$'
+          example: "+255712345678"
+        vehicleType:
+          type: string
+          enum: [motorcycle, bicycle, van, truck]
+          example: motorcycle
+        rating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+          example: 4.8
+        status:
+          type: string
+          enum: [active, busy, offline, suspended]
+          example: active
+        currentLocation:
+          $ref: '#/components/schemas/Location'
+
+    CourierDetailsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/CourierDetails'
+
+    CourierDetails:
+      allOf:
+        - $ref: '#/components/schemas/CourierSummary'
+        - type: object
+          properties:
+            email:
+              type: string
+              format: email
+              example: "john.mwangi@example.com"
+            stats:
+              $ref: '#/components/schemas/CourierStats'
+            documents:
+              type: array
+              items:
+                $ref: '#/components/schemas/DocumentInfo'
+            joinedAt:
+              type: string
+              format: date-time
+            lastActive:
+              type: string
+              format: date-time
+
+    CourierStats:
+      type: object
+      properties:
+        deliveriesCompleted:
+          type: integer
+          minimum: 0
+          example: 1250
+        deliveriesToday:
+          type: integer
+          minimum: 0
+          example: 8
+        averageRating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+          example: 4.8
+        onTimeDeliveryRate:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          example: 94.5
+        totalEarnings:
+          type: number
+          format: float
+          example: 45000.00
+        averageDeliveryTime:
+          type: integer
+          example: 35
+        customerComplaints:
+          type: integer
+          minimum: 0
+          example: 2
+
+    DocumentInfo:
+      type: object
+      required:
+        - type
+        - status
+      properties:
+        type:
+          type: string
+          enum: [license, insurance, vehicle_registration, id_card]
+          example: license
+        status:
+          type: string
+          enum: [pending, approved, rejected, expired]
+          example: approved
+        expiryDate:
+          type: string
+          format: date
+        uploadedAt:
+          type: string
+          format: date-time
+
+    CourierStatusUpdateRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [active, busy, offline, suspended]
+          example: busy
+        reason:
+          type: string
+          maxLength: 200
+          example: "Starting delivery route"
+
+    CourierStatusUpdateResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                courierId:
+                  type: string
+                  example: "courier_001"
+                status:
+                  type: string
+                  example: busy
+                updatedAt:
+                  type: string
+                  format: date-time
+                reason:
+                  type: string
+                  example: "Starting delivery route"
+
+    # ==================== TRACKING SCHEMAS ====================
+
+    TrackingInfoResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                trackingNumber:
+                  type: string
+                  example: "TRKDEL001"
+                status:
+                  type: string
+                  enum: [pending, picked_up, in_transit, out_for_delivery, delivered, failed]
+                  example: in_transit
+                currentLocation:
+                  $ref: '#/components/schemas/Location'
+                estimatedDelivery:
+                  type: string
+                  format: date-time
+                lastUpdate:
+                  type: string
+                  format: date-time
+                history:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/TrackingEvent'
+
+    TrackingEvent:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [created, assigned, picked_up, in_transit, out_for_delivery, delivered, failed]
+          example: picked_up
+        location:
+          $ref: '#/components/schemas/Location'
+        timestamp:
+          type: string
+          format: date-time
+        notes:
+          type: string
+          example: "Package picked up from sender"
+
+    LocationUpdateRequest:
+      type: object
+      required:
+        - courierId
+        - location
+      properties:
+        courierId:
+          type: string
+          example: "courier_001"
+        location:
+          type: object
+          required:
+            - lat
+            - lng
+          properties:
+            lat:
+              type: number
+              format: float
+              minimum: -90
+              maximum: 90
+              example: -6.7924
+            lng:
+              type: number
+              format: float
+              minimum: -180
+              maximum: 180
+              example: 39.2083
+            accuracy:
+              type: number
+              format: float
+              minimum: 0
+              example: 10.5
+            speed:
+              type: number
+              format: float
+              minimum: 0
+              example: 25.0
+            heading:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 360
+              example: 90.0
+            altitude:
+              type: number
+              format: float
+              example: 150.0
+        timestamp:
+          type: string
+          format: date-time
+        batteryLevel:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          example: 85.5
+
+    LocationUpdateResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                courierId:
+                  type: string
+                  example: "courier_001"
+                locationStored:
+                  type: boolean
+                  example: true
+                timestamp:
+                  type: string
+                  format: date-time
+                locationId:
+                  type: string
+                  example: "loc_123456"
+
+    LocationHistoryResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                courierId:
+                  type: string
+                  example: "courier_001"
+                period:
+                  type: string
+                  example: "day"
+                locations:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      timestamp:
+                        type: string
+                        format: date-time
+                      location:
+                        $ref: '#/components/schemas/Location'
+                      speed:
+                        type: number
+                        format: float
+                        example: 25.0
+                      heading:
+                        type: number
+                        format: float
+                        example: 90.0
+
+    # ==================== ANALYTICS SCHEMAS ====================
+
+    AnalyticsOverviewResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                overview:
+                  type: object
+                  properties:
+                    totalDeliveries:
+                      type: integer
+                      example: 1247
+                    completedDeliveries:
+                      type: integer
+                      example: 1189
+                    pendingDeliveries:
+                      type: integer
+                      example: 58
+                    averageDeliveryTime:
+                      type: integer
+                      example: 45
+                    successRate:
+                      type: number
+                      format: float
+                      example: 95.3
+                performance:
+                  type: object
+                  properties:
+                    onTimeDeliveryRate:
+                      type: number
+                      format: float
+                      example: 94.2
+                    customerSatisfaction:
+                      type: number
+                      format: float
+                      example: 4.7
+                    averageRating:
+                      type: number
+                      format: float
+                      example: 4.6
+                    totalRevenue:
+                      type: number
+                      format: float
+                      example: 125000.00
+                trends:
+                  type: object
+                  properties:
+                    dailyGrowth:
+                      type: number
+                      format: float
+                      example: 2.3
+                    weeklyGrowth:
+                      type: number
+                      format: float
+                      example: 8.7
+                    monthlyGrowth:
+                      type: number
+                      format: float
+                      example: 15.2
+
+    PerformanceReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                courierId:
+                  type: string
+                  example: "courier_001"
+                period:
+                  type: string
+                  example: "month"
+                metrics:
+                  $ref: '#/components/schemas/PerformanceMetrics'
+                rankings:
+                  type: object
+                  properties:
+                    overall:
+                      type: integer
+                      example: 5
+                    speed:
+                      type: integer
+                      example: 3
+                    accuracy:
+                      type: integer
+                      example: 7
+
+    PerformanceMetrics:
+      type: object
+      properties:
+        deliveriesCompleted:
+          type: integer
+          example: 145
+        onTimeRate:
+          type: number
+          format: float
+          example: 96.5
+        averageDeliveryTime:
+          type: integer
+          example: 38
+        customerRating:
+          type: number
+          format: float
+          example: 4.8
+        earnings:
+          type: number
+          format: float
+          example: 7250.00
+        fuelEfficiency:
+          type: number
+          format: float
+          example: 85.5
+
+    CourierAnalyticsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                courierId:
+                  type: string
+                  example: "courier_001"
+                kpis:
+                  type: object
+                  properties:
+                    deliverySuccessRate:
+                      type: number
+                      format: float
+                      example: 98.5
+                    averageDeliveryTime:
+                      type: integer
+                      example: 35
+                    customerSatisfaction:
+                      type: number
+                      format: float
+                      example: 4.8
+                    earningsPerHour:
+                      type: number
+                      format: float
+                      example: 125.50
+                    routesOptimized:
+                      type: integer
+                      example: 45
+
+    # ==================== EARNINGS SCHEMAS ====================
+
+    EarningsSummaryResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                summary:
+                  type: object
+                  properties:
+                    totalEarnings:
+                      type: number
+                      format: float
+                      example: 45000.00
+                    totalCommissions:
+                      type: number
+                      format: float
+                      example: 4500.00
+                    netEarnings:
+                      type: number
+                      format: float
+                      example: 40500.00
+                    pendingPayments:
+                      type: number
+                      format: float
+                      example: 2500.00
+                breakdown:
+                  type: object
+                  properties:
+                    deliveryFees:
+                      type: number
+                      format: float
+                      example: 38000.00
+                    bonuses:
+                      type: number
+                      format: float
+                      example: 7000.00
+                    tips:
+                      type: number
+                      format: float
+                      example: 3500.00
+                    deductions:
+                      type: number
+                      format: float
+                      example: 3500.00
+                period:
+                  type: object
+                  properties:
+                    startDate:
+                      type: string
+                      format: date
+                    endDate:
+                      type: string
+                      format: date
+                    totalDays:
+                      type: integer
+                      example: 30
+
+    EarningRecordRequest:
+      type: object
+      required:
+        - courierId
+        - deliveryId
+        - amount
+        - type
+      properties:
+        courierId:
+          type: string
+          example: "courier_001"
+        deliveryId:
+          type: string
+          example: "del_001"
+        amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 1500.00
+        type:
+          type: string
+          enum: [delivery_fee, bonus, tip, penalty]
+          example: delivery_fee
+        description:
+          type: string
+          maxLength: 200
+          example: "Standard delivery fee"
+        metadata:
+          type: object
+          additionalProperties: true
+
+    EarningRecordResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                earningId:
+                  type: string
+                  example: "earn_123456"
+                courierId:
+                  type: string
+                  example: "courier_001"
+                deliveryId:
+                  type: string
+                  example: "del_001"
+                amount:
+                  type: number
+                  format: float
+                  example: 1500.00
+                type:
+                  type: string
+                  example: delivery_fee
+                status:
+                  type: string
+                  enum: [pending, processed, paid]
+                  example: processed
+                recordedAt:
+                  type: string
+                  format: date-time
+
+    CourierEarningsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                courierId:
+                  type: string
+                  example: "courier_001"
+                period:
+                  type: string
+                  example: "today"
+                earnings:
+                  type: object
+                  properties:
+                    total:
+                      type: number
+                      format: float
+                      example: 1850.00
+                    deliveries:
+                      type: integer
+                      example: 8
+                    bonuses:
+                      type: number
+                      format: float
+                      example: 250.00
+                    tips:
+                      type: number
+                      format: float
+                      example: 100.00
+                    deductions:
+                      type: number
+                      format: float
+                      example: 50.00
+                    net:
+                      type: number
+                      format: float
+                      example: 2150.00
+                breakdown:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      deliveryId:
+                        type: string
+                        example: "del_001"
+                      amount:
+                        type: number
+                        format: float
+                        example: 1500.00
+                      type:
+                        type: string
+                        example: delivery_fee
+                      timestamp:
+                        type: string
+                        format: date-time
+
+    CommissionCalculationRequest:
+      type: object
+      required:
+        - deliveries
+      properties:
+        deliveries:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            required:
+              - deliveryId
+              - amount
+              - distance
+            properties:
+              deliveryId:
+                type: string
+                example: "del_001"
+              amount:
+                type: number
+                format: float
+                example: 1500.00
+              distance:
+                type: number
+                format: float
+                example: 15.5
+              duration:
+                type: integer
+                example: 45
+              priority:
+                type: string
+                enum: [low, normal, high]
+                example: normal
+              serviceType:
+                type: string
+                enum: [standard, express, same_day]
+                example: standard
+
+    CommissionCalculationResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                earnings:
+                  type: number
+                  format: float
+                  example: 1350.00
+                commission:
+                  type: number
+                  format: float
+                  example: 135.00
+                total:
+                  type: number
+                  format: float
+                  example: 1485.00
+                breakdown:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      deliveryId:
+                        type: string
+                        example: "del_001"
+                      baseAmount:
+                        type: number
+                        format: float
+                        example: 1500.00
+                      commissionRate:
+                        type: number
+                        format: float
+                        example: 0.09
+                      commissionAmount:
+                        type: number
+                        format: float
+                        example: 135.00
+                      finalAmount:
+                        type: number
+                        format: float
+                        example: 1365.00
+
+    EarningsSummaryReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                period:
+                  type: string
+                  example: "month"
+                totalEarnings:
+                  type: number
+                  format: float
+                  example: 125000.00
+                totalDeliveries:
+                  type: integer
+                  example: 450
+                averagePerDelivery:
+                  type: number
+                  format: float
+                  example: 277.78
+                topPerformers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      courierId:
+                        type: string
+                        example: "courier_001"
+                      name:
+                        type: string
+                        example: "John Mwangi"
+                      earnings:
+                        type: number
+                        format: float
+                        example: 15000.00
+                      deliveries:
+                        type: integer
+                        example: 55
+
+    # ==================== SYSTEM SCHEMAS ====================
+
+    EngineStatusResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                engines:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/EngineInfo'
+                totalEngines:
+                  type: integer
+                  example: 11
+                healthyEngines:
+                  type: integer
+                  example: 11
+                unhealthyEngines:
+                  type: integer
+                  example: 0
+
+    EngineTestResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                testResults:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      engine:
+                        type: string
+                        example: logistics
+                      status:
+                        type: string
+                        enum: [success, error]
+                        example: success
+                      result:
+                        type: object
+                        additionalProperties: true
+                      error:
+                        type: string
+                        example: "Connection timeout"
+                timestamp:
+                  type: string
+                  format: date-time

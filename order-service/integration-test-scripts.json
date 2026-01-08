@@ -1,0 +1,14 @@
+{
+  "scripts": {
+    "test:integration": "jest --config jest.integration.config.js",
+    "test:integration:watch": "jest --config jest.integration.config.js --watch",
+    "test:integration:coverage": "jest --config jest.integration.config.js --coverage",
+    "test:load": "ts-node src/tests/integration/test-runner.ts load",
+    "test:accuracy": "ts-node src/tests/integration/test-runner.ts accuracy",
+    "test:all-integration": "ts-node src/tests/integration/test-runner.ts all",
+    "test:engines": "jest --config jest.integration.config.js --testPathPattern=engine-integration",
+    "test:workflows": "jest --config jest.integration.config.js --testPathPattern=end-to-end-workflows",
+    "test:errors": "jest --config jest.integration.config.js --testPathPattern=error-handling",
+    "test:performance": "jest --config jest.integration.config.js --testPathPattern=load-testing"
+  }
+}

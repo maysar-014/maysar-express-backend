@@ -1,0 +1,452 @@
+# Logistics Service API Test Automation Suite
+# This YAML file defines automated test scenarios for all logistics service endpoints
+# Can be used with testing frameworks like Newman (Postman), Artillery, or custom runners
+
+version: "1.0.0"
+name: "Logistics Service API Tests"
+description: "Comprehensive test suite for logistics service APIs including deliveries, routes, couriers, tracking, analytics, and earnings"
+
+baseUrl: "http://localhost:3007/api/v1"
+
+globals:
+  variables:
+    courierId: "courier_001"
+    deliveryId: "del_001"
+    routeId: "route_001"
+    trackingNumber: "TRKDEL001"
+    orderId: "test_order_001"
+
+testSuites:
+
+  # ==================== HEALTH & STATUS TESTS ====================
+  health_checks:
+    name: "Health and Status Checks"
+    description: "Test health endpoints and service status"
+    tests:
+      - name: "Health Check"
+        method: GET
+        url: "/health"
+        expectedStatus: 200
+        assertions:
+          - type: status
+            value: 200
+
+      - name: "Readiness Check"
+        method: GET
+        url: "/ready"
+        expectedStatus: 200
+
+      - name: "Performance Stats"
+        method: GET
+        url: "/stats/performance"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+
+      - name: "Engine Status Check"
+        method: GET
+        url: "/engines/status"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+          - type: jsonpath
+            path: "$.data.engines"
+            isArray: true
+
+  # ==================== DELIVERY TESTS ====================
+  delivery_tests:
+    name: "Delivery API Tests"
+    description: "Test delivery-related endpoints"
+    tests:
+      - name: "Calculate Delivery Cost"
+        method: POST
+        url: "/deliveries/calculate"
+        body:
+          orderId: "{{orderId}}"
+          pickupAddress:
+            street: "Uhuru Street"
+            city: "Dar es Salaam"
+            region: "Dar es Salaam"
+            postalCode: "11101"
+            country: "Tanzania"
+            contactName: "John Seller"
+            contactPhone: "+255712345678"
+          deliveryAddress:
+            street: "Samora Avenue"
+            city: "Dar es Salaam"
+            region: "Dar es Salaam"
+            postalCode: "11102"
+            country: "Tanzania"
+            contactName: "Jane Customer"
+            contactPhone: "+255723456789"
+          packageDetails:
+            weight: 2.5
+            dimensions:
+              length: 30
+              width: 20
+              height: 15
+            value: 50000
+            fragile: false
+            perishable: false
+            hazardous: false
+            items:
+              - productId: "prod_001"
+                name: "Electronics"
+                quantity: 1
+                weight: 2.5
+                value: 50000
+          serviceType: "standard"
+          priority: "normal"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+          - type: jsonpath
+            path: "$.data.deliveryId"
+            exists: true
+
+      - name: "Get Delivery Details"
+        method: GET
+        url: "/deliveries/{{deliveryId}}"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+          - type: jsonpath
+            path: "$.data.deliveryId"
+            value: "{{deliveryId}}"
+
+      - name: "List Deliveries"
+        method: GET
+        url: "/deliveries"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+          - type: jsonpath
+            path: "$.data.deliveries"
+            isArray: true
+
+      - name: "Get Delivery History"
+        method: GET
+        url: "/deliveries/{{deliveryId}}/history"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+
+  # ==================== ROUTE TESTS ====================
+  route_tests:
+    name: "Route API Tests"
+    description: "Test route optimization and management endpoints"
+    tests:
+      - name: "List Routes"
+        method: GET
+        url: "/routes"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+          - type: jsonpath
+            path: "$.data.routes"
+            isArray: true
+
+      - name: "Create Route"
+        method: POST
+        url: "/routes"
+        body:
+          name: "Test Route"
+          stops:
+            - location: "Point A"
+              lat: -6.7924
+              lng: 39.2083
+            - location: "Point B"
+              lat: -6.8000
+              lng: 39.2100
+          priority: "normal"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+          - type: jsonpath
+            path: "$.data.routeId"
+            exists: true
+
+      - name: "Optimize Route"
+        method: POST
+        url: "/routes/optimize"
+        body:
+          waypoints:
+            - lat: -6.7924
+              lng: 39.2083
+            - lat: -6.8000
+              lng: 39.2100
+            - lat: -6.8050
+              lng: 39.2150
+          constraints:
+            maxDistance: 100
+            maxTime: 120
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+
+      - name: "Get Route Details"
+        method: GET
+        url: "/routes/{{routeId}}"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+
+      - name: "Get Courier Routes"
+        method: GET
+        url: "/routes/courier/{{courierId}}"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+
+  # ==================== COURIER TESTS ====================
+  courier_tests:
+    name: "Courier API Tests"
+    description: "Test courier management endpoints"
+    tests:
+      - name: "List Couriers"
+        method: GET
+        url: "/couriers"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+          - type: jsonpath
+            path: "$.data.couriers"
+            isArray: true
+
+      - name: "Get Courier Details"
+        method: GET
+        url: "/couriers/{{courierId}}"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+          - type: jsonpath
+            path: "$.data.courierId"
+            value: "{{courierId}}"
+
+      - name: "Update Courier Status"
+        method: PUT
+        url: "/couriers/{{courierId}}/status"
+        body:
+          status: "busy"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+
+  # ==================== TRACKING TESTS ====================
+  tracking_tests:
+    name: "Tracking API Tests"
+    description: "Test real-time tracking endpoints"
+    tests:
+      - name: "Get Tracking Info"
+        method: GET
+        url: "/tracking/{{trackingNumber}}"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+          - type: jsonpath
+            path: "$.data.trackingNumber"
+            value: "{{trackingNumber}}"
+
+      - name: "Update Location"
+        method: POST
+        url: "/tracking/location"
+        body:
+          courierId: "{{courierId}}"
+          location:
+            lat: -6.7924
+            lng: 39.2083
+            accuracy: 10
+            speed: 25
+            heading: 90
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+
+      - name: "Get Location History"
+        method: GET
+        url: "/tracking/courier/{{courierId}}/history?period=day"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+
+  # ==================== ANALYTICS TESTS ====================
+  analytics_tests:
+    name: "Analytics API Tests"
+    description: "Test performance analytics endpoints"
+    tests:
+      - name: "Get Analytics Overview"
+        method: GET
+        url: "/analytics"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+          - type: jsonpath
+            path: "$.data.overview"
+            exists: true
+
+      - name: "Get Performance Report"
+        method: GET
+        url: "/analytics/performance?courierId={{courierId}}"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+
+      - name: "Get Courier Analytics"
+        method: GET
+        url: "/analytics/courier/{{courierId}}"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+
+  # ==================== EARNINGS TESTS ====================
+  earnings_tests:
+    name: "Earnings API Tests"
+    description: "Test earnings calculation and management endpoints"
+    tests:
+      - name: "Get Earnings Summary"
+        method: GET
+        url: "/earnings"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+          - type: jsonpath
+            path: "$.data.summary"
+            exists: true
+
+      - name: "Get Courier Earnings"
+        method: GET
+        url: "/earnings/courier/{{courierId}}?period=today"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+
+      - name: "Record Earning"
+        method: POST
+        url: "/earnings"
+        body:
+          courierId: "{{courierId}}"
+          deliveryId: "{{deliveryId}}"
+          amount: 1500
+          type: "delivery_fee"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+
+      - name: "Calculate Commissions"
+        method: POST
+        url: "/earnings/calculate"
+        body:
+          deliveries:
+            - deliveryId: "{{deliveryId}}"
+              amount: 1500
+              distance: 10
+              duration: 30
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+
+      - name: "Get Earnings Summary Report"
+        method: GET
+        url: "/earnings/summary?period=month"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+
+  # ==================== TEST ENDPOINTS ====================
+  test_endpoints:
+    name: "Test Endpoint Tests"
+    description: "Test the test endpoints for engine validation"
+    tests:
+      - name: "Test All Engines"
+        method: GET
+        url: "/test/all-engines"
+        expectedStatus: 200
+        assertions:
+          - type: jsonpath
+            path: "$.success"
+            value: true
+          - type: jsonpath
+            path: "$.data.testResults"
+            isArray: true
+
+# ==================== TEST EXECUTION CONFIG ====================
+execution:
+  parallel: false
+  failFast: false
+  timeout: 30000
+  retries: 2
+  delayBetweenTests: 100
+
+# ==================== REPORTING CONFIG ====================
+reporting:
+  format: "json"
+  outputDir: "./test-results"
+  includeResponseBody: true
+  includeRequestBody: true
+
+# ==================== ENVIRONMENT CONFIG ====================
+environments:
+  development:
+    baseUrl: "http://localhost:3007/api/v1"
+    variables:
+      courierId: "courier_001"
+
+  staging:
+    baseUrl: "https://api-staging.maysar.com/logistics/v1"
+    variables:
+      courierId: "courier_staging_001"
+
+  production:
+    baseUrl: "https://api.maysar.com/logistics/v1"
+    variables:
+      courierId: "courier_prod_001"

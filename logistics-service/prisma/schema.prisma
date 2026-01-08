@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Courier {
+  id                    String   @id @default(uuid())
+  name                  String
+  phone                 String   @unique
+  email                 String   @unique
+  status                String   @default("active")
+  vehicleType           String
+  vehicleLicensePlate   String
+  vehicleCapacity       Float
+  vehicleFuelType       String
+  currentLatitude       Float?
+  currentLongitude      Float?
+  locationAccuracy      Float?
+  locationTimestamp     DateTime?
+  onTimeDeliveryRate    Float    @default(0)
+  customerRating        Float    @default(0)
+  completedDeliveries   Int      @default(0)
+  totalEarnings         Float    @default(0)
+  averageDeliveryTime   Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  deliveries            Delivery[]
+  locationHistory       LocationHistory[]
+  earnings              Earning[]
+
+  @@map("couriers")
+}
+
+model Delivery {
+  id                    String   @id @default(uuid())
+  orderId               String
+  courierId             String?
+  status                String   @default("pending")
+  trackingNumber        String?  @unique
+  
+  pickupStreet          String
+  pickupCity            String
+  pickupRegion          String
+  pickupLatitude        Float
+  pickupLongitude       Float
+  pickupContactName     String
+  pickupContactPhone    String
+  
+  deliveryStreet        String
+  deliveryCity          String
+  deliveryRegion        String
+  deliveryLatitude      Float
+  deliveryLongitude     Float
+  deliveryContactName   String
+  deliveryContactPhone  String
+  
+  packageWeight         Float
+  packageValue          Float
+  packageFragile        Boolean  @default(false)
+  
+  estimatedDeliveryTime DateTime?
+  actualDeliveryTime    DateTime?
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  courier               Courier? @relation(fields: [courierId], references: [id])
+
+  @@map("deliveries")
+}
+
+model LocationHistory {
+  id          String   @id @default(uuid())
+  courierId   String
+  latitude    Float
+  longitude   Float
+  accuracy    Float?
+  timestamp   DateTime
+  createdAt   DateTime @default(now())
+
+  courier     Courier  @relation(fields: [courierId], references: [id])
+
+  @@map("location_history")
+}
+
+model Earning {
+  id              String   @id @default(uuid())
+  courierId       String
+  date            DateTime @db.Date
+  baseEarnings    Float    @default(0)
+  totalEarnings   Float
+  createdAt       DateTime @default(now())
+
+  courier         Courier  @relation(fields: [courierId], references: [id])
+
+  @@map("earnings")
+}

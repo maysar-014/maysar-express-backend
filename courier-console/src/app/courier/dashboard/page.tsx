@@ -10,15 +10,65 @@ export default function CourierDashboard() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      const [dashData, alertsData, statusData] = await Promise.all([
-        courierApi.getDashboard(),
-        courierApi.getCriticalAlerts(),
-        courierApi.getCourierStatus()
-      ]);
-      setDashboardData(dashData.data);
-      setCriticalAlerts(alertsData.data || []);
-      setCourierStatus(statusData.data);
+      try {
+        // Fetch data from multiple API endpoints
+        const [analyticsData, activeDeliveriesData, earningsData, alertsData, statusData] = await Promise.all([
+          courierApi.getDashboard(), // Analytics/KPIs
+          courierApi.getActiveDeliveries(), // Active deliveries count
+          courierApi.getTodayEarnings(), // Today's earnings
+          courierApi.getCriticalAlerts(),
+          courierApi.getCourierStatus()
+        ]);
+
+        // Extract data from API responses
+        const analytics = analyticsData?.data || {};
+        const activeDeliveries = activeDeliveriesData?.data?.deliveries || [];
+        const earnings = earningsData?.data || {};
+        const courierInfo = statusData?.data || {};
+
+        // Transform data for dashboard display
+        const transformedDashboard = {
+          todayEarnings: earnings.total || 0, // Today's total earnings
+          activeDeliveries: activeDeliveries.length || 0, // Count of active deliveries
+          completedDeliveries: earnings.deliveryCount || 0, // Completed deliveries today
+          rating: analytics.kpis?.customerSatisfaction || 0
+        };
+
+        // Transform courier status
+        const transformedStatus = {
+          status: courierInfo.status || 'Connecting...',
+          statusMessage: courierInfo.status ? `Currently ${courierInfo.status}` : 'Establishing connection to server',
+          vehicleType: courierInfo.vehicle || 'Loading...',  // API uses "vehicle" field
+          vehicleCapacity: courierInfo.vehicle ? `${courierInfo.vehicle} capacity` : 'Fetching vehicle details...',
+          behaviorLevel: courierInfo.rating ? `${courierInfo.rating}/5.0` : 'Loading...',
+          behaviorDescription: courierInfo.stats ? `${courierInfo.stats.deliveriesCompleted} total deliveries` : 'Retrieving performance data...'
+        };
+
+        setDashboardData(transformedDashboard);
+        setCriticalAlerts(Array.isArray(alertsData?.data) ? alertsData.data : []);
+        setCourierStatus(transformedStatus);
+
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        // Fallback to default values
+        setDashboardData({
+          todayEarnings: 0,
+          activeDeliveries: 0,
+          completedDeliveries: 0,
+          rating: 0
+        });
+        setCriticalAlerts([]);
+        setCourierStatus({
+          status: 'Error',
+          statusMessage: 'Failed to load data',
+          vehicleType: 'Unknown',
+          vehicleCapacity: 'Unknown',
+          behaviorLevel: 'N/A',
+          behaviorDescription: 'Connection error'
+        });
+      }
     };
+
     fetchDashboardData();
   }, []);
   return (

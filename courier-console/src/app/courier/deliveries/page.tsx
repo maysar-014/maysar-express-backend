@@ -12,9 +12,37 @@ export default function ActiveDeliveriesPage() {
 
   useEffect(() => {
     const fetchDeliveries = async () => {
-      const data = await courierApi.getActiveDeliveries();
-      setDeliveries(data.data);
+      try {
+        const data = await courierApi.getActiveDeliveries();
+
+        // Transform new API response format
+        const deliveriesData = data?.data?.deliveries || [];
+
+        // Filter for active/in-transit deliveries only
+        const activeDeliveries = deliveriesData.filter((delivery: any) =>
+          delivery.status === 'in_transit' || delivery.status === 'assigned'
+        );
+
+        // Transform deliveries to match expected format
+        const transformedDeliveries = activeDeliveries.map((delivery: any) => ({
+          id: delivery.deliveryId || delivery.id || 'DEL-' + Math.random().toString(36).substr(2, 9),
+          type: delivery.status === 'assigned' ? 'Pickup' : 'Delivery',
+          location: delivery.deliveryLocation || delivery.deliveryAddress || 'Location not available',
+          customer: delivery.customerName || delivery.courier || 'Customer details pending',
+          eta: delivery.estimatedDelivery ? new Date(delivery.estimatedDelivery).toLocaleTimeString() : 'ETA pending',
+          packageType: 'Standard Package',
+          weight: delivery.packageWeight ? `${delivery.packageWeight}kg` : 'Weight TBD',
+          riskFlags: delivery.priority === 'high' ? ['High Priority'] : [],
+          status: delivery.status
+        }));
+
+        setDeliveries(transformedDeliveries);
+      } catch (error) {
+        console.error('Error fetching deliveries:', error);
+        setDeliveries([]);
+      }
     };
+
     fetchDeliveries();
   }, []);
 

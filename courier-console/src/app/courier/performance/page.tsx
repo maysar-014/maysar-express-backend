@@ -15,9 +15,74 @@ export default function PerformancePage() {
         courierApi.getPerformanceHints(),
         courierApi.getPerformanceInsights()
       ]);
-      setPerformanceOverview(overviewData.data);
-      setImprovementHints(hintsData.data);
-      setBehavioralInsights(insightsData.data);
+      
+      // Transform new API response format
+      const performanceInfo = overviewData?.data || {};
+      const hintsInfo = hintsData?.data || {};
+      const insightsInfo = insightsData?.data || {};
+      
+      // Transform performance overview
+      const transformedOverview = {
+        deliverySuccess: {
+          level: performanceInfo.metrics?.onTimeRate > 90 ? 'Good' : 'Needs Improvement',
+          percentage: Math.round(performanceInfo.metrics?.onTimeRate || 0),
+          trend: 'stable'
+        },
+        customerSatisfaction: {
+          level: performanceInfo.metrics?.customerRating > 4 ? 'Good' : 'Needs Improvement',
+          percentage: Math.round((performanceInfo.metrics?.customerRating || 0) * 20),
+          trend: 'improving'
+        },
+        routeEfficiency: {
+          level: performanceInfo.metrics?.fuelEfficiency > 80 ? 'Good' : 'Needs Improvement',
+          percentage: Math.round(performanceInfo.metrics?.fuelEfficiency || 0),
+          trend: 'stable'
+        },
+        timeManagement: {
+          level: performanceInfo.metrics?.averageDeliveryTime < 40 ? 'Good' : 'Needs Improvement',
+          percentage: Math.max(0, 100 - (performanceInfo.metrics?.averageDeliveryTime || 40)),
+          trend: 'improving'
+        }
+      };
+      
+      // Transform hints (using KPIs data)
+      const transformedHints = [
+        {
+          metric: 'Delivery Success Rate',
+          hint: `Current success rate: ${Math.round(hintsInfo.kpis?.deliverySuccessRate || 0)}%`,
+          action: 'Focus on completing deliveries on time and following route guidance'
+        },
+        {
+          metric: 'Customer Satisfaction',
+          hint: `Current rating: ${(hintsInfo.kpis?.customerSatisfaction || 0).toFixed(1)}/5.0`,
+          action: 'Maintain professional communication and handle packages with care'
+        },
+        {
+          metric: 'Route Optimization',
+          hint: `Routes optimized: ${hintsInfo.kpis?.routesOptimized || 0}`,
+          action: 'Follow suggested routes and report traffic issues promptly'
+        }
+      ];
+      
+      // Transform insights
+      const transformedInsights = [
+        {
+          insight: 'Delivery Time Performance',
+          period: 'Last 7 days',
+          impact: hintsInfo.kpis?.averageDeliveryTime < 40 ? 'Positive' : 'Needs Attention',
+          suggestion: 'Continue following optimized routes'
+        },
+        {
+          insight: 'Customer Interaction',
+          period: 'Last 30 days',
+          impact: hintsInfo.kpis?.customerSatisfaction > 4 ? 'Positive' : 'Needs Attention',
+          suggestion: 'Maintain professional communication'
+        }
+      ];
+      
+      setPerformanceOverview(transformedOverview);
+      setImprovementHints(transformedHints);
+      setBehavioralInsights(transformedInsights);
     };
     fetchPerformanceData();
   }, []);

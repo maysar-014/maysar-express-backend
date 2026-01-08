@@ -15,9 +15,40 @@ export default function EarningsPage() {
         courierApi.getPendingEarnings(),
         courierApi.getEarningsHistory()
       ]);
-      setTodayEarnings(todayData.data);
-      setPendingEarnings(pendingData.data);
-      setEarningsHistory(historyData.data);
+      
+      // Transform new API response format
+      const todayEarningsData = todayData?.data?.earnings || {};
+      const pendingEarningsData = pendingData?.data?.summary || {};
+      const historyEarningsData = historyData?.data?.breakdown || [];
+      
+      // Transform today's earnings
+      const transformedToday = {
+        total: todayEarningsData.total || 0,
+        breakdown: {
+          base: todayEarningsData.total * 0.6 || 0, // Estimate base rate
+          distance: todayEarningsData.total * 0.2 || 0, // Estimate distance
+          time: todayEarningsData.total * 0.1 || 0, // Estimate time
+          weightBonus: todayEarningsData.bonuses || 0,
+          heavyItemBonus: todayEarningsData.tips || 0
+        }
+      };
+      
+      // Transform history data
+      const transformedHistory = historyEarningsData.map((item: any) => ({
+        period: new Date(item.timestamp).toLocaleDateString(),
+        amount: item.amount || 0,
+        status: 'completed',
+        breakdown: {
+          base: item.amount * 0.6 || 0,
+          distance: item.amount * 0.2 || 0,
+          time: item.amount * 0.1 || 0,
+          bonuses: item.amount * 0.1 || 0
+        }
+      }));
+      
+      setTodayEarnings(transformedToday);
+      setPendingEarnings(pendingEarningsData);
+      setEarningsHistory(transformedHistory);
     };
     fetchEarningsData();
   }, []);
