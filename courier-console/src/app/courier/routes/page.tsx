@@ -34,19 +34,10 @@ export default function RouteNavigationPage() {
     fetchRouteData();
   }, []);
 
-  const handleReroute = async () => {
-    try {
-      await courierApi.requestReroute();
-      setCurrentRoute(prev => ({
-        ...prev,
-        trafficStatus: 'Rerouting due to heavy traffic...',
-        waypoints: prev.waypoints.map(w =>
-          w.status === 'upcoming' ? { ...w, eta: '15:45' } : w
-        ),
-        estimatedTime: '52 mins'
-      }));
-    } catch (err) {
-      console.error('Failed to request reroute:', err);
+  const handleNavigateToLocation = (waypoint) => {
+    if (waypoint.coordinates) {
+      const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${waypoint.coordinates.lat},${waypoint.coordinates.lng}&travelmode=driving`;
+      window.open(googleMapsUrl, '_blank');
     }
   };
 
@@ -100,20 +91,48 @@ export default function RouteNavigationPage() {
         <div className="flex justify-between items-start mb-3">
           <div>
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-2">
-              Active Route: {currentRoute.id}
+              {Array.isArray(currentRoute?.waypoints) ? currentRoute.waypoints.map((waypoint, index) => (
+                <span key={waypoint.id}>
+                  <span className={`${
+                    waypoint.status === 'completed' ? 'text-green-600' :
+                    waypoint.status === 'current' ? 'text-blue-600 font-bold' :
+                    'text-gray-500'
+                  }`}>
+                    {waypoint.location}
+                  </span>
+                  {index < currentRoute.waypoints.length - 1 && <span className="text-gray-400 mx-1">→</span>}
+                </span>
+              )) : currentRoute.name || currentRoute.id}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">{currentRoute.description}</p>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
               <div>
-                <p className="text-gray-500 dark:text-gray-400 uppercase tracking-wider">Distance</p>
-                <p className="font-medium text-gray-900 dark:text-white">{currentRoute.distance}</p>
+                <p className="text-gray-500 dark:text-gray-400 uppercase tracking-wider">Current Location</p>
+                <p className="font-medium text-gray-900 dark:text-white">{currentRoute.currentLocation || 'Loading...'}</p>
               </div>
               <div>
-                <p className="text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estimated Time</p>
-                <p className="font-medium text-gray-900 dark:text-white">{currentRoute.estimatedTime}</p>
+                <p className="text-gray-500 dark:text-gray-400 uppercase tracking-wider">Distance Covered</p>
+                <p className="font-medium text-green-600">{currentRoute.distanceCovered || '0 km'}</p>
               </div>
               <div>
-                <p className="text-gray-500 dark:text-gray-400 uppercase tracking-wider">Traffic Status</p>
-                <p className="font-medium text-orange-600">{currentRoute.trafficStatus}</p>
+                <p className="text-gray-500 dark:text-gray-400 uppercase tracking-wider">Distance Remaining</p>
+                <p className="font-medium text-orange-600">{currentRoute.distanceRemaining || '0 km'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time Remaining</p>
+                <p className="font-medium text-blue-600">{currentRoute.timeRemaining || '0 mins'}</p>
+              </div>
+            </div>
+            <div className="mt-3">
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-gray-500">Route Progress</span>
+                <span className="text-gray-900 dark:text-white font-medium">{currentRoute.progress || 0}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${currentRoute.progress || 0}%` }}
+                ></div>
               </div>
             </div>
           </div>
@@ -130,31 +149,50 @@ export default function RouteNavigationPage() {
 
         {/* Route Waypoints */}
         <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Delivery Locations</h3>
           {Array.isArray(currentRoute?.waypoints) ? currentRoute.waypoints.map((waypoint, index) => (
-            <div key={waypoint.id} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                waypoint.status === 'completed'
-                  ? 'bg-green-500 text-white'
-                  : waypoint.status === 'current'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-300 text-gray-700'
-              }`}>
-                {waypoint.status === 'completed' ? '✓' : index + 1}
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900 dark:text-white text-sm">{waypoint.location}</p>
-                {waypoint.eta && (
-                  <p className="text-xs text-gray-600 dark:text-gray-400">ETA: {waypoint.eta}</p>
-                )}
-              </div>
-              <div className={`px-2 py-1 text-xs font-medium rounded-full ${
-                waypoint.status === 'completed'
-                  ? 'bg-green-100 text-green-800'
-                  : waypoint.status === 'current'
-                  ? 'bg-blue-100 text-blue-800'
-                  : 'bg-gray-100 text-gray-800'
-              }`}>
-                {waypoint.status === 'completed' ? 'Completed' : waypoint.status === 'current' ? 'Current' : 'Upcoming'}
+            <div 
+              key={waypoint.id} 
+              className="border border-gray-200 dark:border-gray-700 rounded p-3"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-start space-x-3 flex-1">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                    waypoint.status === 'completed'
+                      ? 'bg-green-500 text-white'
+                      : waypoint.status === 'current'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-300 text-gray-700'
+                  }`}>
+                    {waypoint.status === 'completed' ? '✓' : index + 1}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <h4 className="font-medium text-gray-900 dark:text-white text-sm">{waypoint.location}</h4>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{waypoint.district}</span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{waypoint.fullAddress}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500">{waypoint.landmark}</p>
+                    <div className="flex items-center space-x-3 mt-2">
+                      <span className="text-xs text-gray-500">ETA: {waypoint.eta}</span>
+                      <span className={`px-2 py-1 text-xs rounded ${
+                        waypoint.status === 'completed'
+                          ? 'bg-green-100 text-green-800'
+                          : waypoint.status === 'current'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {waypoint.status === 'completed' ? 'Completed' : waypoint.status === 'current' ? 'Current' : 'Upcoming'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleNavigateToLocation(waypoint)}
+                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded"
+                >
+                  Navigate
+                </button>
               </div>
             </div>
           )) : null}
@@ -163,14 +201,11 @@ export default function RouteNavigationPage() {
         {/* Navigation Actions */}
         <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
           <div className="text-xs text-gray-600 dark:text-gray-400">
-            Navigation auto-launched • Route automatically selected
+            Next: {currentRoute.nextDestination || 'Loading...'} - {currentRoute.trafficStatus || 'Checking traffic...'}
           </div>
-          <button
-            onClick={handleReroute}
-            className="px-3 py-2 bg-orange-600 text-white text-xs font-medium rounded-md hover:bg-orange-700"
-          >
-            Request Reroute
-          </button>
+          <div className="text-xs text-gray-500">
+            Last updated: {new Date().toLocaleTimeString()}
+          </div>
         </div>
       </div>
 

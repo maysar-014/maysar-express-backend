@@ -38,7 +38,7 @@ router.get('/deliveries/active', async (req, res) => {
         eta: '14:30',
         packageType: 'Electronics',
         weight: '2.5kg',
-        requiredAction: 'Mark as Delivered',
+        requiredAction: 'Photo + Customer Signature',
         riskFlags: ['Fragile'],
         status: 'assigned'
       },
@@ -50,7 +50,7 @@ router.get('/deliveries/active', async (req, res) => {
         eta: '15:15',
         packageType: 'Documents',
         weight: '0.5kg',
-        requiredAction: 'Mark as Delivered',
+        requiredAction: 'ID Check + Signature',
         riskFlags: [],
         status: 'in_progress'
       },
@@ -62,7 +62,7 @@ router.get('/deliveries/active', async (req, res) => {
         eta: '16:00',
         packageType: 'Fashion',
         weight: '1.2kg',
-        requiredAction: 'Mark as Delivered',
+        requiredAction: 'Photo + ID Verification',
         riskFlags: ['High Value'],
         status: 'assigned'
       }
@@ -82,25 +82,45 @@ router.get('/routes/current', async (req, res) => {
     success: true,
     data: {
       id: 'ROUTE-001',
-      distance: '24.5 km',
-      estimatedTime: '45 mins',
+      name: 'Kariakoo → Mikocheni → Masaki',
+      description: '3 deliveries: Electronics pickup, Documents delivery, Fashion delivery',
+      totalDistance: '24.5 km',
+      distanceCovered: '8.2 km',
+      distanceRemaining: '16.3 km',
+      totalEstimatedTime: '45 mins',
+      timeRemaining: '28 mins',
+      currentLocation: 'Ali Hassan Mwinyi Road, approaching Mikocheni',
+      nextDestination: 'Mikocheni Plaza',
+      progress: 33,
       trafficStatus: 'Moderate traffic on main routes',
       waypoints: [
         {
           id: 'wp-1',
           location: 'Kariakoo Market',
+          fullAddress: 'Kariakoo Market, Msimbazi Street, Dar es Salaam, Tanzania',
+          coordinates: { lat: -6.8235, lng: 39.2695 },
+          landmark: 'Near Central Railway Station',
+          district: 'Ilala',
           status: 'completed',
           eta: '14:30'
         },
         {
           id: 'wp-2',
           location: 'Mikocheni',
+          fullAddress: 'Mikocheni Plaza, Ali Hassan Mwinyi Road, Dar es Salaam, Tanzania',
+          coordinates: { lat: -6.7735, lng: 39.2695 },
+          landmark: 'Opposite Shoppers Plaza',
+          district: 'Kinondoni',
           status: 'current',
           eta: '15:15'
         },
         {
           id: 'wp-3',
           location: 'Masaki Peninsula',
+          fullAddress: 'Masaki Peninsula, Haile Selassie Road, Dar es Salaam, Tanzania',
+          coordinates: { lat: -6.7647, lng: 39.2694 },
+          landmark: 'Near Slipway Shopping Center',
+          district: 'Kinondoni',
           status: 'upcoming',
           eta: '16:00'
         }
@@ -261,6 +281,18 @@ router.get('/performance/hints', async (req, res) => {
         action: 'Algorithm prioritizes consistent availability'
       }
     ]
+  });
+});
+
+// ===== ROUTE PERFORMANCE APIs =====
+router.get('/routes/adherence', async (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      onRoutePercentage: 94,
+      gpsAccuracy: 'High (±3m)',
+      speedCompliance: 87
+    }
   });
 });
 

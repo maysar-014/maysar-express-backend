@@ -24,6 +24,23 @@ DeliveryAssigned → RouteOptimized → DeliveryCompleted →
 EarningsCalculated → PerformanceUpdated
 ```
 
+## Courier Console Features
+
+### Dynamic Route Tracking Interface
+- **Real-time Location Updates**: Current driver position with street-level accuracy
+- **Progress Visualization**: Dynamic progress bar showing route completion percentage
+- **Distance Metrics**: Live tracking of covered vs remaining distance
+- **Time Estimation**: Real-time updates of remaining delivery time
+- **Color-coded Route Display**: Visual status indicators for completed, current, and upcoming locations
+- **Google Maps Integration**: One-click navigation to any delivery location
+
+### Professional Delivery Management
+- **Minimal Card Design**: Clean, professional interface without icons or emojis
+- **Comprehensive Location Data**: Full addresses, landmarks, and district information
+- **Status-based Actions**: Context-aware buttons based on delivery status
+- **Buyer Confirmation Flow**: Courier marks delivered, buyer confirms receipt
+- **Performance Tracking**: Route adherence, GPS accuracy, and speed compliance monitoring
+
 ## API Service Structure
 
 ### Base URL: `http://localhost:3015/api/courier`
@@ -69,7 +86,7 @@ Response: {
       eta: '14:30',
       packageType: 'Electronics',
       weight: '2.5kg',
-      requiredAction: 'Photo + Signature',
+      requiredAction: 'Order Current Status As Seen to Buyer',
       riskFlags: ['Fragile'],
       status: 'assigned'
     }
@@ -80,10 +97,18 @@ Response: {
 ### Delivery Saga Events
 
 ```typescript
-// Event Flow
+// Updated Event Flow with Buyer Confirmation
 DeliveryAssigned → CourierNotified → DeliveryAccepted → 
-RouteCalculated → DeliveryInProgress → DeliveryCompleted → 
-BuyerConfirmation → EarningsUpdated → PerformanceTracked
+RouteCalculated → DeliveryInProgress → CourierMarksDelivered → 
+BuyerNotified → BuyerConfirmation → EarningsUpdated → PerformanceTracked
+```
+
+### Dynamic Route Tracking Events
+
+```typescript
+// Real-time Tracking Event Flow
+LocationUpdated → ProgressCalculated → DistanceRecalculated → 
+ETAUpdated → RouteStatusUpdated → UIRefreshed
 ```
 
 ## 2. Route Optimization Saga
@@ -96,19 +121,31 @@ POST /routes/optimize
 Body: { deliveries: [], preferences: {} }
 Response: { success: true, data: { routeId, waypoints, duration } }
 
-// 2. Get Current Route
+// 2. Get Current Route with Dynamic Tracking
 GET /routes/current
 Response: {
   success: true,
   data: {
     id: 'ROUTE-001',
-    distance: '24.5 km',
-    estimatedTime: '45 mins',
+    name: 'Kariakoo → Mikocheni → Masaki',
+    description: '3 deliveries: Electronics pickup, Documents delivery, Fashion delivery',
+    totalDistance: '24.5 km',
+    distanceCovered: '8.2 km',
+    distanceRemaining: '16.3 km',
+    totalEstimatedTime: '45 mins',
+    timeRemaining: '28 mins',
+    currentLocation: 'Ali Hassan Mwinyi Road, approaching Mikocheni',
+    nextDestination: 'Mikocheni Plaza',
+    progress: 33,
     trafficStatus: 'Moderate traffic on main routes',
     waypoints: [
       {
         id: 'wp-1',
         location: 'Kariakoo Market',
+        fullAddress: 'Kariakoo Market, Msimbazi Street, Dar es Salaam, Tanzania',
+        coordinates: { lat: -6.8235, lng: 39.2695 },
+        landmark: 'Near Central Railway Station',
+        district: 'Ilala',
         status: 'completed',
         eta: '14:30'
       }
@@ -116,7 +153,18 @@ Response: {
   }
 }
 
-// 3. Update Route
+// 3. Get Route Adherence Performance
+GET /routes/adherence
+Response: {
+  success: true,
+  data: {
+    onRoutePercentage: 94,
+    gpsAccuracy: 'High (±3m)',
+    speedCompliance: 87
+  }
+}
+
+// 4. Update Route
 PUT /routes/:id/update
 Body: { waypoints: [], reason: 'traffic_update' }
 Response: { success: true, data: { routeId, updated: true } }
