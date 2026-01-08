@@ -1,4 +1,5 @@
 import './globals.css'
+import { ThemeProvider } from '../lib/theme-context'
 
 export const metadata = {
   title: 'Maysar Courier Console',
@@ -12,7 +13,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   )
 }

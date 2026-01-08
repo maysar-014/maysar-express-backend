@@ -1164,4 +1164,95 @@ router.get('/kyc', async (req, res) => {
   });
 });
 
+// ===== SHIPPING MANAGEMENT APIs =====
+router.get('/shipping', async (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      shippingRates: [
+        { id: 1, region: 'Arusha', weightRange: '0-2kg', rate: 7500, carrier: 'Express', deliveryDays: '2-3' },
+        { id: 2, region: 'Dar es Salaam', weightRange: '0-2kg', rate: 2500, carrier: 'Standard', deliveryDays: 'Same' },
+        { id: 3, region: 'Dodoma', weightRange: '0-2kg', rate: 6500, carrier: 'Standard', deliveryDays: '2-3' },
+        { id: 4, region: 'Geita', weightRange: '0-2kg', rate: 8500, carrier: 'Standard', deliveryDays: '3-4' },
+        { id: 5, region: 'Iringa', weightRange: '0-2kg', rate: 9000, carrier: 'Express', deliveryDays: '3-5' },
+        { id: 6, region: 'Kagera', weightRange: '0-2kg', rate: 8000, carrier: 'Standard', deliveryDays: '3-4' },
+        { id: 7, region: 'Katavi', weightRange: '0-2kg', rate: 11000, carrier: 'Standard', deliveryDays: '4-6' },
+        { id: 8, region: 'Kigoma', weightRange: '0-2kg', rate: 10000, carrier: 'Standard', deliveryDays: '4-6' },
+        { id: 9, region: 'Kilimanjaro', weightRange: '0-2kg', rate: 7500, carrier: 'Express', deliveryDays: '2-3' },
+        { id: 10, region: 'Lindi', weightRange: '0-2kg', rate: 8500, carrier: 'Standard', deliveryDays: '3-4' },
+        { id: 11, region: 'Manyara', weightRange: '0-2kg', rate: 7000, carrier: 'Standard', deliveryDays: '2-3' },
+        { id: 12, region: 'Mara', weightRange: '0-2kg', rate: 8500, carrier: 'Standard', deliveryDays: '3-4' },
+        { id: 13, region: 'Mbeya', weightRange: '0-2kg', rate: 9000, carrier: 'Express', deliveryDays: '3-5' },
+        { id: 14, region: 'Morogoro', weightRange: '0-2kg', rate: 5500, carrier: 'Standard', deliveryDays: '1-2' },
+        { id: 15, region: 'Mtwara', weightRange: '0-2kg', rate: 9500, carrier: 'Standard', deliveryDays: '3-5' },
+        { id: 16, region: 'Mwanza', weightRange: '0-2kg', rate: 8000, carrier: 'Standard', deliveryDays: '3-4' },
+        { id: 17, region: 'Njombe', weightRange: '0-2kg', rate: 9500, carrier: 'Express', deliveryDays: '3-5' },
+        { id: 18, region: 'Pwani (Coast)', weightRange: '0-2kg', rate: 4500, carrier: 'Standard', deliveryDays: '1-2' },
+        { id: 19, region: 'Rukwa', weightRange: '0-2kg', rate: 10500, carrier: 'Standard', deliveryDays: '4-6' },
+        { id: 20, region: 'Ruvuma', weightRange: '0-2kg', rate: 10000, carrier: 'Standard', deliveryDays: '4-5' },
+        { id: 21, region: 'Shinyanga', weightRange: '0-2kg', rate: 8500, carrier: 'Standard', deliveryDays: '3-4' },
+        { id: 22, region: 'Simiyu', weightRange: '0-2kg', rate: 8500, carrier: 'Standard', deliveryDays: '3-4' },
+        { id: 23, region: 'Singida', weightRange: '0-2kg', rate: 7500, carrier: 'Standard', deliveryDays: '2-4' },
+        { id: 24, region: 'Songwe', weightRange: '0-2kg', rate: 9500, carrier: 'Express', deliveryDays: '3-5' },
+        { id: 25, region: 'Tabora', weightRange: '0-2kg', rate: 9000, carrier: 'Standard', deliveryDays: '3-5' },
+        { id: 26, region: 'Tanga', weightRange: '0-2kg', rate: 6000, carrier: 'Standard', deliveryDays: '2-3' },
+        { id: 27, region: 'Zanzibar North', weightRange: '0-2kg', rate: 12000, carrier: 'Express', deliveryDays: '2-4' },
+        { id: 28, region: 'Zanzibar South', weightRange: '0-2kg', rate: 12000, carrier: 'Express', deliveryDays: '2-4' },
+        { id: 29, region: 'Zanzibar Urban/West', weightRange: '0-2kg', rate: 11500, carrier: 'Express', deliveryDays: '2-4' },
+        { id: 30, region: 'Pemba North', weightRange: '0-2kg', rate: 13000, carrier: 'Express', deliveryDays: '3-5' },
+        { id: 31, region: 'Pemba South', weightRange: '0-2kg', rate: 13000, carrier: 'Express', deliveryDays: '3-5' }
+      ]
+    }
+  });
+});
+
+router.get('/shipments', async (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      shipments: [
+        {
+          id: 1,
+          orderNumber: 'ORD-2024-001',
+          customer: 'John Doe',
+          status: 'in_transit',
+          trackingNumber: 'TRK123456',
+          carrier: 'DHL',
+          estimatedDelivery: '2024-01-15'
+        },
+        {
+          id: 2,
+          orderNumber: 'ORD-2024-002',
+          customer: 'Jane Smith',
+          status: 'delivered',
+          trackingNumber: 'TRK123457',
+          carrier: 'FedEx',
+          estimatedDelivery: '2024-01-14'
+        },
+        {
+          id: 3,
+          orderNumber: 'ORD-2024-003',
+          customer: 'Mike Johnson',
+          status: 'pending',
+          trackingNumber: 'TRK123458',
+          carrier: 'UPS',
+          estimatedDelivery: '2024-01-16'
+        }
+      ]
+    }
+  });
+});
+
+router.get('/shipping-stats', async (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      activeShipments: 24,
+      deliveredToday: 12,
+      avgDeliveryTime: '2.3',
+      shippingCost: 45000
+    }
+  });
+});
+
 module.exports = router;

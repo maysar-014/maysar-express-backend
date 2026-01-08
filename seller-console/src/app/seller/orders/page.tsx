@@ -35,58 +35,58 @@ export default function OrdersPage() {
   const averageOrderValue = totalRevenue / orders.filter(o => o.status !== 'cancelled').length || 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Orders</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Orders</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">
             Manage and track your customer orders
           </p>
         </div>
         <div className="flex space-x-3">
-          <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+          <button className="px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-sm">
             Export Orders
           </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <button className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
             Process Orders
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Orders</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalOrders}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">All time</p>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Total Orders</p>
+          <p className="text-xl font-bold text-gray-900 dark:text-white">{totalOrders}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">All time</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Orders</p>
-          <p className="text-2xl font-bold text-yellow-600">{pendingOrders}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Need attention</p>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Pending Orders</p>
+          <p className="text-xl font-bold text-yellow-600">{pendingOrders}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Need attention</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</p>
-          <p className="text-2xl font-bold text-green-600">TZS {totalRevenue.toLocaleString()}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">From completed orders</p>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Total Revenue</p>
+          <p className="text-xl font-bold text-green-600">TZS {totalRevenue.toLocaleString()}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">From completed orders</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Average Order Value</p>
-          <p className="text-2xl font-bold text-blue-600">TZS {Math.round(averageOrderValue).toLocaleString()}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Per order</p>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Average Order Value</p>
+          <p className="text-xl font-bold text-blue-600">TZS {Math.round(averageOrderValue).toLocaleString()}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Per order</p>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Order Management</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Order Management</h3>
             <div className="flex space-x-2">
               <input
                 type="text"
                 placeholder="Search orders..."
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
-              <select className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+              <select className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                 <option>All Status</option>
                 <option>Pending</option>
                 <option>Confirmed</option>
@@ -103,13 +103,13 @@ export default function OrdersPage() {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase min-w-[160px]">Order ID</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase min-w-[280px]">Customer</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Items</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Total</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider min-w-[160px]">Order ID</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider min-w-[280px]">Customer</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Items</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -129,7 +129,7 @@ export default function OrdersPage() {
                     TZS {order.totalAmount.toLocaleString()}
                   </td>
                   <td className="px-4 py-2">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusColor(order.status)}`}>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-md whitespace-nowrap ${getStatusColor(order.status)}`}>
                       {order.status}
                     </span>
                   </td>
@@ -150,25 +150,25 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Order Status Distribution</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Order Status Distribution</h3>
           <div className="space-y-3">
-            {['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((status) => {
-              const count = orders.filter(o => o.status === status).length;
+            {['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((status: string) => {
+              const count = orders.filter((o: any) => o.status === status).length;
               const percentage = totalOrders > 0 ? (count / totalOrders) * 100 : 0;
               return (
                 <div key={status} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3 min-w-[140px]">
-                    <span className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusColor(status)}`}>
+                    <span className={`px-3 py-1 text-xs font-medium rounded-md whitespace-nowrap ${getStatusColor(status)}`}>
                       {status}
                     </span>
                     <span className="text-sm text-gray-600 dark:text-gray-400">{count} orders</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="w-20 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                      <div 
-                        className="bg-blue-500 h-2 rounded-full"
+                    <div className="w-20 bg-gray-200 dark:bg-gray-600 rounded-md h-2">
+                      <div
+                        className="bg-blue-500 h-2 rounded-md"
                         style={{ width: `${percentage}%` }}
                       ></div>
                     </div>
@@ -180,31 +180,31 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Order Activity</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Recent Order Activity</h3>
             <div className="flex space-x-2">
-              <button 
+              <button
                 onClick={() => setRecentOrdersPage(Math.max(0, recentOrdersPage - 1))}
                 disabled={recentOrdersPage === 0}
-                className="px-2 py-1 text-sm border rounded disabled:opacity-50 text-gray-700 dark:text-gray-300"
+                className="px-2 py-1 text-xs border rounded disabled:opacity-50 text-gray-700 dark:text-gray-300"
               >
                 Prev
               </button>
-              <button 
+              <button
                 onClick={() => setRecentOrdersPage(recentOrdersPage + 1)}
                 disabled={(recentOrdersPage + 1) * 2 >= orders.length}
-                className="px-2 py-1 text-sm border rounded disabled:opacity-50 text-gray-700 dark:text-gray-300"
+                className="px-2 py-1 text-xs border rounded disabled:opacity-50 text-gray-700 dark:text-gray-300"
               >
                 Next
               </button>
             </div>
           </div>
           <div className="space-y-3">
-            {orders.slice(recentOrdersPage * 2, (recentOrdersPage + 1) * 2).map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            {orders.slice(recentOrdersPage * 2, (recentOrdersPage + 1) * 2).map((order: any) => (
+              <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{order.orderNumber} {order.status}</p>
+                  <p className="text-xs font-medium text-gray-900 dark:text-white">{order.orderNumber} {order.status}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{order.customer.name} • TZS {order.totalAmount.toLocaleString()}</p>
                 </div>
                 <span className="text-xs text-blue-600">{new Date(order.orderDate).toLocaleDateString()}</span>

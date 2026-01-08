@@ -106,6 +106,35 @@ router.get('/analytics/customers', async (req, res) => {
   res.json({ success: true, data: { segments: [], behavior: {} } });
 });
 
+// ===== ENABLER COLLABORATION APIs =====
+router.post('/request-enablers', async (req, res) => {
+  const { requestType, description, targetSales, deadline, products, requirements, commission } = req.body;
+  
+  res.json({ 
+    success: true, 
+    data: { 
+      requestId: `req-${Date.now()}`,
+      status: 'pending',
+      requestType,
+      description,
+      targetSales,
+      deadline,
+      products,
+      requirements,
+      commission,
+      createdAt: new Date().toISOString()
+    } 
+  });
+});
+
+router.get('/enabler-requests', async (req, res) => {
+  res.json({ success: true, data: [] });
+});
+
+router.put('/enabler-requests/:id/status', async (req, res) => {
+  res.json({ success: true, data: { requestId: req.params.id, status: req.body.status } });
+});
+
 // ===== PAYMENT & EARNINGS APIs =====
 router.get('/payments/payouts', async (req, res) => {
   res.json({ success: true, data: [], nextPayout: null });

@@ -5,13 +5,43 @@ import { apiService } from '@/lib/api';
 import { getSeller } from '@/lib/permissions';
 import { useState } from 'react';
 
+
+interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  status: 'active' | 'inactive';
+  customerType: 'premium' | 'regular' | 'new';
+  totalOrders: number;
+  totalSpent: number;
+  averageOrderValue: number;
+  lastOrderDate: string;
+  joinDate: string;
+  lifetimeValue: number;
+  segment: string;
+  tags: string[];
+  notes?: string;
+}
+
 export default function CustomersPage() {
   const seller = getSeller();
-  const [topCustomersPage, setTopCustomersPage] = useState(0);
-  const [customerDirectoryPage, setCustomerDirectoryPage] = useState(0);
+
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
+  const [segmentFilter, setSegmentFilter] = useState('All Segments');
+  const [tagFilter, setTagFilter] = useState('All Tags');
+  const [dateRange, setDateRange] = useState('All Time');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [typeFilter, setTypeFilter] = useState('All Types');
+  const [customerDirectoryPage, setCustomerDirectoryPage] = useState(0);
+  const [topCustomersPage, setTopCustomersPage] = useState(0);
   const customersPerPage = 10;
 
   const { data: customersData, isLoading } = useQuery({
@@ -24,7 +54,7 @@ export default function CustomersPage() {
   const stats = customersData?.data?.data?.stats || {};
 
   // Filter customers based on search and filters
-  const filteredCustomers = customers.filter(customer => {
+  const filteredCustomers = customers.filter((customer: Customer) => {
     const matchesSearch = searchTerm === '' || 
       customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -57,72 +87,72 @@ export default function CustomersPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Customer Management</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Customer Management</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">
             Manage customer relationships and track engagement
           </p>
         </div>
         <div className="flex space-x-3">
-          <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <button className="px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-sm">
             Export Customers
           </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <button className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
             Add Customer
           </button>
         </div>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Customers</p>
-          <p className="text-2xl font-bold text-blue-600 mt-2">{stats.totalCustomers || 0}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">All time</p>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Total Customers</p>
+          <p className="text-xl font-bold text-blue-600">{stats.totalCustomers || 0}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">All time</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Customers</p>
-          <p className="text-2xl font-bold text-green-600 mt-2">{stats.activeCustomers || 0}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Currently engaged</p>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Active Customers</p>
+          <p className="text-xl font-bold text-green-600">{stats.activeCustomers || 0}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Currently engaged</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">New This Month</p>
-          <p className="text-2xl font-bold text-purple-600 mt-2">{stats.newThisMonth || 0}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Recent signups</p>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">New This Month</p>
+          <p className="text-xl font-bold text-purple-600">{stats.newThisMonth || 0}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Recent signups</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Lifetime Value</p>
-          <p className="text-2xl font-bold text-orange-600 mt-2">TZS {(stats.averageLifetimeValue || 0).toLocaleString()}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Per customer</p>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Avg Lifetime Value</p>
+          <p className="text-xl font-bold text-orange-600">TZS {(stats.averageLifetimeValue || 0).toLocaleString()}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Per customer</p>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Customer Directory</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Customer Directory</h3>
             <div className="flex space-x-2">
               <input
                 type="text"
                 placeholder="Search customers..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
-              <select 
+              <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option>All Status</option>
                 <option>Active</option>
                 <option>Inactive</option>
               </select>
-              <select 
+              <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option>All Types</option>
                 <option>Premium</option>
@@ -130,17 +160,17 @@ export default function CustomersPage() {
                 <option>New</option>
               </select>
               <div className="flex space-x-1">
-                <button 
+                <button
                   onClick={() => setCustomerDirectoryPage(Math.max(0, customerDirectoryPage - 1))}
                   disabled={customerDirectoryPage === 0}
-                  className="px-2 py-1 text-sm border rounded disabled:opacity-50 text-gray-700 dark:text-gray-300"
+                  className="px-2 py-1 text-xs border rounded disabled:opacity-50 text-gray-700 dark:text-gray-300"
                 >
                   Prev
                 </button>
-                <button 
+                <button
                   onClick={() => setCustomerDirectoryPage(customerDirectoryPage + 1)}
                   disabled={(customerDirectoryPage + 1) * customersPerPage >= filteredCustomers.length}
-                  className="px-2 py-1 text-sm border rounded disabled:opacity-50 text-gray-700 dark:text-gray-300"
+                  className="px-2 py-1 text-xs border rounded disabled:opacity-50 text-gray-700 dark:text-gray-300"
                 >
                   Next
                 </button>
@@ -181,7 +211,7 @@ export default function CustomersPage() {
               ) : (
                 filteredCustomers
                   .slice(customerDirectoryPage * customersPerPage, (customerDirectoryPage + 1) * customersPerPage)
-                  .map((customer) => (
+                  .map((customer: Customer) => (
                   <tr key={customer.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-6 py-4 min-w-[180px]">
                       <div>
@@ -205,12 +235,12 @@ export default function CustomersPage() {
                       TZS {customer.totalSpent.toLocaleString()}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getCustomerTypeColor(customer.customerType)}`}>
+                      <span className={`px-3 py-1 text-xs font-medium rounded-md whitespace-nowrap ${getCustomerTypeColor(customer.customerType)}`}>
                         {customer.customerType}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusColor(customer.status)}`}>
+                      <span className={`px-3 py-1 text-xs font-medium rounded-md whitespace-nowrap ${getStatusColor(customer.status)}`}>
                         {customer.status}
                       </span>
                     </td>
@@ -232,44 +262,44 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Customer Insights</h3>
-          <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Customer Insights</h3>
+          <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Premium Customers</span>
-              <span className="text-sm font-medium text-purple-600">{customers.filter(c => c.customerType === 'premium').length}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400 uppercase tracking-wider">Premium Customers</span>
+              <span className="text-lg font-bold text-purple-600">{customers.filter((c: any) => c.customerType === 'premium').length}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Regular Customers</span>
-              <span className="text-sm font-medium text-blue-600">{customers.filter(c => c.customerType === 'regular').length}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400 uppercase tracking-wider">Regular Customers</span>
+              <span className="text-lg font-bold text-blue-600">{customers.filter((c: any) => c.customerType === 'regular').length}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600 dark:text-gray-400">New Customers</span>
-              <span className="text-sm font-medium text-yellow-600">{customers.filter(c => c.customerType === 'new').length}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400 uppercase tracking-wider">New Customers</span>
+              <span className="text-lg font-bold text-yellow-600">{customers.filter((c: any) => c.customerType === 'new').length}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Inactive Customers</span>
-              <span className="text-sm font-medium text-red-600">{customers.filter(c => c.status === 'inactive').length}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400 uppercase tracking-wider">Inactive Customers</span>
+              <span className="text-lg font-bold text-red-600">{customers.filter((c: any) => c.status === 'inactive').length}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Top Customers</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Top Customers</h3>
             <div className="flex space-x-2">
-              <button 
+              <button
                 onClick={() => setTopCustomersPage(Math.max(0, topCustomersPage - 1))}
                 disabled={topCustomersPage === 0}
-                className="px-2 py-1 text-sm border rounded disabled:opacity-50 text-gray-700 dark:text-gray-300"
+                className="px-2 py-1 text-xs border rounded disabled:opacity-50 text-gray-700 dark:text-gray-300"
               >
                 Prev
               </button>
-              <button 
+              <button
                 onClick={() => setTopCustomersPage(topCustomersPage + 1)}
                 disabled={(topCustomersPage + 1) * 2 >= customers.length}
-                className="px-2 py-1 text-sm border rounded disabled:opacity-50 text-gray-700 dark:text-gray-300"
+                className="px-2 py-1 text-xs border rounded disabled:opacity-50 text-gray-700 dark:text-gray-300"
               >
                 Next
               </button>
@@ -277,17 +307,17 @@ export default function CustomersPage() {
           </div>
           <div className="space-y-3">
             {customers
-              .sort((a, b) => b.totalSpent - a.totalSpent)
+              .sort((a: any, b: any) => b.totalSpent - a.totalSpent)
               .slice(topCustomersPage * 2, (topCustomersPage + 1) * 2)
-              .map((customer) => (
-                <div key={customer.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              .map((customer: Customer) => (
+                <div key={customer.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">{customer.name}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">{customer.totalOrders} orders</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">TZS {customer.totalSpent.toLocaleString()}</p>
-                    <span className={`text-xs px-2 py-1 rounded-full ${getCustomerTypeColor(customer.customerType)}`}>
+                    <span className={`text-xs px-2 py-1 rounded-md ${getCustomerTypeColor(customer.customerType)}`}>
                       {customer.customerType}
                     </span>
                   </div>
@@ -297,6 +327,7 @@ export default function CustomersPage() {
           </div>
         </div>
       </div>
+
     </div>
   );
 }

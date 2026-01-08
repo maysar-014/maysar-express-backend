@@ -999,6 +999,75 @@ GET /seller/enablers
 }
 ```
 
+#### Request Enabler Support
+```http
+POST /seller/enablers/request
+```
+
+**Description**: Submit a request for enabler support with selected product and commission structure.
+
+**Request Schema**:
+```typescript
+{
+  requestType: 'sales_support';
+  description: string;
+  deadline: string; // ISO 8601 date
+  product: string; // Single product name
+  productPrice: number; // Price of the selected product
+  requirements: string[]; // Array of required skills
+  commission: string; // Percentage with % symbol (e.g., "5%")
+  priority: 'low' | 'medium' | 'high';
+  location: string;
+}
+```
+
+**Response Schema**:
+```typescript
+{
+  success: boolean;
+  data: {
+    requestId: string;
+    status: 'submitted';
+    estimatedCommission: number;
+    productPrice: number;
+    minimumEnablerRank: string;
+    submittedAt: string; // ISO 8601
+  };
+}
+```
+
+#### Get Enabler Requests
+```http
+GET /seller/enablers/requests
+```
+
+**Description**: Retrieve submitted enabler requests and their status.
+
+**Response Schema**:
+```typescript
+{
+  success: boolean;
+  data: {
+    requests: Array<{
+      id: string;
+      requestType: string;
+      status: 'pending' | 'active' | 'completed' | 'cancelled';
+      product: string; // Single product
+      productPrice: number;
+      requirements: string[];
+      priority: string;
+      deadline: string; // ISO 8601
+      createdAt: string; // ISO 8601
+      assignedEnabler?: {
+        name: string;
+        rank: string;
+        rating: number;
+      };
+    }>;
+  };
+}
+```
+
 ## Error Handling
 
 ### Common HTTP Status Codes

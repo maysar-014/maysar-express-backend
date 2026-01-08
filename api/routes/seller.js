@@ -678,6 +678,134 @@ router.get('/analytics', async (req, res) => {
   });
 });
 
+// ===== ENABLER REQUEST API =====
+router.post('/request-enabler', async (req, res) => {
+  const { requestType, description, targetSales, deadline, products, requirements, commission } = req.body;
+
+  res.json({
+    success: true,
+    data: {
+      requestId: `req-${Date.now()}`,
+      status: 'pending',
+      requestType,
+      description,
+      targetSales,
+      deadline,
+      products,
+      requirements,
+      commission,
+      createdAt: new Date().toISOString()
+    }
+  });
+});
+
+router.get('/enabler-requests', async (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      requests: [
+        {
+          id: 'REQ-001',
+          sellerId: 'SELL-001',
+          sellerName: 'Amina Electronics Store',
+          requestType: 'sales_support',
+          priority: 'high',
+          status: 'pending',
+          description: 'Need help boosting smartphone sales during holiday season with targeted customer outreach and product demonstrations',
+          targetSales: 2500000,
+          currentSales: 850000,
+          deadline: '2024-01-15',
+          products: ['iPhone 15', 'Samsung Galaxy S24', 'Xiaomi Redmi Note 13'],
+          requirements: ['Product Knowledge', 'Customer Service', 'Sales Experience'],
+          commission: '5%',
+          estimatedEarnings: 125000,
+          createdAt: '2024-01-02',
+          location: 'Dar es Salaam'
+        },
+        {
+          id: 'REQ-002',
+          sellerId: 'SELL-002',
+          sellerName: 'Fatima Fashion Boutique',
+          requestType: 'digital_marketing',
+          priority: 'medium',
+          status: 'in_progress',
+          description: 'Assist with online store setup and social media marketing for traditional wear collection',
+          targetSales: 1800000,
+          currentSales: 1200000,
+          deadline: '2024-01-20',
+          products: ['Kanga Dresses', 'Traditional Jewelry', 'Headwraps'],
+          requirements: ['Social Media Skills', 'Photography', 'Content Creation'],
+          commission: '5%',
+          estimatedEarnings: 90000,
+          createdAt: '2023-12-28',
+          location: 'Arusha'
+        },
+        {
+          id: 'REQ-003',
+          sellerId: 'SELL-003',
+          sellerName: 'Hassan Auto Parts',
+          requestType: 'customer_acquisition',
+          priority: 'high',
+          status: 'pending',
+          description: 'Expand customer base for motorcycle spare parts through community outreach and B2B networking',
+          targetSales: 3200000,
+          currentSales: 450000,
+          deadline: '2024-01-25',
+          products: ['Motorcycle Engines', 'Brake Pads', 'Tires', 'Oil Filters'],
+          requirements: ['Automotive Knowledge', 'Community Networks', 'B2B Sales'],
+          commission: '5%',
+          estimatedEarnings: 160000,
+          createdAt: '2024-01-01',
+          location: 'Mwanza'
+        },
+        {
+          id: 'REQ-004',
+          sellerId: 'SELL-004',
+          sellerName: 'Mwalimu Book Center',
+          requestType: 'bulk_sales',
+          priority: 'medium',
+          status: 'pending',
+          description: 'Promote educational materials to schools and increase bulk order sales for the new academic year',
+          targetSales: 1500000,
+          currentSales: 300000,
+          deadline: '2024-02-01',
+          products: ['Textbooks', 'Stationery', 'Educational Software', 'School Uniforms'],
+          requirements: ['Education Sector Knowledge', 'Bulk Sales Experience', 'School Relationships'],
+          commission: '5%',
+          estimatedEarnings: 75000,
+          createdAt: '2023-12-30',
+          location: 'Dodoma'
+        },
+        {
+          id: 'REQ-005',
+          sellerId: 'SELL-005',
+          sellerName: 'Mama Pendo Food Supplies',
+          requestType: 'b2b_development',
+          priority: 'low',
+          status: 'pending',
+          description: 'Help establish wholesale relationships with restaurants and hotels for bulk food supply contracts',
+          targetSales: 2800000,
+          currentSales: 1100000,
+          deadline: '2024-01-30',
+          products: ['Rice', 'Cooking Oil', 'Spices', 'Canned Goods'],
+          requirements: ['Restaurant Connections', 'Wholesale Experience', 'Food Safety Knowledge'],
+          commission: '5%',
+          estimatedEarnings: 140000,
+          createdAt: '2024-01-03',
+          location: 'Mbeya'
+        }
+      ],
+      stats: {
+        totalRequests: 5,
+        pendingRequests: 4,
+        activeRequests: 1,
+        completedRequests: 0,
+        totalPotentialEarnings: 590000
+      }
+    }
+  });
+});
+
 // ===== ENABLERS API =====
 router.get('/enablers', async (req, res) => {
   res.json({
@@ -1008,23 +1136,6 @@ router.get('/kyc', async (req, res) => {
       }
     }
   });
-});: 100000
-        }
-      },
-      riskAssessment: {
-        overallRisk: 'low',
-        riskScore: 25,
-        factors: [
-          { factor: 'Business Type', risk: 'low', score: 10 },
-          { factor: 'Transaction Volume', risk: 'medium', score: 15 },
-          { factor: 'Geographic Location', risk: 'low', score: 5 },
-          { factor: 'Document Quality', risk: 'low', score: 5 }
-        ],
-        lastAssessment: '2023-12-15T10:00:00Z',
-        nextAssessment: '2024-06-15T00:00:00Z'
-      }
-    }
-  });
 });
 
 // ===== SETTINGS API =====
@@ -1147,95 +1258,122 @@ router.get('/promotions', async (req, res) => {
   });
 });
 
-// ===== SHIPPING API =====
-router.get('/shipping', async (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      shippingRates: [
-        { id: 1, region: 'Arusha', weightRange: '0-2kg', rate: 7500, carrier: 'Express', deliveryDays: '2-3' },
-        { id: 2, region: 'Dar es Salaam', weightRange: '0-2kg', rate: 2500, carrier: 'Standard', deliveryDays: 'Same day' },
-        { id: 3, region: 'Dodoma', weightRange: '0-2kg', rate: 6500, carrier: 'Standard', deliveryDays: '2-3' },
-        { id: 4, region: 'Geita', weightRange: '0-2kg', rate: 8500, carrier: 'Standard', deliveryDays: '3-4' },
-        { id: 5, region: 'Iringa', weightRange: '0-2kg', rate: 9000, carrier: 'Express', deliveryDays: '3-5' },
-        { id: 6, region: 'Kagera', weightRange: '0-2kg', rate: 8000, carrier: 'Standard', deliveryDays: '3-4' },
-        { id: 7, region: 'Katavi', weightRange: '0-2kg', rate: 11000, carrier: 'Standard', deliveryDays: '4-6' },
-        { id: 8, region: 'Kigoma', weightRange: '0-2kg', rate: 10000, carrier: 'Standard', deliveryDays: '4-6' },
-        { id: 9, region: 'Kilimanjaro', weightRange: '0-2kg', rate: 7500, carrier: 'Express', deliveryDays: '2-3' },
-        { id: 10, region: 'Lindi', weightRange: '0-2kg', rate: 8500, carrier: 'Standard', deliveryDays: '3-4' },
-        { id: 11, region: 'Manyara', weightRange: '0-2kg', rate: 7000, carrier: 'Standard', deliveryDays: '2-3' },
-        { id: 12, region: 'Mara', weightRange: '0-2kg', rate: 8500, carrier: 'Standard', deliveryDays: '3-4' },
-        { id: 13, region: 'Mbeya', weightRange: '0-2kg', rate: 9000, carrier: 'Express', deliveryDays: '3-5' },
-        { id: 14, region: 'Morogoro', weightRange: '0-2kg', rate: 5500, carrier: 'Standard', deliveryDays: '1-2' },
-        { id: 15, region: 'Mtwara', weightRange: '0-2kg', rate: 9500, carrier: 'Standard', deliveryDays: '3-5' },
-        { id: 16, region: 'Mwanza', weightRange: '0-2kg', rate: 8000, carrier: 'Standard', deliveryDays: '3-4' },
-        { id: 17, region: 'Njombe', weightRange: '0-2kg', rate: 9500, carrier: 'Express', deliveryDays: '3-5' },
-        { id: 18, region: 'Pwani (Coast)', weightRange: '0-2kg', rate: 4500, carrier: 'Standard', deliveryDays: '1-2' },
-        { id: 19, region: 'Rukwa', weightRange: '0-2kg', rate: 10500, carrier: 'Standard', deliveryDays: '4-6' },
-        { id: 20, region: 'Ruvuma', weightRange: '0-2kg', rate: 10000, carrier: 'Standard', deliveryDays: '4-5' },
-        { id: 21, region: 'Shinyanga', weightRange: '0-2kg', rate: 8500, carrier: 'Standard', deliveryDays: '3-4' },
-        { id: 22, region: 'Simiyu', weightRange: '0-2kg', rate: 8500, carrier: 'Standard', deliveryDays: '3-4' },
-        { id: 23, region: 'Singida', weightRange: '0-2kg', rate: 7500, carrier: 'Standard', deliveryDays: '2-4' },
-        { id: 24, region: 'Songwe', weightRange: '0-2kg', rate: 9500, carrier: 'Express', deliveryDays: '3-5' },
-        { id: 25, region: 'Tabora', weightRange: '0-2kg', rate: 9000, carrier: 'Standard', deliveryDays: '3-5' },
-        { id: 26, region: 'Tanga', weightRange: '0-2kg', rate: 6000, carrier: 'Standard', deliveryDays: '2-3' },
-        { id: 27, region: 'Zanzibar North', weightRange: '0-2kg', rate: 12000, carrier: 'Express', deliveryDays: '2-4' },
-        { id: 28, region: 'Zanzibar South', weightRange: '0-2kg', rate: 12000, carrier: 'Express', deliveryDays: '2-4' },
-        { id: 29, region: 'Zanzibar Urban/West', weightRange: '0-2kg', rate: 11500, carrier: 'Express', deliveryDays: '2-4' },
-        { id: 30, region: 'Pemba North', weightRange: '0-2kg', rate: 13000, carrier: 'Express', deliveryDays: '3-5' },
-        { id: 31, region: 'Pemba South', weightRange: '0-2kg', rate: 13000, carrier: 'Express', deliveryDays: '3-5' }
-      ]
-    }
-  });
+// ===== ENABLER REQUESTS MANAGEMENT =====
+// In-memory storage for demo purposes (replace with database in production)
+let enablerRequests = [
+  {
+    id: 'REQ-001',
+    sellerId: 'SELL-001',
+    sellerName: 'Amina Electronics Store',
+    requestType: 'sales_support',
+    priority: 'high',
+    status: 'pending',
+    description: 'Need help boosting smartphone sales during holiday season with targeted customer outreach and product demonstrations',
+    targetSales: 2500000,
+    currentSales: 850000,
+    deadline: '2024-01-15',
+    products: ['iPhone 15', 'Samsung Galaxy S24', 'Xiaomi Redmi Note 13'],
+    requirements: ['Product Knowledge', 'Customer Service', 'Sales Experience'],
+    commission: '5%',
+    estimatedEarnings: 125000,
+    createdAt: '2024-01-02',
+    location: 'Dar es Salaam'
+  },
+  {
+    id: 'REQ-002',
+    sellerId: 'SELL-002',
+    sellerName: 'Fatima Fashion Boutique',
+    requestType: 'digital_marketing',
+    priority: 'medium',
+    status: 'in_progress',
+    description: 'Assist with online store setup and social media marketing for traditional wear collection',
+    targetSales: 1800000,
+    currentSales: 1200000,
+    deadline: '2024-01-20',
+    products: ['Kanga Dresses', 'Traditional Jewelry', 'Headwraps'],
+    requirements: ['Social Media Skills', 'Photography', 'Content Creation'],
+    commission: '5%',
+    estimatedEarnings: 90000,
+    createdAt: '2023-12-28',
+    location: 'Arusha'
+  }
+];
+
+router.get('/enabler-requests', async (req, res) => {
+  try {
+    // In production, filter by seller ID from authentication
+    res.json({
+      success: true,
+      data: {
+        requests: enablerRequests
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching enabler requests:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch enabler requests'
+    });
+  }
 });
 
-router.get('/shipments', async (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      shipments: [
-        {
-          id: 1,
-          orderNumber: 'ORD-2024-001',
-          customer: 'John Doe',
-          status: 'in_transit',
-          trackingNumber: 'TRK123456',
-          carrier: 'DHL',
-          estimatedDelivery: '2024-01-15'
-        },
-        {
-          id: 2,
-          orderNumber: 'ORD-2024-002',
-          customer: 'Jane Smith',
-          status: 'delivered',
-          trackingNumber: 'TRK123457',
-          carrier: 'FedEx',
-          estimatedDelivery: '2024-01-14'
-        },
-        {
-          id: 3,
-          orderNumber: 'ORD-2024-003',
-          customer: 'Mike Johnson',
-          status: 'pending',
-          trackingNumber: 'TRK123458',
-          carrier: 'UPS',
-          estimatedDelivery: '2024-01-16'
-        }
-      ]
-    }
-  });
-});
+router.post('/request-enabler', async (req, res) => {
+  try {
+    const {
+      requestType,
+      description,
+      targetSales,
+      deadline,
+      products,
+      requirements,
+      commission,
+      priority,
+      location
+    } = req.body;
 
-router.get('/shipping-stats', async (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      activeShipments: 24,
-      deliveredToday: 12,
-      avgDeliveryTime: '2.3',
-      shippingCost: 45000
-    }
-  });
+    // In production, get seller ID from authentication
+    const sellerId = 'SELL-001'; // Mock seller ID
+    const sellerName = 'Amina Electronics Store'; // Mock seller name
+
+    // Calculate estimated earnings
+    const commissionValue = parseFloat(commission.replace('%', ''));
+    const estimatedEarnings = Math.round((targetSales * commissionValue) / 100);
+
+    const newRequest = {
+      id: `REQ-${Date.now()}`,
+      sellerId,
+      sellerName,
+      requestType,
+      priority,
+      status: 'pending',
+      description,
+      targetSales: Number(targetSales),
+      currentSales: 0, // New request starts at 0
+      deadline,
+      products,
+      requirements,
+      commission,
+      estimatedEarnings,
+      createdAt: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+      location
+    };
+
+    enablerRequests.push(newRequest);
+
+    res.json({
+      success: true,
+      data: {
+        requestId: newRequest.id,
+        message: 'Enabler request submitted successfully'
+      }
+    });
+  } catch (error) {
+    console.error('Error creating enabler request:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create enabler request'
+    });
+  }
 });
 
 module.exports = router;

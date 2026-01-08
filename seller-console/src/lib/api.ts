@@ -140,9 +140,16 @@ export const apiService = {
   
   // Reviews
   getReviews: () => apiClient.get('/seller/reviews'),
-  
+
+  // Analytics
+  getAnalytics: () => apiClient.get('/seller/analytics'),
+
   // Enablers
   getEnablers: () => apiClient.get('/seller/enablers'),
+
+  // Enabler Requests
+  getEnablerRequests: () => apiClient.get('/seller/enabler-requests'),
+  requestEnabler: (data: any) => apiClient.post('/seller/request-enabler', data),
   
   // Promotions
   getPromotions: () => apiClient.get('/seller/promotions'),

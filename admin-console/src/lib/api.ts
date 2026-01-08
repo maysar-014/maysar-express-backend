@@ -525,6 +525,50 @@ export const apiService = {
       apiClient.post('/admin/compliance/reports/generate', { type: reportType }),
   },
 
+  // Shipping & Fulfillment Management
+  shipping: {
+    getShippingData: () =>
+      apiClient.get('/admin/shipping/rates'),
+
+    getShipments: (params?: {
+      status?: string;
+      carrier?: string;
+      page?: number;
+      limit?: number;
+    }) =>
+      apiClient.get('/admin/shipping/shipments', { params }),
+
+    getShippingStats: () =>
+      apiClient.get('/admin/shipping/stats'),
+
+    updateShippingRate: (id: string, rateData: {
+      rate?: number;
+      deliveryDays?: number;
+      carrier?: string;
+    }) =>
+      apiClient.patch(`/admin/shipping/rates/${id}`, rateData),
+
+    createShippingRate: (rateData: {
+      region: string;
+      weightRange: string;
+      rate: number;
+      deliveryDays: number;
+      carrier: string;
+    }) =>
+      apiClient.post('/admin/shipping/rates', rateData),
+
+    deleteShippingRate: (id: string) =>
+      apiClient.delete(`/admin/shipping/rates/${id}`),
+
+    updateShipment: (id: string, shipmentData: {
+      status?: string;
+      trackingNumber?: string;
+      carrier?: string;
+      estimatedDelivery?: string;
+    }) =>
+      apiClient.patch(`/admin/shipping/shipments/${id}`, shipmentData),
+  },
+
   // Enabler Management
   enabler: {
     getMetrics: () =>
