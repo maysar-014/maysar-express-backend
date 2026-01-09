@@ -3,13 +3,16 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import { AppConfiguration } from './config/app.config';
-import { SupabaseClientManager } from './infrastructure/database/supabase.client';
-import { RedisClientManager } from './infrastructure/cache/redis.client';
-import { Logger } from './utils/logger';
+import { compositionRoot } from './bootstrap';
 import courierRoutes from './api/routes/courier.routes';
 import logisticsRoutes from './api/routes/logistics.routes';
 import { OptimizationMiddleware } from './middleware/optimization.middleware';
+
+// Infrastructure components (still needed for health checks)
+import { SupabaseClientManager } from './infrastructure/database/supabase.client';
+import { RedisClientManager } from './infrastructure/cache/redis.client';
+import { Logger } from './utils/logger';
+import { AppConfiguration } from './config/app.config';
 
 class LogisticsService {
   private app: express.Application;
@@ -218,8 +221,13 @@ class LogisticsService {
       try {
         await SupabaseClientManager.getInstance().connect();
         console.log('✓ Supabase connected');
+
+        // Initialize database connections in the container
+        const { container } = await import('./infrastructure/container');
+        await container.initializeDatabaseConnections();
+        console.log('✓ Database repositories initialized');
       } catch (error) {
-        console.warn('⚠ Supabase connection failed, continuing without it:', (error as Error).message);
+        console.warn('⚠ Database connection failed, continuing without it:', (error as Error).message);
       }
       
       try {

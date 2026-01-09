@@ -1,0 +1,166 @@
+name: Constitution Compliance Check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  constitution-audit:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: 'logistics-service/package-lock.json'
+
+    - name: Install dependencies
+      run: |
+        cd logistics-service
+        npm ci
+
+    - name: Run Constitution Audit
+      run: |
+        cd logistics-service
+        node constitution-audit.js
+
+    - name: Run Architectural Tests
+      run: |
+        cd logistics-service
+        npm test -- --testPathPattern="architectural"
+
+    - name: Quality Gate Check
+      run: |
+        cd logistics-service
+        # Check if constitution audit passed
+        if [ ! -f "constitution-results.json" ]; then
+          echo "❌ Constitution audit results not found"
+          exit 1
+        fi
+
+        # Parse results and fail if compliance < 80%
+        COMPLIANCE=$(node -p "JSON.parse(require('fs').readFileSync('constitution-results.json')).constitutionCompliance.overall")
+        if (( $(echo "$COMPLIANCE < 80" | bc -l) )); then
+          echo "❌ Constitution compliance too low: ${COMPLIANCE}%"
+          exit 1
+        fi
+
+        echo "✅ Constitution compliance: ${COMPLIANCE}%"
+
+  security-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: 'logistics-service/package-lock.json'
+
+    - name: Install dependencies
+      run: |
+        cd logistics-service
+        npm ci
+
+    - name: Run Security Audit
+      run: |
+        cd logistics-service
+        npm audit --audit-level=moderate
+
+    - name: Run Custom Security Checks
+      run: |
+        cd logistics-service
+        # Run our custom security audit
+        node -e "
+        const { SecurityAuditEngine } = require('./dist/infrastructure/security-audit');
+        const auditor = new SecurityAuditEngine();
+        auditor.performFullSecurityAudit().then(report => {
+          console.log('Security Score:', report.summary.complianceScore + '%');
+          if (report.summary.complianceScore < 70) {
+            console.error('Security score too low');
+            process.exit(1);
+          }
+        });
+        "
+
+  performance-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: 'logistics-service/package-lock.json'
+
+    - name: Install dependencies
+      run: |
+        cd logistics-service
+        npm ci
+
+    - name: Build for performance testing
+      run: |
+        cd logistics-service
+        npm run build
+
+    - name: Run Performance Benchmarks
+      run: |
+        cd logistics-service
+        node -e "
+        const { PerformanceBenchmarkEngine } = require('./dist/infrastructure/performance-benchmarks');
+        const benchmarker = new PerformanceBenchmarkEngine();
+        benchmarker.runFullBenchmarkSuite().then(results => {
+          console.log('Performance test completed');
+          console.log('Average response time:', results.summary.averageDuration.toFixed(2) + 'ms');
+          console.log('Success rate:', results.summary.successRate.toFixed(1) + '%');
+        });
+        "
+
+  test-coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: 'logistics-service/package-lock.json'
+
+    - name: Install dependencies
+      run: |
+        cd logistics-service
+        npm ci
+
+    - name: Run Tests with Coverage
+      run: |
+        cd logistics-service
+        npm test -- --coverage --coverageThreshold='{
+          \"global\": {
+            \"branches\": 70,
+            \"functions\": 75,
+            \"lines\": 80,
+            \"statements\": 80
+          }
+        }'
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./logistics-service/coverage/lcov.info
+        flags: logistics-service
+        name: logistics-service-coverage

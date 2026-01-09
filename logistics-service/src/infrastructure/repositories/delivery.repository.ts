@@ -1,0 +1,572 @@
+import { DeliveryRepositoryPort } from '../../domain/engines/ports/delivery.port';
+import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
+
+export interface DeliveryEntity {
+  id: string;
+  orderId: string;
+  courierId: string;
+  status: 'assigned' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled' | 'failed';
+  pickupLocation: GeoPoint;
+  deliveryLocation: GeoPoint;
+  estimatedPickupTime: Date;
+  actualPickupTime?: Date;
+  estimatedDeliveryTime: Date;
+  actualDeliveryTime?: Date;
+  weight: number;
+  priority: 'standard' | 'express' | 'urgent';
+  specialRequirements?: string[];
+  routeDistance: number;
+  routeDuration: number;
+  totalCost: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export class DeliveryRepository implements DeliveryRepositoryPort {
+  constructor(private supabaseClient: any) {}
+
+  async save(delivery: DeliveryEntity): Promise<void> {
+    try {
+      const deliveryData = {
+        id: delivery.id,
+        order_id: delivery.orderId,
+        courier_id: delivery.courierId,
+        status: delivery.status,
+        pickup_lat: delivery.pickupLocation.getCoordinates().lat,
+        pickup_lng: delivery.pickupLocation.getCoordinates().lng,
+        pickup_address: delivery.pickupLocation.getAddress(),
+        delivery_lat: delivery.deliveryLocation.getCoordinates().lat,
+        delivery_lng: delivery.deliveryLocation.getCoordinates().lng,
+        delivery_address: delivery.deliveryLocation.getAddress(),
+        estimated_pickup_time: delivery.estimatedPickupTime.toISOString(),
+        actual_pickup_time: delivery.actualPickupTime?.toISOString(),
+        estimated_delivery_time: delivery.estimatedDeliveryTime.toISOString(),
+        actual_delivery_time: delivery.actualDeliveryTime?.toISOString(),
+        weight: delivery.weight,
+        priority: delivery.priority,
+        special_requirements: delivery.specialRequirements || [],
+        route_distance: delivery.routeDistance,
+        route_duration: delivery.routeDuration,
+        total_cost: delivery.totalCost,
+        created_at: delivery.createdAt.toISOString(),
+        updated_at: delivery.updatedAt.toISOString()
+      };
+
+      const { error } = await this.supabaseClient
+        .from('deliveries')
+        .upsert(deliveryData, { onConflict: 'id' });
+
+      if (error) {
+        console.error('Supabase upsert error:', error);
+        throw new Error('Failed to save delivery to database');
+      }
+
+    } catch (error) {
+      console.error('Error saving delivery:', error);
+      throw new Error('Failed to save delivery');
+    }
+  }
+
+  async findById(id: string): Promise<DeliveryEntity | null> {
+    try {
+      const { data: delivery, error } = await this.supabaseClient
+        .from('deliveries')
+        .select(`
+          id,
+          order_id,
+          courier_id,
+          status,
+          pickup_lat,
+          pickup_lng,
+          pickup_address,
+          delivery_lat,
+          delivery_lng,
+          delivery_address,
+          estimated_pickup_time,
+          actual_pickup_time,
+          estimated_delivery_time,
+          actual_delivery_time,
+          weight,
+          priority,
+          special_requirements,
+          route_distance,
+          route_duration,
+          total_cost,
+          created_at,
+          updated_at
+        `)
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        console.error('Supabase query error:', error);
+        return null;
+      }
+
+      if (!delivery) {
+        return null;
+      }
+
+      // Map to domain entity
+      return {
+        id: delivery.id,
+        orderId: delivery.order_id,
+        courierId: delivery.courier_id,
+        status: delivery.status,
+        pickupLocation: GeoPoint.create(
+          delivery.pickup_lat,
+          delivery.pickup_lng,
+          delivery.pickup_address || 'Unknown'
+        ),
+        deliveryLocation: GeoPoint.create(
+          delivery.delivery_lat,
+          delivery.delivery_lng,
+          delivery.delivery_address || 'Unknown'
+        ),
+        estimatedPickupTime: new Date(delivery.estimated_pickup_time),
+        actualPickupTime: delivery.actual_pickup_time ? new Date(delivery.actual_pickup_time) : undefined,
+        estimatedDeliveryTime: new Date(delivery.estimated_delivery_time),
+        actualDeliveryTime: delivery.actual_delivery_time ? new Date(delivery.actual_delivery_time) : undefined,
+        weight: delivery.weight,
+        priority: delivery.priority,
+        specialRequirements: delivery.special_requirements || [],
+        routeDistance: delivery.route_distance,
+        routeDuration: delivery.route_duration,
+        totalCost: delivery.total_cost,
+        createdAt: new Date(delivery.created_at),
+        updatedAt: new Date(delivery.updated_at)
+      };
+
+    } catch (error) {
+      console.error('Error finding delivery by ID:', error);
+      return null;
+    }
+  }
+
+  async findByCourierId(courierId: string): Promise<DeliveryEntity[]> {
+    try {
+      const { data: deliveries, error } = await this.supabaseClient
+        .from('deliveries')
+        .select(`
+          id,
+          order_id,
+          courier_id,
+          status,
+          pickup_lat,
+          pickup_lng,
+          pickup_address,
+          delivery_lat,
+          delivery_lng,
+          delivery_address,
+          estimated_pickup_time,
+          actual_pickup_time,
+          estimated_delivery_time,
+          actual_delivery_time,
+          weight,
+          priority,
+          special_requirements,
+          route_distance,
+          route_duration,
+          total_cost,
+          created_at,
+          updated_at
+        `)
+        .eq('courier_id', courierId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase query error:', error);
+        return [];
+      }
+
+      if (!deliveries || deliveries.length === 0) {
+        return [];
+      }
+
+      // Map to domain entities
+      return deliveries.map((delivery: any) => ({
+        id: delivery.id,
+        orderId: delivery.order_id,
+        courierId: delivery.courier_id,
+        status: delivery.status,
+        pickupLocation: GeoPoint.create(
+          delivery.pickup_lat,
+          delivery.pickup_lng,
+          delivery.pickup_address || 'Unknown'
+        ),
+        deliveryLocation: GeoPoint.create(
+          delivery.delivery_lat,
+          delivery.delivery_lng,
+          delivery.delivery_address || 'Unknown'
+        ),
+        estimatedPickupTime: new Date(delivery.estimated_pickup_time),
+        actualPickupTime: delivery.actual_pickup_time ? new Date(delivery.actual_pickup_time) : undefined,
+        estimatedDeliveryTime: new Date(delivery.estimated_delivery_time),
+        actualDeliveryTime: delivery.actual_delivery_time ? new Date(delivery.actual_delivery_time) : undefined,
+        weight: delivery.weight,
+        priority: delivery.priority,
+        specialRequirements: delivery.special_requirements || [],
+        routeDistance: delivery.route_distance,
+        routeDuration: delivery.route_duration,
+        totalCost: delivery.total_cost,
+        createdAt: new Date(delivery.created_at),
+        updatedAt: new Date(delivery.updated_at)
+      }));
+
+    } catch (error) {
+      console.error('Error finding deliveries by courier ID:', error);
+      return [];
+    }
+  }
+
+  async findByStatus(status: string): Promise<DeliveryEntity[]> {
+    try {
+      const { data: deliveries, error } = await this.supabaseClient
+        .from('deliveries')
+        .select(`
+          id,
+          order_id,
+          courier_id,
+          status,
+          pickup_lat,
+          pickup_lng,
+          pickup_address,
+          delivery_lat,
+          delivery_lng,
+          delivery_address,
+          estimated_pickup_time,
+          actual_pickup_time,
+          estimated_delivery_time,
+          actual_delivery_time,
+          weight,
+          priority,
+          special_requirements,
+          route_distance,
+          route_duration,
+          total_cost,
+          created_at,
+          updated_at
+        `)
+        .eq('status', status)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase query error:', error);
+        return [];
+      }
+
+      if (!deliveries || deliveries.length === 0) {
+        return [];
+      }
+
+      // Map to domain entities
+      return deliveries.map((delivery: any) => ({
+        id: delivery.id,
+        orderId: delivery.order_id,
+        courierId: delivery.courier_id,
+        status: delivery.status,
+        pickupLocation: GeoPoint.create(
+          delivery.pickup_lat,
+          delivery.pickup_lng,
+          delivery.pickup_address || 'Unknown'
+        ),
+        deliveryLocation: GeoPoint.create(
+          delivery.delivery_lat,
+          delivery.delivery_lng,
+          delivery.delivery_address || 'Unknown'
+        ),
+        estimatedPickupTime: new Date(delivery.estimated_pickup_time),
+        actualPickupTime: delivery.actual_pickup_time ? new Date(delivery.actual_pickup_time) : undefined,
+        estimatedDeliveryTime: new Date(delivery.estimated_delivery_time),
+        actualDeliveryTime: delivery.actual_delivery_time ? new Date(delivery.actual_delivery_time) : undefined,
+        weight: delivery.weight,
+        priority: delivery.priority,
+        specialRequirements: delivery.special_requirements || [],
+        routeDistance: delivery.route_distance,
+        routeDuration: delivery.route_duration,
+        totalCost: delivery.total_cost,
+        createdAt: new Date(delivery.created_at),
+        updatedAt: new Date(delivery.updated_at)
+      }));
+
+    } catch (error) {
+      console.error('Error finding deliveries by status:', error);
+      return [];
+    }
+  }
+
+  async findAll(timeRange?: { start: Date; end: Date }): Promise<DeliveryEntity[]> {
+    try {
+      let query = this.supabaseClient
+        .from('deliveries')
+        .select(`
+          id,
+          order_id,
+          courier_id,
+          status,
+          pickup_lat,
+          pickup_lng,
+          pickup_address,
+          delivery_lat,
+          delivery_lng,
+          delivery_address,
+          estimated_pickup_time,
+          actual_pickup_time,
+          estimated_delivery_time,
+          actual_delivery_time,
+          weight,
+          priority,
+          special_requirements,
+          route_distance,
+          route_duration,
+          total_cost,
+          created_at,
+          updated_at
+        `)
+        .order('created_at', { ascending: false });
+
+      // Apply time range filter if provided
+      if (timeRange) {
+        query = query
+          .gte('created_at', timeRange.start.toISOString())
+          .lte('created_at', timeRange.end.toISOString());
+      }
+
+      const { data: deliveries, error } = await query;
+
+      if (error) {
+        console.error('Supabase query error:', error);
+        return [];
+      }
+
+      if (!deliveries || deliveries.length === 0) {
+        return [];
+      }
+
+      // Map to domain entities
+      return deliveries.map((delivery: any) => ({
+        id: delivery.id,
+        orderId: delivery.order_id,
+        courierId: delivery.courier_id,
+        status: delivery.status,
+        pickupLocation: GeoPoint.create(
+          delivery.pickup_lat,
+          delivery.pickup_lng,
+          delivery.pickup_address || 'Unknown'
+        ),
+        deliveryLocation: GeoPoint.create(
+          delivery.delivery_lat,
+          delivery.delivery_lng,
+          delivery.delivery_address || 'Unknown'
+        ),
+        estimatedPickupTime: new Date(delivery.estimated_pickup_time),
+        actualPickupTime: delivery.actual_pickup_time ? new Date(delivery.actual_pickup_time) : undefined,
+        estimatedDeliveryTime: new Date(delivery.estimated_delivery_time),
+        actualDeliveryTime: delivery.actual_delivery_time ? new Date(delivery.actual_delivery_time) : undefined,
+        weight: delivery.weight,
+        priority: delivery.priority,
+        specialRequirements: delivery.special_requirements || [],
+        routeDistance: delivery.route_distance,
+        routeDuration: delivery.route_duration,
+        totalCost: delivery.total_cost,
+        createdAt: new Date(delivery.created_at),
+        updatedAt: new Date(delivery.updated_at)
+      }));
+
+    } catch (error) {
+      console.error('Error finding all deliveries:', error);
+      return [];
+    }
+  }
+
+  async updateStatus(id: string, status: string, metadata?: any): Promise<void> {
+    try {
+      const updateData: any = {
+        status,
+        updated_at: new Date().toISOString()
+      };
+
+      // Update actual times based on status
+      if (status === 'picked_up') {
+        updateData.actual_pickup_time = new Date().toISOString();
+      } else if (status === 'delivered') {
+        updateData.actual_delivery_time = new Date().toISOString();
+      }
+
+      const { error } = await this.supabaseClient
+        .from('deliveries')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw new Error('Failed to update delivery status');
+      }
+
+    } catch (error) {
+      console.error('Error updating delivery status:', error);
+      throw new Error('Failed to update delivery status');
+    }
+  }
+
+  async findActiveDeliveries(): Promise<DeliveryEntity[]> {
+    try {
+      const activeStatuses = ['assigned', 'picked_up', 'in_transit'];
+
+      const { data: deliveries, error } = await this.supabaseClient
+        .from('deliveries')
+        .select(`
+          id,
+          order_id,
+          courier_id,
+          status,
+          pickup_lat,
+          pickup_lng,
+          pickup_address,
+          delivery_lat,
+          delivery_lng,
+          delivery_address,
+          estimated_pickup_time,
+          actual_pickup_time,
+          estimated_delivery_time,
+          actual_delivery_time,
+          weight,
+          priority,
+          special_requirements,
+          route_distance,
+          route_duration,
+          total_cost,
+          created_at,
+          updated_at
+        `)
+        .in('status', activeStatuses)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase query error:', error);
+        return [];
+      }
+
+      if (!deliveries || deliveries.length === 0) {
+        return [];
+      }
+
+      // Map to domain entities
+      return deliveries.map((delivery: any) => ({
+        id: delivery.id,
+        orderId: delivery.order_id,
+        courierId: delivery.courier_id,
+        status: delivery.status,
+        pickupLocation: GeoPoint.create(
+          delivery.pickup_lat,
+          delivery.pickup_lng,
+          delivery.pickup_address || 'Unknown'
+        ),
+        deliveryLocation: GeoPoint.create(
+          delivery.delivery_lat,
+          delivery.delivery_lng,
+          delivery.delivery_address || 'Unknown'
+        ),
+        estimatedPickupTime: new Date(delivery.estimated_pickup_time),
+        actualPickupTime: delivery.actual_pickup_time ? new Date(delivery.actual_pickup_time) : undefined,
+        estimatedDeliveryTime: new Date(delivery.estimated_delivery_time),
+        actualDeliveryTime: delivery.actual_delivery_time ? new Date(delivery.actual_delivery_time) : undefined,
+        weight: delivery.weight,
+        priority: delivery.priority,
+        specialRequirements: delivery.special_requirements || [],
+        routeDistance: delivery.route_distance,
+        routeDuration: delivery.route_duration,
+        totalCost: delivery.total_cost,
+        createdAt: new Date(delivery.created_at),
+        updatedAt: new Date(delivery.updated_at)
+      }));
+
+    } catch (error) {
+      console.error('Error finding active deliveries:', error);
+      return [];
+    }
+  }
+
+  async getDeliveryStats(timeRange?: { start: Date; end: Date }): Promise<{
+    totalDeliveries: number;
+    completedDeliveries: number;
+    averageDeliveryTime: number;
+    onTimeDeliveryRate: number;
+  }> {
+    try {
+      let query = this.supabaseClient.from('deliveries').select('status, actual_delivery_time, estimated_delivery_time');
+
+      // Apply time range filter if provided
+      if (timeRange) {
+        query = query
+          .gte('created_at', timeRange.start.toISOString())
+          .lte('created_at', timeRange.end.toISOString());
+      }
+
+      const { data: deliveries, error } = await query;
+
+      if (error) {
+        console.error('Supabase query error:', error);
+        return {
+          totalDeliveries: 0,
+          completedDeliveries: 0,
+          averageDeliveryTime: 0,
+          onTimeDeliveryRate: 0
+        };
+      }
+
+      if (!deliveries || deliveries.length === 0) {
+        return {
+          totalDeliveries: 0,
+          completedDeliveries: 0,
+          averageDeliveryTime: 0,
+          onTimeDeliveryRate: 0
+        };
+      }
+
+      const totalDeliveries = deliveries.length;
+      const completedDeliveries = deliveries.filter((d: any) => d.status === 'delivered').length;
+
+      // Calculate average delivery time for completed deliveries
+      const completedDeliveriesWithTimes = deliveries.filter((d: any) =>
+        d.status === 'delivered' && d.actual_delivery_time && d.estimated_delivery_time
+      );
+
+      let averageDeliveryTime = 0;
+      if (completedDeliveriesWithTimes.length > 0) {
+        const totalTime = completedDeliveriesWithTimes.reduce((sum: number, delivery: any) => {
+          const actual = new Date(delivery.actual_delivery_time);
+          const estimated = new Date(delivery.estimated_delivery_time);
+          return sum + (actual.getTime() - estimated.getTime()) / (1000 * 60); // minutes
+        }, 0);
+        averageDeliveryTime = totalTime / completedDeliveriesWithTimes.length;
+      }
+
+      // Calculate on-time delivery rate
+      const onTimeDeliveries = completedDeliveriesWithTimes.filter((delivery: any) => {
+        const actual = new Date(delivery.actual_delivery_time);
+        const estimated = new Date(delivery.estimated_delivery_time);
+        return actual <= estimated;
+      }).length;
+
+      const onTimeDeliveryRate = completedDeliveriesWithTimes.length > 0 ?
+        onTimeDeliveries / completedDeliveriesWithTimes.length : 0;
+
+      return {
+        totalDeliveries,
+        completedDeliveries,
+        averageDeliveryTime: Math.round(averageDeliveryTime),
+        onTimeDeliveryRate: Math.round(onTimeDeliveryRate * 100) / 100
+      };
+
+    } catch (error) {
+      console.error('Error getting delivery stats:', error);
+      return {
+        totalDeliveries: 0,
+        completedDeliveries: 0,
+        averageDeliveryTime: 0,
+        onTimeDeliveryRate: 0
+      };
+    }
+  }
+}
