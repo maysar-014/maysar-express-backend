@@ -8,8 +8,12 @@ export class CourierRepository implements CourierRepositoryPort {
     try {
       const coords = location.getCoordinates();
 
+      console.log('🔍 DEBUG - CourierRepository.findAvailableCouriers called');
+      console.log('🔍 DEBUG - Search location:', coords);
+      console.log('🔍 DEBUG - Search radius:', radius);
+
       // Query available couriers within radius using PostGIS
-      const { data: couriers, error } = await this.supabaseClient
+      const query = this.supabaseClient
         .from('couriers')
         .select(`
           id,
@@ -25,7 +29,6 @@ export class CourierRepository implements CourierRepositoryPort {
           current_lng,
           current_address,
           is_available,
-          estimated_arrival_time,
           traffic_experience,
           created_at,
           updated_at
@@ -35,6 +38,16 @@ export class CourierRepository implements CourierRepositoryPort {
         .gte('completion_rate', 0.90)
         .filter('current_lat', 'not.is', null)
         .filter('current_lng', 'not.is', null);
+
+      console.log('🔍 DEBUG - Executing query:', query);
+
+      const { data: couriers, error } = await query;
+
+      console.log('🔍 DEBUG - Query result - error:', error);
+      console.log('🔍 DEBUG - Query result - couriers count:', couriers?.length || 0);
+      if (couriers && couriers.length > 0) {
+        console.log('🔍 DEBUG - First courier from query:', JSON.stringify(couriers[0], null, 2));
+      }
 
       if (error) {
         console.error('Supabase query error:', error);
@@ -77,7 +90,6 @@ export class CourierRepository implements CourierRepositoryPort {
           courier.current_address || 'Unknown'
         ),
         isAvailable: courier.is_available,
-        estimatedArrivalTime: courier.estimated_arrival_time || 15,
         trafficExperience: courier.traffic_experience || 0.8
       }));
 
@@ -105,7 +117,6 @@ export class CourierRepository implements CourierRepositoryPort {
           current_lng,
           current_address,
           is_available,
-          estimated_arrival_time,
           traffic_experience,
           created_at,
           updated_at
@@ -142,7 +153,6 @@ export class CourierRepository implements CourierRepositoryPort {
           courier.current_address || 'Unknown'
         ),
         isAvailable: courier.is_available,
-        estimatedArrivalTime: courier.estimated_arrival_time || 15,
         trafficExperience: courier.traffic_experience || 0.8
       }));
 
@@ -170,7 +180,6 @@ export class CourierRepository implements CourierRepositoryPort {
           current_lng,
           current_address,
           is_available,
-          estimated_arrival_time,
           traffic_experience,
           created_at,
           updated_at
@@ -208,7 +217,6 @@ export class CourierRepository implements CourierRepositoryPort {
           courier.current_address || 'Unknown'
         ),
         isAvailable: courier.is_available,
-        estimatedArrivalTime: courier.estimated_arrival_time || 15,
         trafficExperience: courier.traffic_experience || 0.8
       };
 
@@ -284,7 +292,6 @@ export class CourierRepository implements CourierRepositoryPort {
           current_lng,
           current_address,
           is_available,
-          estimated_arrival_time,
           traffic_experience,
           created_at,
           updated_at
@@ -322,7 +329,6 @@ export class CourierRepository implements CourierRepositoryPort {
           courier.current_address || 'Unknown'
         ),
         isAvailable: courier.is_available,
-        estimatedArrivalTime: courier.estimated_arrival_time || 15,
         trafficExperience: courier.traffic_experience || 0.8
       };
 

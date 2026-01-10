@@ -16,7 +16,6 @@ export interface CourierEntity {
   completionRate: number;
   currentLocation: GeoPoint;
   isAvailable: boolean;
-  estimatedArrivalTime: number;
   trafficExperience: number;
 }
 

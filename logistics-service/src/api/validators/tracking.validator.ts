@@ -4,8 +4,8 @@ export class TrackingValidator {
   static storeLocationUpdate(): ValidationChain[] {
     return [
       body('courierId')
-        .isUUID()
-        .withMessage('Courier ID must be a valid UUID'),
+        .matches(/^(courier_)?[a-zA-Z0-9_-]+$/)
+        .withMessage('Courier ID must be a valid identifier'),
 
       body('location')
         .isObject()
@@ -112,8 +112,8 @@ export class TrackingValidator {
   static getCourierLocationHistory(): ValidationChain[] {
     return [
       param('courierId')
-        .isUUID()
-        .withMessage('Courier ID must be a valid UUID'),
+        .matches(/^(courier_)?[a-zA-Z0-9_-]+$/)
+        .withMessage('Courier ID must be a valid identifier'),
 
       query('period')
         .optional()
@@ -155,8 +155,8 @@ export class TrackingValidator {
   static getLiveTracking(): ValidationChain[] {
     return [
       param('deliveryId')
-        .isUUID()
-        .withMessage('Delivery ID must be a valid UUID'),
+        .matches(/^(del_)?[a-zA-Z0-9_-]+$/)
+        .withMessage('Delivery ID must be a valid identifier'),
 
       query('includeHistory')
         .optional()
@@ -237,8 +237,8 @@ export class TrackingValidator {
   static updateTrackingStatus(): ValidationChain[] {
     return [
       param('courierId')
-        .isUUID()
-        .withMessage('Courier ID must be a valid UUID'),
+        .matches(/^(courier_)?[a-zA-Z0-9_-]+$/)
+        .withMessage('Courier ID must be a valid identifier'),
 
       body('status')
         .isIn(['online', 'offline', 'busy', 'maintenance'])
@@ -264,8 +264,8 @@ export class TrackingValidator {
   static getTrackingAnalytics(): ValidationChain[] {
     return [
       param('courierId')
-        .isUUID()
-        .withMessage('Courier ID must be a valid UUID'),
+        .matches(/^(courier_)?[a-zA-Z0-9_-]+$/)
+        .withMessage('Courier ID must be a valid identifier'),
 
       query('period')
         .optional()

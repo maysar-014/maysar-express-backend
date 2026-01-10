@@ -75,12 +75,22 @@ router.get('/deliveries',
 // ==================== ROUTE ENDPOINTS ====================
 // Route API: http://localhost:3007/api/v1/routes/*
 
-router.post('/routes/optimize', 
+router.get('/routes',
+  ValidationMiddleware.createApiValidationChain(),
+  routeController.getRoutes.bind(routeController)
+);
+
+router.get('/routes/courier/:courierId',
+  ValidationMiddleware.createApiValidationChain(),
+  routeController.getCourierRoutes.bind(routeController)
+);
+
+router.post('/routes/optimize',
   RouteValidator.optimizeRoute(),
   routeController.optimizeRoute.bind(routeController)
 );
 
-router.get('/routes/:routeId', 
+router.get('/routes/:routeId',
   RouteValidator.getRoute(),
   routeController.getRoute.bind(routeController)
 );

@@ -2,6 +2,12 @@ import { BaseSaga, SagaContext } from './base.saga';
 import { SagaRegistry } from './saga-registry';
 import { CourierRepositoryPort } from '../../domain/engines/ports/courier.port';
 import { RealTimeTrackingPort } from '../../domain/engines/ports/tracking.port';
+import { RouteRepositoryPort } from '../../domain/engines/ports/route.port';
+import { CourierDomainService } from '../../domain/services/courier.domain-service';
+import { RouteCreationService } from '../../domain/services/route-creation.service';
+import { CourierEntity } from '../../domain/entities/courier.entity';
+import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
+import { Weight } from '../../domain/value-objects/weight.value-object';
 import {
   DeliveryRequestedEvent,
   DeliveryEvent,
@@ -42,7 +48,10 @@ interface DeliverySagaData {
 export class DeliverySaga extends BaseSaga<DeliverySagaData> {
   constructor(
     private courierPort: CourierRepositoryPort,
-    private trackingPort: RealTimeTrackingPort
+    private trackingPort: RealTimeTrackingPort,
+    private routeRepository?: RouteRepositoryPort,
+    private routeCreationService?: RouteCreationService,
+    private courierDomainService?: CourierDomainService
   ) {
     super();
 
@@ -112,6 +121,84 @@ export class DeliverySaga extends BaseSaga<DeliverySagaData> {
     data.status = 'assigned';
     data.assignedAt = new Date();
 
+    // Calculate estimated arrival time dynamically
+    const pickupLocation = GeoPoint.create(
+      data.pickupLocation.lat,
+      data.pickupLocation.lng,
+      data.pickupLocation.address
+    );
+
+    let estimatedArrival: Date;
+    if (this.courierDomainService) {
+      // Convert interface to entity for domain service
+      const courierEntity = CourierEntity.create({
+        id: selectedCourier.id,
+        name: selectedCourier.name,
+        phone: selectedCourier.phone,
+        vehicle: selectedCourier.vehicle,
+        rating: selectedCourier.rating,
+        completionRate: selectedCourier.completionRate,
+        currentLocation: selectedCourier.currentLocation,
+        isAvailable: selectedCourier.isAvailable,
+        trafficExperience: selectedCourier.trafficExperience
+      });
+
+      const arrivalResult = await this.courierDomainService.calculateEstimatedArrivalTime(
+        courierEntity,
+        pickupLocation
+      );
+      estimatedArrival = new Date(Date.now() + arrivalResult.estimatedMinutes * 60000);
+    } else {
+      // Fallback to static calculation if service not available
+      const fallbackMinutes = selectedCourier.trafficExperience > 0.8 ? 12 : 15;
+      estimatedArrival = new Date(Date.now() + fallbackMinutes * 60000);
+    }
+
+    // Create route for the delivery (Business Logic Integration)
+    if (this.routeCreationService && this.routeRepository) {
+      try {
+        const deliveryForRoute = {
+          id: data.deliveryId,
+          pickupLocation,
+          deliveryLocation: GeoPoint.create(
+            data.deliveryLocation.lat,
+            data.deliveryLocation.lng,
+            data.deliveryLocation.address
+          ),
+          weight: Weight.fromKilograms(1.0), // TODO: Get actual weight from delivery data
+          priority: 'standard' as const
+        };
+
+        const routeResult = await this.routeCreationService.createRouteForSingleDelivery(
+          CourierEntity.create({
+            id: selectedCourier.id,
+            name: selectedCourier.name,
+            phone: selectedCourier.phone,
+            vehicle: selectedCourier.vehicle,
+            rating: selectedCourier.rating,
+            completionRate: selectedCourier.completionRate,
+            currentLocation: selectedCourier.currentLocation,
+            isAvailable: selectedCourier.isAvailable,
+            trafficExperience: selectedCourier.trafficExperience
+          }),
+          deliveryForRoute
+        );
+
+        // Save the route to repository
+        await this.routeRepository.save(routeResult.route);
+
+        console.log(`✅ Route created for delivery ${data.deliveryId}:`, {
+          routeId: routeResult.route.getId(),
+          optimizationScore: routeResult.optimizationScore,
+          savings: routeResult.estimatedSavings
+        });
+
+      } catch (routeError) {
+        console.warn(`⚠️ Failed to create route for delivery ${data.deliveryId}:`, routeError);
+        // Continue with delivery assignment even if route creation fails
+      }
+    }
+
     // Publish courier assigned event
     const event: CourierAssignedEvent = {
       eventType: 'CourierAssigned',
@@ -123,7 +210,7 @@ export class DeliverySaga extends BaseSaga<DeliverySagaData> {
         courierId: selectedCourier.id,
         courierName: selectedCourier.name,
         vehicleType: selectedCourier.vehicle.type,
-        estimatedArrival: new Date(Date.now() + selectedCourier.estimatedArrivalTime * 60000)
+        estimatedArrival
       }
     };
 

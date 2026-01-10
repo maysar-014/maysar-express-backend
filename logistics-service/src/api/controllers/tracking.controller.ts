@@ -4,10 +4,13 @@ import { TrackingRepositoryPort } from '../../domain/engines/ports/tracking.port
 import { DeliveryRepositoryPort } from '../../domain/engines/ports/delivery.port';
 
 export class TrackingController {
-  constructor(
-    private trackingRepository: TrackingRepositoryPort = DependencyContainer.getInstance().getTrackingRepository(),
-    private deliveryRepository: DeliveryRepositoryPort = DependencyContainer.getInstance().getDeliveryRepository()
-  ) {}
+  private get trackingRepository(): TrackingRepositoryPort {
+    return DependencyContainer.getInstance().getTrackingRepository();
+  }
+
+  private get deliveryRepository(): DeliveryRepositoryPort {
+    return DependencyContainer.getInstance().getDeliveryRepository();
+  }
 
   async getTrackingHistory(req: Request, res: Response): Promise<void> {
     try {

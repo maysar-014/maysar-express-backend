@@ -4,10 +4,13 @@ import { EarningsRepositoryPort } from '../../domain/engines/ports/earnings.port
 import { DeliveryRepositoryPort } from '../../domain/engines/ports/delivery.port';
 
 export class EarningsController {
-  constructor(
-    private earningsRepository: EarningsRepositoryPort = DependencyContainer.getInstance().getEarningsRepository(),
-    private deliveryRepository: DeliveryRepositoryPort = DependencyContainer.getInstance().getDeliveryRepository()
-  ) {}
+  private get earningsRepository(): EarningsRepositoryPort {
+    return DependencyContainer.getInstance().getEarningsRepository();
+  }
+
+  private get deliveryRepository(): DeliveryRepositoryPort {
+    return DependencyContainer.getInstance().getDeliveryRepository();
+  }
 
   async getEarnings(req: Request, res: Response): Promise<void> {
     try {

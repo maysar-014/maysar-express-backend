@@ -17,7 +17,6 @@ export class CourierEntity {
     public readonly completionRate: number,
     public readonly currentLocation: GeoPoint,
     public readonly isAvailable: boolean,
-    public readonly estimatedArrivalTime: number,
     public readonly trafficExperience: number
   ) {}
 
@@ -30,7 +29,6 @@ export class CourierEntity {
     completionRate: number;
     currentLocation: GeoPoint;
     isAvailable: boolean;
-    estimatedArrivalTime: number;
     trafficExperience: number;
   }): CourierEntity {
     return new CourierEntity(
@@ -42,7 +40,6 @@ export class CourierEntity {
       data.completionRate,
       data.currentLocation,
       data.isAvailable,
-      data.estimatedArrivalTime,
       data.trafficExperience
     );
   }

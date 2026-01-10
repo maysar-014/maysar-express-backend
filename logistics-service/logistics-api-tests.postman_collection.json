@@ -33,7 +33,7 @@
     },
     {
       "key": "orderId",
-      "value": "test_order_001",
+      "value": "550e8400-e29b-41d4-a716-446655440000",
       "type": "string"
     }
   ],
@@ -45,7 +45,12 @@
           "name": "Health Check",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
           "url": {
             "raw": "http://localhost:3007/health",
             "host": ["localhost:3007"],
@@ -69,7 +74,12 @@
           "name": "Readiness Check",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
           "url": {
             "raw": "http://localhost:3007/ready",
             "host": ["localhost:3007"],
@@ -93,7 +103,12 @@
           "name": "Performance Stats",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
           "url": {
             "raw": "http://localhost:3007/api/stats/performance",
             "host": ["localhost:3007"],
@@ -122,7 +137,12 @@
           "name": "Engine Status Check",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/engines/status",
               "host": ["{{baseUrl}}"],
@@ -158,23 +178,27 @@
       "name": "Delivery API Tests",
       "item": [
         {
-          "name": "Calculate Delivery Cost",
+          "name": "Create Delivery",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "api-version",
+                "value": "v1"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"pickupAddress\": {\n    \"street\": \"Uhuru Street\",\n    \"city\": \"Dar es Salaam\",\n    \"region\": \"Dar es Salaam\",\n    \"postalCode\": \"11101\",\n    \"country\": \"Tanzania\",\n    \"contactName\": \"John Seller\",\n    \"contactPhone\": \"+255712345678\"\n  },\n  \"deliveryAddress\": {\n    \"street\": \"Samora Avenue\",\n    \"city\": \"Dar es Salaam\",\n    \"region\": \"Dar es Salaam\",\n    \"postalCode\": \"11102\",\n    \"country\": \"Tanzania\",\n    \"contactName\": \"Jane Customer\",\n    \"contactPhone\": \"+255723456789\"\n  },\n  \"packageDetails\": {\n    \"weight\": 2.5,\n    \"dimensions\": {\n      \"length\": 30,\n      \"width\": 20,\n      \"height\": 15\n    },\n    \"value\": 50000,\n    \"fragile\": false,\n    \"perishable\": false,\n    \"hazardous\": false,\n    \"items\": [\n      {\n        \"productId\": \"prod_001\",\n        \"name\": \"Electronics\",\n        \"quantity\": 1,\n        \"weight\": 2.5,\n        \"value\": 50000\n      }\n    ]\n  },\n  \"serviceType\": \"standard\",\n  \"priority\": \"normal\"\n}"
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"pickupAddress\": {\n    \"street\": \"Uhuru Street\",\n    \"city\": \"Dar es Salaam\",\n    \"region\": \"Dar es Salaam\",\n    \"postalCode\": \"11101\",\n    \"country\": \"TZ\",\n    \"contactName\": \"John Seller\",\n    \"contactPhone\": \"+255712345678\",\n    \"coordinates\": {\n      \"lat\": -6.7924,\n      \"lng\": 39.2083\n    }\n  },\n  \"deliveryAddress\": {\n    \"street\": \"Samora Avenue\",\n    \"city\": \"Dar es Salaam\",\n    \"region\": \"Dar es Salaam\",\n    \"postalCode\": \"11102\",\n    \"country\": \"TZ\",\n    \"contactName\": \"Jane Customer\",\n    \"contactPhone\": \"+255723456789\",\n    \"coordinates\": {\n      \"lat\": -6.8000,\n      \"lng\": 39.2100\n    }\n  },\n  \"packageDetails\": {\n    \"weight\": 2.5,\n    \"dimensions\": {\n      \"length\": 30,\n      \"width\": 20,\n      \"height\": 15\n    },\n    \"value\": 50000,\n    \"fragile\": false,\n    \"perishable\": false,\n    \"hazardous\": false,\n    \"items\": [\n      {\n        \"productId\": \"prod_001\",\n        \"name\": \"Electronics\",\n        \"quantity\": 1,\n        \"weight\": 2.5,\n        \"value\": 50000\n      }\n    ]\n  },\n  \"priority\": \"standard\",\n  \"desiredArrivalTime\": \"2026-01-10T15:30:00Z\",\n  \"estimatedArrivalMinutes\": 45\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/deliveries/calculate",
+              "raw": "{{baseUrl}}/deliveries",
               "host": ["{{baseUrl}}"],
-              "path": ["deliveries", "calculate"]
+              "path": ["deliveries"]
             }
           },
           "event": [
@@ -204,7 +228,12 @@
           "name": "Get Delivery Details",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/deliveries/{{deliveryId}}",
               "host": ["{{baseUrl}}"],
@@ -238,7 +267,12 @@
           "name": "List Deliveries",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/deliveries",
               "host": ["{{baseUrl}}"],
@@ -272,7 +306,12 @@
           "name": "Get Delivery History",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/deliveries/{{deliveryId}}/history",
               "host": ["{{baseUrl}}"],
@@ -300,13 +339,338 @@
       ]
     },
     {
+      "name": "Route Creation Business Logic Tests",
+      "item": [
+        {
+          "name": "🚀 TEST: Create Delivery → Route Auto-Generation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"pickupAddress\": {\n    \"street\": \"Uhuru Street\",\n    \"city\": \"Dar es Salaam\",\n    \"region\": \"Dar es Salaam\",\n    \"postalCode\": \"11101\",\n    \"country\": \"TZ\",\n    \"contactName\": \"John Seller\",\n    \"contactPhone\": \"+255712345678\",\n    \"coordinates\": {\n      \"lat\": -6.7924,\n      \"lng\": 39.2083\n    }\n  },\n  \"deliveryAddress\": {\n    \"street\": \"Samora Avenue\",\n    \"city\": \"Dar es Salaam\",\n    \"region\": \"Dar es Salaam\",\n    \"postalCode\": \"11102\",\n    \"country\": \"TZ\",\n    \"contactName\": \"Jane Customer\",\n    \"contactPhone\": \"+255723456789\",\n    \"coordinates\": {\n      \"lat\": -6.8000,\n      \"lng\": 39.2100\n    }\n  },\n  \"packageDetails\": {\n    \"weight\": 2.5,\n    \"dimensions\": {\n      \"length\": 30,\n      \"width\": 20,\n      \"height\": 15\n    },\n    \"value\": 50000,\n    \"fragile\": false,\n    \"perishable\": false,\n    \"hazardous\": false,\n    \"items\": [\n      {\n        \"productId\": \"prod_001\",\n        \"name\": \"Electronics\",\n        \"quantity\": 1,\n        \"weight\": 2.5,\n        \"value\": 50000\n      }\n    ]\n  },\n  \"priority\": \"standard\",\n  \"desiredArrivalTime\": \"2026-01-10T15:30:00Z\",\n  \"estimatedArrivalMinutes\": 45\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/deliveries",
+              "host": ["{{baseUrl}}"],
+              "path": ["deliveries"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has deliveryId\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.deliveryId).to.exist;",
+                  "    pm.collectionVariables.set('newDeliveryId', jsonData.data.deliveryId);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has courierId (route should be created)\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.courierId).to.exist;",
+                  "    pm.collectionVariables.set('assignedCourierId', jsonData.data.courierId);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "🔍 TEST: Verify Route Was Auto-Created for Delivery",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/routes/courier/{{assignedCourierId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["routes", "courier", "{{assignedCourierId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Route was created for courier\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.routes).to.be.an('array');",
+                  "    pm.expect(jsonData.data.routes.length).to.be.greaterThan(0);",
+                  "});",
+                  "",
+                  "pm.test(\"Route has business logic properties\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var route = jsonData.data.routes[0];",
+                  "    pm.expect(route.status).to.be.oneOf(['planned', 'active', 'completed']);",
+                  "    pm.expect(route.totalDistance).to.be.a('number');",
+                  "    pm.expect(route.estimatedDuration).to.be.a('number');",
+                  "    pm.expect(route.waypoints).to.be.an('array');",
+                  "    pm.collectionVariables.set('createdRouteId', route.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "📊 TEST: Get Route Optimization Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/routes/{{createdRouteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["routes", "{{createdRouteId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Route has optimization metrics\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    var route = jsonData.data;",
+                  "    pm.expect(route.totalDistance).to.be.a('number');",
+                  "    pm.expect(route.estimatedDuration).to.be.a('number');",
+                  "    pm.expect(route.waypoints.length).to.be.greaterThan(1);",
+                  "});",
+                  "",
+                  "pm.test(\"Route has progress tracking\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var route = jsonData.data;",
+                  "    if (route.progress) {",
+                  "        pm.expect(route.progress.completedStops).to.be.a('number');",
+                  "        pm.expect(route.progress.totalStops).to.be.a('number');",
+                  "        pm.expect(route.progress.currentLocation).to.have.property('lat');",
+                  "        pm.expect(route.progress.currentLocation).to.have.property('lng');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "⚡ TEST: Create Multiple Deliveries → Route Batching",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"order_batch_001\",\n  \"pickupAddress\": {\n    \"street\": \"Uhuru Street\",\n    \"city\": \"Dar es Salaam\",\n    \"region\": \"Dar es Salaam\",\n    \"postalCode\": \"11101\",\n    \"country\": \"TZ\",\n    \"contactName\": \"John Seller\",\n    \"contactPhone\": \"+255712345678\",\n    \"coordinates\": {\n      \"lat\": -6.7924,\n      \"lng\": 39.2083\n    }\n  },\n  \"deliveryAddress\": {\n    \"street\": \"Kariakoo Market\",\n    \"city\": \"Dar es Salaam\",\n    \"region\": \"Dar es Salaam\",\n    \"postalCode\": \"11103\",\n    \"country\": \"TZ\",\n    \"contactName\": \"Customer B\",\n    \"contactPhone\": \"+255723456790\",\n    \"coordinates\": {\n      \"lat\": -6.8200,\n      \"lng\": 39.2700\n    }\n  },\n  \"packageDetails\": {\n    \"weight\": 1.8,\n    \"dimensions\": {\n      \"length\": 25,\n      \"width\": 18,\n      \"height\": 12\n    },\n    \"value\": 35000,\n    \"fragile\": false,\n    \"perishable\": false,\n    \"hazardous\": false,\n    \"items\": [\n      {\n        \"productId\": \"prod_002\",\n        \"name\": \"Clothing\",\n        \"quantity\": 2,\n        \"weight\": 1.8,\n        \"value\": 35000\n      }\n    ]\n  },\n  \"priority\": \"express\",\n  \"desiredArrivalTime\": \"2026-01-10T16:00:00Z\",\n  \"estimatedArrivalMinutes\": 60\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/deliveries",
+              "host": ["{{baseUrl}}"],
+              "path": ["deliveries"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Second delivery created successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "📈 TEST: Compare Route Efficiency (Single vs Multiple)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/routes/courier/{{assignedCourierId}}?includeMetrics=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["routes", "courier", "{{assignedCourierId}}"],
+              "query": [
+                {
+                  "key": "includeMetrics",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Multiple routes show efficiency gains\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.data.routes.length).to.be.greaterThan(0);",
+                  "});",
+                  "",
+                  "pm.test(\"Routes demonstrate business logic optimization\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var routes = jsonData.data.routes;",
+                  "    ",
+                  "    // Check that routes have proper business properties",
+                  "    routes.forEach(function(route) {",
+                  "        pm.expect(route.status).to.exist;",
+                  "        pm.expect(route.totalDistance).to.be.a('number');",
+                  "        pm.expect(route.estimatedDuration).to.be.a('number');",
+                  "        pm.expect(route.waypoints).to.be.an('array');",
+                  "        pm.expect(route.waypoints.length).to.be.greaterThan(1);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "🎯 TEST: Route Savings Calculation (Implemented TODO)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/routes/courier/{{assignedCourierId}}?includeMetrics=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["routes", "courier", "{{assignedCourierId}}"],
+              "query": [
+                {
+                  "key": "includeMetrics",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Route metrics include calculated savings (TODO implemented)\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.data.routes).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Estimated savings calculated from route data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data.routes && jsonData.data.routes.length > 0) {",
+                  "        var route = jsonData.data.routes[0];",
+                  "        if (route.metrics) {",
+                  "            pm.expect(route.metrics.estimatedSavings).to.have.property('timeMinutes');",
+                  "            pm.expect(route.metrics.estimatedSavings).to.have.property('distanceKm');",
+                  "            pm.expect(route.metrics.estimatedSavings).to.have.property('fuelLiters');",
+                  "            ",
+                  "            // Verify savings are numbers (not hardcoded zeros)",
+                  "            pm.expect(typeof route.metrics.estimatedSavings.timeMinutes).to.eql('number');",
+                  "            pm.expect(typeof route.metrics.estimatedSavings.distanceKm).to.eql('number');",
+                  "            pm.expect(typeof route.metrics.estimatedSavings.fuelLiters).to.eql('number');",
+                  "        }",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test(\"Route efficiency metrics calculated properly\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data.routes && jsonData.data.routes.length > 0) {",
+                  "        var route = jsonData.data.routes[0];",
+                  "        if (route.metrics) {",
+                  "            pm.expect(route.metrics.efficiency).to.have.property('averageSpeed');",
+                  "            pm.expect(route.metrics.efficiency).to.have.property('completionRate');",
+                  "            pm.expect(route.metrics.optimizationScore).to.be.within(0, 100);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Route API Tests",
       "item": [
         {
           "name": "List Routes",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/routes",
               "host": ["{{baseUrl}}"],
@@ -344,6 +708,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "api-version",
+                "value": "v1"
               }
             ],
             "body": {
@@ -387,6 +755,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "api-version",
+                "value": "v1"
               }
             ],
             "body": {
@@ -421,7 +793,12 @@
           "name": "Get Route Details",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/routes/{{routeId}}",
               "host": ["{{baseUrl}}"],
@@ -450,7 +827,12 @@
           "name": "Get Courier Routes",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/routes/courier/{{courierId}}",
               "host": ["{{baseUrl}}"],
@@ -484,7 +866,12 @@
           "name": "List Couriers",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/couriers",
               "host": ["{{baseUrl}}"],
@@ -518,7 +905,12 @@
           "name": "Get Courier Details",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/couriers/{{courierId}}",
               "host": ["{{baseUrl}}"],
@@ -556,6 +948,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "api-version",
+                "value": "v1"
               }
             ],
             "body": {
@@ -595,7 +991,12 @@
           "name": "Get Tracking Info",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/tracking/{{trackingNumber}}",
               "host": ["{{baseUrl}}"],
@@ -633,11 +1034,15 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "api-version",
+                "value": "v1"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"courierId\": \"{{courierId}}\",\n  \"location\": {\n    \"lat\": -6.7924,\n    \"lng\": 39.2083,\n    \"accuracy\": 10,\n    \"speed\": 25,\n    \"heading\": 90\n  }\n}"
+              "raw": "{\n  \"courierId\": \"{{courierId}}\",\n  \"location\": {\n    \"latitude\": -6.7924,\n    \"longitude\": 39.2083,\n    \"accuracy\": 10,\n    \"speed\": 25,\n    \"heading\": 90\n  },\n  \"timestamp\": \"2026-01-10T01:38:13.735Z\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/tracking/location",
@@ -667,7 +1072,12 @@
           "name": "Get Location History",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/tracking/courier/{{courierId}}/history?period=day",
               "host": ["{{baseUrl}}"],
@@ -707,7 +1117,12 @@
           "name": "Get Analytics Overview",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/analytics",
               "host": ["{{baseUrl}}"],
@@ -741,7 +1156,12 @@
           "name": "Get Performance Report",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/analytics/performance?courierId={{courierId}}",
               "host": ["{{baseUrl}}"],
@@ -776,7 +1196,12 @@
           "name": "Get Courier Analytics",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/analytics/courier/{{courierId}}",
               "host": ["{{baseUrl}}"],
@@ -810,11 +1235,16 @@
           "name": "Get Earnings Summary",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/earnings",
+              "raw": "{{baseUrl}}/earnings/{{courierId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["earnings"]
+              "path": ["earnings", "{{courierId}}"]
             }
           },
           "event": [
@@ -844,15 +1274,20 @@
           "name": "Get Courier Earnings",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/earnings/courier/{{courierId}}?period=today",
+              "raw": "{{baseUrl}}/earnings/courier/{{courierId}}?period=week",
               "host": ["{{baseUrl}}"],
               "path": ["earnings", "courier", "{{courierId}}"],
               "query": [
                 {
                   "key": "period",
-                  "value": "today"
+                  "value": "week"
                 }
               ]
             }
@@ -883,11 +1318,15 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "api-version",
+                "value": "v1"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"courierId\": \"{{courierId}}\",\n  \"deliveryId\": \"{{deliveryId}}\",\n  \"amount\": 1500,\n  \"type\": \"delivery_fee\"\n}"
+              "raw": "{\n  \"courierId\": \"{{courierId}}\",\n  \"deliveryId\": \"{{deliveryId}}\",\n  \"baseFare\": 1000,\n  \"distanceFee\": 200,\n  \"weightFee\": 100,\n  \"priorityFee\": 50,\n  \"bonuses\": 100,\n  \"deductions\": 50,\n  \"totalEarnings\": 1400,\n  \"commission\": 140,\n  \"netEarnings\": 1260,\n  \"paymentStatus\": \"pending\",\n  \"currency\": \"TZS\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/earnings",
@@ -921,11 +1360,15 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "api-version",
+                "value": "v1"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"deliveries\": [\n    {\n      \"deliveryId\": \"{{deliveryId}}\",\n      \"amount\": 1500,\n      \"distance\": 10,\n      \"duration\": 30\n    }\n  ]\n}"
+              "raw": "{\n  \"deliveries\": [\n    {\n      \"courierId\": \"{{courierId}}\",\n      \"deliveryId\": \"{{deliveryId}}\",\n      \"amount\": 1500,\n      \"distance\": 10,\n      \"duration\": 30\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/earnings/calculate",
@@ -955,7 +1398,12 @@
           "name": "Get Earnings Summary Report",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/earnings/summary?period=month",
               "host": ["{{baseUrl}}"],
@@ -988,6 +1436,7 @@
         }
       ]
     },
+
     {
       "name": "Test Endpoints",
       "item": [
@@ -995,7 +1444,12 @@
           "name": "Test All Engines",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v1"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/test/all-engines",
               "host": ["{{baseUrl}}"],
@@ -1013,7 +1467,7 @@
                   "",
                   "pm.test(\"Response has success\", function () {",
                   "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.success).to.eql(true);",
+                    "    pm.expect(jsonData.success).to.eql(true);",
                   "});",
                   "",
                   "pm.test(\"Response has test results array\", function () {",

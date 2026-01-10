@@ -5,11 +5,17 @@ import { CourierRepositoryPort } from '../../domain/engines/ports/courier.port';
 import { EarningsRepositoryPort } from '../../domain/engines/ports/earnings.port';
 
 export class AnalyticsController {
-  constructor(
-    private deliveryRepository: DeliveryRepositoryPort = DependencyContainer.getInstance().getDeliveryRepository(),
-    private courierRepository: CourierRepositoryPort = DependencyContainer.getInstance().getCourierRepository(),
-    private earningsRepository: EarningsRepositoryPort = DependencyContainer.getInstance().getEarningsRepository()
-  ) {}
+  private get deliveryRepository(): DeliveryRepositoryPort {
+    return DependencyContainer.getInstance().getDeliveryRepository();
+  }
+
+  private get courierRepository(): CourierRepositoryPort {
+    return DependencyContainer.getInstance().getCourierRepository();
+  }
+
+  private get earningsRepository(): EarningsRepositoryPort {
+    return DependencyContainer.getInstance().getEarningsRepository();
+  }
 
   async getAnalytics(req: Request, res: Response): Promise<void> {
     try {

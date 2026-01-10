@@ -5,7 +5,7 @@ import { RouteRepository } from './repositories/route.repository';
 import { TrackingRepository } from './repositories/tracking.repository';
 import { WeatherProviderAdapter } from './providers/weather-provider.adapter';
 import { TrafficProviderAdapter } from './providers/traffic-provider.adapter';
-import { GoogleMapsRouteAdapter } from './providers/google-maps-route.adapter';
+import { HereRouteAdapter } from './providers/here-route.adapter';
 import { RealTimeTrackingAdapter } from './providers/real-time-tracking.adapter';
 import { EventPublisher } from './messaging/event-publisher';
 import { SupabaseClientManager } from './database/supabase.client';
@@ -17,6 +17,7 @@ import { DistanceCalculationAlgorithm } from '../domain/algorithms/distance-calc
 import { CourierDomainService } from '../domain/services/courier.domain-service';
 import { DeliveryDomainService } from '../domain/services/delivery.domain-service';
 import { RouteDomainService } from '../domain/services/route.domain-service';
+import { RouteCreationService } from '../domain/services/route-creation.service';
 
 // Application layer
 import { CreateDeliveryUseCase } from '../application/use-cases/create-delivery.use-case';
@@ -57,6 +58,7 @@ export class DependencyContainer {
   private courierDomainService!: CourierDomainService;
   private deliveryDomainService!: DeliveryDomainService;
   private routeDomainService!: RouteDomainService;
+  private routeCreationService!: RouteCreationService;
 
   // Application services
   private createDeliveryUseCase!: CreateDeliveryUseCase;
@@ -64,9 +66,10 @@ export class DependencyContainer {
   private sagaRegistry!: SagaRegistry;
 
   private constructor() {
-    this.initializeInfrastructureSync();
+    // Defer initialization until database connections are established
+    // This prevents the race condition where repositories get null clients
     this.initializeDomain();
-    this.initializeApplication();
+    // Application layer initialization is deferred until after database connections
   }
 
   public static getInstance(): DependencyContainer {
@@ -77,16 +80,17 @@ export class DependencyContainer {
   }
 
   private initializeInfrastructureSync(): void {
-    // For now, initialize with null - real clients will be connected lazily
-    // TODO: Implement proper async initialization pattern
-    this.courierRepository = new CourierRepository(null);
-    this.deliveryRepository = new DeliveryRepository(null);
-    this.earningsRepository = new EarningsRepository(null);
-    this.routeRepository = new RouteRepository(null);
-    this.trackingRepository = new TrackingRepository(null);
+    // Initialize repositories with proper Supabase client
+    const supabaseClient = SupabaseClientManager.getInstance().getClient();
+
+    this.courierRepository = new CourierRepository(supabaseClient);
+    this.deliveryRepository = new DeliveryRepository(supabaseClient);
+    this.earningsRepository = new EarningsRepository(supabaseClient);
+    this.routeRepository = new RouteRepository(supabaseClient);
+    this.trackingRepository = new TrackingRepository(supabaseClient);
     this.weatherProvider = new WeatherProviderAdapter(process.env.OPENWEATHER_API_KEY || '');
     this.trafficProvider = new TrafficProviderAdapter(process.env.GOOGLE_MAPS_API_KEY || '');
-    this.routeOptimizationProvider = new GoogleMapsRouteAdapter(process.env.GOOGLE_MAPS_API_KEY || '');
+    this.routeOptimizationProvider = new HereRouteAdapter(process.env.HERE_API_KEY || '', 10000);
     this.trackingProvider = new RealTimeTrackingAdapter(process.env.FIREBASE_API_KEY || '');
     this.eventPublisher = new EventPublisher(true); // Enable event store
   }
@@ -96,18 +100,37 @@ export class DependencyContainer {
     try {
       const supabaseClient = await SupabaseClientManager.getInstance().connect();
 
-      // Re-initialize repositories with real client
-      this.courierRepository = new CourierRepository(supabaseClient);
-      this.deliveryRepository = new DeliveryRepository(supabaseClient);
-      this.earningsRepository = new EarningsRepository(supabaseClient);
-      this.routeRepository = new RouteRepository(supabaseClient);
-      this.trackingRepository = new TrackingRepository(supabaseClient);
+      // Initialize all infrastructure with connected client
+      this.initializeInfrastructureWithClient(supabaseClient);
+
+      // Now that infrastructure is ready, initialize application layer
+      this.initializeApplication();
 
       console.log('✅ Database connections initialized successfully');
+      console.log('✅ Application layer initialized successfully');
     } catch (error) {
       console.error('❌ Failed to initialize database connections:', error);
-      // Continue with null clients for graceful degradation
+      throw error; // Re-throw to prevent server startup
     }
+  }
+
+  private initializeInfrastructureWithClient(supabaseClient: any): void {
+    // Initialize repositories with proper Supabase client
+    this.courierRepository = new CourierRepository(supabaseClient);
+    this.deliveryRepository = new DeliveryRepository(supabaseClient);
+    this.earningsRepository = new EarningsRepository(supabaseClient);
+    this.routeRepository = new RouteRepository(supabaseClient);
+    this.trackingRepository = new TrackingRepository(supabaseClient);
+
+    // Initialize other infrastructure components
+    this.weatherProvider = new WeatherProviderAdapter(process.env.OPENWEATHER_API_KEY || '');
+    this.trafficProvider = new TrafficProviderAdapter(process.env.GOOGLE_MAPS_API_KEY || '');
+    this.routeOptimizationProvider = new HereRouteAdapter(process.env.HERE_API_KEY || '', 10000);
+    this.trackingProvider = new RealTimeTrackingAdapter(process.env.FIREBASE_API_KEY || '');
+    this.eventPublisher = new EventPublisher(true); // Enable event store
+
+    // Initialize domain services that depend on infrastructure
+    this.initializeDomainWithInfrastructure();
   }
 
   private initializeDomain(): void {
@@ -119,6 +142,15 @@ export class DependencyContainer {
     this.routeDomainService = new RouteDomainService();
 
     this.logisticsEngine = new LogisticsEngine();
+  }
+
+  private initializeDomainWithInfrastructure(): void {
+    // Initialize domain services that depend on infrastructure
+    // This is called after infrastructure is initialized
+    this.routeCreationService = new RouteCreationService(
+      this.routeOptimizationProvider,
+      this.distanceAlgorithm
+    );
   }
 
   private initializeApplication(): void {
@@ -135,7 +167,10 @@ export class DependencyContainer {
 
     this.deliverySaga = new DeliverySaga(
       this.courierRepository,
-      this.trackingProvider
+      this.trackingProvider,
+      this.routeRepository,
+      this.routeCreationService,
+      this.courierDomainService
     );
 
     this.sagaRegistry = SagaRegistry.getInstance();
@@ -210,6 +245,9 @@ export class DependencyContainer {
 
   // Getters for application services
   public getCreateDeliveryUseCase(): CreateDeliveryUseCase {
+    if (!this.createDeliveryUseCase) {
+      this.initializeApplication();
+    }
     return this.createDeliveryUseCase;
   }
 

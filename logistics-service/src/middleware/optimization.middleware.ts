@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { SuperEfficiencyOptimizer, CacheManager, PerformanceMonitor } from '../engines/super-efficiency-optimizer.engine';
+import { SuperEfficiencyOptimizer, CacheManager, PerformanceMonitor } from '../domain/engines/super-efficiency-optimizer.engine';
 
 export class OptimizationMiddleware {
   private static optimizer = new SuperEfficiencyOptimizer();

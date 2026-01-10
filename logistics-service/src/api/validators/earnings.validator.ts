@@ -4,12 +4,12 @@ export class EarningsValidator {
   static recordEarnings(): ValidationChain[] {
     return [
       body('courierId')
-        .isUUID()
-        .withMessage('Courier ID must be a valid UUID'),
+        .matches(/^(courier_)?[a-zA-Z0-9_-]+$/)
+        .withMessage('Courier ID must be a valid identifier'),
 
       body('deliveryId')
-        .isUUID()
-        .withMessage('Delivery ID must be a valid UUID'),
+        .matches(/^(del_)?[a-zA-Z0-9_-]+$/)
+        .withMessage('Delivery ID must be a valid identifier'),
 
       body('baseFare')
         .isFloat({ min: 0 })
@@ -91,8 +91,8 @@ export class EarningsValidator {
   static getEarnings(): ValidationChain[] {
     return [
       param('courierId')
-        .isUUID()
-        .withMessage('Courier ID must be a valid UUID'),
+        .matches(/^(courier_)?[a-zA-Z0-9_-]+$/)
+        .withMessage('Courier ID must be a valid identifier'),
 
       query('period')
         .optional()
@@ -165,16 +165,16 @@ export class EarningsValidator {
         .withMessage('Deliveries must be an array with 1-100 items'),
 
       body('deliveries.*.deliveryId')
-        .isUUID()
-        .withMessage('Each delivery ID must be a valid UUID'),
+        .matches(/^(del_)?[a-zA-Z0-9_-]+$/)
+        .withMessage('Each delivery ID must be a valid identifier'),
 
       body('deliveries.*.amount')
         .isFloat({ min: 0 })
         .withMessage('Each delivery amount must be non-negative'),
 
       body('deliveries.*.courierId')
-        .isUUID()
-        .withMessage('Each courier ID must be a valid UUID'),
+        .matches(/^(courier_)?[a-zA-Z0-9_-]+$/)
+        .withMessage('Each courier ID must be a valid identifier'),
 
       body('commissionRate')
         .optional()
@@ -314,8 +314,8 @@ export class EarningsValidator {
   static getCourierEarningsReport(): ValidationChain[] {
     return [
       param('courierId')
-        .isUUID()
-        .withMessage('Courier ID must be a valid UUID'),
+        .matches(/^(courier_)?[a-zA-Z0-9_-]+$/)
+        .withMessage('Courier ID must be a valid identifier'),
 
       query('period')
         .optional()

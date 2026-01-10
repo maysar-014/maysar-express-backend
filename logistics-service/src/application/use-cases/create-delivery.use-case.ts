@@ -28,6 +28,8 @@ export interface CreateDeliveryInput {
     earliest: Date;
     latest: Date;
   };
+  desiredArrivalTime?: Date; // Optional: Client's preferred delivery time
+  estimatedArrivalMinutes?: number; // Optional: Client's estimate of arrival time
   specialRequirements?: string[];
 }
 
@@ -64,6 +66,8 @@ export class CreateDeliveryUseCase {
     // APPLICATION LAYER: Pure orchestration - no business logic
     // All business rules moved to domain layer
 
+    console.log('🔍 DEBUG - CreateDeliveryUseCase.execute called with input:', JSON.stringify(input, null, 2));
+
     // Step 1: Validate input using domain business rules
     const validationResult = this.logisticsEngine.validateDeliveryInput(input);
     if (!validationResult.isValid) {
@@ -83,16 +87,53 @@ export class CreateDeliveryUseCase {
       input.deliveryLocation.address
     );
 
+    console.log('🔍 DEBUG - Pickup location:', pickupGeoPoint.getCoordinates());
+    console.log('🔍 DEBUG - Delivery location:', deliveryGeoPoint.getCoordinates());
+
     // Parallel infrastructure calls (orchestration only)
-    const [availableCouriers, routeAlternatives, weatherData, trafficData] = await Promise.all([
+    const [availableCouriers, routeAlternatives, weatherData, trafficData] = await Promise.allSettled([
       this.courierPort.findAvailableCouriers(pickupGeoPoint, 50),
       this.routePort.getRouteAlternatives(pickupGeoPoint, deliveryGeoPoint, 3),
       this.weatherPort.getWeatherData(deliveryGeoPoint),
       this.trafficPort.getTrafficData(pickupGeoPoint, deliveryGeoPoint)
     ]);
 
-    if (availableCouriers.length === 0) {
+    // Handle infrastructure failures gracefully
+    const couriers = availableCouriers.status === 'fulfilled' ? availableCouriers.value : [];
+    let routes = routeAlternatives.status === 'fulfilled' ? routeAlternatives.value : [];
+
+    console.log('🔍 DEBUG - Available couriers result:', availableCouriers.status);
+    console.log('🔍 DEBUG - Couriers found:', couriers.length);
+    if (couriers.length > 0) {
+      console.log('🔍 DEBUG - First courier:', JSON.stringify(couriers[0], null, 2));
+    }
+    console.log('🔍 DEBUG - Route alternatives result:', routeAlternatives.status);
+    console.log('🔍 DEBUG - Routes found:', routes.length);
+    const weather = weatherData.status === 'fulfilled' ? weatherData.value : { severity: 'low' };
+    const traffic = trafficData.status === 'fulfilled' ? trafficData.value : { congestionLevel: 0 };
+
+    if (couriers.length === 0) {
       throw new Error('No couriers available for delivery');
+    }
+
+    if (routes.length === 0) {
+      console.warn('⚠️ No routes available from route optimization service, using fallback calculation');
+      
+      // Create a basic fallback route with actual distance calculation
+      const straightLineDistance = pickupGeoPoint.distanceTo(deliveryGeoPoint);
+      const estimatedDuration = (straightLineDistance / 30) * 60; // 30 km/h average speed
+      
+      const fallbackRoute = {
+        totalDistance: straightLineDistance,
+        totalDuration: estimatedDuration,
+        waypoints: [pickupGeoPoint, deliveryGeoPoint],
+        segments: [],
+        efficiency: 70,
+        confidence: 0.5,
+        alternatives: []
+      };
+      
+      routes = [fallbackRoute];
     }
 
     // Step 3: Apply domain business rules for courier selection
@@ -103,19 +144,18 @@ export class CreateDeliveryUseCase {
       : TimeWindow.create(defaultTimeWindow.earliest, defaultTimeWindow.latest);
 
     // Convert to domain entities for policy evaluation
-    const domainCouriers = availableCouriers.map(courier =>
-      new CourierEntity(
-        courier.id,
-        courier.name,
-        courier.phone,
-        courier.vehicle,
-        courier.rating,
-        courier.completionRate,
-        courier.currentLocation,
-        courier.isAvailable,
-        courier.estimatedArrivalTime,
-        courier.trafficExperience
-      )
+    const domainCouriers = couriers.map(courier =>
+      CourierEntity.create({
+        id: courier.id,
+        name: courier.name,
+        phone: courier.phone,
+        vehicle: courier.vehicle,
+        rating: courier.rating,
+        completionRate: courier.completionRate,
+        currentLocation: courier.currentLocation,
+        isAvailable: courier.isAvailable,
+        trafficExperience: courier.trafficExperience
+      })
     );
 
     // Apply domain policy (business rule)
@@ -132,12 +172,12 @@ export class CreateDeliveryUseCase {
     }
 
     // Step 4: Calculate estimates using domain business rules
-    const optimalRoute = routeAlternatives[0];
-    const weatherSeverity = weatherData.severity === 'extreme' ? 'high' : (weatherData.severity || 'low');
+    const optimalRoute = routes[0];
+    const weatherSeverity = weather.severity === 'extreme' ? 'high' : (weather.severity || 'low');
     const timeEstimates = this.logisticsEngine.calculateTimeEstimates(
       optimalRoute.totalDuration,
       weatherSeverity as 'low' | 'medium' | 'high',
-      trafficData.congestionLevel || 0
+      traffic.congestionLevel || 0
     );
 
     // Calculate cost using domain business rules
@@ -161,11 +201,25 @@ export class CreateDeliveryUseCase {
       route: {
         distance: optimalRoute.totalDistance,
         duration: optimalRoute.totalDuration,
-        waypoints: optimalRoute.waypoints?.map((w: any) => ({
-          lat: w.lat || w.location?.getLatitude() || 0,
-          lng: w.lng || w.location?.getLongitude() || 0,
-          type: w.type || 'waypoint'
-        })) || []
+        waypoints: optimalRoute.waypoints?.map((waypoint: GeoPoint) => {
+          const coords = waypoint.getCoordinates();
+          return {
+            lat: coords.lat,
+            lng: coords.lng,
+            type: 'waypoint' as const
+          };
+        }) || [
+          {
+            lat: input.pickupLocation.lat,
+            lng: input.pickupLocation.lng,
+            type: 'pickup' as const
+          },
+          {
+            lat: input.deliveryLocation.lat,
+            lng: input.deliveryLocation.lng,
+            type: 'delivery' as const
+          }
+        ]
       }
     };
   }

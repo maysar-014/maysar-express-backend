@@ -4,9 +4,9 @@ import { CourierRepositoryPort } from '../../domain/engines/ports/courier.port';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 
 export class CourierController {
-  constructor(
-    private courierRepository: CourierRepositoryPort = DependencyContainer.getInstance().getCourierRepository()
-  ) {}
+  private get courierRepository(): CourierRepositoryPort {
+    return DependencyContainer.getInstance().getCourierRepository();
+  }
 
   async getCouriers(req: Request, res: Response): Promise<void> {
     try {

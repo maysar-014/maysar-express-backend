@@ -42,8 +42,9 @@ export class GoogleMapsRouteAdapter implements RouteOptimizationPort {
     private apiKey: string,
     private readonly timeout: number = 10000 // 10 seconds
   ) {
-    if (!apiKey) {
-      throw new Error('Google Maps API key is required');
+    if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
+      console.warn('⚠️  Google Maps API key not configured. Route optimization will use mock data.');
+      this.apiKey = 'DEVELOPMENT_MODE';
     }
 
     this.circuitBreaker = createCircuitBreaker('google-maps-api', {
@@ -262,7 +263,7 @@ export class GoogleMapsRouteAdapter implements RouteOptimizationPort {
     } catch (error) {
       clearTimeout(timeoutId);
 
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('Request timeout');
       }
 

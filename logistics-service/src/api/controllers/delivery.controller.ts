@@ -5,18 +5,33 @@ import { DependencyContainer } from '../../infrastructure/container';
 import { DeliveryDomainService } from '../../domain/services/delivery.domain-service';
 
 export class DeliveryController {
-  private createDeliveryUseCase: CreateDeliveryUseCase;
-  private deliveryDomainService: DeliveryDomainService;
+  private createDeliveryUseCase: CreateDeliveryUseCase | undefined;
+  private deliveryDomainService: DeliveryDomainService | undefined;
   private container: DependencyContainer;
 
   constructor() {
     this.container = DependencyContainer.getInstance();
-    this.createDeliveryUseCase = this.container.getCreateDeliveryUseCase();
-    this.deliveryDomainService = this.container.getDeliveryDomainService();
+  }
+
+  private getCreateDeliveryUseCase(): CreateDeliveryUseCase {
+    if (!this.createDeliveryUseCase) {
+      this.createDeliveryUseCase = this.container.getCreateDeliveryUseCase();
+    }
+    return this.createDeliveryUseCase;
+  }
+
+  private getDeliveryDomainService(): DeliveryDomainService {
+    if (!this.deliveryDomainService) {
+      this.deliveryDomainService = this.container.getDeliveryDomainService();
+    }
+    return this.deliveryDomainService;
   }
 
   async createDelivery(req: Request, res: Response): Promise<void> {
     try {
+      // DEBUG: Log the incoming request
+      console.log('🔍 DEBUG - Incoming request body:', JSON.stringify(req.body, null, 2));
+
       // Validate request
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -35,25 +50,30 @@ export class DeliveryController {
       const input = {
         orderId: req.body.orderId,
         pickupLocation: {
-          lat: req.body.pickupAddress?.coordinates?.lat || -6.7924, // TODO: Implement geocoding - default to Dar es Salaam
-          lng: req.body.pickupAddress?.coordinates?.lng || 39.2083, // TODO: Implement geocoding - default to Dar es Salaam
+          lat: req.body.pickupAddress?.coordinates?.lat || req.body.pickupAddress?.lat || -6.7924,
+          lng: req.body.pickupAddress?.coordinates?.lng || req.body.pickupAddress?.lng || 39.2083,
           address: `${req.body.pickupAddress?.street}, ${req.body.pickupAddress?.city}, ${req.body.pickupAddress?.postalCode}, ${req.body.pickupAddress?.country}`
         },
         deliveryLocation: {
-          lat: req.body.deliveryAddress?.coordinates?.lat || -6.7924, // TODO: Implement geocoding - default to Dar es Salaam
-          lng: req.body.deliveryAddress?.coordinates?.lng || 39.2083, // TODO: Implement geocoding - default to Dar es Salaam
+          lat: req.body.deliveryAddress?.coordinates?.lat || req.body.deliveryAddress?.lat || -6.7924,
+          lng: req.body.deliveryAddress?.coordinates?.lng || req.body.deliveryAddress?.lng || 39.2083,
           address: `${req.body.deliveryAddress?.street}, ${req.body.deliveryAddress?.city}, ${req.body.deliveryAddress?.postalCode}, ${req.body.deliveryAddress?.country}`
         },
-        weight: req.body.packageDetails?.weight || 1, // Extract weight from packageDetails
+        weight: req.body.packageDetails?.weight || req.body.weight || 1,
         priority: req.body.priority || 'standard',
         timeWindow: req.body.timeWindow ? {
           earliest: new Date(req.body.timeWindow.start),
           latest: new Date(req.body.timeWindow.end)
         } : undefined,
+        desiredArrivalTime: req.body.desiredArrivalTime ? new Date(req.body.desiredArrivalTime) : undefined,
+        estimatedArrivalMinutes: req.body.estimatedArrivalMinutes,
         specialRequirements: req.body.specialRequirements
       };
 
-      const result = await this.createDeliveryUseCase.execute(input);
+      // DEBUG: Log the transformed input
+      console.log('🔍 DEBUG - Transformed input:', JSON.stringify(input, null, 2));
+
+      const result = await this.getCreateDeliveryUseCase().execute(input);
 
       res.status(201).json({
         success: true,

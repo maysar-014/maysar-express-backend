@@ -1,4 +1,4 @@
- import {
+import {
   RouteOptimizationPort,
   OptimizedRoute,
   RouteSegment,
@@ -7,7 +7,13 @@
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 
 export class RouteOptimizationAdapter implements RouteOptimizationPort {
-  constructor(private apiKey?: string) {}
+  private readonly baseUrl = 'https://router.hereapi.com/v8';
+
+  constructor(private apiKey?: string) {
+    if (!apiKey) {
+      console.warn('HERE API key not provided, using fallback routing');
+    }
+  }
 
   async calculateOptimalRoute(
     origin: GeoPoint,
@@ -15,8 +21,32 @@ export class RouteOptimizationAdapter implements RouteOptimizationPort {
     constraints?: RouteConstraints
   ): Promise<OptimizedRoute> {
     try {
-      const alternatives = await this.getRouteAlternatives(origin, destination, 3);
-      return alternatives[0]; // Return the best (first) alternative
+      if (!this.apiKey) {
+        return this.createFallbackRoute(origin, destination);
+      }
+
+      const originCoords = origin.getCoordinates();
+      const destCoords = destination.getCoordinates();
+
+      const url = `${this.baseUrl}/routes`;
+      const params = new URLSearchParams({
+        'apikey': this.apiKey,
+        'transportMode': 'car',
+        'origin': `${originCoords.lat},${originCoords.lng}`,
+        'destination': `${destCoords.lat},${destCoords.lng}`,
+        'return': 'summary,polyline,instructions',
+        'routingMode': 'fast'
+      });
+
+      const response = await fetch(`${url}?${params}`);
+
+      if (!response.ok) {
+        console.error(`HERE API error: ${response.status} - ${await response.text()}`);
+        return this.createFallbackRoute(origin, destination);
+      }
+
+      const data = await response.json();
+      return this.parseHereResponse(data, origin, destination);
     } catch (error) {
       console.error('Error calculating optimal route:', error);
       return this.createFallbackRoute(origin, destination);
@@ -32,19 +62,30 @@ export class RouteOptimizationAdapter implements RouteOptimizationPort {
         throw new Error('At least 2 waypoints required');
       }
 
-      // For multi-stop routes, optimize the sequence and calculate segments
-      const optimizedWaypoints = this.optimizeWaypointOrder(waypoints);
-      const segments = this.calculateRouteSegments(optimizedWaypoints);
+      if (!this.apiKey) {
+        return this.createFallbackMultiRoute(waypoints);
+      }
 
-      return {
-        segments,
-        totalDistance: segments.reduce((sum, seg) => sum + seg.distance, 0),
-        totalDuration: segments.reduce((sum, seg) => sum + seg.duration, 0),
-        waypoints: optimizedWaypoints,
-        efficiency: 85,
-        confidence: 0.8,
-        alternatives: [segments] // Simplified
-      };
+      // For multi-stop routes, use HERE's waypoint optimization
+      const waypointParams = waypoints.map((wp, index) => {
+        const coords = wp.getCoordinates();
+        if (index === 0) return `origin=${coords.lat},${coords.lng}`;
+        if (index === waypoints.length - 1) return `destination=${coords.lat},${coords.lng}`;
+        return `via=${coords.lat},${coords.lng}`;
+      }).join('&');
+
+      const url = `${this.baseUrl}/routes`;
+      const params = `apikey=${this.apiKey}&transportMode=car&${waypointParams}&return=summary,polyline&routingMode=fast`;
+
+      const response = await fetch(`${url}?${params}`);
+
+      if (!response.ok) {
+        console.error(`HERE API error: ${response.status} - ${await response.text()}`);
+        return this.createFallbackMultiRoute(waypoints);
+      }
+
+      const data = await response.json();
+      return this.parseHereMultiStopResponse(data, waypoints);
     } catch (error) {
       console.error('Error calculating multi-stop route:', error);
       return this.createFallbackMultiRoute(waypoints);
@@ -257,8 +298,10 @@ export class RouteOptimizationAdapter implements RouteOptimizationPort {
   }
 
   private createFallbackRoute(origin: GeoPoint, destination: GeoPoint): OptimizedRoute {
-    const distance = 10;
-    const duration = 15;
+    // Calculate actual straight-line distance between points
+    const distance = origin.distanceTo(destination);
+    // Estimate duration based on average speed of 30 km/h (accounting for traffic)
+    const duration = (distance / 30) * 60; // Convert hours to minutes
 
     return {
       segments: [{
@@ -290,5 +333,75 @@ export class RouteOptimizationAdapter implements RouteOptimizationPort {
       confidence: 0.5,
       alternatives: [segments]
     };
+  }
+
+  private parseHereResponse(data: any, origin: GeoPoint, destination: GeoPoint): OptimizedRoute {
+    try {
+      if (!data.routes || data.routes.length === 0) {
+        return this.createFallbackRoute(origin, destination);
+      }
+
+      const route = data.routes[0];
+      const summary = route.summary;
+
+      const segments: RouteSegment[] = [{
+        start: origin,
+        end: destination,
+        distance: summary.length / 1000, // Convert meters to km
+        duration: summary.duration / 60, // Convert seconds to minutes
+        roadType: 'main_road',
+        trafficLevel: 15
+      }];
+
+      return {
+        segments,
+        totalDistance: summary.length / 1000,
+        totalDuration: summary.duration / 60,
+        waypoints: [origin, destination],
+        efficiency: 90,
+        confidence: 0.95,
+        alternatives: [segments]
+      };
+    } catch (error) {
+      console.error('Error parsing HERE response:', error);
+      return this.createFallbackRoute(origin, destination);
+    }
+  }
+
+  private parseHereMultiStopResponse(data: any, waypoints: GeoPoint[]): OptimizedRoute {
+    try {
+      if (!data.routes || data.routes.length === 0) {
+        return this.createFallbackMultiRoute(waypoints);
+      }
+
+      const route = data.routes[0];
+      const summary = route.summary;
+
+      // Create segments between waypoints
+      const segments: RouteSegment[] = [];
+      for (let i = 0; i < waypoints.length - 1; i++) {
+        segments.push({
+          start: waypoints[i],
+          end: waypoints[i + 1],
+          distance: (summary.length / 1000) / (waypoints.length - 1), // Distribute distance
+          duration: (summary.duration / 60) / (waypoints.length - 1), // Distribute duration
+          roadType: 'main_road',
+          trafficLevel: 15
+        });
+      }
+
+      return {
+        segments,
+        totalDistance: summary.length / 1000,
+        totalDuration: summary.duration / 60,
+        waypoints,
+        efficiency: 85,
+        confidence: 0.9,
+        alternatives: [segments]
+      };
+    } catch (error) {
+      console.error('Error parsing HERE multi-stop response:', error);
+      return this.createFallbackMultiRoute(waypoints);
+    }
   }
 }

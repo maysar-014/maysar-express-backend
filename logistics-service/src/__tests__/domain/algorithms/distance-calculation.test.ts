@@ -28,6 +28,19 @@ describe('DistanceCalculationAlgorithm', () => {
       expect(distance).toBeCloseTo(470, 0); // Approximately 470km
     });
 
+    it('should calculate distance between specific coordinates (-6.7813260058560365, 39.03496860459133) to (-3.366479861310482, 36.682537148684055)', () => {
+      const point1 = GeoPoint.create(-6.7813260058560365, 39.03496860459133, 'Point 1');
+      const point2 = GeoPoint.create(-3.366479861310482, 36.682537148684055, 'Point 2');
+
+      const distance = DistanceCalculationAlgorithm.calculateHaversineDistance(point1, point2);
+
+      // Distance should be a positive number
+      expect(distance).toBeGreaterThan(0);
+      // Based on the coordinates, this should be approximately 480-520 km
+      expect(distance).toBeGreaterThan(450);
+      expect(distance).toBeLessThan(550);
+    });
+
     it('should return 0 for same point', () => {
       const distance = DistanceCalculationAlgorithm.calculateHaversineDistance(darEsSalaam, darEsSalaam);
       expect(distance).toBe(0);

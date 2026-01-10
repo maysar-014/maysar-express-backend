@@ -7,13 +7,20 @@ info:
     This service provides delivery management, route optimization, real-time tracking,
     performance analytics, and earnings calculation for courier operations.
 
+    **🏛️ Architecture Constitution Compliant**
+    This service implements the Architecture Constitution with strict layer isolation,
+    comprehensive testing, and automated quality gates.
+
     **Key Features:**
     - Delivery cost calculation and management
     - Route optimization with constraints
-    - Real-time courier tracking
-    - Performance analytics and KPIs
+    - Real-time courier tracking with Saga orchestration
+    - Performance analytics and KPIs with circuit breakers
     - Earnings calculation and commission management
-    - Multi-engine architecture with 11 specialized engines
+    - Clean Architecture with layer isolation validation
+    - Automated constitution compliance testing
+    - Real-time architectural fitness monitoring
+    - Enhanced security and performance benchmarking
 
   contact:
     name: Maysar Development Team
@@ -753,6 +760,110 @@ paths:
               schema:
                 $ref: '#/components/schemas/EngineStatusResponse'
 
+  # ==================== ARCHITECTURAL ENDPOINTS ====================
+
+  /api/v1/architecture/status:
+    get:
+      tags:
+        - Architecture
+      summary: Get architectural compliance status
+      description: |
+        Real-time architectural fitness monitoring with layer isolation validation,
+        dependency direction checks, and constitution compliance metrics.
+      operationId: getArchitectureStatus
+      responses:
+        '200':
+          description: Architectural status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArchitectureStatusResponse'
+
+  /api/v1/architecture/layers:
+    get:
+      tags:
+        - Architecture
+      summary: Get layer isolation metrics
+      description: |
+        Detailed metrics on layer separation, dependency validation,
+        and architectural boundary enforcement.
+      operationId: getLayerIsolationMetrics
+      responses:
+        '200':
+          description: Layer isolation metrics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LayerIsolationResponse'
+
+  /api/v1/architecture/test-results:
+    get:
+      tags:
+        - Architecture
+      summary: Get constitution compliance test results
+      description: |
+        Comprehensive test results for all architectural validation tests,
+        including domain purity, dependency direction, and layer isolation.
+      operationId: getConstitutionTestResults
+      responses:
+        '200':
+          description: Constitution compliance test results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstitutionTestResultsResponse'
+
+  /api/v1/circuit-breaker/status:
+    get:
+      tags:
+        - Reliability
+      summary: Get circuit breaker status
+      description: |
+        Real-time status of all circuit breakers protecting external service calls,
+        including database, cache, and third-party API connections.
+      operationId: getCircuitBreakerStatus
+      responses:
+        '200':
+          description: Circuit breaker status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitBreakerStatusResponse'
+
+  /api/v1/performance/benchmarks:
+    get:
+      tags:
+        - Performance
+      summary: Get performance benchmarks
+      description: |
+        Real-time performance metrics and benchmarks for all engines and operations,
+        including latency tracking, throughput analysis, and resource utilization.
+      operationId: getPerformanceBenchmarks
+      responses:
+        '200':
+          description: Performance benchmarks retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceBenchmarksResponse'
+
+  /api/v1/security/audit:
+    get:
+      tags:
+        - Security
+      summary: Get security audit status
+      description: |
+        Comprehensive security audit results including vulnerability scanning,
+        access control validation, and data protection compliance.
+      operationId: getSecurityAuditStatus
+      responses:
+        '200':
+          description: Security audit status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityAuditResponse'
+
   # ==================== TEST ENDPOINTS ====================
 
   /api/v1/test/all-engines:
@@ -777,6 +888,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/test/architectural:
+    get:
+      tags:
+        - Testing
+      summary: Run architectural validation tests
+      description: |
+        Execute all architectural fitness functions and layer isolation tests
+        to validate constitution compliance and design integrity.
+      operationId: runArchitecturalTests
+      responses:
+        '200':
+          description: Architectural tests completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArchitecturalTestResponse'
 
 components:
   securitySchemes:

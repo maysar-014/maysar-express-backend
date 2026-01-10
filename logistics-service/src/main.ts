@@ -217,30 +217,36 @@ class LogisticsService {
 
   async start(): Promise<void> {
     try {
-      // Try to connect to dependencies, but don't fail if they're unavailable
+      // CRITICAL: Establish database connections BEFORE starting the server
+      // This prevents the race condition where API requests arrive before DB is ready
+
+      console.log('🔄 Initializing database connections...');
+
       try {
         await SupabaseClientManager.getInstance().connect();
-        console.log('✓ Supabase connected');
+        console.log('✅ Supabase connected successfully');
 
-        // Initialize database connections in the container
+        // Initialize database connections in the container with the connected client
         const { container } = await import('./infrastructure/container');
         await container.initializeDatabaseConnections();
-        console.log('✓ Database repositories initialized');
+        console.log('✅ Database repositories initialized successfully');
       } catch (error) {
-        console.warn('⚠ Database connection failed, continuing without it:', (error as Error).message);
+        console.error('❌ Database connection failed:', (error as Error).message);
+        throw new Error('Cannot start service without database connection');
       }
-      
+
       try {
         await RedisClientManager.getInstance().connect();
-        console.log('✓ Redis connected');
+        console.log('✅ Redis connected successfully');
       } catch (error) {
-        console.warn('⚠ Redis connection failed, continuing without it:', (error as Error).message);
+        console.warn('⚠️ Redis connection failed, continuing without caching:', (error as Error).message);
       }
-      
+
+      // Now that all dependencies are ready, start the server
       const port = this.appConfig.getConfig().port;
-      
+
       this.app.listen(port, () => {
-        console.log(`Logistics Service running on port ${port}`);
+        console.log(`🚀 Logistics Service running on port ${port}`);
         console.log(`Health check: http://localhost:${port}/health`);
         console.log(`Readiness check: http://localhost:${port}/ready`);
         console.log(`Performance stats: http://localhost:${port}/api/stats/performance`);
@@ -258,7 +264,7 @@ class LogisticsService {
           service: this.appConfig.getServiceInfo()
         });
       });
-      
+
     } catch (error) {
       this.logger.error('Failed to start service', error as Error);
       process.exit(1);

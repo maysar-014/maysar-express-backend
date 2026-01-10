@@ -1,30 +1,18 @@
-import { GeoPoint } from '../../value-objects/geopoint.value-object';
-
-export interface RouteEntity {
-  id: string;
-  deliveryId: string;
-  courierId: string;
-  waypoints: GeoPoint[];
-  segments: Array<{
-    start: GeoPoint;
-    end: GeoPoint;
-    distance: number;
-    duration: number;
-    roadType: string;
-    trafficLevel: number;
-  }>;
-  totalDistance: number;
-  totalDuration: number;
-  efficiency: number;
-  confidence: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { Route } from '../../entities/route.entity';
+import { RouteStatus } from '../../enums/route-status.enum';
 
 export interface RouteRepositoryPort {
-  save(route: RouteEntity): Promise<void>;
-  findByDeliveryId(deliveryId: string): Promise<RouteEntity | null>;
-  findByCourierId(courierId: string): Promise<RouteEntity[]>;
-  updateRoute(id: string, updates: Partial<RouteEntity>): Promise<void>;
+  save(route: Route): Promise<void>;
+  findById(id: string): Promise<Route | null>;
+  findByCourierId(courierId: string, status?: RouteStatus): Promise<Route[]>;
+  findAll(options?: {
+    page?: number;
+    limit?: number;
+    status?: RouteStatus;
+    courierId?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+  }): Promise<{ routes: Route[]; total: number }>;
+  updateRoute(id: string, updates: Partial<Route>): Promise<Route>;
   deleteRoute(id: string): Promise<void>;
 }
