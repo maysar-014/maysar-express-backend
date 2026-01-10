@@ -1,4 +1,5 @@
 import { GeoPoint } from '../value-objects/geopoint.value-object';
+import { RouteOptimizationPort, RouteConstraints } from '../engines/ports/route-optimization.port';
 
 export interface DistanceResult {
   distance: number; // in kilometers
@@ -7,6 +8,14 @@ export interface DistanceResult {
 }
 
 export class DistanceCalculationAlgorithm {
+  private static routeOptimizationService?: RouteOptimizationPort;
+
+  /**
+   * Set the route optimization service (HERE Technologies) for accurate road-based calculations
+   */
+  static setRouteOptimizationService(service: RouteOptimizationPort): void {
+    this.routeOptimizationService = service;
+  }
   /**
    * Calculate the great circle distance between two points using the Haversine formula
    * Returns distance in kilometers
@@ -49,21 +58,26 @@ export class DistanceCalculationAlgorithm {
   }
 
   /**
-   * Calculate distance, bearing, and estimated duration for delivery routing
+   * Calculate distance, bearing, and estimated duration for delivery routing using HERE Technologies ONLY
+   * Requires HERE service to be configured - no fallback to Haversine
    */
-  static calculateDeliveryDistance(
+  static async calculateDeliveryDistance(
     origin: GeoPoint,
     destination: GeoPoint,
-    averageSpeedKmh: number = 30
-  ): DistanceResult {
-    const distance = this.calculateHaversineDistance(origin, destination);
+    averageSpeedKmh: number = 30,
+    constraints?: RouteConstraints
+  ): Promise<DistanceResult> {
+    if (!this.routeOptimizationService) {
+      throw new Error('HERE Technologies service is required for distance calculations. Configure HERE_API_KEY and call setRouteOptimizationService().');
+    }
+
+    const route = await this.routeOptimizationService.calculateOptimalRoute(origin, destination, constraints);
     const bearing = this.calculateBearing(origin, destination);
-    const duration = (distance / averageSpeedKmh) * 60; // Convert hours to minutes
 
     return {
-      distance: Math.round(distance * 100) / 100, // Round to 2 decimal places
+      distance: Math.round(route.totalDistance * 100) / 100, // Round to 2 decimal places
       bearing: Math.round(bearing * 100) / 100,
-      duration: Math.round(duration)
+      duration: Math.round(route.totalDuration)
     };
   }
 
