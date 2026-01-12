@@ -1,4 +1,4 @@
-import { SettlementService, SettlementRequest } from '../domain/services/settlement.service';
+import { SettlementService, SettlementRequest } from '../../domain/engines/settlement.engine';
 
 export enum SettlementStep {
   INITIATED = 'initiated',
@@ -58,7 +58,7 @@ export class SettlementSaga {
       return await this.processPayment(state, request);
     } catch (error) {
       state.currentStep = SettlementStep.FAILED;
-      state.failureReason = error.message;
+      state.failureReason = (error as Error).message;
       return state;
     }
   }
@@ -86,7 +86,7 @@ export class SettlementSaga {
       return await this.distributeCommissions(state, request);
     } catch (error) {
       state.currentStep = SettlementStep.FAILED;
-      state.failureReason = error.message;
+      state.failureReason = (error as Error).message;
       return state;
     }
   }
@@ -103,7 +103,7 @@ export class SettlementSaga {
       return await this.processPayout(state, request);
     } catch (error) {
       state.currentStep = SettlementStep.FAILED;
-      state.failureReason = error.message;
+      state.failureReason = (error as Error).message;
       return state;
     }
   }
@@ -126,7 +126,7 @@ export class SettlementSaga {
       return state;
     } catch (error) {
       state.currentStep = SettlementStep.FAILED;
-      state.failureReason = error.message;
+      state.failureReason = (error as Error).message;
       return state;
     }
   }

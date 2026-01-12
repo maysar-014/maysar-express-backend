@@ -66,7 +66,7 @@ export class PesapalAdapter {
         body: JSON.stringify(paymentData)
       });
 
-      const result = await response.json();
+      const result = await response.json() as any;
 
       if (result.status === '200') {
         return {
@@ -85,7 +85,7 @@ export class PesapalAdapter {
     } catch (error) {
       return {
         success: false,
-        error: error.message,
+        error: (error as Error).message,
         status: 'failed'
       };
     }
@@ -101,7 +101,7 @@ export class PesapalAdapter {
         }
       });
 
-      const result = await response.json();
+      const result = await response.json() as any;
 
       return {
         success: result.payment_status_description === 'Completed',
@@ -111,7 +111,7 @@ export class PesapalAdapter {
     } catch (error) {
       return {
         success: false,
-        error: error.message,
+        error: (error as Error).message,
         status: 'failed'
       };
     }
@@ -140,7 +140,7 @@ export class PesapalAdapter {
         body: JSON.stringify(payoutData)
       });
 
-      const result = await response.json();
+      const result = await response.json() as any;
 
       return {
         success: result.status === 'success',
@@ -151,7 +151,7 @@ export class PesapalAdapter {
     } catch (error) {
       return {
         success: false,
-        error: error.message,
+        error: (error as Error).message,
         status: 'failed'
       };
     }
@@ -169,7 +169,7 @@ export class PesapalAdapter {
       })
     });
 
-    const result = await response.json();
+    const result = await response.json() as any;
     return result.token;
   }
 
@@ -186,7 +186,7 @@ export class PesapalAdapter {
       })
     });
 
-    const result = await response.json();
+    const result = await response.json() as any;
     return result.ipn_id;
   }
 

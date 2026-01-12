@@ -108,6 +108,15 @@ export class CourierAssignmentPolicy {
     // Sort by total score descending
     scoredCouriers.sort((a, b) => b.totalScore - a.totalScore);
 
+    // Randomly select from the top 3 couriers to distribute load more evenly
+    // This prevents the same courier from always being selected due to location advantages
+    const topCouriers = scoredCouriers.slice(0, Math.min(3, scoredCouriers.length));
+
+    if (topCouriers.length > 1) {
+      const randomIndex = Math.floor(Math.random() * topCouriers.length);
+      return topCouriers[randomIndex].courier;
+    }
+
     return scoredCouriers[0].courier;
   }
 

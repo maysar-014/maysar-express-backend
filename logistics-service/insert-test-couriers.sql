@@ -23,7 +23,8 @@ INSERT INTO couriers (
 ('courier_002', 'Amina Hassan', '+255723456789', 'bicycle', 8.00, 0.03, 3, 4.20, 0.9200, -6.7924, 39.2100, 'Dar es Salaam CBD', true, 0.75, NOW(), NOW()),
 ('courier_003', 'David Kiprop', '+255734567890', 'car', 25.00, 0.15, 10, 4.80, 0.9800, -6.7900, 39.2050, 'Dar es Salaam City Center', true, 0.90, NOW(), NOW()),
 ('courier_004', 'Grace Wanjiku', '+255745678901', 'motorcycle', 12.00, 0.08, 6, 4.60, 0.9400, -6.7950, 39.2120, 'Dar es Salaam Kariakoo', true, 0.85, NOW(), NOW()),
-('courier_005', 'Michael Oduya', '+255756789012', 'van', 50.00, 0.30, 20, 4.70, 0.9600, -6.7880, 39.2000, 'Dar es Salaam Industrial Area', true, 0.88, NOW(), NOW())
+('courier_005', 'Michael Oduya', '+255756789012', 'van', 50.00, 0.30, 20, 4.70, 0.9600, -6.7880, 39.2000, 'Dar es Salaam Industrial Area', true, 0.88, NOW(), NOW()),
+('courier_013', 'Test Courier', '+255700000013', 'motorcycle', 15.00, 0.10, 8, 4.50, 0.9300, -6.7924, 39.2083, 'Test Location', true, 0.80, NOW(), NOW())
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   phone = EXCLUDED.phone,

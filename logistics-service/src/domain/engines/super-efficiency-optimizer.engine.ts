@@ -40,6 +40,24 @@ export class SuperEfficiencyOptimizer {
   private connectionPool: any[] = [];
   private readonly CACHE_TTL = 300000; // 5 minutes
   private readonly MAX_CONNECTIONS = 20;
+  private cacheCleanupInterval: NodeJS.Timeout | null = null;
+
+  constructor() {
+    // Start cache cleanup interval
+    this.startCacheCleanup();
+  }
+
+  /**
+   * Clean up resources when instance is destroyed
+   */
+  destroy(): void {
+    if (this.cacheCleanupInterval) {
+      clearInterval(this.cacheCleanupInterval);
+      this.cacheCleanupInterval = null;
+    }
+    this.cache.clear();
+    this.connectionPool.length = 0;
+  }
 
   async implementAdvancedCaching(): Promise<CacheOptimization> {
     // Multi-layer caching strategy
@@ -229,6 +247,36 @@ export class SuperEfficiencyOptimizer {
         return {};
     }
   }
+
+  /**
+   * Start automatic cache cleanup to prevent memory leaks
+   */
+  private startCacheCleanup(): void {
+    this.cacheCleanupInterval = setInterval(() => {
+      this.cleanupExpiredCache();
+    }, 60000); // Clean up every minute
+  }
+
+  /**
+   * Remove expired cache entries
+   */
+  private cleanupExpiredCache(): void {
+    const now = Date.now();
+    const expiredKeys: string[] = [];
+
+    for (const [key, entry] of this.cache.entries()) {
+      if (entry.expiry <= now) {
+        expiredKeys.push(key);
+      }
+    }
+
+    expiredKeys.forEach(key => this.cache.delete(key));
+
+    // Log cleanup if significant number of entries were removed
+    if (expiredKeys.length > 10) {
+      console.log(`Cleaned up ${expiredKeys.length} expired cache entries`);
+    }
+  }
 }
 
 interface UsagePattern {
@@ -241,12 +289,18 @@ export class CacheManager {
   private static instance: CacheManager;
   private cache = new Map<string, CacheEntry>();
   private stats = { hits: 0, misses: 0, sets: 0 };
+  private cleanupInterval: NodeJS.Timeout | null = null;
 
   static getInstance(): CacheManager {
     if (!CacheManager.instance) {
       CacheManager.instance = new CacheManager();
     }
     return CacheManager.instance;
+  }
+
+  private constructor() {
+    // Start automatic cleanup
+    this.startCleanup();
   }
 
   async get<T>(key: string): Promise<T | null> {
@@ -282,6 +336,47 @@ export class CacheManager {
   }
 
   clear(): void {
+    this.cache.clear();
+    this.stats = { hits: 0, misses: 0, sets: 0 };
+  }
+
+  /**
+   * Start automatic cleanup of expired cache entries
+   */
+  private startCleanup(): void {
+    this.cleanupInterval = setInterval(() => {
+      this.cleanupExpiredEntries();
+    }, 60000); // Clean up every minute
+  }
+
+  /**
+   * Remove expired cache entries to prevent memory leaks
+   */
+  private cleanupExpiredEntries(): void {
+    const now = Date.now();
+    const expiredKeys: string[] = [];
+
+    for (const [key, entry] of this.cache.entries()) {
+      if (entry.expiry <= now) {
+        expiredKeys.push(key);
+      }
+    }
+
+    expiredKeys.forEach(key => this.cache.delete(key));
+
+    if (expiredKeys.length > 0) {
+      console.log(`CacheManager: Cleaned up ${expiredKeys.length} expired entries`);
+    }
+  }
+
+  /**
+   * Destroy the cache manager and clean up resources
+   */
+  destroy(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
     this.cache.clear();
     this.stats = { hits: 0, misses: 0, sets: 0 };
   }

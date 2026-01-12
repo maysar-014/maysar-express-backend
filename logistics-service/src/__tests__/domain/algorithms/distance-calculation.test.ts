@@ -1,72 +1,28 @@
 /**
- * Distance Calculation Algorithm Tests
+ * Distance Calculation Algorithm Tests - HERE Routing API v8 Integration
  *
  * Constitution Section 11: Domain tests must cover pure logic only
  * Constitution Section 5: Engines, Policies, Algorithms Separation
+ *
+ * Tests HERE Routing API v8 integration with vehicle-specific routing,
+ * traffic awareness, and real-time distance calculations
  */
 
 import { GeoPoint } from '../../../domain/value-objects/geopoint.value-object';
 import { DistanceCalculationAlgorithm, DistanceResult } from '../../../domain/algorithms/distance-calculation.algorithm';
+import { RouteConstraints } from '../../../domain/engines/ports/route-optimization.port';
 
-describe('DistanceCalculationAlgorithm', () => {
-  // Test locations
-  const darEsSalaam = GeoPoint.create(-6.7924, 39.2083, 'Dar es Salaam, Tanzania');
+describe('DistanceCalculationAlgorithm - HERE Routing API v8', () => {
+  // Test locations for East African logistics
+  const darEsSalaam = GeoPoint.create(-6.7924, 39.2083, 'Dar es Salaam Port, Tanzania');
   const arusha = GeoPoint.create(-3.3869, 36.6828, 'Arusha, Tanzania');
-  const nairobi = GeoPoint.create(-1.2864, 36.8172, 'Nairobi, Kenya');
+  const nairobi = GeoPoint.create(-1.2864, 36.8172, 'Nairobi CBD, Kenya');
   const kampala = GeoPoint.create(0.3476, 32.5825, 'Kampala, Uganda');
-  const equator = GeoPoint.create(0, 0, 'Equator Prime');
+  const equator = GeoPoint.create(0, 0, 'Equator Reference');
   const northPole = GeoPoint.create(90, 0, 'North Pole');
   const southPole = GeoPoint.create(-90, 0, 'South Pole');
 
-  describe('calculateHaversineDistance', () => {
-    it('should calculate accurate distance between Dar es Salaam and Arusha', () => {
-      const distance = DistanceCalculationAlgorithm.calculateHaversineDistance(darEsSalaam, arusha);
 
-      // Expected distance: ~460-480 km
-      expect(distance).toBeGreaterThan(450);
-      expect(distance).toBeLessThan(490);
-      expect(distance).toBeCloseTo(470, 0); // Approximately 470km
-    });
-
-    it('should calculate distance between specific coordinates (-6.7813260058560365, 39.03496860459133) to (-3.366479861310482, 36.682537148684055) using HERE Technologies', () => {
-      const point1 = GeoPoint.create(-6.7813260058560365, 39.03496860459133, 'Point 1');
-      const point2 = GeoPoint.create(-3.366479861310482, 36.682537148684055, 'Point 2');
-
-      // Test Haversine for reference (straight line distance)
-      const haversineDistance = DistanceCalculationAlgorithm.calculateHaversineDistance(point1, point2);
-      expect(haversineDistance).toBeCloseTo(460.49, 1); // Haversine: 460.49 km
-
-      // NOTE: HERE Technologies would return ~624 km (actual road distance via B1/A14)
-      // Test validates Haversine calculation for reference
-    });
-
-    it('should return 0 for same point', () => {
-      const distance = DistanceCalculationAlgorithm.calculateHaversineDistance(darEsSalaam, darEsSalaam);
-      expect(distance).toBe(0);
-    });
-
-    it('should be symmetric', () => {
-      const distance1 = DistanceCalculationAlgorithm.calculateHaversineDistance(darEsSalaam, arusha);
-      const distance2 = DistanceCalculationAlgorithm.calculateHaversineDistance(arusha, darEsSalaam);
-      expect(distance1).toBe(distance2);
-    });
-
-    it('should handle antipodal points', () => {
-      const distance = DistanceCalculationAlgorithm.calculateHaversineDistance(northPole, southPole);
-
-      // Earth's circumference is ~40,075 km, so antipodal distance should be ~20,037 km
-      expect(distance).toBeGreaterThan(20000);
-      expect(distance).toBeLessThan(20100);
-    });
-
-    it('should calculate equatorial distances accurately', () => {
-      const distance = DistanceCalculationAlgorithm.calculateHaversineDistance(equator, kampala);
-
-      // Kampala is at 0°N, 32.5825°E, so distance should be approximately 3,615 km
-      expect(distance).toBeGreaterThan(3600);
-      expect(distance).toBeLessThan(3650);
-    });
-  });
 
   describe('calculateBearing', () => {
     it('should calculate correct bearing from Dar es Salaam to Arusha', () => {
@@ -124,7 +80,15 @@ describe('DistanceCalculationAlgorithm', () => {
     });
   });
 
-  describe('calculateDeliveryDistance', () => {
+  describe('calculateDeliveryDistance - HERE Routing API v8', () => {
+    const mockHereService = {
+      calculateOptimalRoute: jest.fn()
+    };
+
+    beforeEach(() => {
+      mockHereService.calculateOptimalRoute.mockClear();
+    });
+
     it('should throw error when HERE service is not configured', async () => {
       // Clear any existing service
       DistanceCalculationAlgorithm['routeOptimizationService'] = undefined;
@@ -134,19 +98,19 @@ describe('DistanceCalculationAlgorithm', () => {
         .toThrow('HERE Technologies service is required for distance calculations');
     });
 
-    it('should calculate complete delivery distance with HERE Technologies', async () => {
-      // Mock HERE Technologies service for testing
-      const mockHereService = {
-        calculateOptimalRoute: jest.fn().mockResolvedValue({
-          totalDistance: 624.0, // Google Maps distance via B1/A14
-          totalDuration: 480,   // 8 hours in minutes
-          segments: [],
-          waypoints: [darEsSalaam, arusha],
-          efficiency: 74,
-          confidence: 0.95,
-          alternatives: []
-        })
-      };
+    it('should calculate delivery distance with traffic awareness', async () => {
+      // Mock HERE Routing API v8 response with traffic data
+      mockHereService.calculateOptimalRoute.mockResolvedValue({
+        totalDistance: 624.5,     // Road distance in km
+        totalDuration: 528,       // Duration with traffic (8.8 hours in minutes)
+        baseDuration: 480,        // Duration without traffic (8 hours in minutes)
+        trafficDelay: 48,         // Traffic delay (0.8 hours in minutes)
+        segments: [],
+        waypoints: [darEsSalaam, arusha],
+        efficiency: 74,
+        confidence: 0.95,
+        alternatives: []
+      });
 
       DistanceCalculationAlgorithm.setRouteOptimizationService(mockHereService as any);
 
@@ -155,67 +119,243 @@ describe('DistanceCalculationAlgorithm', () => {
       expect(result).toHaveProperty('distance');
       expect(result).toHaveProperty('bearing');
       expect(result).toHaveProperty('duration');
+      expect(result).toHaveProperty('baseDuration');
+      expect(result).toHaveProperty('trafficDelay');
 
-      expect(result.distance).toBe(624.0); // HERE Technologies road distance
-      expect(result.duration).toBe(480);   // 8 hours in minutes
+      expect(result.distance).toBe(624.5);     // HERE road distance
+      expect(result.duration).toBe(528);       // With traffic
+      expect(result.baseDuration).toBe(480);   // Without traffic
+      expect(result.trafficDelay).toBe(48);    // Traffic delay
       expect(typeof result.bearing).toBe('number');
     });
 
-    it('should calculate duration based on custom speed', async () => {
-      const customSpeed = 50; // km/h
-      const result = await DistanceCalculationAlgorithm.calculateDeliveryDistance(darEsSalaam, arusha, customSpeed);
+    it('should handle vehicle-specific routing constraints', async () => {
+      const motorcycleConstraints: RouteConstraints = {
+        vehicleType: 'motorcycle',
+        avoidTolls: true
+      };
 
-      // Duration should be distance / speed * 60 (convert hours to minutes)
-      const expectedDuration = Math.round((result.distance / customSpeed) * 60);
-      expect(result.duration).toBe(expectedDuration);
+      mockHereService.calculateOptimalRoute.mockResolvedValue({
+        totalDistance: 615.2,     // Motorcycle route might be shorter
+        totalDuration: 465,       // Faster with motorcycle
+        baseDuration: 420,
+        trafficDelay: 45,
+        segments: [],
+        waypoints: [darEsSalaam, arusha],
+        efficiency: 78,
+        confidence: 0.92,
+        alternatives: []
+      });
+
+      const result = await DistanceCalculationAlgorithm.calculateDeliveryDistance(
+        darEsSalaam,
+        arusha,
+        30,
+        motorcycleConstraints
+      );
+
+      expect(mockHereService.calculateOptimalRoute).toHaveBeenCalledWith(
+        darEsSalaam,
+        arusha,
+        motorcycleConstraints
+      );
+
+      expect(result.distance).toBe(615.2);
+      expect(result.duration).toBe(465);
+      expect(result.trafficDelay).toBe(45);
     });
 
-    it('should round distance and bearing to 2 decimal places', async () => {
+    it('should handle truck routing with vehicle constraints', async () => {
+      const truckConstraints: RouteConstraints = {
+        vehicleType: 'truck',
+        avoidHighways: false
+      };
+
+      mockHereService.calculateOptimalRoute.mockResolvedValue({
+        totalDistance: 645.8,     // Truck route might be longer
+        totalDuration: 585,       // Slower with truck
+        baseDuration: 540,
+        trafficDelay: 45,
+        segments: [],
+        waypoints: [darEsSalaam, arusha],
+        efficiency: 72,
+        confidence: 0.88,
+        alternatives: []
+      });
+
+      const result = await DistanceCalculationAlgorithm.calculateDeliveryDistance(
+        darEsSalaam,
+        arusha,
+        30,
+        truckConstraints
+      );
+
+      expect(result.distance).toBe(645.8);
+      expect(result.duration).toBe(585);
+      expect(result.baseDuration).toBe(540);
+      expect(result.trafficDelay).toBe(45);
+    });
+
+    it('should round all numeric values appropriately', async () => {
+      mockHereService.calculateOptimalRoute.mockResolvedValue({
+        totalDistance: 624.123,
+        totalDuration: 527.7,
+        baseDuration: 479.5,
+        trafficDelay: 48.2,
+        segments: [],
+        waypoints: [darEsSalaam, arusha],
+        efficiency: 74,
+        confidence: 0.95,
+        alternatives: []
+      });
+
       const result = await DistanceCalculationAlgorithm.calculateDeliveryDistance(darEsSalaam, arusha);
 
-      // Check if values are rounded to 2 decimal places
-      const distanceStr = result.distance.toString();
+      // Distance rounded to 2 decimal places
+      expect(result.distance).toBe(624.12);
+
+      // Bearing rounded to 2 decimal places
       const bearingStr = result.bearing!.toString();
-
-      expect(distanceStr.split('.')[1]?.length).toBeLessThanOrEqual(2);
       expect(bearingStr.split('.')[1]?.length).toBeLessThanOrEqual(2);
+
+      // Duration rounded to nearest minute
+      expect(Number.isInteger(result.duration)).toBe(true);
+      expect(Number.isInteger(result.baseDuration)).toBe(true);
+
+      // Traffic delay rounded to 2 decimal places
+      const trafficDelayStr = result.trafficDelay!.toString();
+      expect(trafficDelayStr.split('.')[1]?.length).toBeLessThanOrEqual(2);
     });
 
-    it('should round duration to nearest minute', async () => {
+    it('should handle zero traffic delay scenarios', async () => {
+      mockHereService.calculateOptimalRoute.mockResolvedValue({
+        totalDistance: 624.5,
+        totalDuration: 480,       // Same as base duration
+        baseDuration: 480,        // No traffic
+        trafficDelay: 0,
+        segments: [],
+        waypoints: [darEsSalaam, arusha],
+        efficiency: 85,
+        confidence: 0.98,
+        alternatives: []
+      });
+
       const result = await DistanceCalculationAlgorithm.calculateDeliveryDistance(darEsSalaam, arusha);
-      expect(Number.isInteger(result.duration)).toBe(true);
+
+      expect(result.duration).toBe(480);
+      expect(result.baseDuration).toBe(480);
+      expect(result.trafficDelay).toBe(0);
+    });
+
+    it('should handle missing optional fields gracefully', async () => {
+      mockHereService.calculateOptimalRoute.mockResolvedValue({
+        totalDistance: 624.5,
+        totalDuration: 528,
+        segments: [],
+        waypoints: [darEsSalaam, arusha],
+        efficiency: 74,
+        confidence: 0.95,
+        alternatives: []
+        // baseDuration and trafficDelay are undefined
+      });
+
+      const result = await DistanceCalculationAlgorithm.calculateDeliveryDistance(darEsSalaam, arusha);
+
+      expect(result.duration).toBe(528);
+      expect(result.baseDuration).toBeUndefined();
+      expect(result.trafficDelay).toBeUndefined();
     });
   });
 
   describe('isWithinRadius', () => {
-    it('should return true for points within radius', () => {
-      const center = GeoPoint.create(0, 0, 'Center');
-      const nearby = GeoPoint.create(0.1, 0.1, 'Nearby'); // ~15.7 km away
+    const mockHereService = {
+      calculateOptimalRoute: jest.fn()
+    };
 
-      const withinRadius = DistanceCalculationAlgorithm.isWithinRadius(center, nearby, 20);
+    beforeEach(() => {
+      mockHereService.calculateOptimalRoute.mockClear();
+      DistanceCalculationAlgorithm.setRouteOptimizationService(mockHereService as any);
+    });
+
+    it('should return true for points within radius', async () => {
+      const center = GeoPoint.create(0, 0, 'Center');
+      const nearby = GeoPoint.create(0.1, 0.1, 'Nearby');
+
+      mockHereService.calculateOptimalRoute.mockResolvedValue({
+        totalDistance: 15.7, // Within 20km radius
+        totalDuration: 20,
+        segments: [],
+        waypoints: [center, nearby],
+        efficiency: 85,
+        confidence: 0.95,
+        alternatives: []
+      });
+
+      const withinRadius = await DistanceCalculationAlgorithm.isWithinRadius(center, nearby, 20);
       expect(withinRadius).toBe(true);
     });
 
-    it('should return false for points outside radius', () => {
+    it('should return false for points outside radius', async () => {
       const center = GeoPoint.create(0, 0, 'Center');
-      const far = GeoPoint.create(10, 10, 'Far'); // ~1565 km away
+      const far = GeoPoint.create(10, 10, 'Far');
 
-      const withinRadius = DistanceCalculationAlgorithm.isWithinRadius(center, far, 100);
+      mockHereService.calculateOptimalRoute.mockResolvedValue({
+        totalDistance: 1565, // Outside 100km radius
+        totalDuration: 1200,
+        segments: [],
+        waypoints: [center, far],
+        efficiency: 75,
+        confidence: 0.90,
+        alternatives: []
+      });
+
+      const withinRadius = await DistanceCalculationAlgorithm.isWithinRadius(center, far, 100);
       expect(withinRadius).toBe(false);
     });
 
-    it('should return true for same point', () => {
+    it('should return true for same point', async () => {
       const point = GeoPoint.create(0, 0, 'Point');
-      const withinRadius = DistanceCalculationAlgorithm.isWithinRadius(point, point, 0);
+
+      mockHereService.calculateOptimalRoute.mockResolvedValue({
+        totalDistance: 0, // Same point
+        totalDuration: 0,
+        segments: [],
+        waypoints: [point, point],
+        efficiency: 100,
+        confidence: 1.0,
+        alternatives: []
+      });
+
+      const withinRadius = await DistanceCalculationAlgorithm.isWithinRadius(point, point, 0);
       expect(withinRadius).toBe(true);
     });
 
-    it('should handle zero radius correctly', () => {
+    it('should handle zero radius correctly', async () => {
       const point1 = GeoPoint.create(0, 0, 'Point 1');
-      const point2 = GeoPoint.create(0.001, 0.001, 'Point 2'); // Very close
+      const point2 = GeoPoint.create(0.001, 0.001, 'Point 2');
 
-      expect(DistanceCalculationAlgorithm.isWithinRadius(point1, point1, 0)).toBe(true);
-      expect(DistanceCalculationAlgorithm.isWithinRadius(point1, point2, 0)).toBe(false);
+      mockHereService.calculateOptimalRoute
+        .mockResolvedValueOnce({
+          totalDistance: 0,
+          totalDuration: 0,
+          segments: [],
+          waypoints: [point1, point1],
+          efficiency: 100,
+          confidence: 1.0,
+          alternatives: []
+        })
+        .mockResolvedValueOnce({
+          totalDistance: 0.2, // Small distance
+          totalDuration: 1,
+          segments: [],
+          waypoints: [point1, point2],
+          efficiency: 95,
+          confidence: 0.98,
+          alternatives: []
+        });
+
+      expect(await DistanceCalculationAlgorithm.isWithinRadius(point1, point1, 0)).toBe(true);
+      expect(await DistanceCalculationAlgorithm.isWithinRadius(point1, point2, 0)).toBe(false);
     });
   });
 
@@ -252,33 +392,66 @@ describe('DistanceCalculationAlgorithm', () => {
   });
 
   describe('calculateRouteDistance', () => {
-    it('should return 0 for less than 2 waypoints', () => {
-      expect(DistanceCalculationAlgorithm.calculateRouteDistance([darEsSalaam])).toBe(0);
-      expect(DistanceCalculationAlgorithm.calculateRouteDistance([])).toBe(0);
+    const mockHereService = {
+      calculateOptimalRoute: jest.fn()
+    };
+
+    beforeEach(() => {
+      mockHereService.calculateOptimalRoute.mockClear();
+      DistanceCalculationAlgorithm.setRouteOptimizationService(mockHereService as any);
     });
 
-    it('should calculate total distance for multiple waypoints', () => {
+    it('should return 0 for less than 2 waypoints', async () => {
+      expect(await DistanceCalculationAlgorithm.calculateRouteDistance([darEsSalaam])).toBe(0);
+      expect(await DistanceCalculationAlgorithm.calculateRouteDistance([])).toBe(0);
+    });
+
+    it('should calculate total distance for multiple waypoints', async () => {
       const waypoints = [darEsSalaam, arusha, nairobi];
-      const totalDistance = DistanceCalculationAlgorithm.calculateRouteDistance(waypoints);
 
-      // Should be sum of individual distances
-      const dist1 = DistanceCalculationAlgorithm.calculateHaversineDistance(darEsSalaam, arusha);
-      const dist2 = DistanceCalculationAlgorithm.calculateHaversineDistance(arusha, nairobi);
-      const expectedTotal = dist1 + dist2;
+      // Mock the API calls for each segment
+      mockHereService.calculateOptimalRoute
+        .mockResolvedValueOnce({
+          totalDistance: 624.5,
+          totalDuration: 528,
+          segments: [],
+          waypoints: [darEsSalaam, arusha],
+          efficiency: 74,
+          confidence: 0.95,
+          alternatives: []
+        })
+        .mockResolvedValueOnce({
+          totalDistance: 295.2,
+          totalDuration: 240,
+          segments: [],
+          waypoints: [arusha, nairobi],
+          efficiency: 78,
+          confidence: 0.92,
+          alternatives: []
+        });
 
-      expect(totalDistance).toBeCloseTo(expectedTotal, 1);
+      const totalDistance = await DistanceCalculationAlgorithm.calculateRouteDistance(waypoints);
+      expect(totalDistance).toBe(919.7); // 624.5 + 295.2
     });
 
-    it('should round total distance to 2 decimal places', () => {
+    it('should round total distance to 2 decimal places', async () => {
       const waypoints = [darEsSalaam, arusha];
-      const distance = DistanceCalculationAlgorithm.calculateRouteDistance(waypoints);
 
-      const distanceStr = distance.toString();
-      const decimalPlaces = distanceStr.split('.')[1]?.length || 0;
-      expect(decimalPlaces).toBeLessThanOrEqual(2);
+      mockHereService.calculateOptimalRoute.mockResolvedValue({
+        totalDistance: 624.123,
+        totalDuration: 528,
+        segments: [],
+        waypoints: [darEsSalaam, arusha],
+        efficiency: 74,
+        confidence: 0.95,
+        alternatives: []
+      });
+
+      const distance = await DistanceCalculationAlgorithm.calculateRouteDistance(waypoints);
+      expect(distance).toBe(624.12);
     });
 
-    it('should handle complex routes', () => {
+    it('should handle complex routes', async () => {
       const waypoints = [
         GeoPoint.create(0, 0, 'Start'),
         GeoPoint.create(1, 1, 'Waypoint 1'),
@@ -286,77 +459,99 @@ describe('DistanceCalculationAlgorithm', () => {
         GeoPoint.create(3, 3, 'End')
       ];
 
-      const totalDistance = DistanceCalculationAlgorithm.calculateRouteDistance(waypoints);
-      expect(totalDistance).toBeGreaterThan(0);
+      // Mock each segment
+      mockHereService.calculateOptimalRoute
+        .mockResolvedValueOnce({
+          totalDistance: 156.9,
+          totalDuration: 120,
+          segments: [],
+          waypoints: [waypoints[0], waypoints[1]],
+          efficiency: 80,
+          confidence: 0.9,
+          alternatives: []
+        })
+        .mockResolvedValueOnce({
+          totalDistance: 156.9,
+          totalDuration: 120,
+          segments: [],
+          waypoints: [waypoints[1], waypoints[2]],
+          efficiency: 80,
+          confidence: 0.9,
+          alternatives: []
+        })
+        .mockResolvedValueOnce({
+          totalDistance: 156.9,
+          totalDuration: 120,
+          segments: [],
+          waypoints: [waypoints[2], waypoints[3]],
+          efficiency: 80,
+          confidence: 0.9,
+          alternatives: []
+        });
 
-      // Should be sum of all segments
-      let expectedTotal = 0;
-      for (let i = 0; i < waypoints.length - 1; i++) {
-        expectedTotal += DistanceCalculationAlgorithm.calculateHaversineDistance(waypoints[i], waypoints[i + 1]);
-      }
-
-      expect(totalDistance).toBeCloseTo(expectedTotal, 1);
+      const totalDistance = await DistanceCalculationAlgorithm.calculateRouteDistance(waypoints);
+      expect(totalDistance).toBe(470.7); // 156.9 * 3
     });
   });
 
-  describe('algorithm accuracy and edge cases', () => {
-    it('should handle very close points', () => {
-      const point1 = GeoPoint.create(0, 0, 'Point 1');
-      const point2 = GeoPoint.create(0.0001, 0.0001, 'Point 2'); // ~15.7 meters apart
+  describe('HERE API integration reliability', () => {
+    const mockHereService = {
+      calculateOptimalRoute: jest.fn()
+    };
 
-      const distance = DistanceCalculationAlgorithm.calculateHaversineDistance(point1, point2);
-      expect(distance).toBeGreaterThan(0.01); // At least 10 meters
-      expect(distance).toBeLessThan(0.1); // Less than 100 meters
+    beforeEach(() => {
+      mockHereService.calculateOptimalRoute.mockClear();
+      DistanceCalculationAlgorithm.setRouteOptimizationService(mockHereService as any);
     });
 
-    it('should handle exact coordinate matches', () => {
-      const point1 = GeoPoint.create(45.0, 90.0, 'Test Point');
-      const point2 = GeoPoint.create(45.0, 90.0, 'Same Point');
+    it('should handle API responses consistently', async () => {
+      mockHereService.calculateOptimalRoute.mockResolvedValue({
+        totalDistance: 624.5,
+        totalDuration: 528,
+        baseDuration: 480,
+        trafficDelay: 48,
+        segments: [],
+        waypoints: [darEsSalaam, arusha],
+        efficiency: 74,
+        confidence: 0.95,
+        alternatives: []
+      });
 
-      expect(DistanceCalculationAlgorithm.calculateHaversineDistance(point1, point2)).toBe(0);
-      expect(DistanceCalculationAlgorithm.calculateBearing(point1, point2)).toBe(0); // Default for same point
-    });
-
-    it('should handle international date line crossing', () => {
-      const point1 = GeoPoint.create(0, 179, 'Near Date Line West');
-      const point2 = GeoPoint.create(0, -179, 'Near Date Line East');
-
-      const distance = DistanceCalculationAlgorithm.calculateHaversineDistance(point1, point2);
-      expect(distance).toBeGreaterThan(0);
-      expect(distance).toBeLessThan(500); // Should be small distance across date line
-    });
-
-    it('should maintain precision for long distances', async () => {
-      const distance = DistanceCalculationAlgorithm.calculateHaversineDistance(northPole, southPole);
-      const deliveryResult = await DistanceCalculationAlgorithm.calculateDeliveryDistance(northPole, southPole);
-
-      expect(deliveryResult.distance).toBeCloseTo(distance, 1);
-    });
-  });
-
-  describe('performance and computational stability', () => {
-    it('should handle repeated calculations consistently', () => {
-      const results: number[] = [];
+      const results: DistanceResult[] = [];
 
       // Run calculation multiple times
       for (let i = 0; i < 10; i++) {
-        results.push(DistanceCalculationAlgorithm.calculateHaversineDistance(darEsSalaam, arusha));
+        results.push(await DistanceCalculationAlgorithm.calculateDeliveryDistance(darEsSalaam, arusha));
       }
 
       // All results should be identical
       const firstResult = results[0];
       results.forEach(result => {
-        expect(result).toBe(firstResult);
+        expect(result.distance).toBe(firstResult.distance);
+        expect(result.duration).toBe(firstResult.duration);
+        expect(result.bearing).toBe(firstResult.bearing);
       });
     });
 
-    it('should not have floating point precision issues for normal distances', () => {
-      const distance = DistanceCalculationAlgorithm.calculateHaversineDistance(darEsSalaam, arusha);
+    it('should handle API response validation', async () => {
+      mockHereService.calculateOptimalRoute.mockResolvedValue({
+        totalDistance: 624.5,
+        totalDuration: 528,
+        segments: [],
+        waypoints: [darEsSalaam, arusha],
+        efficiency: 74,
+        confidence: 0.95,
+        alternatives: []
+      });
 
-      // Should not be NaN or Infinity
-      expect(distance).not.toBeNaN();
-      expect(distance).not.toBe(Infinity);
-      expect(distance).toBeGreaterThan(0);
+      const result = await DistanceCalculationAlgorithm.calculateDeliveryDistance(darEsSalaam, arusha);
+
+      // Should handle valid API responses without NaN or Infinity
+      expect(result.distance).not.toBeNaN();
+      expect(result.distance).not.toBe(Infinity);
+      expect(result.distance).toBeGreaterThan(0);
+      expect(typeof result.bearing).toBe('number');
+      expect(result.bearing).not.toBeNaN();
     });
   });
 });

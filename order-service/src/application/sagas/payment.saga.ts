@@ -1,5 +1,5 @@
-import { Payment, PaymentStatus, PaymentMethod } from '../domain/entities/payment.entity';
-import { PesapalAdapter } from '../infrastructure/integrations/pesapal.adapter';
+import { Payment, PaymentStatus, PaymentMethod } from '../../domain/entities/payment.entity';
+import { PesapalAdapter } from '../../infrastructure/providers/pesapal.adapter';
 
 export enum PaymentStep {
   INITIATED = 'initiated',
@@ -60,7 +60,7 @@ export class PaymentSaga {
       return await this.processPayment(state, payment);
     } catch (error) {
       state.currentStep = PaymentStep.FAILED;
-      state.failureReason = error.message;
+      state.failureReason = (error as Error).message;
       payment.updateStatus(PaymentStatus.FAILED);
       return state;
     }
@@ -106,7 +106,7 @@ export class PaymentSaga {
     } catch (error) {
       payment.updateStatus(PaymentStatus.FAILED);
       state.currentStep = PaymentStep.FAILED;
-      state.failureReason = error.message;
+      state.failureReason = (error as Error).message;
       return state;
     }
   }
@@ -165,7 +165,7 @@ export class PaymentSaga {
         transactionId: `wallet_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` 
       };
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: (error as Error).message };
     }
   }
 

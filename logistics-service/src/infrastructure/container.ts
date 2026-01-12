@@ -21,6 +21,9 @@ import { RouteCreationService } from '../domain/services/route-creation.service'
 
 // Application layer
 import { CreateDeliveryUseCase } from '../application/use-cases/create-delivery.use-case';
+import { GetDeliveryUseCase } from '../application/use-cases/get-delivery.use-case';
+import { GetDeliveriesUseCase } from '../application/use-cases/get-deliveries.use-case';
+import { UpdateDeliveryStatusUseCase } from '../application/use-cases/update-delivery-status.use-case';
 import { DeliverySaga } from '../application/sagas/delivery.saga';
 import { SagaRegistry } from '../application/sagas/saga-registry';
 
@@ -62,6 +65,9 @@ export class DependencyContainer {
 
   // Application services
   private createDeliveryUseCase!: CreateDeliveryUseCase;
+  private getDeliveryUseCase!: GetDeliveryUseCase;
+  private getDeliveriesUseCase!: GetDeliveriesUseCase;
+  private updateDeliveryStatusUseCase!: UpdateDeliveryStatusUseCase;
   private deliverySaga!: DeliverySaga;
   private sagaRegistry!: SagaRegistry;
 
@@ -165,6 +171,20 @@ export class DependencyContainer {
       this.courierAssignmentPolicy
     );
 
+    this.getDeliveryUseCase = new GetDeliveryUseCase(
+      this.deliveryRepository,
+      this.courierRepository
+    );
+
+    this.getDeliveriesUseCase = new GetDeliveriesUseCase(
+      this.deliveryRepository,
+      this.courierRepository
+    );
+
+    this.updateDeliveryStatusUseCase = new UpdateDeliveryStatusUseCase(
+      this.deliveryRepository
+    );
+
     this.deliverySaga = new DeliverySaga(
       this.courierRepository,
       this.trackingProvider,
@@ -251,12 +271,37 @@ export class DependencyContainer {
     return this.createDeliveryUseCase;
   }
 
+  public getGetDeliveryUseCase(): GetDeliveryUseCase {
+    if (!this.getDeliveryUseCase) {
+      this.initializeApplication();
+    }
+    return this.getDeliveryUseCase;
+  }
+
+  public getGetDeliveriesUseCase(): GetDeliveriesUseCase {
+    if (!this.getDeliveriesUseCase) {
+      this.initializeApplication();
+    }
+    return this.getDeliveriesUseCase;
+  }
+
+  public getUpdateDeliveryStatusUseCase(): UpdateDeliveryStatusUseCase {
+    if (!this.updateDeliveryStatusUseCase) {
+      this.initializeApplication();
+    }
+    return this.updateDeliveryStatusUseCase;
+  }
+
   public getDeliverySaga(): DeliverySaga {
     return this.deliverySaga;
   }
 
   public getSagaRegistry(): SagaRegistry {
     return this.sagaRegistry;
+  }
+
+  public getRouteCreationService(): any {
+    return this.routeCreationService;
   }
 
   // Health check method

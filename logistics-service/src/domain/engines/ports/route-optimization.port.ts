@@ -13,6 +13,8 @@ export interface OptimizedRoute {
   segments: RouteSegment[];
   totalDistance: number;
   totalDuration: number;
+  baseDuration?: number; // duration without traffic in minutes
+  trafficDelay?: number; // traffic delay in minutes
   waypoints: GeoPoint[];
   efficiency: number; // 0-100
   confidence: number;

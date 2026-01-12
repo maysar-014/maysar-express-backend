@@ -7,12 +7,14 @@ import { compositionRoot } from './bootstrap';
 import courierRoutes from './api/routes/courier.routes';
 import logisticsRoutes from './api/routes/logistics.routes';
 import { OptimizationMiddleware } from './middleware/optimization.middleware';
+import { QueryOptimizer } from './middleware/optimization.middleware';
 
 // Infrastructure components (still needed for health checks)
 import { SupabaseClientManager } from './infrastructure/database/supabase.client';
 import { RedisClientManager } from './infrastructure/cache/redis.client';
 import { Logger } from './utils/logger';
 import { AppConfiguration } from './config/app.config';
+import { infrastructureMonitor } from './infrastructure/monitoring';
 
 class LogisticsService {
   private app: express.Application;
@@ -273,8 +275,27 @@ class LogisticsService {
 
   async shutdown(): Promise<void> {
     this.logger.info('Shutting down Logistics Service...');
-    await RedisClientManager.getInstance().disconnect();
-    this.logger.info('Logistics Service shutdown complete');
+
+    // Clean up all resources to prevent memory leaks
+    try {
+      // Clean up cache managers and optimizers
+      const { CacheManager } = await import('./domain/engines/super-efficiency-optimizer.engine');
+      const cacheManager = CacheManager.getInstance();
+      cacheManager.destroy();
+
+      // Clean up query optimizer
+      QueryOptimizer.destroy();
+
+      // Clean up infrastructure monitor
+      infrastructureMonitor.destroy();
+
+      // Disconnect Redis
+      await RedisClientManager.getInstance().disconnect();
+
+      this.logger.info('Logistics Service shutdown complete');
+    } catch (error) {
+      this.logger.error('Error during shutdown cleanup', error as Error);
+    }
   }
 }
 

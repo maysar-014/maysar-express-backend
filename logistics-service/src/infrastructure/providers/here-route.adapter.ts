@@ -9,7 +9,7 @@ import { RouteOptimizationPort, OptimizedRoute, RouteSegment, RouteConstraints }
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 import { CircuitBreaker, createCircuitBreaker } from '../circuit-breaker';
 
-interface HereRoutingResponse {
+interface HereRoutingV8Response {
   routes: Array<{
     id: string;
     sections: Array<{
@@ -32,9 +32,9 @@ interface HereRoutingResponse {
         };
       };
       summary: {
-        duration: number; // seconds
+        duration: number; // seconds with traffic
         length: number;   // meters
-        baseDuration: number;
+        baseDuration: number; // seconds without traffic
       };
       transport: {
         mode: string;
@@ -76,13 +76,17 @@ export class HereRouteAdapter implements RouteOptimizationPort {
       const originCoords = origin.getCoordinates();
       const destCoords = destination.getCoordinates();
 
+      // Map vehicle types to HERE transport modes
+      const transportMode = this.mapVehicleTypeToTransportMode(constraints?.vehicleType);
+
       const params = new URLSearchParams({
         apiKey: this.apiKey,
         origin: `${originCoords.lat},${originCoords.lng}`,
         destination: `${destCoords.lat},${destCoords.lng}`,
-        transportMode: 'car',
+        transportMode,
         routingMode: 'fast',
-        return: 'summary,polyline'
+        return: 'summary,polyline',
+        departureTime: 'now' // Enable traffic awareness
       });
 
       if (constraints?.avoidTolls) {
@@ -92,8 +96,11 @@ export class HereRouteAdapter implements RouteOptimizationPort {
         params.append('avoid[features]', 'motorway');
       }
 
+      // Add vehicle-specific constraints
+      this.addVehicleConstraints(params, constraints?.vehicleType);
+
       const response = await this.makeRequest(`${this.baseUrl}?${params}`);
-      const data = await response.json() as HereRoutingResponse;
+      const data = await response.json() as HereRoutingV8Response;
 
       if (!data.routes || data.routes.length === 0) {
         throw new Error('No routes found from HERE API');
@@ -146,7 +153,7 @@ export class HereRouteAdapter implements RouteOptimizationPort {
       }
 
       const response = await this.makeRequest(`${this.baseUrl}?${params}`);
-      const data = await response.json() as HereRoutingResponse;
+      const data = await response.json() as HereRoutingV8Response;
 
       if (!data.routes || data.routes.length === 0) {
         throw new Error('No routes found from HERE API');
@@ -176,7 +183,7 @@ export class HereRouteAdapter implements RouteOptimizationPort {
       });
 
       const response = await this.makeRequest(`${this.baseUrl}?${params}`);
-      const data = await response.json() as HereRoutingResponse;
+      const data = await response.json() as HereRoutingV8Response;
 
       if (!data.routes || data.routes.length === 0) {
         throw new Error('No routes found from HERE API');
@@ -273,19 +280,23 @@ export class HereRouteAdapter implements RouteOptimizationPort {
   }
 
   private convertHereRouteToOptimizedRoute(
-    hereRoute: HereRoutingResponse['routes'][0],
+    hereRoute: HereRoutingV8Response['routes'][0],
     waypoints: GeoPoint[]
   ): OptimizedRoute {
     let totalDistance = 0;
     let totalDuration = 0;
+    let totalBaseDuration = 0;
 
     hereRoute.sections.forEach(section => {
       totalDistance += section.summary.length;
       totalDuration += section.summary.duration;
+      totalBaseDuration += section.summary.baseDuration;
     });
 
     const totalDistanceKm = totalDistance / 1000;
     const totalDurationMinutes = totalDuration / 60;
+    const totalBaseDurationMinutes = totalBaseDuration / 60;
+    const trafficDelayMinutes = totalDurationMinutes - totalBaseDurationMinutes;
 
     const segments: RouteSegment[] = [];
 
@@ -319,6 +330,8 @@ export class HereRouteAdapter implements RouteOptimizationPort {
       segments,
       totalDistance: totalDistanceKm,
       totalDuration: totalDurationMinutes,
+      baseDuration: totalBaseDurationMinutes,
+      trafficDelay: Math.max(0, trafficDelayMinutes), // Ensure non-negative
       waypoints,
       efficiency: Math.round(efficiency),
       confidence: 0.90,
@@ -350,6 +363,45 @@ export class HereRouteAdapter implements RouteOptimizationPort {
 
   private toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
+  }
+
+  /**
+   * Map courier vehicle types to HERE transport modes
+   */
+  private mapVehicleTypeToTransportMode(vehicleType?: string): string {
+    if (!vehicleType) return 'car';
+
+    const vehicleMapping: Record<string, string> = {
+      'bike': 'motorcycle',
+      'motorcycle': 'motorcycle',
+      'bicycle': 'bicycle',
+      'car': 'car',
+      'van': 'truck',
+      'truck': 'truck',
+      'scooter': 'motorcycle'
+    };
+
+    return vehicleMapping[vehicleType.toLowerCase()] || 'car';
+  }
+
+  /**
+   * Add vehicle-specific constraints to URL parameters
+   */
+  private addVehicleConstraints(params: URLSearchParams, vehicleType?: string): void {
+    if (!vehicleType) return;
+
+    const vehicleTypeLower = vehicleType.toLowerCase();
+
+    // Add truck-specific constraints
+    if (vehicleTypeLower === 'truck' || vehicleTypeLower === 'van') {
+      params.append('truck[weight]', '1200'); // 1.2 tons
+      params.append('truck[height]', '3.2');  // 3.2 meters
+    }
+
+    // Add motorcycle/bicycle constraints
+    if (vehicleTypeLower === 'motorcycle' || vehicleTypeLower === 'bicycle' || vehicleTypeLower === 'bike') {
+      params.append('avoid[features]', 'ferry'); // Motorcycles/bicycles typically avoid ferries
+    }
   }
 
   getCircuitBreakerMetrics() {

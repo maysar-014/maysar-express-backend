@@ -48,8 +48,9 @@ export interface MonitoringAlert {
 export class InfrastructureMonitor {
   private alerts: MonitoringAlert[] = [];
   private metricsHistory: SystemHealthMetrics[] = [];
-  private readonly maxHistorySize = 1000; // Keep last 1000 metrics snapshots
+  private readonly maxHistorySize = 100; // Reduced from 1000 to prevent memory issues
   private readonly alertRetentionDays = 7;
+  private cleanupInterval: NodeJS.Timeout | null = null;
 
   constructor(private readonly checkInterval: number = 30000) { // 30 seconds
     this.startMonitoring();
@@ -311,7 +312,32 @@ export class InfrastructureMonitor {
     const memUsage = process.memoryUsage();
     const used = memUsage.heapUsed;
     const total = memUsage.heapTotal;
-    return (used / total) * 100;
+    const usagePercent = (used / total) * 100;
+
+    // Force garbage collection if memory usage is critically high
+    if (usagePercent > 95 && global.gc) {
+      console.log('Forcing garbage collection due to high memory usage');
+      global.gc();
+      // Recalculate after GC
+      const memAfterGC = process.memoryUsage();
+      const usedAfterGC = memAfterGC.heapUsed;
+      const totalAfterGC = memAfterGC.heapTotal;
+      return (usedAfterGC / totalAfterGC) * 100;
+    }
+
+    return usagePercent;
+  }
+
+  /**
+   * Clean up resources and stop monitoring
+   */
+  destroy(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+    this.alerts.length = 0;
+    this.metricsHistory.length = 0;
   }
 }
 

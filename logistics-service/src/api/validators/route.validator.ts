@@ -154,8 +154,10 @@ export class RouteValidator {
   static getRoute(): ValidationChain[] {
     return [
       param('routeId')
-        .isUUID()
-        .withMessage('Route ID must be a valid UUID'),
+        .notEmpty()
+        .withMessage('Route ID is required')
+        .isLength({ min: 1, max: 100 })
+        .withMessage('Route ID must be between 1 and 100 characters'),
     ];
   }
 

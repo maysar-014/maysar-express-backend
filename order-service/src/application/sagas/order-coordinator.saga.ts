@@ -1,6 +1,6 @@
-import { Order } from '../aggregates/order.aggregate';
-import { CODPolicy } from '../policies/cod.policy';
-import { CancellationPolicy } from '../policies/cancellation.policy';
+import { Order } from '../../domain/entities/order.entity';
+import { CODPolicy } from '../../domain/policies/cod.policy';
+import { CancellationPolicy } from '../../domain/policies/cancellation.policy';
 
 export class OrderCoordinator {
   constructor(
@@ -32,23 +32,11 @@ export class OrderCoordinator {
     }
 
     const order = new Order(orderData);
-    
-    // Trigger delivery saga
-    await this.triggerDeliverySaga(order);
-    
-    // Trigger payment saga if needed
-    if (orderData.paymentMethod !== 'COD') {
-      await this.triggerPaymentSaga(order);
-    }
+
+    // Order service focuses on order creation and validation
+    // Payment processing is handled by payment saga if needed
+    // Delivery coordination is handled by logistics service
 
     return order;
-  }
-
-  private async triggerDeliverySaga(order: Order): Promise<void> {
-    // Implementation will integrate with saga orchestrator
-  }
-
-  private async triggerPaymentSaga(order: Order): Promise<void> {
-    // Implementation will integrate with saga orchestrator
   }
 }

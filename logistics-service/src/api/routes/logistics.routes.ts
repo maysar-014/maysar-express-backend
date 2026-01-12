@@ -41,14 +41,64 @@ const router = express.Router();
 // Initialize dependency container
 const container = DependencyContainer.getInstance();
 
-// Initialize controllers using dependency injection
-const deliveryController = new DeliveryController();
-const routeController = new RouteController();
-const courierController = new CourierController();
-const trackingController = new TrackingController();
-const earningsController = new EarningsController();
-const analyticsController = new AnalyticsController();
-const testController = new TestController();
+// Initialize controllers using dependency injection - deferred until container is ready
+let deliveryController: DeliveryController;
+let routeController: RouteController;
+let courierController: CourierController;
+let trackingController: TrackingController;
+let earningsController: EarningsController;
+let analyticsController: AnalyticsController;
+let testController: TestController;
+
+// Function to get or initialize controllers lazily
+function getDeliveryController(): DeliveryController {
+  if (!deliveryController) {
+    deliveryController = new DeliveryController();
+  }
+  return deliveryController;
+}
+
+function getRouteController(): RouteController {
+  if (!routeController) {
+    routeController = new RouteController();
+  }
+  return routeController;
+}
+
+function getCourierController(): CourierController {
+  if (!courierController) {
+    courierController = new CourierController();
+  }
+  return courierController;
+}
+
+function getTrackingController(): TrackingController {
+  if (!trackingController) {
+    trackingController = new TrackingController();
+  }
+  return trackingController;
+}
+
+function getEarningsController(): EarningsController {
+  if (!earningsController) {
+    earningsController = new EarningsController();
+  }
+  return earningsController;
+}
+
+function getAnalyticsController(): AnalyticsController {
+  if (!analyticsController) {
+    analyticsController = new AnalyticsController();
+  }
+  return analyticsController;
+}
+
+function getTestController(): TestController {
+  if (!testController) {
+    testController = new TestController();
+  }
+  return testController;
+}
 
 // ==================== DELIVERY ENDPOINTS ====================
 // Delivery API: http://localhost:3007/api/v1/deliveries/*
@@ -57,19 +107,26 @@ router.post('/deliveries',
   ValidationMiddleware.createApiValidationChain(),
   DeliveryValidator.createDelivery(),
   ValidationMiddleware.handleValidationErrors,
-  deliveryController.createDelivery.bind(deliveryController)
+  (req: express.Request, res: express.Response) => getDeliveryController().createDelivery(req, res)
 );
 
 router.get('/deliveries/:deliveryId',
   ValidationMiddleware.createApiValidationChain(),
-  deliveryController.getDelivery.bind(deliveryController)
+  (req: express.Request, res: express.Response) => getDeliveryController().getDelivery(req, res)
 );
 
 router.get('/deliveries',
   ValidationMiddleware.createApiValidationChain(),
   DeliveryValidator.getDeliveries(),
   ValidationMiddleware.handleValidationErrors,
-  deliveryController.getDeliveries.bind(deliveryController)
+  (req: express.Request, res: express.Response) => getDeliveryController().getDeliveries(req, res)
+);
+
+router.post('/deliveries/:deliveryId/status',
+  ValidationMiddleware.createApiValidationChain(),
+  DeliveryValidator.updateDeliveryStatus(),
+  ValidationMiddleware.handleValidationErrors,
+  (req: express.Request, res: express.Response) => getDeliveryController().updateDeliveryStatus(req, res)
 );
 
 // ==================== ROUTE ENDPOINTS ====================
@@ -77,31 +134,31 @@ router.get('/deliveries',
 
 router.get('/routes',
   ValidationMiddleware.createApiValidationChain(),
-  routeController.getRoutes.bind(routeController)
+  (req: express.Request, res: express.Response) => getRouteController().getRoutes(req, res)
 );
 
 router.get('/routes/courier/:courierId',
   ValidationMiddleware.createApiValidationChain(),
-  routeController.getCourierRoutes.bind(routeController)
+  (req: express.Request, res: express.Response) => getRouteController().getCourierRoutes(req, res)
 );
 
 router.post('/routes/optimize',
   RouteValidator.optimizeRoute(),
-  routeController.optimizeRoute.bind(routeController)
+  (req: express.Request, res: express.Response) => getRouteController().optimizeRoute(req, res)
 );
 
 router.get('/routes/:routeId',
   RouteValidator.getRoute(),
-  routeController.getRoute.bind(routeController)
+  (req: express.Request, res: express.Response) => getRouteController().getRoute(req, res)
 );
 
-router.put('/routes/:routeId/progress', 
+router.put('/routes/:routeId/progress',
   RouteValidator.updateRouteProgress(),
-  routeController.updateRouteProgress.bind(routeController)
+  (req: express.Request, res: express.Response) => getRouteController().updateRouteProgress(req, res)
 );
 
-router.post('/routes/:routeId/alternatives', 
-  routeController.getAlternativeRoutes.bind(routeController)
+router.post('/routes/:routeId/alternatives',
+  (req: express.Request, res: express.Response) => getRouteController().getAlternativeRoutes(req, res)
 );
 
 // ==================== COURIER ENDPOINTS ====================
@@ -109,17 +166,17 @@ router.post('/routes/:routeId/alternatives',
 
 router.get('/couriers',
   ValidationMiddleware.createApiValidationChain(),
-  courierController.getCouriers.bind(courierController)
+  (req: express.Request, res: express.Response) => getCourierController().getCouriers(req, res)
 );
 
 router.get('/couriers/:courierId',
   ValidationMiddleware.createApiValidationChain(),
-  courierController.getCourier.bind(courierController)
+  (req: express.Request, res: express.Response) => getCourierController().getCourier(req, res)
 );
 
 router.put('/couriers/:courierId/status',
   ValidationMiddleware.createApiValidationChain(),
-  courierController.updateCourierStatus.bind(courierController)
+  (req: express.Request, res: express.Response) => getCourierController().updateCourierStatus(req, res)
 );
 
 // ==================== TRACKING ENDPOINTS ====================
@@ -129,21 +186,21 @@ router.get('/tracking/:trackingNumber',
   ValidationMiddleware.createApiValidationChain(),
   TrackingValidator.getTrackingHistory(),
   ValidationMiddleware.handleValidationErrors,
-  trackingController.getTrackingHistory.bind(trackingController)
+  (req: express.Request, res: express.Response) => getTrackingController().getTrackingHistory(req, res)
 );
 
 router.post('/tracking/location',
   ValidationMiddleware.createApiValidationChain(),
   TrackingValidator.storeLocationUpdate(),
   ValidationMiddleware.handleValidationErrors,
-  trackingController.storeLocationUpdate.bind(trackingController)
+  (req: express.Request, res: express.Response) => getTrackingController().storeLocationUpdate(req, res)
 );
 
 router.get('/tracking/courier/:courierId/history',
   ValidationMiddleware.createApiValidationChain(),
   TrackingValidator.getCourierLocationHistory(),
   ValidationMiddleware.handleValidationErrors,
-  trackingController.getCourierLocationHistory.bind(trackingController)
+  (req: express.Request, res: express.Response) => getTrackingController().getCourierLocationHistory(req, res)
 );
 
 // ==================== ANALYTICS ENDPOINTS ====================
@@ -153,17 +210,17 @@ router.get('/analytics',
   ValidationMiddleware.createApiValidationChain(),
   AnalyticsValidator.getAnalytics(),
   ValidationMiddleware.handleValidationErrors,
-  analyticsController.getAnalytics.bind(analyticsController)
+  (req: express.Request, res: express.Response) => getAnalyticsController().getAnalytics(req, res)
 );
 
 router.get('/analytics/performance',
   ValidationMiddleware.createApiValidationChain(),
-  analyticsController.getPerformanceMetrics.bind(analyticsController)
+  (req: express.Request, res: express.Response) => getAnalyticsController().getPerformanceMetrics(req, res)
 );
 
 router.get('/analytics/courier/:courierId',
   ValidationMiddleware.createApiValidationChain(),
-  analyticsController.getCourierAnalytics.bind(analyticsController)
+  (req: express.Request, res: express.Response) => getAnalyticsController().getCourierAnalytics(req, res)
 );
 
 // ==================== DELIVERY HISTORY ENDPOINTS ====================
@@ -212,35 +269,35 @@ router.get('/earnings',
   ValidationMiddleware.createApiValidationChain(),
   EarningsValidator.getEarnings(),
   ValidationMiddleware.handleValidationErrors,
-  earningsController.getEarnings.bind(earningsController)
+  (req: express.Request, res: express.Response) => getEarningsController().getEarnings(req, res)
 );
 
 router.get('/earnings/courier/:courierId',
   ValidationMiddleware.createApiValidationChain(),
   EarningsValidator.getCourierEarningsReport(),
   ValidationMiddleware.handleValidationErrors,
-  earningsController.getCourierEarnings.bind(earningsController)
+  (req: express.Request, res: express.Response) => getEarningsController().getCourierEarnings(req, res)
 );
 
 router.post('/earnings',
   ValidationMiddleware.createApiValidationChain(),
   EarningsValidator.recordEarnings(),
   ValidationMiddleware.handleValidationErrors,
-  earningsController.recordEarnings.bind(earningsController)
+  (req: express.Request, res: express.Response) => getEarningsController().recordEarnings(req, res)
 );
 
 router.post('/earnings/calculate',
   ValidationMiddleware.createApiValidationChain(),
   EarningsValidator.calculateCommissions(),
   ValidationMiddleware.handleValidationErrors,
-  earningsController.calculateCommissions.bind(earningsController)
+  (req: express.Request, res: express.Response) => getEarningsController().calculateCommissions(req, res)
 );
 
 router.get('/earnings/summary',
   ValidationMiddleware.createApiValidationChain(),
   EarningsValidator.getEarningsSummary(),
   ValidationMiddleware.handleValidationErrors,
-  earningsController.getEarningsSummary.bind(earningsController)
+  (req: express.Request, res: express.Response) => getEarningsController().getEarningsSummary(req, res)
 );
 
 // ==================== PERFORMANCE STATS ENDPOINT ====================
@@ -294,41 +351,41 @@ router.get('/engines/status', async (req, res) => {
 
 router.get('/test/all-engines',
   ValidationMiddleware.createApiValidationChain(),
-  testController.testAllEngines.bind(testController)
+  (req: express.Request, res: express.Response) => getTestController().testAllEngines(req, res)
 );
 
 // ==================== INFRASTRUCTURE MONITORING ENDPOINTS ====================
 // Constitution Section 8: Infrastructure Isolation Rule
 
 router.get('/health',
-  testController.healthCheck.bind(testController)
+  (req: express.Request, res: express.Response) => getTestController().healthCheck(req, res)
 );
 
 router.get('/metrics',
-  testController.getInfrastructureMetrics.bind(testController)
+  (req: express.Request, res: express.Response) => getTestController().getInfrastructureMetrics(req, res)
 );
 
 // ==================== QUALITY ASSURANCE ENDPOINTS ====================
 // Constitution Section 1: Architecture Constitution
 
 router.get('/qa/architecture',
-  testController.runArchitecturalAnalysis.bind(testController)
+  (req: express.Request, res: express.Response) => getTestController().runArchitecturalAnalysis(req, res)
 );
 
 router.get('/qa/performance',
-  testController.runPerformanceBenchmarks.bind(testController)
+  (req: express.Request, res: express.Response) => getTestController().runPerformanceBenchmarks(req, res)
 );
 
 router.post('/qa/load-test',
-  testController.runLoadTest.bind(testController)
+  (req: express.Request, res: express.Response) => getTestController().runLoadTest(req, res)
 );
 
 router.get('/qa/security',
-  testController.runSecurityAudit.bind(testController)
+  (req: express.Request, res: express.Response) => getTestController().runSecurityAudit(req, res)
 );
 
 router.get('/qa/dashboard',
-  testController.getQualityDashboard.bind(testController)
+  (req: express.Request, res: express.Response) => getTestController().getQualityDashboard(req, res)
 );
 
 export default router;

@@ -4,7 +4,9 @@ import { RouteOptimizationPort, RouteConstraints } from '../engines/ports/route-
 export interface DistanceResult {
   distance: number; // in kilometers
   bearing?: number; // in degrees (0-360)
-  duration?: number; // estimated duration in minutes (optional)
+  duration?: number; // estimated duration in minutes with traffic
+  baseDuration?: number; // estimated duration without traffic
+  trafficDelay?: number; // traffic delay in minutes
 }
 
 export class DistanceCalculationAlgorithm {
@@ -15,26 +17,6 @@ export class DistanceCalculationAlgorithm {
    */
   static setRouteOptimizationService(service: RouteOptimizationPort): void {
     this.routeOptimizationService = service;
-  }
-  /**
-   * Calculate the great circle distance between two points using the Haversine formula
-   * Returns distance in kilometers
-   */
-  static calculateHaversineDistance(point1: GeoPoint, point2: GeoPoint): number {
-    const R = 6371; // Earth's radius in km
-
-    const lat1Rad = this.toRadians(point1.getLatitude());
-    const lat2Rad = this.toRadians(point2.getLatitude());
-    const deltaLatRad = this.toRadians(point2.getLatitude() - point1.getLatitude());
-    const deltaLngRad = this.toRadians(point2.getLongitude() - point1.getLongitude());
-
-    const a = Math.sin(deltaLatRad / 2) * Math.sin(deltaLatRad / 2) +
-              Math.cos(lat1Rad) * Math.cos(lat2Rad) *
-              Math.sin(deltaLngRad / 2) * Math.sin(deltaLngRad / 2);
-
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c;
   }
 
   /**
@@ -77,15 +59,22 @@ export class DistanceCalculationAlgorithm {
     return {
       distance: Math.round(route.totalDistance * 100) / 100, // Round to 2 decimal places
       bearing: Math.round(bearing * 100) / 100,
-      duration: Math.round(route.totalDuration)
+      duration: Math.round(route.totalDuration),
+      baseDuration: route.baseDuration ? Math.round(route.baseDuration) : undefined,
+      trafficDelay: route.trafficDelay !== undefined ? Math.round(route.trafficDelay * 100) / 100 : undefined
     };
   }
 
   /**
-   * Check if a point is within a specified radius of another point
+   * Check if a point is within a specified radius of another point using HERE API
    */
-  static isWithinRadius(center: GeoPoint, point: GeoPoint, radiusKm: number): boolean {
-    return this.calculateHaversineDistance(center, point) <= radiusKm;
+  static async isWithinRadius(center: GeoPoint, point: GeoPoint, radiusKm: number): Promise<boolean> {
+    if (!this.routeOptimizationService) {
+      throw new Error('HERE Technologies service is required for distance calculations. Configure HERE_API_KEY and call setRouteOptimizationService().');
+    }
+
+    const distanceResult = await this.calculateDeliveryDistance(center, point);
+    return distanceResult.distance <= radiusKm;
   }
 
   /**
@@ -114,16 +103,21 @@ export class DistanceCalculationAlgorithm {
   }
 
   /**
-   * Calculate total distance for a route with multiple waypoints
+   * Calculate total distance for a route with multiple waypoints using HERE API
    */
-  static calculateRouteDistance(waypoints: GeoPoint[]): number {
+  static async calculateRouteDistance(waypoints: GeoPoint[]): Promise<number> {
     if (waypoints.length < 2) {
       return 0;
     }
 
+    if (!this.routeOptimizationService) {
+      throw new Error('HERE Technologies service is required for distance calculations. Configure HERE_API_KEY and call setRouteOptimizationService().');
+    }
+
     let totalDistance = 0;
     for (let i = 0; i < waypoints.length - 1; i++) {
-      totalDistance += this.calculateHaversineDistance(waypoints[i], waypoints[i + 1]);
+      const segmentResult = await this.calculateDeliveryDistance(waypoints[i], waypoints[i + 1]);
+      totalDistance += segmentResult.distance;
     }
 
     return Math.round(totalDistance * 100) / 100;

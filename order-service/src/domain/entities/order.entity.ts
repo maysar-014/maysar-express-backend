@@ -1,3 +1,6 @@
+import { Address } from '../value-objects/address.value-object';
+import { Money } from '../value-objects/money.value-object';
+
 export enum OrderStatus {
   PENDING = 'pending',
   CONFIRMED = 'confirmed',
@@ -12,11 +15,11 @@ export class Order {
   public buyerId: string;
   public sellerId: string;
   public items: OrderItem[];
-  public totalAmount: number;
+  public totalAmount: Money;
   public totalWeight: number;
   public status: OrderStatus;
   public paymentMethod: 'COD' | 'WALLET' | 'CARD';
-  public deliveryAddress: string;
+  public deliveryAddress: Address;
   public createdAt: Date;
   public updatedAt: Date;
 
@@ -25,11 +28,16 @@ export class Order {
     this.buyerId = data.buyerId;
     this.sellerId = data.sellerId;
     this.items = data.items || [];
-    this.totalAmount = data.totalAmount;
+    this.totalAmount = new Money(data.totalAmount, data.currency || 'TZS');
     this.totalWeight = data.totalWeight;
     this.status = OrderStatus.PENDING;
     this.paymentMethod = data.paymentMethod;
-    this.deliveryAddress = data.deliveryAddress;
+    this.deliveryAddress = new Address(
+      data.deliveryAddress.street,
+      data.deliveryAddress.city,
+      data.deliveryAddress.postalCode,
+      data.deliveryAddress.country
+    );
     this.createdAt = new Date();
     this.updatedAt = new Date();
   }
@@ -55,6 +63,6 @@ export class Order {
 export interface OrderItem {
   productId: string;
   quantity: number;
-  price: number;
+  price: Money;
   weight: number;
 }

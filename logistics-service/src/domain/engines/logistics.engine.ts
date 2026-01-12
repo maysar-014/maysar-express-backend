@@ -360,10 +360,19 @@ export class LogisticsEngine {
    * Pure function: Generate delivery ID (business rule for ID format)
    */
   generateDeliveryId(orderId: string): string {
-    // Business rule - ID format
-    const timestamp = Date.now(); // Should be injected
-    const randomSuffix = Math.random().toString(36).substr(2, 9);
-    return `del_${orderId}_${timestamp}_${randomSuffix}`;
+    // Business rule - use UUID v4 format for consistency
+    return this.generateUUID();
+  }
+
+  /**
+   * Generate UUID v4 (simplified implementation for domain layer)
+   */
+  private generateUUID(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
   }
 
   /**

@@ -7,8 +7,8 @@ CREATE TABLE IF NOT EXISTS routes (
   courier_id VARCHAR(50) REFERENCES couriers(id) NOT NULL,
   status VARCHAR(20) DEFAULT 'planned',
   total_distance DECIMAL(8,2) NOT NULL,
-  estimated_duration INTEGER NOT NULL,
-  actual_duration INTEGER,
+  estimated_duration DECIMAL(8,2) NOT NULL, -- Allow fractional minutes
+  actual_duration DECIMAL(8,2), -- Allow fractional minutes
   waypoints JSONB NOT NULL, -- Array of {lat, lng, address}
   progress JSONB NOT NULL, -- {completed_stops, total_stops, current_lat, current_lng, current_address, last_update_time, estimated_completion_time, notes}
   created_at TIMESTAMP DEFAULT NOW(),
@@ -77,6 +77,42 @@ INSERT INTO routes (
   }'::jsonb,
   NOW() - INTERVAL '4 hours',
   NOW() - INTERVAL '3 hours'
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- Insert route for courier_013 (test data)
+INSERT INTO routes (
+  id,
+  courier_id,
+  status,
+  total_distance,
+  estimated_duration,
+  waypoints,
+  progress,
+  created_at,
+  updated_at
+) VALUES
+(
+  'route_003',
+  'courier_013',
+  'planned',
+  12.5,
+  22,
+  '[
+    {"lat": -6.7924, "lng": 39.2083, "address": "Dar es Salaam CBD"},
+    {"lat": -6.81, "lng": 39.22, "address": "Masaki Peninsula"}
+  ]'::jsonb,
+  '{
+    "completed_stops": 0,
+    "total_stops": 2,
+    "current_lat": -6.7924,
+    "current_lng": 39.2083,
+    "current_address": "Dar es Salaam CBD",
+    "last_update_time": "2026-01-11T00:22:21.000Z",
+    "progress_percentage": 0
+  }'::jsonb,
+  NOW() - INTERVAL '30 minutes',
+  NOW() - INTERVAL '15 minutes'
 )
 ON CONFLICT (id) DO NOTHING;
 

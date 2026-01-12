@@ -27,6 +27,9 @@ export class DeliveryRepository implements DeliveryRepositoryPort {
 
   async save(delivery: DeliveryEntity): Promise<void> {
     try {
+      console.log('🔍 DEBUG - Saving delivery to database:', delivery.id);
+      console.log('🔍 DEBUG - Supabase client available:', !!this.supabaseClient);
+
       const deliveryData = {
         id: delivery.id,
         order_id: delivery.orderId,
@@ -46,24 +49,31 @@ export class DeliveryRepository implements DeliveryRepositoryPort {
         priority: delivery.priority,
         special_requirements: delivery.specialRequirements || [],
         route_distance: delivery.routeDistance,
-        route_duration: delivery.routeDuration,
+        route_duration: Math.round(delivery.routeDuration),
         total_cost: delivery.totalCost,
         created_at: delivery.createdAt.toISOString(),
         updated_at: delivery.updatedAt.toISOString()
       };
 
-      const { error } = await this.supabaseClient
+      console.log('🔍 DEBUG - Delivery data to save:', JSON.stringify(deliveryData, null, 2));
+
+      const { data, error } = await this.supabaseClient
         .from('deliveries')
         .upsert(deliveryData, { onConflict: 'id' });
 
+      console.log('🔍 DEBUG - Supabase upsert result - data:', data, 'error:', error);
+
       if (error) {
-        console.error('Supabase upsert error:', error);
-        throw new Error('Failed to save delivery to database');
+        console.error('❌ Supabase upsert error:', error);
+        throw new Error(`Failed to save delivery to database: ${error.message}`);
       }
 
+      console.log('✅ Delivery saved successfully:', delivery.id);
+
     } catch (error) {
-      console.error('Error saving delivery:', error);
-      throw new Error('Failed to save delivery');
+      console.error('❌ Error saving delivery:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to save delivery: ${errorMessage}`);
     }
   }
 
