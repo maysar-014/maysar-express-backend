@@ -1,0 +1,116 @@
+// Prisma schema for Order Service
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  buyerId         String
+  sellerId        String
+  status          OrderStatus @default(PENDING)
+  paymentMethod   PaymentMethod
+  totalAmount     Decimal
+  currency        String   @default("TZS")
+  totalWeight     Float
+  deliveryAddress Json // Address value object
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  items           OrderItem[]
+  payments        Payment[]
+  settlements     Settlement[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  productId   String
+  quantity    Int
+  price       Decimal
+  weight      Float
+  currency    String  @default("TZS")
+
+  // Relations
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  orderId       String
+  amount        Decimal
+  currency      String        @default("TZS")
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  transactionId String?
+  externalRef   String?
+  metadata      Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Settlement {
+  id              String   @id @default(cuid())
+  orderId         String
+  settlementId    String   @unique
+  sellerPayout    Decimal
+  platformCommission Decimal
+  courierEarnings Decimal?
+  currency        String   @default("TZS")
+  status          SettlementStatus @default(PENDING)
+  processedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("settlements")
+}
+
+// Enums
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  ASSIGNED
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  COD
+  WALLET
+  CARD
+  MOBILE_MONEY
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum SettlementStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
