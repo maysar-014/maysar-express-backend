@@ -4,7 +4,30 @@
 
 ## Overview
 
-The Order Service is a pure, domain-driven microservice that manages the complete order lifecycle within the Maysar Digital Community Trade Network. Built following Clean Architecture principles with strict separation of concerns, it handles order creation, validation, payment processing, and financial settlement while delegating logistics operations to the dedicated logistics service.
+The Order Service is a production-ready, enterprise-grade microservice that manages the complete order lifecycle within the Maysar Digital Community Trade Network. Built following Clean Architecture principles with comprehensive robustness features, it handles order creation, validation, payment processing, and financial settlement while delegating logistics operations to the dedicated logistics service.
+
+## 🚀 **Key Features**
+
+### ✅ **Enterprise-Grade Architecture**
+- **Clean Architecture** with strict separation of concerns
+- **Domain-Driven Design** with pure business logic
+- **Event-Driven Architecture** for cross-service communication
+- **Saga Orchestration** for distributed transactions
+
+### ✅ **Production-Ready Robustness**
+- **Comprehensive Monitoring & Observability**
+- **Enterprise Caching Layer** (Redis + Memory)
+- **Circuit Breaker Pattern** for external service resilience
+- **Advanced Error Handling** with automatic alerting
+- **Health Checks** and graceful degradation
+- **Rate Limiting** and security middleware
+
+### ✅ **Business Capabilities**
+- **Order Lifecycle Management** with state machines
+- **Payment Processing** via PesaPal integration
+- **Financial Settlement** with commission calculations
+- **Inventory Integration** with real-time validation
+- **Multi-Currency Support** and fraud detection
 
 ## Architecture
 
@@ -76,6 +99,182 @@ order-service/
 - **Event Bus**: Domain event publishing for other services
 - **External Systems**: Clean adapter pattern for third-party integrations
 
+## 🛡️ **Robustness Features**
+
+### **2.1 Security & Resilience**
+- **Rate Limiting**: Configurable request throttling with multiple strategies
+- **Security Headers**: Helmet.js with comprehensive security headers
+- **Input Validation**: Request sanitization and validation middleware
+- **CORS Protection**: Configurable cross-origin resource sharing
+- **Circuit Breaker**: Automatic failure detection and recovery for external services
+- **Retry Logic**: Exponential backoff for transient failures
+
+### **2.2 Monitoring & Observability**
+- **Structured Logging**: Winston-based logging with multiple transports
+- **Performance Metrics**: Prometheus-compatible metrics collection
+- **Health Checks**: Multiple health endpoints with detailed diagnostics
+- **Request Tracing**: Correlation IDs for distributed tracing
+- **Error Alerting**: Automatic alerting for critical system events
+- **Security Monitoring**: Threat detection and audit trail logging
+
+### **2.3 Caching Layer**
+- **Multi-Level Caching**: Memory (L1) + Redis (L2) hierarchical caching
+- **Cache-Aside Pattern**: Intelligent cache population with database fallback
+- **Tag-Based Invalidation**: Granular cache invalidation by tags
+- **HTTP Response Caching**: Automatic response caching with TTL
+- **Cache Warming**: Startup cache population for frequently accessed data
+- **Circuit Breaker Protection**: Cache resilience with fallback strategies
+
+## 📊 **Monitoring & Observability**
+
+### Health Check Endpoints
+```
+GET /health              # Basic health status
+GET /health/detailed     # Comprehensive health report
+GET /health/ready        # Readiness probe for Kubernetes
+GET /health/live         # Liveness probe for Kubernetes
+GET /health/metrics      # Prometheus metrics endpoint
+GET /health/circuit-breakers # Circuit breaker status
+```
+
+### Monitoring Features
+- **Real-time Metrics**: HTTP request counts, response times, error rates
+- **Database Monitoring**: Connection pools, query performance, error tracking
+- **Cache Analytics**: Hit/miss ratios, memory usage, invalidation stats
+- **Business Metrics**: Order processing, payment success rates
+- **System Metrics**: Memory usage, event loop lag, garbage collection
+
+### Logging Levels
+- **ERROR**: System errors and critical failures
+- **WARN**: Warning conditions and retry attempts
+- **INFO**: General operational messages
+- **DEBUG**: Detailed debugging information
+
+### Alert Types
+- **Critical**: System failures requiring immediate attention
+- **High**: Service degradation affecting users
+- **Medium**: Performance issues and warnings
+- **Low**: Informational alerts
+
+## 💾 **Caching Architecture**
+
+### Cache Strategy
+```
+┌─────────────────┐    ┌─────────────────┐
+│   Application   │────│  Cache Manager  │
+│                 │    │                 │
+└─────────────────┘    └─────────────────┘
+           │
+    ┌──────▼──────┐
+    │ Cache-Aside │
+    │   Pattern   │
+    └─────────────┘
+           │
+    ┌──────▼──────┐    ┌─────────────────┐
+    │ Multi-Level │────│   Memory L1    │
+    │   Cache     │    │  (Fast Access) │
+    └─────────────┘    └─────────────────┘
+           │
+    ┌──────▼──────┐    ┌─────────────────┐
+    │   Redis L2  │────│ Persistent &   │
+    │              │    │ Distributed    │
+    └─────────────┘    └─────────────────┘
+```
+
+### Cache Features
+- **TTL Management**: Automatic expiration with configurable defaults
+- **Tag Invalidation**: Bulk cache clearing by business domains
+- **Serialization**: JSON-based storage with metadata
+- **Health Checks**: Cache connectivity monitoring
+- **Performance Metrics**: Cache hit rates and operation timing
+- **Graceful Degradation**: Fallback when cache is unavailable
+
+### HTTP Caching Middleware
+```javascript
+// Response caching with TTL
+app.use(cacheResponse({
+  ttl: 300, // 5 minutes
+  tags: ['api', 'orders'],
+  condition: (req, res) => req.method === 'GET'
+}));
+
+// Cache invalidation
+app.use(cacheInvalidation({
+  patterns: [
+    {
+      method: 'POST',
+      path: /^\/api\/orders/,
+      tags: ['orders']
+    }
+  ]
+}));
+```
+
+## 🔧 **Configuration**
+
+### Environment Variables
+```env
+# Application
+PORT=3002
+NODE_ENV=production
+
+# Database
+DATABASE_URL=postgresql://user:pass@localhost:5432/orders
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-anon-key
+
+# Caching
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=your-redis-password
+REDIS_DB=0
+
+# Payment Gateway
+PESAPAL_CONSUMER_KEY=your-consumer-key
+PESAPAL_CONSUMER_SECRET=your-consumer-secret
+PESAPAL_URL=https://cybqa.pesapal.com/pesapalv3
+
+# Monitoring
+ENABLE_METRICS=true
+METRICS_PORT=9090
+LOG_LEVEL=info
+LOG_FORMAT=json
+
+# Security
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+CORS_ORIGIN=https://maysar.com,https://admin.maysar.com
+```
+
+### Configuration Files
+- **`/src/config/index.ts`**: Main application configuration
+- **`/src/config/database.config.ts`**: Database connection settings
+- **`/src/config/security.config.ts`**: Security and middleware settings
+- **`/src/config/monitoring.config.ts`**: Logging, metrics, and caching config
+
+## 🚀 **Performance & Scalability**
+
+### Performance Optimizations
+- **Connection Pooling**: Database and Redis connection management
+- **Request Caching**: HTTP response caching with intelligent invalidation
+- **Lazy Loading**: On-demand service initialization
+- **Memory Management**: Efficient caching with automatic cleanup
+- **Async Processing**: Non-blocking I/O operations throughout
+
+### Scalability Features
+- **Horizontal Scaling**: Stateless design for container orchestration
+- **Load Balancing**: Ready for Kubernetes ingress and service mesh
+- **Circuit Breakers**: Automatic failure isolation and recovery
+- **Rate Limiting**: Protection against traffic spikes
+- **Resource Monitoring**: Memory and CPU usage tracking
+
+### Production Readiness
+- **Health Checks**: Kubernetes readiness/liveness probes
+- **Graceful Shutdown**: Proper cleanup on termination signals
+- **Error Recovery**: Automatic retry and circuit breaker patterns
+- **Monitoring Integration**: Prometheus metrics and alerting
+- **Log Aggregation**: Structured logging for ELK stack integration
+
 ## API Endpoints
 
 ```
@@ -136,13 +335,61 @@ npm test
 npm run lint
 ```
 
+### Dependencies
+```json
+{
+  "dependencies": {
+    "@prisma/client": "^5.7.1",
+    "@supabase/supabase-js": "^2.90.0",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.3.1",
+    "express-validator": "^7.3.1",
+    "express-winston": "^4.2.0",
+    "helmet": "^7.2.0",
+    "ioredis": "^5.3.2",
+    "prom-client": "^15.1.0",
+    "redis": "^4.6.12",
+    "winston": "^3.11.0",
+    "zod": "^3.22.4"
+  }
+}
+```
+
 ### Environment Variables
 ```env
+# Application
 PORT=3002
-PESAPAL_CONSUMER_KEY=your_key
-PESAPAL_CONSUMER_SECRET=your_secret
+NODE_ENV=production
+
+# Database
+DATABASE_URL=postgresql://user:pass@localhost:5432/orders
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-anon-key
+
+# Caching
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=your-redis-password
+REDIS_DB=0
+
+# Payment Gateway
+PESAPAL_CONSUMER_KEY=your-consumer-key
+PESAPAL_CONSUMER_SECRET=your-consumer-secret
 PESAPAL_URL=https://cybqa.pesapal.com/pesapalv3
-BASE_URL=https://api.maysar.com
+
+# Monitoring
+ENABLE_METRICS=true
+METRICS_PORT=9090
+LOG_LEVEL=info
+LOG_FORMAT=json
+
+# Security
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+CORS_ORIGIN=https://maysar.com,https://admin.maysar.com
 ```
 
 ## Domain Model
