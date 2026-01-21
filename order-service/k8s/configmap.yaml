@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-service-config
+  namespace: order-service
+  labels:
+    app: order-service
+    component: config
+spec:
+  data:
+    # Application Configuration
+    NODE_ENV: "production"
+    PORT: "3002"
+    LOG_LEVEL: "info"
+    LOG_FORMAT: "json"
+
+    # Database Configuration
+    DATABASE_URL: "postgresql://order_user:$(DB_PASSWORD)@order-service-postgres:5432/order_service_prod?schema=public&sslmode=require"
+
+    # Supabase Configuration
+    SUPABASE_URL: "https://your-project.supabase.co"
+    SUPABASE_KEY: "$(SUPABASE_ANON_KEY)"
+
+    # Redis Configuration
+    REDIS_HOST: "order-service-redis-master"
+    REDIS_PORT: "6379"
+    REDIS_DB: "0"
+
+    # Payment Gateway
+    PESAPAL_CONSUMER_KEY: "$(PESAPAL_CONSUMER_KEY)"
+    PESAPAL_CONSUMER_SECRET: "$(PESAPAL_CONSUMER_SECRET)"
+    PESAPAL_URL: "https://cybqa.pesapal.com/pesapalv3"
+
+    # Security Configuration
+    JWT_SECRET: "$(JWT_SECRET)"
+    CORS_ORIGIN: "https://maysar.com,https://admin.maysar.com,https://api.maysar.com"
+
+    # Rate Limiting
+    RATE_LIMIT_WINDOW_MS: "900000"
+    RATE_LIMIT_MAX_REQUESTS: "100"
+
+    # Monitoring
+    ENABLE_METRICS: "true"
+    METRICS_PORT: "9090"
+
+    # Cache Configuration
+    CACHE_DEFAULT_TTL: "300"
+    CACHE_MEMORY_MAX_SIZE: "100"
+
+    # Circuit Breaker Configuration
+    CIRCUIT_BREAKER_FAILURE_THRESHOLD: "5"
+    CIRCUIT_BREAKER_RECOVERY_TIMEOUT: "30000"
+    CIRCUIT_BREAKER_MONITORING_PERIOD: "60000"
+
+    # Application Metadata
+    SERVICE_NAME: "order-service"
+    SERVICE_VERSION: "1.0.0"
+    ENVIRONMENT: "production"
+
+    # Health Check Configuration
+    HEALTH_CHECK_TIMEOUT: "5000"
+    HEALTH_CHECK_INTERVAL: "30000"
+
+    # Database Connection Pool
+    DB_MAX_CONNECTIONS: "20"
+    DB_IDLE_TIMEOUT: "30000"
+    DB_CONNECTION_TIMEOUT: "60000"

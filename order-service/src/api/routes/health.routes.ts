@@ -4,7 +4,7 @@
  */
 
 import express, { Request, Response } from 'express';
-import { databaseManager } from '../../config/database.config';
+import { SupabaseClientManager } from '../../infrastructure/database/supabase.client';
 import { circuitBreakerRegistry } from '../../infrastructure/circuit-breaker';
 import { metricsCollector } from '../../infrastructure/monitoring/metrics';
 import { appLogger } from '../../infrastructure/monitoring/logger';
@@ -19,9 +19,9 @@ router.get('/', async (req: Request, res: Response) => {
   const startTime = Date.now();
 
   try {
-    // Check database connectivity
-    const dbHealth = await databaseManager.healthCheck();
-    const isHealthy = dbHealth.prisma && dbHealth.supabase;
+    // Check Supabase database connectivity (only concerned with Supabase, not Prisma)
+    const supabaseHealth = await SupabaseClientManager.getInstance().healthCheck();
+    const isHealthy = supabaseHealth.status === 'healthy';
 
     // Record health check metrics
     metricsCollector.recordHealthCheck('basic', isHealthy, Date.now() - startTime);
@@ -33,7 +33,16 @@ router.get('/', async (req: Request, res: Response) => {
       version: process.env.npm_package_version || '1.0.0',
       environment: process.env.NODE_ENV || 'development',
       uptime: process.uptime(),
-      database: dbHealth,
+      database: {
+        prisma: false, // Not using Prisma
+        supabase: isHealthy,
+        details: {
+          supabase: {
+            status: supabaseHealth.status,
+            latency: supabaseHealth.latency
+          }
+        }
+      },
     };
 
     res.status(isHealthy ? 200 : 503).json(response);
@@ -61,7 +70,17 @@ router.get('/detailed', async (req: Request, res: Response) => {
 
   try {
     // Database health
-    const dbHealth = await databaseManager.healthCheck();
+    const supabaseHealth = await SupabaseClientManager.getInstance().healthCheck();
+    const dbHealth = {
+      prisma: false, // Not using Prisma
+      supabase: supabaseHealth.status === 'healthy',
+      details: {
+        supabase: {
+          status: supabaseHealth.status,
+          latency: supabaseHealth.latency
+        }
+      }
+    };
 
     // Circuit breaker status
     const circuitBreakers = circuitBreakerRegistry.getAllStats();
@@ -90,8 +109,7 @@ router.get('/detailed', async (req: Request, res: Response) => {
     };
 
     const isHealthy =
-      dbHealth.prisma &&
-      dbHealth.supabase &&
+      dbHealth.supabase && // Only check Supabase
       Object.values(circuitBreakers).every(cb => cb.state === 'CLOSED');
 
     metricsCollector.recordHealthCheck('detailed', isHealthy, Date.now() - startTime);
@@ -130,9 +148,20 @@ router.get('/ready', async (req: Request, res: Response) => {
   const startTime = Date.now();
 
   try {
-    // Check if database is ready
-    const dbHealth = await databaseManager.healthCheck();
-    const isReady = dbHealth.prisma && dbHealth.supabase;
+    // Check if Supabase database is ready (only concerned with Supabase)
+    const supabaseHealth = await SupabaseClientManager.getInstance().healthCheck();
+    const isReady = supabaseHealth.status === 'healthy';
+
+    const dbHealth = {
+      prisma: false, // Not using Prisma
+      supabase: isReady,
+      details: {
+        supabase: {
+          status: supabaseHealth.status,
+          latency: supabaseHealth.latency
+        }
+      }
+    };
 
     metricsCollector.recordHealthCheck('ready', isReady, Date.now() - startTime);
 

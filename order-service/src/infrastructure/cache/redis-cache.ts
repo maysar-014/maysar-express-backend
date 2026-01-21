@@ -248,7 +248,7 @@ export class RedisCache {
       }
     });
 
-    return result.success ? result.data : null;
+    return result.success && typeof result.data === 'number' ? result.data : null;
   }
 
   /**
@@ -269,7 +269,7 @@ export class RedisCache {
       }
     });
 
-    return result.success ? result.data : false;
+    return result.success === true && result.data === true;
   }
 
   /**
@@ -290,7 +290,7 @@ export class RedisCache {
       }
     });
 
-    return result.success ? result.data : -2; // -2 indicates key doesn't exist
+    return result.success && typeof result.data === 'number' ? result.data : -2; // -2 indicates key doesn't exist
   }
 
   /**
@@ -322,7 +322,7 @@ export class RedisCache {
       }
     });
 
-    return result.success ? result.data : 0;
+    return result.success && typeof result.data === 'number' ? result.data : 0;
   }
 
   /**
@@ -371,7 +371,7 @@ export class RedisCache {
     if (this.isReady()) {
       try {
         stats.dbSize = await this.redis.dbsize();
-        stats.memoryUsage = await this.redis.info('memory');
+        stats.memoryUsage = await this.redis.info('memory') as any;
       } catch (error) {
         appLogger.error('Failed to get Redis stats', error);
       }

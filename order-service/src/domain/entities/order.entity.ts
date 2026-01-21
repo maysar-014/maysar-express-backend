@@ -4,7 +4,9 @@ import { Money } from '../value-objects/money.value-object';
 export enum OrderStatus {
   PENDING = 'pending',
   CONFIRMED = 'confirmed',
+  PROCESSING = 'processing',
   ASSIGNED = 'assigned',
+  SHIPPED = 'shipped',
   IN_TRANSIT = 'in_transit',
   DELIVERED = 'delivered',
   CANCELLED = 'cancelled'
@@ -18,13 +20,18 @@ export class Order {
   public totalAmount: Money;
   public totalWeight: number;
   public status: OrderStatus;
-  public paymentMethod: 'COD' | 'WALLET' | 'CARD';
+  public paymentMethod: 'cod' | 'card' | 'mobile_money';
   public deliveryAddress: Address;
   public createdAt: Date;
   public updatedAt: Date;
 
   constructor(data: any) {
-    this.id = data.id || this.generateId();
+    // ID must be provided - no infrastructure dependencies in domain
+    if (!data.id) {
+      throw new Error('Order ID must be provided');
+    }
+
+    this.id = data.id;
     this.buyerId = data.buyerId;
     this.sellerId = data.sellerId;
     this.items = data.items || [];
@@ -36,7 +43,9 @@ export class Order {
       data.deliveryAddress.street,
       data.deliveryAddress.city,
       data.deliveryAddress.postalCode,
-      data.deliveryAddress.country
+      data.deliveryAddress.country,
+      data.deliveryAddress.latitude,
+      data.deliveryAddress.longitude
     );
     this.createdAt = new Date();
     this.updatedAt = new Date();
@@ -53,10 +62,6 @@ export class Order {
 
   isHeavyOrder(): boolean {
     return this.totalWeight > 20;
-  }
-
-  private generateId(): string {
-    return `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 }
 

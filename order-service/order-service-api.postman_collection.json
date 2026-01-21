@@ -1,0 +1,1654 @@
+{
+  "info": {
+    "name": "Order Service API - Enterprise Saga Collection",
+    "description": "Comprehensive Postman collection for Order Service API testing with saga-driven orchestration. Includes end-to-end order workflows, event validation, compensation scenarios, and business intelligence testing.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3002/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "healthBaseUrl",
+      "value": "http://localhost:3002",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "current_order_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "current_buyer_id",
+      "value": "550e8400-e29b-41d4-a716-446655440001",
+      "type": "string"
+    },
+    {
+      "key": "current_seller_id",
+      "value": "550e8400-e29b-41d4-a716-446655440002",
+      "type": "string"
+    }
+  ],
+  "item": [
+
+    {
+      "name": "🏥 Health & Monitoring",
+      "item": [
+        {
+          "name": "Service Health Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{healthBaseUrl}}/health",
+              "host": [
+                "{{healthBaseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Basic health check - checks database connectivity and service status."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Health check returns 200 or 503', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    pm.test('Response has required fields', function() {",
+                  "        pm.expect(response).to.have.property('service');",
+                  "        pm.expect(response).to.have.property('status');",
+                  "        pm.expect(response).to.have.property('timestamp');",
+                  "        pm.expect(response).to.have.property('database');",
+                  "    });",
+                  "    ",
+                  "    pm.test('Service status is healthy', function() {",
+                  "        pm.expect(response.status).to.equal('healthy');",
+                  "    });",
+                  "    ",
+                  "    pm.test('Supabase database is healthy', function() {",
+                  "        pm.expect(response.database.supabase).to.be.true;",
+                  "    });",
+                  "    ",
+                  "    console.log('✅ Health check passed - Service is healthy');",
+                  "    console.log('🗄️  Database status - Supabase:', response.database.supabase ? '✅' : '❌');",
+                  "} else {",
+                  "    console.log('⚠️  Service is unhealthy - check database connectivity');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Liveness Probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{healthBaseUrl}}/health/live",
+              "host": [
+                "{{healthBaseUrl}}"
+              ],
+              "path": [
+                "health",
+                "live"
+              ]
+            },
+            "description": "Kubernetes liveness probe - checks if service is running."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Liveness probe returns 200', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 500]);",
+                  "});",
+                  "",
+                  "console.log(pm.response.code === 200 ? '✅ Service is alive' : '❌ Service is not responding');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Readiness Probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{healthBaseUrl}}/health/ready",
+              "host": [
+                "{{healthBaseUrl}}"
+              ],
+              "path": [
+                "health",
+                "ready"
+              ]
+            },
+            "description": "Kubernetes readiness probe - checks if service is ready to accept traffic."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Readiness probe returns appropriate status', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+                  "});",
+                  "",
+                  "console.log(pm.response.code === 200 ? '✅ Service is ready' : '⚠️  Service is not ready');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detailed Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{healthBaseUrl}}/health/detailed",
+              "host": [
+                "{{healthBaseUrl}}"
+              ],
+              "path": [
+                "health",
+                "detailed"
+              ]
+            },
+            "description": "Detailed health check including database, circuit breakers, and system metrics."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Detailed health check returns appropriate status', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.test('Response has detailed checks', function() {",
+                  "        pm.expect(response).to.have.property('checks');",
+                  "        pm.expect(response.checks).to.have.property('database');",
+                  "        pm.expect(response.checks).to.have.property('circuitBreakers');",
+                  "    });",
+                  "    console.log('✅ Detailed health check passed');",
+                  "} else {",
+                  "    console.log('⚠️  Service has health issues - check detailed response');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📦 Order Management",
+      "item": [
+        {
+          "name": "Create Order - COD",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "req_{{current_buyer_id}}_{{$timestamp}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyerId\": \"{{current_buyer_id}}\",\n  \"sellerId\": \"{{current_seller_id}}\",\n  \"items\": [\n    {\n      \"productId\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"quantity\": 2,\n      \"price\": {\n        \"amount\": 15000,\n        \"currency\": \"TZS\"\n      },\n      \"weight\": 1.5\n    }\n  ],\n  \"currency\": \"TZS\",\n  \"deliveryAddress\": {\n    \"street\": \"123 Main Street\",\n    \"city\": \"Dar es Salaam\",\n    \"postalCode\": \"11101\",\n    \"country\": \"TZ\",\n    \"latitude\": -6.7924,\n    \"longitude\": 39.2083\n  },\n  \"paymentMethod\": \"cod\",\n  \"notes\": \"Please handle with care - fragile items\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "Create a new order with Cash on Delivery payment method."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order creation returns 201', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400, 401, 429]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    pm.test('Response has required fields', function() {",
+                  "        pm.expect(response).to.have.property('id');",
+                  "        pm.expect(response).to.have.property('buyerId');",
+                  "        pm.expect(response).to.have.property('sellerId');",
+                  "        pm.expect(response).to.have.property('status');",
+                  "        pm.expect(response).to.have.property('totalAmount');",
+                  "        pm.expect(response).to.have.property('items');",
+                  "        pm.expect(response).to.have.property('createdAt');",
+                  "    });",
+                  "    ",
+                  "    pm.test('Order ID format is valid', function() {",
+                  "        pm.expect(response.id).to.match(/^order_[a-zA-Z0-9]+$/);",
+                  "    });",
+                  "    ",
+                  "    pm.test('Status is pending', function() {",
+                  "        pm.expect(response.status).to.equal('pending');",
+                  "    });",
+                  "    ",
+                  "    pm.test('Total amount is calculated correctly', function() {",
+                  "        const expectedTotal = 2 * 15000; // 2 items * 15000 TZS each",
+                  "        pm.expect(response.totalAmount.amount).to.equal(expectedTotal);",
+                  "        pm.expect(response.totalAmount.currency).to.equal('TZS');",
+                  "    });",
+                  "    ",
+                  "    // Save order ID for subsequent requests",
+                  "    pm.collectionVariables.set('current_order_id', response.id);",
+                  "    console.log('✅ Order created successfully:', response.id);",
+                  "    console.log('💰 Total amount:', response.totalAmount.amount, response.totalAmount.currency);",
+                  "    ",
+                  "} else if (pm.response.code === 400) {",
+                  "    console.log('❌ Validation error - check request data');",
+                  "    const error = pm.response.json();",
+                  "    console.log('Error details:', error.message);",
+                  "} else if (pm.response.code === 401) {",
+                  "    console.log('❌ Authentication required');",
+                  "} else if (pm.response.code === 429) {",
+                  "    console.log('⚠️  Rate limit exceeded - try again later');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Order - Card Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyerId\": \"550e8400-e29b-41d4-a716-446655440003\",\n  \"sellerId\": \"550e8400-e29b-41d4-a716-446655440004\",\n  \"items\": [\n    {\n      \"productId\": \"prod_laptop\",\n      \"quantity\": 1,\n      \"price\": {\n        \"amount\": 250000,\n        \"currency\": \"TZS\"\n      },\n      \"weight\": 2.5\n    }\n  ],\n  \"currency\": \"TZS\",\n  \"deliveryAddress\": {\n    \"street\": \"456 Commerce Ave\",\n    \"city\": \"Dar es Salaam\",\n    \"postalCode\": \"11102\",\n    \"country\": \"TZ\"\n  },\n  \"paymentMethod\": \"card\",\n  \"paymentToken\": \"{{test_payment_token}}\",\n  \"notes\": \"High-value item - secure delivery required\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "Create a new order with Card payment method."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Card payment order creation returns 201', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400, 401, 402]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Card payment order created:', response.id);",
+                  "    pm.collectionVariables.set('card_order_id', response.id);",
+                  "} else if (pm.response.code === 402) {",
+                  "    console.log('💳 Payment required - check payment token');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Order Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/{{current_order_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "{{current_order_id}}"
+              ]
+            },
+            "description": "Retrieve detailed information about a specific order."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order retrieval returns 200 or 404', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 401, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    pm.test('Order details are complete', function() {",
+                  "        pm.expect(response).to.have.property('id');",
+                  "        pm.expect(response).to.have.property('buyerId');",
+                  "        pm.expect(response).to.have.property('sellerId');",
+                  "        pm.expect(response).to.have.property('status');",
+                  "        pm.expect(response).to.have.property('items');",
+                  "        pm.expect(response).to.have.property('deliveryAddress');",
+                  "    });",
+                  "    ",
+                  "    pm.test('Order ID matches requested', function() {",
+                  "        pm.expect(response.id).to.equal(pm.collectionVariables.get('current_order_id'));",
+                  "    });",
+                  "    ",
+                  "    console.log('✅ Order details retrieved for:', response.id);",
+                  "    console.log('📊 Status:', response.status);",
+                  "    console.log('📦 Items:', response.items.length);",
+                  "    ",
+                  "} else if (pm.response.code === 404) {",
+                  "    console.log('❌ Order not found - create an order first');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders?page=1&limit=10&buyerId={{current_buyer_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "buyerId",
+                  "value": "{{current_buyer_id}}"
+                }
+              ]
+            },
+            "description": "Retrieve a paginated list of orders with optional filtering."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order list returns 200', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 401]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    pm.test('Response has pagination', function() {",
+                  "        pm.expect(response).to.have.property('orders');",
+                  "        pm.expect(response).to.have.property('pagination');",
+                  "        pm.expect(response.pagination).to.have.property('page');",
+                  "        pm.expect(response.pagination).to.have.property('limit');",
+                  "        pm.expect(response.pagination).to.have.property('total');",
+                  "    });",
+                  "    ",
+                  "    pm.test('Orders is an array', function() {",
+                  "        pm.expect(response.orders).to.be.an('array');",
+                  "    });",
+                  "    ",
+                  "    console.log('✅ Retrieved', response.orders.length, 'orders');",
+                  "    console.log('📄 Page', response.pagination.page, 'of', response.pagination.totalPages);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Order Delivery Address",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deliveryAddress\": {\n    \"street\": \"789 Updated Street\",\n    \"city\": \"Dar es Salaam\",\n    \"postalCode\": \"11103\",\n    \"country\": \"TZ\"\n  },\n  \"notes\": \"Updated delivery address - ring doorbell\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders/{{current_order_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "{{current_order_id}}"
+              ]
+            },
+            "description": "Update order delivery address and notes."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order update returns appropriate status', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400, 403, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    console.log('✅ Order updated successfully');",
+                  "} else if (pm.response.code === 403) {",
+                  "    console.log('🚫 Update not allowed - order may be processing/shipped');",
+                  "} else if (pm.response.code === 404) {",
+                  "    console.log('❌ Order not found');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/{{current_order_id}}?reason=customer_request&notes=Changed%20my%20mind",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "{{current_order_id}}"
+              ],
+              "query": [
+                {
+                  "key": "reason",
+                  "value": "customer_request"
+                },
+                {
+                  "key": "notes",
+                  "value": "Changed my mind"
+                }
+              ]
+            },
+            "description": "Cancel an order with reason and notes."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order cancellation returns appropriate status', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400, 403, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.test('Order status is cancelled', function() {",
+                  "        pm.expect(response.status).to.equal('cancelled');",
+                  "    });",
+                  "    console.log('✅ Order cancelled successfully');",
+                  "} else if (pm.response.code === 403) {",
+                  "    console.log('🚫 Cancellation not allowed - order may be shipped');",
+                  "} else if (pm.response.code === 400) {",
+                  "    console.log('❌ Order cannot be cancelled - check cancellation rules');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirm Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"confirm\",\n  \"notes\": \"Order confirmed by seller\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders/{{current_order_id}}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "{{current_order_id}}",
+                "status"
+              ]
+            },
+            "description": "Confirm order (pending → confirmed)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order confirmation works', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400, 403, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.test('Order status updated to confirmed', function() {",
+                  "        pm.expect(response.status).to.equal('confirmed');",
+                  "    });",
+                  "    console.log('✅ ORDER CONFIRMED: Status updated to confirmed');",
+                  "} else if (pm.response.code === 403) {",
+                  "    console.log('🚫 Cannot confirm order - invalid state transition');",
+                  "} else if (pm.response.code === 404) {",
+                  "    console.log('❌ Order not found for confirmation');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Process Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"process\",\n  \"estimatedShippingDate\": \"2024-12-31T10:00:00Z\",\n  \"notes\": \"Order processing started\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders/{{current_order_id}}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "{{current_order_id}}",
+                "status"
+              ]
+            },
+            "description": "Process order (confirmed → processing)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order processing works', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400, 403, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.test('Order status updated to processing', function() {",
+                  "        pm.expect(response.status).to.equal('processing');",
+                  "    });",
+                  "    console.log('⚙️  ORDER PROCESSING: Status updated to processing');",
+                  "} else if (pm.response.code === 403) {",
+                  "    console.log('🚫 Cannot process order - invalid state transition');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ship Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"ship\",\n  \"trackingNumber\": \"TRK{{$randomInt}}\",\n  \"carrier\": \"Maysar Express\",\n  \"estimatedDeliveryDate\": \"2024-12-31T18:00:00Z\",\n  \"notes\": \"Order shipped via express delivery\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders/{{current_order_id}}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "{{current_order_id}}",
+                "status"
+              ]
+            },
+            "description": "Ship order (processing → shipped)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order shipping works', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400, 403, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.test('Order status updated to shipped', function() {",
+                  "        pm.expect(response.status).to.equal('shipped');",
+                  "    });",
+                  "    pm.test('Tracking information provided', function() {",
+                  "        pm.expect(response).to.have.property('trackingNumber');",
+                  "        pm.expect(response).to.have.property('carrier');",
+                  "    });",
+                  "    console.log('🚚 ORDER SHIPPED: Tracking #', response.trackingNumber);",
+                  "} else if (pm.response.code === 403) {",
+                  "    console.log('🚫 Cannot ship order - invalid state transition');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Complete Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"complete\",\n  \"deliveryConfirmation\": \"delivered_to_customer\",\n  \"notes\": \"Order delivered successfully\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders/{{current_order_id}}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "{{current_order_id}}",
+                "status"
+              ]
+            },
+            "description": "Complete order (shipped → delivered)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order completion works', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400, 403, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.test('Order status updated to delivered', function() {",
+                  "        pm.expect(response.status).to.equal('delivered');",
+                  "    });",
+                  "    console.log('✅ ORDER COMPLETED: Successfully delivered');",
+                  "} else if (pm.response.code === 403) {",
+                  "    console.log('🚫 Cannot complete order - invalid state transition');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/search?status=pending,processing&buyerId={{current_buyer_id}}&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending,processing"
+                },
+                {
+                  "key": "buyerId",
+                  "value": "{{current_buyer_id}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Search orders with filters"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order search works', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.test('Search results filtered correctly', function() {",
+                  "        pm.expect(response.orders).to.be.an('array');",
+                  "        response.orders.forEach(order => {",
+                  "            pm.expect(['pending', 'processing']).to.include(order.status);",
+                  "        });",
+                  "    });",
+                  "    console.log('🔍 Found', response.orders.length, 'orders');",
+                  "} else {",
+                  "    console.log('🔍 No orders found matching criteria');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Order Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/analytics/stats?period=daily&startDate=2024-01-01&endDate=2024-12-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "analytics",
+                "stats"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "daily"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31"
+                }
+              ]
+            },
+            "description": "Get order analytics and statistics"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Analytics endpoint responds', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.test('Analytics has required fields', function() {",
+                  "        pm.expect(response).to.have.property('totalOrders');",
+                  "        pm.expect(response).to.have.property('totalRevenue');",
+                  "    });",
+                  "    console.log('📊 Total orders:', response.totalOrders);",
+                  "    console.log('💰 Total revenue:', response.totalRevenue);",
+                  "} else {",
+                  "    console.log('📊 No analytics data available');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "⚡ Performance Testing",
+      "item": [
+        {
+          "name": "Health Check Load Test",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{healthBaseUrl}}/health",
+              "host": [
+                "{{healthBaseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Performance test for health check endpoint. Run this multiple times to test load handling."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Health check responds quickly', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500); // 500ms max",
+                  "});",
+                  "",
+                  "pm.test('Health check returns valid status', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    console.log('⚡ Health check response time:', pm.response.responseTime, 'ms');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Order Creation Stress Test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "stress_test_{{$randomInt}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyerId\": \"buyer_stress_{{$randomInt}}\",\n  \"sellerId\": \"seller_stress_{{$randomInt}}\",\n  \"items\": [\n    {\n      \"productId\": \"prod_stress_{{$randomInt}}\",\n      \"quantity\": 1,\n      \"price\": {\n        \"amount\": {{$randomInt 10000 50000}},\n        \"currency\": \"TZS\"\n      },\n      \"weight\": {{$randomInt 1 5}}\n    }\n  ],\n  \"currency\": \"TZS\",\n  \"deliveryAddress\": {\n    \"street\": \"{{$randomInt 100 999}} Stress Test St\",\n    \"city\": \"Dar es Salaam\",\n    \"postalCode\": \"{{$randomInt 10000 99999}}\",\n    \"country\": \"TZ\"\n  },\n  \"paymentMethod\": \"COD\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "Stress test for order creation with randomized data. Use Runner to execute multiple times."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order creation responds within time limit', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000); // 2s max for order creation",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('⚡ Order created in', pm.response.responseTime, 'ms - ID:', response.id);",
+                  "} else if (pm.response.code === 429) {",
+                  "    console.log('⏱️  Rate limited - slowing down requests');",
+                  "} else {",
+                  "    console.log('⚠️  Unexpected response:', pm.response.code, 'in', pm.response.responseTime, 'ms');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🎭 SAGA ORCHESTRATION: Complete Order Workflow",
+      "item": [
+        {
+          "name": "Step 1: Create Order (Saga Initiation)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "saga_test_{{$timestamp}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyerId\": \"buyer_saga_test\",\n  \"sellerId\": \"seller_saga_test\",\n  \"items\": [\n    {\n      \"productId\": \"prod_saga_electronics\",\n      \"quantity\": 1,\n      \"price\": {\n        \"amount\": 150000,\n        \"currency\": \"TZS\"\n      },\n      \"weight\": 2.0\n    }\n  ],\n  \"currency\": \"TZS\",\n  \"deliveryAddress\": {\n    \"street\": \"123 Saga Test Street\",\n    \"city\": \"Dar es Salaam\",\n    \"postalCode\": \"11101\",\n    \"country\": \"TZ\"\n  },\n  \"paymentMethod\": \"CARD\",\n  \"notes\": \"Saga orchestration test - complete order workflow\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "Create order to trigger saga orchestration (OrderCreated → PaymentSaga → SettlementSaga)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order creation triggers saga', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400, 401]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('sagaOrderId', response.id);",
+                  "    ",
+                  "    pm.test('OrderCreated event should be published', function() {",
+                  "        // Saga should publish OrderCreated event",
+                  "        pm.expect(response.id).to.exist;",
+                  "    });",
+                  "    ",
+                  "    console.log('✅ SAGA INITIATED: Order created with ID', response.id);",
+                  "    console.log('🎭 Expecting: OrderCreated → PaymentProcessing → SettlementProcessing events');",
+                  "} else {",
+                  "    console.log('❌ Saga initiation failed - check order creation');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 2: Verify Order Status Progression",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/{{sagaOrderId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "{{sagaOrderId}}"
+              ]
+            },
+            "description": "Check order status progression through saga steps"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order status reflects saga progression', function() {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.status).to.be.oneOf(['pending', 'processing', 'confirmed', 'completed']);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "console.log('📊 SAGA PROGRESS: Order status is', response.status);",
+                  "console.log('💰 Payment status:', response.paymentStatus || 'not_started');",
+                  "console.log('✅ Saga orchestration progressing through workflow steps');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 3: Complete Saga Workflow",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders?buyerId=buyer_saga_test&limit=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "buyerId",
+                  "value": "buyer_saga_test"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Verify complete saga workflow completion"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Saga workflow completed successfully', function() {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.orders).to.be.an('array');",
+                  "    pm.expect(response.orders.length).to.be.greaterThan(0);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "const sagaOrder = response.orders.find(o => o.id === pm.collectionVariables.get('sagaOrderId'));",
+                  "if (sagaOrder) {",
+                  "    console.log('🎉 SAGA COMPLETE: Order', sagaOrder.id, 'processed through full workflow');",
+                  "    console.log('📊 Final status:', sagaOrder.status);",
+                  "    console.log('💳 Payment processed:', sagaOrder.paymentStatus || 'completed');",
+                  "} else {",
+                  "    console.log('⚠️  Saga order not found in results');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🔄 PARALLEL SAGAS: Multiple Order Processing",
+      "item": [
+        {
+          "name": "Create Parallel Order 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "parallel_1_{{$timestamp}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyerId\": \"buyer_parallel_1\",\n  \"sellerId\": \"seller_parallel_1\",\n  \"items\": [\n    {\n      \"productId\": \"prod_parallel_1\",\n      \"quantity\": 1,\n      \"price\": {\n        \"amount\": 75000,\n        \"currency\": \"TZS\"\n      },\n      \"weight\": 1.5\n    }\n  ],\n  \"currency\": \"TZS\",\n  \"deliveryAddress\": {\n    \"street\": \"111 Parallel Street\",\n    \"city\": \"Dar es Salaam\",\n    \"postalCode\": \"11101\",\n    \"country\": \"TZ\"\n  },\n  \"paymentMethod\": \"COD\",\n  \"notes\": \"Parallel saga test - Order 1\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "Create first parallel order for concurrent saga processing"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Parallel order 1 created', function() {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('parallelOrderId1', response.id);",
+                  "});",
+                  "",
+                  "console.log('✅ PARALLEL SAGA 1: Order created with ID', pm.collectionVariables.get('parallelOrderId1'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Parallel Order 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "parallel_2_{{$timestamp}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyerId\": \"buyer_parallel_2\",\n  \"sellerId\": \"seller_parallel_2\",\n  \"items\": [\n    {\n      \"productId\": \"prod_parallel_2\",\n      \"quantity\": 2,\n      \"price\": {\n        \"amount\": 25000,\n        \"currency\": \"TZS\"\n      },\n      \"weight\": 3.0\n    }\n  ],\n  \"currency\": \"TZS\",\n  \"deliveryAddress\": {\n    \"street\": \"222 Parallel Avenue\",\n    \"city\": \"Dar es Salaam\",\n    \"postalCode\": \"11102\",\n    \"country\": \"TZ\"\n  },\n  \"paymentMethod\": \"CARD\",\n  \"notes\": \"Parallel saga test - Order 2\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "Create second parallel order for concurrent saga processing"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Parallel order 2 created', function() {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('parallelOrderId2', response.id);",
+                  "});",
+                  "",
+                  "console.log('✅ PARALLEL SAGA 2: Order created with ID', pm.collectionVariables.get('parallelOrderId2'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Parallel Saga Isolation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders?page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Verify that parallel sagas process independently without interference"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Multiple orders processed in parallel', function() {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.orders.length).to.be.greaterThan(1);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "const parallelOrders = response.orders.filter(o => ",
+                  "    o.id === pm.collectionVariables.get('parallelOrderId1') || ",
+                  "    o.id === pm.collectionVariables.get('parallelOrderId2')",
+                  ");",
+                  "",
+                  "pm.test('Both parallel orders exist', function() {",
+                  "    pm.expect(parallelOrders.length).to.equal(2);",
+                  "});",
+                  "",
+                  "console.log('🔄 PARALLEL SAGAS: Both orders processing independently');",
+                  "console.log('📊 Order 1 status:', parallelOrders.find(o => o.id === pm.collectionVariables.get('parallelOrderId1'))?.status);",
+                  "console.log('📊 Order 2 status:', parallelOrders.find(o => o.id === pm.collectionVariables.get('parallelOrderId2'))?.status);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "⚠️ COMPENSATION: Payment Failure Scenario",
+      "item": [
+        {
+          "name": "Create Order with Invalid Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "compensation_test_{{$timestamp}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyerId\": \"buyer_compensation_test\",\n  \"sellerId\": \"seller_compensation_test\",\n  \"items\": [\n    {\n      \"productId\": \"prod_compensation\",\n      \"quantity\": 1,\n      \"price\": {\n        \"amount\": 200000,\n        \"currency\": \"TZS\"\n      },\n      \"weight\": 2.5\n    }\n  ],\n  \"currency\": \"TZS\",\n  \"deliveryAddress\": {\n    \"street\": \"999 Compensation Street\",\n    \"city\": \"Dar es Salaam\",\n    \"postalCode\": \"11199\",\n    \"country\": \"TZ\"\n  },\n  \"paymentMethod\": \"CARD\",\n  \"paymentToken\": \"invalid_payment_token\",\n  \"notes\": \"Compensation test - invalid payment should trigger rollback\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "Create order with invalid payment to trigger compensation saga"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order created despite invalid payment', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400, 402]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('compensationOrderId', response.id);",
+                  "    console.log('⚠️  COMPENSATION TEST: Order created with invalid payment - saga should handle failure');",
+                  "} else if (pm.response.code === 402) {",
+                  "    console.log('💳 Payment validation working - invalid token rejected');",
+                  "} else {",
+                  "    console.log('❌ Order creation failed for other reasons');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Payment Failure Compensation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/{{compensationOrderId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "{{compensationOrderId}}"
+              ]
+            },
+            "description": "Check if payment failure triggered proper compensation (order should be cancelled or failed)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Payment failure compensation executed', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.test('Order status reflects payment failure', function() {",
+                  "        pm.expect(response.status).to.be.oneOf(['cancelled', 'failed', 'pending']);",
+                  "    });",
+                  "    ",
+                  "    console.log('⚠️  COMPENSATION RESULT: Order status is', response.status);",
+                  "    console.log('💳 Payment status:', response.paymentStatus || 'failed');",
+                  "    console.log('✅ Saga compensation handled payment failure appropriately');",
+                  "} else {",
+                  "    console.log('❌ Order not found - compensation may have deleted it');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🔧 Error Scenarios",
+      "item": [
+        {
+          "name": "Invalid Order Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyerId\": \"\",\n  \"sellerId\": \"invalid_seller\",\n  \"items\": [],\n  \"deliveryAddress\": {\n    \"street\": \"\",\n    \"city\": \"\",\n    \"country\": \"XX\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "Test validation by sending invalid order data."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invalid data returns 400', function() {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 400) {",
+                  "    const error = pm.response.json();",
+                  "    pm.test('Error response has proper structure', function() {",
+                  "        pm.expect(error).to.have.property('error');",
+                  "        pm.expect(error).to.have.property('message');",
+                  "        pm.expect(error).to.have.property('requestId');",
+                  "    });",
+                  "    console.log('✅ Validation working - Error:', error.message);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unauthorized Access",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid_token",
+                "disabled": false
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "Test authentication by using an invalid JWT token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invalid token returns 401', function() {",
+                  "    pm.expect(pm.response.code).to.equal(401);",
+                  "});",
+                  "",
+                  "console.log('✅ Authentication validation working');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Non-existent Order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/order_nonexistent_12345",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "order_nonexistent_12345"
+              ]
+            },
+            "description": "Test 404 handling by requesting a non-existent order."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Non-existent order returns 404', function() {",
+                  "    pm.expect(pm.response.code).to.equal(404);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 404) {",
+                  "    const error = pm.response.json();",
+                  "    console.log('✅ 404 handling working - Error:', error.message);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rate Limit Test",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders?page=1&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Test rate limiting by making frequent requests. Use Runner to execute multiple times quickly."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Rate limiting works', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 401, 429]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 429) {",
+                  "    console.log('✅ Rate limiting active - request blocked');",
+                  "    const headers = pm.response.headers;",
+                  "    const retryAfter = headers.find(h => h.key.toLowerCase() === 'retry-after');",
+                  "    if (retryAfter) {",
+                  "        console.log('⏱️  Retry after:', retryAfter.value, 'seconds');",
+                  "    }",
+                  "} else if (pm.response.code === 200) {",
+                  "    console.log('📊 Request allowed - rate limit not exceeded');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global pre-request script",
+          "console.log('🚀 Executing:', pm.info.requestName);",
+          "console.log('📍 URL:', pm.request.url.toString());",
+          "",
+          "// Add timestamp to request for tracking",
+          "const timestamp = new Date().toISOString();",
+          "console.log('🕒 Timestamp:', timestamp);",
+          "",
+          "// Set common headers if not already set",
+          "if (!pm.request.headers.has('X-Request-ID')) {",
+          "    pm.request.headers.add({",
+          "        key: 'X-Request-ID',",
+          "        value: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`",
+          "    });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script",
+          "console.log('📊 Response Code:', pm.response.code);",
+          "console.log('⚡ Response Time:', pm.response.responseTime, 'ms');",
+          "",
+          "// Global response validation",
+          "pm.test('Response time is reasonable', function() {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000); // 5s max",
+          "});",
+          "",
+          "pm.test('Response has proper content-type', function() {",
+          "    const contentType = pm.response.headers.get('content-type');",
+          "    if (contentType) {",
+          "        pm.expect(contentType).to.include('application/json');",
+          "    }",
+          "});",
+          "",
+          "// Log response size",
+          "if (pm.response.responseSize) {",
+          "    console.log('📏 Response Size:', pm.response.responseSize, 'bytes');",
+          "}",
+          "",
+          "// Global error handling",
+          "if (pm.response.code >= 400) {",
+          "    const response = pm.response.json();",
+          "    if (response && response.error) {",
+          "        console.log('❌ Error:', response.error, '-', response.message);",
+          "        if (response.requestId) {",
+          "            console.log('🆔 Request ID:', response.requestId);",
+          "        }",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ]
+}

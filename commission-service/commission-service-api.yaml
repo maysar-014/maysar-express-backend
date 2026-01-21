@@ -1,0 +1,748 @@
+openapi: 3.0.3
+info:
+  title: Commission Service API
+  description: |
+    # Commission Service - Revenue Sharing & Rewards Management
+
+    A comprehensive microservice for calculating, managing, and distributing commissions and rewards across the platform.
+
+    ## 🎯 Business Domain
+    The Commission Service handles all financial incentives and rewards for platform participants including:
+    - **Sellers**: Sales commissions (8% base rate)
+    - **Enablers**: Task completion bonuses (15-20% rates)
+    - **Couriers**: Delivery performance rewards
+    - **Customers**: Referral commissions (3% rate)
+
+    ## 🚀 Key Features
+    - **Dynamic Commission Calculation**: Multi-tier rates with performance bonuses
+    - **Quality-Based Rewards**: Rating, timeliness, and satisfaction bonuses
+    - **Saga Orchestration**: End-to-end commission workflows
+    - **Real-time Analytics**: Commission summaries and performance metrics
+    - **Business Rule Enforcement**: Comprehensive validation and approval workflows
+
+    ## 📊 Commission Rates
+    | Recipient Type | Commission Type | Base Rate | Notes |
+    |---------------|----------------|-----------|-------|
+    | Seller | Sale | 8% | Standard sales commission |
+    | Seller | Referral | 5% | Customer referral bonus |
+    | Enabler | Task Assignment | 15% | Initial task assignment |
+    | Enabler | Task Completion | 20% | Successful completion |
+    | Customer | Referral | 3% | When referred customer orders |
+
+    ## 🎁 Bonus System
+    - **Performance Bonus**: Up to 50% additional based on metrics
+    - **Quality Bonus**: 5-star rating (+10%), on-time delivery (+5%), high satisfaction (+3%)
+    - **Special Bonuses**: First order ($50), bulk orders (2%), promotional periods (1%)
+  version: 1.0.0
+  contact:
+    name: Commission Service Team
+    email: commission@maysar.com
+  license:
+    name: ISC
+
+servers:
+  - url: http://localhost:3008/api
+    description: Local development server
+  - url: https://api.maysar.com/commission
+    description: Production server
+
+security:
+  - bearerAuth: []
+  - apiKeyAuth: []
+
+paths:
+  /commissions/calculate:
+    post:
+      tags:
+        - Commission Calculation
+      summary: Calculate Commission for Order
+      description: |
+        Calculates commission based on order details, recipient type, and performance metrics.
+
+        **Business Logic:**
+        - Applies base commission rates by recipient type and commission type
+        - Calculates performance bonuses based on metrics
+        - Applies quality bonuses for ratings, timeliness, and satisfaction
+        - Adds special condition bonuses (first order, bulk order, promotional)
+        - Validates minimum commission amounts and business rules
+      operationId: calculateCommission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommissionCalculationRequest'
+            examples:
+              seller_sale:
+                summary: Standard seller sale commission
+                value:
+                  orderId: "550e8400-e29b-41d4-a716-446655440000"
+                  sellerId: "550e8400-e29b-41d4-a716-446655440001"
+                  orderAmount: 150.00
+                  recipientType: "seller"
+                  commissionType: "sale"
+                  performanceBonus: 0.05
+                  qualityMetrics:
+                    rating: 4.8
+                    onTimeDelivery: true
+                    customerSatisfaction: 4.5
+                  specialConditions:
+                    bulkOrder: true
+              enabler_task:
+                summary: Enabler task completion commission
+                value:
+                  orderId: "550e8400-e29b-41d4-a716-446655440002"
+                  sellerId: "550e8400-e29b-41d4-a716-446655440003"
+                  orderAmount: 200.00
+                  recipientType: "enabler"
+                  commissionType: "task_completion"
+                  qualityMetrics:
+                    rating: 5.0
+                    onTimeDelivery: true
+                    customerSatisfaction: 5.0
+              customer_referral:
+                summary: Customer referral commission
+                value:
+                  orderId: "550e8400-e29b-41d4-a716-446655440004"
+                  sellerId: "550e8400-e29b-41d4-a716-446655440005"
+                  orderAmount: 50.00
+                  recipientType: "customer"
+                  commissionType: "referral"
+                  specialConditions:
+                    firstOrder: true
+      responses:
+        '201':
+          description: Commission calculated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommissionCalculationResponse'
+              examples:
+                successful_calculation:
+                  summary: Successful commission calculation with breakdown
+                  value:
+                    success: true
+                    data:
+                      commissionId: "550e8400-e29b-41d4-a716-446655440006"
+                      amount: 18.00
+                      breakdown:
+                        baseAmount: 12.00
+                        bonus: 6.00
+                        totalCommission: 18.00
+                        appliedRate: 0.08
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /commissions/{commissionId}/approve:
+    put:
+      tags:
+        - Commission Management
+      summary: Approve Commission for Payment
+      description: |
+        Approves a pending commission for payment processing.
+
+        **Business Rules:**
+        - Only pending commissions can be approved
+        - Requires appropriate user permissions (admin, finance, manager)
+        - Large commissions (> $1000) require elevated permissions
+        - Cannot approve own commissions (conflict of interest)
+        - Optionally auto-schedules payout
+      operationId: approveCommission
+      parameters:
+        - name: commissionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique identifier of the commission to approve
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommissionApprovalRequest'
+      responses:
+        '200':
+          description: Commission approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommissionApprovalResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Commission not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: "Commission not found"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /commissions/{commissionId}:
+    get:
+      tags:
+        - Commission Retrieval
+      summary: Get Commission Details
+      description: Retrieves detailed information about a specific commission.
+      operationId: getCommission
+      parameters:
+        - name: commissionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique identifier of the commission
+      responses:
+        '200':
+          description: Commission details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommissionDetailsResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /commissions/sellers/{sellerId}:
+    get:
+      tags:
+        - Commission Retrieval
+      summary: Get Seller Commissions
+      description: |
+        Retrieves paginated list of commissions for a specific seller.
+
+        **Features:**
+        - Filter by commission status
+        - Pagination support (limit/offset)
+        - Sorted by creation date (newest first)
+      operationId: getSellerCommissions
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique identifier of the seller
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, paid, rejected, cancelled, earned]
+          description: Filter commissions by status
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: Maximum number of commissions to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of commissions to skip
+      responses:
+        '200':
+          description: Seller commissions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerCommissionsResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /commissions/sellers/{sellerId}/summary:
+    get:
+      tags:
+        - Analytics & Reporting
+      summary: Get Seller Commission Summary
+      description: |
+        Retrieves aggregated commission statistics for a seller.
+
+        **Metrics Include:**
+        - Total earnings (approved + paid commissions)
+        - Total paid amount
+        - Pending commissions amount
+        - Average commission rate
+      operationId: getCommissionSummary
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique identifier of the seller
+      responses:
+        '200':
+          description: Commission summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommissionSummaryResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /health:
+    get:
+      tags:
+        - Health & Monitoring
+      summary: Basic Health Check
+      description: Performs a basic health check of the service.
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /health/detailed:
+    get:
+      tags:
+        - Health & Monitoring
+      summary: Detailed Health Check
+      description: |
+        Performs comprehensive health check including all dependencies.
+
+        **Checks Performed:**
+        - Database connectivity
+        - Messaging system status
+        - Cache system status
+        - External payment provider (if configured)
+      operationId: detailedHealthCheck
+      responses:
+        '200':
+          description: All dependencies healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedHealthResponse'
+        '503':
+          description: One or more dependencies unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedHealthResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    CommissionCalculationRequest:
+      type: object
+      required:
+        - orderId
+        - sellerId
+        - orderAmount
+        - recipientType
+        - commissionType
+      properties:
+        orderId:
+          type: string
+          format: uuid
+          description: Unique identifier of the order
+        sellerId:
+          type: string
+          format: uuid
+          description: Unique identifier of the seller/enabler/customer
+        orderAmount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          description: Total order amount in USD
+        recipientType:
+          type: string
+          enum: [seller, courier, enabler, customer]
+          description: Type of commission recipient
+        commissionType:
+          type: string
+          enum: [sale, referral, bonus, adjustment, task_assignment, task_completion, collaboration_setup]
+          description: Type of commission being calculated
+        baseRate:
+          type: number
+          format: decimal
+          minimum: 0
+          maximum: 1
+          description: Custom base commission rate (optional, uses default if not provided)
+        performanceBonus:
+          type: number
+          format: decimal
+          minimum: 0
+          maximum: 1
+          description: Performance bonus multiplier (0-1)
+        qualityMetrics:
+          type: object
+          properties:
+            rating:
+              type: number
+              minimum: 1
+              maximum: 5
+              description: Customer rating (1-5 stars)
+            onTimeDelivery:
+              type: boolean
+              description: Whether delivery was on time
+            customerSatisfaction:
+              type: number
+              minimum: 1
+              maximum: 5
+              description: Customer satisfaction score
+        specialConditions:
+          type: object
+          properties:
+            firstOrder:
+              type: boolean
+              description: First order bonus applicable
+            bulkOrder:
+              type: boolean
+              description: Bulk order bonus applicable
+            promotionalPeriod:
+              type: boolean
+              description: Promotional period bonus applicable
+
+    CommissionCalculationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            commissionId:
+              type: string
+              format: uuid
+              description: Unique identifier of the created commission
+            amount:
+              type: number
+              format: decimal
+              description: Final commission amount
+            breakdown:
+              type: object
+              properties:
+                baseAmount:
+                  type: number
+                  format: decimal
+                  description: Base commission before bonuses
+                bonus:
+                  type: number
+                  format: decimal
+                  description: Total bonus amount
+                totalCommission:
+                  type: number
+                  format: decimal
+                  description: Final total commission
+                appliedRate:
+                  type: number
+                  format: decimal
+                  description: Actual commission rate applied
+
+    CommissionApprovalRequest:
+      type: object
+      properties:
+        autoSchedulePayout:
+          type: boolean
+          default: false
+          description: Whether to automatically schedule payout after approval
+
+    CommissionApprovalResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            approved:
+              type: boolean
+              example: true
+            eventsGenerated:
+              type: integer
+              description: Number of domain events generated
+
+    CommissionDetailsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            orderId:
+              type: string
+              format: uuid
+            sellerId:
+              type: string
+              format: uuid
+            amount:
+              type: number
+              format: decimal
+            rate:
+              type: number
+              format: decimal
+            type:
+              type: string
+              enum: [sale, referral, bonus, adjustment, task_assignment, task_completion, collaboration_setup]
+            status:
+              type: string
+              enum: [pending, approved, paid, rejected, cancelled, earned]
+            createdAt:
+              type: string
+              format: date-time
+            paidAt:
+              type: string
+              format: date-time
+              nullable: true
+            payoutId:
+              type: string
+              format: uuid
+              nullable: true
+
+    SellerCommissionsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            commissions:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  orderId:
+                    type: string
+                    format: uuid
+                  amount:
+                    type: number
+                    format: decimal
+                  rate:
+                    type: number
+                    format: decimal
+                  type:
+                    type: string
+                    enum: [sale, referral, bonus, adjustment, task_assignment, task_completion, collaboration_setup]
+                  status:
+                    type: string
+                    enum: [pending, approved, paid, rejected, cancelled, earned]
+                  createdAt:
+                    type: string
+                    format: date-time
+                  paidAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+            total:
+              type: integer
+              description: Total number of commissions found
+            limit:
+              type: integer
+              description: Applied limit
+            offset:
+              type: integer
+              description: Applied offset
+
+    CommissionSummaryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            totalEarned:
+              type: number
+              format: decimal
+              description: Total approved + paid commissions
+            totalPaid:
+              type: number
+              format: decimal
+              description: Total paid commissions
+            pendingAmount:
+              type: number
+              format: decimal
+              description: Total pending commissions
+            averageRate:
+              type: number
+              format: decimal
+              description: Average commission rate across all commissions
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          example: healthy
+        service:
+          type: string
+          example: commission-service
+        timestamp:
+          type: string
+          format: date-time
+        uptime:
+          type: number
+          description: Service uptime in seconds
+
+    DetailedHealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        service:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        uptime:
+          type: number
+        version:
+          type: string
+        environment:
+          type: string
+        dependencies:
+          type: object
+          properties:
+            database:
+              type: string
+              enum: [healthy, unhealthy, unknown]
+            messaging:
+              type: string
+              enum: [healthy, unhealthy, unknown]
+            cache:
+              type: string
+              enum: [healthy, unhealthy, unknown]
+            payment:
+              type: string
+              enum: [healthy, unhealthy, unknown]
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+            path:
+              type: string
+            method:
+              type: string
+
+  responses:
+    ValidationError:
+      description: Validation error in request data
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: "Validation error"
+              details: ["orderId must be a valid UUID"]
+              timestamp: "2026-01-16T23:00:00Z"
+              path: "/api/commissions/calculate"
+              method: "POST"
+
+    ForbiddenError:
+      description: Insufficient permissions for operation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: "Insufficient permissions to approve commissions"
+              timestamp: "2026-01-16T23:00:00Z"
+              path: "/api/commissions/123/approve"
+              method: "PUT"
+
+    NotFoundError:
+      description: Requested resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: "Commission not found"
+              timestamp: "2026-01-16T23:00:00Z"
+              path: "/api/commissions/123"
+              method: "GET"
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: "Internal server error"
+              timestamp: "2026-01-16T23:00:00Z"
+              path: "/api/commissions/calculate"
+              method: "POST"
+
+tags:
+  - name: Commission Calculation
+    description: Core commission calculation operations
+  - name: Commission Management
+    description: Commission approval and lifecycle management
+  - name: Commission Retrieval
+    description: Commission data retrieval and queries
+  - name: Analytics & Reporting
+    description: Commission analytics and reporting
+  - name: Health & Monitoring
+    description: Service health and monitoring endpoints

@@ -2,34 +2,34 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { OrderRepository } from '../../domain/repositories/order.repository';
 import { Order } from '../../domain/entities/order.entity';
 import { OrderStatus } from '../../domain/entities/order.entity';
-import { databaseManager } from '../../config/database.config';
+import { SupabaseClientManager } from './supabase.client';
 
 export class SupabaseOrderRepository implements OrderRepository {
   private supabase: SupabaseClient;
 
   constructor() {
-    this.supabase = databaseManager.getSupabase();
+    this.supabase = SupabaseClientManager.getInstance().getClient()!;
   }
 
   async save(order: Order): Promise<void> {
     try {
       const orderData = {
         id: order.id,
-        buyerId: order.buyerId,
-        sellerId: order.sellerId,
+        buyer_id: order.buyerId,
+        seller_id: order.sellerId,
         status: order.status as any,
-        paymentMethod: order.paymentMethod as any,
-        totalAmount: order.totalAmount.amount,
+        payment_method: order.paymentMethod as any,
+        total_amount: order.totalAmount.amount,
         currency: order.totalAmount.currency,
-        totalWeight: order.totalWeight,
-        deliveryAddress: {
+        total_weight: order.totalWeight,
+        delivery_address: {
           street: order.deliveryAddress.street,
           city: order.deliveryAddress.city,
           postalCode: order.deliveryAddress.postalCode,
           country: order.deliveryAddress.country
         } as any,
-        createdAt: order.createdAt.toISOString(),
-        updatedAt: order.updatedAt.toISOString()
+        created_at: order.createdAt.toISOString(),
+        updated_at: order.updatedAt.toISOString()
       };
 
       // Insert order
@@ -43,8 +43,8 @@ export class SupabaseOrderRepository implements OrderRepository {
 
       // Insert order items
       const orderItems = order.items.map(item => ({
-        orderId: order.id,
-        productId: item.productId,
+        order_id: order.id,
+        product_id: item.productId,
         quantity: item.quantity,
         price: item.price.amount,
         weight: item.weight,
@@ -103,8 +103,8 @@ export class SupabaseOrderRepository implements OrderRepository {
           *,
           items:order_items(*)
         `)
-        .eq('buyerId', buyerId)
-        .order('createdAt', { ascending: false });
+        .eq('buyer_id', buyerId)
+        .order('created_at', { ascending: false });
 
       if (error) {
         throw new Error(`Failed to find orders by buyer: ${error.message}`);
@@ -121,20 +121,20 @@ export class SupabaseOrderRepository implements OrderRepository {
   async update(order: Order): Promise<void> {
     try {
       const orderData = {
-        buyerId: order.buyerId,
-        sellerId: order.sellerId,
+        buyer_id: order.buyerId,
+        seller_id: order.sellerId,
         status: order.status as any,
-        paymentMethod: order.paymentMethod as any,
-        totalAmount: order.totalAmount.amount,
+        payment_method: order.paymentMethod as any,
+        total_amount: order.totalAmount.amount,
         currency: order.totalAmount.currency,
-        totalWeight: order.totalWeight,
-        deliveryAddress: {
+        total_weight: order.totalWeight,
+        delivery_address: {
           street: order.deliveryAddress.street,
           city: order.deliveryAddress.city,
           postalCode: order.deliveryAddress.postalCode,
           country: order.deliveryAddress.country
         } as any,
-        updatedAt: new Date().toISOString()
+        updated_at: new Date().toISOString()
       };
 
       const { error } = await this.supabase
@@ -170,22 +170,22 @@ export class SupabaseOrderRepository implements OrderRepository {
   }
 
   private mapSupabaseOrderToDomain(orderData: any): Order {
-    const deliveryAddress = orderData.deliveryAddress as any;
+    const deliveryAddress = orderData.delivery_address as any;
 
     const orderDataForDomain = {
       id: orderData.id,
-      buyerId: orderData.buyerId,
-      sellerId: orderData.sellerId,
+      buyerId: orderData.buyer_id,
+      sellerId: orderData.seller_id,
       items: orderData.items.map((item: any) => ({
-        productId: item.productId,
+        productId: item.product_id,
         quantity: item.quantity,
         price: { amount: Number(item.price), currency: item.currency },
         weight: item.weight
       })),
-      totalAmount: Number(orderData.totalAmount),
+      totalAmount: Number(orderData.total_amount),
       currency: orderData.currency,
-      totalWeight: orderData.totalWeight,
-      paymentMethod: orderData.paymentMethod as any,
+      totalWeight: orderData.total_weight,
+      paymentMethod: orderData.payment_method as any,
       deliveryAddress: {
         street: deliveryAddress.street,
         city: deliveryAddress.city,
@@ -197,8 +197,8 @@ export class SupabaseOrderRepository implements OrderRepository {
     const order = new Order(orderDataForDomain);
     // Override the status and dates from database
     (order as any).status = orderData.status;
-    (order as any).createdAt = new Date(orderData.createdAt);
-    (order as any).updatedAt = new Date(orderData.updatedAt);
+    (order as any).createdAt = new Date(orderData.created_at);
+    (order as any).updatedAt = new Date(orderData.updated_at);
 
     return order;
   }
@@ -249,7 +249,7 @@ export class SupabaseOrderRepository implements OrderRepository {
           items:order_items(*)
         `)
         .eq('status', status)
-        .order('createdAt', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) {
         throw new Error(`Failed to find orders by status: ${error.message}`);

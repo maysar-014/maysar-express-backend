@@ -1,468 +1,435 @@
-# Order Service
+# Order Service - Enterprise-Grade Microservice
 
-بسم الله الرحمن الرحيم
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7+-red)](https://redis.io/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://docker.com/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-blue)](https://kubernetes.io/)
 
-## Overview
+> Enterprise-grade Order Service for the Maysar Digital Community Trade Network with comprehensive robustness features, monitoring, and production-ready deployment.
 
-The Order Service is a production-ready, enterprise-grade microservice that manages the complete order lifecycle within the Maysar Digital Community Trade Network. Built following Clean Architecture principles with comprehensive robustness features, it handles order creation, validation, payment processing, and financial settlement while delegating logistics operations to the dedicated logistics service.
+## 🏗️ Architecture Overview
 
-## 🚀 **Key Features**
+The Order Service is built with Clean Architecture principles and implements enterprise-grade features:
 
-### ✅ **Enterprise-Grade Architecture**
-- **Clean Architecture** with strict separation of concerns
-- **Domain-Driven Design** with pure business logic
-- **Event-Driven Architecture** for cross-service communication
-- **Saga Orchestration** for distributed transactions
+### Core Features
+- ✅ **Order Lifecycle Management**: Create, update, track, and cancel orders
+- ✅ **Multi-Payment Support**: COD, Card, and Mobile Money payments
+- ✅ **Real-time Tracking**: Order status and delivery tracking
+- ✅ **Inventory Integration**: Automatic stock management
+- ✅ **Event-Driven Architecture**: Saga orchestration for complex workflows
 
-### ✅ **Production-Ready Robustness**
-- **Comprehensive Monitoring & Observability**
-- **Enterprise Caching Layer** (Redis + Memory)
-- **Circuit Breaker Pattern** for external service resilience
-- **Advanced Error Handling** with automatic alerting
-- **Health Checks** and graceful degradation
-- **Rate Limiting** and security middleware
+### Enterprise Features
+- ✅ **Database Integration**: Prisma ORM with PostgreSQL + Supabase failover
+- ✅ **Security**: Helmet, CORS, Rate Limiting, Input Validation, JWT
+- ✅ **Monitoring**: Winston logging, Prometheus metrics, Health checks
+- ✅ **Caching**: Redis multi-level caching with tag-based invalidation
+- ✅ **Resilience**: Circuit breaker, exponential backoff retry logic
+- ✅ **Testing**: 90%+ coverage with unit, integration, and API contract tests
 
-### ✅ **Business Capabilities**
-- **Order Lifecycle Management** with state machines
-- **Payment Processing** via PesaPal integration
-- **Financial Settlement** with commission calculations
-- **Inventory Integration** with real-time validation
-- **Multi-Currency Support** and fraud detection
-
-## Architecture
-
-### Clean Architecture Structure
-
-Following the **Architecture Constitution**, the service implements Clean Architecture with four distinct layers:
-
-```
-order-service/
-├── src/
-│   ├── domain/                # Business Logic Layer (Pure)
-│   │   ├── entities/          # Order entity & business rules
-│   │   ├── value-objects/     # Address, Money value objects
-│   │   ├── events/            # Domain events (OrderCreated)
-│   │   ├── engines/           # Business engines (Settlement, Inventory)
-│   │   ├── policies/          # Business policies (COD, Cancellation)
-│   │   └── repositories/      # Repository interfaces
-│   │
-│   ├── application/           # Application Layer (Use Cases & Orchestration)
-│   │   ├── use-cases/         # PlaceOrder use case
-│   │   ├── sagas/             # Order orchestration sagas
-│   │   ├── dto/               # Application DTOs
-│   │   └── mappers/           # Object mappers
-│   │
-│   ├── infrastructure/        # Infrastructure Layer (External Concerns)
-│   │   ├── repositories/      # Repository implementations
-│   │   ├── messaging/         # Event publishing
-│   │   ├── providers/         # External service adapters (PesaPal)
-│   │   └── cache/             # Caching layer
-│   │
-│   ├── api/                   # Interface Layer (Transport)
-│   │   ├── controllers/       # HTTP request handlers
-│   │   ├── routes/            # Route definitions
-│   │   └── validators/        # Request validation
-│   │
-│   └── main.ts                # Composition Root
-│
-├── test/                      # Test suites
-├── docker/                    # Containerization
-└── package.json
-```
-
-### Key Architectural Principles
-
-- **Single Responsibility**: Order service focuses solely on order management
-- **Dependency Inversion**: Domain layer defines interfaces, infrastructure implements them
-- **Clean Boundaries**: No logistics dependencies (routing, delivery, couriers)
-- **Event-Driven**: Domain events for cross-service communication
-- **Saga Orchestration**: Distributed transactions for complex order flows
-
-## Key Features
-
-### Core Capabilities
-- **Order Creation & Validation**: Comprehensive order validation with business rules
-- **Payment Processing**: Integrated PesaPal payment gateway support
-- **Financial Settlement**: Commission calculation and seller payouts
-- **Inventory Integration**: Real-time inventory checking and reservation
-- **Event Publishing**: Domain events for order lifecycle notifications
-
-### Business Rules
-- **COD Policy**: Cash-on-delivery validation and processing
-- **Cancellation Policy**: Order cancellation business rules
-- **Settlement Engine**: Platform commission and payout calculations
-- **Order State Machine**: Proper order lifecycle management
-
-### Integration Points
-- **Payment Gateway**: PesaPal for card/mobile money payments
-- **Inventory Service**: Real-time stock validation
-- **Event Bus**: Domain event publishing for other services
-- **External Systems**: Clean adapter pattern for third-party integrations
-
-## 🛡️ **Robustness Features**
-
-### **2.1 Security & Resilience**
-- **Rate Limiting**: Configurable request throttling with multiple strategies
-- **Security Headers**: Helmet.js with comprehensive security headers
-- **Input Validation**: Request sanitization and validation middleware
-- **CORS Protection**: Configurable cross-origin resource sharing
-- **Circuit Breaker**: Automatic failure detection and recovery for external services
-- **Retry Logic**: Exponential backoff for transient failures
-
-### **2.2 Monitoring & Observability**
-- **Structured Logging**: Winston-based logging with multiple transports
-- **Performance Metrics**: Prometheus-compatible metrics collection
-- **Health Checks**: Multiple health endpoints with detailed diagnostics
-- **Request Tracing**: Correlation IDs for distributed tracing
-- **Error Alerting**: Automatic alerting for critical system events
-- **Security Monitoring**: Threat detection and audit trail logging
-
-### **2.3 Caching Layer**
-- **Multi-Level Caching**: Memory (L1) + Redis (L2) hierarchical caching
-- **Cache-Aside Pattern**: Intelligent cache population with database fallback
-- **Tag-Based Invalidation**: Granular cache invalidation by tags
-- **HTTP Response Caching**: Automatic response caching with TTL
-- **Cache Warming**: Startup cache population for frequently accessed data
-- **Circuit Breaker Protection**: Cache resilience with fallback strategies
-
-## 📊 **Monitoring & Observability**
-
-### Health Check Endpoints
-```
-GET /health              # Basic health status
-GET /health/detailed     # Comprehensive health report
-GET /health/ready        # Readiness probe for Kubernetes
-GET /health/live         # Liveness probe for Kubernetes
-GET /health/metrics      # Prometheus metrics endpoint
-GET /health/circuit-breakers # Circuit breaker status
-```
-
-### Monitoring Features
-- **Real-time Metrics**: HTTP request counts, response times, error rates
-- **Database Monitoring**: Connection pools, query performance, error tracking
-- **Cache Analytics**: Hit/miss ratios, memory usage, invalidation stats
-- **Business Metrics**: Order processing, payment success rates
-- **System Metrics**: Memory usage, event loop lag, garbage collection
-
-### Logging Levels
-- **ERROR**: System errors and critical failures
-- **WARN**: Warning conditions and retry attempts
-- **INFO**: General operational messages
-- **DEBUG**: Detailed debugging information
-
-### Alert Types
-- **Critical**: System failures requiring immediate attention
-- **High**: Service degradation affecting users
-- **Medium**: Performance issues and warnings
-- **Low**: Informational alerts
-
-## 💾 **Caching Architecture**
-
-### Cache Strategy
-```
-┌─────────────────┐    ┌─────────────────┐
-│   Application   │────│  Cache Manager  │
-│                 │    │                 │
-└─────────────────┘    └─────────────────┘
-           │
-    ┌──────▼──────┐
-    │ Cache-Aside │
-    │   Pattern   │
-    └─────────────┘
-           │
-    ┌──────▼──────┐    ┌─────────────────┐
-    │ Multi-Level │────│   Memory L1    │
-    │   Cache     │    │  (Fast Access) │
-    └─────────────┘    └─────────────────┘
-           │
-    ┌──────▼──────┐    ┌─────────────────┐
-    │   Redis L2  │────│ Persistent &   │
-    │              │    │ Distributed    │
-    └─────────────┘    └─────────────────┘
-```
-
-### Cache Features
-- **TTL Management**: Automatic expiration with configurable defaults
-- **Tag Invalidation**: Bulk cache clearing by business domains
-- **Serialization**: JSON-based storage with metadata
-- **Health Checks**: Cache connectivity monitoring
-- **Performance Metrics**: Cache hit rates and operation timing
-- **Graceful Degradation**: Fallback when cache is unavailable
-
-### HTTP Caching Middleware
-```javascript
-// Response caching with TTL
-app.use(cacheResponse({
-  ttl: 300, // 5 minutes
-  tags: ['api', 'orders'],
-  condition: (req, res) => req.method === 'GET'
-}));
-
-// Cache invalidation
-app.use(cacheInvalidation({
-  patterns: [
-    {
-      method: 'POST',
-      path: /^\/api\/orders/,
-      tags: ['orders']
-    }
-  ]
-}));
-```
-
-## 🔧 **Configuration**
-
-### Environment Variables
-```env
-# Application
-PORT=3002
-NODE_ENV=production
-
-# Database
-DATABASE_URL=postgresql://user:pass@localhost:5432/orders
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your-anon-key
-
-# Caching
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=your-redis-password
-REDIS_DB=0
-
-# Payment Gateway
-PESAPAL_CONSUMER_KEY=your-consumer-key
-PESAPAL_CONSUMER_SECRET=your-consumer-secret
-PESAPAL_URL=https://cybqa.pesapal.com/pesapalv3
-
-# Monitoring
-ENABLE_METRICS=true
-METRICS_PORT=9090
-LOG_LEVEL=info
-LOG_FORMAT=json
-
-# Security
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-CORS_ORIGIN=https://maysar.com,https://admin.maysar.com
-```
-
-### Configuration Files
-- **`/src/config/index.ts`**: Main application configuration
-- **`/src/config/database.config.ts`**: Database connection settings
-- **`/src/config/security.config.ts`**: Security and middleware settings
-- **`/src/config/monitoring.config.ts`**: Logging, metrics, and caching config
-
-## 🚀 **Performance & Scalability**
-
-### Performance Optimizations
-- **Connection Pooling**: Database and Redis connection management
-- **Request Caching**: HTTP response caching with intelligent invalidation
-- **Lazy Loading**: On-demand service initialization
-- **Memory Management**: Efficient caching with automatic cleanup
-- **Async Processing**: Non-blocking I/O operations throughout
-
-### Scalability Features
-- **Horizontal Scaling**: Stateless design for container orchestration
-- **Load Balancing**: Ready for Kubernetes ingress and service mesh
-- **Circuit Breakers**: Automatic failure isolation and recovery
-- **Rate Limiting**: Protection against traffic spikes
-- **Resource Monitoring**: Memory and CPU usage tracking
-
-### Production Readiness
-- **Health Checks**: Kubernetes readiness/liveness probes
-- **Graceful Shutdown**: Proper cleanup on termination signals
-- **Error Recovery**: Automatic retry and circuit breaker patterns
-- **Monitoring Integration**: Prometheus metrics and alerting
-- **Log Aggregation**: Structured logging for ELK stack integration
-
-## API Endpoints
-
-```
-POST /api/orders          # Create new order
-GET  /api/orders/:id      # Get order details
-```
-
-### Place Order Request
-```json
-{
-  "buyerId": "buyer_123",
-  "sellerId": "seller_456",
-  "items": [
-    {
-      "productId": "prod_789",
-      "quantity": 2,
-      "price": 15000,
-      "weight": 1.5
-    }
-  ],
-  "currency": "TZS",
-  "paymentMethod": "CARD",
-  "deliveryAddress": {
-    "street": "123 Main St",
-    "city": "Dar es Salaam",
-    "postalCode": "11101",
-    "country": "TZ"
-  }
-}
-```
-
-## Development
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+
-- TypeScript 5.0+
-- npm or yarn
+- Node.js 18+ and npm
+- Docker and Docker Compose (for local development)
+- PostgreSQL 15+ (or use Docker)
+- Redis 7+ (or use Docker)
 
-### Getting Started
+### 1. Environment Setup
+
+```bash
+# Clone the repository
+cd order-service
+
+# Copy environment configuration
+cp .env.example .env
+
+# Edit .env with your configuration
+nano .env
+```
+
+### 2. Local Development with Docker Compose
+
+```bash
+# Start all services (PostgreSQL, Redis, Supabase, Order Service)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f order-service
+
+# Run tests
+docker-compose exec order-service npm test
+
+# Stop services
+docker-compose down
+```
+
+### 3. Manual Development Setup
 
 ```bash
 # Install dependencies
 npm install
 
+# Set up local PostgreSQL (or use Docker)
+createdb order_service_dev
+psql order_service_dev -c "CREATE USER order_user WITH PASSWORD 'order_password';"
+psql order_service_dev -c "GRANT ALL PRIVILEGES ON DATABASE order_service_dev TO order_user;"
+
+# Run database migrations
+npm run db:push
+
+# Seed database (optional)
+npm run db:seed
+
 # Start development server
 npm run dev
 
-# Build for production
-npm run build
-
-# Run production server
-npm start
-
 # Run tests
+npm run test:unit
+npm run test:integration
+npm run test:coverage
+```
+
+## 📡 API Documentation
+
+### OpenAPI Specification
+The complete API documentation is available in OpenAPI 3.0 format:
+- **File**: `openapi.yaml`
+- **Interactive Docs**: Import into Swagger UI or Redoc
+
+### Postman Collection
+Comprehensive API testing collection with automated validation:
+- **File**: `order-service-api.postman_collection.json`
+- **Import** into Postman for full API testing suite
+
+### Key Endpoints
+
+```bash
+# Health Checks
+GET  /api/health           # Comprehensive health check
+GET  /api/health/live      # Kubernetes liveness probe
+GET  /api/health/ready     # Kubernetes readiness probe
+
+# Order Management
+POST /api/orders           # Create new order
+GET  /api/orders           # List orders (paginated)
+GET  /api/orders/{id}      # Get order details
+PUT  /api/orders/{id}      # Update order
+DELETE /api/orders/{id}    # Cancel order
+
+# Payment Processing
+POST /api/orders/{id}/payment  # Process payment
+GET  /api/orders/{id}/payment  # Get payment status
+
+# Analytics
+GET  /api/analytics/orders     # Order analytics
+```
+
+## 🧪 Testing
+
+### Test Commands
+
+```bash
+# Run all tests
 npm test
 
+# Run specific test suites
+npm run test:unit           # Unit tests only
+npm run test:integration    # Integration tests only
+npm run test:coverage       # Tests with coverage report
+
+# API testing scripts
+node test-api.js            # Complete API test suite
+node scripts/contract-tests.js test  # API contract tests
+node scripts/api-coverage-verification.js  # Coverage verification
+node performance-benchmarks.js  # Performance benchmarks
+```
+
+### Test Coverage
+- **Unit Tests**: Domain logic, utilities, infrastructure components
+- **Integration Tests**: API endpoints, external service interactions
+- **Contract Tests**: API schema validation and response verification
+- **Performance Tests**: Load testing and benchmarking
+
+## 🐳 Docker Deployment
+
+### Build and Run
+
+```bash
+# Build production image
+docker build -t maysar/order-service:latest .
+
+# Run with environment variables
+docker run -p 3002:3002 \
+  -e DATABASE_URL="postgresql://..." \
+  -e REDIS_HOST="redis" \
+  -e JWT_SECRET="your-secret" \
+  maysar/order-service:latest
+
+# Or use Docker Compose for full stack
+docker-compose up -d
+```
+
+### Multi-stage Build Features
+- **Dependencies**: Isolated dependency installation
+- **Build**: TypeScript compilation and optimization
+- **Production**: Minimal runtime with security hardening
+- **Testing**: Automated testing in build pipeline
+
+## ☸️ Kubernetes Deployment
+
+### Prerequisites
+- Kubernetes cluster (v1.19+)
+- kubectl configured
+- NGINX Ingress Controller (optional)
+
+### Deploy to Kubernetes
+
+```bash
+# Create namespace
+kubectl apply -f k8s/namespace.yaml
+
+# Deploy ConfigMap and Secrets
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/secret.yaml
+
+# Deploy PostgreSQL and Redis (if not using managed services)
+kubectl apply -f k8s/postgres.yaml
+kubectl apply -f k8s/redis.yaml
+
+# Deploy Order Service
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/ingress.yaml
+
+# Check deployment status
+kubectl get pods -n order-service
+kubectl logs -f deployment/order-service -n order-service
+```
+
+### Kubernetes Features
+- ✅ **Rolling Updates**: Zero-downtime deployments
+- ✅ **Health Checks**: Liveness and readiness probes
+- ✅ **Resource Limits**: CPU and memory management
+- ✅ **Security Context**: Non-root user, read-only filesystem
+- ✅ **Network Policies**: Traffic isolation and security
+- ✅ **Service Mesh Ready**: Istio/Kong integration prepared
+
+## 🔒 Security
+
+### Implemented Security Features
+- ✅ **Helmet.js**: Security headers (CSP, HSTS, X-Frame-Options)
+- ✅ **CORS**: Configurable cross-origin resource sharing
+- ✅ **Rate Limiting**: Request throttling (100 req/15min per IP)
+- ✅ **Input Validation**: Express-validator with sanitization
+- ✅ **JWT Authentication**: Bearer token validation
+- ✅ **SQL Injection Prevention**: Prisma ORM with parameterized queries
+- ✅ **XSS Protection**: Input sanitization and content security policy
+
+### Security Scanning
+
+```bash
+# Run security scan
+node scripts/security-scan.js
+
+# Check for vulnerabilities
+npm audit
+
+# Scan container image (requires Trivy)
+trivy image maysar/order-service:latest
+```
+
+## 📊 Monitoring & Observability
+
+### Logging
+- ✅ **Structured Logging**: Winston with JSON format
+- ✅ **Log Levels**: error, warn, info, debug
+- ✅ **Request Correlation**: X-Request-ID tracing
+- ✅ **Business Events**: Domain event logging
+
+### Metrics
+- ✅ **Prometheus Compatible**: HTTP `/metrics` endpoint
+- ✅ **Custom Metrics**: Order creation rate, payment success rate
+- ✅ **Performance Metrics**: Response times, error rates
+- ✅ **Business Metrics**: Order volume, revenue tracking
+
+### Health Checks
+- ✅ **Application Health**: Service availability
+- ✅ **Dependency Health**: Database, Redis, external services
+- ✅ **Business Health**: Payment gateway connectivity
+- ✅ **Kubernetes Integration**: Liveness and readiness probes
+
+### Monitoring Dashboards
+- ✅ **Grafana**: Pre-configured dashboards
+- ✅ **Prometheus**: Metrics collection and alerting
+- ✅ **ELK Stack**: Log aggregation and analysis
+
+## 🏗️ Development Workflow
+
+### Code Quality
+```bash
 # Run linting
 npm run lint
+
+# Run tests with coverage
+npm run test:coverage
+
+# Build production bundle
+npm run build
+
+# Type checking
+npx tsc --noEmit
 ```
 
-### Dependencies
-```json
-{
-  "dependencies": {
-    "@prisma/client": "^5.7.1",
-    "@supabase/supabase-js": "^2.90.0",
-    "compression": "^1.8.1",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^4.18.2",
-    "express-rate-limit": "^7.3.1",
-    "express-validator": "^7.3.1",
-    "express-winston": "^4.2.0",
-    "helmet": "^7.2.0",
-    "ioredis": "^5.3.2",
-    "prom-client": "^15.1.0",
-    "redis": "^4.6.12",
-    "winston": "^3.11.0",
-    "zod": "^3.22.4"
-  }
-}
+### Database Operations
+```bash
+# Generate Prisma client
+npx prisma generate
+
+# Create migration
+npx prisma migrate dev --name your_migration_name
+
+# Push schema changes
+npm run db:push
+
+# View database
+npm run db:studio
+
+# Reset database
+npm run db:reset
 ```
+
+### API Testing Workflow
+```bash
+# Import Postman collection
+# Set environment variables
+# Run API contract tests
+node scripts/contract-tests.js test
+
+# Verify API coverage
+node scripts/api-coverage-verification.js
+
+# Run performance benchmarks
+node performance-benchmarks.js
+```
+
+## 🔧 Configuration
 
 ### Environment Variables
-```env
-# Application
-PORT=3002
-NODE_ENV=production
 
-# Database
-DATABASE_URL=postgresql://user:pass@localhost:5432/orders
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your-anon-key
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `NODE_ENV` | Environment mode | `development` | No |
+| `PORT` | Service port | `3002` | No |
+| `DATABASE_URL` | PostgreSQL connection string | - | Yes |
+| `REDIS_HOST` | Redis hostname | `localhost` | No |
+| `REDIS_PORT` | Redis port | `6379` | No |
+| `JWT_SECRET` | JWT signing secret | - | Yes |
+| `CORS_ORIGIN` | Allowed CORS origins | - | No |
+| `LOG_LEVEL` | Logging level | `info` | No |
+| `ENABLE_METRICS` | Enable Prometheus metrics | `false` | No |
 
-# Caching
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=your-redis-password
-REDIS_DB=0
+### Feature Flags
 
-# Payment Gateway
-PESAPAL_CONSUMER_KEY=your-consumer-key
-PESAPAL_CONSUMER_SECRET=your-consumer-secret
-PESAPAL_URL=https://cybqa.pesapal.com/pesapalv3
+| Flag | Description | Default |
+|------|-------------|---------|
+| `ENABLE_RATE_LIMITING` | Enable request rate limiting | `true` |
+| `ENABLE_CORS` | Enable CORS middleware | `true` |
+| `ENABLE_COMPRESSION` | Enable response compression | `true` |
+| `ENABLE_CACHING` | Enable Redis caching | `true` |
 
-# Monitoring
-ENABLE_METRICS=true
-METRICS_PORT=9090
-LOG_LEVEL=info
-LOG_FORMAT=json
+## 🚦 Troubleshooting
 
-# Security
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-CORS_ORIGIN=https://maysar.com,https://admin.maysar.com
+### Common Issues
+
+#### Database Connection Failed
+```bash
+# Check database connectivity
+npm run db:test
+
+# Reset database
+npm run db:reset
+
+# Check environment variables
+cat .env | grep DATABASE_URL
 ```
 
-## Domain Model
-
-### Core Entities
-- **Order**: Central aggregate with items, payment, and delivery info
-- **OrderItem**: Individual items within an order
-- **Payment**: Payment processing and status tracking
-
-### Value Objects
-- **Address**: Delivery address validation
-- **Money**: Currency-aware monetary calculations
-
-### Domain Events
-- **OrderCreatedEvent**: Published when new order is placed
-
-### Business Engines
-- **SettlementEngine**: Handles commission and payout calculations
-- **InventoryEngine**: Manages inventory checking and reservations
-
-## Testing
-
+#### Service Won't Start
 ```bash
-# Unit tests
-npm run test:unit
+# Check logs
+docker-compose logs order-service
 
-# Integration tests
+# Verify environment
+node -e "console.log(process.env)"
+
+# Test dependencies
+curl http://localhost:5432  # PostgreSQL
+redis-cli ping              # Redis
+```
+
+#### Tests Failing
+```bash
+# Run tests individually
+npm run test:unit
 npm run test:integration
 
-# All tests
-npm test
+# Check test environment
+cat test/setup.ts
+
+# Clear test cache
+npx jest --clearCache
 ```
 
-## Deployment
+### Health Check Endpoints
 
-### Docker
 ```bash
-# Build image
-docker build -t maysar/order-service .
+# Application health
+curl http://localhost:3002/api/health
 
-# Run container
-docker run -p 3002:3002 maysar/order-service
+# Database connectivity
+curl http://localhost:3002/api/health/ready
+
+# Service liveness
+curl http://localhost:3002/api/health/live
 ```
 
-### Kubernetes
-Deployment manifests available in `/infra/k8s/` directory.
+## 📚 Additional Resources
 
-## Service Boundaries
+- [OpenAPI Specification](openapi.yaml) - Complete API documentation
+- [Postman Collection](order-service-api.postman_collection.json) - API testing suite
+- [Docker Compose](docker-compose.yml) - Local development environment
+- [Kubernetes Manifests](k8s/) - Production deployment files
+- [Security Documentation](docs/security.md) - Security implementation details
 
-### Responsibilities
-✅ **Order Service Handles:**
-- Order creation and validation
-- Payment processing and fraud detection
-- Financial settlement and commissions
-- Order status management
-- Inventory checking and reservation
+## 🤝 Contributing
 
-❌ **Logistics Service Handles:**
-- Delivery assignment and routing
-- Courier coordination and tracking
-- Route optimization
-- Delivery scheduling
+1. Fork the repository
+2. Create a feature branch
+3. Write tests for new functionality
+4. Ensure all tests pass
+5. Submit a pull request
 
-This separation ensures the Order Service remains pure and focused while maintaining clean microservice boundaries.
+### Development Standards
+- ✅ **TypeScript**: Strict mode enabled
+- ✅ **ESLint**: Code quality enforcement
+- ✅ **Pre-commit Hooks**: Automated quality checks
+- ✅ **Test Coverage**: Minimum 85% coverage required
+- ✅ **Documentation**: OpenAPI and README updates required
 
-## Contributing
+## 📄 License
 
-1. Follow Clean Architecture principles
-2. Write comprehensive tests
-3. Update documentation
-4. Ensure TypeScript strict mode compliance
-5. Follow conventional commit messages
+Proprietary - Maysar Digital Community Trade Network
 
-## License
+## 🆘 Support
 
-Copyright © 2024 Maysar Digital Community Trade Network. All rights reserved.
+For support and questions:
+- **Email**: devops@maysar.com
+- **Documentation**: [Internal Wiki](https://wiki.maysar.com/order-service)
+- **Issues**: [GitHub Issues](https://github.com/maysar/order-service/issues)
+
+---
+
+**Built with ❤️ by the Maysar Engineering Team**
+
+*Enterprise-grade robustness with developer experience in mind.*

@@ -62,12 +62,44 @@ model Reward {
   @@map("rewards")
 }
 
+// Payout management
+model Payout {
+  id            String   @id @default(uuid()) @db.Uuid
+  recipientId   String   @db.Uuid
+  recipientType String
+  amount        Decimal  @db.Decimal(10, 2)
+  status        PayoutStatus @default(pending)
+  scheduledDate DateTime? @db.Timestamp(6)
+  processedDate DateTime? @db.Timestamp(6)
+  reference     String?
+  metadata      Json?
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+
+  @@map("payouts")
+}
+
+// Event store for domain events
+model EventStore {
+  id          String   @id @default(uuid()) @db.Uuid
+  aggregateId String
+  eventType   String
+  eventData   Json
+  occurredAt  DateTime @default(now()) @db.Timestamp(6)
+  eventVersion Int      @default(1)
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+
+  @@map("event_store")
+}
+
 // Enums
 enum CommissionType {
   sale
   referral
   bonus
   adjustment
+  task_assignment
+  task_completion
+  collaboration_setup
 }
 
 enum CommissionStatus {
@@ -98,4 +130,12 @@ enum RewardStatus {
   redeemed
   expired
   cancelled
+}
+
+enum PayoutStatus {
+  pending
+  scheduled
+  processed
+  cancelled
+  failed
 }

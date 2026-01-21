@@ -8,12 +8,21 @@ import { Request, Response, NextFunction } from 'express';
 
 export class RateLimitingMiddleware {
 
+  // Pre-created rate limiter instances (created once at app initialization)
+  private static generalLimiter: ReturnType<typeof rateLimit>;
+  private static strictLimiter: ReturnType<typeof rateLimit>;
+  private static authLimiter: ReturnType<typeof rateLimit>;
+  private static createLimiter: ReturnType<typeof rateLimit>;
+  private static paymentLimiter: ReturnType<typeof rateLimit>;
+  private static adminLimiter: ReturnType<typeof rateLimit>;
+
   /**
-   * General API rate limiter
-   * Standard rate limiting for most endpoints
+   * Initialize rate limiters at app startup
+   * Must be called once before using any rate limiting middleware
    */
-  static getGeneralLimiter() {
-    return rateLimit({
+  static initializeRateLimiters() {
+    // General API rate limiter
+    this.generalLimiter = rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
       max: 100, // limit each IP to 100 requests per windowMs
       message: {
@@ -24,7 +33,7 @@ export class RateLimitingMiddleware {
       legacyHeaders: false, // Disable the `X-RateLimit-*` headers
       skip: (req: Request) => {
         // Skip rate limiting for health checks
-        return req.path === '/health' || req.path === '/health/ready' || req.path === '/health/live';
+        return req.path === '/health' || req.path === '/health/ready' || req.path === '/health/live' || req.path === '/health/detailed';
       },
       handler: (req: Request, res: Response) => {
         res.status(429).json({
@@ -34,14 +43,9 @@ export class RateLimitingMiddleware {
         });
       }
     });
-  }
 
-  /**
-   * Strict rate limiter for sensitive operations
-   * Tighter limits for authentication and payment endpoints
-   */
-  static getStrictLimiter() {
-    return rateLimit({
+    // Strict rate limiter for sensitive operations
+    this.strictLimiter = rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
       max: 10, // limit each IP to 10 requests per windowMs
       message: {
@@ -58,14 +62,9 @@ export class RateLimitingMiddleware {
         });
       }
     });
-  }
 
-  /**
-   * Login rate limiter
-   * Very strict limits for authentication attempts
-   */
-  static getAuthLimiter() {
-    return rateLimit({
+    // Login rate limiter
+    this.authLimiter = rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
       max: 5, // limit each IP to 5 login attempts per windowMs
       message: {
@@ -84,14 +83,9 @@ export class RateLimitingMiddleware {
         });
       }
     });
-  }
 
-  /**
-   * API creation rate limiter
-   * Limits for resource creation endpoints
-   */
-  static getCreateLimiter() {
-    return rateLimit({
+    // API creation rate limiter
+    this.createLimiter = rateLimit({
       windowMs: 60 * 60 * 1000, // 1 hour
       max: 50, // limit each IP to 50 creations per hour
       message: {
@@ -108,14 +102,9 @@ export class RateLimitingMiddleware {
         });
       }
     });
-  }
 
-  /**
-   * Payment rate limiter
-   * Strict limits for payment operations
-   */
-  static getPaymentLimiter() {
-    return rateLimit({
+    // Payment rate limiter
+    this.paymentLimiter = rateLimit({
       windowMs: 10 * 60 * 1000, // 10 minutes
       max: 20, // limit each IP to 20 payment attempts per windowMs
       message: {
@@ -132,14 +121,9 @@ export class RateLimitingMiddleware {
         });
       }
     });
-  }
 
-  /**
-   * Admin operations rate limiter
-   * Very strict limits for admin endpoints
-   */
-  static getAdminLimiter() {
-    return rateLimit({
+    // Admin operations rate limiter
+    this.adminLimiter = rateLimit({
       windowMs: 60 * 60 * 1000, // 1 hour
       max: 100, // limit each IP to 100 admin requests per hour
       message: {
@@ -156,6 +140,58 @@ export class RateLimitingMiddleware {
         });
       }
     });
+  }
+
+
+
+  /**
+   * Get pre-created general limiter
+   */
+  static getGeneralLimiter() {
+    if (!this.generalLimiter) {
+      throw new Error('Rate limiters not initialized. Call initializeRateLimiters() first.');
+    }
+    return this.generalLimiter;
+  }
+
+  /**
+   * Get pre-created auth limiter
+   */
+  static getAuthLimiter() {
+    if (!this.authLimiter) {
+      throw new Error('Rate limiters not initialized. Call initializeRateLimiters() first.');
+    }
+    return this.authLimiter;
+  }
+
+  /**
+   * Get pre-created create limiter
+   */
+  static getCreateLimiter() {
+    if (!this.createLimiter) {
+      throw new Error('Rate limiters not initialized. Call initializeRateLimiters() first.');
+    }
+    return this.createLimiter;
+  }
+
+  /**
+   * Get pre-created payment limiter
+   */
+  static getPaymentLimiter() {
+    if (!this.paymentLimiter) {
+      throw new Error('Rate limiters not initialized. Call initializeRateLimiters() first.');
+    }
+    return this.paymentLimiter;
+  }
+
+  /**
+   * Get pre-created admin limiter
+   */
+  static getAdminLimiter() {
+    if (!this.adminLimiter) {
+      throw new Error('Rate limiters not initialized. Call initializeRateLimiters() first.');
+    }
+    return this.adminLimiter;
   }
 
   /**

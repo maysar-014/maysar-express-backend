@@ -35,38 +35,71 @@ export class DatabaseManager {
 
   async initialize(config: DatabaseConfig): Promise<void> {
     try {
-      // Initialize Prisma
+      console.log('🔄 Connecting to database...');
+
+      // Initialize Prisma with connection timeout
       this.prismaClient = new PrismaClient({
         datasourceUrl: config.prisma.url,
         log: config.prisma.logQueries ? ['query', 'info', 'warn', 'error'] : undefined,
       });
 
-      // Test Prisma connection
-      await this.prismaClient.$connect();
+      // Test Prisma connection with timeout
+      await Promise.race([
+        this.prismaClient.$connect(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Prisma connection timeout')), 30000)
+        )
+      ]);
+
       console.log('✅ Prisma database connected successfully');
 
-      // Initialize Supabase
-      this.supabaseClient = createClient(
-        config.supabase.url,
-        config.supabase.key,
-        config.supabase.options
-      );
+      // Initialize Supabase (optional for local development)
+      try {
+        this.supabaseClient = createClient(
+          config.supabase.url,
+          config.supabase.key,
+          config.supabase.options
+        );
 
-      // Test Supabase connection
-      const { data, error } = await this.supabaseClient
-        .from('orders')
-        .select('id')
-        .limit(1);
+        // Test Supabase connection (optional)
+        const result = await Promise.race([
+          this.supabaseClient.from('orders').select('id').limit(1),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Supabase connection timeout')), 10000)
+          )
+        ]);
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        throw error;
+        // Handle the result properly
+        if (result && typeof result === 'object' && 'error' in result) {
+          const { error } = result as { error: any };
+          if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+            console.warn('⚠️  Supabase connection issue (non-critical):', error.message);
+            console.log('📝 Continuing without Supabase - using Prisma only');
+          } else {
+            console.log('✅ Supabase database connected successfully');
+          }
+        } else {
+          console.log('✅ Supabase database connected successfully');
+        }
+      } catch (supabaseError) {
+        const error = supabaseError as Error;
+        console.warn('⚠️  Supabase connection failed (non-critical):', error.message);
+        console.log('📝 Continuing with Prisma only - Supabase features disabled');
       }
 
-      console.log('✅ Supabase database connected successfully');
-
     } catch (error) {
-      console.error('❌ Database initialization failed:', error);
-      throw new Error(`Database initialization failed: ${error}`);
+      const err = error as Error;
+      console.error('❌ Database initialization failed:', err.message);
+
+      // Provide helpful guidance for common issues
+      if (err.message.includes('connection timeout')) {
+        console.log('\n💡 Troubleshooting:');
+        console.log('   • For local development: use Docker Compose (docker-compose up -d)');
+        console.log('   • For production: ensure DATABASE_URL is correct');
+        console.log('   • For testing: run tests without external dependencies');
+      }
+
+      throw new Error(`Database initialization failed: ${err.message}`);
     }
   }
 

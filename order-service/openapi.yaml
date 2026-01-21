@@ -1,0 +1,1318 @@
+openapi: 3.0.3
+info:
+  title: Order Service API
+  description: |
+    Enterprise-grade Order Service API for Maysar Digital Community Trade Network.
+
+    ## Overview
+    The Order Service manages the complete order lifecycle including creation, payment processing,
+    status tracking, and delivery coordination for the Maysar marketplace platform.
+
+    ## Features
+    - Order lifecycle management
+    - Multi-payment method support (COD, Card, Mobile Money)
+    - Real-time order tracking
+    - Inventory management integration
+    - Event-driven architecture
+    - Enterprise security and monitoring
+
+    ## Authentication
+    All API endpoints require authentication using JWT tokens in the Authorization header:
+    ```
+    Authorization: Bearer <jwt_token>
+    ```
+
+    ## Rate Limiting
+    API requests are rate-limited to prevent abuse:
+    - 100 requests per 15 minutes per IP
+    - 1000 requests per hour per authenticated user
+
+    ## Response Codes
+    - `200` - Success
+    - `201` - Created
+    - `400` - Bad Request
+    - `401` - Unauthorized
+    - `403` - Forbidden
+    - `404` - Not Found
+    - `429` - Too Many Requests
+    - `500` - Internal Server Error
+  version: 1.0.0
+  contact:
+    name: Maysar DevOps Team
+    email: devops@maysar.com
+    url: https://maysar.com
+  license:
+    name: Proprietary
+    url: https://maysar.com/legal
+  termsOfService: https://maysar.com/terms
+
+servers:
+  - url: https://api.maysar.com/v1
+    description: Production server
+  - url: https://staging-api.maysar.com/v1
+    description: Staging server
+  - url: http://localhost:3002/api
+    description: Local development server
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ================================
+  # Health Check Endpoints
+  # ================================
+  /health:
+    get:
+      summary: Service health check
+      description: |
+        Comprehensive health check endpoint that verifies the status of all service dependencies
+        including database, cache, external services, and internal components.
+      tags:
+        - Health
+      security: []  # No authentication required for health checks
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "healthy"
+                timestamp: "2024-01-13T10:30:00.000Z"
+                version: "1.0.0"
+                uptime: 86400
+                services:
+                  database: "connected"
+                  redis: "connected"
+                  payment_gateway: "operational"
+                  message_queue: "connected"
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "unhealthy"
+                timestamp: "2024-01-13T10:30:00.000Z"
+                services:
+                  database: "disconnected"
+                  redis: "error"
+
+  /health/live:
+    get:
+      summary: Liveness probe
+      description: |
+        Kubernetes liveness probe endpoint. Returns 200 if the service is running
+        and can handle requests, 500 if the service is not ready.
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "alive"
+                  timestamp:
+                    type: string
+                    format: date-time
+        '500':
+          description: Service is not alive
+
+  /health/ready:
+    get:
+      summary: Readiness probe
+      description: |
+        Kubernetes readiness probe endpoint. Returns 200 if the service is ready
+        to accept traffic, 503 if dependencies are not available.
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ready"
+                  dependencies:
+                    type: object
+                    properties:
+                      database:
+                        type: string
+                        example: "connected"
+                      redis:
+                        type: string
+                        example: "connected"
+        '503':
+          description: Service is not ready
+
+  # ================================
+  # Order Management Endpoints
+  # ================================
+  /orders:
+    post:
+      summary: Create a new order
+      description: |
+        Creates a new order with items, delivery address, and payment method.
+        The order will be validated, inventory will be reserved, and payment
+        processing will be initiated if required.
+
+        ## Business Rules
+        - Buyer must have sufficient balance for non-COD payments
+        - All items must be available in inventory
+        - Delivery address must be valid and serviceable
+        - Total order value must be within limits
+      tags:
+        - Orders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+            examples:
+              cod_order:
+                summary: Cash on Delivery Order
+                value:
+                  buyerId: "buyer_123"
+                  sellerId: "seller_456"
+                  items:
+                    - productId: "prod_789"
+                      quantity: 2
+                      price:
+                        amount: 15000
+                        currency: "TZS"
+                      weight: 1.5
+                  currency: "TZS"
+                  deliveryAddress:
+                    street: "123 Main Street"
+                    city: "Dar es Salaam"
+                    postalCode: "11101"
+                    country: "TZ"
+                  paymentMethod: "COD"
+                  notes: "Please handle with care"
+              card_order:
+                summary: Card Payment Order
+                value:
+                  buyerId: "buyer_456"
+                  sellerId: "seller_789"
+                  items:
+                    - productId: "prod_101"
+                      quantity: 1
+                      price:
+                        amount: 50000
+                        currency: "TZS"
+                      weight: 2.0
+                    - productId: "prod_202"
+                      quantity: 3
+                      price:
+                        amount: 25000
+                        currency: "TZS"
+                      weight: 1.0
+                  currency: "TZS"
+                  deliveryAddress:
+                    street: "456 Commerce Ave"
+                    city: "Dar es Salaam"
+                    postalCode: "11102"
+                    country: "TZ"
+                  paymentMethod: "CARD"
+                  paymentToken: "tok_visa_123456789"
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+              example:
+                id: "order_abc123def456"
+                buyerId: "buyer_123"
+                sellerId: "seller_456"
+                status: "pending"
+                totalAmount:
+                  amount: 30000
+                  currency: "TZS"
+                totalWeight: 3.0
+                items:
+                  - productId: "prod_789"
+                    quantity: 2
+                    price:
+                      amount: 15000
+                      currency: "TZS"
+                    weight: 1.5
+                    subtotal:
+                      amount: 30000
+                      currency: "TZS"
+                deliveryAddress:
+                  street: "123 Main Street"
+                  city: "Dar es Salaam"
+                  postalCode: "11101"
+                  country: "TZ"
+                paymentMethod: "COD"
+                createdAt: "2024-01-13T10:30:00.000Z"
+                estimatedDelivery: "2024-01-15T10:30:00.000Z"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                validation_error:
+                  summary: Validation Error
+                  value:
+                    error: "ValidationError"
+                    message: "Invalid order data"
+                    details:
+                      - field: "buyerId"
+                        message: "Buyer ID is required"
+                      - field: "items"
+                        message: "At least one item is required"
+                insufficient_inventory:
+                  summary: Insufficient Inventory
+                  value:
+                    error: "InventoryError"
+                    message: "Insufficient inventory for product prod_789"
+                    details:
+                      available: 5
+                      requested: 10
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      summary: List orders
+      description: |
+        Retrieves a paginated list of orders with optional filtering.
+
+        ## Filtering Options
+        - `buyerId`: Filter by buyer
+        - `sellerId`: Filter by seller
+        - `status`: Filter by order status
+        - `dateFrom`/`dateTo`: Filter by date range
+        - `minAmount`/`maxAmount`: Filter by order amount
+
+        ## Sorting Options
+        - `createdAt`: Sort by creation date (default: desc)
+        - `totalAmount`: Sort by order amount
+        - `status`: Sort by status
+      tags:
+        - Orders
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of items per page
+        - name: buyerId
+          in: query
+          schema:
+            type: string
+          description: Filter by buyer ID
+        - name: sellerId
+          in: query
+          schema:
+            type: string
+          description: Filter by seller ID
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, confirmed, processing, shipped, delivered, cancelled, refunded]
+          description: Filter by order status
+        - name: dateFrom
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Filter orders from this date
+        - name: dateTo
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Filter orders until this date
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [createdAt, totalAmount, status]
+            default: createdAt
+          description: Sort field
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order
+      responses:
+        '200':
+          description: Orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListResponse'
+              example:
+                orders:
+                  - id: "order_abc123"
+                    buyerId: "buyer_123"
+                    sellerId: "seller_456"
+                    status: "delivered"
+                    totalAmount:
+                      amount: 30000
+                      currency: "TZS"
+                    createdAt: "2024-01-10T10:30:00.000Z"
+                  - id: "order_def456"
+                    buyerId: "buyer_789"
+                    sellerId: "seller_456"
+                    status: "shipped"
+                    totalAmount:
+                      amount: 75000
+                      currency: "TZS"
+                    createdAt: "2024-01-12T14:20:00.000Z"
+                pagination:
+                  page: 1
+                  limit: 20
+                  total: 2
+                  totalPages: 1
+                summary:
+                  totalOrders: 2
+                  totalRevenue:
+                    amount: 105000
+                    currency: "TZS"
+        '400':
+          description: Invalid query parameters
+        '401':
+          description: Authentication required
+
+  /orders/{orderId}:
+    get:
+      summary: Get order details
+      description: |
+        Retrieves detailed information about a specific order including
+        items, delivery information, payment status, and tracking history.
+      tags:
+        - Orders
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^order_[a-zA-Z0-9]+$'
+          description: Order ID
+      responses:
+        '200':
+          description: Order details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetailResponse'
+              example:
+                id: "order_abc123def456"
+                buyerId: "buyer_123"
+                sellerId: "seller_456"
+                status: "shipped"
+                totalAmount:
+                  amount: 30000
+                  currency: "TZS"
+                totalWeight: 3.0
+                items:
+                  - productId: "prod_789"
+                    productName: "Wireless Headphones"
+                    quantity: 2
+                    price:
+                      amount: 15000
+                      currency: "TZS"
+                    weight: 1.5
+                    subtotal:
+                      amount: 30000
+                      currency: "TZS"
+                deliveryAddress:
+                  street: "123 Main Street"
+                  city: "Dar es Salaam"
+                  postalCode: "11101"
+                  country: "TZ"
+                paymentMethod: "COD"
+                paymentStatus: "pending"
+                tracking:
+                  trackingNumber: "TN123456789"
+                  carrier: "DHL"
+                  status: "in_transit"
+                  estimatedDelivery: "2024-01-15T10:30:00.000Z"
+                  updates:
+                    - status: "confirmed"
+                      timestamp: "2024-01-13T10:30:00.000Z"
+                      location: "Dar es Salaam Hub"
+                    - status: "shipped"
+                      timestamp: "2024-01-13T14:00:00.000Z"
+                      location: "Dar es Salaam Distribution Center"
+                createdAt: "2024-01-13T10:30:00.000Z"
+                updatedAt: "2024-01-13T14:00:00.000Z"
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "NotFoundError"
+                message: "Order not found"
+                orderId: "order_invalid"
+        '401':
+          description: Authentication required
+
+    put:
+      summary: Update order
+      description: |
+        Updates order information. Only certain fields can be updated
+        depending on the current order status.
+
+        ## Updateable Fields by Status
+        - **pending**: deliveryAddress, notes
+        - **confirmed**: deliveryAddress (limited), notes
+        - **processing**: No updates allowed
+        - **shipped/delivered**: No updates allowed
+      tags:
+        - Orders
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^order_[a-zA-Z0-9]+$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrderRequest'
+      responses:
+        '200':
+          description: Order updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '400':
+          description: Invalid update request
+        '403':
+          description: Update not allowed for current order status
+        '404':
+          description: Order not found
+
+    delete:
+      summary: Cancel order
+      description: |
+        Cancels an order if it's in a cancellable state.
+        Only pending and confirmed orders can be cancelled.
+
+        ## Cancellation Rules
+        - Orders can only be cancelled within 30 minutes of creation
+        - COD orders can be cancelled up to confirmed status
+        - Paid orders will be refunded automatically
+        - Inventory will be released back to stock
+      tags:
+        - Orders
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^order_[a-zA-Z0-9]+$'
+        - name: reason
+          in: query
+          schema:
+            type: string
+            enum: [customer_request, payment_failed, inventory_unavailable, other]
+          description: Cancellation reason
+        - name: notes
+          in: query
+          schema:
+            type: string
+            maxLength: 500
+          description: Additional cancellation notes
+      responses:
+        '200':
+          description: Order cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+              example:
+                id: "order_abc123"
+                status: "cancelled"
+                cancelledAt: "2024-01-13T11:00:00.000Z"
+                cancellationReason: "customer_request"
+        '400':
+          description: Order cannot be cancelled
+        '404':
+          description: Order not found
+
+  # ================================
+  # Payment Management Endpoints
+  # ================================
+  /orders/{orderId}/payment:
+    post:
+      summary: Process payment
+      description: |
+        Initiates payment processing for an order. This endpoint is used
+        for card and mobile money payments.
+
+        ## Payment Flow
+        1. Validate payment method and amount
+        2. Create payment intent with payment gateway
+        3. Return payment processing instructions
+        4. Handle payment confirmation via webhook
+      tags:
+        - Payments
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^order_[a-zA-Z0-9]+$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessPaymentRequest'
+      responses:
+        '200':
+          description: Payment processing initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          description: Invalid payment request
+
+    get:
+      summary: Get payment status
+      description: Retrieves the current payment status for an order.
+      tags:
+        - Payments
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^order_[a-zA-Z0-9]+$'
+      responses:
+        '200':
+          description: Payment status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentStatusResponse'
+
+  # ================================
+  # Analytics & Reporting Endpoints
+  # ================================
+  /analytics/orders:
+    get:
+      summary: Order analytics
+      description: |
+        Retrieves order analytics and metrics for dashboards and reporting.
+
+        ## Available Metrics
+        - Order volume by time period
+        - Revenue analytics
+        - Payment method distribution
+        - Order status distribution
+        - Geographic distribution
+      tags:
+        - Analytics
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [hour, day, week, month, year]
+            default: day
+          description: Time period for analytics
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Start date for analytics (ISO 8601)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: End date for analytics (ISO 8601)
+        - name: sellerId
+          in: query
+          schema:
+            type: string
+          description: Filter by seller ID
+      responses:
+        '200':
+          description: Analytics data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsResponse'
+
+# ================================
+# Reusable Components
+# ================================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication
+
+  schemas:
+    # ================================
+    # Common Schemas
+    # ================================
+    Money:
+      type: object
+      properties:
+        amount:
+          type: integer
+          minimum: 0
+          description: Amount in smallest currency unit (e.g., cents for USD, shillings for TZS)
+          example: 30000
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: '^[A-Z]{3}$'
+          description: ISO 4217 currency code
+          example: "TZS"
+      required:
+        - amount
+        - currency
+
+    Address:
+      type: object
+      properties:
+        street:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Street address
+          example: "123 Main Street"
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: City name
+          example: "Dar es Salaam"
+        postalCode:
+          type: string
+          minLength: 1
+          maxLength: 20
+          description: Postal/ZIP code
+          example: "11101"
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+          pattern: '^[A-Z]{2}$'
+          description: ISO 3166-1 alpha-2 country code
+          example: "TZ"
+      required:
+        - street
+        - city
+        - postalCode
+        - country
+
+    OrderItem:
+      type: object
+      properties:
+        productId:
+          type: string
+          pattern: '^prod_[a-zA-Z0-9]+$'
+          description: Product identifier
+          example: "prod_789"
+        productName:
+          type: string
+          description: Product display name
+          example: "Wireless Headphones"
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 999
+          description: Quantity ordered
+          example: 2
+        price:
+          $ref: '#/components/schemas/Money'
+        weight:
+          type: number
+          minimum: 0
+          maximum: 1000
+          description: Weight in kilograms
+          example: 1.5
+        subtotal:
+          $ref: '#/components/schemas/Money'
+      required:
+        - productId
+        - quantity
+        - price
+        - weight
+
+    # ================================
+    # Request Schemas
+    # ================================
+    CreateOrderRequest:
+      type: object
+      properties:
+        buyerId:
+          type: string
+          pattern: '^buyer_[a-zA-Z0-9]+$'
+          description: Buyer identifier
+          example: "buyer_123"
+        sellerId:
+          type: string
+          pattern: '^seller_[a-zA-Z0-9]+$'
+          description: Seller identifier
+          example: "seller_456"
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+                pattern: '^prod_[a-zA-Z0-9]+$'
+              quantity:
+                type: integer
+                minimum: 1
+                maximum: 999
+              price:
+                $ref: '#/components/schemas/Money'
+              weight:
+                type: number
+                minimum: 0
+                maximum: 1000
+            required:
+              - productId
+              - quantity
+              - price
+              - weight
+          minItems: 1
+          maxItems: 100
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          default: "TZS"
+        deliveryAddress:
+          $ref: '#/components/schemas/Address'
+        paymentMethod:
+          type: string
+          enum: [COD, CARD, MOBILE]
+          description: |
+            Payment method:
+            - COD: Cash on Delivery
+            - CARD: Credit/Debit Card
+            - MOBILE: Mobile Money
+        paymentToken:
+          type: string
+          description: Payment token for card/mobile payments
+        notes:
+          type: string
+          maxLength: 1000
+          description: Order notes or special instructions
+      required:
+        - buyerId
+        - sellerId
+        - items
+        - deliveryAddress
+        - paymentMethod
+
+    UpdateOrderRequest:
+      type: object
+      properties:
+        deliveryAddress:
+          $ref: '#/components/schemas/Address'
+        notes:
+          type: string
+          maxLength: 1000
+      minProperties: 1
+
+    ProcessPaymentRequest:
+      type: object
+      properties:
+        paymentMethod:
+          type: string
+          enum: [CARD, MOBILE]
+        paymentToken:
+          type: string
+          description: Payment token from frontend
+        amount:
+          $ref: '#/components/schemas/Money'
+        metadata:
+          type: object
+          description: Additional payment metadata
+      required:
+        - paymentMethod
+        - paymentToken
+        - amount
+
+    # ================================
+    # Response Schemas
+    # ================================
+    OrderResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: '^order_[a-zA-Z0-9]+$'
+          example: "order_abc123def456"
+        buyerId:
+          type: string
+          example: "buyer_123"
+        sellerId:
+          type: string
+          example: "seller_456"
+        status:
+          type: string
+          enum: [pending, confirmed, processing, shipped, delivered, cancelled, refunded]
+          example: "pending"
+        totalAmount:
+          $ref: '#/components/schemas/Money'
+        totalWeight:
+          type: number
+          example: 3.0
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        deliveryAddress:
+          $ref: '#/components/schemas/Address'
+        paymentMethod:
+          type: string
+          enum: [COD, CARD, MOBILE]
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-13T10:30:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-13T10:30:00.000Z"
+        estimatedDelivery:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00.000Z"
+      required:
+        - id
+        - buyerId
+        - sellerId
+        - status
+        - totalAmount
+        - items
+        - deliveryAddress
+        - paymentMethod
+        - createdAt
+
+    OrderDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/OrderResponse'
+        - type: object
+          properties:
+            paymentStatus:
+              type: string
+              enum: [pending, processing, completed, failed, refunded]
+              example: "pending"
+            tracking:
+              type: object
+              properties:
+                trackingNumber:
+                  type: string
+                  example: "TN123456789"
+                carrier:
+                  type: string
+                  example: "DHL"
+                status:
+                  type: string
+                  enum: [pending, picked_up, in_transit, out_for_delivery, delivered]
+                  example: "in_transit"
+                estimatedDelivery:
+                  type: string
+                  format: date-time
+                updates:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                      timestamp:
+                        type: string
+                        format: date-time
+                      location:
+                        type: string
+                    required:
+                      - status
+                      - timestamp
+
+    OrderListResponse:
+      type: object
+      properties:
+        orders:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              buyerId:
+                type: string
+              sellerId:
+                type: string
+              status:
+                type: string
+              totalAmount:
+                $ref: '#/components/schemas/Money'
+              createdAt:
+                type: string
+                format: date-time
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
+            totalPages:
+              type: integer
+          required:
+            - page
+            - limit
+            - total
+            - totalPages
+        summary:
+          type: object
+          properties:
+            totalOrders:
+              type: integer
+            totalRevenue:
+              $ref: '#/components/schemas/Money'
+      required:
+        - orders
+        - pagination
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy, degraded]
+          example: "healthy"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-13T10:30:00.000Z"
+        version:
+          type: string
+          example: "1.0.0"
+        uptime:
+          type: integer
+          description: Uptime in seconds
+          example: 86400
+        services:
+          type: object
+          properties:
+            database:
+              type: string
+              enum: [connected, disconnected, error]
+              example: "connected"
+            redis:
+              type: string
+              enum: [connected, disconnected, error]
+              example: "connected"
+            payment_gateway:
+              type: string
+              enum: [operational, degraded, down]
+              example: "operational"
+            message_queue:
+              type: string
+              enum: [connected, disconnected, error]
+              example: "connected"
+          required:
+            - database
+            - redis
+      required:
+        - status
+        - timestamp
+        - services
+
+    PaymentResponse:
+      type: object
+      properties:
+        paymentId:
+          type: string
+          example: "pay_abc123"
+        orderId:
+          type: string
+          example: "order_abc123"
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+          example: "pending"
+        amount:
+          $ref: '#/components/schemas/Money'
+        paymentMethod:
+          type: string
+          enum: [CARD, MOBILE]
+        gatewayReference:
+          type: string
+          description: Payment gateway reference ID
+        expiresAt:
+          type: string
+          format: date-time
+          description: Payment expiration time
+        nextAction:
+          type: object
+          description: Next action required for payment completion
+      required:
+        - paymentId
+        - orderId
+        - status
+        - amount
+        - paymentMethod
+
+    PaymentStatusResponse:
+      type: object
+      properties:
+        orderId:
+          type: string
+        paymentStatus:
+          type: string
+          enum: [pending, processing, completed, failed, refunded]
+        paymentMethod:
+          type: string
+          enum: [COD, CARD, MOBILE]
+        amount:
+          $ref: '#/components/schemas/Money'
+        transactions:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              type:
+                type: string
+                enum: [charge, refund, capture]
+              amount:
+                $ref: '#/components/schemas/Money'
+              status:
+                type: string
+                enum: [pending, completed, failed]
+              timestamp:
+                type: string
+                format: date-time
+              gatewayReference:
+                type: string
+      required:
+        - orderId
+        - paymentStatus
+        - paymentMethod
+
+    AnalyticsResponse:
+      type: object
+      properties:
+        period:
+          type: string
+          example: "day"
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        metrics:
+          type: object
+          properties:
+            totalOrders:
+              type: integer
+            totalRevenue:
+              $ref: '#/components/schemas/Money'
+            averageOrderValue:
+              $ref: '#/components/schemas/Money'
+            ordersByStatus:
+              type: object
+              additionalProperties:
+                type: integer
+            ordersByPaymentMethod:
+              type: object
+              additionalProperties:
+                type: integer
+            topProducts:
+              type: array
+              items:
+                type: object
+                properties:
+                  productId:
+                    type: string
+                  productName:
+                    type: string
+                  orders:
+                    type: integer
+                  revenue:
+                    $ref: '#/components/schemas/Money'
+            geographicDistribution:
+              type: array
+              items:
+                type: object
+                properties:
+                  region:
+                    type: string
+                  orders:
+                    type: integer
+                  revenue:
+                    $ref: '#/components/schemas/Money'
+      required:
+        - period
+        - metrics
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error type identifier
+          example: "ValidationError"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Invalid order data"
+        details:
+          oneOf:
+            - type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+            - type: object
+              description: Additional error context
+        requestId:
+          type: string
+          description: Request correlation ID
+          example: "req_abc123def456"
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+      required:
+        - error
+        - message
+
+  # ================================
+  # Response Examples
+  # ================================
+  examples:
+    successful_order_creation:
+      summary: Successful order creation
+      value:
+        id: "order_abc123def456"
+        buyerId: "buyer_123"
+        sellerId: "seller_456"
+        status: "pending"
+        totalAmount:
+          amount: 30000
+          currency: "TZS"
+        items:
+          - productId: "prod_789"
+            quantity: 2
+            price:
+              amount: 15000
+              currency: "TZS"
+            weight: 1.5
+        deliveryAddress:
+          street: "123 Main Street"
+          city: "Dar es Salaam"
+          postalCode: "11101"
+          country: "TZ"
+        paymentMethod: "COD"
+        createdAt: "2024-01-13T10:30:00.000Z"
+
+    validation_error:
+      summary: Validation error
+      value:
+        error: "ValidationError"
+        message: "Invalid order data"
+        details:
+          - field: "buyerId"
+            message: "Buyer ID is required"
+          - field: "items"
+            message: "At least one item is required"
+        requestId: "req_xyz789"
+        timestamp: "2024-01-13T10:30:00.000Z"
+
+# ================================
+# External Documentation
+# ================================
+externalDocs:
+  description: Complete API documentation and guides
+  url: https://docs.maysar.com/api/order-service
+
+# ================================
+# Tags
+# ================================
+tags:
+  - name: Orders
+    description: Order lifecycle management endpoints
+  - name: Payments
+    description: Payment processing and status endpoints
+  - name: Health
+    description: Service health and monitoring endpoints
+  - name: Analytics
+    description: Business analytics and reporting endpoints

@@ -1,59 +1,41 @@
+/**
+ * Jest Integration Configuration
+ * Specialized config for integration and end-to-end tests
+ */
+
 module.exports = {
-  displayName: 'Integration Tests',
-  testMatch: ['**/tests/integration/**/*.test.ts'],
-  testEnvironment: 'node',
-  setupFilesAfterEnv: ['<rootDir>/src/tests/integration/setup.ts'],
-  globalTeardown: '<rootDir>/src/tests/integration/teardown.ts',
-  
-  // Performance settings
-  testTimeout: 60000, // 60 seconds for load tests
-  maxWorkers: 4, // Parallel execution
-  
-  // Coverage settings
-  collectCoverage: true,
-  coverageDirectory: 'coverage/integration',
-  coverageReporters: ['text', 'lcov', 'html'],
-  collectCoverageFrom: [
-    'src/domain/services/*.engine.ts',
-    '!src/tests/**',
-    '!src/**/*.test.ts'
+  ...require('./jest.config.js'),
+
+  // Integration test specific settings
+  testMatch: [
+    '**/__tests__/integration/**/*.test.ts',
+    '**/__tests__/integration/**/*.spec.ts',
+    '**/?(*.)+(integration|spec).ts'
   ],
-  coverageThreshold: {
-    global: {
-      branches: 90,
-      functions: 95,
-      lines: 95,
-      statements: 95
-    }
-  },
-  
-  // TypeScript support
-  preset: 'ts-jest',
-  transform: {
-    '^.+\\.ts$': 'ts-jest'
-  },
-  
-  // Module resolution
-  moduleNameMapping: {
-    '^@/(.*)$': '<rootDir>/src/$1'
-  },
-  
-  // Test reporting
+
+  // Setup files for integration tests
+  setupFilesAfterEnv: [
+    '<rootDir>/test/setup.ts',
+    '<rootDir>/test/setup.integration.ts'
+  ],
+
+  // Longer timeout for integration tests
+  testTimeout: 60000,
+
+  // Slower test environment detection
+  detectOpenHandles: false,
+  forceExit: false,
+
+  // More verbose output for integration tests
+  verbose: false,
+
+  // Custom reporters for integration tests
   reporters: [
     'default',
     ['jest-junit', {
-      outputDirectory: 'test-results/integration',
-      outputName: 'junit.xml'
+      outputDirectory: 'reports/integration',
+      outputName: 'junit.xml',
+      suiteName: 'Order Service Integration Tests'
     }]
-  ],
-  
-  // Verbose output for debugging
-  verbose: true,
-  
-  // Fail fast on first failure for critical tests
-  bail: false,
-  
-  // Clear mocks between tests
-  clearMocks: true,
-  restoreMocks: true
+  ]
 };

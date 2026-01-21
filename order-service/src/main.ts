@@ -1,7 +1,8 @@
 // Order Service Entry Point
 import express from 'express';
 import dotenv from 'dotenv';
-import { PrismaOrderRepository } from './infrastructure/database/prisma-order.repository';
+import { SupabaseOrderRepository } from './infrastructure/database/supabase-order.repository';
+import { SupabaseClientManager } from './infrastructure/database/supabase.client';
 import { EventPublisherImpl } from './infrastructure/messaging/event-publisher';
 import { PlaceOrderUseCase } from './application/use-cases/place-order.use-case';
 import { OrderController } from './api/controllers/order.controller';
@@ -14,6 +15,7 @@ import { logSecurityConfigSummary } from './config/security.config';
 import { logMonitoringConfigSummary } from './config/monitoring.config';
 import { databaseManager, loadDatabaseConfig } from './config/database.config';
 import { logStartup, logShutdown, flushLogs } from './infrastructure/monitoring/logger';
+import { RateLimitingMiddleware } from './middleware/rate-limiting.middleware';
 
 // Load environment variables
 dotenv.config();
@@ -49,22 +51,39 @@ async function initializeService() {
     logSecurityConfigSummary();
     logMonitoringConfigSummary();
 
-    // Load and validate database configuration
-    const dbConfig = loadDatabaseConfig();
+    // Initialize rate limiters (must be done before applying middleware)
+    RateLimitingMiddleware.initializeRateLimiters();
+    console.log('✅ Rate limiters initialized');
 
-    // Initialize database connections
-    await databaseManager.initialize(dbConfig);
-    console.log('✅ Database connections established');
+    // Initialize Supabase connection
+    try {
+      await SupabaseClientManager.getInstance().connect();
+      console.log('✅ Database connection established');
+    } catch (dbError) {
+      const error = dbError as Error;
+      console.error('❌ Database initialization failed:', error.message);
+
+      // For development, provide helpful guidance instead of crashing
+      if (process.env.NODE_ENV === 'development') {
+        console.log('\n💡 Development Setup Options:');
+        console.log('   • Check SUPABASE_URL and SUPABASE_KEY in .env.local');
+        console.log('   • Verify Supabase project is accessible');
+        console.log('   • Run unit tests only: npm run test:unit');
+        console.log('\n📖 See README.md for detailed setup instructions');
+      }
+
+      throw error; // Re-throw to maintain existing behavior
+    }
 
     // Dependency injection with database repository
-    const orderRepository = new PrismaOrderRepository();
+    const orderRepository = new SupabaseOrderRepository();
     const eventPublisher = new EventPublisherImpl();
     const placeOrderUseCase = new PlaceOrderUseCase(orderRepository, eventPublisher);
     const orderController = new OrderController(placeOrderUseCase);
 
     // Setup routes
     const orderRoutes = setupOrderRoutes(orderController);
-    app.use('/api', orderRoutes);
+    app.use('/api/v1', orderRoutes);
 
     // Health check routes
     const healthRoutes = await import('./api/routes/health.routes');
@@ -76,21 +95,39 @@ async function initializeService() {
     // Health check endpoint (legacy - now handled by health routes)
     app.get('/health', async (req, res) => {
       try {
-        const health = await databaseManager.healthCheck();
-        const isHealthy = health.prisma && health.supabase;
+        // Check Supabase connection
+        const supabaseHealth = await SupabaseClientManager.getInstance().healthCheck();
+        const isHealthy = supabaseHealth.status === 'healthy';
 
         res.status(isHealthy ? 200 : 503).json({
           service: 'order-service',
           status: isHealthy ? 'healthy' : 'unhealthy',
           timestamp: new Date().toISOString(),
-          database: health
+          version: '1.0.0',
+          environment: process.env.NODE_ENV || 'development',
+          uptime: process.uptime(),
+          database: {
+            supabase: isHealthy,
+            details: {
+              connection: supabaseHealth.status,
+              latency: supabaseHealth.latency
+            }
+          }
         });
       } catch (error) {
         res.status(503).json({
           service: 'order-service',
           status: 'unhealthy',
           timestamp: new Date().toISOString(),
-          error: error instanceof Error ? error.message : 'Unknown error'
+          version: '1.0.0',
+          environment: process.env.NODE_ENV || 'development',
+          uptime: process.uptime(),
+          database: {
+            supabase: false,
+            details: {
+              error: error instanceof Error ? error.message : 'Unknown error'
+            }
+          }
         });
       }
     });
@@ -111,13 +148,11 @@ async function initializeService() {
 // Graceful shutdown handling
 process.on('SIGTERM', async () => {
   console.log('🛑 SIGTERM received, shutting down gracefully...');
-  await databaseManager.disconnect();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   console.log('🛑 SIGINT received, shutting down gracefully...');
-  await databaseManager.disconnect();
   process.exit(0);
 });
 

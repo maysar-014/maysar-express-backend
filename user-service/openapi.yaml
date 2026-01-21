@@ -1,0 +1,734 @@
+openapi: 3.0.3
+info:
+  title: User Service API
+  description: Enterprise-grade user management microservice for Maysar marketplace
+  version: 1.0.0
+  contact:
+    name: Maysar Development Team
+    email: dev@maysar.com
+
+servers:
+  - url: http://localhost:3001/api/v1
+    description: Development server
+  - url: https://api.maysar.com/user/v1
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+paths:
+  # User CRUD Operations
+  /users:
+    post:
+      summary: Create a new user
+      description: Register a new user account with basic profile information
+      operationId: createUser
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+    get:
+      summary: Search users
+      description: Search and filter users by various criteria (admin only)
+      operationId: searchUsers
+      tags:
+        - Users
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+          description: Search query (email, name, etc.)
+        - name: role
+          in: query
+          schema:
+            $ref: '#/components/schemas/UserRole'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/UserStatus'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Users found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserResponse'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{userId}:
+    get:
+      summary: Get user by ID
+      description: Retrieve detailed user profile information
+      operationId: getUser
+      tags:
+        - Users
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update user profile
+      description: Update user profile information (own profile or admin)
+      operationId: updateUser
+      tags:
+        - Users
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Delete user account
+      description: Permanently delete a user account (admin only)
+      operationId: deleteUser
+      tags:
+        - Users
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: User deleted successfully
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # User Verification
+  /users/{userId}/verify-email:
+    post:
+      summary: Verify user email
+      description: Mark user email as verified
+      operationId: verifyUserEmail
+      tags:
+        - Verification
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /users/{userId}/verify-phone:
+    post:
+      summary: Verify user phone
+      description: Mark user phone number as verified
+      operationId: verifyUserPhone
+      tags:
+        - Verification
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Phone verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # User Addresses
+  /users/{userId}/addresses:
+    get:
+      summary: Get user addresses
+      description: Retrieve all addresses for a user
+      operationId: getUserAddresses
+      tags:
+        - Addresses
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Addresses retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  addresses:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserAddressResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      summary: Add user address
+      description: Create a new address for a user
+      operationId: createUserAddress
+      tags:
+        - Addresses
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserAddressRequest'
+      responses:
+        '201':
+          description: Address created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAddressResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /users/{userId}/addresses/{addressId}:
+    put:
+      summary: Update user address
+      description: Update an existing user address
+      operationId: updateUserAddress
+      tags:
+        - Addresses
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: addressId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserAddressRequest'
+      responses:
+        '200':
+          description: Address updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAddressResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Delete user address
+      description: Remove a user address
+      operationId: deleteUserAddress
+      tags:
+        - Addresses
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: addressId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Address deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # User Preferences
+  /users/{userId}/preferences:
+    get:
+      summary: Get user preferences
+      description: Retrieve user preferences and settings
+      operationId: getUserPreferences
+      tags:
+        - Preferences
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferencesResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update user preferences
+      description: Update user preferences and settings
+      operationId: updateUserPreferences
+      tags:
+        - Preferences
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserPreferencesRequest'
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferencesResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # User Statistics (Admin)
+  /users/stats:
+    get:
+      summary: Get user statistics
+      description: Retrieve user statistics by status (admin only)
+      operationId: getUserStats
+      tags:
+        - Administration
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stats:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                  total:
+                    type: integer
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # Health Check
+  /health:
+    get:
+      summary: Health check
+      description: Service health check endpoint
+      operationId: healthCheck
+      tags:
+        - System
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  uptime:
+                    type: number
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # Enums
+    UserRole:
+      type: string
+      enum:
+        - buyer
+        - seller
+        - supplier
+        - courier
+        - enabler
+        - system
+
+    UserStatus:
+      type: string
+      enum:
+        - pending_verification
+        - active
+        - suspended
+        - deactivated
+        - locked
+
+    AddressType:
+      type: string
+      enum:
+        - home
+        - work
+        - billing
+        - shipping
+
+    # Request Schemas
+    CreateUserRequest:
+      type: object
+      required:
+        - email
+        - password
+        - firstName
+        - lastName
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        firstName:
+          type: string
+          minLength: 1
+        lastName:
+          type: string
+          minLength: 1
+        phoneNumber:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        role:
+          $ref: '#/components/schemas/UserRole'
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phoneNumber:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        avatar:
+          type: string
+          format: uri
+
+    CreateUserAddressRequest:
+      type: object
+      required:
+        - street
+        - city
+        - country
+      properties:
+        type:
+          $ref: '#/components/schemas/AddressType'
+        street:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+        isDefault:
+          type: boolean
+          default: false
+
+    UpdateUserAddressRequest:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/AddressType'
+        street:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+        isDefault:
+          type: boolean
+
+    UpdateUserPreferencesRequest:
+      type: object
+      properties:
+        language:
+          type: string
+          example: "en"
+        timezone:
+          type: string
+          example: "UTC"
+        notificationsEnabled:
+          type: boolean
+
+    # Response Schemas
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phoneNumber:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        avatar:
+          type: string
+          format: uri
+        role:
+          $ref: '#/components/schemas/UserRole'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        isEmailVerified:
+          type: boolean
+        isPhoneVerified:
+          type: boolean
+        emailVerifiedAt:
+          type: string
+          format: date-time
+        phoneVerifiedAt:
+          type: string
+          format: date-time
+        language:
+          type: string
+        timezone:
+          type: string
+        notificationsEnabled:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        lastLoginAt:
+          type: string
+          format: date-time
+
+    UserAddressResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/AddressType'
+        street:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+        isDefault:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserPreferencesResponse:
+      type: object
+      properties:
+        language:
+          type: string
+        timezone:
+          type: string
+        notificationsEnabled:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+        timestamp:
+          type: string
+          format: date-time
+        requestId:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Conflict:
+      description: Resource conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

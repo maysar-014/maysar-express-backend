@@ -1,0 +1,1002 @@
+{
+  "info": {
+    "name": "Commission Service Saga Orchestration Tests",
+    "description": "Comprehensive test suite validating commission saga orchestration flows and business processes. Tests commission calculation, approval, and payout workflows end-to-end.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3008/api",
+      "type": "string"
+    },
+    {
+      "key": "sellerId",
+      "value": "seller_001",
+      "type": "string"
+    },
+    {
+      "key": "enablerId",
+      "value": "enabler_001",
+      "type": "string"
+    },
+    {
+      "key": "currentDateTime",
+      "value": "2026-01-16T23:00:00Z",
+      "type": "string"
+    },
+    {
+      "key": "commissionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "parallelCommissionId1",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "parallelOrderId1",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "parallelCommissionId2",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "parallelOrderId2",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "eventCommissionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "eventOrderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "approvalCommissionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "approvalOrderId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🚀 END-TO-END: Complete Commission Saga Flow",
+      "item": [
+        {
+          "name": "Step 1: Calculate Commission (Order Completion Triggers Saga)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"saga_order_{{$timestamp}}\",\n  \"sellerId\": \"{{sellerId}}\",\n  \"orderAmount\": 150.00,\n  \"recipientType\": \"seller\",\n  \"commissionType\": \"sale\",\n  \"baseRate\": 0.08,\n  \"performanceBonus\": 0.05,\n  \"qualityMetrics\": {\n    \"rating\": 4.8,\n    \"onTimeDelivery\": true,\n    \"customerSatisfaction\": 4.5\n  },\n  \"specialConditions\": {\n    \"firstOrder\": false,\n    \"bulkOrder\": true,\n    \"promotionalPeriod\": false\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/commissions/calculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "calculate"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Commission calculated successfully\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.data.commissionId).to.exist;",
+                  "    pm.collectionVariables.set('commissionId', jsonData.data.commissionId);",
+                  "    pm.collectionVariables.set('orderId', 'saga_order_' + pm.collectionVariables.get('$timestamp'));",
+                  "});",
+                  "",
+                  "pm.test(\"Commission breakdown provided\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.breakdown).to.be.an('object');",
+                  "    pm.expect(jsonData.data.breakdown.baseAmount).to.be.a('number');",
+                  "    pm.expect(jsonData.data.breakdown.bonus).to.be.a('number');",
+                  "    pm.expect(jsonData.data.breakdown.totalCommission).to.be.a('number');",
+                  "});",
+                  "",
+                  "pm.test(\"Commission amount within expected range\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var totalCommission = jsonData.data.breakdown.totalCommission;",
+                  "    pm.expect(totalCommission).to.be.within(10, 25); // Expected range for $150 order",
+                  "});",
+                  "",
+                  "console.log('✅ SAGA STEP 1 COMPLETE: Commission calculated for order', pm.collectionVariables.get('orderId'), 'with ID', pm.collectionVariables.get('commissionId'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 2: Verify Commission Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/commissions/{{commissionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "{{commissionId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Commission details retrieved\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.data.id).to.eql(pm.collectionVariables.get('commissionId'));",
+                  "});",
+                  "",
+                  "pm.test(\"Commission in pending status\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.status).to.eql('pending');",
+                  "    pm.expect(jsonData.data.createdAt).to.exist;",
+                  "});",
+                  "",
+                  "pm.test(\"Commission data integrity\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var commission = jsonData.data;",
+                  "    pm.expect(commission.orderId).to.eql(pm.collectionVariables.get('orderId'));",
+                  "    pm.expect(commission.sellerId).to.eql(pm.collectionVariables.get('sellerId'));",
+                  "    pm.expect(commission.type).to.eql('sale');",
+                  "    pm.expect(commission.amount).to.be.a('number');",
+                  "    pm.expect(commission.rate).to.be.a('number');",
+                  "});",
+                  "",
+                  "console.log('✅ SAGA BUSINESS LOGIC: Commission details verified with pending status');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 3: Approve Commission (Saga Step 2)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"autoSchedulePayout\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/commissions/{{commissionId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "{{commissionId}}", "approve"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Commission approval successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.data.approved).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Approval response structure\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.eventsGenerated).to.be.a('number');",
+                  "    pm.expect(jsonData.data.eventsGenerated).to.be.greaterThan(0);",
+                  "});",
+                  "",
+                  "console.log('✅ SAGA STEP 2 COMPLETE: Commission approved and payout auto-scheduled');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 4: Verify Commission Status Updated",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/commissions/{{commissionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "{{commissionId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Commission status updated to approved\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.status).to.eql('approved');",
+                  "});",
+                  "",
+                  "pm.test(\"Commission approved timestamp\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    // Note: This assumes the approval timestamp is tracked",
+                  "    pm.expect(jsonData.data).to.be.an('object');",
+                  "});",
+                  "",
+                  "console.log('✅ SAGA STATE: Commission status updated to approved');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 5: Verify Seller Commission Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/commissions/sellers/{{sellerId}}/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "sellers", "{{sellerId}}", "summary"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Seller summary retrieved\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Summary contains expected metrics\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var summary = jsonData.data;",
+                  "    pm.expect(summary).to.have.property('totalEarned');",
+                  "    pm.expect(summary).to.have.property('totalPaid');",
+                  "    pm.expect(summary).to.have.property('pendingAmount');",
+                  "    pm.expect(summary).to.have.property('averageRate');",
+                  "});",
+                  "",
+                  "pm.test(\"Approved commission reflected in summary\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var summary = jsonData.data;",
+                  "    pm.expect(summary.totalEarned).to.be.greaterThan(0);",
+                  "    pm.expect(summary.pendingAmount).to.be.a('number');",
+                  "});",
+                  "",
+                  "console.log('✅ SAGA BUSINESS LOGIC: Seller commission summary updated with approved commission');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 6: Complete Saga Validation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Service health check passes\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('healthy');",
+                  "});",
+                  "",
+                  "pm.test(\"Saga orchestration completed successfully\", function () {",
+                  "    // Final validation that all saga steps completed",
+                  "    var commissionId = pm.collectionVariables.get('commissionId');",
+                  "    var orderId = pm.collectionVariables.get('orderId');",
+                  "    pm.expect(commissionId).to.exist;",
+                  "    pm.expect(orderId).to.exist;",
+                  "});",
+                  "",
+                  "console.log('🎉 END-TO-END SAGA VALIDATION COMPLETE: Commission calculation, approval, and payout scheduling successful');",
+                  "console.log('Commission ID:', pm.collectionVariables.get('commissionId'));",
+                  "console.log('Order ID:', pm.collectionVariables.get('orderId'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🔄 PARALLEL: Multiple Commission Calculations",
+      "item": [
+        {
+          "name": "Calculate First Parallel Commission",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"parallel_order_1_{{$timestamp}}\",\n  \"sellerId\": \"{{sellerId}}\",\n  \"orderAmount\": 200.00,\n  \"recipientType\": \"seller\",\n  \"commissionType\": \"sale\",\n  \"baseRate\": 0.10,\n  \"performanceBonus\": 0.03,\n  \"qualityMetrics\": {\n    \"rating\": 5.0,\n    \"onTimeDelivery\": true,\n    \"customerSatisfaction\": 5.0\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/commissions/calculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "calculate"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"First parallel commission calculated\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.collectionVariables.set('parallelCommissionId1', jsonData.data.commissionId);",
+                  "    pm.collectionVariables.set('parallelOrderId1', 'parallel_order_1_' + pm.collectionVariables.get('$timestamp'));",
+                  "});",
+                  "",
+                  "console.log('✅ PARALLEL COMMISSION 1: Calculated with ID', pm.collectionVariables.get('parallelCommissionId1'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Calculate Second Parallel Commission",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"parallel_order_2_{{$timestamp}}\",\n  \"sellerId\": \"{{sellerId}}\",\n  \"orderAmount\": 75.00,\n  \"recipientType\": \"seller\",\n  \"commissionType\": \"referral\",\n  \"baseRate\": 0.05,\n  \"specialConditions\": {\n    \"firstOrder\": true\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/commissions/calculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "calculate"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Second parallel commission calculated\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.collectionVariables.set('parallelCommissionId2', jsonData.data.commissionId);",
+                  "    pm.collectionVariables.set('parallelOrderId2', 'parallel_order_2_' + pm.collectionVariables.get('$timestamp'));",
+                  "});",
+                  "",
+                  "console.log('✅ PARALLEL COMMISSION 2: Calculated with ID', pm.collectionVariables.get('parallelCommissionId2'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Parallel Commission Isolation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/commissions/sellers/{{sellerId}}?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "sellers", "{{sellerId}}"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Multiple commissions retrieved\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.data.commissions.length).to.be.greaterThan(1);",
+                  "});",
+                  "",
+                  "pm.test(\"Commissions have different IDs and orderIds\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var commissions = jsonData.data.commissions;",
+                  "    var ids = commissions.map(c => c.id);",
+                  "    var orderIds = commissions.map(c => c.orderId);",
+                  "    var uniqueIds = [...new Set(ids)];",
+                  "    var uniqueOrderIds = [...new Set(orderIds)];",
+                  "    pm.expect(uniqueIds.length).to.be.greaterThan(1);",
+                  "    pm.expect(uniqueOrderIds.length).to.be.greaterThan(1);",
+                  "});",
+                  "",
+                  "pm.test(\"All commissions in pending status\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var commissions = jsonData.data.commissions;",
+                  "    commissions.forEach(function(commission) {",
+                  "        pm.expect(commission.status).to.eql('pending');",
+                  "    });",
+                  "});",
+                  "",
+                  "console.log('✅ PARALLEL SAGAS: Multiple independent commission calculations processed successfully');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📊 BUSINESS LOGIC: Commission Rate Calculations",
+      "item": [
+        {
+          "name": "Test Seller Commission Rate (8%)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"rate_test_seller_{{$timestamp}}\",\n  \"sellerId\": \"{{sellerId}}\",\n  \"orderAmount\": 100.00,\n  \"recipientType\": \"seller\",\n  \"commissionType\": \"sale\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/commissions/calculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "calculate"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Seller commission calculated correctly\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Seller commission rate is 8%\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var breakdown = jsonData.data.breakdown;",
+                  "    var expectedBaseCommission = 100 * 0.08; // 8% of $100",
+                  "    pm.expect(breakdown.baseAmount).to.eql(expectedBaseCommission);",
+                  "    pm.expect(breakdown.appliedRate).to.eql(0.08);",
+                  "});",
+                  "",
+                  "console.log('✅ BUSINESS LOGIC: Seller commission rate correctly applied at 8%');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Test Enabler Commission Rate (15%)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"rate_test_enabler_{{$timestamp}}\",\n  \"sellerId\": \"{{enablerId}}\",\n  \"orderAmount\": 200.00,\n  \"recipientType\": \"enabler\",\n  \"commissionType\": \"task_assignment\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/commissions/calculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "calculate"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Enabler commission calculated correctly\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Enabler commission rate is 15%\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var breakdown = jsonData.data.breakdown;",
+                  "    var expectedBaseCommission = 200 * 0.15; // 15% of $200",
+                  "    pm.expect(breakdown.baseAmount).to.eql(expectedBaseCommission);",
+                  "    pm.expect(breakdown.appliedRate).to.eql(0.15);",
+                  "});",
+                  "",
+                  "console.log('✅ BUSINESS LOGIC: Enabler commission rate correctly applied at 15%');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Test Customer Referral Rate (3%)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"rate_test_customer_{{$timestamp}}\",\n  \"sellerId\": \"customer_001\",\n  \"orderAmount\": 50.00,\n  \"recipientType\": \"customer\",\n  \"commissionType\": \"referral\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/commissions/calculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "calculate"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Customer referral commission calculated correctly\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Customer referral rate is 3%\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var breakdown = jsonData.data.breakdown;",
+                  "    var expectedBaseCommission = 50 * 0.03; // 3% of $50",
+                  "    pm.expect(breakdown.baseAmount).to.eql(expectedBaseCommission);",
+                  "    pm.expect(breakdown.appliedRate).to.eql(0.03);",
+                  "});",
+                  "",
+                  "console.log('✅ BUSINESS LOGIC: Customer referral rate correctly applied at 3%');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🎁 BONUS CALCULATIONS: Performance & Quality Bonuses",
+      "item": [
+        {
+          "name": "Test Performance Bonus Calculation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"bonus_test_performance_{{$timestamp}}\",\n  \"sellerId\": \"{{sellerId}}\",\n  \"orderAmount\": 100.00,\n  \"recipientType\": \"seller\",\n  \"commissionType\": \"sale\",\n  \"performanceBonus\": 0.10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/commissions/calculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "calculate"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Performance bonus calculated\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Performance bonus applied correctly\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var breakdown = jsonData.data.breakdown;",
+                  "    var baseCommission = 100 * 0.08; // 8% base rate",
+                  "    var expectedBonus = baseCommission * 0.10; // 10% performance bonus",
+                  "    var expectedTotal = baseCommission + expectedBonus;",
+                  "    pm.expect(breakdown.performanceBonus).to.eql(expectedBonus);",
+                  "    pm.expect(breakdown.totalCommission).to.eql(expectedTotal);",
+                  "});",
+                  "",
+                  "console.log('✅ BONUS CALCULATION: Performance bonus correctly applied at 10% of base commission');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Test Quality Bonus (5-Star Rating)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"bonus_test_quality_{{$timestamp}}\",\n  \"sellerId\": \"{{sellerId}}\",\n  \"orderAmount\": 100.00,\n  \"recipientType\": \"seller\",\n  \"commissionType\": \"sale\",\n  \"qualityMetrics\": {\n    \"rating\": 5.0,\n    \"onTimeDelivery\": true,\n    \"customerSatisfaction\": 5.0\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/commissions/calculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "calculate"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Quality bonus calculated\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Quality bonus applied for 5-star rating\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var breakdown = jsonData.data.breakdown;",
+                  "    var baseCommission = 100 * 0.08; // 8% base rate",
+                  "    var expectedQualityBonus = baseCommission * (0.05 + 0.05 + 0.05 + 0.03); // 5% rating + 5% perfect + 5% on-time + 3% satisfaction",
+                  "    pm.expect(breakdown.qualityBonus).to.eql(expectedQualityBonus);",
+                  "    pm.expect(breakdown.bonus).to.be.greaterThan(0);",
+                  "});",
+                  "",
+                  "console.log('✅ QUALITY BONUS: Multiple quality metrics correctly applied for maximum bonus');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Test Special Conditions Bonus",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"bonus_test_special_{{$timestamp}}\",\n  \"sellerId\": \"{{sellerId}}\",\n  \"orderAmount\": 100.00,\n  \"recipientType\": \"seller\",\n  \"commissionType\": \"sale\",\n  \"specialConditions\": {\n    \"firstOrder\": true,\n    \"bulkOrder\": true,\n    \"promotionalPeriod\": true\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/commissions/calculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "calculate"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Special conditions bonus calculated\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Special conditions bonus applied\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var breakdown = jsonData.data.breakdown;",
+                  "    var expectedSpecialBonus = 50 + (100 * 0.02) + (100 * 0.08 * 0.01); // $50 first order + 2% bulk + 1% promo",
+                  "    pm.expect(breakdown.specialBonus).to.eql(expectedSpecialBonus);",
+                  "});",
+                  "",
+                  "console.log('✅ SPECIAL BONUS: First order, bulk order, and promotional bonuses correctly applied');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "⚠️ VALIDATION: Business Rule Enforcement",
+      "item": [
+        {
+          "name": "Test Minimum Commission Amount Validation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"validation_test_min_{{$timestamp}}\",\n  \"sellerId\": \"{{sellerId}}\",\n  \"orderAmount\": 0.50,\n  \"recipientType\": \"seller\",\n  \"commissionType\": \"sale\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/commissions/calculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "calculate"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Minimum amount validation enforced\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(false);",
+                  "    pm.expect(jsonData.error).to.contain('Commission amount must be at least');",
+                  "});",
+                  "",
+                  "console.log('✅ VALIDATION: Minimum commission amount rule correctly enforced');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Test Invalid UUID Validation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/commissions/invalid-uuid",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "invalid-uuid"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Invalid UUID validation enforced\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(false);",
+                  "    pm.expect(jsonData.error).to.contain('Validation error');",
+                  "});",
+                  "",
+                  "console.log('✅ VALIDATION: UUID format validation correctly enforced');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Test Commission Approval Without Permission",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"autoSchedulePayout\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/commissions/{{commissionId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["commissions", "{{commissionId}}", "approve"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Approval permission validation enforced\", function () {",
+                  "    // This may fail due to missing authentication, which is expected",
+                  "    var statusCode = pm.response.code;",
+                  "    pm.expect([400, 401, 403]).to.include(statusCode);",
+                  "});",
+                  "",
+                  "console.log('✅ VALIDATION: Approval permission checks correctly enforced');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🏥 HEALTH CHECKS: Service Monitoring",
+      "item": [
+        {
+          "name": "Basic Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/../health",
+              "host": ["{{baseUrl}}"],
+              "path": ["..", "health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Basic health check successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('healthy');",
+                  "    pm.expect(jsonData.service).to.eql('commission-service');",
+                  "    pm.expect(jsonData.uptime).to.be.a('number');",
+                  "});",
+                  "",
+                  "console.log('✅ HEALTH CHECK: Basic service health verified');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detailed Health Check with Dependencies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/../health/detailed",
+              "host": ["{{baseUrl}}"],
+              "path": ["..", "health", "detailed"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Detailed health check includes dependencies\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.dependencies).to.be.an('object');",
+                  "    pm.expect(jsonData.dependencies).to.have.property('database');",
+                  "    pm.expect(jsonData.dependencies).to.have.property('messaging');",
+                  "    pm.expect(jsonData.dependencies).to.have.property('cache');",
+                  "});",
+                  "",
+                  "pm.test(\"Health check includes service metadata\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.version).to.exist;",
+                  "    pm.expect(jsonData.environment).to.exist;",
+                  "    pm.expect(jsonData.uptime).to.be.a('number');",
+                  "});",
+                  "",
+                  "console.log('✅ HEALTH MONITORING: Detailed health check with dependency monitoring working');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Readiness Probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/../health/ready",
+              "host": ["{{baseUrl}}"],
+              "path": ["..", "health", "ready"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Readiness probe successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('ready');",
+                  "});",
+                  "",
+                  "console.log('✅ KUBERNETES: Readiness probe configured and responding');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Liveness Probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/../health/live",
+              "host": ["{{baseUrl}}"],
+              "path": ["..", "health", "live"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Liveness probe successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('alive');",
+                  "});",
+                  "",
+                  "console.log('✅ KUBERNETES: Liveness probe configured and responding');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

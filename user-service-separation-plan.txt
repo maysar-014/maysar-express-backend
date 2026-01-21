@@ -1,0 +1,270 @@
+# User Service Separation Plan
+# Enterprise-grade plan to separate User Service from Auth Service
+
+## Executive Summary
+
+The current auth-service contains both authentication concerns and user management functionality, violating single responsibility principle. This plan outlines the creation of a dedicated User Service and the refactoring of the Auth Service to achieve proper separation of concerns.
+
+## Current State Analysis
+
+### Auth Service Responsibilities (Mixed)
+**Authentication Logic:**
+- Password validation and hashing
+- JWT token generation/validation
+- Session management
+- Authentication policies
+- Two-factor authentication
+- Login attempt tracking
+
+**User Management Logic (Should be separated):**
+- User entity and domain model
+- User CRUD operations
+- User repository (Prisma)
+- User search and filtering
+- Email/phone verification status
+- User status management
+
+### Problems with Current Architecture
+1. **Tight Coupling**: Auth service directly depends on user data access
+2. **Single Responsibility Violation**: Handles both "who you are" and "what you are"
+3. **Scalability Issues**: Authentication and user management have different scaling requirements
+4. **Testing Complexity**: Mixed concerns make unit testing difficult
+5. **Deployment Coupling**: Changes to user management affect auth service
+
+## Proposed Architecture
+
+### User Service (New)
+**Responsibilities:**
+- User profile management (CRUD)
+- User registration and validation
+- Email/phone verification workflows
+- User search and listing
+- User preferences and settings
+- User data consistency across services
+
+**API Endpoints:**
+- POST /users - Create user
+- GET /users/:id - Get user by ID
+- PUT /users/:id - Update user
+- DELETE /users/:id - Delete user
+- GET /users/search - Search users
+- POST /users/:id/verify-email - Verify email
+- POST /users/:id/verify-phone - Verify phone
+
+### Auth Service (Refactored)
+**Responsibilities:**
+- User authentication (login/logout)
+- Password validation
+- JWT token management
+- Session handling
+- Authentication policies
+- Security monitoring
+
+**Dependencies:**
+- User Service (via HTTP/gRPC)
+- Session store (Redis)
+- Token blacklist store
+
+## Implementation Plan
+
+### Phase 1: Planning and Design (Week 1)
+
+#### 1.1 Service Contract Design
+- [x] Define User Service API specification (OpenAPI 3.0)
+- [x] Design inter-service communication protocols
+- [x] Establish data ownership boundaries
+- [x] Define shared domain models/interfaces
+
+#### 1.2 Database Schema Planning
+- [x] Analyze current user-related tables
+- [x] Design data migration strategy
+- [x] Plan database separation (if needed)
+- [x] Define data synchronization mechanisms
+
+#### 1.3 Dependency Analysis
+- [x] Identify all services using user data
+- [x] Map current auth-service dependencies
+- [x] Plan service discovery mechanism
+- [x] Design circuit breaker patterns
+
+### Phase 2: User Service Development (Weeks 2-4)
+
+#### 2.1 Project Setup
+- [ ] Create user-service directory structure
+- [ ] Initialize package.json with dependencies
+- [ ] Set up TypeScript configuration
+- [ ] Configure testing framework (Jest)
+
+#### 2.2 Domain Layer Implementation
+- [x] Extract User entity from auth-service
+- [x] Implement User repository interface
+- [x] Create value objects (Email, PhoneNumber, etc.)
+- [x] Implement domain policies for user management
+
+#### 2.3 Infrastructure Layer
+- [x] Set up Prisma client and schema
+- [x] Implement PrismaUserRepository
+- [x] Configure database connection
+- [x] Set up logging and monitoring
+
+#### 2.4 Application Layer
+- [x] Implement user CRUD use cases
+- [x] Create user registration use case
+- [x] Implement email/phone verification use cases
+- [x] Add user search functionality
+
+#### 2.5 API Layer
+- [x] Create Express.js application
+- [x] Implement REST API controllers
+- [x] Add request validation middleware
+- [x] Configure CORS and security headers
+
+#### 2.6 Cross-Cutting Concerns
+- [x] Implement error handling
+- [x] Add request logging
+- [x] Configure rate limiting
+- [x] Set up health checks
+
+### Phase 3: Auth Service Refactoring (Weeks 5-6)
+
+#### 3.1 Dependency Injection Setup
+- [x] Replace direct repository usage with HTTP client
+- [x] Implement UserServiceClient interface
+- [x] Add circuit breaker for User Service calls
+- [x] Configure service discovery
+
+#### 3.2 Authentication Logic Updates
+- [x] Modify authenticate-user use case to use User Service
+- [x] Update password validation logic
+- [x] Refactor session management
+- [x] Update authentication policies
+
+#### 3.3 Remove User Management Code
+- [x] Remove User entity from auth-service
+- [x] Delete user repository implementation
+- [x] Remove user-related value objects
+- [x] Clean up unused dependencies
+
+#### 3.4 API Updates
+- [x] Update authentication endpoints
+- [x] Remove user management endpoints (redirect to User Service)
+- [x] Update response formats
+- [x] Add service health checks
+
+### Phase 4: Integration and Testing (Weeks 7-8)
+
+#### 4.1 Service Integration
+- [ ] Implement service-to-service authentication
+- [ ] Configure API gateway routing
+- [ ] Set up inter-service communication
+- [ ] Implement retry and timeout policies
+
+#### 4.2 Testing Strategy
+- [ ] Unit tests for both services
+- [ ] Integration tests for service communication
+- [ ] End-to-end authentication flows
+- [ ] Performance testing for both services
+- [ ] Load testing for authentication scenarios
+
+#### 4.3 Data Migration
+- [ ] Plan data migration scripts
+- [ ] Implement backward compatibility
+- [ ] Test data consistency
+- [ ] Plan rollback procedures
+
+### Phase 5: Deployment and Monitoring (Week 9)
+
+#### 5.1 Infrastructure Setup
+- [ ] Configure Kubernetes deployments
+- [ ] Set up service mesh (Istio/Linkerd)
+- [ ] Configure load balancers
+- [ ] Set up monitoring and alerting
+
+#### 5.2 Deployment Strategy
+- [ ] Blue-green deployment plan
+- [ ] Database migration coordination
+- [ ] Service discovery configuration
+- [ ] Rollback procedures
+
+#### 5.3 Monitoring and Observability
+- [ ] Set up distributed tracing
+- [ ] Configure service metrics
+- [ ] Implement log aggregation
+- [ ] Create dashboards for both services
+
+## Risk Assessment and Mitigation
+
+### High Risk Items
+1. **Data Consistency**: Multiple services accessing user data
+   - Mitigation: Implement event-driven architecture for data synchronization
+
+2. **Service Downtime**: User Service unavailability affects authentication
+   - Mitigation: Implement caching and circuit breaker patterns
+
+3. **Breaking Changes**: API contract changes affect other services
+   - Mitigation: Versioned APIs and backward compatibility
+
+### Medium Risk Items
+1. **Performance Impact**: Additional network calls
+   - Mitigation: Implement caching and optimize queries
+
+2. **Increased Complexity**: Distributed system management
+   - Mitigation: Comprehensive monitoring and automated testing
+
+## Success Criteria
+
+### Functional Requirements
+- [ ] User registration works through User Service
+- [ ] Authentication flows work with separated services
+- [ ] User profile management available via User Service
+- [ ] All existing functionality preserved
+- [ ] No breaking changes for external clients
+
+### Non-Functional Requirements
+- [ ] Authentication response time < 500ms
+- [ ] User Service response time < 200ms
+- [ ] 99.9% uptime for both services
+- [ ] Zero data loss during migration
+- [ ] Comprehensive test coverage (>90%)
+
+## Timeline and Milestones
+
+- **Week 1**: Planning and design complete
+- **Week 4**: User Service MVP ready
+- **Week 6**: Auth Service refactoring complete
+- **Week 8**: Integration testing complete
+- **Week 9**: Production deployment
+- **Week 10**: Post-deployment monitoring and optimization
+
+## Team Requirements
+
+### Skills Needed
+- Backend TypeScript/Node.js developers (4)
+- DevOps engineers (2)
+- QA engineers (2)
+- Database administrators (1)
+- Security specialists (1)
+
+### Training Requirements
+- Microservices architecture patterns
+- Service mesh technologies
+- Distributed systems testing
+- API design and documentation
+
+## Cost Estimation
+
+### Development Costs
+- User Service development: 4 weeks × 4 developers = 64 developer-weeks
+- Auth Service refactoring: 2 weeks × 4 developers = 16 developer-weeks
+- Testing and integration: 2 weeks × 6 developers = 24 developer-weeks
+- Infrastructure setup: 1 week × 2 DevOps = 4 DevOps-weeks
+
+### Infrastructure Costs
+- Additional Kubernetes pods for User Service
+- Service mesh licensing
+- Monitoring and logging enhancements
+- Database storage for User Service
+
+## Conclusion
+
+This separation plan provides a structured approach to decoupling authentication and user management concerns, enabling better scalability, maintainability, and independent evolution of both services. The phased approach minimizes risk while ensuring business continuity throughout the transition.

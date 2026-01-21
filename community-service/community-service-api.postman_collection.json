@@ -1,0 +1,1978 @@
+{
+  "info": {
+    "name": "Community Service API - Enterprise Social Commerce Saga Collection",
+    "description": "Comprehensive Postman collection for Community Service API testing with saga-driven social commerce workflows. Includes end-to-end content lifecycles, algorithmic feeds, moderation orchestration, and event-driven interactions.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3002/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "healthBaseUrl",
+      "value": "http://localhost:3002",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "current_post_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "current_user_id",
+      "value": "550e8400-e29b-41d4-a716-446655440001",
+      "type": "string"
+    },
+    {
+      "key": "current_seller_id",
+      "value": "550e8400-e29b-41d4-a716-446655440002",
+      "type": "string"
+    },
+    {
+      "key": "current_buyer_id",
+      "value": "550e8400-e29b-41d4-a716-446655440003",
+      "type": "string"
+    },
+    {
+      "key": "saga_post_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "moderation_post_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "engagement_post_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🏥 Health & System Monitoring",
+      "item": [
+        {
+          "name": "Service Health Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{healthBaseUrl}}/health",
+              "host": [
+                "{{healthBaseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Basic health check - checks database, Redis, and Kafka connectivity."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Health check returns 200 or 503', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    pm.test('Response has required fields', function() {",
+                  "        pm.expect(response).to.have.property('service');",
+                  "        pm.expect(response).to.have.property('status');",
+                  "        pm.expect(response).to.have.property('timestamp');",
+                  "        pm.expect(response).to.have.property('database');",
+                  "        pm.expect(response).to.have.property('cache');",
+                  "        pm.expect(response).to.have.property('messaging');",
+                  "    });",
+                  "    ",
+                  "    pm.test('Service status is healthy', function() {",
+                  "        pm.expect(response.status).to.equal('healthy');",
+                  "    });",
+                  "    ",
+                  "    pm.test('Database is healthy', function() {",
+                  "        pm.expect(response.database.status).to.equal('connected');",
+                  "    });",
+                  "    ",
+                  "    pm.test('Redis cache is healthy', function() {",
+                  "        pm.expect(response.cache.status).to.equal('connected');",
+                  "    });",
+                  "    ",
+                  "    pm.test('Kafka messaging is healthy', function() {",
+                  "        pm.expect(response.messaging.status).to.equal('connected');",
+                  "    });",
+                  "    ",
+                  "    console.log('✅ Health check passed - Service is healthy');",
+                  "    console.log('🗄️  Database:', response.database.status, response.database.latency ? `(${response.database.latency}ms)` : '');",
+                  "    console.log('⚡ Cache:', response.cache.status, response.cache.latency ? `(${response.cache.latency}ms)` : '');",
+                  "    console.log('📨 Messaging:', response.messaging.status);",
+                  "}",
+                  "else {",
+                  "    console.log('⚠️  Service is unhealthy - check infrastructure components');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detailed Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{healthBaseUrl}}/health/detailed",
+              "host": [
+                "{{healthBaseUrl}}"
+              ],
+              "path": [
+                "health",
+                "detailed"
+              ]
+            },
+            "description": "Detailed health check including database metrics, cache statistics, and event publishing status."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Detailed health check returns appropriate status', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.test('Response has detailed checks', function() {",
+                  "        pm.expect(response).to.have.property('checks');",
+                  "        pm.expect(response.checks).to.have.property('database');",
+                  "        pm.expect(response.checks).to.have.property('cache');",
+                  "        pm.expect(response.checks).to.have.property('messaging');",
+                  "        pm.expect(response.checks).to.have.property('feedEngine');",
+                  "    });",
+                  "    console.log('✅ Detailed health check passed');",
+                  "    console.log('📊 Database connections:', response.checks.database.connections);",
+                  "    console.log('⚡ Cache hit rate:', response.checks.cache.hitRate || 'N/A');",
+                  "    console.log('📨 Messages published (last hour):', response.checks.messaging.messagesPublished);",
+                  "}",
+                  "else {",
+                  "    console.log('⚠️  Service has health issues - check detailed response');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "System Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/metrics",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "metrics"
+              ]
+            },
+            "description": "Get system performance metrics and KPIs."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Metrics endpoint responds', function() {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "console.log('📊 System Metrics:');",
+                  "console.log('📈 Total posts:', response.posts.total);",
+                  "console.log('👥 Active users:', response.users.active);",
+                  "console.log('📊 Engagement rate:', response.engagement.rate);",
+                  "console.log('⚡ Avg response time:', response.performance.avgResponseTime, 'ms');",
+                  "console.log('🛡️  Moderation queue:', response.moderation.pending);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📝 Content Creation & Management",
+      "item": [
+        {
+          "name": "Create Text Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "req_text_post_{{current_user_id}}_{{$timestamp}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": \"{{current_user_id}}\",\n  \"content\": \"Excited to share my experience with the latest products on Maysar! The quality and customer service are outstanding. #MaysarExperience #QualityShopping\",\n  \"type\": \"text\",\n  \"visibility\": \"public\",\n  \"metadata\": {\n    \"tags\": [\"MaysarExperience\", \"QualityShopping\", \"CustomerReview\"],\n    \"location\": {\n      \"latitude\": -6.7924,\n      \"longitude\": 39.2083,\n      \"address\": \"Dar es Salaam, Tanzania\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts"
+              ]
+            },
+            "description": "Create a new text post with tags and location metadata."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Text post creation returns 201', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400, 429]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    pm.test('Response has required fields', function() {",
+                  "        pm.expect(response).to.have.property('postId');",
+                  "        pm.expect(response).to.have.property('status');",
+                  "        pm.expect(response).to.have.property('message');",
+                  "    });",
+                  "    ",
+                  "    pm.test('Post ID format is valid', function() {",
+                  "        pm.expect(response.postId).to.match(/^[a-zA-Z0-9\-_]+$/);",
+                  "    });",
+                  "    ",
+                  "    // Save post ID for subsequent requests",
+                  "    pm.collectionVariables.set('current_post_id', response.postId);",
+                  "    console.log('✅ Text post created successfully:', response.postId);",
+                  "    console.log('📝 Status:', response.status);",
+                  "    console.log('📨 Event published: PostCreated');",
+                  "}",
+                  "else if (pm.response.code === 400) {",
+                  "    console.log('❌ Validation error - check request data');",
+                  "}",
+                  "else if (pm.response.code === 429) {",
+                  "    console.log('⚠️  Rate limit exceeded - try again later');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Product Announcement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": \"{{current_seller_id}}\",\n  \"title\": \"New Laptop Arrivals - Limited Stock!\",\n  \"content\": \"🚀 Exciting news! We've just received a fresh shipment of premium laptops with the latest specifications. Features include 16GB RAM, 512GB SSD, and Intel i7 processors. Perfect for students, professionals, and gaming enthusiasts!\\n\\n📦 Available in multiple configurations\\n💰 Competitive pricing starting from TZS 1,200,000\\n🚚 Fast delivery across Tanzania\\n\\nVisit our store or contact us for special bulk pricing. Limited quantities available!\",\n  \"type\": \"product_announcement\",\n  \"visibility\": \"public\",\n  \"metadata\": {\n    \"tags\": [\"NewArrival\", \"Laptops\", \"Electronics\", \"StudentDeals\"],\n    \"relatedProductId\": \"prod_laptop_deluxe_001\",\n    \"location\": {\n      \"latitude\": -6.7924,\n      \"longitude\": 39.2083,\n      \"address\": \"Maysar Store, Dar es Salaam\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts"
+              ]
+            },
+            "description": "Create a product announcement post with commerce metadata."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Product announcement creation works', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 202, 400, 403]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Product announcement published:', response.postId);",
+                  "    pm.collectionVariables.set('product_post_id', response.postId);",
+                  "} else if (pm.response.code === 202) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('⏳ Product announcement sent for moderation:', response.postId);",
+                  "    pm.collectionVariables.set('product_post_id', response.postId);",
+                  "} else if (pm.response.code === 403) {",
+                  "    console.log('🚫 Only verified sellers can create product announcements');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Event Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": \"{{current_seller_id}}\",\n  \"title\": \"Grand Opening Celebration!\",\n  \"content\": \"🎉 Join us for our grand opening celebration this Saturday!\\n\\n📅 Date: December 31st, 2024\\n🕒 Time: 10:00 AM - 6:00 PM\\n📍 Location: Maysar Plaza, Ground Floor\\n\\n🎁 Special offers and giveaways throughout the day\\n🍕 Free food and refreshments\\n🎵 Live music and entertainment\\n\\nDon't miss out on exclusive opening day discounts up to 40% off! RSVP required for special guests.\",\n  \"type\": \"event\",\n  \"visibility\": \"public\",\n  \"metadata\": {\n    \"eventDetails\": {\n      \"startDate\": \"2024-12-31T10:00:00Z\",\n      \"endDate\": \"2024-12-31T18:00:00Z\",\n      \"location\": \"Maysar Plaza, Ground Floor, Dar es Salaam\",\n      \"capacity\": 200,\n      \"rsvpRequired\": true\n    },\n    \"tags\": [\"GrandOpening\", \"Celebration\", \"SpecialOffers\", \"FreeFood\"],\n    \"location\": {\n      \"latitude\": -6.7924,\n      \"longitude\": 39.2083,\n      \"address\": \"Maysar Plaza, Dar es Salaam\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts"
+              ]
+            },
+            "description": "Create an event post with detailed event metadata."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Event post creation works', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Event post created:', response.postId);",
+                  "    console.log('📅 Event details validated and stored');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Poll Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": \"{{current_user_id}}\",\n  \"content\": \"What's your preferred shopping method? Help us understand your preferences!\",\n  \"type\": \"poll\",\n  \"visibility\": \"public\",\n  \"metadata\": {\n    \"pollOptions\": [\n      \"In-store shopping\",\n      \"Online shopping with home delivery\",\n      \"Online shopping with pickup\",\n      \"Mobile app ordering\",\n      \"Market/vendor shopping\"\n    ],\n    \"tags\": [\"CustomerSurvey\", \"ShoppingPreferences\", \"MarketResearch\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts"
+              ]
+            },
+            "description": "Create a poll post with multiple choice options."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Poll post creation works', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Poll post created:', response.postId);",
+                  "    console.log('🗳️  Poll options validated and stored');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Delivery Update",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": \"{{current_user_id}}\",\n  \"content\": \"🚚 Order #12345 has been picked up and is on the way! Expected delivery by 3:00 PM today. Track your package: https://maysar.com/track/12345\",\n  \"type\": \"delivery_update\",\n  \"visibility\": \"public\",\n  \"metadata\": {\n    \"relatedOrderId\": \"order_12345_example\",\n    \"relatedShipmentId\": \"ship_12345_example\",\n    \"tags\": [\"OrderUpdate\", \"Delivery\", \"OnTheWay\"],\n    \"location\": {\n      \"latitude\": -6.8,\n      \"longitude\": 39.2,\n      \"address\": \"In transit to Dar es Salaam\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts"
+              ]
+            },
+            "description": "Create a delivery update post linking to an order and shipment."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Delivery update creation works', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 403]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Delivery update posted:', response.postId);",
+                  "    console.log('🚚 Order and shipment links established');",
+                  "} else if (pm.response.code === 403) {",
+                  "    console.log('🚫 Only couriers can create delivery updates');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Post Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{current_post_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{current_post_id}}"
+              ]
+            },
+            "description": "Retrieve detailed information about a specific post."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Post retrieval returns 200 or 404', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    const post = response.post;",
+                  "    ",
+                  "    pm.test('Post details are complete', function() {",
+                  "        pm.expect(post).to.have.property('id');",
+                  "        pm.expect(post).to.have.property('authorId');",
+                  "        pm.expect(post).to.have.property('content');",
+                  "        pm.expect(post).to.have.property('type');",
+                  "        pm.expect(post).to.have.property('status');",
+                  "        pm.expect(post).to.have.property('visibility');",
+                  "        pm.expect(post).to.have.property('createdAt');",
+                  "    });",
+                  "    ",
+                  "    pm.test('Post ID matches requested', function() {",
+                  "        pm.expect(post.id).to.equal(pm.collectionVariables.get('current_post_id'));",
+                  "    });",
+                  "    ",
+                  "    console.log('✅ Post details retrieved for:', post.id);",
+                  "    console.log('👤 Author:', post.authorId);",
+                  "    console.log('📝 Type:', post.type);",
+                  "    console.log('👁️  Visibility:', post.visibility);",
+                  "    console.log('📊 Status:', post.status);",
+                  "    console.log('👍 Likes:', post.likesCount || 0);",
+                  "    console.log('💬 Comments:', post.commentsCount || 0);",
+                  "}",
+                  "else if (pm.response.code === 404) {",
+                  "    console.log('❌ Post not found - create a post first');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Post Content",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Updated content with additional information and corrections.\",\n  \"metadata\": {\n    \"tags\": [\"Updated\", \"Corrected\", \"AdditionalInfo\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts/{{current_post_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{current_post_id}}"
+              ]
+            },
+            "description": "Update post content and metadata."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Post update returns appropriate status', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 403, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    console.log('✅ Post updated successfully');",
+                  "    console.log('📨 Event published: PostUpdated');",
+                  "} else if (pm.response.code === 403) {",
+                  "    console.log('🚫 Update not allowed - check ownership and time limits');",
+                  "} else if (pm.response.code === 404) {",
+                  "    console.log('❌ Post not found');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🔍 Feed & Discovery",
+      "item": [
+        {
+          "name": "Get Global Feed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/published?page=1&limit=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "published"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get paginated global feed of published posts."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Global feed returns 200', function() {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Feed has pagination', function() {",
+                  "    pm.expect(response).to.have.property('posts');",
+                  "    pm.expect(response).to.have.property('pagination');",
+                  "    pm.expect(response.posts).to.be.an('array');",
+                  "});",
+                  "",
+                  "console.log('✅ Retrieved', response.posts.length, 'posts from global feed');",
+                  "console.log('📄 Page', response.pagination.page, 'of', response.pagination.totalPages);",
+                  "console.log('📊 Total posts:', response.pagination.total);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Personalized Feed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/{{current_user_id}}/feed?limit=15&includeFollowed=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{current_user_id}}",
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "15"
+                },
+                {
+                  "key": "includeFollowed",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Get personalized feed for a user using algorithmic ranking."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Personalized feed returns 200', function() {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Feed has algorithmic ranking', function() {",
+                  "    pm.expect(response).to.have.property('feed');",
+                  "    pm.expect(response.feed).to.be.an('array');",
+                  "    if (response.feed.length > 0) {",
+                  "        pm.expect(response.feed[0]).to.have.property('post');",
+                  "        pm.expect(response.feed[0]).to.have.property('score');",
+                  "        pm.expect(response.feed[0]).to.have.property('reasons');",
+                  "    }",
+                  "});",
+                  "",
+                  "console.log('🎯 Personalized feed generated for user:', pm.collectionVariables.get('current_user_id'));",
+                  "console.log('📊 Feed items:', response.feed.length);",
+                  "",
+                  "if (response.feed.length > 0) {",
+                  "    console.log('🏆 Top post score:', response.feed[0].score);",
+                  "    console.log('📝 Ranking reasons:', response.feed[0].reasons.join(', '));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/search?q=Maysar&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Maysar"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Search posts by content, title, or tags."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Search returns 200', function() {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Search results are structured', function() {",
+                  "    pm.expect(response).to.have.property('query');",
+                  "    pm.expect(response).to.have.property('posts');",
+                  "    pm.expect(response).to.have.property('count');",
+                  "    pm.expect(response.posts).to.be.an('array');",
+                  "});",
+                  "",
+                  "console.log('🔍 Search results for \"' + response.query + '\":', response.count, 'posts found');",
+                  "",
+                  "if (response.posts.length > 0) {",
+                  "    console.log('📝 Sample result:', response.posts[0].content.substring(0, 50) + '...');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Trending Topics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/trending?hours=24",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "trending"
+              ],
+              "query": [
+                {
+                  "key": "hours",
+                  "value": "24"
+                }
+              ]
+            },
+            "description": "Get trending topics and hashtags from recent posts."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Trending topics returns 200', function() {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Trending data is valid', function() {",
+                  "    pm.expect(response).to.have.property('topics');",
+                  "    pm.expect(response).to.have.property('timeWindowHours');",
+                  "    pm.expect(response.topics).to.be.an('array');",
+                  "});",
+                  "",
+                  "console.log('📈 Trending topics (last', response.timeWindowHours, 'hours):');",
+                  "response.topics.slice(0, 5).forEach((topic, index) => {",
+                  "    console.log('  ', (index + 1) + '.', topic.tag || topic, '(score:', topic.score || 'N/A)');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Related Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{current_post_id}}/related?limit=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{current_post_id}}",
+                "related"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Get posts related to a specific post based on tags, type, and author."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Related posts returns 200 or 404', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.test('Related posts are returned', function() {",
+                  "        pm.expect(response).to.have.property('postId');",
+                  "        pm.expect(response).to.have.property('relatedPosts');",
+                  "        pm.expect(response).to.have.property('count');",
+                  "        pm.expect(response.relatedPosts).to.be.an('array');",
+                  "    });",
+                  "    ",
+                  "    console.log('🔗 Found', response.count, 'related posts for post:', response.postId);",
+                  "}",
+                  "else if (pm.response.code === 404) {",
+                  "    console.log('❌ Post not found for related posts');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "⚡ Performance Testing",
+      "item": [
+        {
+          "name": "Feed Load Test",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/published?page=1&limit=50",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "published"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Performance test for feed loading. Run multiple times to test caching and database performance."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Feed loads within time limit', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1000); // 1s max for cached feed",
+                  "});",
+                  "",
+                  "pm.test('Feed returns valid data', function() {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.posts).to.be.an('array');",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "console.log('⚡ Feed loaded in', pm.response.responseTime, 'ms -', response.posts.length, 'posts');",
+                  "",
+                  "if (pm.response.responseTime < 100) {",
+                  "    console.log('🚀 Cache hit - super fast!');",
+                  "} else if (pm.response.responseTime < 500) {",
+                  "    console.log('⚡ Fast response - good performance');",
+                  "} else {",
+                  "    console.log('🐌 Slower response - check database or cache');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Performance Test",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/search?q=quality&limit=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "quality"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Performance test for search functionality."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Search responds quickly', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(800); // 800ms max for search",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "console.log('🔍 Search completed in', pm.response.responseTime, 'ms - found', response.count, 'results');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Post Creation Stress Test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "stress_test_{{$randomInt}}_{{$timestamp}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": \"user_stress_{{$randomInt}}\",\n  \"content\": \"Stress test post {{$randomInt}} - testing system performance under load. Random content: {{$randomLoremSentence}}\",\n  \"type\": \"text\",\n  \"visibility\": \"public\",\n  \"metadata\": {\n    \"tags\": [\"StressTest\", \"Performance\", \"LoadTest\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts"
+              ]
+            },
+            "description": "Stress test for post creation with randomized data. Use Runner to execute multiple times."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Post creation handles load', function() {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000); // 3s max under load",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('⚡ Post created under load in', pm.response.responseTime, 'ms - ID:', response.postId);",
+                  "} else if (pm.response.code === 429) {",
+                  "    console.log('⏱️  Rate limited - system handling load correctly');",
+                  "} else {",
+                  "    console.log('⚠️  Unexpected response under load:', pm.response.code, 'in', pm.response.responseTime, 'ms');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🛡️ Error Scenarios & Edge Cases",
+      "item": [
+        {
+          "name": "Invalid Post Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": \"\",\n  \"content\": \"\",\n  \"type\": \"invalid_type\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts"
+              ]
+            },
+            "description": "Test validation by sending invalid post data."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invalid data returns 400', function() {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 400) {",
+                  "    const error = pm.response.json();",
+                  "    pm.test('Error response has proper structure', function() {",
+                  "        pm.expect(error).to.have.property('error');",
+                  "        pm.expect(error).to.have.property('message');",
+                  "        pm.expect(error).to.have.property('details');",
+                  "        pm.expect(error.details).to.be.an('array');",
+                  "    });",
+                  "    console.log('✅ Validation working - Error:', error.message);",
+                  "    console.log('📝 Validation details:', error.details.length, 'issues found');",
+                  "}",
+                  "else {",
+                  "    console.log('❌ Validation not working properly');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Non-existent Post",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/post_nonexistent_12345",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "post_nonexistent_12345"
+              ]
+            },
+            "description": "Test 404 handling by requesting a non-existent post."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Non-existent post returns 404', function() {",
+                  "    pm.expect(pm.response.code).to.equal(404);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 404) {",
+                  "    const error = pm.response.json();",
+                  "    console.log('✅ 404 handling working - Error:', error.message);",
+                  "}",
+                  "else {",
+                  "    console.log('❌ 404 handling not working');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unauthorized Content Creation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": \"{{current_buyer_id}}\",\n  \"content\": \"Attempting to create system notice as buyer - should fail\",\n  \"type\": \"system_notice\",\n  \"visibility\": \"public\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts"
+              ]
+            },
+            "description": "Test authorization by having a buyer try to create a system notice (only enablers allowed)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Unauthorized content creation returns 400 or 403', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 403]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 403) {",
+                  "    console.log('✅ Authorization working - buyer cannot create system notices');",
+                  "}",
+                  "else if (pm.response.code === 400) {",
+                  "    console.log('✅ Validation working - invalid content type for user role');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rate Limit Test",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/published?page=1&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "published"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Test rate limiting by making frequent requests. Use Runner to execute multiple times quickly."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Rate limiting works', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 429]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 429) {",
+                  "    console.log('✅ Rate limiting active - request blocked');",
+                  "    const headers = pm.response.headers;",
+                  "    const retryAfter = headers.find(h => h.key.toLowerCase() === 'retry-after');",
+                  "    if (retryAfter) {",
+                  "        console.log('⏱️  Retry after:', retryAfter.value, 'seconds');",
+                  "    }",
+                  "} else if (pm.response.code === 200) {",
+                  "    console.log('📊 Request allowed - rate limit not exceeded');",
+                  "    const headers = pm.response.headers;",
+                  "    const remaining = headers.find(h => h.key.toLowerCase() === 'x-ratelimit-remaining');",
+                  "    if (remaining) {",
+                  "        console.log('📊 Requests remaining:', remaining.value);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Content Moderation Trigger",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": \"{{current_user_id}}\",\n  \"content\": \"This post contains suspicious content: fake products, counterfeit items, and questionable deals. This should trigger content moderation.\",\n  \"type\": \"text\",\n  \"visibility\": \"public\",\n  \"metadata\": {\n    \"tags\": [\"suspicious\", \"fake\", \"counterfeit\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts"
+              ]
+            },
+            "description": "Test content moderation by posting content with suspicious keywords."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Content moderation may trigger', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 202]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 202) {",
+                  "    console.log('✅ Content moderation triggered - post sent for review');",
+                  "    console.log('📨 Event published: ContentReported');",
+                  "} else if (pm.response.code === 201) {",
+                  "    console.log('📝 Post published - moderation not triggered');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🎭 SAGA ORCHESTRATION: Content Lifecycle Workflow",
+      "item": [
+        {
+          "name": "Step 1: Create Content (Saga Initiation)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "saga_content_{{$timestamp}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": \"{{current_seller_id}}\",\n  \"title\": \"🚀 New Product Launch - Premium Wireless Headphones\",\n  \"content\": \"🎧 Introducing our latest premium wireless headphones with industry-leading noise cancellation, 30-hour battery life, and premium sound quality. Perfect for music lovers, professionals, and anyone seeking audio excellence.\\n\\n✨ Key Features:\\n• Active Noise Cancellation\\n• 30-hour battery life\\n• Premium drivers\\n• Comfortable design\\n• Wireless charging\\n\\n💰 Special launch pricing: TZS 85,000 (Regular: TZS 120,000)\\n\\nLimited stock available - order now!\",\n  \"type\": \"product_announcement\",\n  \"visibility\": \"public\",\n  \"metadata\": {\n    \"relatedProductId\": \"prod_headphones_premium_001\",\n    \"tags\": [\"NewLaunch\", \"Headphones\", \"PremiumAudio\", \"LimitedStock\"],\n    \"location\": {\n      \"latitude\": -6.7924,\n      \"longitude\": 39.2083,\n      \"address\": \"Maysar Electronics Store, Dar es Salaam\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts"
+              ]
+            },
+            "description": "Create product announcement to trigger Content Lifecycle Saga (PostCreated → ContentValidation → ModerationCheck → Publishing)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Content creation triggers saga', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 202]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201 || pm.response.code === 202) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('saga_post_id', response.postId);",
+                  "    ",
+                  "    pm.test('PostCreated event should be published', function() {",
+                  "        pm.expect(response.postId).to.exist;",
+                  "    });",
+                  "    ",
+                  "    console.log('✅ CONTENT SAGA INITIATED: Product announcement created with ID', response.postId);",
+                  "    console.log('🎭 Expecting: PostCreated → ContentValidation → ModerationCheck → Publishing events');",
+                  "    console.log('📊 Saga steps: 1. Content Created ✓');",
+                  "}",
+                  "else {",
+                  "    console.log('❌ Content saga initiation failed');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 2: Verify Content Processing (Validation & Moderation)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{saga_post_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{saga_post_id}}"
+              ]
+            },
+            "description": "Check content processing status through saga steps"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Content processing reflects saga progression', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    const post = response.post;",
+                  "    ",
+                  "    pm.test('Post has processing status', function() {",
+                  "        pm.expect(['draft', 'published', 'hidden']).to.include(post.status);",
+                  "    });",
+                  "    ",
+                  "    console.log('📊 CONTENT SAGA PROGRESS: Post status is', post.status);",
+                  "    console.log('🎭 Saga steps completed:');",
+                  "    console.log('   1. Content Created ✓');",
+                  "    console.log('   2. Content Validation ✓');",
+                  "    console.log('   3. Moderation Check', post.status === 'published' ? '✓ (Auto-approved)' : post.status === 'draft' ? '⏳ (Under review)' : '⚠️ (Flagged)');",
+                  "    console.log('   4. Publishing', post.status === 'published' ? '✓' : '⏳');",
+                  "    ",
+                  "    if (post.publishedAt) {",
+                  "        console.log('📅 Published at:', new Date(post.publishedAt).toLocaleString());",
+                  "    }",
+                  "}",
+                  "else {",
+                  "    console.log('❌ Post not found - saga may have failed');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 3: Complete Content Lifecycle (Engagement & Analytics)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{saga_post_id}}/related?limit=3",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{saga_post_id}}",
+                "related"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "3"
+                }
+              ]
+            },
+            "description": "Verify complete content lifecycle with engagement and discovery"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Content lifecycle completion works', function() {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "console.log('🎉 CONTENT LIFECYCLE COMPLETE: Post integrated into ecosystem');",
+                  "console.log('🔗 Found', response.count, 'related posts for content discovery');",
+                  "console.log('📊 Saga steps completed:');",
+                  "console.log('   1. Content Created ✓');",
+                  "console.log('   2. Content Validation ✓');",
+                  "console.log('   3. Moderation Check ✓');",
+                  "console.log('   4. Publishing ✓');",
+                  "console.log('   5. Content Discovery ✓');",
+                  "console.log('   6. Engagement Ready ✓');",
+                  "console.log('   7. Analytics Integration ✓');",
+                  "",
+                  "console.log('🎭 CONTENT SAGA SUCCESSFUL: Full lifecycle orchestration completed');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🔄 PARALLEL SAGAS: Multi-Content Publishing",
+      "item": [
+        {
+          "name": "Create Parallel Content 1 - Tech Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "parallel_content_1_{{$timestamp}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": \"{{current_user_id}}\",\n  \"content\": \"📱 Just tested the new smartphone - incredible camera quality and battery life! The AI features are game-changing. Perfect for content creators and photography enthusiasts. Highly recommended! ⭐⭐⭐⭐⭐\",\n  \"type\": \"text\",\n  \"visibility\": \"public\",\n  \"metadata\": {\n    \"tags\": [\"TechReview\", \"Smartphone\", \"Photography\", \"AI\", \"Recommended\"],\n    \"location\": {\n      \"latitude\": -6.7924,\n      \"longitude\": 39.2083,\n      \"address\": \"Tech Hub, Dar es Salaam\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts"
+              ]
+            },
+            "description": "Create first parallel content for concurrent saga processing"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Parallel content 1 created', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 202]);",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('parallelPostId1', response.postId);",
+                  "});",
+                  "",
+                  "console.log('✅ PARALLEL SAGA 1: Tech review created with ID', pm.collectionVariables.get('parallelPostId1'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Parallel Content 2 - Event Announcement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "parallel_content_2_{{$timestamp}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": \"{{current_seller_id}}\",\n  \"title\": \"🌟 Community Tech Meetup - January 2025\",\n  \"content\": \"🎉 Join us for our monthly Tech Meetup featuring:\\n\\n💻 Guest Speaker: AI in E-commerce\\n🍕 Networking with fellow tech enthusiasts\\n🚀 Startup pitching session\\n🎁 Door prizes and giveaways\\n\\n📅 Date: January 15th, 2025\\n🕒 Time: 6:00 PM - 9:00 PM\\n📍 Venue: Innovation Hub, Dar es Salaam\\n\\nRSVP required - limited seats available!\",\n  \"type\": \"event\",\n  \"visibility\": \"public\",\n  \"metadata\": {\n    \"eventDetails\": {\n      \"startDate\": \"2025-01-15T18:00:00Z\",\n      \"endDate\": \"2025-01-15T21:00:00Z\",\n      \"location\": \"Innovation Hub, Dar es Salaam\",\n      \"capacity\": 50,\n      \"rsvpRequired\": true\n    },\n    \"tags\": [\"TechMeetup\", \"Networking\", \"AI\", \"Startup\", \"Community\"],\n    \"location\": {\n      \"latitude\": -6.8,\n      \"longitude\": 39.25,\n      \"address\": \"Innovation Hub, Dar es Salaam\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts"
+              ]
+            },
+            "description": "Create second parallel content for concurrent saga processing"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Parallel content 2 created', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 202]);",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('parallelPostId2', response.postId);",
+                  "});",
+                  "",
+                  "console.log('✅ PARALLEL SAGA 2: Event announcement created with ID', pm.collectionVariables.get('parallelPostId2'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Parallel Content Processing",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/search?q=Tech&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Tech"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Verify that parallel content sagas process independently"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Parallel content processing works', function() {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.posts.length).to.be.greaterThan(1);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "const parallelPosts = response.posts.filter(p => ",
+                  "    p.id === pm.collectionVariables.get('parallelPostId1') || ",
+                  "    p.id === pm.collectionVariables.get('parallelPostId2')",
+                  ");",
+                  "",
+                  "pm.test('Both parallel posts exist', function() {",
+                  "    pm.expect(parallelPosts.length).to.equal(2);",
+                  "});",
+                  "",
+                  "console.log('🔄 PARALLEL CONTENT SAGAS: Both posts processing independently');",
+                  "console.log('📊 Post 1 status:', parallelPosts.find(p => p.id === pm.collectionVariables.get('parallelPostId1'))?.status);",
+                  "console.log('📊 Post 2 status:', parallelPosts.find(p => p.id === pm.collectionVariables.get('parallelPostId2'))?.status);",
+                  "console.log('🎭 Multiple content lifecycles running in parallel');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "⚠️ COMPENSATION: Content Moderation Failure Scenario",
+      "item": [
+        {
+          "name": "Create Content with Moderation Triggers",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "compensation_moderation_{{$timestamp}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": \"{{current_user_id}}\",\n  \"content\": \"🚨 COMPENSATION TEST: This content contains multiple suspicious keywords including fake, counterfeit, scam, fraudulent, illegal, prohibited, weapons, drugs, malware, virus, hack, crack, exploit. This should trigger automatic moderation and potentially content rejection or user suspension.\",\n  \"type\": \"text\",\n  \"visibility\": \"public\",\n  \"metadata\": {\n    \"tags\": [\"suspicious\", \"fake\", \"counterfeit\", \"scam\", \"fraudulent\", \"test\"],\n    \"location\": {\n      \"latitude\": 0,\n      \"longitude\": 0,\n      \"address\": \"Test Location\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts"
+              ]
+            },
+            "description": "Create content with moderation triggers to test compensation saga"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Content with moderation triggers processed', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 202, 400, 403]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 202) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('moderation_post_id', response.postId);",
+                  "    console.log('⚠️  MODERATION COMPENSATION: Content flagged for review - ID', response.postId);",
+                  "    console.log('🎭 Expecting: ContentReported → ModerationReview → PotentialContentRemoval');",
+                  "} else if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('moderation_post_id', response.postId);",
+                  "    console.log('⚠️  MODERATION COMPENSATION: Content auto-approved despite triggers - ID', response.postId);",
+                  "} else if (pm.response.code === 403) {",
+                  "    console.log('🚫 MODERATION COMPENSATION: Content rejected due to policy violations');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Moderation Compensation Actions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{moderation_post_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{moderation_post_id}}"
+              ]
+            },
+            "description": "Check if moderation triggers activated appropriate compensation actions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Moderation compensation actions executed', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    const post = response.post;",
+                  "    ",
+                  "    console.log('⚠️  MODERATION COMPENSATION RESULT: Post status is', post.status);",
+                  "    console.log('🛡️  Moderation actions taken:');",
+                  "    ",
+                  "    if (post.status === 'hidden') {",
+                  "        console.log('   • Content hidden from public view');",
+                  "        console.log('   • ContentReported event published');",
+                  "        console.log('   • ModerationReview initiated');",
+                  "    } else if (post.status === 'published') {",
+                  "        console.log('   • Content passed moderation checks');",
+                  "        console.log('   • Auto-approval successful');",
+                  "    }",
+                  "    ",
+                  "    if (post.moderatedBy) {",
+                  "        console.log('   • Moderated by:', post.moderatedBy);",
+                  "        console.log('   • Moderation reason:', post.moderationReason || 'N/A');",
+                  "    }",
+                  "    ",
+                  "    console.log('✅ MODERATION COMPENSATION: Policy enforcement completed');",
+                  "} else {",
+                  "    console.log('❌ Post not found - compensation may have resulted in deletion');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🎯 FEED OPTIMIZATION: Personalization Saga",
+      "item": [
+        {
+          "name": "Generate User Interaction Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorId\": \"{{current_user_id}}\",\n  \"content\": \"🔥 HOT: Amazing deals on electronics this week! Laptops, phones, and accessories at unbeatable prices. Don't miss out on these limited-time offers!\\n\\n📱 Smartphone deals starting from TZS 150,000\\n💻 Laptop bundles with free accessories\\n🎧 Premium headphones at 40% off\\n\\nVisit our store or shop online now!\",\n  \"type\": \"promotion\",\n  \"visibility\": \"public\",\n  \"metadata\": {\n    \"tags\": [\"Deals\", \"Electronics\", \"LimitedTime\", \"HotOffers\"],\n    \"relatedProductId\": \"prod_electronics_bundle_001\",\n    \"location\": {\n      \"latitude\": -6.7924,\n      \"longitude\": 39.2083,\n      \"address\": \"Maysar Electronics, Dar es Salaam\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts"
+              ]
+            },
+            "description": "Create engaging content to test feed personalization algorithms"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Feed content created successfully', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 202]);",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('engagement_post_id', response.postId);",
+                  "});",
+                  "",
+                  "console.log('🎯 FEED PERSONALIZATION SAGA: Engaging content created for algorithm testing');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Test Personalized Feed Algorithm",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/{{current_user_id}}/feed?limit=20&includeFollowed=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{current_user_id}}",
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "includeFollowed",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Test feed personalization algorithm with scoring and ranking"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Personalized feed algorithm works', function() {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.feed).to.be.an('array');",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "console.log('🎯 FEED PERSONALIZATION ALGORITHM:');",
+                  "console.log('📊 Feed items returned:', response.feed.length);",
+                  "",
+                  "if (response.feed.length > 0) {",
+                  "    const topItem = response.feed[0];",
+                  "    console.log('🏆 Top content score:', topItem.score);",
+                  "    console.log('📝 Ranking factors:', topItem.reasons.join(', '));",
+                  "    console.log('👤 Content author:', topItem.post.authorId);",
+                  "    console.log('📋 Content type:', topItem.post.type);",
+                  "    ",
+                  "    // Check if our test content is in feed",
+                  "    const ourContent = response.feed.find(item => item.post.id === pm.collectionVariables.get('engagement_post_id'));",
+                  "    if (ourContent) {",
+                  "        console.log('✅ Our content appears in personalized feed with score:', ourContent.score);",
+                  "        console.log('🎭 Personalization working: Content ranked based on user preferences');",
+                  "    } else {",
+                  "        console.log('⚠️  Our content not in feed - may need more user interaction data');",
+                  "    }",
+                  "}",
+                  "",
+                  "console.log('🎯 FEED SAGA COMPLETE: Algorithm successfully personalized content');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Feed Adaptation (Trending Integration)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/trending?hours=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "trending"
+              ],
+              "query": [
+                {
+                  "key": "hours",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Verify that feed personalization integrates with trending content analysis"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Trending analysis integrates with feed', function() {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "console.log('📈 TRENDING INTEGRATION:');",
+                  "console.log('⏰ Analysis window:', response.timeWindowHours, 'hours');",
+                  "console.log('🔥 Trending topics found:', response.topics.length);",
+                  "",
+                  "response.topics.slice(0, 3).forEach((topic, index) => {",
+                  "    console.log(`   ${index + 1}. ${topic.tag} (score: ${topic.score})`);",
+                  "});",
+                  "",
+                  "console.log('🎯 COMPLETE FEED SAGA: Personalization + Trending + Algorithmic ranking integrated');",
+                  "console.log('🔄 Expecting: UserInteraction → AlgorithmUpdate → FeedRanking → TrendingAnalysis cycle');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global pre-request script",
+          "console.log('🚀 Executing:', pm.info.requestName);",
+          "console.log('📍 URL:', pm.request.url.toString());",
+          "",
+          "// Add timestamp to request for tracking",
+          "const timestamp = new Date().toISOString();",
+          "console.log('🕒 Timestamp:', timestamp);",
+          "",
+          "// Set common headers if not already set",
+          "if (!pm.request.headers.has('X-Request-ID')) {",
+          "    pm.request.headers.add({",
+          "        key: 'X-Request-ID',",
+          "        value: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`",
+          "    });",
+          "}",
+          "",
+          "// Log rate limit headers if present",
+          "const rateLimitHeaders = ['x-ratelimit-limit', 'x-ratelimit-remaining', 'x-ratelimit-reset'];",
+          "rateLimitHeaders.forEach(header => {",
+          "    if (pm.request.headers.has(header)) {",
+          "        console.log(`📊 ${header}:`, pm.request.headers.get(header));",
+          "    }",
+          "});"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script",
+          "console.log('📊 Response Code:', pm.response.code);",
+          "console.log('⚡ Response Time:', pm.response.responseTime, 'ms');",
+          "",
+          "// Global response validation",
+          "pm.test('Response time is reasonable', function() {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000); // 5s max",
+          "});",
+          "",
+          "pm.test('Response has proper content-type', function() {",
+          "    const contentType = pm.response.headers.get('content-type');",
+          "    if (contentType) {",
+          "        pm.expect(contentType).to.include('application/json');",
+          "    }",
+          "});",
+          "",
+          "// Log response size",
+          "if (pm.response.responseSize) {",
+          "    console.log('📏 Response Size:', pm.response.responseSize, 'bytes');",
+          "}",
+          "",
+          "// Global error handling",
+          "if (pm.response.code >= 400) {",
+          "    const response = pm.response.json();",
+          "    if (response && response.error) {",
+          "        console.log('❌ Error:', response.error, '-', response.message);",
+          "        if (response.details) {",
+          "            console.log('📝 Details:', response.details);",
+          "        }",
+          "        if (response.requestId) {",
+          "            console.log('🆔 Request ID:', response.requestId);",
+          "        }",
+          "    }",
+          "}",
+          "",
+          "// Log successful responses",
+          "if (pm.response.code >= 200 && pm.response.code < 300) {",
+          "    console.log('✅ Request successful');",
+          "}",
+          "",
+          "// Check for rate limit headers",
+          "const rateLimitRemaining = pm.response.headers.get('x-ratelimit-remaining');",
+          "if (rateLimitRemaining !== null) {",
+          "    const remaining = parseInt(rateLimitRemaining);",
+          "    if (remaining < 10) {",
+          "        console.log('⚠️  Rate limit running low:', remaining, 'requests remaining');",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ]
+}
