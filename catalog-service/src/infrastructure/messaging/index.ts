@@ -10,6 +10,15 @@ export * from './event-publisher';
 // Event Store
 export * from './event-store';
 
+// Event Subscriber
+export * from './event-subscriber';
+
+// Message Bus
+export * from './message-bus';
+
+// External Messaging Adapter
+export * from './external-messaging.adapter';
+
 /**
  * Messaging Infrastructure Overview
  *

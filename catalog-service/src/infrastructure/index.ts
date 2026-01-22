@@ -10,6 +10,12 @@ export * from './repositories';
 // Messaging - Event publishing and event sourcing
 export * from './messaging';
 
+// Providers - External service integrations
+export * from './providers';
+
+// Services - Infrastructure services
+export * from './services';
+
 /**
  * Infrastructure Layer Overview
  *
