@@ -2,7 +2,7 @@
 
 > **Proprietor**: Maysar Corporation - All rights reserved
 > **Authority**: Supreme testing law binding all Maysar software engineers and stakeholders
-> **Mission**: Establish world-class testing standards that guarantee quality, reliability, and professionalism in all Maysar software deliverables
+> **Mission**: Establish enterprise-grade testing standards that guarantee quality, reliability, and professionalism in all Maysar software deliverables
 > **Vision**: Zero-defect production deployments through comprehensive, intelligent testing that validates every business rule and edge case
 > **Commitment**: Every line of Maysar code is battle-tested, every Maysar business rule is validated, every Maysar edge case is covered
 
@@ -382,62 +382,108 @@ npm install --save-dev @percy/playwright
 
 ## Test Organization Excellence
 
-### File Structure Standards
+### Universal File Structure Standards
+
+The following structure applies to all services and projects:
 
 ```
 src/
 ├── domain/
 │   ├── entities/
-│   │   ├── product.entity.ts
+│   │   ├── [entity-name].entity.ts
 │   │   └── __tests__/
-│   │       ├── product.entity.test.ts
-│   │       ├── product.entity.performance.test.ts
-│   │       └── product.entity.security.test.ts
+│   │       ├── [entity-name].entity.test.ts
+│   │       ├── [entity-name].entity.performance.test.ts
+│   │       └── [entity-name].entity.security.test.ts
 │   ├── value-objects/
-│   │   ├── price.value-object.ts
+│   │   ├── [value-object-name].value-object.ts
 │   │   └── __tests__/
-│   │       ├── price.value-object.test.ts
-│   │       └── price.value-object.property.test.ts
-│   └── services/
-│       ├── pricing.service.ts
+│   │       ├── [value-object-name].value-object.test.ts
+│   │       └── [value-object-name].value-object.property.test.ts
+│   ├── services/
+│   │   ├── [domain-service-name].service.ts
+│   │   └── __tests__/
+│   │       ├── [domain-service-name].service.test.ts
+│   │       ├── [domain-service-name].service.integration.test.ts
+│   │       └── [domain-service-name].service.load.test.ts
+│   ├── engines/
+│   │   ├── [engine-name].engine.ts
+│   │   └── __tests__/
+│   │       ├── [engine-name].engine.test.ts
+│   │       └── [engine-name].engine.performance.test.ts
+│   ├── policies/
+│   │   ├── [policy-name].policy.ts
+│   │   └── __tests__/
+│   │       ├── [policy-name].policy.test.ts
+│   │       └── [policy-name].policy.integration.test.ts
+│   └── algorithms/
+│       ├── [algorithm-name].algorithm.ts
 │       └── __tests__/
-│           ├── pricing.service.test.ts
-│           ├── pricing.service.integration.test.ts
-│           └── pricing.service.load.test.ts
+│           ├── [algorithm-name].algorithm.test.ts
+│           └── [algorithm-name].algorithm.property.test.ts
 ├── application/
 │   ├── use-cases/
-│   │   ├── create-order.use-case.ts
+│   │   ├── [use-case-name].use-case.ts
 │   │   └── __tests__/
-│   │       ├── create-order.use-case.test.ts
-│   │       └── create-order.use-case.integration.test.ts
-│   └── sagas/
-│       ├── order-fulfillment.saga.ts
+│   │       ├── [use-case-name].use-case.test.ts
+│   │       └── [use-case-name].use-case.integration.test.ts
+│   ├── sagas/
+│   │   ├── [saga-name].saga.ts
+│   │   └── __tests__/
+│   │       ├── [saga-name].saga.test.ts
+│   │       └── [saga-name].saga.compensation.test.ts
+│   ├── dto/
+│   │   ├── [dto-name].dto.ts
+│   │   └── __tests__/
+│   │       ├── [dto-name].dto.test.ts
+│   │       └── [dto-name].dto.validation.test.ts
+│   └── mappers/
+│       ├── [mapper-name].mapper.ts
 │       └── __tests__/
-│           ├── order-fulfillment.saga.test.ts
-│           └── order-fulfillment.saga.compensation.test.ts
+│           └── [mapper-name].mapper.test.ts
 ├── infrastructure/
 │   ├── repositories/
-│   │   ├── product.repository.ts
+│   │   ├── [entity-name].repository.ts
 │   │   └── __tests__/
-│       │   ├── product.repository.test.ts
-│       │   └── product.repository.integration.test.ts
+│   │       ├── [entity-name].repository.test.ts
+│   │       └── [entity-name].repository.integration.test.ts
+│   ├── services/
+│   │   ├── [service-name].service.ts
+│   │   └── __tests__/
+│   │       ├── [service-name].service.test.ts
+│   │       ├── [service-name].service.integration.test.ts
+│   │       └── [service-name].service.contract.test.ts
+│   ├── providers/
+│   │   ├── [provider-name].provider.ts
+│   │   └── __tests__/
+│   │       ├── [provider-name].provider.test.ts
+│   │       └── [provider-name].provider.contract.test.ts
+│   ├── messaging/
+│   │   ├── [message-handler].handler.ts
+│   │   └── __tests__/
+│   │       ├── [message-handler].handler.test.ts
+│   │       └── [message-handler].handler.integration.test.ts
 │   └── adapters/
-│       ├── payment-gateway.adapter.ts
+│       ├── [external-system].adapter.ts
 │       └── __tests__/
-│           ├── payment-gateway.adapter.test.ts
-│           └── payment-gateway.adapter.contract.test.ts
+│           ├── [external-system].adapter.test.ts
+│           └── [external-system].adapter.contract.test.ts
 └── api/
     ├── controllers/
-    │   ├── product.controller.ts
+    │   ├── [resource-name].controller.ts
     │   └── __tests__/
-    │       ├── product.controller.test.ts
-    │       ├── product.controller.e2e.test.ts
-    │       └── product.controller.security.test.ts
-    └── routes/
-        ├── product.routes.ts
+    │       ├── [resource-name].controller.test.ts
+    │       ├── [resource-name].controller.e2e.test.ts
+    │       └── [resource-name].controller.security.test.ts
+    ├── routes/
+    │   ├── [resource-name].routes.ts
+    │   └── __tests__/
+    │       ├── [resource-name].routes.test.ts
+    │       └── [resource-name].routes.integration.test.ts
+    └── middleware/
+        ├── [middleware-name].middleware.ts
         └── __tests__/
-            ├── product.routes.test.ts
-            └── product.routes.integration.test.ts
+            └── [middleware-name].middleware.test.ts
 ```
 
 ### Test Naming Conventions
@@ -865,7 +911,7 @@ Common issues and solutions...
 
 ---
 
-## 🏛️ Constitutional Authority
+## Constitutional Authority
 
 ### Enforcement Hierarchy
 
@@ -923,12 +969,12 @@ Common issues and solutions...
 
 ---
 
-## 📜 Constitutional Oath
+## Constitutional Oath
 
-> **"I solemnly affirm to uphold the Testing Constitution of Maysar, to write tests that reflect truth, to maintain coverage that represents reality, and to never compromise the quality standards that protect our users, our business, and our professional integrity. I commit to continuous learning, peer mentorship, and the relentless pursuit of testing excellence."**
+> **"I solemnly affirm to uphold the Testing Constitution, to write tests that reflect truth, to maintain coverage that represents reality, and to never compromise the quality standards that protect our users, our business, and our professional integrity. I commit to continuous learning, peer mentorship, and the relentless pursuit of testing excellence."**
 
-*Every Maysar engineer must acknowledge this oath before contributing to production systems.*
+*Every engineer must acknowledge this oath before contributing to production systems.*
 
 ---
 
-**This Constitution is the supreme law of Maysar software testing, binding all engineers, teams, and systems. It evolves through democratic process while maintaining unwavering commitment to quality excellence. Compliance is not optional—it is the foundation of our professional integrity.**
+**This Constitution is the supreme law of software testing, binding all engineers, teams, and systems. It evolves through democratic process while maintaining unwavering commitment to quality excellence. Compliance is not optional—it is the foundation of our professional integrity.**

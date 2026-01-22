@@ -105,8 +105,8 @@ PHASE 1: DOMAIN LAYER FIXES (Priority: Critical)
    - Fix visibility-policies.test.ts failing assertions
    - Import real policy implementations
    - Test permission logic with actual user roles
-iiuc
-PHASE 2: APPLICATION LAYER FIXES (Priority: High)
+
+
 --------------------------------------------------
 
 2.1 Use Case Testing

@@ -1,820 +1,432 @@
 /**
  * Visibility Policies Tests
- * Tests for domain business policies with rule validation and edge cases
+ * Tests for domain business policies with rule-based visibility evaluation
  */
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
+import {
+  VisibilityRuleEngine,
+  VisibilityRule,
+  VisibilityContext,
+  VisibilityRuleResult,
+  VisibilityPolicyDSL,
+  DEFAULT_VISIBILITY_RULES,
+  VisibilityCondition,
+  VisibilityAction
+} from '../visibility-policies';
 
-// Mock domain policies (since they don't exist yet, we'll create test stubs)
-interface UserContext {
-  userId: string;
-  roles: string[];
-  permissions: string[];
-  isAuthenticated: boolean;
-  subscriptionTier?: string;
-  region?: string;
-}
-
-interface ProductContext {
-  id: string;
-  category: string;
-  status: 'draft' | 'published' | 'archived';
-  visibility: 'public' | 'private' | 'restricted';
-  ownerId: string;
-  tags: string[];
-  price: number;
-  inventory: number;
-  createdAt: Date;
-  publishedAt?: Date;
-  description?: string;
-}
-
-class VisibilityPolicies {
-  /**
-   * Check if user can view a product
-   */
-  canViewProduct(user: UserContext, product: ProductContext): boolean {
-    // Public products are visible to everyone
-    if (product.visibility === 'public' && product.status === 'published') {
-      return true;
-    }
-
-    // Private products only visible to owner
-    if (product.visibility === 'private') {
-      return user.isAuthenticated && user.userId === product.ownerId;
-    }
-
-    // Restricted products require specific permissions or roles
-    if (product.visibility === 'restricted') {
-      return this.hasRestrictedAccess(user, product);
-    }
-
-    // Draft products only visible to owner or admins
-    if (product.status === 'draft') {
-      return user.isAuthenticated &&
-             (user.userId === product.ownerId || user.roles.includes('admin'));
-    }
-
-    // Archived products only visible to admins
-    if (product.status === 'archived') {
-      return user.roles.includes('admin');
-    }
-
-    return false;
-  }
-
-  /**
-   * Check if user can edit a product
-   */
-  canEditProduct(user: UserContext, product: ProductContext): boolean {
-    // Must be authenticated
-    if (!user.isAuthenticated) {
-      return false;
-    }
-
-    // Owner can always edit their products
-    if (user.userId === product.ownerId) {
-      return true;
-    }
-
-    // Admins can edit any product
-    if (user.roles.includes('admin')) {
-      return true;
-    }
-
-    // Moderators can edit published products
-    if (user.roles.includes('moderator') && product.status === 'published') {
-      return true;
-    }
-
-    // Premium users can edit their published products
-    if (user.subscriptionTier === 'premium' &&
-        user.userId === product.ownerId &&
-        product.status === 'published') {
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
-   * Check if user can delete a product
-   */
-  canDeleteProduct(user: UserContext, product: ProductContext): boolean {
-    // Must be authenticated
-    if (!user.isAuthenticated) {
-      return false;
-    }
-
-    // Owner can delete their own products (except if published and has orders)
-    if (user.userId === product.ownerId) {
-      // Simulate: can't delete published products with inventory
-      return !(product.status === 'published' && product.inventory > 0);
-    }
-
-    // Admins can delete any product
-    if (user.roles.includes('admin')) {
-      return true;
-    }
-
-    // Moderators can delete products with issues
-    if (user.roles.includes('moderator') && this.hasProductIssues(product)) {
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
-   * Check if user can publish a product
-   */
-  canPublishProduct(user: UserContext, product: ProductContext): boolean {
-    // Must be authenticated
-    if (!user.isAuthenticated) {
-      return false;
-    }
-
-    // Owner can publish their draft products
-    if (user.userId === product.ownerId && product.status === 'draft') {
-      return this.isProductReadyForPublishing(product);
-    }
-
-    // Admins can publish any draft product
-    if (user.roles.includes('admin') && product.status === 'draft') {
-      return true;
-    }
-
-    // Moderators can publish products that meet quality standards
-    if (user.roles.includes('moderator') &&
-        product.status === 'draft' &&
-        this.meetsQualityStandards(product)) {
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
-   * Check if user can bulk operate on products
-   */
-  canBulkOperate(user: UserContext, products: ProductContext[], operation: string): boolean {
-    // Must be authenticated
-    if (!user.isAuthenticated) {
-      return false;
-    }
-
-    // Admins can perform any bulk operation
-    if (user.roles.includes('admin')) {
-      return true;
-    }
-
-    // Check operation-specific permissions
-    switch (operation) {
-      case 'publish':
-        return user.roles.includes('moderator') &&
-               products.every(p => p.ownerId === user.userId && p.status === 'draft');
-
-      case 'archive':
-        return user.roles.includes('moderator') ||
-               products.every(p => p.ownerId === user.userId);
-
-      case 'delete':
-        return user.roles.includes('admin') ||
-               (user.roles.includes('moderator') &&
-                products.every(p => this.hasProductIssues(p)));
-
-      default:
-        return false;
-    }
-  }
-
-  /**
-   * Get visible products for user
-   */
-  getVisibleProducts(user: UserContext, products: ProductContext[]): ProductContext[] {
-    return products.filter(product => this.canViewProduct(user, product));
-  }
-
-  /**
-   * Get editable products for user
-   */
-  getEditableProducts(user: UserContext, products: ProductContext[]): ProductContext[] {
-    return products.filter(product => this.canEditProduct(user, product));
-  }
-
-  /**
-   * Filter products by user permissions
-   */
-  filterProductsByPermissions(
-    user: UserContext,
-    products: ProductContext[],
-    permission: 'view' | 'edit' | 'delete' | 'publish'
-  ): ProductContext[] {
-    switch (permission) {
-      case 'view':
-        return this.getVisibleProducts(user, products);
-      case 'edit':
-        return this.getEditableProducts(user, products);
-      case 'delete':
-        return products.filter(product => this.canDeleteProduct(user, product));
-      case 'publish':
-        return products.filter(product => this.canPublishProduct(user, product));
-      default:
-        return [];
-    }
-  }
-
-  // Private helper methods
-  private hasRestrictedAccess(user: UserContext, product: ProductContext): boolean {
-    // Region-based access
-    if (product.tags.includes('regional') && user.region) {
-      return product.tags.some(tag => tag.includes(user.region!));
-    }
-
-    // Premium subscription required
-    if (product.tags.includes('premium-only')) {
-      return user.subscriptionTier === 'premium';
-    }
-
-    // Specific role required
-    if (product.tags.some(tag => tag.startsWith('role:'))) {
-      const requiredRole = product.tags.find(tag => tag.startsWith('role:'))?.split(':')[1];
-      return requiredRole ? user.roles.includes(requiredRole) : false;
-    }
-
-    return false;
-  }
-
-  private hasProductIssues(product: ProductContext): boolean {
-    return product.inventory < 0 ||
-           product.price <= 0 ||
-           !product.category ||
-           product.tags.length === 0;
-  }
-
-  private isProductReadyForPublishing(product: ProductContext): boolean {
-    return product.price > 0 &&
-           product.inventory >= 0 &&
-           !!product.category &&
-           product.tags.length > 0 &&
-           product.createdAt.getTime() > Date.now() - (24 * 60 * 60 * 1000); // Created within last 24 hours
-  }
-
-  private meetsQualityStandards(product: ProductContext): boolean {
-    return product.price > 0 &&
-           product.inventory >= 0 &&
-           !!product.category &&
-           product.tags.length >= 2 &&
-           (product.description?.length ?? 0) >= 10;
-  }
-}
-
-describe('VisibilityPolicies', () => {
-  let policies: VisibilityPolicies;
-  let mockUser: UserContext;
-  let mockProduct: ProductContext;
+describe('VisibilityRuleEngine', () => {
+  let engine: VisibilityRuleEngine;
+  let mockContext: VisibilityContext;
 
   beforeEach(() => {
-    policies = new VisibilityPolicies();
+    engine = new VisibilityRuleEngine();
 
-    mockUser = {
-      userId: 'user-123',
-      roles: ['user'],
-      permissions: ['read:products'],
-      isAuthenticated: true,
-      subscriptionTier: 'basic',
-      region: 'us-east'
-    };
-
-    mockProduct = {
-      id: 'product-123',
+    mockContext = {
+      productId: 'product-123',
+      sellerId: 'seller-456',
+      currentVisibility: 'public',
       category: 'electronics',
-      status: 'published' as const,
-      visibility: 'public' as const,
-      ownerId: 'user-123',
-      tags: ['electronics', 'gadgets'],
       price: 99.99,
-      inventory: 100,
-      createdAt: new Date(),
-      publishedAt: new Date()
+      productStatus: 'published',
+      sellerRating: 4.5,
+      sellerTier: 'established',
+      accountAge: 365,
+      violationCount: 0,
+      reviewCount: 150,
+      successfulSales: 500,
+      returnRate: 0.02,
+      region: 'us-east',
+      marketSegment: 'consumer'
     };
   });
 
-  describe('Product Viewing Permissions', () => {
-    it('should allow viewing public published products', () => {
-      const product = { ...mockProduct, visibility: 'public' as const, status: 'published' as const };
-      const user = { ...mockUser, isAuthenticated: false };
-
-      expect(policies.canViewProduct(user, product)).toBe(true);
+  describe('Rule Engine Creation and Management', () => {
+    it('should create an empty rule engine', () => {
+      expect(engine).toBeDefined();
+      expect(engine.getAllRules()).toHaveLength(0);
     });
 
-    it('should allow owner to view private products', () => {
-      const product = { ...mockProduct, visibility: 'private' as const };
-      const user = { ...mockUser, userId: product.ownerId };
+    it('should add and retrieve rules', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'test-rule',
+        name: 'Test Rule',
+        condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
+        action: VisibilityPolicyDSL.action('set_visibility', 'public', 'High-rated seller')
+      });
 
-      expect(policies.canViewProduct(user, product)).toBe(true);
+      engine.addRule(rule);
+
+      const retrievedRule = engine.getRule('test-rule');
+      expect(retrievedRule).toEqual(rule);
+      expect(engine.getAllRules()).toHaveLength(1);
     });
 
-    it('should deny non-owner access to private products', () => {
-      const product = { ...mockProduct, visibility: 'private' as const };
-      const user = { ...mockUser, userId: 'different-user' };
+    it('should remove rules', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'test-rule',
+        name: 'Test Rule',
+        condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
+        action: VisibilityPolicyDSL.action('set_visibility', 'public', 'High-rated seller')
+      });
 
-      expect(policies.canViewProduct(user, product)).toBe(false);
+      engine.addRule(rule);
+      expect(engine.getAllRules()).toHaveLength(1);
+
+      engine.removeRule('test-rule');
+      expect(engine.getAllRules()).toHaveLength(0);
+      expect(engine.getRule('test-rule')).toBeUndefined();
     });
 
-    it('should handle restricted products with region access', () => {
-      const product = {
-        ...mockProduct,
-        visibility: 'restricted' as const,
-        tags: ['regional', 'us-east']
-      };
-      const user = { ...mockUser, region: 'us-east' };
+    it('should replace rules with same ID', () => {
+      const rule1 = VisibilityPolicyDSL.createRule({
+        id: 'test-rule',
+        name: 'Rule 1',
+        condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
+        action: VisibilityPolicyDSL.action('set_visibility', 'public', 'Rule 1')
+      });
 
-      expect(policies.canViewProduct(user, product)).toBe(true);
-    });
+      const rule2 = VisibilityPolicyDSL.createRule({
+        id: 'test-rule',
+        name: 'Rule 2',
+        condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 3.0),
+        action: VisibilityPolicyDSL.action('set_visibility', 'b2b_only', 'Rule 2')
+      });
 
-    it('should handle restricted products with premium access', () => {
-      const product = {
-        ...mockProduct,
-        visibility: 'restricted' as const,
-        tags: ['premium-only']
-      };
-      const user = { ...mockUser, subscriptionTier: 'premium' };
+      engine.addRule(rule1);
+      engine.addRule(rule2);
 
-      expect(policies.canViewProduct(user, product)).toBe(true);
-    });
-
-    it('should deny premium access to basic users', () => {
-      const product = {
-        ...mockProduct,
-        visibility: 'restricted' as const,
-        tags: ['premium-only']
-      };
-      const user = { ...mockUser, subscriptionTier: 'basic' };
-
-      expect(policies.canViewProduct(user, product)).toBe(false);
-    });
-
-    it('should allow owner to view draft products', () => {
-      const product = { ...mockProduct, status: 'draft' as const };
-      const user = { ...mockUser, userId: product.ownerId };
-
-      expect(policies.canViewProduct(user, product)).toBe(true);
-    });
-
-    it('should allow admins to view draft products', () => {
-      const product = { ...mockProduct, status: 'draft' as const };
-      const user = { ...mockUser, roles: ['admin'] };
-
-      expect(policies.canViewProduct(user, product)).toBe(true);
-    });
-
-    it('should deny non-owner access to draft products', () => {
-      const product = { ...mockProduct, status: 'draft' as const };
-      const user = { ...mockUser, userId: 'different-user' };
-
-      expect(policies.canViewProduct(user, product)).toBe(false);
-    });
-
-    it('should only allow admins to view archived products', () => {
-      const product: ProductContext = { ...mockProduct, status: 'archived' };
-      const adminUser = { ...mockUser, roles: ['admin'] };
-      const regularUser = { ...mockUser, roles: ['user'] };
-
-      expect(policies.canViewProduct(adminUser, product)).toBe(true);
-      expect(policies.canViewProduct(regularUser, product)).toBe(false);
-    });
-
-    it('should deny access to unauthenticated users for non-public content', () => {
-      const product = { ...mockProduct, visibility: 'private' as const };
-      const user = { ...mockUser, isAuthenticated: false };
-
-      expect(policies.canViewProduct(user, product)).toBe(false);
+      expect(engine.getAllRules()).toHaveLength(1);
+      expect(engine.getRule('test-rule')?.name).toBe('Rule 2');
     });
   });
 
-  describe('Product Editing Permissions', () => {
-    it('should allow owner to edit their products', () => {
-      const product = { ...mockProduct };
-      const user = { ...mockUser, userId: product.ownerId };
+  describe('Rule Evaluation Logic', () => {
+    it('should evaluate simple conditions', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'high-rating-rule',
+        name: 'High Rating Rule',
+        priority: 10,
+        condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
+        action: VisibilityPolicyDSL.action('set_visibility', 'public', 'High-rated seller')
+      });
 
-      expect(policies.canEditProduct(user, product)).toBe(true);
+      engine.addRule(rule);
+
+      const highRatingContext = { ...mockContext, sellerRating: 4.5 };
+      const result = engine.evaluateRules(highRatingContext);
+
+      expect(result.appliedRules).toContain('high-rating-rule');
+      expect(result.finalVisibility).toBe('public');
+      expect(result.confidence).toBeGreaterThan(0);
     });
 
-    it('should allow admins to edit any product', () => {
-      const product = { ...mockProduct };
-      const user = { ...mockUser, roles: ['admin'], userId: 'different-user' };
+    it('should not apply rules when conditions are not met', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'high-rating-rule',
+        name: 'High Rating Rule',
+        condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
+        action: VisibilityPolicyDSL.action('set_visibility', 'public', 'High-rated seller')
+      });
 
-      expect(policies.canEditProduct(user, product)).toBe(true);
+      engine.addRule(rule);
+
+      const lowRatingContext = { ...mockContext, sellerRating: 3.0 };
+      const result = engine.evaluateRules(lowRatingContext);
+
+      expect(result.appliedRules).not.toContain('high-rating-rule');
+      expect(result.finalVisibility).toBe('public'); // Original visibility
     });
 
-    it('should allow moderators to edit published products', () => {
-      const product: ProductContext = { ...mockProduct, status: 'published' };
-      const user = { ...mockUser, roles: ['moderator'], userId: 'different-user' };
+    it('should evaluate complex conditions with multiple operators', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'complex-rule',
+        name: 'Complex Rule',
+        condition: VisibilityPolicyDSL.and(
+          VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
+          VisibilityPolicyDSL.condition('account_age', 'greater_than', 180)
+        ),
+        action: VisibilityPolicyDSL.action('set_visibility', 'premium', 'Qualified seller')
+      });
 
-      expect(policies.canEditProduct(user, product)).toBe(true);
+      engine.addRule(rule);
+
+      const qualifiedContext = { ...mockContext, sellerRating: 4.5, accountAge: 365 };
+      const unqualifiedContext1 = { ...mockContext, sellerRating: 3.5, accountAge: 365 };
+      const unqualifiedContext2 = { ...mockContext, sellerRating: 4.5, accountAge: 90 };
+
+      expect(engine.evaluateRules(qualifiedContext).appliedRules).toContain('complex-rule');
+      expect(engine.evaluateRules(unqualifiedContext1).appliedRules).not.toContain('complex-rule');
+      expect(engine.evaluateRules(unqualifiedContext2).appliedRules).not.toContain('complex-rule');
     });
 
-    it('should deny moderators from editing draft products they do not own', () => {
-      const product: ProductContext = { ...mockProduct, status: 'draft' };
-      const user = { ...mockUser, roles: ['moderator'], userId: 'different-user' };
+    it('should respect rule priority ordering', () => {
+      const lowPriorityRule = VisibilityPolicyDSL.createRule({
+        id: 'low-priority',
+        name: 'Low Priority',
+        priority: 5,
+        condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 3.0),
+        action: VisibilityPolicyDSL.action('set_visibility', 'b2b_only', 'Basic qualification')
+      });
 
-      expect(policies.canEditProduct(user, product)).toBe(false);
-    });
+      const highPriorityRule = VisibilityPolicyDSL.createRule({
+        id: 'high-priority',
+        name: 'High Priority',
+        priority: 15,
+        condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
+        action: VisibilityPolicyDSL.action('set_visibility', 'public', 'Premium qualification')
+      });
 
-    it('should allow premium users to edit their published products', () => {
-      const product: ProductContext = { ...mockProduct, status: 'published' };
-      const user = {
-        ...mockUser,
-        userId: product.ownerId,
-        subscriptionTier: 'premium'
-      };
+      engine.addRule(lowPriorityRule);
+      engine.addRule(highPriorityRule);
 
-      expect(policies.canEditProduct(user, product)).toBe(true);
-    });
+      const context = { ...mockContext, sellerRating: 4.5 };
+      const result = engine.evaluateRules(context);
 
-    it('should allow basic users to edit their products', () => {
-      const product: ProductContext = { ...mockProduct, status: 'published' };
-      const user = {
-        ...mockUser,
-        userId: product.ownerId,
-        subscriptionTier: 'basic'
-      };
-
-      expect(policies.canEditProduct(user, product)).toBe(true);
-    });
-
-    it('should deny editing to unauthenticated users', () => {
-      const product = { ...mockProduct };
-      const user = { ...mockUser, isAuthenticated: false };
-
-      expect(policies.canEditProduct(user, product)).toBe(false);
-    });
-  });
-
-  describe('Product Deletion Permissions', () => {
-    it('should allow owner to delete their draft products', () => {
-      const product = { ...mockProduct, status: 'draft' as const, inventory: 0 };
-      const user = { ...mockUser, userId: product.ownerId };
-
-      expect(policies.canDeleteProduct(user, product)).toBe(true);
-    });
-
-    it('should deny owner from deleting published products with inventory', () => {
-      const product = { ...mockProduct, status: 'published' as const, inventory: 10 };
-      const user = { ...mockUser, userId: product.ownerId };
-
-      expect(policies.canDeleteProduct(user, product)).toBe(false);
-    });
-
-    it('should allow owner to delete published products with no inventory', () => {
-      const product = { ...mockProduct, status: 'published' as const, inventory: 0 };
-      const user = { ...mockUser, userId: product.ownerId };
-
-      expect(policies.canDeleteProduct(user, product)).toBe(true);
-    });
-
-    it('should allow admins to delete any product', () => {
-      const product = { ...mockProduct, status: 'published' as const, inventory: 100 };
-      const user = { ...mockUser, roles: ['admin'], userId: 'different-user' };
-
-      expect(policies.canDeleteProduct(user, product)).toBe(true);
-    });
-
-    it('should allow moderators to delete products with issues', () => {
-      const product = { ...mockProduct, price: 0, inventory: -1 }; // Has issues
-      const user = { ...mockUser, roles: ['moderator'], userId: 'different-user' };
-
-      expect(policies.canDeleteProduct(user, product)).toBe(true);
-    });
-
-    it('should deny moderators from deleting healthy products they do not own', () => {
-      const product = { ...mockProduct, price: 100, inventory: 10 };
-      const user = { ...mockUser, roles: ['moderator'], userId: 'different-user' };
-
-      expect(policies.canDeleteProduct(user, product)).toBe(false);
-    });
-
-    it('should deny deletion to unauthenticated users', () => {
-      const product = { ...mockProduct };
-      const user = { ...mockUser, isAuthenticated: false };
-
-      expect(policies.canDeleteProduct(user, product)).toBe(false);
+      expect(result.appliedRules).toContain('high-priority');
+      expect(result.finalVisibility).toBe('public'); // High priority rule wins
     });
   });
 
-  describe('Product Publishing Permissions', () => {
-    it('should allow owner to publish ready draft products', () => {
-      const product = {
-        ...mockProduct,
-        status: 'draft' as const,
-        price: 99.99,
-        inventory: 10,
-        category: 'electronics',
-        tags: ['electronics'],
-        createdAt: new Date()
-      };
-      const user = { ...mockUser, userId: product.ownerId };
+  describe('Visibility Actions', () => {
+    it('should execute set_visibility action', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'set-visibility-rule',
+        name: 'Set Visibility',
+        condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
+        action: VisibilityPolicyDSL.action('set_visibility', 'b2b_only', 'B2B seller')
+      });
 
-      expect(policies.canPublishProduct(user, product)).toBe(true);
+      engine.addRule(rule);
+
+      const context = { ...mockContext, sellerRating: 4.5 };
+      const result = engine.evaluateRules(context);
+
+      expect(result.finalVisibility).toBe('b2b_only');
+      expect(result.visibilityChanges).toHaveLength(1);
+      expect(result.visibilityChanges[0].toVisibility).toBe('b2b_only');
     });
 
-    it('should deny owner from publishing incomplete draft products', () => {
-      const product = {
-        ...mockProduct,
-        status: 'draft' as const,
-        price: 0, // Invalid price
-        inventory: 10,
-        category: 'electronics',
-        tags: ['electronics'],
-        createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000) // Too old
-      };
-      const user = { ...mockUser, userId: product.ownerId };
+    it('should execute restrict_visibility action', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'restrict-rule',
+        name: 'Restrict Visibility',
+        condition: VisibilityPolicyDSL.condition('violation_count', 'greater_than', 5),
+        action: VisibilityPolicyDSL.action('restrict_visibility', 'seller_only', 'Violations detected')
+      });
 
-      expect(policies.canPublishProduct(user, product)).toBe(false);
+      engine.addRule(rule);
+
+      const context = { ...mockContext, currentVisibility: 'public', violationCount: 10 };
+      const result = engine.evaluateRules(context);
+
+      expect(result.finalVisibility).toBe('seller_only'); // Restricted from public
     });
 
-    it('should allow admins to publish any draft product', () => {
-      const product = {
-        ...mockProduct,
-        status: 'draft' as const,
-        price: 0, // Even with issues
-        userId: 'different-user'
-      };
-      const user = { ...mockUser, roles: ['admin'], userId: 'different-user' };
+    it('should execute boost_visibility action', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'boost-rule',
+        name: 'Boost Visibility',
+        condition: VisibilityPolicyDSL.condition('seller_tier', 'equals', 'premium'),
+        action: VisibilityPolicyDSL.action('boost_visibility', 'public', 'Premium seller boost')
+      });
 
-      expect(policies.canPublishProduct(user, product)).toBe(true);
+      engine.addRule(rule);
+
+      const context = { ...mockContext, currentVisibility: 'b2b_only', sellerTier: 'premium' as const };
+      const result = engine.evaluateRules(context);
+
+      expect(result.finalVisibility).toBe('public'); // Boosted from b2b_only
     });
 
-    it('should allow moderators to publish quality draft products', () => {
-      const product = {
-        ...mockProduct,
-        status: 'draft' as const,
-        price: 99.99,
-        inventory: 10,
-        category: 'electronics',
-        tags: ['electronics', 'gadgets'], // Multiple tags = quality
-        description: 'A great product with detailed description' // Long description
-      };
-      const user = { ...mockUser, roles: ['moderator'], userId: 'different-user' };
+    it('should execute hide_product action', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'hide-rule',
+        name: 'Hide Product',
+        condition: VisibilityPolicyDSL.condition('product_status', 'equals', 'suspended'),
+        action: VisibilityPolicyDSL.action('hide_product', 'hidden', 'Product suspended')
+      });
 
-      expect(policies.canPublishProduct(user, product)).toBe(true);
-    });
+      engine.addRule(rule);
 
-    it('should deny moderators from publishing low-quality products', () => {
-      const product = {
-        ...mockProduct,
-        status: 'draft' as const,
-        price: 99.99,
-        inventory: 10,
-        category: 'electronics',
-        tags: ['electronics'], // Only one tag = low quality
-        description: 'Short' // Too short description
-      };
-      const user = { ...mockUser, roles: ['moderator'], userId: 'different-user' };
+      const context = { ...mockContext, productStatus: 'suspended' as const };
+      const result = engine.evaluateRules(context);
 
-      expect(policies.canPublishProduct(user, product)).toBe(false);
-    });
-
-    it('should deny publishing to unauthenticated users', () => {
-      const product = { ...mockProduct, status: 'draft' as const };
-      const user = { ...mockUser, isAuthenticated: false };
-
-      expect(policies.canPublishProduct(user, product)).toBe(false);
-    });
-
-    it('should deny publishing already published products', () => {
-      const product = { ...mockProduct, status: 'published' as const };
-      const user = { ...mockUser, userId: product.ownerId };
-
-      expect(policies.canPublishProduct(user, product)).toBe(false);
+      expect(result.finalVisibility).toBe('hidden');
     });
   });
 
-  describe('Bulk Operations Permissions', () => {
-    it('should allow admins to perform any bulk operation', () => {
-      const products = [
-        { ...mockProduct, id: '1', ownerId: 'user-123', status: 'draft' as const },
-        { ...mockProduct, id: '2', ownerId: 'user-123', status: 'draft' as const }
-      ];
-      const user = { ...mockUser, roles: ['admin'] };
-
-      expect(policies.canBulkOperate(user, products, 'publish')).toBe(true);
-      expect(policies.canBulkOperate(user, products, 'archive')).toBe(true);
-      expect(policies.canBulkOperate(user, products, 'delete')).toBe(true);
+  describe('Default Visibility Rules', () => {
+    beforeEach(() => {
+      // Load default rules for testing
+      DEFAULT_VISIBILITY_RULES.forEach(rule => engine.addRule(rule));
     });
 
-    it('should allow moderators to bulk publish owned draft products', () => {
-      const products = [
-        { ...mockProduct, id: '1', ownerId: 'user-123', status: 'draft' as const },
-        { ...mockProduct, id: '2', ownerId: 'user-123', status: 'draft' as const }
-      ];
-      const user = { ...mockUser, roles: ['moderator'], userId: products[0].ownerId };
-      const draftProducts = products.map(p => ({ ...p, status: 'draft' as const }));
+    it('should apply new seller restriction rule', () => {
+      const context = { ...mockContext, accountAge: 15 }; // New seller
+      const result = engine.evaluateRules(context);
 
-      expect(policies.canBulkOperate(user, draftProducts, 'publish')).toBe(true);
+      expect(result.appliedRules).toContain('new_seller_restriction');
+      expect(result.finalVisibility).toBe('private');
     });
 
-    it('should deny moderators from bulk publishing others draft products', () => {
-      const products = [
-        { ...mockProduct, id: '1', ownerId: 'user-123', status: 'draft' as const },
-        { ...mockProduct, id: '2', ownerId: 'user-123', status: 'draft' as const }
-      ];
-      const user = { ...mockUser, roles: ['moderator'], userId: 'different-user' };
-      const draftProducts = products.map(p => ({ ...p, status: 'draft' as const }));
+    it('should apply low rating restriction rule', () => {
+      const context = { ...mockContext, sellerRating: 2.5 }; // Low rating
+      const result = engine.evaluateRules(context);
 
-      expect(policies.canBulkOperate(user, draftProducts, 'publish')).toBe(false);
+      expect(result.appliedRules).toContain('low_rating_restriction');
+      expect(result.finalVisibility).toBe('seller_only');
     });
 
-    it('should allow bulk archiving of owned products', () => {
-      const products = [
-        { ...mockProduct, id: '1', ownerId: 'user-123', status: 'draft' as const },
-        { ...mockProduct, id: '2', ownerId: 'user-123', status: 'draft' as const }
-      ];
-      const user = { ...mockUser, roles: ['user'], userId: products[0].ownerId };
+    it('should apply high value review rule', () => {
+      const context = { ...mockContext, price: 600 }; // High value
+      const result = engine.evaluateRules(context);
 
-      expect(policies.canBulkOperate(user, products, 'archive')).toBe(true);
+      expect(result.appliedRules).toContain('high_value_review');
+      expect(result.finalVisibility).toBe('private');
     });
 
-    it('should allow moderators to bulk delete problematic products', () => {
-      const products = [
-        { ...mockProduct, id: '1', ownerId: 'user-123', status: 'draft' as const },
-        { ...mockProduct, id: '2', ownerId: 'user-123', status: 'draft' as const }
-      ];
-      const user = { ...mockUser, roles: ['moderator'], userId: 'different-user' };
-      const problematicProducts = products.map(p => ({ ...p, price: 0, inventory: -1 }));
+    it('should apply premium seller boost rule', () => {
+      const context = { ...mockContext, sellerTier: 'premium' as const };
+      const result = engine.evaluateRules(context);
 
-      expect(policies.canBulkOperate(user, problematicProducts, 'delete')).toBe(true);
+      expect(result.appliedRules).toContain('premium_seller_boost');
+      expect(result.finalVisibility).toBe('public');
     });
 
-    it('should deny bulk operations to unauthenticated users', () => {
-      const products = [
-        { ...mockProduct, id: '1', ownerId: 'user-123', status: 'draft' as const },
-        { ...mockProduct, id: '2', ownerId: 'user-123', status: 'draft' as const }
-      ];
-      const user = { ...mockUser, isAuthenticated: false };
+    it('should apply suspended product hide rule', () => {
+      const context = { ...mockContext, productStatus: 'suspended' as const };
+      const result = engine.evaluateRules(context);
 
-      expect(policies.canBulkOperate(user, products, 'publish')).toBe(false);
+      expect(result.appliedRules).toContain('suspended_product_hide');
+      expect(result.finalVisibility).toBe('hidden');
     });
 
-    it('should deny unsupported bulk operations', () => {
-      const products = [
-        { ...mockProduct, id: '1', ownerId: 'user-123', status: 'draft' as const },
-        { ...mockProduct, id: '2', ownerId: 'user-123', status: 'draft' as const }
-      ];
-      const user = { ...mockUser, roles: ['admin'] };
+    it('should apply archived product hide rule', () => {
+      const context = { ...mockContext, productStatus: 'archived' as const };
+      const result = engine.evaluateRules(context);
 
-      expect(policies.canBulkOperate(user, products, 'unsupported')).toBe(false);
+      expect(result.appliedRules).toContain('archived_product_hide');
+      expect(result.finalVisibility).toBe('hidden');
+    });
+
+    it('should apply B2B price visibility rule', () => {
+      const context = { ...mockContext, price: 150 }; // B2B price range
+      const result = engine.evaluateRules(context);
+
+      expect(result.appliedRules).toContain('b2b_price_visibility');
+      expect(result.finalVisibility).toBe('b2b_only');
     });
   });
 
-  describe('Product Filtering', () => {
-    it('should filter visible products correctly', () => {
-      const products: ProductContext[] = [
-        { ...mockProduct, id: '1', visibility: 'public' as const, status: 'published' as const },
-        { ...mockProduct, id: '2', visibility: 'private' as const, ownerId: 'user-123' },
-        { ...mockProduct, id: '3', visibility: 'private' as const, ownerId: 'other-user' },
-        { ...mockProduct, id: '4', status: 'draft' as const, ownerId: 'user-123' },
-        { ...mockProduct, id: '5', status: 'archived' as const }
-      ];
-      const user = { ...mockUser };
-      const visibleProducts = policies.getVisibleProducts(user, products);
+  describe('Rule Engine Edge Cases', () => {
+    it('should handle empty rule set', () => {
+      const result = engine.evaluateRules(mockContext);
 
-      expect(visibleProducts).toHaveLength(3); // public, owned private, owned draft
-      expect(visibleProducts.map(p => p.id)).toEqual(['1', '2', '4']);
+      expect(result.appliedRules).toHaveLength(0);
+      expect(result.finalVisibility).toBe('public'); // Original visibility
+      expect(result.confidence).toBe(0.5); // Default confidence
     });
 
-    it('should filter editable products correctly', () => {
-      const products: ProductContext[] = [
-        { ...mockProduct, id: '1', visibility: 'public' as const, status: 'published' as const },
-        { ...mockProduct, id: '2', visibility: 'private' as const, ownerId: 'user-123' },
-        { ...mockProduct, id: '3', visibility: 'private' as const, ownerId: 'other-user' },
-        { ...mockProduct, id: '4', status: 'draft' as const, ownerId: 'user-123' },
-        { ...mockProduct, id: '5', status: 'archived' as const }
-      ];
-      const user = { ...mockUser, userId: products[0].ownerId };
-      const editableProducts = policies.getEditableProducts(user, products);
+    it('should handle disabled rules', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'disabled-rule',
+        name: 'Disabled Rule',
+        condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
+        action: VisibilityPolicyDSL.action('set_visibility', 'premium', 'Disabled rule')
+      });
 
-      expect(editableProducts).toHaveLength(3); // owned products
-      expect(editableProducts.map(p => p.id)).toEqual(['1', '2', '4']);
+      rule.enabled = false;
+      engine.addRule(rule);
+
+      const context = { ...mockContext, sellerRating: 4.5 };
+      const result = engine.evaluateRules(context);
+
+      expect(result.appliedRules).not.toContain('disabled-rule');
+      expect(result.finalVisibility).toBe('public');
     });
 
-    it('should filter by specific permissions', () => {
-      const products: ProductContext[] = [
-        { ...mockProduct, id: '1', visibility: 'public' as const, status: 'published' as const },
-        { ...mockProduct, id: '2', visibility: 'private' as const, ownerId: 'user-123' },
-        { ...mockProduct, id: '3', visibility: 'private' as const, ownerId: 'other-user' },
-        { ...mockProduct, id: '4', status: 'draft' as const, ownerId: 'user-123' },
-        { ...mockProduct, id: '5', status: 'archived' as const }
-      ];
-      const user = { ...mockUser, roles: ['admin'] };
+    it('should handle invalid conditions gracefully', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'invalid-condition',
+        name: 'Invalid Condition',
+        condition: { type: 'invalid_field' as any, operator: 'equals', value: 'test' },
+        action: VisibilityPolicyDSL.action('set_visibility', 'hidden', 'Invalid condition')
+      });
 
-      const viewable = policies.filterProductsByPermissions(user, products, 'view');
-      const editable = policies.filterProductsByPermissions(user, products, 'edit');
-      const deletable = policies.filterProductsByPermissions(user, products, 'delete');
-      const publishable = policies.filterProductsByPermissions(user, products, 'publish');
+      engine.addRule(rule);
 
-      expect(viewable).toHaveLength(5); // Admin can view all
-      expect(editable).toHaveLength(5); // Admin can edit all
-      expect(deletable).toHaveLength(5); // Admin can delete all
-      expect(publishable).toHaveLength(1); // Only the draft product
+      const result = engine.evaluateRules(mockContext);
+
+      expect(result.appliedRules).not.toContain('invalid-condition');
+      expect(result.finalVisibility).toBe('public');
     });
 
-    it('should handle empty product lists', () => {
-      const user = { ...mockUser };
-
-      expect(policies.getVisibleProducts(user, [])).toHaveLength(0);
-      expect(policies.getEditableProducts(user, [])).toHaveLength(0);
-      expect(policies.filterProductsByPermissions(user, [], 'view')).toHaveLength(0);
-    });
-  });
-
-  describe('Policy Consistency', () => {
-    it('should maintain consistent permissions across operations', () => {
-      const user = { ...mockUser };
-      const product = { ...mockProduct };
-
-      // If user can view, they might not necessarily edit
-      const canView = policies.canViewProduct(user, product);
-      const canEdit = policies.canEditProduct(user, product);
-
-      // Owner should be able to both view and edit
-      if (user.userId === product.ownerId) {
-        expect(canView && canEdit).toBe(true);
-      }
-    });
-
-    it('should handle role hierarchy correctly', () => {
-      const adminUser = { ...mockUser, roles: ['admin'] };
-      const modUser = { ...mockUser, roles: ['moderator'] };
-      const basicUser = { ...mockUser, roles: ['user'] };
-      const product = { ...mockProduct };
-
-      // Admins should have all permissions
-      expect(policies.canViewProduct(adminUser, product)).toBe(true);
-      expect(policies.canEditProduct(adminUser, product)).toBe(true);
-      expect(policies.canDeleteProduct(adminUser, product)).toBe(true);
-
-      // Moderators should have fewer permissions than admins
-      expect(policies.canViewProduct(modUser, product)).toBe(true);
-      expect(policies.canEditProduct(modUser, product)).toBe(true);
-      // Moderators might not be able to delete healthy products
-    });
-
-    it('should be idempotent', () => {
-      const user = { ...mockUser };
-      const product = { ...mockProduct };
-
-      // Multiple calls should return same result
-      const result1 = policies.canViewProduct(user, product);
-      const result2 = policies.canViewProduct(user, product);
-      const result3 = policies.canViewProduct(user, product);
-
-      expect(result1).toBe(result2);
-      expect(result2).toBe(result3);
-    });
-  });
-
-  describe('Edge Cases and Error Handling', () => {
-    it('should handle products with missing properties', () => {
-      const incompleteProduct = {
-        ...mockProduct,
-        price: undefined as any,
-        category: undefined as any
+    it('should handle malformed context data', () => {
+      const malformedContext = {
+        ...mockContext,
+        sellerRating: undefined as any,
+        accountAge: null as any
       };
-      const user = { ...mockUser };
 
-      // Should not crash, should return reasonable defaults
-      expect(() => policies.canViewProduct(user, incompleteProduct)).not.toThrow();
-      expect(() => policies.canEditProduct(user, incompleteProduct)).not.toThrow();
+      const result = engine.evaluateRules(malformedContext);
+
+      // Should not crash and return reasonable defaults
+      expect(result).toBeDefined();
+      expect(typeof result.finalVisibility).toBe('string');
+      expect(Array.isArray(result.appliedRules)).toBe(true);
+    });
+  });
+
+  describe('DSL Functionality', () => {
+    it('should create rules using DSL', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'dsl-rule',
+        name: 'DSL Created Rule',
+        condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
+        action: VisibilityPolicyDSL.action('set_visibility', 'premium', 'DSL rule')
+      });
+
+      expect(rule.id).toBe('dsl-rule');
+      expect(rule.condition.type).toBe('seller_rating');
+      expect(rule.condition.operator).toBe('greater_than');
+      expect(rule.condition.value).toBe(4.0);
+      expect(rule.action.type).toBe('set_visibility');
+      expect(rule.action.value).toBe('premium');
     });
 
-    it('should handle users with missing properties', () => {
-      const incompleteUser = {
-        ...mockUser,
-        roles: undefined as any,
-        isAuthenticated: undefined as any
-      };
-      const product = { ...mockProduct };
+    it('should create complex conditions using DSL', () => {
+      const complexCondition = VisibilityPolicyDSL.and(
+        VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
+        VisibilityPolicyDSL.condition('account_age', 'greater_than', 180),
+        VisibilityPolicyDSL.or(
+          VisibilityPolicyDSL.condition('seller_tier', 'equals', 'premium'),
+          VisibilityPolicyDSL.condition('successful_sales', 'greater_than', 1000)
+        )
+      );
 
-      // Should not crash, should return reasonable defaults
-      expect(() => policies.canViewProduct(incompleteUser, product)).not.toThrow();
+      expect(complexCondition.and).toHaveLength(3);
+      expect(complexCondition.and![2].or).toHaveLength(2);
     });
 
-    it('should handle empty arrays and collections', () => {
-      const user = { ...mockUser };
-      const productWithEmptyTags = { ...mockProduct, tags: [] };
+    it('should handle metadata in DSL rules', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'metadata-rule',
+        name: 'Metadata Rule',
+        version: '2.0.0',
+        priority: 20,
+        condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
+        action: VisibilityPolicyDSL.action('set_visibility', 'premium', 'Metadata test'),
+        description: 'Test rule with metadata',
+        author: 'Test Author'
+      });
 
-      expect(policies.canViewProduct(user, productWithEmptyTags)).toBe(true);
-      expect(policies.canBulkOperate(user, [], 'publish')).toBe(true); // Empty array is allowed
-    });
-
-    it('should handle special characters and unicode', () => {
-      const user = { ...mockUser, userId: 'user-🚀-test' };
-      const product = { ...mockProduct, ownerId: 'user-🚀-test', tags: ['🏷️', '测试'] };
-
-      expect(policies.canViewProduct(user, product)).toBe(true);
-      expect(policies.canEditProduct(user, product)).toBe(true);
+      expect(rule.version).toBe('2.0.0');
+      expect(rule.priority).toBe(20);
+      expect(rule.metadata.description).toBe('Test rule with metadata');
+      expect(rule.metadata.author).toBe('Test Author');
+      expect(rule.metadata.createdAt).toBeInstanceOf(Date);
+      expect(rule.metadata.updatedAt).toBeInstanceOf(Date);
     });
   });
 });
