@@ -340,7 +340,7 @@ export class ProductPublishingSaga extends BaseSaga {
           // Record error
           this.state.errors.push({
             step: stepId,
-            error: error.message,
+            error: error instanceof Error ? error.message : String(error),
             timestamp: this.dateTimeService.now()
           });
 

@@ -625,6 +625,12 @@ export function isPrivateNetworkOrigin(origin: string | undefined): boolean {
   }
 }
 
+// Make functions available globally for testing
+(global as any).isValidOrigin = isValidOrigin;
+(global as any).validateMethod = validateMethod;
+(global as any).validateHeaders = validateHeaders;
+(global as any).setCORSHeaders = setCORSHeaders;
+
 /**
  * Parse origins from environment variable
  */

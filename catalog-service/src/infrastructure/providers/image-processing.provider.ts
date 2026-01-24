@@ -145,7 +145,13 @@ export class SharpImageProvider {
 
         // Cache result
         if (this.config.cacheEnabled) {
-          await this.saveToCache(cacheKey, result);
+          // Create a complete result for caching
+          const cacheResult = {
+            ...result,
+            processingTime: 0, // Will be set later
+            originalSize: buffer.length
+          };
+          await this.saveToCache(cacheKey, cacheResult);
         }
 
         const processingTime = Date.now() - startTime;

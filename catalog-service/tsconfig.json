@@ -30,7 +30,6 @@
     "exactOptionalPropertyTypes": false,
     "noUncheckedIndexedAccess": false,
     "noImplicitUseStrict": false,
-    "suppressImplicitAnyIndexErrors": true,
     "types": ["node", "jest"]
   },
   "include": [

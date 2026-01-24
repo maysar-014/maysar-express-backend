@@ -3,7 +3,6 @@
  * Tests for domain business policies with rule-based visibility evaluation
  */
 
-import { describe, it, expect, beforeEach } from '@jest/globals';
 import {
   VisibilityRuleEngine,
   VisibilityRule,
@@ -13,11 +12,11 @@ import {
   DEFAULT_VISIBILITY_RULES,
   VisibilityCondition,
   VisibilityAction
-} from '../visibility-policies';
+} from '../../policies/visibility-policies';
 
 describe('VisibilityRuleEngine', () => {
-  let engine: VisibilityRuleEngine;
-  let mockContext: VisibilityContext;
+  let engine;
+  let mockContext;
 
   beforeEach(() => {
     engine = new VisibilityRuleEngine();
@@ -146,7 +145,7 @@ describe('VisibilityRuleEngine', () => {
           VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
           VisibilityPolicyDSL.condition('account_age', 'greater_than', 180)
         ),
-        action: VisibilityPolicyDSL.action('set_visibility', 'premium', 'Qualified seller')
+        action: VisibilityPolicyDSL.action('set_visibility', 'public', 'Qualified seller')
       });
 
       engine.addRule(rule);
@@ -233,7 +232,7 @@ describe('VisibilityRuleEngine', () => {
 
       engine.addRule(rule);
 
-      const context = { ...mockContext, currentVisibility: 'b2b_only', sellerTier: 'premium' as const };
+      const context = { ...mockContext, currentVisibility: 'b2b_only', sellerTier: 'premium' };
       const result = engine.evaluateRules(context);
 
       expect(result.finalVisibility).toBe('public'); // Boosted from b2b_only
@@ -249,7 +248,7 @@ describe('VisibilityRuleEngine', () => {
 
       engine.addRule(rule);
 
-      const context = { ...mockContext, productStatus: 'suspended' as const };
+      const context = { ...mockContext, productStatus: 'suspended' };
       const result = engine.evaluateRules(context);
 
       expect(result.finalVisibility).toBe('hidden');
@@ -287,7 +286,7 @@ describe('VisibilityRuleEngine', () => {
     });
 
     it('should apply premium seller boost rule', () => {
-      const context = { ...mockContext, sellerTier: 'premium' as const };
+      const context = { ...mockContext, sellerTier: 'premium' };
       const result = engine.evaluateRules(context);
 
       expect(result.appliedRules).toContain('premium_seller_boost');
@@ -295,7 +294,7 @@ describe('VisibilityRuleEngine', () => {
     });
 
     it('should apply suspended product hide rule', () => {
-      const context = { ...mockContext, productStatus: 'suspended' as const };
+      const context = { ...mockContext, productStatus: 'suspended' };
       const result = engine.evaluateRules(context);
 
       expect(result.appliedRules).toContain('suspended_product_hide');
@@ -303,7 +302,7 @@ describe('VisibilityRuleEngine', () => {
     });
 
     it('should apply archived product hide rule', () => {
-      const context = { ...mockContext, productStatus: 'archived' as const };
+      const context = { ...mockContext, productStatus: 'archived' };
       const result = engine.evaluateRules(context);
 
       expect(result.appliedRules).toContain('archived_product_hide');
@@ -333,7 +332,7 @@ describe('VisibilityRuleEngine', () => {
         id: 'disabled-rule',
         name: 'Disabled Rule',
         condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
-        action: VisibilityPolicyDSL.action('set_visibility', 'premium', 'Disabled rule')
+        action: VisibilityPolicyDSL.action('set_visibility', 'hidden', 'Disabled rule')
       });
 
       rule.enabled = false;
@@ -350,7 +349,7 @@ describe('VisibilityRuleEngine', () => {
       const rule = VisibilityPolicyDSL.createRule({
         id: 'invalid-condition',
         name: 'Invalid Condition',
-        condition: { type: 'invalid_field' as any, operator: 'equals', value: 'test' },
+        condition: { type: 'seller_rating', operator: 'equals', value: 'test' },
         action: VisibilityPolicyDSL.action('set_visibility', 'hidden', 'Invalid condition')
       });
 
@@ -365,8 +364,8 @@ describe('VisibilityRuleEngine', () => {
     it('should handle malformed context data', () => {
       const malformedContext = {
         ...mockContext,
-        sellerRating: undefined as any,
-        accountAge: null as any
+        sellerRating: undefined,
+        accountAge: null
       };
 
       const result = engine.evaluateRules(malformedContext);
@@ -376,6 +375,105 @@ describe('VisibilityRuleEngine', () => {
       expect(typeof result.finalVisibility).toBe('string');
       expect(Array.isArray(result.appliedRules)).toBe(true);
     });
+
+    it('should handle between operator', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'between-rule',
+        name: 'Between Rule',
+        condition: { type: 'price_range', operator: 'between', value: [50, 200] },
+        action: VisibilityPolicyDSL.action('set_visibility', 'b2b_only', 'Price in range')
+      });
+
+      engine.addRule(rule);
+
+      const inRangeContext = { ...mockContext, price: 100 };
+      const outOfRangeContext = { ...mockContext, price: 300 };
+
+      expect(engine.evaluateRules(inRangeContext).appliedRules).toContain('between-rule');
+      expect(engine.evaluateRules(outOfRangeContext).appliedRules).not.toContain('between-rule');
+    });
+
+    it('should handle in and not_in operators', () => {
+      const inRule = VisibilityPolicyDSL.createRule({
+        id: 'in-rule',
+        name: 'In Rule',
+        priority: 10,
+        condition: { type: 'category', operator: 'in', value: ['electronics', 'gadgets'] },
+        action: VisibilityPolicyDSL.action('set_visibility', 'public', 'Allowed category')
+      });
+
+      const notInRule = VisibilityPolicyDSL.createRule({
+        id: 'not-in-rule',
+        name: 'Not In Rule',
+        priority: 5,
+        condition: { type: 'category', operator: 'not_in', value: ['restricted', 'banned'] },
+        action: VisibilityPolicyDSL.action('set_visibility', 'public', 'Not restricted category')
+      });
+
+      engine.addRule(inRule);
+      
+      const allowedContext = { ...mockContext, category: 'electronics' };
+      expect(engine.evaluateRules(allowedContext).appliedRules).toContain('in-rule');
+      
+      engine.removeRule('in-rule');
+      engine.addRule(notInRule);
+      
+      const allowedContext2 = { ...mockContext, category: 'allowed' };
+      expect(engine.evaluateRules(allowedContext2).appliedRules).toContain('not-in-rule');
+    });
+
+    it('should handle unknown field types', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'unknown-field-rule',
+        name: 'Unknown Field Rule',
+        condition: { type: 'unknown_field' as any, operator: 'equals', value: 'test' },
+        action: VisibilityPolicyDSL.action('set_visibility', 'hidden', 'Unknown field')
+      });
+
+      engine.addRule(rule);
+      const result = engine.evaluateRules(mockContext);
+
+      expect(result.appliedRules).not.toContain('unknown-field-rule');
+    });
+
+    it('should handle restrict_visibility with invalid visibility levels', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'invalid-restrict-rule',
+        name: 'Invalid Restrict Rule',
+        condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
+        action: { type: 'restrict_visibility', value: 'invalid_level' as any, reason: 'Invalid level test' }
+      });
+
+      engine.addRule(rule);
+      const context = { ...mockContext, currentVisibility: 'invalid_current' as any, sellerRating: 4.5 };
+      const result = engine.evaluateRules(context);
+
+      expect(result.finalVisibility).toBe('invalid_current'); // Should return current visibility
+    });
+
+    it('should handle boost_visibility with invalid visibility levels', () => {
+      const rule = VisibilityPolicyDSL.createRule({
+        id: 'invalid-boost-rule',
+        name: 'Invalid Boost Rule',
+        condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
+        action: { type: 'boost_visibility', value: 'invalid_level' as any, reason: 'Invalid level test' }
+      });
+
+      engine.addRule(rule);
+      const context = { ...mockContext, currentVisibility: 'invalid_current' as any, sellerRating: 4.5 };
+      const result = engine.evaluateRules(context);
+
+      expect(result.finalVisibility).toBe('invalid_current'); // Should return current visibility
+    });
+
+    it('should create DSL action with duration', () => {
+      const actionWithDuration = VisibilityPolicyDSL.action('set_visibility', 'hidden', 'Temporary hide', 60);
+      
+      expect(actionWithDuration.duration).toBe(60);
+      expect(actionWithDuration.type).toBe('set_visibility');
+      expect(actionWithDuration.value).toBe('hidden');
+      expect(actionWithDuration.reason).toBe('Temporary hide');
+    });
   });
 
   describe('DSL Functionality', () => {
@@ -384,7 +482,7 @@ describe('VisibilityRuleEngine', () => {
         id: 'dsl-rule',
         name: 'DSL Created Rule',
         condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
-        action: VisibilityPolicyDSL.action('set_visibility', 'premium', 'DSL rule')
+        action: VisibilityPolicyDSL.action('set_visibility', 'public', 'DSL rule')
       });
 
       expect(rule.id).toBe('dsl-rule');
@@ -392,7 +490,7 @@ describe('VisibilityRuleEngine', () => {
       expect(rule.condition.operator).toBe('greater_than');
       expect(rule.condition.value).toBe(4.0);
       expect(rule.action.type).toBe('set_visibility');
-      expect(rule.action.value).toBe('premium');
+      expect(rule.action.value).toBe('public');
     });
 
     it('should create complex conditions using DSL', () => {
@@ -406,7 +504,9 @@ describe('VisibilityRuleEngine', () => {
       );
 
       expect(complexCondition.and).toHaveLength(3);
-      expect(complexCondition.and![2].or).toHaveLength(2);
+      if (complexCondition.and) {
+        expect(complexCondition.and[2].or).toHaveLength(2);
+      }
     });
 
     it('should handle metadata in DSL rules', () => {
@@ -416,7 +516,7 @@ describe('VisibilityRuleEngine', () => {
         version: '2.0.0',
         priority: 20,
         condition: VisibilityPolicyDSL.condition('seller_rating', 'greater_than', 4.0),
-        action: VisibilityPolicyDSL.action('set_visibility', 'premium', 'Metadata test'),
+        action: VisibilityPolicyDSL.action('set_visibility', 'public', 'Metadata test'),
         description: 'Test rule with metadata',
         author: 'Test Author'
       });

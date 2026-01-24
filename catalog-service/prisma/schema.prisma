@@ -20,7 +20,7 @@ model Category {
   slug        String   @unique @db.VarChar(255)
   description String?
   imageUrl    String?  @db.VarChar(500)
-  displayOrder Integer  @default(0)
+  displayOrder Int  @default(0)
   isActive    Boolean  @default(true)
   seoMetadata Json?
   createdAt   DateTime @default(now()) @db.Timestamp(6)
@@ -87,7 +87,7 @@ model MediaRef {
   mediaType    String   @db.VarChar(50) // image, video, document
   url          String   @db.VarChar(500)
   altText      String?  @db.VarChar(255)
-  displayOrder Integer  @default(0)
+  displayOrder Int  @default(0)
   isPrimary    Boolean  @default(false)
   metadata     Json?
   uploadedBy   String   @db.Uuid

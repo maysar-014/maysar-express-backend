@@ -1,6 +1,11 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { eventBus } from '../../shared/events/eventBus';
+import { eventBus } from '../src/events/eventBus';
+import { v4 as uuidv4 } from 'uuid';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 const prisma = new PrismaClient();
@@ -15,8 +20,8 @@ initializeSellerSagaHandlers();
 function initializeSellerSagaHandlers() {
   // Product Catalog Management Saga Events
   eventBus.subscribe('ProductCreationStarted', async (event) => {
-    const { sellerId, productName, category } = event.data;
-    
+    const { sellerId, productName, category, sagaId } = event.payload;
+
     const product = await prisma.product.create({
       data: {
         name: productName,
@@ -25,55 +30,77 @@ function initializeSellerSagaHandlers() {
         status: 'draft'
       }
     });
-    
+
     await eventBus.publish({
-      type: 'ProductCreated',
-      data: { productId: product.id, sellerId, sagaId: event.sagaId }
+      event: 'ProductCreated',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { productId: product.id, sellerId, sagaId }
     });
   });
 
   eventBus.subscribe('ProductImagesUploaded', async (event) => {
-    const { images } = event.data;
-    
+    const { images, sagaId } = event.payload;
+
     await eventBus.publish({
-      type: 'ProductSEOOptimized',
-      data: { seoData: { optimized: true }, sagaId: event.sagaId }
+      event: 'ProductSEOOptimized',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { seoData: { optimized: true }, sagaId }
     });
   });
 
   eventBus.subscribe('ProductSEOOptimized', async (event) => {
-    const { seoData } = event.data;
-    
+    const { seoData, sagaId } = event.payload;
+
     await eventBus.publish({
-      type: 'ProductCatalogSynced',
-      data: { sagaId: event.sagaId }
+      event: 'ProductCatalogSynced',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { sagaId }
     });
   });
 
   eventBus.subscribe('ProductCatalogSynced', async (event) => {
+    const { sagaId } = event.payload;
+
     await eventBus.publish({
-      type: 'ProductPublished',
-      data: { publishedAt: new Date(), sagaId: event.sagaId }
+      event: 'ProductPublished',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { publishedAt: new Date(), sagaId }
     });
   });
 
   // Pricing Management Saga Events
   eventBus.subscribe('PricingValidationRequested', async (event) => {
-    const { sellerId, productId, pricing } = event.data;
-    
+    const { sellerId, productId, pricing, sagaId } = event.payload;
+
     const isValid = pricing.price > 0;
-    
+
     if (isValid) {
       await eventBus.publish({
-        type: 'ProductPricingUpdated',
-        data: { sellerId, productId, pricing, sagaId: event.sagaId }
+        event: 'ProductPricingUpdated',
+        version: 'v1',
+        eventId: uuidv4(),
+        producer: 'catalog-service',
+        timestamp: new Date().toISOString(),
+        payload: { sellerId, productId, pricing, sagaId }
       });
     }
   });
 
   eventBus.subscribe('ProductPricingUpdated', async (event) => {
-    const { productId, pricing } = event.data;
-    
+    const { productId, pricing, sagaId } = event.payload;
+
     await prisma.productVariant.updateMany({
       where: { productId },
       data: {
@@ -81,42 +108,58 @@ function initializeSellerSagaHandlers() {
         compareAtPrice: pricing.compareAtPrice
       }
     });
-    
+
     await eventBus.publish({
-      type: 'PricingChangeNotificationSent',
-      data: { productId, sagaId: event.sagaId }
+      event: 'PricingChangeNotificationSent',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { productId, sagaId }
     });
   });
 
   // Promotional Campaign Saga Events
   eventBus.subscribe('CampaignValidationRequested', async (event) => {
-    const { sellerId, campaign } = event.data;
-    
+    const { sellerId, campaign, sagaId } = event.payload;
+
     const isValid = campaign.startDate && campaign.endDate && campaign.discountPercentage > 0;
-    
+
     if (isValid) {
       await eventBus.publish({
-        type: 'PromotionalCampaignCreated',
-        data: { sellerId, campaign, sagaId: event.sagaId }
+        event: 'PromotionalCampaignCreated',
+        version: 'v1',
+        eventId: uuidv4(),
+        producer: 'catalog-service',
+        timestamp: new Date().toISOString(),
+        payload: { sellerId, campaign, sagaId }
       });
     }
   });
 
   eventBus.subscribe('PromotionalCampaignCreated', async (event) => {
-    const { sellerId, campaign } = event.data;
-    
+    const { sellerId, campaign, sagaId } = event.payload;
+
     await eventBus.publish({
-      type: 'CampaignActivated',
-      data: { sellerId, campaignId: campaign.id, sagaId: event.sagaId }
+      event: 'CampaignActivated',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { sellerId, campaignId: campaign.id, sagaId }
     });
   });
 
   eventBus.subscribe('CampaignActivated', async (event) => {
-    const { sellerId, campaignId } = event.data;
-    
+    const { sellerId, campaignId, sagaId } = event.payload;
+
     await eventBus.publish({
-      type: 'CampaignNotificationSent',
-      data: { sellerId, campaignId, sagaId: event.sagaId }
+      event: 'CampaignNotificationSent',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { sellerId, campaignId, sagaId }
     });
   });
 }
@@ -130,7 +173,7 @@ app.post('/api/products', async (req, res) => {
     });
     res.json(product);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
@@ -142,7 +185,7 @@ app.get('/api/products/:id', async (req, res) => {
     });
     res.json(product);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
@@ -154,7 +197,7 @@ app.get('/api/wholesale/pricing/:supplierId', async (req, res) => {
     });
     res.json(pricing);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
@@ -165,43 +208,51 @@ app.post('/api/wholesale/pricing', async (req, res) => {
     });
     res.json(pricing);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
 function initializeSupplierPricingHandlers() {
   // Wholesale Pricing Events
   eventBus.subscribe('WholesaleCostAnalyzed', async (event) => {
-    const { supplierId, products, costAnalysis } = event.data;
-    
+    const { supplierId, products, costAnalysis, sagaId } = event.payload;
+
     const pricing = await calculateWholesalePricing(products, costAnalysis);
-    
+
     await eventBus.publish({
-      type: 'WholesalePricingCalculated',
-      data: { supplierId, products, pricing, sagaId: event.sagaId }
+      event: 'WholesalePricingCalculated',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { supplierId, products, pricing, sagaId }
     });
   });
 
   eventBus.subscribe('WholesalePricingCalculated', async (event) => {
-    const { supplierId, products, pricing } = event.data;
-    
+    const { supplierId, products, pricing, sagaId } = event.payload;
+
     const approvedPricing = pricing;
-    
+
     await eventBus.publish({
-      type: 'WholesalePricingApproved',
-      data: { supplierId, products, approvedPricing, sagaId: event.sagaId }
+      event: 'WholesalePricingApproved',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { supplierId, products, approvedPricing, sagaId }
     });
   });
 
   eventBus.subscribe('WholesalePricingApproved', async (event) => {
-    const { supplierId, products, approvedPricing } = event.data;
-    
+    const { supplierId, products, approvedPricing, sagaId } = event.payload;
+
     for (const product of products) {
       await prisma.wholesalePricing.upsert({
-        where: { 
-          supplierId_productId: { 
-            supplierId, 
-            productId: product.id 
+        where: {
+          supplierId_productId: {
+            supplierId,
+            productId: product.id
           }
         },
         update: {
@@ -216,30 +267,38 @@ function initializeSupplierPricingHandlers() {
         }
       });
     }
-    
+
     await eventBus.publish({
-      type: 'WholesalePricingPublished',
-      data: { supplierId, products, publishedAt: new Date(), sagaId: event.sagaId }
+      event: 'WholesalePricingPublished',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { supplierId, products, publishedAt: new Date(), sagaId }
     });
   });
 
   eventBus.subscribe('WholesalePricingPublished', async (event) => {
-    const { supplierId, products } = event.data;
-    
+    const { supplierId, products, sagaId } = event.payload;
+
     await eventBus.publish({
-      type: 'WholesalePricingNotificationSent',
-      data: { supplierId, products, sagaId: event.sagaId }
+      event: 'WholesalePricingNotificationSent',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { supplierId, products, sagaId }
     });
   });
 }
 
-async function calculateWholesalePricing(products, costAnalysis) {
-  const pricing = {};
-  
+async function calculateWholesalePricing(products: any[], costAnalysis: any) {
+  const pricing: any = {};
+
   for (const product of products) {
     const baseCost = costAnalysis[product.id]?.cost || 100;
     const markup = 0.3; // 30% markup
-    
+
     pricing[product.id] = {
       unitPrice: baseCost * (1 + markup),
       bulkTiers: [
@@ -249,15 +308,15 @@ async function calculateWholesalePricing(products, costAnalysis) {
       ]
     };
   }
-  
+
   return pricing;
 }
 
 function initializeEventHandlers() {
   // Product Catalog Management Saga Events
   eventBus.subscribe('ProductCreationRequested', async (event) => {
-    const { sellerId, productData } = event.data;
-    
+    const { sellerId, productData, sagaId } = event.payload;
+
     const product = await prisma.product.create({
       data: {
         ...productData,
@@ -265,16 +324,20 @@ function initializeEventHandlers() {
         status: 'draft'
       }
     });
-    
+
     await eventBus.publish({
-      type: 'ProductCreated',
-      data: { productId: product.id, sellerId, sagaId: event.sagaId }
+      event: 'ProductCreated',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { productId: product.id, sellerId, sagaId }
     });
   });
 
   eventBus.subscribe('ProductImageUploadRequested', async (event) => {
-    const { productId, images } = event.data;
-    
+    const { productId, images, sagaId } = event.payload;
+
     // Store product images
     for (const image of images) {
       await prisma.mediaRef.create({
@@ -288,69 +351,89 @@ function initializeEventHandlers() {
         }
       });
     }
-    
+
     await eventBus.publish({
-      type: 'ProductImagesUploaded',
-      data: { productId, imageCount: images.length, sagaId: event.sagaId }
+      event: 'ProductImagesUploaded',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { productId, imageCount: images.length, sagaId }
     });
   });
 
   eventBus.subscribe('SEOOptimizationRequested', async (event) => {
-    const { productId, seoData } = event.data;
-    
+    const { productId, seoData, sagaId } = event.payload;
+
     await prisma.product.update({
       where: { id: productId },
       data: { seoMetadata: seoData }
     });
-    
+
     await eventBus.publish({
-      type: 'SEOOptimizationCompleted',
-      data: { productId, sagaId: event.sagaId }
+      event: 'SEOOptimizationCompleted',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { productId, sagaId }
     });
   });
 
   eventBus.subscribe('CatalogSyncRequested', async (event) => {
-    const { sellerId } = event.data;
-    
+    const { sellerId, sagaId } = event.payload;
+
     // Sync catalog with external systems
     const products = await prisma.product.findMany({
       where: { sellerId },
       include: { variants: true }
     });
-    
+
     await eventBus.publish({
-      type: 'CatalogSynced',
-      data: { sellerId, productCount: products.length, sagaId: event.sagaId }
+      event: 'CatalogSynced',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { sellerId, productCount: products.length, sagaId }
     });
   });
 
   eventBus.subscribe('ProductPublicationRequested', async (event) => {
-    const { productId } = event.data;
-    
+    const { productId, sagaId } = event.payload;
+
     await prisma.product.update({
       where: { id: productId },
       data: { status: 'published' }
     });
-    
+
     await eventBus.publish({
-      type: 'ProductPublished',
-      data: { productId, sagaId: event.sagaId }
+      event: 'ProductPublished',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { productId, sagaId }
     });
   });
 
   // Bulk Product Operations Saga Events
   eventBus.subscribe('BulkProductOperationRequested', async (event) => {
-    const { sellerId, operation, productIds } = event.data;
-    
+    const { sellerId, operation, productIds, sagaId } = event.payload;
+
     await eventBus.publish({
-      type: 'BulkProductOperationInitiated',
-      data: { sellerId, operation, productIds, sagaId: event.sagaId }
+      event: 'BulkProductOperationInitiated',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { sellerId, operation, productIds, sagaId }
     });
   });
 
   eventBus.subscribe('BulkProductOperationInitiated', async (event) => {
-    const { operation, productIds } = event.data;
-    
+    const { operation, productIds, sagaId } = event.payload;
+
     if (operation === 'publish') {
       await prisma.product.updateMany({
         where: { id: { in: productIds } },
@@ -362,24 +445,32 @@ function initializeEventHandlers() {
         data: { status: 'draft' }
       });
     }
-    
+
     await eventBus.publish({
-      type: 'BulkProductOperationCompleted',
-      data: { operation, productIds, sagaId: event.sagaId }
+      event: 'BulkProductOperationCompleted',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { operation, productIds, sagaId }
     });
   });
 
   // Pricing Management Saga Events
   eventBus.subscribe('PricingValidationRequested', async (event) => {
-    const { sellerId, productId, pricing } = event.data;
-    
+    const { sellerId, productId, pricing, sagaId } = event.payload;
+
     // Validate pricing rules
     const isValid = pricing.price > 0 && (!pricing.compareAtPrice || pricing.compareAtPrice > pricing.price);
-    
+
     if (isValid) {
       await eventBus.publish({
-        type: 'ProductPricingUpdated',
-        data: { sellerId, productId, pricing, sagaId: event.sagaId }
+        event: 'ProductPricingUpdated',
+        version: 'v1',
+        eventId: uuidv4(),
+        producer: 'catalog-service',
+        timestamp: new Date().toISOString(),
+        payload: { sellerId, productId, pricing, sagaId }
       });
     } else {
       throw new Error('Invalid pricing configuration');
@@ -387,8 +478,8 @@ function initializeEventHandlers() {
   });
 
   eventBus.subscribe('ProductPricingUpdated', async (event) => {
-    const { productId, pricing } = event.data;
-    
+    const { productId, pricing, sagaId } = event.payload;
+
     await prisma.productVariant.updateMany({
       where: { productId },
       data: {
@@ -397,24 +488,32 @@ function initializeEventHandlers() {
         costPrice: pricing.costPrice
       }
     });
-    
+
     await eventBus.publish({
-      type: 'PricingChangeNotificationSent',
-      data: { productId, sagaId: event.sagaId }
+      event: 'PricingChangeNotificationSent',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { productId, sagaId }
     });
   });
 
   // Promotional Campaign Saga Events
   eventBus.subscribe('CampaignValidationRequested', async (event) => {
-    const { sellerId, campaign } = event.data;
-    
+    const { sellerId, campaign, sagaId } = event.payload;
+
     // Validate campaign parameters
     const isValid = campaign.startDate && campaign.endDate && campaign.discountPercentage > 0;
-    
+
     if (isValid) {
       await eventBus.publish({
-        type: 'PromotionalCampaignCreated',
-        data: { sellerId, campaign, sagaId: event.sagaId }
+        event: 'PromotionalCampaignCreated',
+        version: 'v1',
+        eventId: uuidv4(),
+        producer: 'catalog-service',
+        timestamp: new Date().toISOString(),
+        payload: { sellerId, campaign, sagaId }
       });
     } else {
       throw new Error('Invalid campaign configuration');
@@ -422,15 +521,15 @@ function initializeEventHandlers() {
   });
 
   eventBus.subscribe('PromotionalCampaignCreated', async (event) => {
-    const { sellerId, campaign } = event.data;
-    
+    const { sellerId, campaign, sagaId } = event.payload;
+
     // Apply campaign to products
     if (campaign.productIds) {
       for (const productId of campaign.productIds) {
         const variants = await prisma.productVariant.findMany({
           where: { productId }
         });
-        
+
         for (const variant of variants) {
           const discountedPrice = variant.price * (1 - campaign.discountPercentage / 100);
           await prisma.productVariant.update({
@@ -440,19 +539,27 @@ function initializeEventHandlers() {
         }
       }
     }
-    
+
     await eventBus.publish({
-      type: 'CampaignActivated',
-      data: { sellerId, campaignId: campaign.id, sagaId: event.sagaId }
+      event: 'CampaignActivated',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { sellerId, campaignId: campaign.id, sagaId }
     });
   });
 
   eventBus.subscribe('CampaignActivated', async (event) => {
-    const { sellerId, campaignId } = event.data;
-    
+    const { sellerId, campaignId, sagaId } = event.payload;
+
     await eventBus.publish({
-      type: 'CampaignNotificationSent',
-      data: { sellerId, campaignId, sagaId: event.sagaId }
+      event: 'CampaignNotificationSent',
+      version: 'v1',
+      eventId: uuidv4(),
+      producer: 'catalog-service',
+      timestamp: new Date().toISOString(),
+      payload: { sellerId, campaignId, sagaId }
     });
   });
 }

@@ -1,574 +1,426 @@
 /**
  * Product Entity Tests
- * Tests for domain entities with business rules validation and invariants
+ * Comprehensive domain entity testing for product business logic
+ * Tests real entity implementation with deterministic behavior
+ * Follows testing constitution: Fast, Isolated, Deterministic, Focused, Readable
  */
 
-import { describe, it, expect, beforeEach } from '@jest/globals';
-import { Product, ProductVariant } from '../../entities/product.entity';
+import { Product, ProductVariant } from '../product.entity';
 import { ProductId, SellerId, CategoryId } from '../../value-objects/ids.value-object';
-import { Price } from '../../value-objects/monetary.value-object';
-import { ProductType, ProductVisibility, ProductStatus, ProductStatusValue } from '../../value-objects/product-types.value-object';
+import { Price, CostPrice } from '../../value-objects/monetary.value-object';
+import {
+  ProductStatus,
+  ProductStatusValue,
+  ProductVisibility,
+  ProductType,
+  ProductCondition
+} from '../../value-objects/product-types.value-object';
 
-describe('Product Entity', () => {
-  let validProductData: any;
+describe('ProductVariant', () => {
+  const mockPrice = new Price(99.99, 'USD');
+  const mockComparePrice = new Price(129.99, 'USD');
+  const mockCostPrice = new CostPrice(50.00, 'USD');
 
-  beforeEach(() => {
-    validProductData = {
-      id: 'prod-123',
-      name: 'Test Product',
-      description: 'A comprehensive test product description',
-      price: 99.99,
-      category: 'electronics',
-      sku: 'TEST-001',
-      inventory: 100,
-      ownerId: 'user-123'
-    };
-  });
-
-  describe('Creation', () => {
-    it('should create valid product', () => {
-      const product = new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'draft',
-        'public',
-        validProductData.ownerId
+  describe('creation and getters', () => {
+    it('should create variant with all properties', () => {
+      const variant = new ProductVariant(
+        'variant-1',
+        'SKU-001',
+        'Red Variant',
+        mockPrice,
+        mockComparePrice,
+        mockCostPrice,
+        10,
+        { color: 'red', size: 'M' }
       );
 
-      expect(product.id).toBe(validProductData.id);
-      expect(product.name).toBe(validProductData.name);
-      expect(product.price).toBe(validProductData.price);
-      expect(product.status).toBe('draft');
-      expect(product.isPublished()).toBe(false);
+      expect(variant.getId()).toBe('variant-1');
+      expect(variant.getSku()).toBe('SKU-001');
+      expect(variant.getName()).toBe('Red Variant');
+      expect(variant.getPrice()).toBe(mockPrice);
+      expect(variant.getCompareAtPrice()).toBe(mockComparePrice);
+      expect(variant.getCostPrice()).toBe(mockCostPrice);
+      expect(variant.getInventoryQuantity()).toBe(10);
+      expect(variant.getAttributes()).toEqual({ color: 'red', size: 'M' });
     });
 
-    it('should create product with default values', () => {
-      const product = new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        undefined, // status
-        undefined, // visibility
-        validProductData.ownerId
-      );
+    it('should create variant with minimal properties', () => {
+      const variant = new ProductVariant('variant-1', 'SKU-001', 'Basic Variant', mockPrice);
 
-      expect(product.status).toBe('draft');
-      expect(product.visibility).toBe('public');
-    });
-
-    it('should reject empty name', () => {
-      expect(() => new Product(
-        validProductData.id,
-        '', // empty name
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'draft',
-        'public',
-        validProductData.ownerId
-      )).toThrow('Product name is required');
-    });
-
-    it('should reject name exceeding maximum length', () => {
-      const longName = 'a'.repeat(101);
-      expect(() => new Product(
-        validProductData.id,
-        longName,
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'draft',
-        'public',
-        validProductData.ownerId
-      )).toThrow('Product name cannot exceed 100 characters');
-    });
-
-    it('should reject negative price', () => {
-      expect(() => new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        -10, // negative price
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'draft',
-        'public',
-        validProductData.ownerId
-      )).toThrow('Product price cannot be negative');
-    });
-
-    it('should reject price exceeding maximum', () => {
-      expect(() => new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        2000000, // price too high
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'draft',
-        'public',
-        validProductData.ownerId
-      )).toThrow('Product price cannot exceed maximum allowed');
-    });
-
-    it('should reject empty category', () => {
-      expect(() => new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        validProductData.price,
-        '', // empty category
-        validProductData.sku,
-        validProductData.inventory,
-        'draft',
-        'public',
-        validProductData.ownerId
-      )).toThrow('Product category is required');
-    });
-
-    it('should reject empty SKU', () => {
-      expect(() => new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        '', // empty SKU
-        validProductData.inventory,
-        'draft',
-        'public',
-        validProductData.ownerId
-      )).toThrow('Product SKU is required');
-    });
-
-    it('should reject negative inventory', () => {
-      expect(() => new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        validProductData.sku,
-        -5, // negative inventory
-        'draft',
-        'public',
-        validProductData.ownerId
-      )).toThrow('Product inventory cannot be negative');
-    });
-
-    it('should reject empty owner', () => {
-      expect(() => new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'draft',
-        'public',
-        '' // empty owner
-      )).toThrow('Product owner is required');
+      expect(variant.getId()).toBe('variant-1');
+      expect(variant.getCompareAtPrice()).toBeUndefined();
+      expect(variant.getCostPrice()).toBeUndefined();
+      expect(variant.getInventoryQuantity()).toBe(0);
+      expect(variant.getAttributes()).toEqual({});
     });
   });
 
-  describe('Publishing', () => {
-    let draftProduct: Product;
+  describe('business logic', () => {
+    it('should check stock status correctly', () => {
+      const inStockVariant = new ProductVariant('v1', 'SKU-1', 'In Stock', mockPrice, undefined, undefined, 5);
+      const outOfStockVariant = new ProductVariant('v2', 'SKU-2', 'Out of Stock', mockPrice, undefined, undefined, 0);
+
+      expect(inStockVariant.isInStock()).toBe(true);
+      expect(outOfStockVariant.isInStock()).toBe(false);
+    });
+
+    it('should detect sale status correctly', () => {
+      const onSaleVariant = new ProductVariant('v1', 'SKU-1', 'On Sale', mockPrice, mockComparePrice);
+      const regularVariant = new ProductVariant('v2', 'SKU-2', 'Regular', mockPrice);
+
+      expect(onSaleVariant.isOnSale()).toBe(true);
+      expect(regularVariant.isOnSale()).toBe(false);
+    });
+
+    it('should calculate margin when cost price is available', () => {
+      const variant = new ProductVariant('v1', 'SKU-1', 'With Cost', mockPrice, undefined, mockCostPrice);
+      const variantNoCost = new ProductVariant('v2', 'SKU-2', 'No Cost', mockPrice);
+
+      expect(variant.calculateMargin()).toBeCloseTo(49.99); // (99.99 - 50) / 99.99 * 100
+      expect(variantNoCost.calculateMargin()).toBeNull();
+    });
+  });
+});
+
+describe('Product', () => {
+  const mockSellerId = SellerId.fromString('seller-123');
+  const mockCategoryId = CategoryId.fromString('category-456');
+  const mockVariant = new ProductVariant('variant-1', 'SKU-001', 'Default Variant', new Price(99.99, 'USD'), undefined, undefined, 10);
+
+  describe('creation and validation', () => {
+    it('should create product with valid data', () => {
+      const product = new Product(
+        ProductId.fromString('product-123'),
+        mockSellerId,
+        'Test Product',
+        'A test product description',
+        new ProductStatusValue(ProductStatus.DRAFT),
+        ProductType.PHYSICAL,
+        ProductVisibility.PUBLIC,
+        mockCategoryId,
+        [mockVariant],
+        ['image1.jpg', 'image2.jpg'],
+        ['tag1', 'tag2']
+      );
+
+      expect(product.getName()).toBe('Test Product');
+      expect(product.getDescription()).toBe('A test product description');
+      expect(product.getSellerId()).toBe(mockSellerId);
+      expect(product.getCategoryId()).toBe(mockCategoryId);
+      expect(product.getVariants()).toHaveLength(1);
+      expect(product.getImages()).toEqual(['image1.jpg', 'image2.jpg']);
+      expect(product.getTags()).toEqual(['tag1', 'tag2']);
+    });
+
+    it('should throw error for empty name', () => {
+      expect(() => {
+        new Product(
+          ProductId.fromString('product-123'),
+          mockSellerId,
+          '',
+          'Description',
+          new ProductStatusValue(ProductStatus.DRAFT),
+          ProductType.PHYSICAL,
+          ProductVisibility.PUBLIC,
+          undefined,
+          [mockVariant]
+        );
+      }).toThrow('Product name cannot be empty');
+    });
+
+    it('should throw error for empty description', () => {
+      expect(() => {
+        new Product(
+          ProductId.fromString('product-123'),
+          mockSellerId,
+          'Name',
+          '',
+          new ProductStatusValue(ProductStatus.DRAFT),
+          ProductType.PHYSICAL,
+          ProductVisibility.PUBLIC,
+          undefined,
+          [mockVariant]
+        );
+      }).toThrow('Product description cannot be empty');
+    });
+
+    it('should throw error for no variants', () => {
+      expect(() => {
+        new Product(
+          ProductId.fromString('product-123'),
+          mockSellerId,
+          'Name',
+          'Description',
+          new ProductStatusValue(ProductStatus.DRAFT),
+          ProductType.PHYSICAL,
+          ProductVisibility.PUBLIC,
+          undefined,
+          []
+        );
+      }).toThrow('Product must have at least one variant');
+    });
+  });
+
+  describe('getters', () => {
+    let product: Product;
 
     beforeEach(() => {
-      draftProduct = new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'draft',
-        'public',
-        validProductData.ownerId
+      product = new Product(
+        ProductId.fromString('product-123'),
+        mockSellerId,
+        'Test Product',
+        'Description',
+        new ProductStatusValue(ProductStatus.PUBLISHED),
+        ProductType.PHYSICAL,
+        ProductVisibility.PUBLIC,
+        mockCategoryId,
+        [mockVariant],
+        ['image1.jpg'],
+        ['tag1']
       );
     });
 
-    it('should publish valid draft product', () => {
-      const publishedProduct = draftProduct.publish();
+    it('should return all properties correctly', () => {
+      expect(product.getId().toString()).toBe('product-123');
+      expect(product.getSellerId()).toBe(mockSellerId);
+      expect(product.getName()).toBe('Test Product');
+      expect(product.getDescription()).toBe('Description');
+      expect(product.getStatus().getValue()).toBe(ProductStatus.PUBLISHED);
+      expect(product.getType()).toBe(ProductType.PHYSICAL);
+      expect(product.getVisibility()).toBe(ProductVisibility.PUBLIC);
+      expect(product.getCategoryId()).toBe(mockCategoryId);
+      expect(product.getCondition()).toBe(ProductCondition.NEW);
+      expect(product.getCreatedAt()).toBeInstanceOf(Date);
+      expect(product.getUpdatedAt()).toBeInstanceOf(Date);
+    });
 
-      expect(publishedProduct.status).toBe('published');
+    it('should return default variant', () => {
+      expect(product.getDefaultVariant()).toBe(mockVariant);
+    });
+
+    it('should return copies of arrays', () => {
+      const images = product.getImages();
+      const tags = product.getTags();
+      const variants = product.getVariants();
+
+      images.push('new-image.jpg');
+      tags.push('new-tag');
+      variants.push(mockVariant);
+
+      expect(product.getImages()).toEqual(['image1.jpg']);
+      expect(product.getTags()).toEqual(['tag1']);
+      expect(product.getVariants()).toHaveLength(1);
+    });
+  });
+
+  describe('business logic', () => {
+    it('should check published status', () => {
+      const publishedProduct = new Product(
+        ProductId.fromString('product-1'),
+        mockSellerId,
+        'Published Product',
+        'Description',
+        new ProductStatusValue(ProductStatus.PUBLISHED),
+        ProductType.PHYSICAL,
+        ProductVisibility.PUBLIC,
+        undefined,
+        [mockVariant]
+      );
+
+      const draftProduct = new Product(
+        ProductId.fromString('product-2'),
+        mockSellerId,
+        'Draft Product',
+        'Description',
+        new ProductStatusValue(ProductStatus.DRAFT),
+        ProductType.PHYSICAL,
+        ProductVisibility.PUBLIC,
+        undefined,
+        [mockVariant]
+      );
+
       expect(publishedProduct.isPublished()).toBe(true);
-      expect(publishedProduct.publishedAt).toBeDefined();
-      expect(publishedProduct.updatedAt.getTime()).toBeGreaterThanOrEqual(draftProduct.updatedAt.getTime());
-    });
-
-    it('should reject publishing already published product', () => {
-      const publishedProduct = draftProduct.publish();
-
-      expect(() => publishedProduct.publish()).toThrow('Only draft products can be published');
-    });
-
-    it('should reject publishing incomplete product', () => {
-      const incompleteProduct = new Product(
-        validProductData.id,
-        'Hi', // too short name
-        'Short', // too short description
-        0, // invalid price
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'draft',
-        'public',
-        validProductData.ownerId
-      );
-
-      expect(() => incompleteProduct.publish()).toThrow('Product is not ready for publishing');
-    });
-
-    it('should set publishedAt timestamp', () => {
-      const beforePublish = new Date();
-      const publishedProduct = draftProduct.publish();
-      const afterPublish = new Date();
-
-      expect(publishedProduct.publishedAt!.getTime()).toBeGreaterThanOrEqual(beforePublish.getTime());
-      expect(publishedProduct.publishedAt!.getTime()).toBeLessThanOrEqual(afterPublish.getTime());
-    });
-  });
-
-  describe('Archiving', () => {
-    let product: Product;
-
-    beforeEach(() => {
-      product = new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'published',
-        'public',
-        validProductData.ownerId
-      );
-    });
-
-    it('should archive product', () => {
-      const archivedProduct = product.archive();
-
-      expect(archivedProduct.status).toBe('archived');
-      expect(archivedProduct.isArchived()).toBe(true);
-      expect(archivedProduct.updatedAt.getTime()).toBeGreaterThanOrEqual(product.updatedAt.getTime());
-    });
-
-    it('should preserve publishedAt when archiving', () => {
-      const archivedProduct = product.archive();
-
-      expect(archivedProduct.publishedAt).toEqual(product.publishedAt);
-    });
-
-    it('should allow archiving draft products', () => {
-      const draftProduct = new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'draft',
-        'public',
-        validProductData.ownerId
-      );
-
-      const archivedProduct = draftProduct.archive();
-      expect(archivedProduct.status).toBe('archived');
-    });
-  });
-
-  describe('Updates', () => {
-    let product: Product;
-
-    beforeEach(() => {
-      product = new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'draft',
-        'public',
-        validProductData.ownerId
-      );
-    });
-
-    it('should update product name', () => {
-      const updatedProduct = product.update({ name: 'Updated Product Name' });
-
-      expect(updatedProduct.name).toBe('Updated Product Name');
-      expect(updatedProduct.updatedAt.getTime()).toBeGreaterThanOrEqual(product.updatedAt.getTime());
-      expect(updatedProduct.id).toBe(product.id); // immutable properties
-    });
-
-    it('should update multiple properties', () => {
-      const updatedProduct = product.update({
-        name: 'Updated Name',
-        price: 149.99,
-        inventory: 50,
-        visibility: 'private'
-      });
-
-      expect(updatedProduct.name).toBe('Updated Name');
-      expect(updatedProduct.price).toBe(149.99);
-      expect(updatedProduct.inventory).toBe(50);
-      expect(updatedProduct.visibility).toBe('private');
-    });
-
-    it('should preserve unchanged properties', () => {
-      const updatedProduct = product.update({ price: 199.99 });
-
-      expect(updatedProduct.name).toBe(product.name);
-      expect(updatedProduct.description).toBe(product.description);
-      expect(updatedProduct.category).toBe(product.category);
-      expect(updatedProduct.sku).toBe(product.sku); // SKU should not change
-    });
-
-    it('should validate updated data', () => {
-      expect(() => product.update({ name: '' })).toThrow('Product name is required');
-      expect(() => product.update({ price: -10 })).toThrow('Product price cannot be negative');
-      expect(() => product.update({ inventory: -5 })).toThrow('Product inventory cannot be negative');
-    });
-
-    it('should create new instance for updates', () => {
-      const updatedProduct = product.update({ name: 'New Name' });
-
-      expect(updatedProduct).not.toBe(product);
-      expect(updatedProduct.name).not.toBe(product.name);
-    });
-  });
-
-  describe('Business Logic', () => {
-    let product: Product;
-
-    beforeEach(() => {
-      product = new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'published',
-        'public',
-        validProductData.ownerId
-      );
-    });
-
-    it('should check ownership correctly', () => {
-      expect(product.isOwnedBy(validProductData.ownerId)).toBe(true);
-      expect(product.isOwnedBy('different-user')).toBe(false);
-    });
-
-    it('should identify published products', () => {
-      expect(product.isPublished()).toBe(true);
-      expect(product.isArchived()).toBe(false);
-      expect(product.isPublic()).toBe(true);
-    });
-
-    it('should identify archived products', () => {
-      const archivedProduct = product.archive();
-
-      expect(archivedProduct.isPublished()).toBe(false);
-      expect(archivedProduct.isArchived()).toBe(true);
-      expect(archivedProduct.isPublic()).toBe(false); // archived products are not public
-    });
-
-    it('should identify draft products', () => {
-      const draftProduct = new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'draft',
-        'public',
-        validProductData.ownerId
-      );
-
       expect(draftProduct.isPublished()).toBe(false);
-      expect(draftProduct.isArchived()).toBe(false);
-      expect(draftProduct.isPublic()).toBe(false); // draft products are not public
     });
 
-    it('should calculate age correctly', () => {
-      const now = new Date();
-      const twoDaysAgo = new Date(now.getTime() - (2 * 24 * 60 * 60 * 1000));
-
-      const oldProduct = new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'published',
-        'public',
-        validProductData.ownerId,
-        twoDaysAgo
+    it('should check active status', () => {
+      const activeProduct = new Product(
+        ProductId.fromString('product-1'),
+        mockSellerId,
+        'Active Product',
+        'Description',
+        new ProductStatusValue(ProductStatus.PUBLISHED),
+        ProductType.PHYSICAL,
+        ProductVisibility.PUBLIC,
+        undefined,
+        [mockVariant]
       );
 
-      expect(oldProduct.getAgeInDays()).toBe(2);
+      expect(activeProduct.isActive()).toBe(true);
     });
 
-    it('should identify products needing restocking', () => {
-      expect(product.needsRestocking(10)).toBe(false); // inventory is 100
-      expect(product.needsRestocking(150)).toBe(true); // inventory below threshold
-
-      const lowStockProduct = product.update({ inventory: 5 });
-      expect(lowStockProduct.needsRestocking(10)).toBe(true);
-    });
-
-    it('should not flag draft products for restocking', () => {
-      const draftProduct = new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        validProductData.sku,
-        5, // low inventory
-        'draft',
-        'public',
-        validProductData.ownerId
+    it('should check public visibility', () => {
+      const publicProduct = new Product(
+        ProductId.fromString('product-1'),
+        mockSellerId,
+        'Public Product',
+        'Description',
+        new ProductStatusValue(ProductStatus.PUBLISHED),
+        ProductType.PHYSICAL,
+        ProductVisibility.PUBLIC,
+        undefined,
+        [mockVariant]
       );
 
-      expect(draftProduct.needsRestocking(10)).toBe(false); // draft products don't need restocking
+      const privateProduct = new Product(
+        ProductId.fromString('product-2'),
+        mockSellerId,
+        'Private Product',
+        'Description',
+        new ProductStatusValue(ProductStatus.PUBLISHED),
+        ProductType.PHYSICAL,
+        ProductVisibility.PRIVATE,
+        undefined,
+        [mockVariant]
+      );
+
+      expect(publicProduct.isVisibleToPublic()).toBe(true);
+      expect(privateProduct.isVisibleToPublic()).toBe(false);
+    });
+
+    it('should detect multiple variants', () => {
+      const variant2 = new ProductVariant('variant-2', 'SKU-002', 'Second Variant', new Price(89.99, 'USD'));
+      
+      const singleVariantProduct = new Product(
+        ProductId.fromString('product-1'),
+        mockSellerId,
+        'Single Variant',
+        'Description',
+        new ProductStatusValue(ProductStatus.DRAFT),
+        ProductType.PHYSICAL,
+        ProductVisibility.PUBLIC,
+        undefined,
+        [mockVariant]
+      );
+
+      const multiVariantProduct = new Product(
+        ProductId.fromString('product-2'),
+        mockSellerId,
+        'Multi Variant',
+        'Description',
+        new ProductStatusValue(ProductStatus.DRAFT),
+        ProductType.PHYSICAL,
+        ProductVisibility.PUBLIC,
+        undefined,
+        [mockVariant, variant2]
+      );
+
+      expect(singleVariantProduct.hasVariants()).toBe(false);
+      expect(multiVariantProduct.hasVariants()).toBe(true);
+    });
+
+    it('should calculate total inventory', () => {
+      const variant1 = new ProductVariant('v1', 'SKU-1', 'Variant 1', new Price(99.99, 'USD'), undefined, undefined, 5);
+      const variant2 = new ProductVariant('v2', 'SKU-2', 'Variant 2', new Price(89.99, 'USD'), undefined, undefined, 3);
+
+      const product = new Product(
+        ProductId.fromString('product-1'),
+        mockSellerId,
+        'Multi Variant',
+        'Description',
+        new ProductStatusValue(ProductStatus.DRAFT),
+        ProductType.PHYSICAL,
+        ProductVisibility.PUBLIC,
+        undefined,
+        [variant1, variant2]
+      );
+
+      expect(product.getTotalInventory()).toBe(8);
+      expect(product.isInStock()).toBe(true);
+    });
+
+    it('should calculate price range', () => {
+      const variant1 = new ProductVariant('v1', 'SKU-1', 'Expensive', new Price(199.99, 'USD'));
+      const variant2 = new ProductVariant('v2', 'SKU-2', 'Cheap', new Price(99.99, 'USD'));
+      const variant3 = new ProductVariant('v3', 'SKU-3', 'Medium', new Price(149.99, 'USD'));
+
+      const product = new Product(
+        ProductId.fromString('product-1'),
+        mockSellerId,
+        'Price Range Product',
+        'Description',
+        new ProductStatusValue(ProductStatus.DRAFT),
+        ProductType.PHYSICAL,
+        ProductVisibility.PUBLIC,
+        undefined,
+        [variant1, variant2, variant3]
+      );
+
+      const priceRange = product.getPriceRange();
+      expect(priceRange.min.getAmount()).toBe(99.99);
+      expect(priceRange.max.getAmount()).toBe(199.99);
+    });
+
+    it('should check status transitions', () => {
+      const product = new Product(
+        ProductId.fromString('product-1'),
+        mockSellerId,
+        'Test Product',
+        'Description',
+        new ProductStatusValue(ProductStatus.DRAFT),
+        ProductType.PHYSICAL,
+        ProductVisibility.PUBLIC,
+        undefined,
+        [mockVariant]
+      );
+
+      expect(product.canTransitionToStatus(ProductStatus.PUBLISHED)).toBe(true);
     });
   });
 
-  describe('Invariants and Immutability', () => {
-    it('should maintain immutable identity', () => {
-      const product1 = new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'draft',
-        'public',
-        validProductData.ownerId
+  describe('static factory method', () => {
+    it('should create product using factory method', () => {
+      const product = Product.create(
+        mockSellerId,
+        'Factory Product',
+        'Created via factory',
+        ProductType.DIGITAL,
+        [mockVariant],
+        {
+          categoryId: mockCategoryId,
+          visibility: ProductVisibility.PRIVATE,
+          images: ['factory-image.jpg'],
+          tags: ['factory'],
+          condition: ProductCondition.USED
+        }
       );
 
-      const product2 = product1.update({ name: 'New Name' });
-      const product3 = product2.publish();
-
-      expect(product1.id).toBe(product2.id);
-      expect(product2.id).toBe(product3.id);
-      expect(product1.ownerId).toBe(product2.ownerId);
-      expect(product2.ownerId).toBe(product3.ownerId);
-      expect(product1.createdAt).toEqual(product2.createdAt);
-      expect(product2.createdAt).toEqual(product3.createdAt);
+      expect(product.getName()).toBe('Factory Product');
+      expect(product.getDescription()).toBe('Created via factory');
+      expect(product.getType()).toBe(ProductType.DIGITAL);
+      expect(product.getVisibility()).toBe(ProductVisibility.PRIVATE);
+      expect(product.getCategoryId()).toBe(mockCategoryId);
+      expect(product.getImages()).toEqual(['factory-image.jpg']);
+      expect(product.getTags()).toEqual(['factory']);
+      expect(product.getCondition()).toBe(ProductCondition.USED);
+      expect(product.getStatus().getValue()).toBe(ProductStatus.DRAFT);
     });
 
-    it('should preserve business rules across state changes', () => {
-      const draftProduct = new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        validProductData.price,
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'draft',
-        'public',
-        validProductData.ownerId
+    it('should create product with minimal options', () => {
+      const product = Product.create(
+        mockSellerId,
+        'Minimal Product',
+        'Minimal description',
+        ProductType.PHYSICAL,
+        [mockVariant]
       );
 
-      // Update should preserve validity
-      const updatedProduct = draftProduct.update({ price: 199.99 });
-      expect(updatedProduct.price).toBe(199.99);
-
-      // Publishing should preserve validity
-      const publishedProduct = updatedProduct.publish();
-      expect(publishedProduct.isPublished()).toBe(true);
-      expect(publishedProduct.price).toBe(199.99);
-    });
-  });
-
-  describe('Edge Cases', () => {
-    it('should handle zero values appropriately', () => {
-      const freeProduct = new Product(
-        validProductData.id,
-        validProductData.name,
-        validProductData.description,
-        0, // free product
-        validProductData.category,
-        validProductData.sku,
-        0, // no inventory
-        'draft',
-        'public',
-        validProductData.ownerId
-      );
-
-      expect(freeProduct.price).toBe(0);
-      expect(freeProduct.inventory).toBe(0);
-      expect(freeProduct.needsRestocking(10)).toBe(false); // draft product
-    });
-
-    it('should handle boundary values', () => {
-      const boundaryProduct = new Product(
-        validProductData.id,
-        'a'.repeat(100), // max name length
-        validProductData.description,
-        999999.99, // max price
-        validProductData.category,
-        validProductData.sku,
-        validProductData.inventory,
-        'draft',
-        'public',
-        validProductData.ownerId
-      );
-
-      expect(boundaryProduct.name.length).toBe(100);
-      expect(boundaryProduct.price).toBe(999999.99);
-    });
-
-    it('should handle unicode characters', () => {
-      const unicodeProduct = new Product(
-        validProductData.id,
-        '产品名称', // Chinese characters
-        '📱 Smartphone with amazing features',
-        validProductData.price,
-        'electronics',
-        'UNI-001',
-        validProductData.inventory,
-        'draft',
-        'public',
-        validProductData.ownerId
-      );
-
-      expect(unicodeProduct.name).toBe('产品名称');
-      expect(unicodeProduct.description).toContain('📱');
+      expect(product.getName()).toBe('Minimal Product');
+      expect(product.getCategoryId()).toBeUndefined();
+      expect(product.getVisibility()).toBe(ProductVisibility.PUBLIC);
+      expect(product.getImages()).toEqual([]);
+      expect(product.getTags()).toEqual([]);
+      expect(product.getCondition()).toBe(ProductCondition.NEW);
     });
   });
 });

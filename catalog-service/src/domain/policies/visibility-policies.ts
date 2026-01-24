@@ -21,7 +21,7 @@ export interface VisibilityRule {
 }
 
 export interface VisibilityCondition {
-  type: 'seller_rating' | 'product_status' | 'category' | 'price_range' | 'seller_tier' | 'account_age' | 'violation_count' | 'review_count';
+  type: 'seller_rating' | 'product_status' | 'category' | 'price_range' | 'seller_tier' | 'account_age' | 'violation_count' | 'review_count' | 'successful_sales';
   operator: 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'between' | 'in' | 'not_in';
   value: any;
   and?: VisibilityCondition[];
@@ -123,6 +123,9 @@ export class VisibilityRuleEngine {
 
         totalConfidence += rule.priority;
         ruleCount++;
+
+        // Higher priority rules win - break after first matching rule
+        break;
       }
     }
 
@@ -138,6 +141,16 @@ export class VisibilityRuleEngine {
   }
 
   private evaluateCondition(condition: VisibilityCondition, context: VisibilityContext): boolean {
+    // Handle complex conditions with AND/OR operators
+    if (condition.and) {
+      return condition.and.every(subCondition => this.evaluateCondition(subCondition, context));
+    }
+    
+    if (condition.or) {
+      return condition.or.some(subCondition => this.evaluateCondition(subCondition, context));
+    }
+    
+    // Handle simple conditions
     const fieldValue = this.getFieldValue(condition.type, context);
 
     switch (condition.operator) {
@@ -178,6 +191,8 @@ export class VisibilityRuleEngine {
         return context.violationCount;
       case 'review_count':
         return context.reviewCount;
+      case 'successful_sales':
+        return context.successfulSales;
       default:
         return null;
     }

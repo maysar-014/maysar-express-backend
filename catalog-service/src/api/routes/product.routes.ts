@@ -391,7 +391,10 @@ export const PRODUCT_ROUTES_METADATA = {
 
     // Media Management
     { method: 'POST', path: '/products/:id/media', description: 'Upload product media', auth: 'seller' },
-    { method: 'GET', path: '/products/:id/media', description: 'Get product media', auth: 'public' }
+    { method: 'GET', path: '/products/:id/media', description: 'Get product media', auth: 'public' },
+
+    // Category Management
+    { method: 'PUT', path: '/products/:id/category', description: 'Update product category', auth: 'seller' }
   ],
   middleware: [
     'authentication',

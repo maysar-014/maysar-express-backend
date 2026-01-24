@@ -117,7 +117,7 @@ export interface TokenBlacklist {
 export function authenticate(config: Partial<AuthConfig> = {}) {
   const finalConfig = { ...DEFAULT_AUTH_CONFIG, ...config };
 
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const authHeader = req.headers.authorization;
       const token = extractTokenFromHeader(authHeader);
@@ -203,7 +203,7 @@ export function authenticate(config: Partial<AuthConfig> = {}) {
 export function optionalAuthenticate(config: Partial<AuthConfig> = {}) {
   const finalConfig = { ...DEFAULT_AUTH_CONFIG, ...config };
 
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const authHeader = req.headers.authorization;
       const token = extractTokenFromHeader(authHeader);
@@ -240,7 +240,7 @@ export function optionalAuthenticate(config: Partial<AuthConfig> = {}) {
 export function authenticateApiKey(config: Partial<AuthConfig> = {}) {
   const finalConfig = { ...DEFAULT_AUTH_CONFIG, ...config };
 
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const apiKey = req.headers['x-api-key'] as string;
 

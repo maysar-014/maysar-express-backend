@@ -49,7 +49,7 @@ export class PricingController {
 
       // Simple price calculation (mock implementation)
       let finalPrice = basePrice;
-      const appliedRules = [];
+      const appliedRules: any[] = [];
 
       if (pricingRules && Array.isArray(pricingRules)) {
         for (const rule of pricingRules) {

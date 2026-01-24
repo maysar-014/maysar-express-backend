@@ -3,9 +3,15 @@ import { EventPayload } from '../../shared-contracts/events'
 import Redis from 'ioredis'
 import { v4 as uuidv4 } from 'uuid'
 import { eventSchemaValidator } from './eventSchemas'
-import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+// Optional Prisma import
+let prisma: any = null
+try {
+  const { PrismaClient } = require('@prisma/client')
+  prisma = new PrismaClient()
+} catch (error) {
+  console.warn('Prisma not available, event persistence disabled')
+}
 
 // Event processing interfaces
 export interface EventConsumer {
@@ -190,6 +196,11 @@ export class EnhancedEventBus {
     idempotencyKey: string,
     processingDuration?: number
   ): Promise<void> {
+    if (!prisma) {
+      // Prisma not available, skip storage
+      return
+    }
+
     // Determine if this is a critical flow
     const isCriticalFlow = this.isCriticalFlowEvent(envelope.event)
     const flowType = this.getFlowType(envelope.event)
@@ -233,6 +244,11 @@ export class EnhancedEventBus {
     isCriticalFlow: boolean,
     flowType: string | null
   ): void {
+    if (!prisma) {
+      // Prisma not available, skip storage
+      return
+    }
+
     // Fire and forget - don't await
     setImmediate(async () => {
       try {

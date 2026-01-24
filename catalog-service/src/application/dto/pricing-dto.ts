@@ -418,6 +418,7 @@ export function isUpdatePricingCommandDto(obj: any): obj is UpdatePricingCommand
     obj &&
     typeof obj === 'object' &&
     typeof obj.productId === 'string' &&
+    obj.productId.length > 0 &&
     ['fixed', 'percentage', 'formula'].includes(obj.pricingStrategy) &&
     typeof obj.pricingValue === 'number' &&
     obj.pricingValue > 0 &&
