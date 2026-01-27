@@ -51,7 +51,7 @@
     "axios": "^1.6.2",
     "node-fetch": "^3.3.2",
     "retry": "^0.13.1",
-    "circuit-breaker-js": "^0.2.0",
+    "opossum": "^7.0.2",
     "google-auth-library": "^9.6.3"
   },
   "devDependencies": {

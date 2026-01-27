@@ -3,6 +3,7 @@ import { databaseConfig } from './database.config';
 import { securityConfig } from './security.config';
 import { monitoringConfig } from './monitoring.config';
 import { authzConfigManager, AuthorizationConfigManager } from './authorization.config';
+import { googleOAuthConfig, validateGoogleOAuthConfig, initializeGoogleOAuthConfig } from './google-oauth.config';
 
 // Load environment variables
 dotenv.config();

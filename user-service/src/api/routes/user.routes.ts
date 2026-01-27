@@ -1,218 +1,112 @@
 import { Router } from 'express';
-import { userController } from '../controllers/user.controller';
-import { validateRequest } from '../middleware/validation.middleware';
-import { asyncHandler } from '../middleware/error.middleware';
-import { requireRole } from '../middleware/validation.middleware';
-
-const router = Router();
-
-/**
- * User Management Routes
- * All routes are prefixed with /api/v1 in main.ts
- */
-
-// ============================================================================
-// USER CRUD OPERATIONS
-// ============================================================================
+import { UserController } from '@api/controllers/user.controller';
+import { CreateUserUseCase } from '@application/use-cases/create-user.use-case';
+import { UserValidationService } from '@domain/services/user-validation.service';
+import { UserSecurityPolicy } from '@domain/policies/user-security.policy';
+import { UserMapper } from '@application/mappers/user-mapper';
+import { UserAlreadyExistsError } from '@domain/errors/user.errors';
 
 /**
- * Create a new user account
- * POST /api/v1/users
+ * User Routes
+ * Defines all user-related API endpoints
  */
-router.post(
-  '/',
-  validateRequest({
-    body: {
-      email: { type: 'string', required: true, format: 'email' },
-      password: { type: 'string', required: true, minLength: 8 },
-      firstName: { type: 'string', required: false, maxLength: 50 },
-      lastName: { type: 'string', required: false, maxLength: 50 },
-      phoneNumber: { type: 'string', required: false },
-      dateOfBirth: { type: 'string', required: false, format: 'date' },
-      role: { type: 'string', required: false, enum: ['BUYER', 'SELLER', 'COURIER', 'SUPPLIER', 'ENABLER'] }
-    }
-  }),
-  asyncHandler(userController.createUser.bind(userController))
-);
+export function createUserRoutes(): Router {
+  const router = Router();
+  
+  // Initialize dependencies
+  const userValidationService = new UserValidationService();
+  const userSecurityPolicy = new UserSecurityPolicy();
+  const createUserUseCase = new CreateUserUseCase(
+    userValidationService,
+    userSecurityPolicy
+  );
+  
+  const userController = new UserController(
+    createUserUseCase,
+    userValidationService,
+    userSecurityPolicy
+  );
 
-/**
- * Get user by ID
- * GET /api/v1/users/:userId
- */
-router.get(
-  '/:userId',
-  validateRequest({
-    params: {
-      userId: { type: 'string', required: true, pattern: /^[a-zA-Z0-9_-]+$/ }
-    },
-    query: {
-      fields: { type: 'string', required: false }
-    }
-  }),
-  asyncHandler(userController.getUser.bind(userController))
-);
+  /**
+   * @route   POST /api/users
+   * @desc    Create a new user
+   * @access  Public
+   */
+  router.post('/', async (req, res) => {
+    await userController.createUser(req, res);
+  });
 
-/**
- * Update user profile
- * PUT /api/v1/users/:userId
- */
-router.put(
-  '/:userId',
-  validateRequest({
-    params: {
-      userId: { type: 'string', required: true, pattern: /^[a-zA-Z0-9_-]+$/ }
-    },
-    body: {
-      firstName: { type: 'string', required: false, maxLength: 50 },
-      lastName: { type: 'string', required: false, maxLength: 50 },
-      phoneNumber: { type: 'string', required: false },
-      dateOfBirth: { type: 'string', required: false, format: 'date' },
-      avatar: { type: 'string', required: false, format: 'uri' },
-      language: { type: 'string', required: false, enum: ['en', 'sw', 'fr', 'ar'] },
-      timezone: { type: 'string', required: false },
-      notificationsEnabled: { type: 'boolean', required: false }
-    }
-  }),
-  asyncHandler(userController.updateUser.bind(userController))
-);
+  /**
+   * @route   GET /api/users/:id
+   * @desc    Get user by ID
+   * @access  Private
+   */
+  router.get('/:id', async (req, res) => {
+    await userController.getUserById(req, res);
+  });
 
-/**
- * Delete user account (Admin only)
- * DELETE /api/v1/users/:userId
- */
-router.delete(
-  '/:userId',
-  requireRole('SYSTEM', 'ENABLER'),
-  validateRequest({
-    params: {
-      userId: { type: 'string', required: true, pattern: /^[a-zA-Z0-9_-]+$/ }
-    }
-  }),
-  asyncHandler(userController.deleteUser.bind(userController))
-);
+  /**
+   * @route   PUT /api/users/:id
+   * @desc    Update user
+   * @access  Private
+   */
+  router.put('/:id', async (req, res) => {
+    await userController.updateUser(req, res);
+  });
 
-// ============================================================================
-// USER VERIFICATION OPERATIONS
-// ============================================================================
+  /**
+   * @route   DELETE /api/users/:id
+   * @desc    Delete user
+   * @access  Private
+   */
+  router.delete('/:id', async (req, res) => {
+    await userController.deleteUser(req, res);
+  });
 
-/**
- * Verify user email
- * POST /api/v1/users/:userId/verify-email
- */
-router.post(
-  '/:userId/verify-email',
-  validateRequest({
-    params: {
-      userId: { type: 'string', required: true, pattern: /^[a-zA-Z0-9_-]+$/ }
-    },
-    body: {
-      verificationToken: { type: 'string', required: true, minLength: 32, maxLength: 128 }
-    }
-  }),
-  asyncHandler(userController.verifyEmail.bind(userController))
-);
+  /**
+   * @route   POST /api/users/verify-email/:token
+   * @desc    Verify user email
+   * @access  Public
+   */
+  router.post('/verify-email/:token', async (req, res) => {
+    await userController.verifyEmail(req, res);
+  });
 
-// ============================================================================
-// USER SEARCH AND LISTING
-// ============================================================================
+  /**
+   * @route   POST /api/users/request-password-reset
+   * @desc    Request password reset
+   * @access  Public
+   */
+  router.post('/request-password-reset', async (req, res) => {
+    await userController.requestPasswordReset(req, res);
+  });
 
-/**
- * Search users with advanced filtering
- * GET /api/v1/users/search
- */
-router.get(
-  '/search',
-  requireRole('SYSTEM', 'ENABLER', 'SELLER'),
-  validateRequest({
-    query: {
-      query: { type: 'string', required: false, maxLength: 100 },
-      role: { type: 'string', required: false, enum: ['BUYER', 'SELLER', 'COURIER', 'SUPPLIER', 'ENABLER'] },
-      status: { type: 'string', required: false, enum: ['PENDING_VERIFICATION', 'ACTIVE', 'SUSPENDED', 'DEACTIVATED', 'LOCKED'] },
-      emailVerified: { type: 'string', required: false, enum: ['true', 'false'] },
-      phoneVerified: { type: 'string', required: false, enum: ['true', 'false'] },
-      createdAfter: { type: 'string', required: false, format: 'date' },
-      createdBefore: { type: 'string', required: false, format: 'date' },
-      page: { type: 'string', required: false, pattern: /^\d+$/, min: 1 },
-      limit: { type: 'string', required: false, pattern: /^\d+$/, min: 1, max: 100 },
-      sortBy: { type: 'string', required: false, enum: ['createdAt', 'email', 'firstName', 'lastName'] },
-      sortOrder: { type: 'string', required: false, enum: ['asc', 'desc'] }
-    }
-  }),
-  asyncHandler(userController.searchUsers.bind(userController))
-);
+  /**
+   * @route   POST /api/users/reset-password/:token
+   * @desc    Reset password
+   * @access  Public
+   */
+  router.post('/reset-password/:token', async (req, res) => {
+    await userController.resetPassword(req, res);
+  });
 
-// ============================================================================
-// USER STATISTICS AND METRICS
-// ============================================================================
+  /**
+   * @route   GET /api/users/profile
+   * @desc    Get user profile
+   * @access  Private
+   */
+  router.get('/profile', async (req, res) => {
+    await userController.getProfile(req, res);
+  });
 
-/**
- * Get user statistics (Admin only)
- * GET /api/v1/users/stats
- */
-router.get(
-  '/stats',
-  requireRole('SYSTEM', 'ENABLER'),
-  asyncHandler(userController.getUserStats.bind(userController))
-);
+  /**
+   * @route   PUT /api/users/profile
+   * @desc    Update user profile
+   * @access  Private
+   */
+  router.put('/profile', async (req, res) => {
+    await userController.updateProfile(req, res);
+  });
 
-// ============================================================================
-// USER PROFILE OPERATIONS (Self-service)
-// ============================================================================
-
-/**
- * Get current user profile
- * GET /api/v1/users/me
- */
-router.get(
-  '/me',
-  validateRequest({}),
-  asyncHandler(async (req, res) => {
-    // This would use authentication middleware to get current user
-    // For now, redirect to user controller with authenticated user ID
-    const userId = (req as any).userId;
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required'
-      });
-    }
-
-    req.params.userId = userId;
-    return userController.getUser(req, res, () => {});
-  })
-);
-
-/**
- * Update current user profile
- * PUT /api/v1/users/me
- */
-router.put(
-  '/me',
-  validateRequest({
-    body: {
-      firstName: { type: 'string', required: false, maxLength: 50 },
-      lastName: { type: 'string', required: false, maxLength: 50 },
-      phoneNumber: { type: 'string', required: false },
-      dateOfBirth: { type: 'string', required: false, format: 'date' },
-      avatar: { type: 'string', required: false, format: 'uri' },
-      language: { type: 'string', required: false, enum: ['en', 'sw', 'fr', 'ar'] },
-      timezone: { type: 'string', required: false },
-      notificationsEnabled: { type: 'boolean', required: false }
-    }
-  }),
-  asyncHandler(async (req, res) => {
-    // This would use authentication middleware to get current user
-    const userId = (req as any).userId;
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required'
-      });
-    }
-
-    req.params.userId = userId;
-    return userController.updateUser(req, res, () => {});
-  })
-);
-
-export { router as userRoutes };
+  return router;
+}

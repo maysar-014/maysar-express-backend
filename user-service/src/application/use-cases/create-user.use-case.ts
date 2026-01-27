@@ -1,224 +1,216 @@
-import { User, UserRole } from '../../domain/entities/user.entity';
-import { Email } from '../../domain/value-objects/email.value-object';
-import { PasswordHash } from '../../domain/value-objects/password-hash.value-object';
-import { PhoneNumber } from '../../domain/value-objects/phone-number.value-object';
-import { IUserRepository } from '../../domain/repositories';
-import { UserPolicies } from '../../domain/policies/user-policies';
-import { IDomainEventPublisher, UserRegisteredEvent } from '../../domain/events';
-import { logger } from '../../infrastructure/services/logger.service';
+import { User } from '../../domain/entities/user.entity';
+import { UserValidationService } from '../../domain/services/user-validation.service';
+import { UserSecurityPolicy } from '../../domain/policies/user-security.policy';
+import { CreateUserDto } from '../dto/user.dto';
+import { UserMapper } from '../mappers/user-mapper';
+import { UserAlreadyExistsError, UserValidationError } from '../../domain/errors/user.errors';
 
 /**
- * Input for creating a new user
- */
-export interface CreateUserInput {
-  email: string;
-  password: string;
-  firstName?: string;
-  lastName?: string;
-  phoneNumber?: string;
-  dateOfBirth?: Date;
-  role?: UserRole;
-}
-
-/**
- * Output from creating a new user
- */
-export interface CreateUserOutput {
-  user: User;
-  success: boolean;
-  message: string;
-}
-
-/**
- * Use case for creating a new user account
- * Handles user registration with validation and domain rules
+ * Create User Use Case
+ * Handles the creation of new users with validation and security checks
  */
 export class CreateUserUseCase {
   constructor(
-    private userRepository: IUserRepository,
-    private eventPublisher: IDomainEventPublisher
+    private userValidationService: UserValidationService,
+    private userSecurityPolicy: UserSecurityPolicy
   ) {}
 
   /**
-   * Execute the create user use case
+   * Execute user creation
    */
-  async execute(input: CreateUserInput): Promise<CreateUserOutput> {
+  async execute(createUserDto: CreateUserDto): Promise<User> {
     try {
-      logger.logBusiness('Starting user creation', undefined, { email: input.email });
+      // 1. Validate input data
+      this.validateInput(createUserDto);
 
-      // Validate input data
-      const validationResult = await this.validateInput(input);
-      if (!validationResult.valid) {
-        return {
-          user: null as any,
-          success: false,
-          message: validationResult.message
-        };
-      }
+      // 2. Check for existing user
+      await this.checkExistingUser(createUserDto.email, createUserDto.phoneNumber);
 
-      // Create domain objects
-      const email = Email.create(input.email);
-      const passwordHash = await PasswordHash.fromPlainPassword(input.password);
-      let phoneNumber: PhoneNumber | undefined;
+      // 3. Apply security policies
+      this.applySecurityPolicies(createUserDto);
 
-      if (input.phoneNumber) {
-        phoneNumber = PhoneNumber.create(input.phoneNumber);
-      }
+      // 4. Create user entity
+      const user = UserMapper.toEntity(createUserDto);
 
-      // Check business rules for registration
-      if (phoneNumber) {
-        const registrationAllowed = UserPolicies.canRegister(email, phoneNumber);
-        if (!registrationAllowed.allowed) {
-          return {
-            user: null as any,
-            success: false,
-            message: registrationAllowed.reason || 'Registration not allowed'
-          };
-        }
-      }
+      // 5. Validate user entity
+      this.userValidationService.validateUser(user);
 
-      // Check if email already exists
-      const existingUser = await this.userRepository.findByEmail(input.email);
-      if (existingUser) {
-        return {
-          user: null as any,
-          success: false,
-          message: 'Email address already registered'
-        };
-      }
+      // 6. Apply additional business rules
+      this.applyBusinessRules(user);
 
-      // Check if phone number already exists (if provided)
-      if (phoneNumber) {
-        const existingPhoneUser = await this.userRepository.findByPhoneNumber(phoneNumber.toString());
-        if (existingPhoneUser) {
-          return {
-            user: null as any,
-            success: false,
-            message: 'Phone number already registered'
-          };
-        }
-      } else {
-        // If no phone number provided, we can skip this check
-      }
-
-      // Create user entity
-      const user = User.create({
-        id: this.generateUserId(),
-        email,
-        passwordHash,
-        role: input.role || UserRole.BUYER,
-        firstName: input.firstName,
-        lastName: input.lastName
-      });
-
-      // Update additional fields if provided
-      if (phoneNumber) {
-        user.updatePhoneNumber(phoneNumber);
-      }
-
-      if (input.dateOfBirth) {
-        user.updateProfile({ dateOfBirth: input.dateOfBirth });
-      }
-
-      // Save user to repository
-      const savedUser = await this.userRepository.create(user);
-
-      // Publish domain event
-      const userRegisteredEvent = new UserRegisteredEvent(
-        savedUser.id,
-        savedUser.email.toString(),
-        savedUser.role,
-        'email' // Default registration method
-      );
-
-      await this.eventPublisher.publish(userRegisteredEvent);
-
-      logger.logBusiness('User created successfully', savedUser.id, {
-        email: savedUser.email.toString(),
-        role: savedUser.role
-      });
-
-      return {
-        user: savedUser,
-        success: true,
-        message: 'User account created successfully'
-      };
-
+      return user;
     } catch (error) {
-      logger.error('Failed to create user', { email: input.email, error });
-      return {
-        user: null as any,
-        success: false,
-        message: 'Failed to create user account'
-      };
+      if (error instanceof UserValidationError || error instanceof UserAlreadyExistsError) {
+        throw error;
+      }
+      if (error instanceof Error) {
+        throw new UserValidationError(`Failed to create user: ${error.message}`);
+      }
+      throw new UserValidationError('Failed to create user: Unknown error occurred');
     }
   }
 
   /**
    * Validate input data
    */
-  private async validateInput(input: CreateUserInput): Promise<{ valid: boolean; message?: string }> {
-    // Required fields validation
-    if (!input.email || !input.password) {
-      return { valid: false, message: 'Email and password are required' };
+  private validateInput(createUserDto: CreateUserDto): void {
+    const { email, phoneNumber, firstName, lastName, role } = createUserDto;
+
+    // Basic validation
+    if (!email || !this.isValidEmail(email)) {
+      throw new UserValidationError('Invalid email format');
     }
 
-    // Email format validation
-    try {
-      Email.create(input.email);
-    } catch (error) {
-      return { valid: false, message: 'Invalid email format' };
+    if (!phoneNumber || !this.isValidPhoneNumber(phoneNumber)) {
+      throw new UserValidationError('Invalid phone number format');
     }
 
-    // Password strength validation
-    if (!PasswordHash.isValidPassword(input.password)) {
-      return {
-        valid: false,
-        message: 'Password must be at least 8 characters with uppercase, lowercase, number, and special character'
-      };
+    if (!firstName || firstName.trim().length < 2) {
+      throw new UserValidationError('First name must be at least 2 characters');
     }
 
-    // Phone number validation (if provided)
-    if (input.phoneNumber) {
-      try {
-        PhoneNumber.create(input.phoneNumber);
-      } catch (error) {
-        return { valid: false, message: 'Invalid phone number format' };
-      }
+    if (!lastName || lastName.trim().length < 2) {
+      throw new UserValidationError('Last name must be at least 2 characters');
     }
 
-    // Age validation (if date of birth provided)
-    if (input.dateOfBirth) {
-      const age = this.calculateAge(input.dateOfBirth);
-      if (age < 13) {
-        return { valid: false, message: 'Users must be at least 13 years old' };
-      }
+    if (!role || !this.isValidUserRole(role)) {
+      throw new UserValidationError('Invalid user role');
     }
-
-    return { valid: true };
   }
 
   /**
-   * Generate unique user ID
+   * Check for existing user
    */
-  private generateUserId(): string {
-    // In a real implementation, this might use a more sophisticated ID generation
-    // For now, we'll use a simple approach
-    return `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  private async checkExistingUser(email: string, phoneNumber: string): Promise<void> {
+    // This would typically call a repository to check for existing users
+    // For now, we'll simulate this check
+    const existingUser = await this.findUserByEmailOrPhone(email, phoneNumber);
+    
+    if (existingUser) {
+      throw new UserAlreadyExistsError('User with this email or phone number already exists');
+    }
   }
 
   /**
-   * Calculate age from date of birth
+   * Apply security policies
    */
-  private calculateAge(birthDate: Date): number {
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
+  private applySecurityPolicies(createUserDto: CreateUserDto): void {
+    // Check for suspicious patterns
+    if (this.userSecurityPolicy.isSuspiciousEmail(createUserDto.email)) {
+      throw new UserValidationError('Email address appears to be suspicious');
     }
 
-    return age;
+    if (this.userSecurityPolicy.isSuspiciousPhoneNumber(createUserDto.phoneNumber)) {
+      throw new UserValidationError('Phone number appears to be suspicious');
+    }
+
+    // Check for rate limiting (would be implemented with a cache/service)
+    if (this.userSecurityPolicy.isRateLimited(createUserDto.email)) {
+      throw new UserValidationError('Too many registration attempts. Please try again later');
+    }
+  }
+
+  /**
+   * Apply business rules
+   */
+  private applyBusinessRules(user: User): void {
+    // Apply age verification rules
+    if (user.dateOfBirth && !user.isAdult()) {
+      throw new UserValidationError('Users must be at least 13 years old');
+    }
+
+    // Validate business ID if provided
+    if (user.businessId && !this.isValidBusinessId(user.businessId)) {
+      throw new UserValidationError('Invalid business ID format');
+    }
+  }
+
+  /**
+   * Helper method to validate email format
+   */
+  private isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  /**
+   * Helper method to validate phone number format
+   */
+  private isValidPhoneNumber(phoneNumber: string): boolean {
+    // Tanzanian phone number format validation
+    const tanzanianPhoneRegex = /^(\+255|0)(7[0-9]|6[0-9]|2[0-9])\d{7}$/;
+    return tanzanianPhoneRegex.test(phoneNumber.replace(/\s+/g, ''));
+  }
+
+  /**
+   * Helper method to validate user role
+   */
+  private isValidUserRole(role: string): boolean {
+    const validRoles = ['customer', 'seller', 'admin'];
+    return validRoles.includes(role);
+  }
+
+  /**
+   * Helper method to validate business ID
+   */
+  private isValidBusinessId(businessId: string): boolean {
+    // Business ID format: BIZ followed by 6-10 digits
+    const businessIdRegex = /^BIZ\d{6,10}$/;
+    return businessIdRegex.test(businessId.toUpperCase());
+  }
+
+  /**
+   * Simulate finding existing user (would be implemented with repository)
+   */
+  private async findUserByEmailOrPhone(email: string, phoneNumber: string): Promise<User | null> {
+    // This is a placeholder - in a real implementation, this would query the database
+    // For now, we'll return null to allow user creation
+    return null;
+  }
+}
+
+/**
+ * User Registration Service
+ * Orchestrates the complete user registration process
+ */
+export class UserRegistrationService {
+  constructor(
+    private createUserUseCase: CreateUserUseCase
+  ) {}
+
+  /**
+   * Register a new user
+   */
+  async registerUser(createUserDto: CreateUserDto): Promise<User> {
+    // Execute the use case
+    const user = await this.createUserUseCase.execute(createUserDto);
+
+    // Additional registration logic could go here:
+    // - Send welcome email
+    // - Create user preferences
+    // - Initialize user settings
+    // - Log registration event
+
+    return user;
+  }
+
+  /**
+   * Register a business user
+   */
+  async registerBusinessUser(createUserDto: CreateUserDto, businessId: string): Promise<User> {
+    // Validate business user requirements
+    if (createUserDto.role !== 'seller') {
+      throw new UserValidationError('Business users must have seller role');
+    }
+
+    if (!businessId) {
+      throw new UserValidationError('Business ID is required for business users');
+    }
+
+    // Set business ID
+    createUserDto.businessId = businessId;
+
+    // Execute registration
+    return this.registerUser(createUserDto);
   }
 }

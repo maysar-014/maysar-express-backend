@@ -1,43 +1,35 @@
-/** @type {import('jest').Config} */
 module.exports = {
   // Test environment
   testEnvironment: 'node',
-
-  // Roots for test discovery
-  roots: ['<rootDir>/src', '<rootDir>/test'],
-
+  
   // Test file patterns
   testMatch: [
     '**/__tests__/**/*.test.ts',
-    '**/__tests__/**/*.spec.ts',
-    '**/*.test.ts',
-    '**/*.spec.ts'
+    '**/?(*.)+(spec|test).ts'
   ],
-
+  
   // Transform TypeScript files
   transform: {
     '^.+\\.ts$': 'ts-jest'
   },
-
+  
   // Module file extensions
   moduleFileExtensions: ['ts', 'js', 'json'],
-
+  
+  // Setup files
+  setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
+  
   // Coverage configuration
+  collectCoverage: true,
   collectCoverageFrom: [
-    'src/**/*.{ts,js}',
+    'src/**/*.ts',
+    '!src/**/*.test.ts',
+    '!src/**/*.spec.ts',
     '!src/**/*.d.ts',
-    '!src/**/index.ts',
-    '!src/main.ts'
+    '!src/index.ts'
   ],
-
-  coverageDirectory: 'coverage',
-  coverageReporters: [
-    'text',
-    'lcov',
-    'html',
-    'json-summary'
-  ],
-
+  
+  // Coverage thresholds
   coverageThreshold: {
     global: {
       branches: 80,
@@ -46,51 +38,42 @@ module.exports = {
       statements: 80
     }
   },
-
-  // Test setup
-  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
-
+  
+  // Coverage reporters
+  coverageReporters: [
+    'text',
+    'lcov',
+    'html',
+    'json-summary'
+  ],
+  
+  // Coverage directory
+  coverageDirectory: '<rootDir>/coverage',
+  
   // Test timeout
   testTimeout: 10000,
-
-  // Clear mocks between tests
-  clearMocks: true,
-
-  // Restore mocks between tests
-  restoreMocks: true,
-
-  // Collect coverage from files
-  collectCoverage: true,
-
+  
   // Verbose output
   verbose: true,
-
-  // Module name mapping for path aliases
+  
+  // Clear mocks between tests
+  clearMocks: true,
+  
+  // Restore mocks after each test
+  restoreMocks: true,
+  
+  // Module name mapping for aliases
   moduleNameMapping: {
-    '^@/(.*)$': '<rootDir>/src/$1',
     '^@domain/(.*)$': '<rootDir>/src/domain/$1',
     '^@application/(.*)$': '<rootDir>/src/application/$1',
     '^@infrastructure/(.*)$': '<rootDir>/src/infrastructure/$1',
     '^@api/(.*)$': '<rootDir>/src/api/$1'
   },
-
-  // Ignore patterns
-  testPathIgnorePatterns: [
-    '/node_modules/',
-    '/dist/',
-    '/coverage/'
-  ],
-
-  // Global setup and teardown
-  globalSetup: '<rootDir>/test/global-setup.ts',
-  globalTeardown: '<rootDir>/test/global-teardown.ts',
-
-  // Detect open handles
-  detectOpenHandles: true,
-
-  // Force exit
-  forceExit: true,
-
-  // Run tests in parallel
-  maxWorkers: '50%'
+  
+  // Global variables
+  globals: {
+    'ts-jest': {
+      tsconfig: 'tsconfig.json'
+    }
+  }
 };

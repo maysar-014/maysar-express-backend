@@ -2,6 +2,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { UserEntity } from '../domain/entities/user.entity';
 import { UserServiceClient, createUserServiceClient } from '../infrastructure/clients/user-service.client';
 import { authzConfigManager } from '../config/authorization.config';
+import { googleOAuthConfig } from '../config/google-oauth.config';
 
 export interface GoogleUserProfile {
   id: string;
@@ -20,18 +21,18 @@ export class GoogleOAuthService {
 
   constructor() {
     this.oauth2Client = new OAuth2Client(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_CALLBACK_URL
+      googleOAuthConfig.clientId,
+      googleOAuthConfig.clientSecret,
+      googleOAuthConfig.callbackUrl
     );
     this.userServiceClient = createUserServiceClient();
   }
 
   getAuthUrl(): string {
     return this.oauth2Client.generateAuthUrl({
-      access_type: 'offline',
-      scope: process.env.GOOGLE_SCOPES?.split(' '),
-      prompt: 'consent'
+      access_type: googleOAuthConfig.accessType,
+      scope: googleOAuthConfig.scopes,
+      prompt: googleOAuthConfig.prompt
     });
   }
 
@@ -68,7 +69,7 @@ export class GoogleOAuthService {
   private async getUserProfile(idToken: string): Promise<GoogleUserProfile> {
     const ticket = await this.oauth2Client.verifyIdToken({
       idToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: googleOAuthConfig.clientId,
     });
 
     const payload = ticket.getPayload();
@@ -130,6 +131,8 @@ export class GoogleOAuthService {
       failedLoginAttempts: userServiceUser.failedLoginAttempts,
       lockoutUntil: userServiceUser.lockoutUntil ? new Date(userServiceUser.lockoutUntil) : undefined,
       lastLoginAt: userServiceUser.lastLoginAt ? new Date(userServiceUser.lastLoginAt) : undefined,
+      avatar: userServiceUser.avatar,
+      metadata: userServiceUser.metadata,
       createdAt: new Date(userServiceUser.createdAt),
       updatedAt: new Date(userServiceUser.updatedAt)
     });

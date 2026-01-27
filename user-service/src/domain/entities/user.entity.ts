@@ -1,467 +1,389 @@
-import { PasswordHash } from '../value-objects/password-hash.value-object';
+import { Entity } from '../interfaces';
 import { Email } from '../value-objects/email.value-object';
 import { PhoneNumber } from '../value-objects/phone-number.value-object';
+import { Address } from '../value-objects/address.value-object';
+import { UserStatus, UserRole, UserMetadata } from '../types/user.types';
 
 /**
- * User roles in the marketplace ecosystem
+ * User Entity
+ * Represents a user in the Maysar marketplace system
  */
-export enum UserRole {
-  BUYER = 'buyer',
-  SELLER = 'seller',
-  SUPPLIER = 'supplier',
-  COURIER = 'courier',
-  ENABLER = 'enabler',
-  SYSTEM = 'system'
-}
+export class User implements Entity {
+  public readonly id: string;
+  public readonly email: Email;
+  public readonly phoneNumber: PhoneNumber;
+  public readonly firstName: string;
+  public readonly lastName: string;
+  public readonly dateOfBirth?: Date;
+  public readonly role: UserRole;
+  public readonly status: UserStatus;
+  public readonly metadata: UserMetadata;
+  public readonly createdAt: Date;
+  public readonly updatedAt: Date;
+  public readonly lastLoginAt?: Date;
+  public readonly emailVerified: boolean;
+  public readonly phoneVerified: boolean;
+  public readonly profilePicture?: string;
+  public readonly preferredLanguage: string;
+  public readonly preferredCurrency: string;
+  public readonly addresses: Address[];
+  public readonly businessId?: string;
 
-/**
- * User account status
- */
-export enum UserStatus {
-  PENDING_VERIFICATION = 'pending_verification',
-  ACTIVE = 'active',
-  SUSPENDED = 'suspended',
-  DEACTIVATED = 'deactivated',
-  LOCKED = 'locked'
-}
-
-/**
- * User preferences for notifications and settings
- */
-export interface UserPreferences {
-  language: string;
-  timezone: string;
-  notificationsEnabled: boolean;
-}
-
-/**
- * User entity - Core domain entity representing a user account
- * Enhanced for comprehensive user profile management
- */
-export class User {
-  private constructor(
-    private readonly _id: string,
-    private readonly _email: Email,
-    private _passwordHash: PasswordHash,
-    private _role: UserRole,
-    private _status: UserStatus,
-    private readonly _createdAt: Date,
-    private _updatedAt: Date,
-
-    // Profile Information
-    private _firstName?: string,
-    private _lastName?: string,
-    private _phoneNumber?: PhoneNumber,
-    private _dateOfBirth?: Date,
-    private _avatar?: string,
-
-    // Verification Status
-    private _isEmailVerified: boolean = false,
-    private _isPhoneVerified: boolean = false,
-    private _emailVerifiedAt?: Date,
-    private _phoneVerifiedAt?: Date,
-
-    // Security Tracking
-    private _failedLoginAttempts: number = 0,
-    private _lockoutUntil?: Date,
-    private _lastLoginAt?: Date,
-    private _passwordChangedAt?: Date,
-
-    // Two-Factor Authentication
-    private _twoFactorEnabled: boolean = false,
-    private _twoFactorSecret?: string,
-
-    // Preferences
-    private _language: string = 'en',
-    private _timezone: string = 'UTC',
-    private _notificationsEnabled: boolean = true,
-
-    // Metadata
-    private _attributes?: Record<string, any>
-  ) {}
-
-  // Getters
-  get id(): string { return this._id; }
-  get email(): Email { return this._email; }
-  get passwordHash(): PasswordHash { return this._passwordHash; }
-  get role(): UserRole { return this._role; }
-  get status(): UserStatus { return this._status; }
-  get createdAt(): Date { return this._createdAt; }
-  get updatedAt(): Date { return this._updatedAt; }
-
-  // Profile getters
-  get firstName(): string | undefined { return this._firstName; }
-  get lastName(): string | undefined { return this._lastName; }
-  get fullName(): string {
-    const parts = [this._firstName, this._lastName].filter(Boolean);
-    return parts.length > 0 ? parts.join(' ') : '';
-  }
-  get phoneNumber(): PhoneNumber | undefined { return this._phoneNumber; }
-  get dateOfBirth(): Date | undefined { return this._dateOfBirth; }
-  get avatar(): string | undefined { return this._avatar; }
-
-  // Verification getters
-  get isEmailVerified(): boolean { return this._isEmailVerified; }
-  get isPhoneVerified(): boolean { return this._isPhoneVerified; }
-  get emailVerifiedAt(): Date | undefined { return this._emailVerifiedAt; }
-  get phoneVerifiedAt(): Date | undefined { return this._phoneVerifiedAt; }
-
-  // Security getters
-  get failedLoginAttempts(): number { return this._failedLoginAttempts; }
-  get lockoutUntil(): Date | undefined { return this._lockoutUntil; }
-  get lastLoginAt(): Date | undefined { return this._lastLoginAt; }
-  get passwordChangedAt(): Date | undefined { return this._passwordChangedAt; }
-
-  // 2FA getters
-  get twoFactorEnabled(): boolean { return this._twoFactorEnabled; }
-  get twoFactorSecret(): string | undefined { return this._twoFactorSecret; }
-
-  // Preferences getters
-  get language(): string { return this._language; }
-  get timezone(): string { return this._timezone; }
-  get notificationsEnabled(): boolean { return this._notificationsEnabled; }
-  get preferences(): UserPreferences {
-    return {
-      language: this._language,
-      timezone: this._timezone,
-      notificationsEnabled: this._notificationsEnabled
-    };
+  constructor(props: {
+    id: string;
+    email: Email;
+    phoneNumber: PhoneNumber;
+    firstName: string;
+    lastName: string;
+    dateOfBirth?: Date;
+    role: UserRole;
+    status: UserStatus;
+    metadata: UserMetadata;
+    createdAt: Date;
+    updatedAt: Date;
+    lastLoginAt?: Date;
+    emailVerified: boolean;
+    phoneVerified: boolean;
+    profilePicture?: string;
+    preferredLanguage: string;
+    preferredCurrency: string;
+    addresses: Address[];
+    businessId?: string;
+  }) {
+    this.id = props.id;
+    this.email = props.email;
+    this.phoneNumber = props.phoneNumber;
+    this.firstName = props.firstName;
+    this.lastName = props.lastName;
+    this.dateOfBirth = props.dateOfBirth;
+    this.role = props.role;
+    this.status = props.status;
+    this.metadata = props.metadata;
+    this.createdAt = props.createdAt;
+    this.updatedAt = props.updatedAt;
+    this.lastLoginAt = props.lastLoginAt;
+    this.emailVerified = props.emailVerified;
+    this.phoneVerified = props.phoneVerified;
+    this.profilePicture = props.profilePicture;
+    this.preferredLanguage = props.preferredLanguage;
+    this.preferredCurrency = props.preferredCurrency;
+    this.addresses = props.addresses;
+    this.businessId = props.businessId;
   }
 
-  // Metadata getter
-  get attributes(): Record<string, any> | undefined { return this._attributes; }
-
-  // Factory methods
+  /**
+   * Create a new user
+   */
   static create(props: {
     id: string;
     email: Email;
-    passwordHash: PasswordHash;
-    role: UserRole;
-    firstName?: string;
-    lastName?: string;
-  }): User {
-    return new User(
-      props.id,
-      props.email,
-      props.passwordHash,
-      props.role,
-      UserStatus.PENDING_VERIFICATION,
-      new Date(),
-      new Date(),
-      props.firstName,
-      props.lastName
-    );
-  }
-
-  static reconstitute(props: {
-    id: string;
-    email: Email;
-    passwordHash: PasswordHash;
-    role: UserRole;
-    status: UserStatus;
-    createdAt: Date;
-    updatedAt: Date;
-    firstName?: string;
-    lastName?: string;
-    phoneNumber?: PhoneNumber;
+    phoneNumber: PhoneNumber;
+    firstName: string;
+    lastName: string;
     dateOfBirth?: Date;
-    avatar?: string;
-    isEmailVerified?: boolean;
-    isPhoneVerified?: boolean;
-    emailVerifiedAt?: Date;
-    phoneVerifiedAt?: Date;
-    failedLoginAttempts?: number;
-    lockoutUntil?: Date;
-    lastLoginAt?: Date;
-    passwordChangedAt?: Date;
-    twoFactorEnabled?: boolean;
-    twoFactorSecret?: string;
-    language?: string;
-    timezone?: string;
-    notificationsEnabled?: boolean;
-    attributes?: Record<string, any>;
+    role: UserRole;
+    metadata?: Partial<UserMetadata>;
+    preferredLanguage?: string;
+    preferredCurrency?: string;
+    addresses?: Address[];
+    businessId?: string;
   }): User {
-    return new User(
-      props.id,
-      props.email,
-      props.passwordHash,
-      props.role,
-      props.status,
-      props.createdAt,
-      props.updatedAt,
-      props.firstName,
-      props.lastName,
-      props.phoneNumber,
-      props.dateOfBirth,
-      props.avatar,
-      props.isEmailVerified,
-      props.isPhoneVerified,
-      props.emailVerifiedAt,
-      props.phoneVerifiedAt,
-      props.failedLoginAttempts,
-      props.lockoutUntil,
-      props.lastLoginAt,
-      props.passwordChangedAt,
-      props.twoFactorEnabled,
-      props.twoFactorSecret,
-      props.language,
-      props.timezone,
-      props.notificationsEnabled,
-      props.attributes
-    );
+    return new User({
+      id: props.id,
+      email: props.email,
+      phoneNumber: props.phoneNumber,
+      firstName: props.firstName,
+      lastName: props.lastName,
+      dateOfBirth: props.dateOfBirth,
+      role: props.role,
+      status: 'active',
+      metadata: {
+        accountAge: 0,
+        loginAttempts: 0,
+        lastFailedLoginAttempt: undefined,
+        accountLockedUntil: undefined,
+        ...props.metadata
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      emailVerified: false,
+      phoneVerified: false,
+      preferredLanguage: props.preferredLanguage || 'sw',
+      preferredCurrency: props.preferredCurrency || 'TZS',
+      addresses: props.addresses || [],
+      businessId: props.businessId
+    });
   }
-
-  // Business methods
 
   /**
-   * Updates user profile information
+   * Update user profile
    */
-  updateProfile(profile: {
+  updateProfile(props: {
     firstName?: string;
     lastName?: string;
     dateOfBirth?: Date;
-    avatar?: string;
-  }): void {
-    if (profile.firstName !== undefined) this._firstName = profile.firstName;
-    if (profile.lastName !== undefined) this._lastName = profile.lastName;
-    if (profile.dateOfBirth !== undefined) this._dateOfBirth = profile.dateOfBirth;
-    if (profile.avatar !== undefined) this._avatar = profile.avatar;
-    this._updatedAt = new Date();
+    preferredLanguage?: string;
+    preferredCurrency?: string;
+    profilePicture?: string;
+  }): User {
+    return new User({
+      ...this,
+      ...props,
+      updatedAt: new Date()
+    });
   }
 
   /**
-   * Verifies user email
+   * Verify email
    */
-  verifyEmail(): void {
-    if (this._status === UserStatus.PENDING_VERIFICATION) {
-      this._status = UserStatus.ACTIVE;
-    }
-    this._isEmailVerified = true;
-    this._emailVerifiedAt = new Date();
-    this._updatedAt = new Date();
+  verifyEmail(): User {
+    return new User({
+      ...this,
+      emailVerified: true,
+      updatedAt: new Date()
+    });
   }
 
   /**
-   * Updates phone number
+   * Verify phone number
    */
-  updatePhoneNumber(phoneNumber: PhoneNumber): void {
-    this._phoneNumber = phoneNumber;
-    this._isPhoneVerified = false; // Reset verification
-    this._phoneVerifiedAt = undefined;
-    this._updatedAt = new Date();
+  verifyPhone(): User {
+    return new User({
+      ...this,
+      phoneVerified: true,
+      updatedAt: new Date()
+    });
   }
 
   /**
-   * Verifies phone number
+   * Update last login time
    */
-  verifyPhone(): void {
-    if (this._phoneNumber) {
-      this._isPhoneVerified = true;
-      this._phoneVerifiedAt = new Date();
-      this._updatedAt = new Date();
-    }
+  updateLastLogin(): User {
+    return new User({
+      ...this,
+      lastLoginAt: new Date(),
+      updatedAt: new Date()
+    });
   }
 
   /**
-   * Changes user password
+   * Update metadata
    */
-  changePassword(newPasswordHash: PasswordHash): void {
-    this._passwordHash = newPasswordHash;
-    this._passwordChangedAt = new Date();
-    this._updatedAt = new Date();
-    this._failedLoginAttempts = 0; // Reset failed attempts
-    this._lockoutUntil = undefined; // Remove lockout
+  updateMetadata(metadata: Partial<UserMetadata>): User {
+    return new User({
+      ...this,
+      metadata: { ...this.metadata, ...metadata },
+      updatedAt: new Date()
+    });
   }
 
   /**
-   * Records successful login
+   * Add address
    */
-  recordSuccessfulLogin(): void {
-    this._lastLoginAt = new Date();
-    this._failedLoginAttempts = 0;
-    this._lockoutUntil = undefined;
-    this._updatedAt = new Date();
+  addAddress(address: Address): User {
+    return new User({
+      ...this,
+      addresses: [...this.addresses, address],
+      updatedAt: new Date()
+    });
   }
 
   /**
-   * Records failed login attempt
+   * Remove address
    */
-  recordFailedLogin(): void {
-    this._failedLoginAttempts += 1;
-    this._updatedAt = new Date();
-
-    // Lock account after 5 failed attempts
-    if (this._failedLoginAttempts >= 5) {
-      this._status = UserStatus.LOCKED;
-      this._lockoutUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
-    }
+  removeAddress(addressId: string): User {
+    return new User({
+      ...this,
+      addresses: this.addresses.filter(addr => addr.getId() !== addressId),
+      updatedAt: new Date()
+    });
   }
 
   /**
-   * Updates user preferences
+   * Update address
    */
-  updatePreferences(preferences: Partial<UserPreferences>): void {
-    if (preferences.language !== undefined) this._language = preferences.language;
-    if (preferences.timezone !== undefined) this._timezone = preferences.timezone;
-    if (preferences.notificationsEnabled !== undefined) this._notificationsEnabled = preferences.notificationsEnabled;
-    this._updatedAt = new Date();
+  updateAddress(addressId: string, updatedAddress: Address): User {
+    return new User({
+      ...this,
+      addresses: this.addresses.map(addr => 
+        addr.getId() === addressId ? updatedAddress : addr
+      ),
+      updatedAt: new Date()
+    });
   }
 
   /**
-   * Checks if account is currently locked
+   * Change role
    */
-  isLocked(): boolean {
-    if (this._status === UserStatus.LOCKED && this._lockoutUntil) {
-      return this._lockoutUntil > new Date();
-    }
-    return this._status === UserStatus.LOCKED;
+  changeRole(newRole: UserRole): User {
+    return new User({
+      ...this,
+      role: newRole,
+      updatedAt: new Date()
+    });
   }
 
   /**
-   * Unlocks account (admin action)
+   * Activate user
    */
-  unlock(): void {
-    if (this._status === UserStatus.LOCKED) {
-      this._status = UserStatus.ACTIVE;
-      this._failedLoginAttempts = 0;
-      this._lockoutUntil = undefined;
-      this._updatedAt = new Date();
-    }
+  activate(): User {
+    return new User({
+      ...this,
+      status: 'active',
+      updatedAt: new Date()
+    });
   }
 
   /**
-   * Suspends user account
+   * Deactivate user
    */
-  suspend(): void {
-    this._status = UserStatus.SUSPENDED;
-    this._updatedAt = new Date();
+  deactivate(): User {
+    return new User({
+      ...this,
+      status: 'inactive',
+      updatedAt: new Date()
+    });
   }
 
   /**
-   * Reactivates suspended account
+   * Suspend user
    */
-  reactivate(): void {
-    if (this._status === UserStatus.SUSPENDED) {
-      this._status = UserStatus.ACTIVE;
-      this._updatedAt = new Date();
-    }
+  suspend(): User {
+    return new User({
+      ...this,
+      status: 'suspended',
+      updatedAt: new Date()
+    });
   }
 
   /**
-   * Deactivates user account
+   * Check if user is active
    */
-  deactivate(): void {
-    this._status = UserStatus.DEACTIVATED;
-    this._updatedAt = new Date();
+  isActive(): boolean {
+    return this.status === 'active';
   }
 
   /**
-   * Enables two-factor authentication
-   */
-  enableTwoFactor(secret: string): void {
-    this._twoFactorEnabled = true;
-    this._twoFactorSecret = secret;
-    this._updatedAt = new Date();
-  }
-
-  /**
-   * Disables two-factor authentication
-   */
-  disableTwoFactor(): void {
-    this._twoFactorEnabled = false;
-    this._twoFactorSecret = undefined;
-    this._updatedAt = new Date();
-  }
-
-  /**
-   * Changes user role (admin action)
-   */
-  changeRole(newRole: UserRole): void {
-    this._role = newRole;
-    this._updatedAt = new Date();
-  }
-
-  /**
-   * Updates user attributes/metadata
-   */
-  updateAttributes(attributes: Record<string, any>): void {
-    this._attributes = { ...this._attributes, ...attributes };
-    this._updatedAt = new Date();
-  }
-
-  /**
-   * Business rules
-   */
-
-  /**
-   * Can user authenticate?
-   */
-  canAuthenticate(): boolean {
-    return this._status === UserStatus.ACTIVE && !this.isLocked();
-  }
-
-  /**
-   * Can user change password?
-   */
-  canChangePassword(): boolean {
-    return this._status === UserStatus.ACTIVE;
-  }
-
-  /**
-   * Requires two-factor authentication?
-   */
-  requiresTwoFactor(): boolean {
-    return this._twoFactorEnabled;
-  }
-
-  /**
-   * Is account verified?
+   * Check if user is verified
    */
   isVerified(): boolean {
-    return this._isEmailVerified || this._isPhoneVerified;
+    return this.emailVerified && this.phoneVerified;
   }
 
   /**
-   * Can user access system features?
+   * Check if user can login
    */
-  canAccessSystem(): boolean {
-    return this._status === UserStatus.ACTIVE && this.isVerified();
+  canLogin(): boolean {
+    return this.isActive() && this.isVerified();
   }
 
   /**
-   * Is user profile complete?
+   * Get full name
    */
-  isProfileComplete(): boolean {
-    return !!(this._firstName && this._lastName && this._phoneNumber && this._isEmailVerified);
+  getFullName(): string {
+    return `${this.firstName} ${this.lastName}`;
   }
 
   /**
-   * Can user receive notifications?
+   * Get primary address
    */
-  canReceiveNotifications(): boolean {
-    return this._notificationsEnabled && this._status === UserStatus.ACTIVE;
+  getPrimaryAddress(): Address | undefined {
+    return this.addresses.find(addr => addr.isPrimary);
   }
 
-  // Serialization for DTOs (not domain entities)
-  toJSON() {
+  /**
+   * Check if user has business
+   */
+  hasBusiness(): boolean {
+    return !!this.businessId;
+  }
+
+  /**
+   * Get user age
+   */
+  getAge(): number | undefined {
+    if (!this.dateOfBirth) return undefined;
+    
+    const today = new Date();
+    const birthDate = new Date(this.dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  }
+
+  /**
+   * Check if user is adult (18+)
+   */
+  isAdult(): boolean {
+    const age = this.getAge();
+    return age !== undefined && age >= 18;
+  }
+
+  /**
+   * Validate user entity
+   */
+  validate(): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    if (!this.id || this.id.trim().length === 0) {
+      errors.push('User ID is required');
+    }
+
+    if (!this.email) {
+      errors.push('Email is required');
+    } else if (!Email.isValid(this.email.getValue())) {
+      errors.push('Invalid email format');
+    }
+
+    if (!this.phoneNumber) {
+      errors.push('Phone number is required');
+    } else if (!this.phoneNumber.isValid()) {
+      errors.push('Invalid phone number format');
+    }
+
+    if (!this.firstName || this.firstName.trim().length === 0) {
+      errors.push('First name is required');
+    }
+
+    if (!this.lastName || this.lastName.trim().length === 0) {
+      errors.push('Last name is required');
+    }
+
+    if (!this.role) {
+      errors.push('User role is required');
+    }
+
+    if (!this.status) {
+      errors.push('User status is required');
+    }
+
+    if (this.dateOfBirth && this.dateOfBirth > new Date()) {
+      errors.push('Date of birth cannot be in the future');
+    }
+
+    if (this.dateOfBirth) {
+      const age = this.getAge();
+      if (age !== undefined && age < 13) {
+        errors.push('User must be at least 13 years old');
+      }
+    }
+
+    if (!this.preferredLanguage || this.preferredLanguage.trim().length === 0) {
+      errors.push('Preferred language is required');
+    }
+
+    if (!this.preferredCurrency || this.preferredCurrency.trim().length === 0) {
+      errors.push('Preferred currency is required');
+    }
+
     return {
-      id: this._id,
-      email: this._email.toString(),
-      firstName: this._firstName,
-      lastName: this._lastName,
-      role: this._role,
-      status: this._status,
-      phoneNumber: this._phoneNumber?.toString(),
-      avatar: this._avatar,
-      isEmailVerified: this._isEmailVerified,
-      isPhoneVerified: this._isPhoneVerified,
-      twoFactorEnabled: this._twoFactorEnabled,
-      language: this._language,
-      timezone: this._timezone,
-      notificationsEnabled: this._notificationsEnabled,
-      createdAt: this._createdAt,
-      updatedAt: this._updatedAt,
-      lastLoginAt: this._lastLoginAt
+      isValid: errors.length === 0,
+      errors
     };
   }
 }

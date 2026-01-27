@@ -17,10 +17,10 @@ export class Email {
   }
 
   /**
-   * Creates Email from trusted source (database, etc.)
+   * Get email value
    */
-  static fromTrusted(value: string): Email {
-    return new Email(value);
+  getValue(): string {
+    return this.value;
   }
 
   /**

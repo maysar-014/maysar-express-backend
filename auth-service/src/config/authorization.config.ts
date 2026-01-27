@@ -154,6 +154,8 @@ export const DEFAULT_ROLES: RoleConfiguration[] = [
       { resource: 'users', action: '*', scope: 'organization' },
       { resource: 'products', action: '*', scope: 'organization' },
       { resource: 'orders', action: '*', scope: 'organization' },
+      { resource: 'suppliers', action: '*', scope: 'organization' },
+      { resource: 'enablers', action: '*', scope: 'organization' },
       { resource: 'system', action: 'manage', scope: 'global' }
     ],
     inherits: [],
@@ -164,12 +166,14 @@ export const DEFAULT_ROLES: RoleConfiguration[] = [
     }
   },
   {
-    name: 'moderator',
-    description: 'Content moderator with limited admin access',
+    name: 'buyer',
+    description: 'Customer with purchasing capabilities',
     permissions: [
-      { resource: 'products', action: 'moderate', scope: 'organization' },
-      { resource: 'users', action: 'view', scope: 'organization' },
-      { resource: 'reports', action: 'generate', scope: 'organization' }
+      { resource: 'products', action: 'view', scope: 'public' },
+      { resource: 'orders', action: '*', scope: 'own' },
+      { resource: 'profile', action: '*', scope: 'own' },
+      { resource: 'suppliers', action: 'view', scope: 'public' },
+      { resource: 'enablers', action: 'view', scope: 'public' }
     ],
     inherits: [],
     metadata: {
@@ -184,7 +188,8 @@ export const DEFAULT_ROLES: RoleConfiguration[] = [
     permissions: [
       { resource: 'products', action: '*', scope: 'own' },
       { resource: 'orders', action: 'view', scope: 'own' },
-      { resource: 'inventory', action: '*', scope: 'own' }
+      { resource: 'inventory', action: '*', scope: 'own' },
+      { resource: 'profile', action: '*', scope: 'own' }
     ],
     inherits: [],
     metadata: {
@@ -194,16 +199,34 @@ export const DEFAULT_ROLES: RoleConfiguration[] = [
     }
   },
   {
-    name: 'customer',
-    description: 'Regular customer with basic access',
+    name: 'supplier',
+    description: 'Supplier with access to supply chain resources',
     permissions: [
       { resource: 'products', action: 'view', scope: 'public' },
-      { resource: 'orders', action: '*', scope: 'own' },
+      { resource: 'orders', action: 'view', scope: 'supplier' },
+      { resource: 'inventory', action: '*', scope: 'own' },
+      { resource: 'suppliers', action: 'view', scope: 'own' },
       { resource: 'profile', action: '*', scope: 'own' }
     ],
     inherits: [],
     metadata: {
-      level: 1,
+      level: 2,
+      riskLevel: 'low',
+      active: true
+    }
+  },
+  {
+    name: 'enabler',
+    description: 'Service enabler with access to enablement resources',
+    permissions: [
+      { resource: 'products', action: 'view', scope: 'public' },
+      { resource: 'orders', action: 'view', scope: 'enabler' },
+      { resource: 'enablers', action: '*', scope: 'own' },
+      { resource: 'profile', action: '*', scope: 'own' }
+    ],
+    inherits: [],
+    metadata: {
+      level: 2,
       riskLevel: 'low',
       active: true
     }
@@ -213,7 +236,9 @@ export const DEFAULT_ROLES: RoleConfiguration[] = [
     description: 'Guest user with limited access',
     permissions: [
       { resource: 'products', action: 'view', scope: 'public' },
-      { resource: 'categories', action: 'view', scope: 'public' }
+      { resource: 'categories', action: 'view', scope: 'public' },
+      { resource: 'suppliers', action: 'view', scope: 'public' },
+      { resource: 'enablers', action: 'view', scope: 'public' }
     ],
     inherits: [],
     metadata: {
@@ -1000,16 +1025,3 @@ export interface ConfigStatistics {
 // =====================================================================================
 
 export const authzConfigManager = AuthorizationConfigManager.getInstance();
-export { AuthorizationConfigManager };
-export type { 
-  AuthorizationPolicy, 
-  PolicyCondition, 
-  ConditionRule, 
-  PolicyAction, 
-  RoleConfiguration, 
-  PermissionConfiguration, 
-  EnvironmentConfig,
-  ValidationResult,
-  ConfigStatistics
-};
-export { DEFAULT_ROLES, DEFAULT_PERMISSIONS, DEFAULT_POLICIES };
