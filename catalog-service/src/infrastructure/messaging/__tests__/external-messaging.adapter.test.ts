@@ -27,15 +27,8 @@ import { DomainEvent } from '../../../domain/interfaces';
 
 describe('Kafka Messaging Adapter', () => {
   let kafkaAdapter: KafkaMessagingAdapter;
-  let mockEventStore: any;
 
   beforeEach(() => {
-    mockEventStore = {
-      save: jest.fn(),
-      load: jest.fn(),
-      getAggregateVersion: jest.fn()
-    };
-
     const kafkaConfig = {
       provider: 'kafka' as any,
       brokers: ['localhost:9092'],
@@ -44,6 +37,10 @@ describe('Kafka Messaging Adapter', () => {
     };
 
     kafkaAdapter = new KafkaMessagingAdapter(kafkaConfig);
+    
+    // Mock the internal components for testing
+    kafkaAdapter['producer'] = { send: jest.fn() };
+    kafkaAdapter['consumer'] = { subscribe: jest.fn(), run: jest.fn() };
   });
 
   describe('Connection Management', () => {
@@ -163,15 +160,8 @@ describe('Kafka Messaging Adapter', () => {
 
 describe('RabbitMQ Messaging Adapter', () => {
   let rabbitMQAdapter: RabbitMQMessagingAdapter;
-  let mockEventStore: any;
 
   beforeEach(() => {
-    mockEventStore = {
-      save: jest.fn(),
-      load: jest.fn(),
-      getAggregateVersion: jest.fn()
-    };
-
     const rabbitMQConfig = {
       provider: 'rabbitmq' as any,
       url: 'amqp://localhost:5672',
@@ -179,6 +169,16 @@ describe('RabbitMQ Messaging Adapter', () => {
     };
 
     rabbitMQAdapter = new RabbitMQMessagingAdapter(rabbitMQConfig);
+    
+    // Mock the internal components for testing
+    rabbitMQAdapter['connection'] = { close: jest.fn() };
+    rabbitMQAdapter['channel'] = { 
+      publish: jest.fn(),
+      assertQueue: jest.fn(),
+      bindQueue: jest.fn(),
+      consume: jest.fn(),
+      close: jest.fn()
+    };
   });
 
   describe('Connection Management', () => {
@@ -297,15 +297,8 @@ describe('RabbitMQ Messaging Adapter', () => {
 
 describe('SQS Messaging Adapter', () => {
   let sqsAdapter: SQSMessagingAdapter;
-  let mockEventStore: any;
 
   beforeEach(() => {
-    mockEventStore = {
-      save: jest.fn(),
-      load: jest.fn(),
-      getAggregateVersion: jest.fn()
-    };
-
     const sqsConfig = {
       provider: 'aws_sqs' as any,
       url: 'https://sqs.us-east-1.amazonaws.com/123456789012/test-queue',
@@ -313,6 +306,13 @@ describe('SQS Messaging Adapter', () => {
     };
 
     sqsAdapter = new SQSMessagingAdapter(sqsConfig);
+    
+    // Mock the internal components for testing
+    sqsAdapter['sqsClient'] = { 
+      sendMessage: jest.fn(),
+      receiveMessage: jest.fn(),
+      deleteMessage: jest.fn()
+    };
   });
 
   describe('Connection Management', () => {
@@ -472,7 +472,6 @@ describe('External Messaging Adapter Factory', () => {
 });
 
 describe('Message Broker Health Monitor', () => {
-  let monitor: any;
   let kafkaAdapter: KafkaMessagingAdapter;
   let rabbitMQAdapter: RabbitMQMessagingAdapter;
 
@@ -488,11 +487,6 @@ describe('Message Broker Health Monitor', () => {
 
     kafkaAdapter = new KafkaMessagingAdapter(kafkaConfig);
     rabbitMQAdapter = new RabbitMQMessagingAdapter(rabbitMQConfig);
-
-    monitor = {
-      getOverallHealth: jest.fn(),
-      getAggregatedMetrics: jest.fn()
-    };
   });
 
   it('should get overall health status', async () => {
@@ -529,5 +523,4 @@ describe('Message Broker Health Monitor', () => {
     expect(kafkaStats.totalDelivered).toBe(1);
     expect(rabbitStats.totalDelivered).toBe(1);
   });
-});
 });

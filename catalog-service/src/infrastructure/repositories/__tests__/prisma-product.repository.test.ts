@@ -1,18 +1,15 @@
 /**
- * Prisma Product Repository Tests
- * Infrastructure layer testing for product persistence operations
- * Tests real database operations using mocked Prisma client
- *
- * Coverage Requirements (per Testing Constitution):
- * - Infrastructure Layer: 75% minimum, 80% target, 85% critical
- * - Real database testing patterns
- * - Error scenario validation
- * - Data persistence testing
+ * Comprehensive Prisma Product Repository Tests
+ * Tests all repository functionality including CRUD operations, search, validation, and error handling
  */
 
 import { PrismaClient } from '@prisma/client';
 import { PrismaProductRepository } from '../prisma-product.repository';
-import { ProductRepository } from '../../../domain/interfaces';
+import { ProductId, SellerId, CategoryId } from '../../../domain/value-objects/ids.value-object';
+import { Price } from '../../../domain/value-objects/monetary.value-object';
+import { ProductType, ProductVisibility, ProductCondition } from '../../../domain/value-objects/product-types.value-object';
+import { Product, ProductVariant } from '../../../domain/entities/product.entity';
+import { ProductStatusValue } from '../../../domain/value-objects/product-types.value-object';
 
 // Mock Prisma client
 jest.mock('@prisma/client', () => ({
@@ -28,135 +25,221 @@ jest.mock('@prisma/client', () => ({
       deleteMany: jest.fn(),
       createMany: jest.fn()
     },
-    $transaction: jest.fn()
+    $transaction: jest.fn(),
+    $connect: jest.fn(),
+    $disconnect: jest.fn()
   }))
 }));
 
 describe('PrismaProductRepository', () => {
-  let prismaClient: jest.Mocked<PrismaClient>;
-  let repository: ProductRepository;
+  let repository: PrismaProductRepository;
+  let mockPrisma: any;
+  let mockProduct: any;
+  let mockProductData: any;
+  let mockPrismaProduct: any;
 
   beforeEach(() => {
+    mockPrisma = new PrismaClient();
+    repository = new PrismaProductRepository(mockPrisma);
+
+    // Mock product entity
+    const mockIdGenerator = {
+      generate: () => 'generated-id',
+      validate: () => true
+    };
+
+    mockProduct = {
+      getId: () => ProductId.fromString('prod-123', mockIdGenerator),
+      getSellerId: () => SellerId.fromString('seller-123', mockIdGenerator),
+      getName: () => 'Test Product',
+      getDescription: () => 'Test product description',
+      getCategoryId: () => CategoryId.fromString('cat-123', mockIdGenerator),
+      getStatus: () => ({ toString: () => 'published' }),
+      getVisibility: () => ProductVisibility.PUBLIC,
+      getTags: () => ['test', 'product'],
+      getVariants: () => [
+        {
+          getId: () => 'variant-1',
+          getSku: () => 'SKU-001',
+          getName: () => 'Test Variant',
+          getPrice: () => new Price(99.99, 'USD'),
+          getCompareAtPrice: () => new Price(129.99, 'USD'),
+          getCostPrice: () => 50.00,
+          getAttributes: () => ({ color: 'red', size: 'M' }),
+          getInventoryQuantity: () => 100
+        }
+      ]
+    };
+
+    // Mock Prisma product data
+    mockPrismaProduct = {
+      id: 'prod-123',
+      sellerId: 'seller-123',
+      title: 'Test Product',
+      description: 'Test product description',
+      categoryId: 'cat-123',
+      status: 'published',
+      visibility: 'public',
+      tags: ['test', 'product'],
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01'),
+      category: {
+        id: 'cat-123',
+        name: 'Test Category',
+        status: 'active'
+      },
+      variants: [
+        {
+          id: 'variant-1',
+          sku: 'SKU-001',
+          name: 'Test Variant',
+          price: 99.99,
+          compareAtPrice: 129.99,
+          costPrice: 50.00,
+          attributes: { color: 'red', size: 'M' },
+          inventoryQuantity: 100,
+          status: 'active'
+        }
+      ]
+    };
+
+    mockProductData = {
+      id: 'prod-123',
+      sellerId: 'seller-123',
+      title: 'Test Product',
+      description: 'Test product description',
+      categoryId: 'cat-123',
+      status: 'published',
+      visibility: 'public',
+      tags: ['test', 'product'],
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01'),
+      category: {
+        id: 'cat-123',
+        name: 'Test Category',
+        status: 'active'
+      },
+      variants: [
+        {
+          id: 'variant-1',
+          sku: 'SKU-001',
+          name: 'Test Variant',
+          price: 99.99,
+          compareAtPrice: 129.99,
+          costPrice: 50.00,
+          attributes: { color: 'red', size: 'M' },
+          inventoryQuantity: 100,
+          status: 'active'
+        }
+      ]
+    };
+  });
+
+  afterEach(() => {
     jest.clearAllMocks();
-    prismaClient = new PrismaClient() as jest.Mocked<PrismaClient>;
-    repository = new PrismaProductRepository(prismaClient);
   });
 
   describe('save', () => {
-    it('should save a product using transaction', async () => {
-      // Arrange
-      const mockProduct = {
-        getId: jest.fn().mockReturnValue({ toString: () => 'test-product-id' }),
-        getSellerId: jest.fn().mockReturnValue({ toString: () => 'seller-123' }),
-        getName: jest.fn().mockReturnValue('Test Product'),
-        getDescription: jest.fn().mockReturnValue('Test Description'),
-        getCategoryId: jest.fn().mockReturnValue({ toString: () => 'category-123' }),
-        getStatus: jest.fn().mockReturnValue({ toString: () => 'draft' }),
-        getVisibility: jest.fn().mockReturnValue('PUBLIC'),
-        getTags: jest.fn().mockReturnValue(['test']),
-        getVariants: jest.fn().mockReturnValue([{
-          getId: jest.fn().mockReturnValue('variant-1'),
-          getSku: jest.fn().mockReturnValue('TEST-SKU'),
-          getName: jest.fn().mockReturnValue('Variant'),
-          getPrice: jest.fn().mockReturnValue({ toNumber: () => 99.99 }),
-          getCompareAtPrice: jest.fn().mockReturnValue({ toNumber: () => 129.99 }),
-          getCostPrice: jest.fn().mockReturnValue({ toNumber: () => 79.99 }),
-          getAttributes: jest.fn().mockReturnValue({ color: 'red' })
-        }])
+    it('should save a new product successfully', async () => {
+      const savedProduct = { ...mockPrismaProduct, id: 'prod-new' };
+      mockPrisma.$transaction.mockResolvedValue(savedProduct);
+
+      const result = await repository.save(mockProduct);
+
+      expect(mockPrisma.$transaction).toHaveBeenCalledWith(expect.any(Function));
+      expect(result).toEqual(savedProduct);
+    });
+
+    it('should update an existing product successfully', async () => {
+      const updatedProduct = { ...mockPrismaProduct, title: 'Updated Product' };
+      mockPrisma.$transaction.mockResolvedValue(updatedProduct);
+
+      const result = await repository.save(mockProduct);
+
+      expect(mockPrisma.$transaction).toHaveBeenCalledWith(expect.any(Function));
+      expect(result).toEqual(updatedProduct);
+    });
+
+    it('should handle product variants correctly', async () => {
+      mockPrisma.$transaction.mockResolvedValue(mockPrismaProduct);
+
+      await repository.save(mockProduct);
+
+      const transactionCallback = mockPrisma.$transaction.mock.calls[0][0];
+      const mockTx = {
+        product: { upsert: jest.fn().mockResolvedValue(mockPrismaProduct) },
+        productVariant: {
+          deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+          createMany: jest.fn().mockResolvedValue({ count: 1 })
+        }
       };
 
-      const expectedResult = {
-        id: 'test-product-id',
-        sellerId: 'seller-123',
-        title: 'Test Product',
-        description: 'Test Description',
-        categoryId: 'category-123',
-        status: 'draft',
-        visibility: 'public',
-        tags: ['test'],
-        updatedAt: expect.any(Date)
-      };
+      await transactionCallback(mockTx);
 
-      prismaClient.$transaction.mockImplementation(async (callback) => {
-        return callback({
-          product: {
-            upsert: jest.fn().mockResolvedValue(expectedResult),
-            ...prismaClient.product
-          },
-          productVariant: {
-            deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-            createMany: jest.fn().mockResolvedValue({ count: 1 }),
-            ...prismaClient.productVariant
-          }
-        });
+      expect(mockTx.productVariant.deleteMany).toHaveBeenCalledWith({
+        where: { productId: 'prod-123' }
       });
+      expect(mockTx.productVariant.createMany).toHaveBeenCalledWith({
+        data: [
+          {
+            id: 'variant-1',
+            sku: 'SKU-001',
+            name: 'Test Variant',
+            price: 99.99,
+            compareAtPrice: 129.99,
+            costPrice: 50.00,
+            attributes: { color: 'red', size: 'M' },
+            status: 'active',
+            productId: 'prod-123'
+          }
+        ]
+      });
+    });
 
-      // Act
-      const result = await repository.save(mockProduct as any);
+    it('should handle products without variants', async () => {
+      const productWithoutVariants = {
+        ...mockProduct,
+        getVariants: () => []
+      };
 
-      // Assert
-      expect(prismaClient.$transaction).toHaveBeenCalledTimes(1);
-      expect(result).toEqual(expectedResult);
+      mockPrisma.$transaction.mockResolvedValue(mockPrismaProduct);
+
+      await repository.save(productWithoutVariants);
+
+      const transactionCallback = mockPrisma.$transaction.mock.calls[0][0];
+      const mockTx = {
+        product: { upsert: jest.fn().mockResolvedValue(mockPrismaProduct) },
+        productVariant: {
+          deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+          createMany: jest.fn().mockResolvedValue({ count: 0 })
+        }
+      };
+
+      await transactionCallback(mockTx);
+
+      expect(mockTx.productVariant.deleteMany).toHaveBeenCalledWith({
+        where: { productId: 'prod-123' }
+      });
+      expect(mockTx.productVariant.createMany).toHaveBeenCalledWith({
+        data: []
+      });
     });
 
     it('should handle transaction failures', async () => {
-      // Arrange
-      const mockProduct = {
-        getId: jest.fn().mockReturnValue({ toString: () => 'test-product-id' }),
-        getSellerId: jest.fn().mockReturnValue({ toString: () => 'seller-123' }),
-        getName: jest.fn().mockReturnValue('Test Product'),
-        getDescription: jest.fn().mockReturnValue('Test Description'),
-        getCategoryId: jest.fn().mockReturnValue(undefined),
-        getStatus: jest.fn().mockReturnValue({ toString: () => 'draft' }),
-        getVisibility: jest.fn().mockReturnValue('PUBLIC'),
-        getTags: jest.fn().mockReturnValue([]),
-        getVariants: jest.fn().mockReturnValue([])
-      };
+      mockPrisma.$transaction.mockRejectedValue(new Error('Database error'));
 
-      const transactionError = new Error('Database transaction failed');
-      prismaClient.$transaction.mockRejectedValue(transactionError);
-
-      // Act & Assert
-      await expect(repository.save(mockProduct as any)).rejects.toThrow('Database transaction failed');
+      await expect(repository.save(mockProduct)).rejects.toThrow('Database error');
     });
   });
 
   describe('findById', () => {
-    it('should find product by ID', async () => {
-      // Arrange
-      const mockPrismaData = {
-        id: 'test-product-id',
-        sellerId: 'seller-123',
-        title: 'Test Product',
-        description: 'Test Description',
-        categoryId: 'category-123',
-        status: 'published',
-        visibility: 'public',
-        tags: ['test'],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        category: { id: 'category-123', name: 'Test Category' },
-        variants: [{
-          id: 'variant-1',
-          sku: 'TEST-SKU',
-          name: 'Test Variant',
-          price: 99.99,
-          compareAtPrice: 129.99,
-          costPrice: 79.99,
-          attributes: { color: 'red' },
-          status: 'active',
-          inventoryQuantity: 50
-        }]
-      };
+    it('should find product by ID successfully', async () => {
+      mockPrisma.product.findUnique.mockResolvedValue(mockPrismaProduct);
 
-      prismaClient.product.findUnique.mockResolvedValue(mockPrismaData);
+      const result = await repository.findById('prod-123');
 
-      // Act
-      const result = await repository.findById('test-product-id');
-
-      // Assert
-      expect(prismaClient.product.findUnique).toHaveBeenCalledWith({
-        where: { id: 'test-product-id' },
+      expect(mockPrisma.product.findUnique).toHaveBeenCalledWith({
+        where: { id: 'prod-123' },
         include: {
           category: true,
           variants: true
@@ -166,51 +249,28 @@ describe('PrismaProductRepository', () => {
     });
 
     it('should return null when product not found', async () => {
-      // Arrange
-      prismaClient.product.findUnique.mockResolvedValue(null);
+      mockPrisma.product.findUnique.mockResolvedValue(null);
 
-      // Act
-      const result = await repository.findById('non-existent-id');
+      const result = await repository.findById('prod-nonexistent');
 
-      // Assert
       expect(result).toBeNull();
     });
 
     it('should handle database errors', async () => {
-      // Arrange
-      const dbError = new Error('Database connection failed');
-      prismaClient.product.findUnique.mockRejectedValue(dbError);
+      mockPrisma.product.findUnique.mockRejectedValue(new Error('Database error'));
 
-      // Act & Assert
-      await expect(repository.findById('test-product-id')).rejects.toThrow('Database connection failed');
+      await expect(repository.findById('prod-123')).rejects.toThrow('Database error');
     });
   });
 
   describe('findBySeller', () => {
-    it('should find products by seller ID', async () => {
-      // Arrange
-      const mockProducts = [{
-        id: 'product-1',
-        sellerId: 'seller-123',
-        title: 'Product 1',
-        description: 'Description 1',
-        categoryId: 'cat-1',
-        status: 'published',
-        visibility: 'public',
-        tags: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        category: { id: 'cat-1', name: 'Category 1' },
-        variants: []
-      }];
+    it('should find products by seller successfully', async () => {
+      const products = [mockPrismaProduct, { ...mockPrismaProduct, id: 'prod-456' }];
+      mockPrisma.product.findMany.mockResolvedValue(products);
 
-      prismaClient.product.findMany.mockResolvedValue(mockProducts);
-
-      // Act
       const result = await repository.findBySeller('seller-123');
 
-      // Assert
-      expect(prismaClient.product.findMany).toHaveBeenCalledWith({
+      expect(mockPrisma.product.findMany).toHaveBeenCalledWith({
         where: { sellerId: 'seller-123' },
         include: {
           category: true,
@@ -218,104 +278,72 @@ describe('PrismaProductRepository', () => {
         },
         orderBy: { createdAt: 'desc' }
       });
-      expect(result).toHaveLength(1);
+      expect(result).toHaveLength(2);
     });
 
-    it('should return empty array when seller has no products', async () => {
-      // Arrange
-      prismaClient.product.findMany.mockResolvedValue([]);
+    it('should return empty array when no products found', async () => {
+      mockPrisma.product.findMany.mockResolvedValue([]);
 
-      // Act
-      const result = await repository.findBySeller('empty-seller-id');
+      const result = await repository.findBySeller('seller-nonexistent');
 
-      // Assert
-      expect(result).toHaveLength(0);
+      expect(result).toEqual([]);
+    });
+
+    it('should handle database errors', async () => {
+      mockPrisma.product.findMany.mockRejectedValue(new Error('Database error'));
+
+      await expect(repository.findBySeller('seller-123')).rejects.toThrow('Database error');
     });
   });
 
   describe('findByCategory', () => {
-    it('should find products by category ID', async () => {
-      // Arrange
-      const mockProducts = [{
-        id: 'product-1',
-        sellerId: 'seller-1',
-        title: 'Category Product',
-        description: 'Product in category',
-        categoryId: 'test-category-id',
-        status: 'published',
-        visibility: 'public',
-        tags: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        category: { id: 'test-category-id', name: 'Test Category' },
-        variants: []
-      }];
+    it('should find products by category successfully', async () => {
+      const products = [mockPrismaProduct, { ...mockPrismaProduct, id: 'prod-456' }];
+      mockPrisma.product.findMany.mockResolvedValue(products);
 
-      prismaClient.product.findMany.mockResolvedValue(mockProducts);
+      const result = await repository.findByCategory('cat-123');
 
-      // Act
-      const result = await repository.findByCategory('test-category-id');
-
-      // Assert
-      expect(prismaClient.product.findMany).toHaveBeenCalledWith({
-        where: { categoryId: 'test-category-id' },
+      expect(mockPrisma.product.findMany).toHaveBeenCalledWith({
+        where: { categoryId: 'cat-123' },
         include: {
           category: true,
           variants: true
         },
         orderBy: { createdAt: 'desc' }
       });
-      expect(result).toHaveLength(1);
+      expect(result).toHaveLength(2);
+    });
+
+    it('should return empty array when no products found', async () => {
+      mockPrisma.product.findMany.mockResolvedValue([]);
+
+      const result = await repository.findByCategory('cat-nonexistent');
+
+      expect(result).toEqual([]);
+    });
+
+    it('should handle database errors', async () => {
+      mockPrisma.product.findMany.mockRejectedValue(new Error('Database error'));
+
+      await expect(repository.findByCategory('cat-123')).rejects.toThrow('Database error');
     });
   });
 
   describe('search', () => {
-    it('should search products with filters and pagination', async () => {
-      // Arrange
-      const filters = {
-        category: 'test-category-id',
-        status: 'published',
-        tags: ['electronics']
-      };
+    it('should search products with basic filters', async () => {
+      const products = [mockPrismaProduct];
+      mockPrisma.product.findMany.mockResolvedValue(products);
+      mockPrisma.product.count.mockResolvedValue(1);
+
+      const filters = { category: 'cat-123', seller: 'seller-123' };
       const pagination = { page: 1, limit: 10 };
 
-      const searchResults = [{
-        id: 'search-product-1',
-        sellerId: 'seller-1',
-        title: 'Search Result Product',
-        description: 'Matching product',
-        categoryId: 'test-category-id',
-        status: 'published',
-        visibility: 'public',
-        tags: ['electronics'],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        category: { id: 'test-category-id', name: 'Test Category' },
-        variants: [{
-          id: 'variant-1',
-          sku: 'SEARCH-SKU',
-          name: 'Search Variant',
-          price: 99.99,
-          compareAtPrice: null,
-          costPrice: 80.00,
-          attributes: {},
-          status: 'active',
-          inventoryQuantity: 25
-        }]
-      }];
-
-      prismaClient.product.findMany.mockResolvedValue(searchResults);
-      prismaClient.product.count.mockResolvedValue(1);
-
-      // Act
       const result = await repository.search(filters, pagination);
 
-      // Assert
-      expect(prismaClient.product.findMany).toHaveBeenCalledWith({
+      expect(mockPrisma.product.findMany).toHaveBeenCalledWith({
         where: {
-          categoryId: 'test-category-id',
-          status: 'published',
-          tags: { hasSome: ['electronics'] }
+          categoryId: 'cat-123',
+          sellerId: 'seller-123'
         },
         include: {
           category: true,
@@ -325,55 +353,175 @@ describe('PrismaProductRepository', () => {
         take: 10,
         orderBy: { createdAt: 'desc' }
       });
+      expect(mockPrisma.product.count).toHaveBeenCalledWith({
+        where: {
+          categoryId: 'cat-123',
+          sellerId: 'seller-123'
+        }
+      });
       expect(result.products).toHaveLength(1);
       expect(result.pagination.total).toBe(1);
     });
 
-    it('should handle empty search results', async () => {
-      // Arrange
-      const filters = {};
+    it('should search products with status filter', async () => {
+      mockPrisma.product.findMany.mockResolvedValue([mockPrismaProduct]);
+      mockPrisma.product.count.mockResolvedValue(1);
+
+      const filters = { status: 'published' };
       const pagination = { page: 1, limit: 10 };
 
-      prismaClient.product.findMany.mockResolvedValue([]);
-      prismaClient.product.count.mockResolvedValue(0);
+      await repository.search(filters, pagination);
 
-      // Act
+      expect(mockPrisma.product.findMany).toHaveBeenCalledWith({
+        where: {
+          status: 'published'
+        },
+        include: {
+          category: true,
+          variants: true
+        },
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: 'desc' }
+      });
+    });
+
+    it('should search products with visibility filter', async () => {
+      mockPrisma.product.findMany.mockResolvedValue([mockPrismaProduct]);
+      mockPrisma.product.count.mockResolvedValue(1);
+
+      const filters = { visibility: 'public' };
+      const pagination = { page: 1, limit: 10 };
+
+      await repository.search(filters, pagination);
+
+      expect(mockPrisma.product.findMany).toHaveBeenCalledWith({
+        where: {
+          visibility: 'public'
+        },
+        include: {
+          category: true,
+          variants: true
+        },
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: 'desc' }
+      });
+    });
+
+    it('should search products with tags filter', async () => {
+      mockPrisma.product.findMany.mockResolvedValue([mockPrismaProduct]);
+      mockPrisma.product.count.mockResolvedValue(1);
+
+      const filters = { tags: ['test', 'product'] };
+      const pagination = { page: 1, limit: 10 };
+
+      await repository.search(filters, pagination);
+
+      expect(mockPrisma.product.findMany).toHaveBeenCalledWith({
+        where: {
+          tags: {
+            hasSome: ['test', 'product']
+          }
+        },
+        include: {
+          category: true,
+          variants: true
+        },
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: 'desc' }
+      });
+    });
+
+    it('should search products with price range filter', async () => {
+      mockPrisma.product.findMany.mockResolvedValue([mockPrismaProduct]);
+      mockPrisma.product.count.mockResolvedValue(1);
+
+      const filters = { priceRange: { min: 50, max: 150 } };
+      const pagination = { page: 1, limit: 10 };
+
+      await repository.search(filters, pagination);
+
+      expect(mockPrisma.product.findMany).toHaveBeenCalledWith({
+        where: {
+          variants: {
+            some: {
+              price: {
+                gte: 50,
+                lte: 150
+              }
+            }
+          }
+        },
+        include: {
+          category: true,
+          variants: true
+        },
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: 'desc' }
+      });
+    });
+
+    it('should handle pagination correctly', async () => {
+      mockPrisma.product.findMany.mockResolvedValue([mockPrismaProduct]);
+      mockPrisma.product.count.mockResolvedValue(25);
+
+      const filters = {};
+      const pagination = { page: 2, limit: 10 };
+
       const result = await repository.search(filters, pagination);
 
-      // Assert
-      expect(result.products).toHaveLength(0);
+      expect(mockPrisma.product.findMany).toHaveBeenCalledWith({
+        where: {},
+        include: {
+          category: true,
+          variants: true
+        },
+        skip: 10,
+        take: 10,
+        orderBy: { createdAt: 'desc' }
+      });
+      expect(result.pagination.page).toBe(2);
+      expect(result.pagination.limit).toBe(10);
+      expect(result.pagination.total).toBe(25);
+      expect(result.pagination.totalPages).toBe(3);
+      expect(result.pagination.hasNext).toBe(true);
+      expect(result.pagination.hasPrev).toBe(true);
+    });
+
+    it('should handle empty search results', async () => {
+      mockPrisma.product.findMany.mockResolvedValue([]);
+      mockPrisma.product.count.mockResolvedValue(0);
+
+      const result = await repository.search({}, { page: 1, limit: 10 });
+
+      expect(result.products).toEqual([]);
       expect(result.pagination.total).toBe(0);
       expect(result.pagination.totalPages).toBe(0);
+      expect(result.pagination.hasNext).toBe(false);
+      expect(result.pagination.hasPrev).toBe(false);
+    });
+
+    it('should handle database errors', async () => {
+      mockPrisma.product.findMany.mockRejectedValue(new Error('Database error'));
+
+      await expect(repository.search({}, { page: 1, limit: 10 })).rejects.toThrow('Database error');
     });
   });
 
   describe('updateStatus', () => {
-    it('should update product status', async () => {
-      // Arrange
-      const updatedProductData = {
-        id: 'test-product-id',
-        sellerId: 'test-seller-id',
-        title: 'Test Product',
-        description: 'Test description',
-        categoryId: 'test-category-id',
-        status: 'suspended',
-        visibility: 'public',
-        tags: [],
-        updatedAt: new Date(),
-        category: { id: 'test-category-id', name: 'Test Category' },
-        variants: []
-      };
+    it('should update product status successfully', async () => {
+      const updatedProduct = { ...mockPrismaProduct, status: 'archived' };
+      mockPrisma.product.update.mockResolvedValue(updatedProduct);
 
-      prismaClient.product.update.mockResolvedValue(updatedProductData);
+      const result = await repository.updateStatus('prod-123', 'archived');
 
-      // Act
-      const result = await repository.updateStatus('test-product-id', 'suspended');
-
-      // Assert
-      expect(prismaClient.product.update).toHaveBeenCalledWith({
-        where: { id: 'test-product-id' },
+      expect(mockPrisma.product.update).toHaveBeenCalledWith({
+        where: { id: 'prod-123' },
         data: {
-          status: 'suspended',
+          status: 'archived',
           updatedAt: expect.any(Date)
         },
         include: {
@@ -381,25 +529,43 @@ describe('PrismaProductRepository', () => {
           variants: true
         }
       });
-      expect(result).toBeDefined();
+      expect(result).toEqual(updatedProduct);
+    });
+
+    it('should handle product not found', async () => {
+      mockPrisma.product.update.mockRejectedValue(new Error('Record not found'));
+
+      await expect(repository.updateStatus('prod-nonexistent', 'archived')).rejects.toThrow('Record not found');
+    });
+
+    it('should handle invalid status', async () => {
+      mockPrisma.product.update.mockResolvedValue(mockPrismaProduct);
+
+      // Test with invalid status - should map to draft
+      await repository.updateStatus('prod-123', 'invalid-status');
+
+      expect(mockPrisma.product.update).toHaveBeenCalledWith({
+        where: { id: 'prod-123' },
+        data: {
+          status: 'draft', // Should map invalid status to draft
+          updatedAt: expect.any(Date)
+        },
+        include: {
+          category: true,
+          variants: true
+        }
+      });
     });
   });
 
   describe('delete', () => {
-    it('should soft delete product successfully', async () => {
-      // Arrange
-      prismaClient.product.update.mockResolvedValue({
-        id: 'test-product-id',
-        status: 'archived',
-        updatedAt: new Date()
-      } as any);
+    it('should delete product successfully (soft delete)', async () => {
+      mockPrisma.product.update.mockResolvedValue(mockPrismaProduct);
 
-      // Act
-      const result = await repository.delete('test-product-id');
+      const result = await repository.delete('prod-123');
 
-      // Assert
-      expect(prismaClient.product.update).toHaveBeenCalledWith({
-        where: { id: 'test-product-id' },
+      expect(mockPrisma.product.update).toHaveBeenCalledWith({
+        where: { id: 'prod-123' },
         data: {
           status: 'archived',
           updatedAt: expect.any(Date)
@@ -408,60 +574,114 @@ describe('PrismaProductRepository', () => {
       expect(result).toBe(true);
     });
 
-    it('should return false on delete failure', async () => {
-      // Arrange
-      const deleteError = new Error('Delete operation failed');
-      prismaClient.product.update.mockRejectedValue(deleteError);
+    it('should handle delete failure', async () => {
+      mockPrisma.product.update.mockRejectedValue(new Error('Database error'));
 
-      // Act
-      const result = await repository.delete('test-product-id');
+      const result = await repository.delete('prod-123');
 
-      // Assert
+      expect(result).toBe(false);
+    });
+
+    it('should handle product not found', async () => {
+      mockPrisma.product.update.mockRejectedValue(new Error('Record not found'));
+
+      const result = await repository.delete('prod-nonexistent');
+
       expect(result).toBe(false);
     });
   });
 
   describe('error handling', () => {
-    it('should handle Prisma connection errors', async () => {
-      // Arrange
-      const connectionError = new Error('Connection timeout');
-      prismaClient.product.findUnique.mockRejectedValue(connectionError);
+    it('should handle connection errors gracefully', async () => {
+      mockPrisma.$connect.mockRejectedValue(new Error('Connection failed'));
 
-      // Act & Assert
-      await expect(repository.findById('test-id')).rejects.toThrow('Connection timeout');
+      await expect(repository.save(mockProduct)).rejects.toThrow('Connection failed');
     });
 
-    it('should handle transaction rollback on failure', async () => {
-      // Arrange
-      const mockProduct = {
-        getId: jest.fn().mockReturnValue({ toString: () => 'test-product-id' }),
-        getSellerId: jest.fn().mockReturnValue({ toString: () => 'seller-123' }),
-        getName: jest.fn().mockReturnValue('Test Product'),
-        getDescription: jest.fn().mockReturnValue('Test Description'),
-        getCategoryId: jest.fn().mockReturnValue(undefined),
-        getStatus: jest.fn().mockReturnValue({ toString: () => 'draft' }),
-        getVisibility: jest.fn().mockReturnValue('PUBLIC'),
-        getTags: jest.fn().mockReturnValue([]),
-        getVariants: jest.fn().mockReturnValue([])
-      };
-
-      const variantError = new Error('Variant creation failed');
-      prismaClient.$transaction.mockImplementation(async (callback) => {
-        return callback({
-          product: {
-            upsert: jest.fn().mockResolvedValue({ id: 'test-product-id' }),
-            ...prismaClient.product
-          },
-          productVariant: {
-            deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-            createMany: jest.fn().mockRejectedValue(variantError),
-            ...prismaClient.productVariant
-          }
+    it('should handle timeout errors', async () => {
+      mockPrisma.product.findUnique.mockImplementation(() => {
+        return new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout')), 100);
         });
       });
 
-      // Act & Assert
-      await expect(repository.save(mockProduct as any)).rejects.toThrow('Variant creation failed');
+      await expect(repository.findById('prod-123')).rejects.toThrow('Timeout');
+    });
+
+    it('should handle constraint violations', async () => {
+      mockPrisma.$transaction.mockRejectedValue(new Error('Unique constraint violation'));
+
+      await expect(repository.save(mockProduct)).rejects.toThrow('Unique constraint violation');
+    });
+  });
+
+  describe('data mapping', () => {
+    it('should map Prisma data to domain entity correctly', async () => {
+      mockPrisma.product.findUnique.mockResolvedValue(mockPrismaProduct);
+
+      const result = await repository.findById('prod-123');
+
+      expect(result).toBeDefined();
+      expect(result.id).toBe('prod-123');
+      expect(result.title).toBe('Test Product');
+      expect(result.variants).toHaveLength(1);
+      expect(result.variants[0].price).toBe(99.99);
+    });
+
+    it('should handle products without category', async () => {
+      const productWithoutCategory = {
+        ...mockPrismaProduct,
+        category: null
+      };
+      mockPrisma.product.findUnique.mockResolvedValue(productWithoutCategory);
+
+      const result = await repository.findById('prod-123');
+
+      expect(result).toBeDefined();
+      expect(result.category).toBeNull();
+    });
+
+    it('should handle products without variants', async () => {
+      const productWithoutVariants = {
+        ...mockPrismaProduct,
+        variants: []
+      };
+      mockPrisma.product.findUnique.mockResolvedValue(productWithoutVariants);
+
+      const result = await repository.findById('prod-123');
+
+      expect(result).toBeDefined();
+      expect(result.variants).toHaveLength(0);
+    });
+  });
+
+  describe('performance', () => {
+    it('should handle large result sets efficiently', async () => {
+      const largeProductSet = Array.from({ length: 1000 }, (_, i) => ({
+        ...mockPrismaProduct,
+        id: `prod-${i}`
+      }));
+
+      mockPrisma.product.findMany.mockResolvedValue(largeProductSet);
+      mockPrisma.product.count.mockResolvedValue(1000);
+
+      const result = await repository.search({}, { page: 1, limit: 100 });
+
+      expect(result.products).toHaveLength(100);
+      expect(result.pagination.total).toBe(1000);
+    });
+
+    it('should handle concurrent operations', async () => {
+      mockPrisma.product.findUnique.mockResolvedValue(mockPrismaProduct);
+
+      const promises = Array.from({ length: 10 }, () =>
+        repository.findById('prod-123')
+      );
+
+      const results = await Promise.all(promises);
+
+      expect(results).toHaveLength(10);
+      results.forEach(result => expect(result).toBeDefined());
     });
   });
 });

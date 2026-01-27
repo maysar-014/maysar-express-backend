@@ -34,7 +34,6 @@
   },
   "include": [
     "src/**/*",
-    "tests/**/*",
     "**/*.test.ts",
     "**/*.spec.ts"
   ],

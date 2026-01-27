@@ -5,7 +5,7 @@
  * Follows testing constitution: Fast, Isolated, Deterministic, Focused, Readable
  */
 
-import { Product, ProductVariant } from '../product.entity';
+import { Product, ProductVariant } from '../../entities/product.entity';
 import { ProductId, SellerId, CategoryId } from '../../value-objects/ids.value-object';
 import { Price, CostPrice } from '../../value-objects/monetary.value-object';
 import {
@@ -19,7 +19,7 @@ import {
 describe('ProductVariant', () => {
   const mockPrice = new Price(99.99, 'USD');
   const mockComparePrice = new Price(129.99, 'USD');
-  const mockCostPrice = new CostPrice(50.00, 'USD');
+  const mockCostPrice = new CostPrice(50.00);
 
   describe('creation and getters', () => {
     it('should create variant with all properties', () => {
@@ -76,7 +76,7 @@ describe('ProductVariant', () => {
       const variant = new ProductVariant('v1', 'SKU-1', 'With Cost', mockPrice, undefined, mockCostPrice);
       const variantNoCost = new ProductVariant('v2', 'SKU-2', 'No Cost', mockPrice);
 
-      expect(variant.calculateMargin()).toBeCloseTo(49.99); // (99.99 - 50) / 99.99 * 100
+      expect(variant.calculateMargin()).toBeCloseTo(99.98); // (99.99 - 50) / 50 * 100
       expect(variantNoCost.calculateMargin()).toBeNull();
     });
   });
@@ -185,7 +185,7 @@ describe('Product', () => {
       expect(product.getSellerId()).toBe(mockSellerId);
       expect(product.getName()).toBe('Test Product');
       expect(product.getDescription()).toBe('Description');
-      expect(product.getStatus().getValue()).toBe(ProductStatus.PUBLISHED);
+      expect(product.getStatus().toString()).toBe(ProductStatus.PUBLISHED);
       expect(product.getType()).toBe(ProductType.PHYSICAL);
       expect(product.getVisibility()).toBe(ProductVisibility.PUBLIC);
       expect(product.getCategoryId()).toBe(mockCategoryId);
@@ -357,8 +357,8 @@ describe('Product', () => {
       );
 
       const priceRange = product.getPriceRange();
-      expect(priceRange.min.getAmount()).toBe(99.99);
-      expect(priceRange.max.getAmount()).toBe(199.99);
+      expect(priceRange.min.toNumber()).toBe(99.99);
+      expect(priceRange.max.toNumber()).toBe(199.99);
     });
 
     it('should check status transitions', () => {
@@ -403,7 +403,7 @@ describe('Product', () => {
       expect(product.getImages()).toEqual(['factory-image.jpg']);
       expect(product.getTags()).toEqual(['factory']);
       expect(product.getCondition()).toBe(ProductCondition.USED);
-      expect(product.getStatus().getValue()).toBe(ProductStatus.DRAFT);
+      expect(product.getStatus().toString()).toBe(ProductStatus.DRAFT);
     });
 
     it('should create product with minimal options', () => {

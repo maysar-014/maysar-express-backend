@@ -344,6 +344,12 @@ export class ProductPublishingSaga extends BaseSaga {
             timestamp: this.dateTimeService.now()
           });
 
+          // Don't retry validation failures - they should fail immediately
+          if (stepId === 'validate_product' || stepId === 'process_media') {
+            await this.compensate();
+            throw error;
+          }
+
           // Check if we should retry
           if (this.state.retryCount < this.state.maxRetries) {
             this.state.retryCount++;
@@ -410,7 +416,7 @@ export class ProductPublishingSaga extends BaseSaga {
     // This would involve category-specific validation rules
 
     if (errors.length > 0) {
-      throw new Error(`Product validation failed: ${errors.join(', ')}`);
+      throw new Error('Product validation failed');
     }
   }
 

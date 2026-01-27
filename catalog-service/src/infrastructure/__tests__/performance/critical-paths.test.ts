@@ -29,10 +29,10 @@ import { FileUploadService } from '../../services/file-upload.service';
 import { ImageOptimizationService } from '../../services/image-optimization.service';
 import { CacheService } from '../../services/cache.service';
 import { HealthCheckService } from '../../services/health-check.service';
-import { SearchProvider } from '../../providers/search.provider';
-import { S3CDNProvider } from '../../providers/cdn.provider';
+import { SearchProviderFactory, SearchProvider as SearchProviderEnum, ElasticsearchProvider } from '../../providers/search.provider';
+import { S3CDNProvider, CDNProvider } from '../../providers/cdn.provider';
 import { SharpImageProvider } from '../../providers/image-processing.provider';
-import { CacheProvider } from '../../providers/cache-provider';
+import { CacheProviderFactory } from '../../providers/cache-provider';
 
 describe('Infrastructure Layer Performance Tests', () => {
   let repository: PrismaProductRepository;

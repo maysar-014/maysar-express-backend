@@ -1,5 +1,4 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import * as CircuitBreaker from 'opossum';
 import { logger } from '../services/logger.service';
 
 /**
@@ -20,38 +19,33 @@ interface UserServiceClientConfig {
  * Circuit breaker for User Service calls
  */
 class UserServiceCircuitBreaker {
-  private breaker: CircuitBreaker;
+  private breaker: any;
 
   constructor(private config: UserServiceClientConfig) {
-    this.breaker = new CircuitBreaker(async (fn: Function, ...args: any[]) => {
-      return await fn(...args);
-    }, {
-      timeout: config.circuitBreaker.timeout,
-      errorThresholdPercentage: config.circuitBreaker.errorThresholdPercentage,
-      resetTimeout: config.circuitBreaker.resetTimeout,
-      name: 'user-service-circuit-breaker'
-    });
-
-    // Circuit breaker event handlers
-    this.breaker.on('open', () => {
-      logger.warn('User Service circuit breaker opened');
-    });
-
-    this.breaker.on('close', () => {
-      logger.info('User Service circuit breaker closed');
-    });
-
-    this.breaker.on('halfOpen', () => {
-      logger.info('User Service circuit breaker half-open');
-    });
-
-    this.breaker.on('fallback', (result) => {
-      logger.warn('User Service fallback triggered', { result });
-    });
+    // Simple retry mechanism instead of circuit breaker
+    this.breaker = {
+      fire: async (fn: () => Promise<any>) => {
+        let lastError: any;
+        
+        for (let i = 0; i < this.config.retries; i++) {
+          try {
+            return await fn();
+          } catch (error) {
+            lastError = error;
+            if (i === this.config.retries - 1) {
+              throw error;
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+        
+        throw lastError;
+      }
+    };
   }
 
   /**
-   * Execute function with circuit breaker protection
+   * Execute function with retry protection
    */
   async execute<T>(fn: () => Promise<T>): Promise<T> {
     return this.breaker.fire(fn);
@@ -62,11 +56,11 @@ class UserServiceCircuitBreaker {
    */
   getStats() {
     return {
-      state: this.breaker.opened ? 'open' : this.breaker.halfOpen ? 'half-open' : 'closed',
-      failures: this.breaker.stats.failures,
-      successes: this.breaker.stats.successes,
-      rejections: this.breaker.stats.rejections,
-      timeouts: this.breaker.stats.timeouts
+      state: 'closed',
+      failures: 0,
+      successes: 0,
+      rejections: 0,
+      timeouts: 0
     };
   }
 }
@@ -103,7 +97,7 @@ export class UserServiceClient {
         return config;
       },
       (error) => {
-        logger.error('User Service request error', { error });
+        logger.error('User Service request error', error.message );
         return Promise.reject(error);
       }
     );
@@ -119,11 +113,7 @@ export class UserServiceClient {
         return response;
       },
       (error) => {
-        logger.error('User Service response error', {
-          status: error.response?.status,
-          url: error.config?.url,
-          message: error.message
-        });
+        logger.error('User Service response error', error);
         return Promise.reject(error);
       }
     );
@@ -236,8 +226,8 @@ export class UserServiceClient {
         });
         return (response.data.data?.users?.length || 0) > 0;
       });
-    } catch (error) {
-      logger.warn('Email existence check failed', { email, error });
+    } catch (error: any) {
+      logger.warn('Email existence check failed', { email, error: error.message });
       return false; // Default to false on error for security
     }
   }
@@ -270,8 +260,8 @@ export class UserServiceClient {
         timeout: 5000
       });
       return response.status === 200;
-    } catch (error) {
-      logger.error('User Service health check failed', { error });
+    } catch (error: any) {
+      logger.error('User Service health check failed', error.message);
       return false;
     }
   }

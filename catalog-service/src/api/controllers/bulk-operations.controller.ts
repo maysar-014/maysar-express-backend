@@ -113,7 +113,7 @@ export class BulkOperationsController {
         return;
       }
 
-      // Mock bulk update
+      // Mock bulk update - synchronous and fast
       const operationId = `bulk-update-${Date.now()}`;
       const results = productIds.map((productId: string, index: number) => ({
         productId,
@@ -171,7 +171,7 @@ export class BulkOperationsController {
         return;
       }
 
-      // Mock bulk deletion
+      // Mock bulk deletion - synchronous and fast
       const operationId = `bulk-delete-${Date.now()}`;
       const results = productIds.map((productId: string) => ({
         productId,

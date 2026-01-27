@@ -1,4 +1,4 @@
-l/**
+/**
  * Product Controller Tests
  * Comprehensive API layer testing for product operations
  * Validates HTTP request/response handling, validation, and use case orchestration
@@ -312,14 +312,18 @@ describe('ProductController', () => {
           type: 'physical',
           tags: ['tag1'],
           status: 'active',
-          createdAt: new Date()
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          description: 'Test product',
+          attributes: {}
         }
       ];
 
       mockGetProductsBySellerUseCase.execute.mockResolvedValue({
         status: 'success',
         products: mockProducts,
-        total: 1
+        total: 1,
+        message: 'Products retrieved successfully'
       });
 
       await controller.getProductsBySeller(req, res);

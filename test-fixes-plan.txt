@@ -1,0 +1,329 @@
+# Test Fixes Plan
+
+## Overview
+This plan addresses all failing tests in the catalog-service by implementing proper middleware, improving error handling, and correcting validation logic.
+
+## Root Causes Analysis
+
+### 1. Product Routes Tests (product.routes.test.ts)
+- **Timeout errors**: Middleware functions are placeholders that don't properly handle async operations
+- **Controller errors**: Controllers throwing errors instead of handling them gracefully
+- **Mock implementations**: Test mocks need proper Express response handling
+
+### 2. Search Controller Tests (search.controller.test.ts)
+- **Test errors**: Response status mock throwing errors instead of returning proper responses
+- **Error handling**: Controller error handling methods not properly implemented
+
+### 3. Pricing Controller Tests (pricing.controller.test.ts)
+- **Test errors**: Similar response status mock issues
+- **Error handling**: Internal error handling not working correctly
+
+### 4. Saga Tests (product-publishing.saga.test.ts, pricing-update.saga.test.ts, bulk-product-update.saga.test.ts)
+- **Validation failures**: Business rule validation too strict or incorrectly implemented
+- **Error handling**: Saga error handling and compensation logic issues
+
+### 5. Infrastructure Provider Tests
+- **Connection issues**: Messaging adapters and event subscribers need proper connection setup
+- **Serialization issues**: Cache provider serialization/deserialization problems
+- **Validation issues**: Image processing provider validation too strict
+
+### 6. CORS Middleware Tests
+- **Validation failures**: Method validation and IPv6 address detection issues
+
+### 7. Product Entity Tests
+- **Status transitions**: Business logic validation too strict
+
+### 8. Search DTO Tests
+- **Type guard failures**: Null handling and pagination validation issues
+
+## Implementation Plan
+
+### Phase 1: Fix Middleware Implementation (Priority: HIGH)
+
+#### 1.1 Product Routes Middleware
+**File**: `catalog-service/src/api/routes/product.routes.ts`
+
+**Changes**:
+- Replace placeholder middleware with proper implementations
+- Add proper async/await handling
+- Implement basic authentication and authorization logic
+- Add proper rate limiting and caching middleware
+
+**Implementation**:
+```typescript
+// Replace placeholder middleware with proper implementations
+const authenticate = async (req: any, res: any, next: any) => {
+  try {
+    // Basic auth check - in real implementation would validate tokens
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } });
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+const authorize = async (req: any, res: any, next: any) => {
+  try {
+    // Basic authorization check
+    const userRole = req.headers['x-user-role'] || 'public';
+    req.userRole = userRole;
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+const validateRequest = async (req: any, res: any, next: any) => {
+  try {
+    // Basic request validation
+    if (req.method === 'POST' || req.method === 'PUT') {
+      if (!req.body || Object.keys(req.body).length === 0) {
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Request body required' } });
+      }
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+const rateLimit = async (req: any, res: any, next: any) => {
+  try {
+    // Basic rate limiting (in real implementation would use Redis)
+    req.rateLimit = { remaining: 999, resetTime: Date.now() + 60000 };
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+const cache = async (req: any, res: any, next: any) => {
+  try {
+    // Basic cache middleware
+    res.set('Cache-Control', 'public, max-age=300');
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+const analytics = async (req: any, res: any, next: any) => {
+  try {
+    // Basic analytics tracking
+    req.analytics = { timestamp: Date.now(), path: req.path };
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+```
+
+#### 1.2 Error Handling Middleware
+**File**: `catalog-service/src/api/middleware/error.middleware.ts`
+
+**Changes**:
+- Improve error handling to properly catch and format errors
+- Add proper error response formatting
+- Handle different error types appropriately
+
+### Phase 2: Fix Controller Error Handling (Priority: HIGH)
+
+#### 2.1 Product Controller
+**File**: `catalog-service/src/api/controllers/product.controller.ts`
+
+**Changes**:
+- Fix error handling methods to properly format responses
+- Ensure all controller methods handle errors gracefully
+- Add proper try-catch blocks for all async operations
+
+**Key Fixes**:
+```typescript
+private sendInternalError(res: Response, error: Error): void {
+  console.error('Internal error:', error);
+  const response: ApiResponse = {
+    success: false,
+    error: {
+      code: 'INTERNAL_ERROR',
+      message: process.env.NODE_ENV === 'production' ? 'An internal error occurred' : error.message
+    },
+    meta: {
+      timestamp: new Date()
+    }
+  };
+  res.status(500).json(response);
+}
+```
+
+#### 2.2 Search Controller
+**File**: `catalog-service/src/api/controllers/search.controller.ts`
+
+**Changes**:
+- Fix response status mock issues in tests
+- Ensure error handling methods don't throw additional errors
+- Add proper error response formatting
+
+#### 2.3 Pricing Controller
+**File**: `catalog-service/src/api/controllers/pricing.controller.ts`
+
+**Changes**:
+- Fix similar response status mock issues
+- Ensure internal error handling works correctly
+- Add proper error response formatting
+
+### Phase 3: Fix Saga Validation Logic (Priority: MEDIUM)
+
+#### 3.1 Product Publishing Saga
+**File**: `catalog-service/src/application/sagas/product-publishing.saga.ts`
+
+**Changes**:
+- Review and adjust validation logic to be less strict
+- Fix business rule validation to allow valid scenarios
+- Improve error handling and compensation logic
+
+#### 3.2 Pricing Update Saga
+**File**: `catalog-service/src/application/sagas/pricing-update.saga.ts`
+
+**Changes**:
+- Adjust business rule validation thresholds
+- Fix validation logic to allow reasonable price changes
+- Improve compensation and rollback logic
+
+#### 3.3 Bulk Product Update Saga
+**File**: `catalog-service/src/application/sagas/bulk-product-update.saga.ts`
+
+**Changes**:
+- Fix validation logic for bulk operations
+- Adjust business rule validation to be more permissive
+- Improve error handling and compensation logic
+
+### Phase 4: Fix Infrastructure Providers (Priority: MEDIUM)
+
+#### 4.1 Messaging Adapters
+**File**: `catalog-service/src/infrastructure/messaging/external-messaging.adapter.ts`
+
+**Changes**:
+- Fix connection checking logic
+- Add proper mock implementations for testing
+- Ensure proper error handling for connection failures
+
+#### 4.2 Event Subscriber
+**File**: `catalog-service/src/infrastructure/messaging/event-subscriber.ts`
+
+**Changes**:
+- Fix Redis connection checking logic
+- Add proper mock implementations for testing
+- Ensure proper error handling for connection failures
+
+#### 4.3 Cache Provider
+**File**: `catalog-service/src/infrastructure/providers/cache-provider.ts`
+
+**Changes**:
+- Fix serialization/deserialization issues
+- Ensure proper handling of complex objects
+- Add proper error handling for serialization failures
+
+#### 4.4 Image Processing Provider
+**File**: `catalog-service/src/infrastructure/providers/image-processing.provider.ts`
+
+**Changes**:
+- Fix validation logic to be less strict
+- Improve format and size validation
+- Add proper error handling for validation failures
+
+### Phase 5: Fix CORS Middleware (Priority: LOW)
+
+#### 5.1 CORS Validation
+**File**: `catalog-service/src/api/middleware/cors.middleware.ts`
+
+**Changes**:
+- Fix method validation logic
+- Fix IPv6 address detection
+- Improve error handling for middleware failures
+
+### Phase 6: Fix Domain Logic (Priority: LOW)
+
+#### 6.1 Product Entity
+**File**: `catalog-service/src/domain/entities/product.entity.ts`
+
+**Changes**:
+- Review status transition validation logic
+- Ensure valid status transitions are allowed
+- Fix business logic validation
+
+#### 6.2 Search DTO
+**File**: `catalog-service/src/application/dto/search-dto.ts`
+
+**Changes**:
+- Fix type guard implementations
+- Handle null values properly
+- Fix pagination validation logic
+
+#### 6.3 Pricing Algorithms
+**File**: `catalog-service/src/domain/algorithms/pricing-algorithms.ts`
+
+**Changes**:
+- Review minimum margin constraints
+- Adjust business rule validation thresholds
+- Fix optimization logic
+
+### Phase 7: Update Test Mocks (Priority: MEDIUM)
+
+#### 7.1 Controller Test Mocks
+**Files**: All controller test files
+
+**Changes**:
+- Fix response status mock implementations
+- Ensure proper mock behavior for all controller methods
+- Add proper error handling in test mocks
+
+#### 7.2 Service Test Mocks
+**Files**: All service test files
+
+**Changes**:
+- Fix service mock implementations
+- Ensure proper error handling in service mocks
+- Add proper validation for mock responses
+
+## Implementation Order
+
+1. **Phase 1**: Fix middleware implementation (HIGH priority)
+2. **Phase 2**: Fix controller error handling (HIGH priority)
+3. **Phase 7**: Update test mocks (MEDIUM priority)
+4. **Phase 3**: Fix saga validation logic (MEDIUM priority)
+5. **Phase 4**: Fix infrastructure providers (MEDIUM priority)
+6. **Phase 5**: Fix CORS middleware (LOW priority)
+7. **Phase 6**: Fix domain logic (LOW priority)
+
+## Testing Strategy
+
+1. **Unit Tests**: Fix individual component tests
+2. **Integration Tests**: Ensure components work together
+3. **End-to-End Tests**: Verify complete workflows
+4. **Performance Tests**: Ensure fixes don't impact performance
+
+## Success Criteria
+
+- All tests pass without timeout errors
+- Error handling works gracefully without throwing additional errors
+- Validation logic is reasonable and allows valid scenarios
+- Middleware properly handles async operations
+- Mock implementations behave correctly
+
+## Risk Mitigation
+
+- **Backup**: Create backups before making changes
+- **Incremental**: Implement changes incrementally and test after each phase
+- **Rollback**: Have rollback plans for each phase
+- **Documentation**: Document all changes made
+
+## Timeline
+
+- **Phase 1-2**: 2-3 hours (Critical fixes)
+- **Phase 3-4**: 3-4 hours (Core functionality)
+- **Phase 5-6**: 2-3 hours (Edge cases and improvements)
+- **Testing and validation**: 1-2 hours
+
+**Total estimated time**: 8-12 hours

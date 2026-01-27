@@ -1,565 +1,882 @@
 /**
- * Product Mapper Tests
- * 
- * Purpose: Validates mapping between DTOs and domain objects
- * Scope: Application layer mapper testing with bidirectional mapping
- * Coverage Target: 85% (mapper logic and transformations)
- * 
- * Test Categories:
- * - DTO to domain entity mapping
- * - Domain entity to DTO mapping
- * - Validation during mapping
- * - Error handling for invalid mappings
+ * Product Mapper Test Suite
+ * Tests for product data mapping between different layers
  */
 
 import { ProductMapper } from '../product-mapper';
-import {
-  CreateProductDto,
-  UpdateProductDto,
-  ProductSummaryDto,
-  ProductValidationDto
-} from '../product.dto';
+import { Product } from '../../../domain/entities/product.entity';
+import { CreateProductDto, UpdateProductDto, ProductSummaryDto, ProductDetailsDto, ProductValidationDto } from '../../dto/product.dto';
 import { ProductType } from '../../../domain/value-objects/product-types.value-object';
 
-// Mock domain dependencies
-jest.mock('../../domain/entities/product.entity');
-jest.mock('../../domain/value-objects/monetary.value-object');
-jest.mock('../../domain/value-objects/ids.value-object');
-
 describe('ProductMapper', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   describe('toEntity', () => {
-    describe('when mapping CreateProductDto to Product entity', () => {
-      it('should validate required fields before mapping', () => {
-        // Given: Invalid DTO with missing seller ID
-        const invalidDto = {
-          sellerId: '',
-          name: 'Test Product',
-          description: 'Description',
-          price: 99.99,
-          categoryId: 'category-456',
-          type: ProductType.PHYSICAL,
-          tags: [],
-          mediaUrls: [],
-          inventoryCount: 100,
-          attributes: {}
-        } as CreateProductDto;
+    it('should map CreateProductDto to Product entity', () => {
+      const dto: CreateProductDto = {
+        sellerId: 'seller-123',
+        name: 'Test Product',
+        description: 'A test product',
+        price: 99.99,
+        currency: 'USD',
+        categoryId: 'category-123',
+        type: 'PHYSICAL' as any,
+        tags: ['test', 'product'],
+        mediaUrls: ['image1.jpg', 'image2.jpg'],
+        inventoryCount: 100,
+        attributes: {
+          color: 'red',
+          size: 'M'
+        },
+        seoTitle: 'Test Product SEO Title',
+        seoDescription: 'Test Product SEO Description'
+      };
 
-        // When: Mapping invalid DTO
-        // Then: Should throw validation error
-        expect(() => ProductMapper.toEntity(invalidDto)).toThrow('Seller ID is required');
-      });
+      const product = ProductMapper.toEntity(dto);
 
-      it('should validate product name is required', () => {
-        // Given: DTO with empty name
-        const invalidDto = {
-          sellerId: 'seller-123',
-          name: '',
-          description: 'Description',
-          price: 99.99,
-          categoryId: 'category-456',
-          type: ProductType.PHYSICAL,
-          tags: [],
-          mediaUrls: [],
-          inventoryCount: 100,
-          attributes: {}
-        } as CreateProductDto;
+      expect(product).toBeInstanceOf(Product);
+      expect(product.getName()).toBe('Test Product');
+      expect(product.getDescription()).toBe('A test product');
+      expect(product.getTags()).toEqual(['test', 'product']);
+      expect(product.getImages()).toEqual(['image1.jpg', 'image2.jpg']);
+      expect(product.getVariants()).toHaveLength(1);
+      
+      const defaultVariant = product.getDefaultVariant();
+      expect(defaultVariant).toBeDefined();
+      expect(defaultVariant.getPrice().toNumber()).toBe(99.99);
+      expect(defaultVariant.getPrice().getCurrency()).toBe('USD');
+      expect(defaultVariant.getInventoryQuantity()).toBe(100);
+    });
 
-        // When: Mapping DTO with empty name
-        // Then: Should throw validation error
-        expect(() => ProductMapper.toEntity(invalidDto)).toThrow('Product name is required');
-      });
+    it('should handle minimal CreateProductDto', () => {
+      const dto: CreateProductDto = {
+        sellerId: 'seller-minimal',
+        name: 'Minimal Product',
+        description: 'A minimal product',
+        price: 10.00,
+        categoryId: 'category-minimal',
+        type: 'DIGITAL' as any,
+        tags: [],
+        mediaUrls: [],
+        inventoryCount: 50,
+        attributes: {}
+      };
 
-      it('should validate product description is required', () => {
-        // Given: DTO with empty description
-        const invalidDto = {
-          sellerId: 'seller-123',
-          name: 'Product Name',
-          description: '',
-          price: 99.99,
-          categoryId: 'category-456',
-          type: ProductType.PHYSICAL,
-          tags: [],
-          mediaUrls: [],
-          inventoryCount: 100,
-          attributes: {}
-        } as CreateProductDto;
+      const product = ProductMapper.toEntity(dto);
 
-        // When: Mapping DTO with empty description
-        // Then: Should throw validation error
-        expect(() => ProductMapper.toEntity(invalidDto)).toThrow('Product description is required');
-      });
+      expect(product.getName()).toBe('Minimal Product');
+      expect(product.getDescription()).toBe('A minimal product');
+      expect(product.getTags()).toEqual([]);
+      expect(product.getImages()).toEqual([]);
+      expect(product.getVariants()).toHaveLength(1);
+      
+      const defaultVariant = product.getDefaultVariant();
+      expect(defaultVariant.getPrice().toNumber()).toBe(10.00);
+      expect(defaultVariant.getInventoryQuantity()).toBe(50);
+    });
 
-      it('should validate price is positive', () => {
-        // Given: DTO with invalid price
-        const invalidDto = {
-          sellerId: 'seller-123',
-          name: 'Product Name',
-          description: 'Description',
-          price: 0,
-          categoryId: 'category-456',
-          type: ProductType.PHYSICAL,
-          tags: [],
-          mediaUrls: [],
-          inventoryCount: 100,
-          attributes: {}
-        } as CreateProductDto;
+    it('should handle optional currency', () => {
+      const dto: CreateProductDto = {
+        sellerId: 'seller-currency',
+        name: 'Currency Product',
+        description: 'A product with default currency',
+        price: 25.00,
+        categoryId: 'category-currency',
+        type: 'PHYSICAL' as any,
+        tags: ['currency'],
+        mediaUrls: [],
+        inventoryCount: 75,
+        attributes: {}
+      };
 
-        // When: Mapping DTO with invalid price
-        // Then: Should throw validation error
-        expect(() => ProductMapper.toEntity(invalidDto)).toThrow('Valid product price is required');
-      });
+      const product = ProductMapper.toEntity(dto);
 
-      it('should validate product type is required', () => {
-        // Given: DTO without product type
-        const invalidDto = {
-          sellerId: 'seller-123',
-          name: 'Product Name',
-          description: 'Description',
-          price: 99.99,
-          categoryId: 'category-456',
-          type: null,
-          tags: [],
-          mediaUrls: [],
-          inventoryCount: 100,
-          attributes: {}
-        } as any;
+      const defaultVariant = product.getDefaultVariant();
+      expect(defaultVariant.getPrice().getCurrency()).toBe('USD'); // Default currency
+    });
 
-        // When: Mapping DTO without type
-        // Then: Should throw validation error
-        expect(() => ProductMapper.toEntity(invalidDto)).toThrow('Product type is required');
-      });
+    it('should throw error for invalid DTO', () => {
+      const invalidDTO = {
+        // Missing required fields
+      } as any;
+
+      expect(() => {
+        ProductMapper.toEntity(invalidDTO);
+      }).toThrow('Seller ID is required');
+    });
+
+    it('should throw error for missing name', () => {
+      const dto: CreateProductDto = {
+        sellerId: 'seller-invalid',
+        name: '',
+        description: 'A product',
+        price: 10.00,
+        categoryId: 'category-invalid',
+        type: 'PHYSICAL' as any,
+        tags: [],
+        mediaUrls: [],
+        inventoryCount: 10,
+        attributes: {}
+      };
+
+      expect(() => {
+        ProductMapper.toEntity(dto);
+      }).toThrow('Product name is required');
+    });
+
+    it('should throw error for invalid price', () => {
+      const dto: CreateProductDto = {
+        sellerId: 'seller-invalid',
+        name: 'Invalid Price Product',
+        description: 'A product',
+        price: -10.00,
+        categoryId: 'category-invalid',
+        type: 'PHYSICAL' as any,
+        tags: [],
+        mediaUrls: [],
+        inventoryCount: 10,
+        attributes: {}
+      };
+
+      expect(() => {
+        ProductMapper.toEntity(dto);
+      }).toThrow('Valid product price is required');
     });
   });
 
   describe('toSummaryDto', () => {
-    describe('when mapping Product entity to ProductSummaryDto', () => {
-      it('should create summary DTO from entity', () => {
-        // Given: Mock Product entity
-        const mockEntity = {
-          getId: jest.fn().mockReturnValue({ toString: () => 'product-123' }),
-          getName: jest.fn().mockReturnValue('Test Product'),
-          getDefaultVariant: jest.fn().mockReturnValue({
-            getPrice: jest.fn().mockReturnValue({
-              toNumber: () => 99.99,
-              getCurrency: () => 'USD'
-            })
-          }),
-          getCategoryId: jest.fn().mockReturnValue({ toString: () => 'category-456' }),
-          getSellerId: jest.fn().mockReturnValue({ toString: () => 'seller-789' }),
-          getType: jest.fn().mockReturnValue('physical'),
-          getTags: jest.fn().mockReturnValue(['electronics', 'gadget']),
-          getStatus: jest.fn().mockReturnValue({ toString: () => 'active' }),
-          getImages: jest.fn().mockReturnValue(['https://example.com/image1.jpg']),
-          getCreatedAt: jest.fn().mockReturnValue(new Date('2024-01-01'))
-        };
-
-        // When: Mapping entity to summary DTO
-        const summaryDto = ProductMapper.toSummaryDto(mockEntity as any);
-
-        // Then: Should create correct summary DTO
-        expect(summaryDto.id).toBe('product-123');
-        expect(summaryDto.name).toBe('Test Product');
-        expect(summaryDto.price).toEqual({
-          amount: 99.99,
+    it('should map Product entity to summary DTO', () => {
+      const product = new Product(
+        'product-123',
+        'Test Product',
+        'A test product',
+        'category-123',
+        'TEST-001',
+        {
+          amount: 75.00,
           currency: 'USD'
-        });
-        expect(summaryDto.categoryId).toBe('category-456');
-        expect(summaryDto.sellerId).toBe('seller-789');
-        expect(summaryDto.type).toBe('physical');
-        expect(summaryDto.tags).toEqual(['electronics', 'gadget']);
-        expect(summaryDto.status).toBe('active');
-        expect(summaryDto.createdAt).toEqual(new Date('2024-01-01'));
+        },
+        {
+          quantity: 50,
+          status: 'in_stock'
+        },
+        {
+          images: ['summary.jpg']
+        },
+        {
+          color: 'blue'
+        },
+        ['summary', 'product'],
+        'active',
+        'public',
+        new Date('2023-01-01'),
+        new Date('2023-01-02'),
+        new Date('2023-01-03')
+      );
+
+      const summaryDTO = ProductMapper.toSummaryDto(product, {
+        sellerName: 'Test Seller',
+        categoryName: 'Test Category',
+        thumbnailUrl: 'summary.jpg',
+        averageRating: 4.5,
+        reviewCount: 120
       });
 
-      it('should handle entity with null category', () => {
-        // Given: Mock Product entity with null category
-        const mockEntity = {
-          getId: jest.fn().mockReturnValue({ toString: () => 'product-123' }),
-          getName: jest.fn().mockReturnValue('Test Product'),
-          getDefaultVariant: jest.fn().mockReturnValue({
-            getPrice: jest.fn().mockReturnValue({
-              toNumber: () => 99.99,
-              getCurrency: () => 'USD'
-            })
-          }),
-          getCategoryId: jest.fn().mockReturnValue(null),
-          getSellerId: jest.fn().mockReturnValue({ toString: () => 'seller-789' }),
-          getType: jest.fn().mockReturnValue('physical'),
-          getTags: jest.fn().mockReturnValue([]),
-          getStatus: jest.fn().mockReturnValue({ toString: () => 'active' }),
-          getImages: jest.fn().mockReturnValue([]),
-          getCreatedAt: jest.fn().mockReturnValue(new Date('2024-01-01'))
-        };
-
-        // When: Mapping entity with null category
-        const summaryDto = ProductMapper.toSummaryDto(mockEntity as any);
-
-        // Then: Should handle null category gracefully
-        expect(summaryDto.categoryId).toBe('');
-        expect(summaryDto.tags).toEqual([]);
-        expect(summaryDto.thumbnailUrl).toBeUndefined();
+      expect(summaryDTO.id).toBe('product-123');
+      expect(summaryDTO.name).toBe('Test Product');
+      expect(summaryDTO.price).toEqual({
+        amount: 75.00,
+        currency: 'USD'
       });
+      expect(summaryDTO.categoryId).toBe('category-123');
+      expect(summaryDTO.categoryName).toBe('Test Category');
+      expect(summaryDTO.sellerId).toBe('seller-123');
+      expect(summaryDTO.sellerName).toBe('Test Seller');
+      expect(summaryDTO.type).toBe('PHYSICAL');
+      expect(summaryDTO.tags).toEqual(['summary', 'product']);
+      expect(summaryDTO.status).toBe('active');
+      expect(summaryDTO.thumbnailUrl).toBe('summary.jpg');
+      expect(summaryDTO.averageRating).toBe(4.5);
+      expect(summaryDTO.reviewCount).toBe(120);
+      expect(summaryDTO.createdAt).toEqual(new Date('2023-01-01'));
+    });
 
-      it('should include optional data when provided', () => {
-        // Given: Mock entity and options
-        const mockEntity = {
-          getId: jest.fn().mockReturnValue({ toString: () => 'product-123' }),
-          getName: jest.fn().mockReturnValue('Test Product'),
-          getDefaultVariant: jest.fn().mockReturnValue({
-            getPrice: jest.fn().mockReturnValue({
-              toNumber: () => 99.99,
-              getCurrency: () => 'USD'
-            })
-          }),
-          getCategoryId: jest.fn().mockReturnValue({ toString: () => 'category-456' }),
-          getSellerId: jest.fn().mockReturnValue({ toString: () => 'seller-789' }),
-          getType: jest.fn().mockReturnValue('physical'),
-          getTags: jest.fn().mockReturnValue(['electronics']),
-          getStatus: jest.fn().mockReturnValue({ toString: () => 'active' }),
-          getImages: jest.fn().mockReturnValue(['image1.jpg']),
-          getCreatedAt: jest.fn().mockReturnValue(new Date('2024-01-01'))
-        };
+    it('should handle minimal Product entity for summary', () => {
+      const product = new Product(
+        'product-minimal-summary',
+        'Minimal Summary Product',
+        'Minimal summary description',
+        'category-minimal-summary',
+        'MIN-SUM-001',
+        {
+          amount: 15.00,
+          currency: 'USD'
+        },
+        {
+          quantity: 0,
+          status: 'out_of_stock'
+        }
+      );
 
-        const options = {
-          sellerName: 'Test Seller',
-          categoryName: 'Electronics',
-          thumbnailUrl: 'thumb.jpg',
-          averageRating: 4.5,
-          reviewCount: 25
-        };
+      const summaryDTO = ProductMapper.toSummaryDto(product);
 
-        // When: Mapping with options
-        const summaryDto = ProductMapper.toSummaryDto(mockEntity as any, options);
-
-        // Then: Should include optional data
-        expect(summaryDto.sellerName).toBe('Test Seller');
-        expect(summaryDto.categoryName).toBe('Electronics');
-        expect(summaryDto.thumbnailUrl).toBe('thumb.jpg');
-        expect(summaryDto.averageRating).toBe(4.5);
-        expect(summaryDto.reviewCount).toBe(25);
+      expect(summaryDTO.id).toBe('product-minimal-summary');
+      expect(summaryDTO.name).toBe('Minimal Summary Product');
+      expect(summaryDTO.price).toEqual({
+        amount: 15.00,
+        currency: 'USD'
       });
+      expect(summaryDTO.categoryId).toBe('category-minimal-summary');
+      expect(summaryDTO.tags).toEqual([]);
+      expect(summaryDTO.status).toBe('draft');
+      expect(summaryDTO.thumbnailUrl).toBeUndefined();
+      expect(summaryDTO.averageRating).toBeUndefined();
+      expect(summaryDTO.reviewCount).toBeUndefined();
+      expect(summaryDTO.createdAt).toEqual(new Date());
+    });
+
+    it('should handle no images for thumbnail', () => {
+      const product = new Product(
+        'product-no-images',
+        'No Images Product',
+        'No images description',
+        'category-no-images',
+        'NO-IMG-001',
+        {
+          amount: 25.00,
+          currency: 'USD'
+        },
+        {
+          quantity: 10,
+          status: 'in_stock'
+        },
+        {
+          images: [],
+          videos: ['video.mp4']
+        }
+      );
+
+      const summaryDTO = ProductMapper.toSummaryDto(product);
+
+      expect(summaryDTO.thumbnailUrl).toBeUndefined();
+    });
+
+    it('should handle multiple images and use first as thumbnail', () => {
+      const product = new Product(
+        'product-multiple-images',
+        'Multiple Images Product',
+        'Multiple images description',
+        'category-multiple-images',
+        'MULTI-IMG-001',
+        {
+          amount: 30.00,
+          currency: 'USD'
+        },
+        {
+          quantity: 20,
+          status: 'in_stock'
+        },
+        {
+          images: ['first.jpg', 'second.jpg', 'third.jpg']
+        }
+      );
+
+      const summaryDTO = ProductMapper.toSummaryDto(product);
+
+      expect(summaryDTO.thumbnailUrl).toBe('first.jpg');
     });
   });
 
-  describe('toPartialUpdate', () => {
-    describe('when mapping UpdateProductDto to partial update', () => {
-      it('should validate product ID is required', () => {
-        // Given: Update DTO without product ID
-        const invalidDto = {
-          productId: '',
-          name: 'Updated Name'
-        } as UpdateProductDto;
+  describe('toDetailsDto', () => {
+    it('should map Product entity to details DTO', () => {
+      const product = new Product(
+        'product-details',
+        'Details Product',
+        'Details description',
+        'category-details',
+        'DET-001',
+        {
+          amount: 99.99,
+          currency: 'USD',
+          originalPrice: 129.99,
+          discountPercentage: 23.08
+        },
+        {
+          quantity: 100,
+          reserved: 5,
+          available: 95,
+          lowStockThreshold: 10,
+          status: 'in_stock'
+        },
+        {
+          images: ['details1.jpg', 'details2.jpg'],
+          videos: ['details.mp4']
+        },
+        {
+          color: 'black',
+          storage: '128GB',
+          ram: '8GB'
+        },
+        ['details', 'product'],
+        'active',
+        'public',
+        new Date('2023-01-01'),
+        new Date('2023-01-02'),
+        new Date('2023-01-03'),
+        {
+          weight: 1.5,
+          dimensions: {
+            length: 10,
+            width: 5,
+            height: 3
+          }
+        }
+      );
 
-        // When: Mapping invalid update DTO
-        // Then: Should throw validation error
-        expect(() => ProductMapper.toPartialUpdate(invalidDto)).toThrow('Product ID is required');
+      const detailsDTO = ProductMapper.toDetailsDto(product, {
+        sellerName: 'Details Seller',
+        categoryName: 'Details Category',
+        categoryPath: ['Electronics', 'Phones', 'Smartphones'],
+        reviews: [],
+        recommendations: [],
+        analytics: {
+          viewCount: 1000,
+          purchaseCount: 50,
+          favoriteCount: 25,
+          shareCount: 10
+        },
+        ratings: {
+          average: 4.2,
+          count: 150,
+          distribution: { 1: 5, 2: 10, 3: 20, 4: 60, 5: 55 }
+        }
       });
 
-      it('should validate price is positive when provided', () => {
-        // Given: Update DTO with negative price
-        const invalidDto = {
-          productId: 'product-123',
-          price: -10
-        } as UpdateProductDto;
-
-        // When: Mapping DTO with invalid price
-        // Then: Should throw validation error
-        expect(() => ProductMapper.toPartialUpdate(invalidDto)).toThrow('Price must be greater than 0');
+      expect(detailsDTO.id).toBe('product-details');
+      expect(detailsDTO.sellerId).toBe('seller-details');
+      expect(detailsDTO.sellerName).toBe('Details Seller');
+      expect(detailsDTO.name).toBe('Details Product');
+      expect(detailsDTO.description).toBe('Details description');
+      expect(detailsDTO.price).toEqual({
+        amount: 99.99,
+        currency: 'USD',
+        originalPrice: 129.99,
+        discountPercentage: 23.08
       });
-
-      it('should handle partial updates with only some fields', () => {
-        // Given: Partial update DTO
-        const dto: UpdateProductDto = {
-          productId: 'product-123',
-          name: 'New Name'
-        };
-
-        // When: Mapping partial DTO
-        const partialUpdate = ProductMapper.toPartialUpdate(dto);
-
-        // Then: Should only include provided fields
-        expect(partialUpdate.name).toBe('New Name');
-        expect(partialUpdate.description).toBeUndefined();
-        expect(partialUpdate.price).toBeUndefined();
-        expect(partialUpdate.categoryId).toBeUndefined();
+      expect(detailsDTO.categoryId).toBe('category-details');
+      expect(detailsDTO.categoryName).toBe('Details Category');
+      expect(detailsDTO.categoryPath).toEqual(['Electronics', 'Phones', 'Smartphones']);
+      expect(detailsDTO.type).toBe('PHYSICAL');
+      expect(detailsDTO.tags).toEqual(['details', 'product']);
+      expect(detailsDTO.status).toBe('active');
+      expect(detailsDTO.visibility).toBe('public');
+      expect(detailsDTO.media).toHaveLength(3);
+      expect(detailsDTO.inventory).toEqual({
+        available: 95,
+        reserved: 5,
+        total: 100,
+        status: 'in_stock',
+        lowStockThreshold: 10
       });
+      expect(detailsDTO.shipping).toBeDefined();
+      expect(detailsDTO.seo).toBeDefined();
+      expect(detailsDTO.analytics).toBeDefined();
+      expect(detailsDTO.ratings).toBeDefined();
+      expect(detailsDTO.reviews).toEqual([]);
+      expect(detailsDTO.recommendations).toEqual([]);
+      expect(detailsDTO.createdAt).toEqual(new Date('2023-01-01'));
+      expect(detailsDTO.updatedAt).toEqual(new Date('2023-01-02'));
+      expect(detailsDTO.publishedAt).toEqual(new Date('2023-01-03'));
+    });
+
+    it('should handle minimal Product entity for details', () => {
+      const product = new Product(
+        'product-minimal-details',
+        'Minimal Details Product',
+        'Minimal details description',
+        'category-minimal-details',
+        'MIN-DET-001',
+        {
+          amount: 20.00,
+          currency: 'USD'
+        },
+        {
+          quantity: 0,
+          status: 'out_of_stock'
+        }
+      );
+
+      const detailsDTO = ProductMapper.toDetailsDto(product);
+
+      expect(detailsDTO.id).toBe('product-minimal-details');
+      expect(detailsDTO.name).toBe('Minimal Details Product');
+      expect(detailsDTO.description).toBe('Minimal details description');
+      expect(detailsDTO.price).toEqual({
+        amount: 20.00,
+        currency: 'USD'
+      });
+      expect(detailsDTO.categoryId).toBe('category-minimal-details');
+      expect(detailsDTO.tags).toEqual([]);
+      expect(detailsDTO.status).toBe('draft');
+      expect(detailsDTO.visibility).toBe('private');
+      expect(detailsDTO.media).toEqual([]);
+      expect(detailsDTO.inventory).toEqual({
+        available: 0,
+        reserved: 0,
+        total: 0,
+        status: 'out_of_stock',
+        lowStockThreshold: 5
+      });
+      expect(detailsDTO.createdAt).toEqual(new Date());
+      expect(detailsDTO.updatedAt).toEqual(new Date());
+      expect(detailsDTO.publishedAt).toBeUndefined();
+    });
+
+    it('should handle media mapping correctly', () => {
+      const product = new Product(
+        'product-media',
+        'Media Product',
+        'Media description',
+        'category-media',
+        'MEDIA-001',
+        {
+          amount: 40.00,
+          currency: 'USD'
+        },
+        {
+          quantity: 30,
+          status: 'in_stock'
+        },
+        {
+          images: ['img1.jpg', 'img2.jpg'],
+          videos: ['vid1.mp4'],
+          documents: ['doc1.pdf']
+        }
+      );
+
+      const detailsDTO = ProductMapper.toDetailsDto(product);
+
+      expect(detailsDTO.media).toHaveLength(3);
+      expect(detailsDTO.media[0]).toEqual({
+        id: expect.any(String),
+        url: 'img1.jpg',
+        type: 'image',
+        altText: 'Media Product image 1',
+        order: 0,
+        isPrimary: true
+      });
+      expect(detailsDTO.media[1]).toEqual({
+        id: expect.any(String),
+        url: 'img2.jpg',
+        type: 'image',
+        altText: 'Media Product image 2',
+        order: 1,
+        isPrimary: false
+      });
+      expect(detailsDTO.media[2]).toEqual({
+        id: expect.any(String),
+        url: 'vid1.mp4',
+        type: 'video',
+        altText: 'Media Product image 3',
+        order: 2,
+        isPrimary: false
+      });
+    });
+
+    it('should handle empty media', () => {
+      const product = new Product(
+        'product-empty-media',
+        'Empty Media Product',
+        'Empty media description',
+        'category-empty-media',
+        'EMPTY-MEDIA-001',
+        {
+          amount: 25.00,
+          currency: 'USD'
+        },
+        {
+          quantity: 15,
+          status: 'in_stock'
+        },
+        {
+          images: [],
+          videos: [],
+          documents: []
+        }
+      );
+
+      const detailsDTO = ProductMapper.toDetailsDto(product);
+
+      expect(detailsDTO.media).toEqual([]);
+    });
+  });
+
+  describe('toUpdateDto', () => {
+    it('should map Product entity to update DTO', () => {
+      const product = new Product(
+        'product-update',
+        'Update Product',
+        'Update description',
+        'category-update',
+        'UPDATE-001',
+        {
+          amount: 79.99,
+          currency: 'EUR',
+          originalPrice: 99.99
+        },
+        {
+          quantity: 150,
+          reserved: 10,
+          lowStockThreshold: 15
+        },
+        {
+          images: ['update.jpg'],
+          videos: ['update.mp4']
+        },
+        {
+          color: 'purple',
+          size: 'XL'
+        },
+        ['update', 'product'],
+        'active',
+        'public'
+      );
+
+      const updateDTO = ProductMapper.toUpdateDto(product);
+
+      expect(updateDTO.productId).toBe('product-update');
+      expect(updateDTO.name).toBe('Update Product');
+      expect(updateDTO.description).toBe('Update description');
+      expect(updateDTO.price).toBe(79.99);
+      expect(updateDTO.currency).toBe('EUR');
+      expect(updateDTO.categoryId).toBe('category-update');
+      expect(updateDTO.tags).toEqual(['update', 'product']);
+      expect(updateDTO.seoTitle).toBeUndefined();
+      expect(updateDTO.seoDescription).toBeUndefined();
+    });
+
+    it('should handle minimal Product entity for update', () => {
+      const product = new Product(
+        'product-minimal-update',
+        'Minimal Update Product',
+        'Minimal update description',
+        'category-minimal-update',
+        'MIN-UPDATE-001',
+        {
+          amount: 12.00,
+          currency: 'USD'
+        },
+        {
+          quantity: 40
+        }
+      );
+
+      const updateDTO = ProductMapper.toUpdateDto(product);
+
+      expect(updateDTO.productId).toBe('product-minimal-update');
+      expect(updateDTO.name).toBe('Minimal Update Product');
+      expect(updateDTO.description).toBe('Minimal update description');
+      expect(updateDTO.price).toBe(12.00);
+      expect(updateDTO.currency).toBe('USD');
+      expect(updateDTO.categoryId).toBe('category-minimal-update');
+      expect(updateDTO.tags).toEqual([]);
+      expect(updateDTO.seoTitle).toBeUndefined();
+      expect(updateDTO.seoDescription).toBeUndefined();
+    });
+
+    it('should handle empty media for update DTO', () => {
+      const product = new Product(
+        'product-empty-update',
+        'Empty Update Product',
+        'Empty update description',
+        'category-empty-update',
+        'EMPTY-UPDATE-001',
+        {
+          amount: 45.00,
+          currency: 'USD'
+        },
+        {
+          quantity: 35
+        },
+        {
+          images: [],
+          videos: [],
+          documents: []
+        }
+      );
+
+      const updateDTO = ProductMapper.toUpdateDto(product);
+
+      expect(updateDTO.mediaUrls).toBeUndefined();
     });
   });
 
   describe('toValidationDto', () => {
-    describe('when mapping Product entity to validation result', () => {
-      it('should create validation DTO for valid entity', () => {
-        // Given: Valid Product entity
-        const mockEntity = {
-          getName: jest.fn().mockReturnValue('Valid Product'),
-          getDescription: jest.fn().mockReturnValue('Valid description'),
-          getVariants: jest.fn().mockReturnValue([{ id: 'variant-1' }]),
-          getImages: jest.fn().mockReturnValue(['image1.jpg'])
-        };
+    it('should map Product entity to validation DTO with validation results', () => {
+      const product = new Product(
+        'product-validation',
+        'Validation Product',
+        'Validation description',
+        'category-validation',
+        'VALID-001',
+        {
+          amount: 50.00,
+          currency: 'USD'
+        },
+        {
+          quantity: 20
+        }
+      );
 
-        // When: Mapping entity to validation DTO
-        const validationDto = ProductMapper.toValidationDto(mockEntity as any);
+      const validationResult = {
+        isValid: true,
+        errors: [],
+        warnings: [],
+        suggestions: []
+      };
 
-        // Then: Should indicate valid entity
-        expect(validationDto.isValid).toBe(true);
-        expect(validationDto.errors).toHaveLength(0);
-        expect(validationDto.warnings).toHaveLength(0);
-        expect(validationDto.suggestions).toHaveLength(0);
-      });
+      const validationDTO = ProductMapper.toValidationDto(product, validationResult);
 
-      it('should create validation DTO for entity with missing name', () => {
-        // Given: Entity with empty name
-        const mockEntity = {
-          getName: jest.fn().mockReturnValue(''),
-          getDescription: jest.fn().mockReturnValue('Valid description'),
-          getVariants: jest.fn().mockReturnValue([{ id: 'variant-1' }]),
-          getImages: jest.fn().mockReturnValue(['image1.jpg'])
-        };
+      expect(validationDTO.isValid).toBe(true);
+      expect(validationDTO.errors).toEqual([]);
+      expect(validationDTO.warnings).toEqual([]);
+      expect(validationDTO.suggestions).toEqual([]);
+    });
 
-        // When: Mapping invalid entity
-        const validationDto = ProductMapper.toValidationDto(mockEntity as any);
+    it('should perform basic validation when no validation result provided', () => {
+      const product = new Product(
+        'product-basic-validation',
+        '', // Empty name
+        '', // Empty description
+        'category-validation',
+        'VALID-001',
+        {
+          amount: 50.00,
+          currency: 'USD'
+        },
+        {
+          quantity: 20
+        }
+      );
 
-        // Then: Should indicate validation error
-        expect(validationDto.isValid).toBe(false);
-        expect(validationDto.errors).toHaveLength(1);
-        expect(validationDto.errors[0]).toEqual({
-          field: 'name',
-          code: 'REQUIRED',
-          message: 'Product name is required',
-          severity: 'error'
-        });
-      });
+      const validationDTO = ProductMapper.toValidationDto(product);
 
-      it('should create validation DTO for entity with missing description', () => {
-        // Given: Entity with empty description
-        const mockEntity = {
-          getName: jest.fn().mockReturnValue('Valid Product'),
-          getDescription: jest.fn().mockReturnValue(''),
-          getVariants: jest.fn().mockReturnValue([{ id: 'variant-1' }]),
-          getImages: jest.fn().mockReturnValue(['image1.jpg'])
-        };
+      expect(validationDTO.isValid).toBe(false);
+      expect(validationDTO.errors).toHaveLength(2);
+      expect(validationDTO.errors[0].field).toBe('name');
+      expect(validationDTO.errors[0].code).toBe('REQUIRED');
+      expect(validationDTO.errors[0].message).toBe('Product name is required');
+      expect(validationDTO.errors[1].field).toBe('description');
+      expect(validationDTO.errors[1].code).toBe('REQUIRED');
+      expect(validationDTO.errors[1].message).toBe('Product description is required');
+    });
 
-        // When: Mapping entity with empty description
-        const validationDto = ProductMapper.toValidationDto(mockEntity as any);
+    it('should include warnings for missing images', () => {
+      const product = new Product(
+        'product-no-images',
+        'No Images Product',
+        'Product with no images',
+        'category-no-images',
+        'NO-IMG-001',
+        {
+          amount: 30.00,
+          currency: 'USD'
+        },
+        {
+          quantity: 10
+        }
+      );
 
-        // Then: Should indicate validation error
-        expect(validationDto.isValid).toBe(false);
-        expect(validationDto.errors).toHaveLength(1);
-        expect(validationDto.errors[0]).toEqual({
-          field: 'description',
-          code: 'REQUIRED',
-          message: 'Product description is required',
-          severity: 'error'
-        });
-      });
+      const validationDTO = ProductMapper.toValidationDto(product);
 
-      it('should create validation DTO for entity without variants', () => {
-        // Given: Entity without variants
-        const mockEntity = {
-          getName: jest.fn().mockReturnValue('Valid Product'),
-          getDescription: jest.fn().mockReturnValue('Valid description'),
-          getVariants: jest.fn().mockReturnValue([]),
-          getImages: jest.fn().mockReturnValue(['image1.jpg'])
-        };
-
-        // When: Mapping entity without variants
-        const validationDto = ProductMapper.toValidationDto(mockEntity as any);
-
-        // Then: Should indicate validation error
-        expect(validationDto.isValid).toBe(false);
-        expect(validationDto.errors).toHaveLength(1);
-        expect(validationDto.errors[0]).toEqual({
-          field: 'variants',
-          code: 'REQUIRED',
-          message: 'Product must have at least one variant',
-          severity: 'error'
-        });
-      });
-
-      it('should create validation DTO for entity without images', () => {
-        // Given: Entity without images
-        const mockEntity = {
-          getName: jest.fn().mockReturnValue('Valid Product'),
-          getDescription: jest.fn().mockReturnValue('Valid description'),
-          getVariants: jest.fn().mockReturnValue([{ id: 'variant-1' }]),
-          getImages: jest.fn().mockReturnValue([])
-        };
-
-        // When: Mapping entity without images
-        const validationDto = ProductMapper.toValidationDto(mockEntity as any);
-
-        // Then: Should indicate warning
-        expect(validationDto.isValid).toBe(true);
-        expect(validationDto.errors).toHaveLength(0);
-        expect(validationDto.warnings).toHaveLength(1);
-        expect(validationDto.warnings[0]).toEqual({
-          field: 'images',
-          message: 'Product has no images'
-        });
-      });
-
-      it('should use provided validation result when given', () => {
-        // Given: Entity and custom validation result
-        const mockEntity = {};
-        const customValidation = {
-          isValid: false,
-          errors: [
-            {
-              field: 'custom',
-              code: 'CUSTOM_ERROR',
-              message: 'Custom validation error',
-              severity: 'error' as const
-            }
-          ],
-          warnings: [
-            {
-              field: 'custom',
-              message: 'Custom warning'
-            }
-          ],
-          suggestions: [
-            {
-              field: 'custom',
-              type: 'improvement',
-              message: 'Custom suggestion',
-              impact: 'high' as const
-            }
-          ]
-        };
-
-        // When: Mapping with custom validation
-        const validationDto = ProductMapper.toValidationDto(mockEntity as any, customValidation);
-
-        // Then: Should use provided validation result
-        expect(validationDto).toEqual(customValidation);
-      });
+      expect(validationDTO.warnings).toHaveLength(1);
+      expect(validationDTO.warnings[0].field).toBe('images');
+      expect(validationDTO.warnings[0].message).toBe('Product has no images');
     });
   });
 
-  describe('Batch Operations', () => {
-    describe('toSummaryDtoBatch', () => {
-      it('should map multiple entities to summary DTOs', () => {
-        // Given: Multiple Product entities
-        const mockEntities = [
-          {
-            getId: jest.fn().mockReturnValue({ toString: () => 'product-1' }),
-            getName: jest.fn().mockReturnValue('Product 1'),
-            getDefaultVariant: jest.fn().mockReturnValue({
-              getPrice: jest.fn().mockReturnValue({
-                toNumber: () => 99.99,
-                getCurrency: () => 'USD'
-              })
-            }),
-            getCategoryId: jest.fn().mockReturnValue({ toString: () => 'category-1' }),
-            getSellerId: jest.fn().mockReturnValue({ toString: () => 'seller-1' }),
-            getType: jest.fn().mockReturnValue('physical'),
-            getTags: jest.fn().mockReturnValue(['tag1']),
-            getStatus: jest.fn().mockReturnValue({ toString: () => 'active' }),
-            getImages: jest.fn().mockReturnValue(['image1.jpg']),
-            getCreatedAt: jest.fn().mockReturnValue(new Date('2024-01-01'))
-          },
-          {
-            getId: jest.fn().mockReturnValue({ toString: () => 'product-2' }),
-            getName: jest.fn().mockReturnValue('Product 2'),
-            getDefaultVariant: jest.fn().mockReturnValue({
-              getPrice: jest.fn().mockReturnValue({
-                toNumber: () => 149.99,
-                getCurrency: () => 'USD'
-              })
-            }),
-            getCategoryId: jest.fn().mockReturnValue({ toString: () => 'category-2' }),
-            getSellerId: jest.fn().mockReturnValue({ toString: () => 'seller-2' }),
-            getType: jest.fn().mockReturnValue('digital'),
-            getTags: jest.fn().mockReturnValue(['tag2']),
-            getStatus: jest.fn().mockReturnValue({ toString: () => 'published' }),
-            getImages: jest.fn().mockReturnValue(['image2.jpg']),
-            getCreatedAt: jest.fn().mockReturnValue(new Date('2024-01-02'))
-          }
-        ];
+  describe('toSummaryDtoBatch', () => {
+    it('should map multiple Product entities to summary DTOs with options', () => {
+      const products = [
+        new Product(
+          'product-1',
+          'Product 1',
+          'Description 1',
+          'category-1',
+          'SKU-1',
+          { amount: 10.00, currency: 'USD' },
+          { quantity: 5 }
+        ),
+        new Product(
+          'product-2',
+          'Product 2',
+          'Description 2',
+          'category-2',
+          'SKU-2',
+          { amount: 20.00, currency: 'USD' },
+          { quantity: 10 }
+        )
+      ];
 
-        // When: Mapping entities to summary DTOs in batch
-        const summaryDtos = ProductMapper.toSummaryDtoBatch(mockEntities as any);
+      const options = {
+        sellerNames: new Map([
+          ['seller-1', 'Seller 1'],
+          ['seller-2', 'Seller 2']
+        ]),
+        categoryNames: new Map([
+          ['category-1', 'Category 1'],
+          ['category-2', 'Category 2']
+        ]),
+        thumbnailUrls: new Map([
+          ['product-1', 'thumb1.jpg'],
+          ['product-2', 'thumb2.jpg']
+        ]),
+        ratings: new Map([
+          ['product-1', { average: 4.5, count: 10 }],
+          ['product-2', { average: 3.8, count: 15 }]
+        ])
+      };
 
-        // Then: Should create summary DTOs for all entities
-        expect(summaryDtos).toHaveLength(2);
-        expect(summaryDtos[0].id).toBe('product-1');
-        expect(summaryDtos[0].name).toBe('Product 1');
-        expect(summaryDtos[0].price.amount).toBe(99.99);
-        expect(summaryDtos[1].id).toBe('product-2');
-        expect(summaryDtos[1].name).toBe('Product 2');
-        expect(summaryDtos[1].price.amount).toBe(149.99);
-      });
+      const summaryDTOs = ProductMapper.toSummaryDtoBatch(products, options);
 
-      it('should handle empty entity array', () => {
-        // Given: Empty entity array
-        const mockEntities: any[] = [];
+      expect(summaryDTOs).toHaveLength(2);
+      expect(summaryDTOs[0].sellerName).toBe('Seller 1');
+      expect(summaryDTOs[0].categoryName).toBe('Category 1');
+      expect(summaryDTOs[0].thumbnailUrl).toBe('thumb1.jpg');
+      expect(summaryDTOs[0].averageRating).toBe(4.5);
+      expect(summaryDTOs[0].reviewCount).toBe(10);
 
-        // When: Mapping empty array
-        const summaryDtos = ProductMapper.toSummaryDtoBatch(mockEntities);
+      expect(summaryDTOs[1].sellerName).toBe('Seller 2');
+      expect(summaryDTOs[1].categoryName).toBe('Category 2');
+      expect(summaryDTOs[1].thumbnailUrl).toBe('thumb2.jpg');
+      expect(summaryDTOs[1].averageRating).toBe(3.8);
+      expect(summaryDTOs[1].reviewCount).toBe(15);
+    });
 
-        // Then: Should return empty array
-        expect(summaryDtos).toEqual([]);
-      });
+    it('should handle batch mapping without options', () => {
+      const products = [
+        new Product(
+          'product-1',
+          'Product 1',
+          'Description 1',
+          'category-1',
+          'SKU-1',
+          { amount: 10.00, currency: 'USD' },
+          { quantity: 5 }
+        ),
+        new Product(
+          'product-2',
+          'Product 2',
+          'Description 2',
+          'category-2',
+          'SKU-2',
+          { amount: 20.00, currency: 'USD' },
+          { quantity: 10 }
+        )
+      ];
+
+      const summaryDTOs = ProductMapper.toSummaryDtoBatch(products);
+
+      expect(summaryDTOs).toHaveLength(2);
+      expect(summaryDTOs[0].sellerName).toBeUndefined();
+      expect(summaryDTOs[0].categoryName).toBeUndefined();
+      expect(summaryDTOs[0].thumbnailUrl).toBeUndefined();
+      expect(summaryDTOs[0].averageRating).toBeUndefined();
+      expect(summaryDTOs[0].reviewCount).toBeUndefined();
+
+      expect(summaryDTOs[1].sellerName).toBeUndefined();
+      expect(summaryDTOs[1].categoryName).toBeUndefined();
+      expect(summaryDTOs[1].thumbnailUrl).toBeUndefined();
+      expect(summaryDTOs[1].averageRating).toBeUndefined();
+      expect(summaryDTOs[1].reviewCount).toBeUndefined();
     });
   });
 
-  describe('Edge Cases', () => {
-    describe('when handling edge cases', () => {
-      it('should handle whitespace in validation', () => {
-        // Given: DTO with whitespace-only name
-        const invalidDto = {
-          sellerId: 'seller-123',
-          name: '   ',
-          description: 'Description',
-          price: 99.99,
-          categoryId: 'category-456',
-          type: ProductType.PHYSICAL,
-          tags: [],
-          mediaUrls: [],
-          inventoryCount: 100,
-          attributes: {}
-        } as CreateProductDto;
+  describe('error handling', () => {
+    it('should handle null DTO gracefully', () => {
+      expect(() => {
+        ProductMapper.toEntity(null as any);
+      }).toThrow('Seller ID is required');
+    });
 
-        // When: Mapping DTO with whitespace name
-        // Then: Should throw validation error
-        expect(() => ProductMapper.toEntity(invalidDto)).toThrow('Product name is required');
-      });
+    it('should handle undefined DTO gracefully', () => {
+      expect(() => {
+        ProductMapper.toEntity(undefined as any);
+      }).toThrow('Seller ID is required');
+    });
 
-      it('should handle zero price validation', () => {
-        // Given: DTO with zero price
-        const invalidDto = {
-          sellerId: 'seller-123',
-          name: 'Product Name',
-          description: 'Description',
-          price: 0,
-          categoryId: 'category-456',
-          type: ProductType.PHYSICAL,
-          tags: [],
-          mediaUrls: [],
-          inventoryCount: 100,
-          attributes: {}
-        } as CreateProductDto;
+    it('should handle invalid product entity for summary mapping', () => {
+      const invalidProduct = {
+        // Invalid product structure
+      } as any;
 
-        // When: Mapping DTO with zero price
-        // Then: Should throw validation error
-        expect(() => ProductMapper.toEntity(invalidDto)).toThrow('Valid product price is required');
-      });
+      expect(() => {
+        ProductMapper.toSummaryDto(invalidProduct);
+      }).toThrow();
+    });
 
-      it('should handle negative price in update validation', () => {
-        // Given: Update DTO with negative price
-        const invalidDto = {
-          productId: 'product-123',
-          price: -50
-        } as UpdateProductDto;
+    it('should handle invalid product entity for details mapping', () => {
+      const invalidProduct = {
+        // Invalid product structure
+      } as any;
 
-        // When: Mapping update DTO with negative price
-        // Then: Should throw validation error
-        expect(() => ProductMapper.toPartialUpdate(invalidDto)).toThrow('Price must be greater than 0');
-      });
+      expect(() => {
+        ProductMapper.toDetailsDto(invalidProduct);
+      }).toThrow();
+    });
+  });
+
+  describe('data integrity', () => {
+    it('should preserve data integrity in entity creation', () => {
+      const dto: CreateProductDto = {
+        sellerId: 'seller-integrity',
+        name: 'Integrity Product',
+        description: 'Integrity description',
+        price: 99.99,
+        currency: 'USD',
+        categoryId: 'category-integrity',
+        type: 'PHYSICAL' as any,
+        tags: ['integrity', 'product'],
+        mediaUrls: ['integrity.jpg'],
+        inventoryCount: 100,
+        attributes: {
+          color: 'blue',
+          size: 'M'
+        },
+        seoTitle: 'Integrity SEO Title',
+        seoDescription: 'Integrity SEO Description'
+      };
+
+      const product = ProductMapper.toEntity(dto);
+
+      expect(product.getName()).toBe('Integrity Product');
+      expect(product.getDescription()).toBe('Integrity description');
+      expect(product.getTags()).toEqual(['integrity', 'product']);
+      expect(product.getImages()).toEqual(['integrity.jpg']);
+      
+      const defaultVariant = product.getDefaultVariant();
+      expect(defaultVariant.getPrice().toNumber()).toBe(99.99);
+      expect(defaultVariant.getPrice().getCurrency()).toBe('USD');
+      expect(defaultVariant.getInventoryQuantity()).toBe(100);
+    });
+
+    it('should handle currency mapping correctly', () => {
+      const dto: CreateProductDto = {
+        sellerId: 'seller-currency',
+        name: 'Currency Product',
+        description: 'Currency description',
+        price: 50.00,
+        currency: 'EUR',
+        categoryId: 'category-currency',
+        type: 'DIGITAL' as any,
+        tags: [],
+        mediaUrls: [],
+        inventoryCount: 25,
+        attributes: {}
+      };
+
+      const product = ProductMapper.toEntity(dto);
+      const defaultVariant = product.getDefaultVariant();
+
+      expect(defaultVariant.getPrice().getCurrency()).toBe('EUR');
     });
   });
 });

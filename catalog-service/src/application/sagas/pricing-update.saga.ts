@@ -488,7 +488,7 @@ export class PricingUpdateSaga extends BaseSaga {
   // Helper methods
 
   private canContinueWithPartialSuccess(stepId: string): boolean {
-    // For bulk pricing operations, we can continue with partial success in some cases
+    // For bulk operations, we can continue with partial success in some cases
     if (stepId === 'apply_pricing_updates' && this.results.successful.length > 0) {
       return true; // Continue if at least some pricing updates succeeded
     }

@@ -38,6 +38,7 @@ export enum UserStatus {
 export interface AuthUser {
   id: string;
   email: string;
+  name?: string; // Full name for display purposes
   role: UserRole;
   status: UserStatus;
   isEmailVerified: boolean;
@@ -47,6 +48,8 @@ export interface AuthUser {
   failedLoginAttempts: number;
   lockoutUntil?: Date;
   lastLoginAt?: Date;
+  avatar?: string; // User profile picture URL
+  metadata?: Record<string, any>; // Additional user metadata
   createdAt: Date;
   updatedAt: Date;
 }

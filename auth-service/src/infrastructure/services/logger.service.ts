@@ -1,196 +1,539 @@
-import winston from 'winston';
-import { config } from '../../config';
-
 /**
- * Logging Service
- * Enterprise-grade logging with Winston
- * Supports multiple transports and structured logging
+ * Logger Service for Auth Service
+ * Provides structured logging with different levels and output formats
+ * Supports both development and production logging configurations
  */
 
-// Define log levels
-const logLevels = {
-  error: 0,
-  warn: 1,
-  info: 2,
-  debug: 3,
-  trace: 4
-};
+import { createLogger, format, transports, Logger as WinstonLogger } from 'winston';
+import { Request } from 'express';
 
-// Define colors for console output
-const logColors = {
-  error: 'red',
-  warn: 'yellow',
-  info: 'green',
-  debug: 'blue',
-  trace: 'gray'
-};
+// =====================================================================================
+// LOGGING CONFIGURATION
+// =====================================================================================
 
-// Create Winston logger instance
-const winstonLogger = winston.createLogger({
-  level: config.logging.level,
-  levels: logLevels,
-  format: winston.format.combine(
-    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    winston.format.errors({ stack: true }),
-    winston.format.json()
-  ),
-  defaultMeta: {
-    service: config.logging.structured.serviceName,
-    version: config.logging.structured.version
-  },
-  transports: []
-});
+/**
+ * Log Level Configuration
+ */
+export type LogLevel = 'error' | 'warn' | 'info' | 'http' | 'debug';
 
-// Add console transport
-if (config.logging.console.enabled) {
-  winstonLogger.add(new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    )
-  }));
-}
-
-// Add file transport
-if (config.logging.file.enabled) {
-  winstonLogger.add(new winston.transports.File({
-    filename: config.logging.file.path,
-    maxsize: 10485760, // 10MB
-    maxFiles: 5,
-    tailable: true,
-    format: winston.format.combine(
-      winston.format.timestamp(),
-      winston.format.json()
-    )
-  }));
+/**
+ * Logger Configuration Interface
+ */
+export interface LoggerConfig {
+  level: LogLevel;
+  format: 'json' | 'simple' | 'combined';
+  enableConsole: boolean;
+  enableFile: boolean;
+  filename?: string;
+  maxsize?: number;
+  maxFiles?: number;
+  enableCorrelationId: boolean;
+  enableRequestLogging: boolean;
+  enablePerformanceLogging: boolean;
+  enableSecurityLogging: boolean;
 }
 
 /**
- * Enhanced Logger Interface
- * Provides additional logging methods and structured logging
+ * Default Logger Configuration
  */
-class LoggerService {
-  private logger: winston.Logger;
+export const DEFAULT_LOGGER_CONFIG: LoggerConfig = {
+  level: (process.env.LOG_LEVEL as LogLevel) || 'info',
+  format: (process.env.LOG_FORMAT as 'json' | 'simple' | 'combined') || 'json',
+  enableConsole: process.env.ENABLE_CONSOLE_LOGGING !== 'false',
+  enableFile: process.env.ENABLE_FILE_LOGGING === 'true',
+  filename: process.env.LOG_FILE_PATH || 'logs/auth-service.log',
+  maxsize: parseInt(process.env.LOG_MAX_SIZE || '10485760'), // 10MB
+  maxFiles: parseInt(process.env.LOG_MAX_FILES || '5'),
+  enableCorrelationId: process.env.ENABLE_CORRELATION_ID === 'true',
+  enableRequestLogging: process.env.ENABLE_REQUEST_LOGGING !== 'false',
+  enablePerformanceLogging: process.env.ENABLE_PERFORMANCE_LOGGING === 'true',
+  enableSecurityLogging: process.env.ENABLE_SECURITY_LOGGING !== 'false'
+};
 
-  constructor(logger: winston.Logger) {
-    this.logger = logger;
+// =====================================================================================
+// LOG ENTRIES INTERFACES
+// =====================================================================================
+
+/**
+ * Base Log Entry Interface
+ */
+export interface BaseLogEntry {
+  timestamp: string;
+  level: LogLevel;
+  message: string;
+  service: string;
+  environment: string;
+  correlationId?: string;
+  userId?: string;
+  sessionId?: string;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+/**
+ * Request Log Entry Interface
+ */
+export interface RequestLogEntry extends BaseLogEntry {
+  method: string;
+  url: string;
+  statusCode: number;
+  responseTime: number;
+  contentLength?: number;
+}
+
+/**
+ * Performance Log Entry Interface
+ */
+export interface PerformanceLogEntry extends BaseLogEntry {
+  operation: string;
+  duration: number;
+  startTime: number;
+  endTime: number;
+  memoryUsage?: NodeJS.MemoryUsage;
+  cpuUsage?: NodeJS.CpuUsage;
+}
+
+/**
+ * Security Log Entry Interface
+ */
+export interface SecurityLogEntry extends BaseLogEntry {
+  action: string;
+  resource?: string;
+  result: 'success' | 'failure' | 'blocked';
+  reason?: string;
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  metadata?: any;
+}
+
+// =====================================================================================
+// LOGGER SERVICE CLASS
+// =====================================================================================
+
+/**
+ * Logger Service
+ * Provides structured logging with different levels and output formats
+ */
+export class LoggerService {
+  private logger: WinstonLogger;
+  private config: LoggerConfig;
+
+  constructor(config?: Partial<LoggerConfig>) {
+    this.config = { ...DEFAULT_LOGGER_CONFIG, ...config };
+    this.logger = this.createLogger();
   }
 
-  // Standard log levels
-  error(message: string, meta?: any): void {
-    this.logger.error(message, meta);
-  }
+  /**
+   * Create Winston Logger Instance
+   */
+  private createLogger(): WinstonLogger {
+    const logFormat = this.getLogFormat();
+    const logTransports: any[] = [];
 
-  warn(message: string, meta?: any): void {
-    this.logger.warn(message, meta);
-  }
+    // Console Transport
+    if (this.config.enableConsole) {
+      logTransports.push(
+        new transports.Console({
+          format: logFormat,
+          level: this.config.level
+        })
+      );
+    }
 
-  info(message: string, meta?: any): void {
-    this.logger.info(message, meta);
-  }
+    // File Transport
+    if (this.config.enableFile) {
+      logTransports.push(
+        new transports.File({
+          filename: this.config.filename,
+          format: format.combine(
+            format.timestamp(),
+            format.errors({ stack: true }),
+            format.json()
+          ),
+          maxsize: this.config.maxsize,
+          maxFiles: this.config.maxFiles,
+          level: 'error'
+        })
+      );
 
-  debug(message: string, meta?: any): void {
-    this.logger.debug(message, meta);
-  }
+      logTransports.push(
+        new transports.File({
+          filename: this.config.filename.replace('.log', '.combined.log'),
+          format: logFormat,
+          maxsize: this.config.maxsize,
+          maxFiles: this.config.maxFiles,
+          level: this.config.level
+        })
+      );
+    }
 
-  trace(message: string, meta?: any): void {
-    this.logger.trace(message, meta);
-  }
-
-  // Specialized logging methods
-  logSecurityEvent(event: {
-    action: string;
-    userId?: string;
-    email?: string;
-    ipAddress: string;
-    userAgent: string;
-    success: boolean;
-    reason?: string;
-    metadata?: any;
-  }): void {
-    this.logger.info('Security Event', {
-      type: 'security',
-      ...event
+    return createLogger({
+      level: this.config.level,
+      format: logFormat,
+      transports: logTransports,
+      exitOnError: false
     });
   }
 
-  logApiRequest(req: any, res: any, responseTime: number): void {
-    this.logger.info('API Request', {
-      type: 'api',
-      method: req.method,
-      url: req.url,
-      statusCode: res.statusCode,
-      responseTime,
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      userId: req.user?.id
-    });
-  }
+  /**
+   * Get Log Format Based on Configuration
+   */
+  private getLogFormat() {
+    const baseFormat = format.combine(
+      format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
+      format.errors({ stack: true }),
+      format.metadata({ fillExcept: ['message', 'level', 'timestamp'] })
+    );
 
-  logDatabaseQuery(query: string, duration: number, error?: any): void {
-    if (error) {
-      this.logger.error('Database Query Failed', {
-        type: 'database',
-        query,
-        duration,
-        error: error.message
-      });
-    } else if (duration > config.database.slowQueryThreshold) {
-      this.logger.warn('Slow Database Query', {
-        type: 'database',
-        query,
-        duration
-      });
-    } else {
-      this.logger.debug('Database Query', {
-        type: 'database',
-        query,
-        duration
-      });
+    switch (this.config.format) {
+      case 'simple':
+        return format.combine(
+          baseFormat,
+          format.simple()
+        );
+
+      case 'combined':
+        return format.combine(
+          baseFormat,
+          format.printf(({ timestamp, level, message, metadata }) => {
+            return `${timestamp} [${level.toUpperCase()}]: ${message} ${metadata ? JSON.stringify(metadata) : ''}`;
+          })
+        );
+
+      case 'json':
+      default:
+        return format.combine(
+          baseFormat,
+          format.json()
+        );
     }
   }
 
-  logBusinessEvent(event: {
-    type: string;
-    userId?: string;
-    data: any;
-    metadata?: any;
-  }): void {
-    this.logger.info('Business Event', {
-      type: 'business',
-      ...event
-    });
+  // =====================================================================================
+  // LOGGING METHODS
+  // =====================================================================================
+
+  /**
+   * Log Error
+   */
+  error(message: string, error?: Error, metadata?: any): void {
+    const logEntry = this.createBaseLogEntry('error', message, metadata);
+    if (error) {
+      logEntry.error = {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      };
+    }
+    this.logger.error(message, { ...logEntry, error });
   }
 
-  logPerformanceMetric(metric: {
-    name: string;
-    value: number;
-    unit: string;
-    tags?: Record<string, string>;
-  }): void {
-    this.logger.info('Performance Metric', {
-      type: 'performance',
-      ...metric
-    });
+  /**
+   * Log Warning
+   */
+  warn(message: string, metadata?: any): void {
+    const logEntry = this.createBaseLogEntry('warn', message, metadata);
+    this.logger.warn(message, logEntry);
   }
 
-  // Child logger for specific contexts
-  child(meta: any): LoggerService {
-    return new LoggerService(this.logger.child(meta));
+  /**
+   * Log Info
+   */
+  info(message: string, metadata?: any): void {
+    const logEntry = this.createBaseLogEntry('info', message, metadata);
+    this.logger.info(message, logEntry);
   }
 
-  // Stream interface for Morgan (HTTP request logging)
-  stream(level: string = 'info') {
-    return {
-      write: (message: string) => {
-        // Remove trailing newline from Morgan
-        const cleanMessage = message.replace(/\n$/, '');
-        this.logger.log(level, cleanMessage);
-      }
+  /**
+   * Log HTTP Request
+   */
+  http(message: string, req: Request, statusCode: number, responseTime: number, metadata?: any): void {
+    if (!this.config.enableRequestLogging) return;
+
+    const logEntry: RequestLogEntry = {
+      ...this.createBaseLogEntry('http', message, metadata),
+      method: req.method,
+      url: req.originalUrl || req.url,
+      statusCode,
+      responseTime,
+      contentLength: parseInt(req.headers['content-length'] || '0'),
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.headers['user-agent']
     };
+
+    this.logger.http(message, logEntry);
+  }
+
+  /**
+   * Log Debug
+   */
+  debug(message: string, metadata?: any): void {
+    const logEntry = this.createBaseLogEntry('debug', message, metadata);
+    this.logger.debug(message, logEntry);
+  }
+
+  // =====================================================================================
+  // SPECIALIZED LOGGING METHODS
+  // =====================================================================================
+
+  /**
+   * Log Performance Metrics
+   */
+  performance(operation: string, duration: number, startTime: number, endTime: number, metadata?: any): void {
+    if (!this.config.enablePerformanceLogging) return;
+
+    const logEntry: PerformanceLogEntry = {
+      ...this.createBaseLogEntry('info', `Performance: ${operation}`, metadata),
+      operation,
+      duration,
+      startTime,
+      endTime,
+      memoryUsage: process.memoryUsage(),
+      cpuUsage: process.cpuUsage()
+    };
+
+    this.logger.info(`Performance: ${operation}`, logEntry);
+  }
+
+  /**
+   * Log Security Events
+   */
+  security(action: string, result: 'success' | 'failure' | 'blocked', riskLevel: 'low' | 'medium' | 'high' | 'critical', metadata?: any): void {
+    if (!this.config.enableSecurityLogging) return;
+
+    const logEntry: SecurityLogEntry = {
+      ...this.createBaseLogEntry('warn', `Security: ${action}`, metadata),
+      action,
+      result,
+      riskLevel,
+      metadata
+    };
+
+    this.logger.warn(`Security: ${action}`, logEntry);
+  }
+
+  /**
+   * Log Authentication Events
+   */
+  auth(action: string, userId: string, success: boolean, reason?: string, metadata?: any): void {
+    const riskLevel: 'low' | 'medium' | 'high' | 'critical' = success ? 'low' : 'medium';
+    const result: 'success' | 'failure' | 'blocked' = success ? 'success' : 'failure';
+
+    this.security(`Auth: ${action}`, result, riskLevel, {
+      ...metadata,
+      userId,
+      reason
+    });
+  }
+
+  /**
+   * Log Authorization Events
+   */
+  authorization(action: string, userId: string, resource: string, granted: boolean, reason?: string, metadata?: any): void {
+    const riskLevel: 'low' | 'medium' | 'high' | 'critical' = granted ? 'low' : 'high';
+    const result: 'success' | 'failure' | 'blocked' = granted ? 'success' : 'blocked';
+
+    this.security(`AuthZ: ${action}`, result, riskLevel, {
+      ...metadata,
+      userId,
+      resource,
+      granted,
+      reason
+    });
+  }
+
+  /**
+   * Log Token Events
+   */
+  token(action: string, userId: string, success: boolean, reason?: string, metadata?: any): void {
+    const riskLevel: 'low' | 'medium' | 'high' | 'critical' = success ? 'low' : 'high';
+    const result: 'success' | 'failure' | 'blocked' = success ? 'success' : 'failure';
+
+    this.security(`Token: ${action}`, result, riskLevel, {
+      ...metadata,
+      userId,
+      reason
+    });
+  }
+
+  /**
+   * Log API Key Events
+   */
+  apiKey(action: string, serviceId: string, success: boolean, reason?: string, metadata?: any): void {
+    const riskLevel: 'low' | 'medium' | 'high' | 'critical' = success ? 'low' : 'high';
+    const result: 'success' | 'failure' | 'blocked' = success ? 'success' : 'failure';
+
+    this.security(`API Key: ${action}`, result, riskLevel, {
+      ...metadata,
+      serviceId,
+      reason
+    });
+  }
+
+  // =====================================================================================
+  // UTILITY METHODS
+  // =====================================================================================
+
+  /**
+   * Create Base Log Entry
+   */
+  private createBaseLogEntry(level: LogLevel, message: string, metadata?: any): BaseLogEntry {
+    const correlationId = this.config.enableCorrelationId ? this.generateCorrelationId() : undefined;
+
+    return {
+      timestamp: new Date().toISOString(),
+      level,
+      message,
+      service: 'auth-service',
+      environment: process.env.NODE_ENV || 'development',
+      correlationId,
+      ...metadata
+    };
+  }
+
+  /**
+   * Generate Correlation ID
+   */
+  private generateCorrelationId(): string {
+    return `correlation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Get Logger Instance (for advanced usage)
+   */
+  getLogger(): WinstonLogger {
+    return this.logger;
+  }
+
+  /**
+   * Update Logger Configuration
+   */
+  updateConfig(config: Partial<LoggerConfig>): void {
+    this.config = { ...this.config, ...config };
+    this.logger = this.createLogger(); // Recreate logger with new config
+  }
+
+  /**
+   * Get Current Configuration
+   */
+  getConfig(): LoggerConfig {
+    return { ...this.config };
+  }
+
+  /**
+   * Enable/Disable Specific Logging Features
+   */
+  enableRequestLogging(enable: boolean): void {
+    this.config.enableRequestLogging = enable;
+  }
+
+  enablePerformanceLogging(enable: boolean): void {
+    this.config.enablePerformanceLogging = enable;
+  }
+
+  enableSecurityLogging(enable: boolean): void {
+    this.config.enableSecurityLogging = enable;
+  }
+
+  enableCorrelationId(enable: boolean): void {
+    this.config.enableCorrelationId = enable;
   }
 }
 
-// Create and export the logger service instance
-export const logger = new LoggerService(winstonLogger);
-export default logger;
+// =====================================================================================
+// GLOBAL LOGGER INSTANCE
+// =====================================================================================
+
+/**
+ * Default Logger Service Instance
+ * Can be used throughout the application
+ */
+export const logger = new LoggerService();
+
+// =====================================================================================
+// LOGGING MIDDLEWARE
+// =====================================================================================
+
+/**
+ * Request Logging Middleware
+ */
+export function requestLoggingMiddleware(loggerService: LoggerService = logger) {
+  return (req: Request, res: any, next: Function) => {
+    const startTime = Date.now();
+
+    // Log request start
+    loggerService.http('Request started', req, 0, 0, {
+      requestId: req.headers['x-request-id'] || 'unknown'
+    });
+
+    // Override res.end to log response
+    const originalEnd = res.end;
+    res.end = function(chunk?: any, encoding?: any) {
+      const endTime = Date.now();
+      const responseTime = endTime - startTime;
+
+      loggerService.http('Request completed', req, res.statusCode, responseTime, {
+        requestId: req.headers['x-request-id'] || 'unknown',
+        contentLength: res.getHeader('content-length') || 0
+      });
+
+      originalEnd.call(this, chunk, encoding);
+    };
+
+    next();
+  };
+}
+
+// =====================================================================================
+// PERFORMANCE MONITORING
+// =====================================================================================
+
+/**
+ * Performance Monitoring Decorator
+ */
+export function logPerformance(operationName: string) {
+  return function(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+    const originalMethod = descriptor.value;
+
+    descriptor.value = async function(...args: any[]) {
+      const startTime = Date.now();
+      const startMemory = process.memoryUsage();
+      const startCpu = process.cpuUsage();
+
+      try {
+        const result = await originalMethod.apply(this, args);
+        const endTime = Date.now();
+        const endMemory = process.memoryUsage();
+        const endCpu = process.cpuUsage(startCpu);
+
+        const duration = endTime - startTime;
+        const memoryDelta = {
+          rss: endMemory.rss - startMemory.rss,
+          heapTotal: endMemory.heapTotal - startMemory.heapTotal,
+          heapUsed: endMemory.heapUsed - startMemory.heapUsed,
+          external: endMemory.external - startMemory.external
+        };
+
+        logger.performance(operationName, duration, startTime, endTime, {
+          memoryDelta,
+          cpuDelta: endCpu,
+          args: args.length > 0 ? args.map(arg => typeof arg) : 'none'
+        });
+
+        return result;
+      } catch (error) {
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+
+        logger.error(`Performance monitoring error in ${operationName}`, error as Error, {
+          duration,
+          startTime,
+          endTime
+        });
+
+        throw error;
+      }
+    };
+
+    return descriptor;
+  };
+}

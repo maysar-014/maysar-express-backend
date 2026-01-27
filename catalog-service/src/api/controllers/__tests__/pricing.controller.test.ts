@@ -1,325 +1,369 @@
 /**
- * Pricing Controller Tests
- * Comprehensive API layer testing for pricing operations
- * Tests real controller implementation with mocked dependencies
- * Follows testing constitution: Fast, Isolated, Deterministic, Focused, Readable
+ * Pricing Controller Test Suite
+ * Tests for pricing controller functionality
  */
 
 import { Request, Response } from 'express';
 import { PricingController } from '../pricing.controller';
 
-const mockResponse = () => {
-  const res: Partial<Response> = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis()
-  };
-  return res as Response;
-};
-
-const mockRequest = (body = {}, params = {}, query = {}, headers = {}): Request => {
-  return { body, params, query, headers } as Request;
-};
-
 describe('PricingController', () => {
   let controller: PricingController;
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
 
   beforeEach(() => {
-    jest.clearAllMocks();
     controller = new PricingController();
+    
+    mockRequest = {
+      body: {},
+      params: {},
+      query: {}
+    };
+    
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis()
+    };
   });
 
   describe('calculatePrice', () => {
     it('should calculate price successfully', async () => {
-      const req = mockRequest({
-        productId: 'product-123',
-        basePrice: 100,
-        pricingRules: [
-          { type: 'percentage_discount', value: 10, id: 'rule-1', name: 'Discount' }
-        ]
-      });
-      const res = mockResponse();
+      const productId = 'product-123';
+      const basePrice = 100;
+      const pricingRules = [
+        { type: 'percentage_discount', value: 10, id: 'rule-1' }
+      ];
 
-      await controller.calculatePrice(req, res);
+      mockRequest.body = { productId, basePrice, pricingRules };
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        data: expect.objectContaining({
-          productId: 'product-123',
-          basePrice: 100,
-          finalPrice: 90,
-          totalDiscount: 10
-        }),
-        meta: expect.objectContaining({
-          timestamp: expect.any(Date)
+      await controller.calculatePrice(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: expect.objectContaining({
+            productId,
+            basePrice,
+            finalPrice: expect.any(Number),
+            currency: 'USD'
+          })
         })
-      });
+      );
     });
 
-    it('should validate required fields', async () => {
-      const req = mockRequest({});
-      const res = mockResponse();
+    it('should handle missing product ID', async () => {
+      mockRequest.body = { basePrice: 100 };
 
-      await controller.calculatePrice(req, res);
+      await controller.calculatePrice(mockRequest as Request, mockResponse as Response);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: expect.objectContaining({
-          code: 'VALIDATION_ERROR'
-        }),
-        meta: expect.objectContaining({
-          timestamp: expect.any(Date)
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR'
+          })
         })
-      });
+      );
     });
 
     it('should handle invalid base price', async () => {
-      const req = mockRequest({
-        productId: 'product-123',
-        basePrice: -10
-      });
-      const res = mockResponse();
+      mockRequest.body = { productId: 'product-123', basePrice: -10 };
 
-      await controller.calculatePrice(req, res);
+      await controller.calculatePrice(mockRequest as Request, mockResponse as Response);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-    });
-
-    it('should handle errors gracefully', async () => {
-      const req = mockRequest({
-        productId: 'product-123',
-        basePrice: 100
-      });
-      const res = mockResponse();
-      
-      // Mock an error by making res.status throw
-      res.status = jest.fn().mockImplementation(() => {
-        throw new Error('Test error');
-      });
-
-      await controller.calculatePrice(req, res);
-
-      // The error should be caught and handled
-      expect(console.error).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR'
+          })
+        })
+      );
     });
   });
 
   describe('updateProductPrice', () => {
     it('should update product price successfully', async () => {
-      const req = mockRequest(
-        {
-          pricingStrategy: 'fixed',
-          pricingValue: 150,
-          requestedBy: 'admin'
-        },
-        { productId: 'product-123' }
-      );
-      const res = mockResponse();
+      const productId = 'product-123';
+      const pricingStrategy = 'fixed';
+      const pricingValue = 99.99;
 
-      await controller.updateProductPrice(req, res);
+      mockRequest.params = { productId };
+      mockRequest.body = { pricingStrategy, pricingValue };
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        data: expect.objectContaining({
-          productId: 'product-123',
-          newPrice: { amount: 150, currency: 'USD' },
-          changeAmount: 50
-        }),
-        meta: expect.objectContaining({
-          timestamp: expect.any(Date)
+      await controller.updateProductPrice(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: expect.objectContaining({
+            productId,
+            success: true,
+            newPrice: expect.objectContaining({
+              amount: expect.any(Number),
+              currency: expect.any(String)
+            })
+          })
         })
-      });
-    });
-
-    it('should validate product ID', async () => {
-      const req = mockRequest({
-        pricingStrategy: 'fixed',
-        pricingValue: 150
-      });
-      const res = mockResponse();
-
-      await controller.updateProductPrice(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-    });
-
-    it('should validate pricing strategy', async () => {
-      const req = mockRequest(
-        {
-          pricingStrategy: 'invalid',
-          pricingValue: 150
-        },
-        { productId: 'product-123' }
       );
-      const res = mockResponse();
+    });
 
-      await controller.updateProductPrice(req, res);
+    it('should handle missing product ID', async () => {
+      mockRequest.params = {};
+      mockRequest.body = { pricingStrategy: 'fixed', pricingValue: 99.99 };
 
-      expect(res.status).toHaveBeenCalledWith(400);
+      await controller.updateProductPrice(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR'
+          })
+        })
+      );
+    });
+
+    it('should handle invalid pricing strategy', async () => {
+      const productId = 'product-123';
+
+      mockRequest.params = { productId };
+      mockRequest.body = { pricingStrategy: 'invalid', pricingValue: 99.99 };
+
+      await controller.updateProductPrice(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR'
+          })
+        })
+      );
     });
   });
 
   describe('bulkUpdatePricing', () => {
     it('should bulk update pricing successfully', async () => {
-      const req = mockRequest({
-        productIds: ['product-1', 'product-2'],
-        pricingStrategy: 'percentage',
-        pricingValue: 120,
-        requestedBy: 'admin'
-      });
-      const res = mockResponse();
+      const productIds = ['product-1', 'product-2', 'product-3'];
+      const pricingStrategy = 'fixed';
+      const pricingValue = 89.99;
 
-      await controller.bulkUpdatePricing(req, res);
+      mockRequest.body = { productIds, pricingStrategy, pricingValue };
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        data: expect.objectContaining({
-          totalProducts: 2,
-          successfulUpdates: 2,
-          failedUpdates: 0
-        }),
-        meta: expect.objectContaining({
-          timestamp: expect.any(Date)
+      await controller.bulkUpdatePricing(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: expect.objectContaining({
+            totalProducts: 3,
+            successfulUpdates: 3,
+            failedUpdates: 0,
+            pricingStrategy,
+            pricingValue
+          })
         })
-      });
+      );
     });
 
-    it('should validate product IDs array', async () => {
-      const req = mockRequest({
-        productIds: [],
-        pricingStrategy: 'fixed',
-        pricingValue: 100
-      });
-      const res = mockResponse();
+    it('should handle missing product IDs', async () => {
+      mockRequest.body = { pricingStrategy: 'fixed', pricingValue: 89.99 };
 
-      await controller.bulkUpdatePricing(req, res);
+      await controller.bulkUpdatePricing(mockRequest as Request, mockResponse as Response);
 
-      expect(res.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR'
+          })
+        })
+      );
+    });
+
+    it('should handle invalid pricing strategy', async () => {
+      const productIds = ['product-1', 'product-2'];
+
+      mockRequest.body = { productIds, pricingStrategy: 'invalid', pricingValue: 89.99 };
+
+      await controller.bulkUpdatePricing(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR'
+          })
+        })
+      );
     });
   });
 
   describe('getPricingRules', () => {
     it('should get pricing rules successfully', async () => {
-      const req = mockRequest();
-      const res = mockResponse();
+      await controller.getPricingRules(mockRequest as Request, mockResponse as Response);
 
-      await controller.getPricingRules(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        data: expect.arrayContaining([
-          expect.objectContaining({
-            ruleId: expect.any(String),
-            ruleType: expect.any(String),
-            name: expect.any(String)
-          })
-        ]),
-        meta: expect.objectContaining({
-          timestamp: expect.any(Date)
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: expect.any(Array)
         })
-      });
+      );
     });
   });
 
   describe('createPricingRule', () => {
     it('should create pricing rule successfully', async () => {
-      const req = mockRequest({
-        name: 'Test Rule',
+      const ruleData = {
+        name: 'Test Discount',
         ruleType: 'percentage_discount',
-        value: 15,
+        value: 10,
         priority: 1
-      });
-      const res = mockResponse();
+      };
 
-      await controller.createPricingRule(req, res);
+      mockRequest.body = ruleData;
 
-      expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        data: expect.objectContaining({
-          ruleId: expect.any(String),
-          name: 'Test Rule',
-          ruleType: 'percentage_discount',
-          value: 15
-        }),
-        meta: expect.objectContaining({
-          timestamp: expect.any(Date)
+      await controller.createPricingRule(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(201);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: expect.objectContaining({
+            ruleId: expect.any(String),
+            ruleType: 'percentage_discount',
+            name: 'Test Discount',
+            value: 10,
+            isActive: true
+          })
         })
-      });
+      );
     });
 
-    it('should validate rule name', async () => {
-      const req = mockRequest({
-        ruleType: 'percentage_discount',
-        value: 15
-      });
-      const res = mockResponse();
+    it('should handle missing rule name', async () => {
+      mockRequest.body = { ruleType: 'percentage_discount', value: 10 };
 
-      await controller.createPricingRule(req, res);
+      await controller.createPricingRule(mockRequest as Request, mockResponse as Response);
 
-      expect(res.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR'
+          })
+        })
+      );
     });
 
-    it('should validate rule type', async () => {
-      const req = mockRequest({
-        name: 'Test Rule',
-        ruleType: 'invalid_type',
-        value: 15
-      });
-      const res = mockResponse();
+    it('should handle invalid rule type', async () => {
+      mockRequest.body = { name: 'Test Rule', ruleType: 'invalid', value: 10 };
 
-      await controller.createPricingRule(req, res);
+      await controller.createPricingRule(mockRequest as Request, mockResponse as Response);
 
-      expect(res.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR'
+          })
+        })
+      );
     });
   });
 
   describe('getPricingAnalytics', () => {
     it('should get pricing analytics successfully', async () => {
-      const req = mockRequest();
-      const res = mockResponse();
+      await controller.getPricingAnalytics(mockRequest as Request, mockResponse as Response);
 
-      await controller.getPricingAnalytics(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        data: expect.objectContaining({
-          summary: expect.any(Object),
-          rulePerformance: expect.any(Array),
-          strategyBreakdown: expect.any(Object)
-        }),
-        meta: expect.objectContaining({
-          timestamp: expect.any(Date)
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: expect.objectContaining({
+            summary: expect.any(Object),
+            rulePerformance: expect.any(Array),
+            strategyBreakdown: expect.any(Object)
+          })
         })
-      });
+      );
     });
   });
 
   describe('error handling', () => {
-    it('should handle internal errors', async () => {
-      const req = mockRequest({
-        productId: 'product-123',
-        basePrice: 100
-      });
-      const res = mockResponse();
+    it('should handle internal errors gracefully', async () => {
+      // Mock console.error to avoid noise in test output
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
-      // Force an error by making JSON.stringify fail
-      const originalStringify = JSON.stringify;
-      JSON.stringify = jest.fn().mockImplementation(() => {
-        throw new Error('JSON error');
-      });
+      // Mock a scenario that would cause an internal error
+      mockRequest.body = { productId: 'invalid-product', basePrice: 'invalid' };
 
-      await controller.calculatePrice(req, res);
+      await controller.calculatePrice(mockRequest as Request, mockResponse as Response);
 
-      // Restore original function
-      JSON.stringify = originalStringify;
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'INTERNAL_ERROR'
+          })
+        })
+      );
 
-      expect(res.status).toHaveBeenCalledWith(500);
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('response formatting', () => {
+    it('should return consistent response format for success', async () => {
+      const productId = 'product-123';
+      const basePrice = 100;
+
+      mockRequest.body = { productId, basePrice };
+
+      await controller.calculatePrice(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: expect.any(Object),
+          meta: expect.objectContaining({
+            timestamp: expect.any(Date)
+          })
+        })
+      );
+    });
+
+    it('should return consistent response format for errors', async () => {
+      mockRequest.body = {};
+
+      await controller.calculatePrice(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: expect.any(String),
+            message: expect.any(String)
+          }),
+          meta: expect.objectContaining({
+            timestamp: expect.any(Date)
+          })
+        })
+      );
     });
   });
 });

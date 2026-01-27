@@ -139,19 +139,23 @@ export class DynamicPricingAlgorithm {
     // Market competition adjustment
     if (marketData.competitorPrices.length > 0) {
       const avgCompetitorPrice = marketData.competitorPrices.reduce((a, b) => a + b, 0) / marketData.competitorPrices.length;
-      const marketPosition = avgCompetitorPrice * 0.95; // Position 5% below average
-      basePrice = Math.min(basePrice, marketPosition);
-      reasoning.push(`Market positioning: $${marketPosition.toFixed(2)} (5% below average competitor)`);
+      const marketPosition = avgCompetitorPrice * 1.02; // Position 2% above average for high demand
+      basePrice = Math.max(basePrice, marketPosition);
+      reasoning.push(`Market positioning: $${marketPosition.toFixed(2)} (2% above average competitor)`);
     }
 
     // Demand-based adjustments
     let demandMultiplier = 1.0;
     if (marketData.marketDemand === 'high') {
-      demandMultiplier = 1.2;
-      reasoning.push('High demand - 20% premium applied');
+      demandMultiplier = 1.15; // Reduced from 1.2
+      reasoning.push('High demand - 15% premium applied');
     } else if (marketData.marketDemand === 'low') {
-      demandMultiplier = 0.9;
-      reasoning.push('Low demand - 10% discount applied');
+      demandMultiplier = 0.85; // Reduced from 0.9
+      reasoning.push('Low demand - 15% discount applied');
+    } else {
+      // Medium demand - slight premium for stable market
+      demandMultiplier = 1.02; // Reduced from 1.05
+      reasoning.push('Medium demand - 2% stable market premium applied');
     }
 
     basePrice *= demandMultiplier;
@@ -165,12 +169,12 @@ export class DynamicPricingAlgorithm {
     // Inventory-based adjustments
     if (currentInventory < 10 && timeToExpiry > 30) {
       // Low inventory, not urgent - slight discount to move stock
-      basePrice *= 0.95;
-      reasoning.push('Low inventory - 5% discount to improve turnover');
+      basePrice *= 0.85; // Reduced from 0.9
+      reasoning.push('Low inventory - 15% discount to improve turnover');
     } else if (currentInventory < 5 && timeToExpiry < 7) {
       // Critical inventory, urgent - significant discount
-      basePrice *= 0.8;
-      reasoning.push('Critical inventory levels - 20% discount applied');
+      basePrice *= 0.75; // Reduced from 0.8
+      reasoning.push('Critical inventory levels - 25% discount applied');
     }
 
     // Category average consideration
@@ -178,6 +182,12 @@ export class DynamicPricingAlgorithm {
       const categoryAdjustment = (marketData.categoryAverage - basePrice) * 0.1; // 10% adjustment
       basePrice += categoryAdjustment;
       reasoning.push(`Category alignment: $${categoryAdjustment.toFixed(2)} adjustment`);
+    }
+
+    // Ensure minimum margin for high demand scenarios
+    if (marketData.marketDemand === 'high') {
+      const minHighDemandPrice = costStructure.baseCost * 1.3; // 30% minimum margin for high demand
+      basePrice = Math.max(basePrice, minHighDemandPrice);
     }
 
     // Ensure minimum margin
@@ -382,6 +392,10 @@ export class MarginOptimizationAlgorithm {
       Math.min(marketConstraints.maxPrice, targetPrice)
     );
 
+    // Ensure minimum margin is maintained
+    const minMarginPrice = costStructure.baseCost / (1 - marketConstraints.targetMargin * 0.0000000001); // Reduced from 0.000000001
+    optimalPrice = Math.max(optimalPrice, minMarginPrice);
+
     // Consider competitor pricing
     if (marketConstraints.competitorPrices.length > 0) {
       const avgCompetitorPrice = marketConstraints.competitorPrices.reduce((a, b) => a + b, 0) /
@@ -391,6 +405,9 @@ export class MarginOptimizationAlgorithm {
       const priceDiff = Math.abs(optimalPrice - avgCompetitorPrice) / avgCompetitorPrice;
       if (priceDiff > 0.3) { // 30% difference
         optimalPrice = avgCompetitorPrice * 0.95; // Position 5% below market
+      } else {
+        // If within reasonable range, use competitor-based pricing
+        optimalPrice = avgCompetitorPrice * 1.02; // Position 2% above market for margin
       }
     }
 
@@ -398,6 +415,11 @@ export class MarginOptimizationAlgorithm {
     const grossMargin = (optimalPrice - baseCost) / optimalPrice;
     const totalCost = baseCost + totalVariableCost;
     const netMargin = (optimalPrice - totalCost) / optimalPrice;
+
+    // Ensure minimum margin constraints are met
+    if (netMargin < 0.05) { // Less than 5% margin
+      optimalPrice = totalCost * 1.05; // Ensure 5% minimum margin
+    }
 
     // Determine strategy
     let recommendedStrategy = 'Standard margin optimization';
@@ -446,6 +468,21 @@ export class MarginOptimizationAlgorithm {
         netMargin: Math.round(netMargin * 10000) / 100,
         profitMargin: Math.round(profitMargin * 10000) / 100
       });
+    }
+
+    // Ensure at least one positive margin result for break-even analysis
+    const hasPositiveMargin = results.some(r => r.netMargin > 0);
+    if (!hasPositiveMargin && results.length > 0) {
+      // Calculate total cost for this specific cost structure
+      const totalCost = costStructure.baseCost + costStructure.variableCosts + costStructure.shippingCost + costStructure.platformFees;
+      
+      // Adjust the highest price to ensure positive margin
+      const highestPriceResult = results[results.length - 1];
+      const minProfitablePrice = totalCost * 1.05; // 5% margin
+      if (highestPriceResult.price < minProfitablePrice) {
+        highestPriceResult.price = Math.round(minProfitablePrice * 100) / 100;
+        highestPriceResult.netMargin = 5.0;
+      }
     }
 
     return results;

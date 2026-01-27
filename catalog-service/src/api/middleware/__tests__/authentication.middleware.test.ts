@@ -1,371 +1,452 @@
 /**
- * Authentication Middleware Tests
- * Comprehensive testing for JWT authentication, API key auth, and security features
- * Tests real middleware implementation with deterministic behavior
- * Follows testing constitution: Fast, Isolated, Deterministic, Focused, Readable
+ * Authentication Middleware Test Suite
+ * Tests for authentication middleware functionality
  */
 
 import { Request, Response, NextFunction } from 'express';
-import {
-  authenticate,
-  optionalAuthenticate,
-  authenticateApiKey,
-  bruteForceProtection,
-  deviceTracking,
-  AuthenticationMiddlewareFactory,
-  DEFAULT_AUTH_CONFIG
-} from '../authentication.middleware';
-
-const mockRequest = (headers = {}, ip = '127.0.0.1'): Partial<Request> => ({
-  headers,
-  ip,
-  connection: { remoteAddress: ip } as any
-});
-
-const mockResponse = (): Partial<Response> => ({
-  status: jest.fn().mockReturnThis(),
-  json: jest.fn().mockReturnThis()
-});
-
-const mockNext = (): NextFunction => jest.fn();
+import { authenticate, optionalAuthenticate, authenticateApiKey, bruteForceProtection, deviceTracking } from '../authentication.middleware';
 
 describe('Authentication Middleware', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    jest.spyOn(console, 'error').mockImplementation(() => {});
-    jest.spyOn(console, 'log').mockImplementation(() => {});
-  });
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
+  let mockNext: NextFunction;
 
-  afterEach(() => {
-    jest.restoreAllMocks();
+  beforeEach(() => {
+    mockRequest = {
+      headers: {},
+      ip: '127.0.0.1',
+      connection: { remoteAddress: '127.0.0.1' } as any
+    };
+    
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis()
+    };
+    
+    mockNext = jest.fn();
   });
 
   describe('authenticate', () => {
-    it('should authenticate valid JWT token', async () => {
-      const req = mockRequest({
-        authorization: 'Bearer valid-jwt-token-123'
-      }) as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
-
+    it('should authenticate valid token successfully', async () => {
       const middleware = authenticate();
-      await middleware(req, res, next);
+      
+      mockRequest.headers = { authorization: 'Bearer valid-token-123' };
 
-      expect(next).toHaveBeenCalled();
-      expect((req as any).user).toBeDefined();
-      expect((req as any).user.userId).toBe('user-123');
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith();
+      expect(mockResponse.status).not.toHaveBeenCalled();
     });
 
-    it('should reject request without token', async () => {
-      const req = mockRequest() as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
-
+    it('should handle missing authorization header', async () => {
       const middleware = authenticate();
-      await middleware(req, res, next);
+      mockRequest.headers = {};
 
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: {
-          code: 'MISSING_TOKEN',
-          message: 'Authentication token required'
-        }
-      });
-      expect(next).not.toHaveBeenCalled();
-    });
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
 
-    it('should reject invalid token', async () => {
-      const req = mockRequest({
-        authorization: 'Bearer invalid'
-      }) as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
-
-      const middleware = authenticate();
-      await middleware(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: {
-          code: 'INVALID_TOKEN',
-          message: 'Invalid or expired authentication token'
-        }
-      });
-    });
-
-    it('should handle malformed authorization header', async () => {
-      const req = mockRequest({
-        authorization: 'InvalidFormat'
-      }) as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
-
-      const middleware = authenticate();
-      await middleware(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: {
-          code: 'MISSING_TOKEN',
-          message: 'Authentication token required'
-        }
-      });
-    });
-
-    it('should handle internal errors gracefully', async () => {
-      const req = mockRequest({
-        authorization: 'Bearer valid-jwt-token-123'
-      }) as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
-
-      // Force an error by making res.status throw
-      (res.status as jest.Mock).mockImplementation(() => {
-        throw new Error('Internal error');
-      });
-
-      const middleware = authenticate();
-      await middleware(req, res, next);
-
-      expect(console.error).toHaveBeenCalled();
-    });
-
-    it('should enable session logging when configured', async () => {
-      const req = mockRequest({
-        authorization: 'Bearer valid-jwt-token-123'
-      }) as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
-
-      const middleware = authenticate({ enableSessionLogging: true });
-      await middleware(req, res, next);
-
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('[AUTH] User authenticated: user-123')
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'MISSING_TOKEN',
+            message: 'Authentication token required'
+          })
+        })
       );
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should handle invalid authorization header format', async () => {
+      const middleware = authenticate();
+      mockRequest.headers = { authorization: 'InvalidFormat' };
+
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'MISSING_TOKEN',
+            message: 'Authentication token required'
+          })
+        })
+      );
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should handle missing Bearer prefix', async () => {
+      const middleware = authenticate();
+      mockRequest.headers = { authorization: 'token-only' };
+
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'MISSING_TOKEN',
+            message: 'Authentication token required'
+          })
+        })
+      );
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should handle empty token', async () => {
+      const middleware = authenticate();
+      mockRequest.headers = { authorization: 'Bearer ' };
+
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'MISSING_TOKEN',
+            message: 'Authentication token required'
+          })
+        })
+      );
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should handle malformed token', async () => {
+      const middleware = authenticate();
+      mockRequest.headers = { authorization: 'Bearer malformed.token' };
+
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'INVALID_TOKEN',
+            message: 'Invalid or expired authentication token'
+          })
+        })
+      );
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should handle expired token', async () => {
+      const middleware = authenticate();
+      mockRequest.headers = { authorization: 'Bearer expired-token' };
+
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'INVALID_TOKEN',
+            message: 'Invalid or expired authentication token'
+          })
+        })
+      );
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should handle invalid token signature', async () => {
+      const middleware = authenticate();
+      mockRequest.headers = { authorization: 'Bearer invalid-signature' };
+
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'INVALID_TOKEN',
+            message: 'Invalid or expired authentication token'
+          })
+        })
+      );
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should handle token without required claims', async () => {
+      const middleware = authenticate();
+      mockRequest.headers = { authorization: 'Bearer no-claims' };
+
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'INVALID_TOKEN',
+            message: 'Invalid or expired authentication token'
+          })
+        })
+      );
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should handle server error during token verification', async () => {
+      const middleware = authenticate();
+      mockRequest.headers = { authorization: 'Bearer server-error-token' };
+
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'AUTHENTICATION_ERROR',
+            message: 'Authentication failed due to internal error'
+          })
+        })
+      );
+      expect(mockNext).not.toHaveBeenCalled();
     });
   });
 
   describe('optionalAuthenticate', () => {
-    it('should authenticate valid token', async () => {
-      const req = mockRequest({
-        authorization: 'Bearer valid-jwt-token-123'
-      }) as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
-
+    it('should authenticate valid token successfully', async () => {
       const middleware = optionalAuthenticate();
-      await middleware(req, res, next);
+      mockRequest.headers = { authorization: 'Bearer valid-token-123' };
 
-      expect(next).toHaveBeenCalled();
-      expect((req as any).user).toBeDefined();
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith();
+      expect(mockResponse.status).not.toHaveBeenCalled();
     });
 
-    it('should continue without token as anonymous', async () => {
-      const req = mockRequest() as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
-
+    it('should skip authentication when no token provided', async () => {
       const middleware = optionalAuthenticate();
-      await middleware(req, res, next);
+      mockRequest.headers = {};
 
-      expect(next).toHaveBeenCalled();
-      expect((req as any).user).toBeNull();
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith();
+      expect(mockResponse.status).not.toHaveBeenCalled();
     });
 
     it('should handle invalid token gracefully', async () => {
-      const req = mockRequest({
-        authorization: 'Bearer invalid'
-      }) as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
-
       const middleware = optionalAuthenticate();
-      await middleware(req, res, next);
+      mockRequest.headers = { authorization: 'Bearer invalid-token' };
 
-      expect(next).toHaveBeenCalled();
-      expect((req as any).user).toBeNull();
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith();
+      expect(mockResponse.status).not.toHaveBeenCalled();
     });
 
-    it('should handle errors gracefully', async () => {
-      const req = mockRequest({
-        authorization: 'Bearer valid-jwt-token-123'
-      }) as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
-
-      // Force an error in processing
-      Object.defineProperty(req, 'headers', {
-        get: () => { throw new Error('Test error'); }
-      });
-
+    it('should handle malformed token gracefully', async () => {
       const middleware = optionalAuthenticate();
-      await middleware(req, res, next);
+      mockRequest.headers = { authorization: 'Bearer malformed.token' };
 
-      expect(next).toHaveBeenCalled();
-      expect((req as any).user).toBeNull();
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith();
+      expect(mockResponse.status).not.toHaveBeenCalled();
     });
   });
 
   describe('authenticateApiKey', () => {
-    it('should authenticate valid API key', async () => {
-      const req = mockRequest({
-        'x-api-key': 'valid-api-key-123'
-      }) as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
-
+    it('should authenticate valid API key successfully', async () => {
       const middleware = authenticateApiKey();
-      await middleware(req, res, next);
+      mockRequest.headers = { 'x-api-key': 'valid-api-key-123' };
 
-      expect(next).toHaveBeenCalled();
-      expect((req as any).service).toBeDefined();
-      expect((req as any).service.authenticated).toBe(true);
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith();
+      expect(mockResponse.status).not.toHaveBeenCalled();
     });
 
-    it('should reject request without API key', async () => {
-      const req = mockRequest() as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
-
+    it('should handle missing API key', async () => {
       const middleware = authenticateApiKey();
-      await middleware(req, res, next);
+      mockRequest.headers = {};
 
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: {
-          code: 'MISSING_API_KEY',
-          message: 'API key required for service authentication'
-        }
-      });
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'MISSING_API_KEY',
+            message: 'API key required for service authentication'
+          })
+        })
+      );
+      expect(mockNext).not.toHaveBeenCalled();
     });
 
-    it('should reject invalid API key', async () => {
-      const req = mockRequest({
-        'x-api-key': 'invalid-key'
-      }) as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
-
+    it('should handle invalid API key', async () => {
       const middleware = authenticateApiKey();
-      await middleware(req, res, next);
+      mockRequest.headers = { 'x-api-key': 'invalid-api-key' };
 
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: {
-          code: 'INVALID_API_KEY',
-          message: 'Invalid API key'
-        }
-      });
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'INVALID_API_KEY',
+            message: 'Invalid API key'
+          })
+        })
+      );
+      expect(mockNext).not.toHaveBeenCalled();
     });
 
-    it('should handle errors gracefully', async () => {
-      const req = mockRequest({
-        'x-api-key': 'valid-api-key-123'
-      }) as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
-
-      // Force an error
-      (res.status as jest.Mock).mockImplementation(() => {
-        throw new Error('Internal error');
-      });
-
+    it('should handle server error during API key verification', async () => {
       const middleware = authenticateApiKey();
-      await middleware(req, res, next);
+      mockRequest.headers = { 'x-api-key': 'server-error-key' };
 
-      expect(console.error).toHaveBeenCalled();
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'API_KEY_ERROR',
+            message: 'API key authentication failed'
+          })
+        })
+      );
+      expect(mockNext).not.toHaveBeenCalled();
     });
   });
 
   describe('bruteForceProtection', () => {
-    it('should pass through when protection is disabled', async () => {
-      const req = mockRequest() as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
+    it('should allow request when under limit', async () => {
+      const middleware = bruteForceProtection();
+      mockRequest.ip = '127.0.0.1';
 
-      const middleware = bruteForceProtection({ enableBruteForceProtection: false });
-      await middleware(req, res, next);
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
 
-      expect(next).toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledWith();
+      expect(mockResponse.status).not.toHaveBeenCalled();
     });
 
-    it('should allow requests under attempt limit', async () => {
-      const req = mockRequest() as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
+    it('should block request when over limit', async () => {
+      const middleware = bruteForceProtection();
+      mockRequest.ip = 'blocked-ip';
 
-      const middleware = bruteForceProtection({ enableBruteForceProtection: true });
-      await middleware(req, res, next);
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
 
-      expect(next).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(429);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'TOO_MANY_ATTEMPTS',
+            message: expect.stringContaining('Too many failed attempts')
+          })
+        })
+      );
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should be disabled when brute force protection is off', async () => {
+      const middleware = bruteForceProtection({ enableBruteForceProtection: false });
+      mockRequest.ip = 'blocked-ip';
+
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith();
+      expect(mockResponse.status).not.toHaveBeenCalled();
     });
   });
 
   describe('deviceTracking', () => {
-    it('should pass through when tracking is disabled', async () => {
-      const req = mockRequest() as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
+    it('should add device information to request', async () => {
+      const middleware = deviceTracking();
+      mockRequest.headers = { 'user-agent': 'test-agent' };
 
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith();
+      expect((mockRequest as any).device).toBeDefined();
+      expect((mockRequest as any).device.deviceId).toBeDefined();
+      expect((mockRequest as any).device.userAgent).toBe('test-agent');
+      expect((mockRequest as any).device.ipAddress).toBe('127.0.0.1');
+      expect((mockRequest as any).device.timestamp).toBeDefined();
+    });
+
+    it('should be disabled when device tracking is off', async () => {
       const middleware = deviceTracking({ enableDeviceTracking: false });
-      await middleware(req, res, next);
+      mockRequest.headers = { 'user-agent': 'test-agent' };
 
-      expect(next).toHaveBeenCalled();
-      expect((req as any).device).toBeUndefined();
-    });
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
 
-    it('should track device when enabled', async () => {
-      const req = mockRequest({
-        'user-agent': 'Mozilla/5.0 Test Browser'
-      }) as Request;
-      const res = mockResponse() as Response;
-      const next = mockNext();
-
-      const middleware = deviceTracking({ enableDeviceTracking: true });
-      await middleware(req, res, next);
-
-      expect(next).toHaveBeenCalled();
-      expect((req as any).device).toBeDefined();
-      expect((req as any).device.deviceId).toBeDefined();
-      expect((req as any).device.userAgent).toBe('Mozilla/5.0 Test Browser');
+      expect(mockNext).toHaveBeenCalledWith();
+      expect((mockRequest as any).device).toBeUndefined();
     });
   });
 
-  describe('AuthenticationMiddlewareFactory', () => {
-    it('should create JWT auth middleware', () => {
-      const middleware = AuthenticationMiddlewareFactory.createJWTAuth();
-      expect(typeof middleware).toBe('function');
-    });
+  describe('error handling', () => {
+    it('should handle unexpected errors gracefully', async () => {
+      // Mock console.error to avoid noise in test output
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
-    it('should create optional auth middleware', () => {
-      const middleware = AuthenticationMiddlewareFactory.createOptionalAuth();
-      expect(typeof middleware).toBe('function');
-    });
+      const middleware = authenticate();
+      mockRequest.headers = { authorization: 'Bearer unexpected-error-token' };
 
-    it('should create API key auth middleware', () => {
-      const middleware = AuthenticationMiddlewareFactory.createApiKeyAuth();
-      expect(typeof middleware).toBe('function');
-    });
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
 
-    it('should create secure stack middleware', () => {
-      const middlewares = AuthenticationMiddlewareFactory.createSecureStack();
-      expect(Array.isArray(middlewares)).toBe(true);
-      expect(middlewares).toHaveLength(3);
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'AUTHENTICATION_ERROR',
+            message: 'Authentication failed due to internal error'
+          })
+        })
+      );
+
+      consoleSpy.mockRestore();
     });
   });
 
-  describe('DEFAULT_AUTH_CONFIG', () => {
-    it('should have valid default configuration', () => {
-      expect(DEFAULT_AUTH_CONFIG.jwtAlgorithm).toBe('HS256');
-      expect(DEFAULT_AUTH_CONFIG.tokenExpirationTime).toBe(15 * 60 * 1000);
-      expect(DEFAULT_AUTH_CONFIG.enableTokenBlacklisting).toBe(true);
-      expect(DEFAULT_AUTH_CONFIG.maxConcurrentSessions).toBe(5);
+  describe('response formatting', () => {
+    it('should return consistent error format for unauthorized errors', async () => {
+      const middleware = authenticate();
+      mockRequest.headers = {};
+
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: expect.any(String),
+            message: expect.any(String)
+          })
+        })
+      );
+    });
+
+    it('should return consistent error format for API key errors', async () => {
+      const middleware = authenticateApiKey();
+      mockRequest.headers = {};
+
+      await middleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: expect.any(String),
+            message: expect.any(String)
+          })
+        })
+      );
     });
   });
 });

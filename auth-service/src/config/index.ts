@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import { databaseConfig } from './database.config';
 import { securityConfig } from './security.config';
 import { monitoringConfig } from './monitoring.config';
+import { authzConfigManager, AuthorizationConfigManager } from './authorization.config';
 
 // Load environment variables
 dotenv.config();
