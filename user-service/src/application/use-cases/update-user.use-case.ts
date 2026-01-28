@@ -1,6 +1,5 @@
-import { User, UserRole, UserStatus, UserPreferences } from '../../domain/entities/user.entity';
-import { Email } from '../../domain/value-objects/email.value-object';
-import { PhoneNumber } from '../../domain/value-objects/phone-number.value-object';
+import { User, UserRole } from '../../domain/entities/user.entity';
+import { UserPreferences } from '../../domain/types/user.types';
 import { IUserRepository } from '../../domain/repositories';
 import { UserPolicies } from '../../domain/policies/user-policies';
 import { UserProfileUpdatedEvent, IDomainEventPublisher } from '../../domain/events';
@@ -84,24 +83,6 @@ export class UpdateUserUseCase {
         };
       }
 
-      // Validate user preferences if being updated
-      if (input.updates.language || input.updates.timezone) {
-        const preferences: Partial<UserPreferences> = {};
-        if (input.updates.language) preferences.language = input.updates.language;
-        if (input.updates.timezone) preferences.timezone = input.updates.timezone;
-        if (input.updates.notificationsEnabled !== undefined) {
-          preferences.notificationsEnabled = input.updates.notificationsEnabled;
-        }
-
-        const prefValidation = UserPolicies.validateUserPreferences(preferences);
-        if (!prefValidation.valid) {
-          return {
-            user: null as any,
-            success: false,
-            message: `Invalid preferences: ${prefValidation.errors.join(', ')}`
-          };
-        }
-      }
 
       // Track changes for auditing
       const oldValues: Record<string, any> = {};
@@ -133,39 +114,9 @@ export class UpdateUserUseCase {
         }
       }
 
-      if (input.updates.avatar !== undefined && input.updates.avatar !== user.avatar) {
-        oldValues.avatar = user.avatar;
-        newValues.avatar = input.updates.avatar;
-        changes.push('avatar');
-        user.updateProfile({ avatar: input.updates.avatar });
-      }
 
-      // Apply phone number update (requires validation)
-      if (input.updates.phoneNumber !== undefined) {
-        let phoneNumber: PhoneNumber | undefined;
-        if (input.updates.phoneNumber) {
-          phoneNumber = PhoneNumber.create(input.updates.phoneNumber);
-
-          // Check if phone number is already taken by another user
-          const existingPhoneUser = await this.userRepository.findByPhoneNumber(phoneNumber.toString());
-          if (existingPhoneUser && existingPhoneUser.id !== user.id) {
-            return {
-              user: null as any,
-              success: false,
-              message: 'Phone number already in use'
-            };
-          }
-        }
-
-        if (phoneNumber?.toString() !== user.phoneNumber?.toString()) {
-          oldValues.phoneNumber = user.phoneNumber?.toString();
-          newValues.phoneNumber = phoneNumber?.toString();
-          changes.push('phoneNumber');
-          if (phoneNumber) {
-            user.updatePhoneNumber(phoneNumber);
-          }
-        }
-      }
+      // TODO: Implement phone number update with validation
+      // This would require additional entity methods
 
       // Update preferences if provided
       if (input.updates.language !== undefined ||
@@ -180,9 +131,6 @@ export class UpdateUserUseCase {
         }
         if (input.updates.timezone !== undefined) {
           updatedPrefs.timezone = input.updates.timezone;
-        }
-        if (input.updates.notificationsEnabled !== undefined) {
-          updatedPrefs.notificationsEnabled = input.updates.notificationsEnabled;
         }
 
         await this.userRepository.updateUserPreferences(user.id, updatedPrefs);

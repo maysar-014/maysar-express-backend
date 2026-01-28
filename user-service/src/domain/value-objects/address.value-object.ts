@@ -105,11 +105,11 @@ export class Address implements ValueObject<AddressType> {
    */
   toString(): string {
     const parts = [
-      this.value.street,
-      this.value.city,
-      this.value.state,
-      this.value.postalCode,
-      this.value.country
+      this.value.street || '',
+      this.value.city || '',
+      this.value.state || '',
+      this.value.postalCode || '',
+      this.value.country || ''
     ].filter(part => part && part.trim().length > 0);
 
     return parts.join(', ');
@@ -200,28 +200,48 @@ export class Address implements ValueObject<AddressType> {
    * Create business address
    */
   static createBusiness(data: Omit<AddressType, 'type'>): Address {
-    return new Address({ ...data, type: 'business' });
+    return new Address({ 
+      ...data, 
+      type: 'business',
+      state: data.state || '',
+      coordinates: data.coordinates || { latitude: 0, longitude: 0 }
+    });
   }
 
   /**
    * Create home address
    */
   static createHome(data: Omit<AddressType, 'type'>): Address {
-    return new Address({ ...data, type: 'home' });
+    return new Address({ 
+      ...data, 
+      type: 'home',
+      state: data.state || '',
+      coordinates: data.coordinates || { latitude: 0, longitude: 0 }
+    });
   }
 
   /**
    * Create billing address
    */
   static createBilling(data: Omit<AddressType, 'type'>): Address {
-    return new Address({ ...data, type: 'billing' });
+    return new Address({ 
+      ...data, 
+      type: 'billing',
+      state: data.state || '',
+      coordinates: data.coordinates || { latitude: 0, longitude: 0 }
+    });
   }
 
   /**
    * Create shipping address
    */
   static createShipping(data: Omit<AddressType, 'type'>): Address {
-    return new Address({ ...data, type: 'shipping' });
+    return new Address({ 
+      ...data, 
+      type: 'shipping',
+      state: data.state || '',
+      coordinates: data.coordinates || { latitude: 0, longitude: 0 }
+    });
   }
 
   /**
@@ -235,11 +255,11 @@ export class Address implements ValueObject<AddressType> {
       throw new Error('Address string must contain at least street, city, and country');
     }
 
-    const street = parts[0];
-    const city = parts[1];
-    const country = parts[parts.length - 1];
-    const state = parts.length > 3 ? parts[2] : undefined;
-    const postalCode = parts.length > 4 ? parts[3] : undefined;
+    const street = parts[0] || '';
+    const city = parts[1] || '';
+    const country = parts[parts.length - 1] || '';
+    const state = parts.length > 3 ? parts[2] || '' : '';
+    const postalCode = parts.length > 4 ? parts[3] || '00000' : '00000';
 
     return new Address({
       id: '',
@@ -249,9 +269,9 @@ export class Address implements ValueObject<AddressType> {
       street,
       city,
       state,
-      postalCode: postalCode || '00000',
+      postalCode,
       country,
-      coordinates: undefined,
+      coordinates: { latitude: 0, longitude: 0 },
       createdAt: new Date(),
       updatedAt: new Date()
     });

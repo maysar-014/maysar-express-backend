@@ -1,4 +1,4 @@
-import { User } from '../../domain/entities/user.entity';
+import { User, UserRole } from '../../domain/entities/user.entity';
 import { IUserRepository } from '../../domain/repositories';
 import { UserPolicies } from '../../domain/policies/user-policies';
 import { logger } from '../../infrastructure/services/logger.service';
@@ -305,7 +305,7 @@ export class SearchUsersUseCase {
       byStatus[user.status] = (byStatus[user.status] || 0) + 1;
 
       // Count verifications
-      if (user.isEmailVerified) verifiedCount++;
+      if (user.emailVerified) verifiedCount++;
     });
 
     const verificationRate = users.length > 0 ? (verifiedCount / users.length) * 100 : 0;

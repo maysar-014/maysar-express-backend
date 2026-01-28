@@ -85,7 +85,7 @@ export class InMemoryUserRepository implements UserRepository {
     return userId ? this.users.get(userId) || null : null;
   }
 
-  async findByBusinessId(businessId: string): Promise<User | null> {
+  async findByBusinessId(_businessId: string): Promise<User | null> {
     // TODO: Implement business ID lookup once BusinessInfo is integrated
     // For now, return null as businessId is not yet part of UserMetadata
     return null;
@@ -132,14 +132,14 @@ export class InMemoryUserRepository implements UserRepository {
   async unlockAccount(userId: string): Promise<void> {
     const user = this.users.get(userId);
     if (user) {
-      const updatedUser = user.updateMetadata({ 
-        accountLockedUntil: undefined 
+      const updatedUser = user.updateMetadata({
+        accountLockedUntil: undefined as any
       });
       this.users.set(userId, updatedUser);
     }
   }
 
-  async updateLastLogin(userId: string, loginTime: Date): Promise<void> {
+  async updateLastLogin(userId: string): Promise<void> {
     const user = this.users.get(userId);
     if (user) {
       const updatedUser = user.updateLastLogin();
@@ -251,9 +251,9 @@ export class DatabaseUserRepository implements UserRepository {
     return this.fallbackRepository.unlockAccount(userId);
   }
 
-  async updateLastLogin(userId: string, loginTime: Date): Promise<void> {
+  async updateLastLogin(userId: string): Promise<void> {
     // TODO: Implement database update with Prisma
-    return this.fallbackRepository.updateLastLogin(userId, loginTime);
+    return this.fallbackRepository.updateLastLogin(userId);
   }
 
   async updateMetadata(userId: string, metadata: any): Promise<void> {

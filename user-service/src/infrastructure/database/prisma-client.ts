@@ -22,7 +22,7 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
  * Database connection utilities
  */
 export class DatabaseConnection {
-  private static isConnected = false;
+  // private static isConnected = false;
 
   /**
    * Test database connection
@@ -84,7 +84,6 @@ export class DatabaseConnection {
         // await prisma.$executeRaw`-- migration commands would go here`;
       }
 
-      this.isConnected = true;
       logger.info('Database connection initialized successfully');
     } catch (error) {
       logger.error('Failed to initialize database connection', { error });
@@ -98,7 +97,6 @@ export class DatabaseConnection {
   static async close(): Promise<void> {
     try {
       await prisma.$disconnect();
-      this.isConnected = false;
       logger.info('Database connection closed');
     } catch (error) {
       logger.error('Error closing database connection', { error });
@@ -127,13 +125,13 @@ export class DatabaseConnection {
   /**
    * Get active connection count (PostgreSQL specific)
    */
-  private static async getActiveConnections(): Promise<number> {
+  static async getActiveConnections(): Promise<number> {
     try {
-      const result = await prisma.$queryRaw<Array<{ count: number }>>`
+      const result = await prisma.$queryRaw`
         SELECT count(*) as count
         FROM pg_stat_activity
         WHERE state = 'active' AND datname = current_database()
-      `;
+      ` as Array<{ count: number }>;
       return result[0]?.count || 0;
     } catch {
       return 0; // Fallback for non-PostgreSQL databases
@@ -143,13 +141,13 @@ export class DatabaseConnection {
   /**
    * Get idle connection count
    */
-  private static async getIdleConnections(): Promise<number> {
+  static async getIdleConnections(): Promise<number> {
     try {
-      const result = await prisma.$queryRaw<Array<{ count: number }>>`
+      const result = await prisma.$queryRaw`
         SELECT count(*) as count
         FROM pg_stat_activity
         WHERE state = 'idle' AND datname = current_database()
-      `;
+      ` as Array<{ count: number }>;
       return result[0]?.count || 0;
     } catch {
       return 0;
@@ -159,13 +157,13 @@ export class DatabaseConnection {
   /**
    * Get total connection count
    */
-  private static async getTotalConnections(): Promise<number> {
+  static async getTotalConnections(): Promise<number> {
     try {
-      const result = await prisma.$queryRaw<Array<{ count: number }>>`
+      const result = await prisma.$queryRaw`
         SELECT count(*) as count
         FROM pg_stat_activity
         WHERE datname = current_database()
-      `;
+      ` as Array<{ count: number }>;
       return result[0]?.count || 0;
     } catch {
       return 0;
@@ -175,17 +173,18 @@ export class DatabaseConnection {
   /**
    * Execute raw SQL with logging
    */
-  static async executeRaw(query: string, params: any[] = []): Promise<any> {
+  static async executeRaw(query: string, _params: any[] = []): Promise<any> {
     const startTime = Date.now();
     try {
-      const result = await prisma.$queryRaw(query, ...params);
+      // Use prisma.$queryRaw for actual execution
+      const result = await prisma.$queryRaw`${query}`;
       const duration = Date.now() - startTime;
 
       logger.logDatabase('raw_query', 'custom', duration, true);
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      logger.logDatabase('raw_query', 'custom', duration, false, error as string);
+      logger.logDatabase('raw_query', 'custom', duration, false, (error as Error).message);
       throw error;
     }
   }
@@ -205,7 +204,7 @@ export class DatabaseConnection {
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      logger.logDatabase('transaction', 'multiple', duration, false, error as string);
+      logger.logDatabase('transaction', 'multiple', duration, false, (error as Error).message);
       throw error;
     }
   }

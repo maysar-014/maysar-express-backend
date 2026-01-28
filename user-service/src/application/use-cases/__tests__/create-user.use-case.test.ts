@@ -2,7 +2,8 @@ import { CreateUserUseCase } from '../create-user.use-case';
 import { UserValidationService } from '../../../domain/services/user-validation.service';
 import { UserSecurityPolicy } from '../../../domain/policies/user-security.policy';
 import { CreateUserDto } from '../../dto/user.dto';
-import { UserAlreadyExistsError, UserValidationError } from '../../../domain/errors/user.errors';
+import { UserValidationError } from '../../../domain/errors/user.errors';
+import { UserRole } from '../../../domain/types/user.types';
 
 // Mock dependencies
 jest.mock('../../../domain/services/user-validation.service');
@@ -35,7 +36,7 @@ describe('CreateUserUseCase', () => {
       phoneNumber: '+255712345678',
       firstName: 'John',
       lastName: 'Doe',
-      role: 'customer',
+      role: UserRole.BUYER,
       preferredLanguage: 'en',
       preferredCurrency: 'USD'
     };

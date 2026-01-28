@@ -1,4 +1,5 @@
-import { User, UserRole, UserStatus, UserPreferences } from '../entities/user.entity';
+import { User, UserRole, UserStatus } from '../entities/user.entity';
+import { UserPreferences } from '../types/user.types';
 
 /**
  * User Address interface for repository operations

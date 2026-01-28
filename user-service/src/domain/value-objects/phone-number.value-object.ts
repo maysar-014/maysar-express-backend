@@ -50,7 +50,7 @@ export class PhoneNumber implements ValueObject<string> {
    */
   private extractNationalNumber(phoneNumber: string): string {
     const match = phoneNumber.match(/^\+\d{1,3}(.+)$/);
-    return match ? match[1] : '';
+    return match ? match[1] || '' : '';
   }
 
   /**

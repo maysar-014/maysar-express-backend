@@ -4,6 +4,9 @@ import { PhoneNumber } from '../value-objects/phone-number.value-object';
 import { Address } from '../value-objects/address.value-object';
 import { UserStatus, UserRole, UserMetadata } from '../types/user.types';
 
+// Re-export types for convenience
+export { UserStatus, UserRole, UserMetadata } from '../types/user.types';
+
 /**
  * User Entity
  * Represents a user in the Maysar marketplace system
@@ -14,20 +17,20 @@ export class User implements Entity {
   public readonly phoneNumber: PhoneNumber;
   public readonly firstName: string;
   public readonly lastName: string;
-  public readonly dateOfBirth?: Date;
+  public readonly dateOfBirth?: Date | undefined;
   public readonly role: UserRole;
   public readonly status: UserStatus;
   public readonly metadata: UserMetadata;
   public readonly createdAt: Date;
   public readonly updatedAt: Date;
-  public readonly lastLoginAt?: Date;
+  public readonly lastLoginAt?: Date | undefined;
   public readonly emailVerified: boolean;
   public readonly phoneVerified: boolean;
-  public readonly profilePicture?: string;
+  public readonly profilePicture?: string | undefined;
   public readonly preferredLanguage: string;
   public readonly preferredCurrency: string;
   public readonly addresses: Address[];
-  public readonly businessId?: string;
+  public readonly businessId?: string | undefined;
 
   constructor(props: {
     id: string;
@@ -35,20 +38,20 @@ export class User implements Entity {
     phoneNumber: PhoneNumber;
     firstName: string;
     lastName: string;
-    dateOfBirth?: Date;
+    dateOfBirth?: Date | undefined;
     role: UserRole;
     status: UserStatus;
     metadata: UserMetadata;
     createdAt: Date;
     updatedAt: Date;
-    lastLoginAt?: Date;
+    lastLoginAt?: Date | undefined;
     emailVerified: boolean;
     phoneVerified: boolean;
-    profilePicture?: string;
+    profilePicture?: string | undefined;
     preferredLanguage: string;
     preferredCurrency: string;
     addresses: Address[];
-    businessId?: string;
+    businessId?: string | undefined;
   }) {
     this.id = props.id;
     this.email = props.email;
@@ -96,12 +99,12 @@ export class User implements Entity {
       lastName: props.lastName,
       dateOfBirth: props.dateOfBirth,
       role: props.role,
-      status: 'active',
+      status: UserStatus.ACTIVE,
       metadata: {
         accountAge: 0,
         loginAttempts: 0,
-        lastFailedLoginAttempt: undefined,
-        accountLockedUntil: undefined,
+        lastFailedLoginAttempt: props.metadata?.lastFailedLoginAttempt || undefined,
+        accountLockedUntil: props.metadata?.accountLockedUntil || undefined,
         ...props.metadata
       },
       createdAt: new Date(),
@@ -229,7 +232,7 @@ export class User implements Entity {
   activate(): User {
     return new User({
       ...this,
-      status: 'active',
+      status: UserStatus.ACTIVE,
       updatedAt: new Date()
     });
   }
@@ -240,7 +243,7 @@ export class User implements Entity {
   deactivate(): User {
     return new User({
       ...this,
-      status: 'inactive',
+      status: UserStatus.INACTIVE,
       updatedAt: new Date()
     });
   }

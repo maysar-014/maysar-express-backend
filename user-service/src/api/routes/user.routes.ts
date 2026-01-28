@@ -3,8 +3,6 @@ import { UserController } from '@api/controllers/user.controller';
 import { CreateUserUseCase } from '@application/use-cases/create-user.use-case';
 import { UserValidationService } from '@domain/services/user-validation.service';
 import { UserSecurityPolicy } from '@domain/policies/user-security.policy';
-import { UserMapper } from '@application/mappers/user-mapper';
-import { UserAlreadyExistsError } from '@domain/errors/user.errors';
 
 /**
  * User Routes
@@ -22,9 +20,7 @@ export function createUserRoutes(): Router {
   );
   
   const userController = new UserController(
-    createUserUseCase,
-    userValidationService,
-    userSecurityPolicy
+    createUserUseCase
   );
 
   /**

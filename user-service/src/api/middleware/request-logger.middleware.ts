@@ -95,7 +95,7 @@ export const ensureRequestId = (req: Request, res: Response, next: NextFunction)
 /**
  * Middleware to log request body for debugging (development only)
  */
-export const logRequestBody = (req: Request, res: Response, next: NextFunction): void => {
+export const logRequestBody = (req: Request, _res: Response, next: NextFunction): void => {
   if (process.env.NODE_ENV === 'development' && req.body && Object.keys(req.body).length > 0) {
     logger.debug('Request Body', {
       requestId: (req as any).requestId,

@@ -28,7 +28,7 @@ describe('User Entity', () => {
         phoneNumber: validPhone,
         firstName: 'John',
         lastName: 'Doe',
-        role: 'customer',
+        role: UserRole.BUYER,
         addresses: [validAddress]
       });
 
@@ -37,7 +37,7 @@ describe('User Entity', () => {
       expect(user.phoneNumber).toBe(validPhone);
       expect(user.firstName).toBe('John');
       expect(user.lastName).toBe('Doe');
-      expect(user.role).toBe('customer');
+      expect(user.role).toBe(UserRole.BUYER);
       expect(user.status).toBe('active');
       expect(user.addresses).toHaveLength(1);
       expect(user.emailVerified).toBe(false);
@@ -53,7 +53,7 @@ describe('User Entity', () => {
         phoneNumber: validPhone,
         firstName: 'John',
         lastName: 'Doe',
-        role: 'customer'
+        role: UserRole.BUYER
       });
 
       expect(user.preferredLanguage).toBe('sw');
@@ -70,7 +70,7 @@ describe('User Entity', () => {
         phoneNumber: validPhone,
         firstName: 'John',
         lastName: 'Doe',
-        role: 'customer',
+        role: UserRole.BUYER,
         preferredLanguage: 'en',
         preferredCurrency: 'USD'
       });
@@ -88,7 +88,7 @@ describe('User Entity', () => {
         phoneNumber: validPhone,
         firstName: 'John',
         lastName: 'Doe',
-        role: 'customer'
+        role: UserRole.BUYER
       });
 
       const validation = user.validate();
@@ -103,7 +103,7 @@ describe('User Entity', () => {
         phoneNumber: validPhone,
         firstName: '',
         lastName: '',
-        role: 'customer' as UserRole,
+        role: UserRole.BUYER as UserRole,
         status: 'active' as UserStatus,
         metadata: {
           accountAge: 0,
@@ -133,7 +133,7 @@ describe('User Entity', () => {
         phoneNumber: validPhone,
         firstName: 'John',
         lastName: 'Doe',
-        role: 'customer' as UserRole,
+        role: UserRole.BUYER as UserRole,
         status: 'active' as UserStatus,
         metadata: {
           accountAge: 0,
@@ -167,7 +167,7 @@ describe('User Entity', () => {
         phoneNumber: validPhone,
         firstName: 'John',
         lastName: 'Doe',
-        role: 'customer' as UserRole,
+        role: UserRole.BUYER as UserRole,
         status: 'active' as UserStatus,
         metadata: {
           accountAge: 0,
@@ -204,7 +204,7 @@ describe('User Entity', () => {
         firstName: 'John',
         lastName: 'Doe',
         dateOfBirth: futureDate,
-        role: 'customer' as UserRole,
+        role: UserRole.BUYER as UserRole,
         status: 'active' as UserStatus,
         metadata: {
           accountAge: 0,
@@ -235,7 +235,7 @@ describe('User Entity', () => {
         firstName: 'John',
         lastName: 'Doe',
         dateOfBirth: youngDate,
-        role: 'customer' as UserRole,
+        role: UserRole.BUYER as UserRole,
         status: 'active' as UserStatus,
         metadata: {
           accountAge: 0,
@@ -266,7 +266,7 @@ describe('User Entity', () => {
         phoneNumber: validPhone,
         firstName: 'John',
         lastName: 'Doe',
-        role: 'customer',
+        role: UserRole.BUYER,
         addresses: [validAddress]
       });
     });
@@ -393,8 +393,8 @@ describe('User Entity', () => {
           updatedAt: new Date(originalUpdatedAt.getTime() - delay)
         });
 
-        const sellerUser = userWithDelay.changeRole('seller');
-        expect(sellerUser.role).toBe('seller');
+        const sellerUser = userWithDelay.changeRole(UserRole.SELLER);
+        expect(sellerUser.role).toBe(UserRole.SELLER);
         expect(sellerUser.updatedAt.getTime()).toBeGreaterThan(userWithDelay.updatedAt.getTime());
       });
     });
@@ -505,7 +505,7 @@ describe('User Entity', () => {
         phoneNumber: tanzanianPhone,
         firstName: 'John',
         lastName: 'Doe',
-        role: 'customer'
+        role: UserRole.BUYER
       });
 
       expect(user.phoneNumber.isTanzanian()).toBe(true);
@@ -532,12 +532,12 @@ describe('User Entity', () => {
         phoneNumber: validPhone,
         firstName: 'John',
         lastName: 'Doe',
-        role: 'customer',
+        role: UserRole.BUYER,
         addresses: [tanzanianAddress]
       });
 
       expect(tanzanianAddress.isTanzanian()).toBe(true);
-      expect(user.addresses[0].isTanzanian()).toBe(true);
+      expect(user.addresses?.[0]?.isTanzanian?.()).toBe(true);
     });
 
     it('should use Swahili as default language', () => {
@@ -547,7 +547,7 @@ describe('User Entity', () => {
         phoneNumber: validPhone,
         firstName: 'John',
         lastName: 'Doe',
-        role: 'customer'
+        role: UserRole.BUYER
       });
 
       expect(user.preferredLanguage).toBe('sw');
@@ -563,7 +563,7 @@ describe('User Entity', () => {
         phoneNumber: validPhone,
         firstName: 'John',
         lastName: 'Doe',
-        role: 'customer',
+        role: UserRole.BUYER,
         addresses: []
       });
 
@@ -604,7 +604,7 @@ describe('User Entity', () => {
         phoneNumber: validPhone,
         firstName: 'John',
         lastName: 'Doe',
-        role: 'customer',
+        role: UserRole.BUYER,
         addresses: [address1, address2]
       });
 
@@ -625,7 +625,7 @@ describe('User Entity', () => {
         firstName: 'John',
         lastName: 'Doe',
         dateOfBirth: thirteenYearsAgo,
-        role: 'customer' as UserRole,
+        role: UserRole.BUYER as UserRole,
         status: 'active' as UserStatus,
         metadata: {
           accountAge: 0,

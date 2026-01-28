@@ -146,8 +146,8 @@ export class CreateUserUseCase {
    * Helper method to validate user role
    */
   private isValidUserRole(role: string): boolean {
-    const validRoles = ['customer', 'seller', 'admin'];
-    return validRoles.includes(role);
+    const validRoles = ['buyer', 'seller', 'supplier', 'courier', 'enabler', 'system'];
+    return validRoles.includes(role?.toLowerCase() || '');
   }
 
   /**
@@ -162,9 +162,9 @@ export class CreateUserUseCase {
   /**
    * Simulate finding existing user (would be implemented with repository)
    */
-  private async findUserByEmailOrPhone(email: string, phoneNumber: string): Promise<User | null> {
-    // This is a placeholder - in a real implementation, this would query the database
-    // For now, we'll return null to allow user creation
+  private async findUserByEmailOrPhone(_email: string, _phoneNumber: string): Promise<User | null> {
+    // TODO: Implement actual database lookup
+    // For now, return null as we don't have a real database connection
     return null;
   }
 }

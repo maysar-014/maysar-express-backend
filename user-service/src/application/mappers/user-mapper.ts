@@ -30,12 +30,12 @@ export class UserMapper {
       phoneNumber: PhoneNumber.create(createUserDto.phoneNumber),
       firstName: createUserDto.firstName,
       lastName: createUserDto.lastName,
-      dateOfBirth: createUserDto.dateOfBirth,
+      ...(createUserDto.dateOfBirth && { dateOfBirth: createUserDto.dateOfBirth }),
       role: createUserDto.role,
-      preferredLanguage: createUserDto.preferredLanguage,
-      preferredCurrency: createUserDto.preferredCurrency,
-      addresses: createUserDto.addresses || [],
-      businessId: createUserDto.businessId
+      ...(createUserDto.preferredLanguage && { preferredLanguage: createUserDto.preferredLanguage }),
+      ...(createUserDto.preferredCurrency && { preferredCurrency: createUserDto.preferredCurrency }),
+      ...(createUserDto.addresses && { addresses: createUserDto.addresses }),
+      ...(createUserDto.businessId && { businessId: createUserDto.businessId })
     });
   }
 
@@ -50,23 +50,23 @@ export class UserMapper {
       firstName: user.firstName,
       lastName: user.lastName,
       fullName: user.getFullName(),
-      dateOfBirth: user.dateOfBirth,
+      dateOfBirth: user.dateOfBirth || new Date(0),
       role: user.role,
       status: user.status,
       emailVerified: user.emailVerified,
       phoneVerified: user.phoneVerified,
-      profilePicture: user.profilePicture,
+      profilePicture: user.profilePicture || '',
       preferredLanguage: user.preferredLanguage,
       preferredCurrency: user.preferredCurrency,
       addresses: user.addresses,
-      businessId: user.businessId,
+      businessId: user.businessId || '',
       metadata: {
         accountAge: user.metadata.accountAge,
         loginAttempts: user.metadata.loginAttempts,
-        lastFailedLoginAttempt: user.metadata.lastFailedLoginAttempt,
-        accountLockedUntil: user.metadata.accountLockedUntil
+        lastFailedLoginAttempt: user.metadata.lastFailedLoginAttempt || new Date(0),
+        accountLockedUntil: user.metadata.accountLockedUntil || new Date(0)
       },
-      lastLoginAt: user.lastLoginAt,
+      lastLoginAt: user.lastLoginAt || new Date(0),
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };
@@ -88,8 +88,8 @@ export class UserMapper {
       phoneVerified: user.phoneVerified,
       preferredLanguage: user.preferredLanguage,
       preferredCurrency: user.preferredCurrency,
-      businessId: user.businessId,
-      lastLoginAt: user.lastLoginAt,
+      ...(user.businessId !== undefined && { businessId: user.businessId }),
+      ...(user.lastLoginAt !== undefined && { lastLoginAt: user.lastLoginAt }),
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };
@@ -111,8 +111,8 @@ export class UserMapper {
       phoneVerified: user.phoneVerified,
       preferredLanguage: user.preferredLanguage,
       preferredCurrency: user.preferredCurrency,
-      businessId: user.businessId,
-      lastLoginAt: user.lastLoginAt,
+      ...(user.businessId !== undefined && { businessId: user.businessId }),
+      ...(user.lastLoginAt !== undefined && { lastLoginAt: user.lastLoginAt }),
       addresses: user.addresses
     };
   }
@@ -126,8 +126,8 @@ export class UserMapper {
       email: user.email.getValue(),
       firstName: user.firstName,
       lastName: user.lastName,
-      lastLoginAt: user.lastLoginAt,
-      lastActivityAt: recentActivity.length > 0 ? recentActivity[0].timestamp : undefined,
+      ...(user.lastLoginAt && { lastLoginAt: user.lastLoginAt }),
+      lastActivityAt: recentActivity.length > 0 ? recentActivity[0].timestamp : new Date(0),
       loginCount: user.metadata.accountAge, // This would typically come from a separate service
       failedLoginAttempts: user.metadata.loginAttempts,
       riskScore: user.metadata.riskScore || 0,
@@ -149,7 +149,7 @@ export class UserMapper {
       businessVerified: !!user.businessId, // Simplified logic
       verificationStatus: user.emailVerified && user.phoneVerified ? 'verified' : 'pending',
       verificationAttempts: user.metadata.loginAttempts,
-      lastVerificationAttempt: user.lastLoginAt,
+      lastVerificationAttempt: user.lastLoginAt || new Date(0), // Use epoch date if undefined
       verificationDocuments: [] // This would come from a separate verification service
     };
   }
@@ -187,12 +187,12 @@ export class UserMapper {
    */
   static updateProfileFromDto(user: User, updateDto: UpdateUserProfileDto): User {
     return user.updateProfile({
-      firstName: updateDto.firstName,
-      lastName: updateDto.lastName,
-      dateOfBirth: updateDto.dateOfBirth,
-      preferredLanguage: updateDto.preferredLanguage,
-      preferredCurrency: updateDto.preferredCurrency,
-      profilePicture: updateDto.profilePicture
+      ...(updateDto.firstName !== undefined && { firstName: updateDto.firstName }),
+      ...(updateDto.lastName !== undefined && { lastName: updateDto.lastName }),
+      ...(updateDto.dateOfBirth !== undefined && { dateOfBirth: updateDto.dateOfBirth }),
+      ...(updateDto.preferredLanguage !== undefined && { preferredLanguage: updateDto.preferredLanguage }),
+      ...(updateDto.preferredCurrency !== undefined && { preferredCurrency: updateDto.preferredCurrency }),
+      ...(updateDto.profilePicture !== undefined && { profilePicture: updateDto.profilePicture })
     });
   }
 
@@ -201,11 +201,11 @@ export class UserMapper {
    */
   static updateMetadataFromDto(user: User, updateDto: UpdateUserMetadataDto): User {
     return user.updateMetadata({
-      loginAttempts: updateDto.loginAttempts,
-      riskScore: updateDto.riskScore,
-      accountAge: updateDto.accountAge,
-      lastFailedLoginAttempt: updateDto.lastFailedLoginAttempt,
-      accountLockedUntil: updateDto.accountLockedUntil
+      ...(updateDto.loginAttempts !== undefined && { loginAttempts: updateDto.loginAttempts }),
+      ...(updateDto.riskScore !== undefined && { riskScore: updateDto.riskScore }),
+      ...(updateDto.accountAge !== undefined && { accountAge: updateDto.accountAge }),
+      ...(updateDto.lastFailedLoginAttempt !== undefined && { lastFailedLoginAttempt: updateDto.lastFailedLoginAttempt }),
+      ...(updateDto.accountLockedUntil !== undefined && { accountLockedUntil: updateDto.accountLockedUntil })
     });
   }
 
@@ -213,20 +213,25 @@ export class UserMapper {
    * Add address from AddAddressDto
    */
   static addAddressFromDto(user: User, addAddressDto: AddAddressDto): User {
-    const address = Address.create({
+    const addressData: any = {
       id: this.generateAddressId(),
       userId: user.id,
       type: addAddressDto.type as 'billing' | 'shipping' | 'business' | 'home',
       isPrimary: addAddressDto.isPrimary,
-      street: addAddressDto.street,
-      city: addAddressDto.city,
-      state: addAddressDto.state,
-      postalCode: addAddressDto.postalCode,
-      country: addAddressDto.country,
+      street: addAddressDto.street || '',
+      city: addAddressDto.city || '',
+      postalCode: addAddressDto.postalCode || '',
+      country: addAddressDto.country || '',
       coordinates: addAddressDto.coordinates,
       createdAt: new Date(),
       updatedAt: new Date()
-    });
+    };
+    
+    if (addAddressDto.state !== undefined) {
+      addressData.state = addAddressDto.state;
+    }
+    
+    const address = Address.create(addressData);
 
     return user.addAddress(address);
   }
@@ -235,20 +240,25 @@ export class UserMapper {
    * Update address from UpdateAddressDto
    */
   static updateAddressFromDto(user: User, updateAddressDto: UpdateAddressDto): User {
-    const address = Address.create({
+    const addressData: any = {
       id: updateAddressDto.id,
       userId: user.id,
       type: (updateAddressDto.type || 'shipping') as 'billing' | 'shipping' | 'business' | 'home',
       isPrimary: updateAddressDto.isPrimary || false,
       street: updateAddressDto.street || '',
       city: updateAddressDto.city || '',
-      state: updateAddressDto.state,
       postalCode: updateAddressDto.postalCode || '',
       country: updateAddressDto.country || '',
       coordinates: updateAddressDto.coordinates,
       createdAt: new Date(), // This would typically be preserved
       updatedAt: new Date()
-    });
+    };
+    
+    if (updateAddressDto.state !== undefined) {
+      addressData.state = updateAddressDto.state;
+    }
+    
+    const address = Address.create(addressData);
 
     return user.updateAddress(updateAddressDto.id, address);
   }

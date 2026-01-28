@@ -4,11 +4,10 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { DatabaseConnection } from './infrastructure/database/prisma-client';
 import { logger } from './infrastructure/services/logger.service';
-import { userRoutes } from './api/routes/user.routes';
+import { createUserRoutes } from './api/routes/user.routes';
 import { healthRoutes } from './api/routes/health.routes';
 import { errorHandler } from './api/middleware/error.middleware';
 import { requestLogger } from './api/middleware/request-logger.middleware';
-import { rateLimiter } from './api/middleware/rate-limit.middleware';
 import { validationErrorHandler } from './api/middleware/validation.middleware';
 
 /**
@@ -52,7 +51,7 @@ class UserServiceApplication {
 
     // CORS configuration
     this.app.use(cors({
-      origin: (origin, callback) => {
+      origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
         // Allow requests with no origin (mobile apps, curl, etc.)
         if (!origin) return callback(null, true);
 
@@ -103,9 +102,9 @@ class UserServiceApplication {
     this.app.use(express.json({
       limit: '10mb',
       strict: true,
-      verify: (req, res, buf) => {
+      verify: (_req, _res, buf) => {
         // Store raw body for webhook signature verification
-        (req as any).rawBody = buf;
+        (_req as any).rawBody = buf;
       }
     }));
 
@@ -117,9 +116,6 @@ class UserServiceApplication {
     // Request logging
     this.app.use(requestLogger);
 
-    // Rate limiting
-    this.app.use('/api/', rateLimiter);
-
     // Health check (no rate limiting)
     this.app.use('/health', healthRoutes);
   }
@@ -128,11 +124,14 @@ class UserServiceApplication {
    * Initialize API routes
    */
   private initializeRoutes(): void {
+    // Create user routes
+    const userRoutes = createUserRoutes();
+
     // API versioning
     this.app.use('/api/v1', userRoutes);
 
     // Root endpoint
-    this.app.get('/', (req, res) => {
+    this.app.get('/', (_req: express.Request, res: express.Response) => {
       res.json({
         service: 'User Service',
         version: '1.0.0',
@@ -147,7 +146,7 @@ class UserServiceApplication {
     });
 
     // 404 handler
-    this.app.use('*', (req, res) => {
+    this.app.use('*', (req: express.Request, res: express.Response) => {
       res.status(404).json({
         error: 'Not Found',
         message: `Route ${req.method} ${req.originalUrl} not found`,

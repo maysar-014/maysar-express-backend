@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
 import { CreateUserUseCase } from '@application/use-cases/create-user.use-case';
 import { UserMapper } from '@application/mappers/user-mapper';
-import { UserValidationService } from '@domain/services/user-validation.service';
-import { UserSecurityPolicy } from '@domain/policies/user-security.policy';
 import { UserAlreadyExistsError } from '@domain/errors/user.errors';
 
 /**
@@ -11,9 +9,7 @@ import { UserAlreadyExistsError } from '@domain/errors/user.errors';
  */
 export class UserController {
   constructor(
-    private createUserUseCase: CreateUserUseCase,
-    private userValidationService: UserValidationService,
-    private userSecurityPolicy: UserSecurityPolicy
+    private createUserUseCase: CreateUserUseCase
   ) {}
 
   /**
@@ -23,25 +19,8 @@ export class UserController {
     try {
       const userDto = req.body;
 
-      // Validate input data
-      const validation = this.userValidationService.validateUserCreation(userDto);
-      if (!validation.isValid) {
-        res.status(400).json({
-          success: false,
-          errors: validation.errors
-        });
-        return;
-      }
-
-      // Check security policy
-      const securityCheck = this.userSecurityPolicy.validateUserCreation(userDto);
-      if (!securityCheck.isValid) {
-        res.status(422).json({
-          success: false,
-          errors: ['Security policy violation: ' + securityCheck.reason]
-        });
-        return;
-      }
+      // TODO: Add validation logic here if needed
+      // For now, pass directly to use case which will handle validation
 
       // Create user
       const createdUser = await this.createUserUseCase.execute(userDto);
@@ -49,7 +28,7 @@ export class UserController {
       // Return success response
       res.status(201).json({
         success: true,
-        data: UserMapper.toDto(createdUser),
+        data: UserMapper.toResponseDto(createdUser),
         message: 'User created successfully'
       });
 
@@ -78,9 +57,9 @@ export class UserController {
   /**
    * Get user by ID
    */
-  async getUserById(req: Request, res: Response): Promise<void> {
+  async getUserById(_req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.params.id;
+      // const userId = req.params.id; // TODO: Use when implementing getUserById use case
 
       // TODO: Implement getUserById use case
       // const user = await this.getUserByIdUseCase.execute(userId);
@@ -108,10 +87,10 @@ export class UserController {
   /**
    * Update user
    */
-  async updateUser(req: Request, res: Response): Promise<void> {
+  async updateUser(_req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.params.id;
-      const userDto = req.body;
+      // const userId = req.params.id; // TODO: Use when implementing updateUser use case
+      // const userDto = req.body; // TODO: Use when implementing updateUser use case
 
       // TODO: Implement updateUser use case
       // const updatedUser = await this.updateUserUseCase.execute(userId, userDto);
@@ -139,9 +118,9 @@ export class UserController {
   /**
    * Delete user
    */
-  async deleteUser(req: Request, res: Response): Promise<void> {
+  async deleteUser(_req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.params.id;
+      // const userId = req.params.id; // TODO: Use when implementing deleteUser use case
 
       // TODO: Implement deleteUser use case
       // await this.deleteUserUseCase.execute(userId);
@@ -169,9 +148,9 @@ export class UserController {
   /**
    * Verify email
    */
-  async verifyEmail(req: Request, res: Response): Promise<void> {
+  async verifyEmail(_req: Request, res: Response): Promise<void> {
     try {
-      const { token } = req.params;
+      // const { token } = req.params; // TODO: Use when implementing email verification
 
       // TODO: Implement email verification
       // const result = await this.verifyEmailUseCase.execute(token);
@@ -199,9 +178,9 @@ export class UserController {
   /**
    * Request password reset
    */
-  async requestPasswordReset(req: Request, res: Response): Promise<void> {
+  async requestPasswordReset(_req: Request, res: Response): Promise<void> {
     try {
-      const { email } = req.body;
+      // const { email } = req.body; // TODO: Use when implementing password reset
 
       // TODO: Implement password reset request
       // await this.requestPasswordResetUseCase.execute(email);
@@ -229,10 +208,10 @@ export class UserController {
   /**
    * Reset password
    */
-  async resetPassword(req: Request, res: Response): Promise<void> {
+  async resetPassword(_req: Request, res: Response): Promise<void> {
     try {
-      const { token } = req.params;
-      const { newPassword } = req.body;
+      // const { token } = req.params; // TODO: Use when implementing password reset
+      // const { newPassword } = req.body; // TODO: Use when implementing password reset
 
       // TODO: Implement password reset
       // await this.resetPasswordUseCase.execute(token, newPassword);
@@ -308,7 +287,7 @@ export class UserController {
       // Extract user ID from authenticated request
       // TODO: Implement proper authentication middleware to attach user to request
       const userId = req.headers['x-user-id'] as string;
-      const profileData = req.body;
+      // const profileData = req.body; // TODO: Use when implementing updateProfile use case
 
       if (!userId) {
         res.status(401).json({

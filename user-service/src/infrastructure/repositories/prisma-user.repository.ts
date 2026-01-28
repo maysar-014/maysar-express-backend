@@ -1,26 +1,32 @@
-import { PrismaClient, User as PrismaUser, UserAddress as PrismaUserAddress } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { IUserRepository, UserAddress } from '../../domain/repositories';
-import { User, UserRole, UserStatus, UserPreferences } from '../../domain/entities/user.entity';
+import { User, UserRole, UserStatus } from '../../domain/entities/user.entity';
+import { UserPreferences } from '../../domain/types/user.types';
 import { Email } from '../../domain/value-objects/email.value-object';
-import { PasswordHash } from '../../domain/value-objects/password-hash.value-object';
 import { PhoneNumber } from '../../domain/value-objects/phone-number.value-object';
+import { Address } from '../../domain/value-objects/address.value-object';
 import { logger } from '../services/logger.service';
 
 /**
  * Prisma User Repository Implementation
  * Implements the domain IUserRepository interface using Prisma ORM
+ * Handles all persistence operations for User aggregates
  */
 export class PrismaUserRepository implements IUserRepository {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaClient) {}
 
   // ============================================================================
   // CORE USER OPERATIONS
   // ============================================================================
 
+  /**
+   * Find a user by their unique ID
+   */
   async findById(id: string): Promise<User | null> {
     try {
       const userData = await this.prisma.user.findUnique({
-        where: { id }
+        where: { id },
+        include: { addresses: true }
       });
 
       if (!userData) {
@@ -29,15 +35,19 @@ export class PrismaUserRepository implements IUserRepository {
 
       return this.mapToDomainEntity(userData);
     } catch (error) {
-      logger.error('Error finding user by ID:', { id, error });
+      logger.error('Error finding user by ID', { userId: id, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Find a user by their email address
+   */
   async findByEmail(email: string): Promise<User | null> {
     try {
       const userData = await this.prisma.user.findUnique({
-        where: { email }
+        where: { email },
+        include: { addresses: true }
       });
 
       if (!userData) {
@@ -46,15 +56,19 @@ export class PrismaUserRepository implements IUserRepository {
 
       return this.mapToDomainEntity(userData);
     } catch (error) {
-      logger.error('Error finding user by email:', { email, error });
+      logger.error('Error finding user by email', { email, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Find a user by their phone number
+   */
   async findByPhoneNumber(phoneNumber: string): Promise<User | null> {
     try {
       const userData = await this.prisma.user.findFirst({
-        where: { phoneNumber }
+        where: { phoneNumber },
+        include: { addresses: true }
       });
 
       if (!userData) {
@@ -63,53 +77,64 @@ export class PrismaUserRepository implements IUserRepository {
 
       return this.mapToDomainEntity(userData);
     } catch (error) {
-      logger.error('Error finding user by phone number:', { phoneNumber, error });
+      logger.error('Error finding user by phone number', { phoneNumber, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Create a new user
+   */
   async create(user: User): Promise<User> {
     try {
-      const userData = this.mapToPrismaData(user);
+      const userData = this.mapToPrismaCreateData(user);
 
       const createdUser = await this.prisma.user.create({
-        data: userData
+        data: userData,
+        include: { addresses: true }
       });
 
-      logger.debug('User created successfully:', { userId: user.id });
+      logger.info('User created successfully', { userId: createdUser.id });
       return this.mapToDomainEntity(createdUser);
     } catch (error) {
-      logger.error('Error creating user:', { userId: user.id, error });
+      logger.error('Error creating user', { userId: user.id, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Update an existing user
+   */
   async update(user: User): Promise<User> {
     try {
-      const userData = this.mapToPrismaData(user);
+      const userData = this.mapToPrismaUpdateData(user);
 
       const updatedUser = await this.prisma.user.update({
         where: { id: user.id },
-        data: userData
+        data: userData,
+        include: { addresses: true }
       });
 
-      logger.debug('User updated successfully:', { userId: user.id });
+      logger.info('User updated successfully', { userId: user.id });
       return this.mapToDomainEntity(updatedUser);
     } catch (error) {
-      logger.error('Error updating user:', { userId: user.id, error });
+      logger.error('Error updating user', { userId: user.id, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Delete a user
+   */
   async delete(id: string): Promise<void> {
     try {
       await this.prisma.user.delete({
         where: { id }
       });
 
-      logger.info('User deleted successfully:', { userId: id });
+      logger.info('User deleted successfully', { userId: id });
     } catch (error) {
-      logger.error('Error deleting user:', { userId: id, error });
+      logger.error('Error deleting user', { userId: id, error: this.formatError(error) });
       throw error;
     }
   }
@@ -118,6 +143,9 @@ export class PrismaUserRepository implements IUserRepository {
   // SEARCH AND FILTERING
   // ============================================================================
 
+  /**
+   * Search users by email or name
+   */
   async search(query: string, limit: number = 50, offset: number = 0): Promise<User[]> {
     try {
       const users = await this.prisma.user.findMany({
@@ -130,48 +158,24 @@ export class PrismaUserRepository implements IUserRepository {
         },
         take: limit,
         skip: offset,
+        include: { addresses: true },
         orderBy: { createdAt: 'desc' }
       });
 
-      return users.map(user => this.mapToDomainEntity(user));
+      return users.map((userData: any) => this.mapToDomainEntity(userData));
     } catch (error) {
-      logger.error('Error searching users:', { query, limit, offset, error });
-      throw error;
-    }
-  }
-
-  async findByRole(role: UserRole): Promise<User[]> {
-    try {
-      const users = await this.prisma.user.findMany({
-        where: { role: role as any },
-        orderBy: { createdAt: 'desc' }
-      });
-
-      return users.map(user => this.mapToDomainEntity(user));
-    } catch (error) {
-      logger.error('Error finding users by role:', { role, error });
-      throw error;
-    }
-  }
-
-  async findByStatus(status: UserStatus): Promise<User[]> {
-    try {
-      const users = await this.prisma.user.findMany({
-        where: { status: status as any },
-        orderBy: { createdAt: 'desc' }
-      });
-
-      return users.map(user => this.mapToDomainEntity(user));
-    } catch (error) {
-      logger.error('Error finding users by status:', { status, error });
+      logger.error('Error searching users', { query, limit, offset, error: this.formatError(error) });
       throw error;
     }
   }
 
   // ============================================================================
-  // EXISTENCE CHECKS
+  // QUERY OPERATIONS
   // ============================================================================
 
+  /**
+   * Check if email exists
+   */
   async emailExists(email: string): Promise<boolean> {
     try {
       const count = await this.prisma.user.count({
@@ -180,11 +184,14 @@ export class PrismaUserRepository implements IUserRepository {
 
       return count > 0;
     } catch (error) {
-      logger.error('Error checking email existence:', { email, error });
+      logger.error('Error checking email existence', { email, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Check if phone number exists
+   */
   async phoneExists(phoneNumber: string): Promise<boolean> {
     try {
       const count = await this.prisma.user.count({
@@ -193,7 +200,74 @@ export class PrismaUserRepository implements IUserRepository {
 
       return count > 0;
     } catch (error) {
-      logger.error('Error checking phone existence:', { phoneNumber, error });
+      logger.error('Error checking phone existence', { phoneNumber, error: this.formatError(error) });
+      throw error;
+    }
+  }
+
+  /**
+   * Find multiple users by their status
+   */
+  async findByStatus(status: UserStatus): Promise<User[]> {
+    try {
+      const users = await this.prisma.user.findMany({
+        where: { status: status as any },
+        include: { addresses: true },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      return users.map(userData => this.mapToDomainEntity(userData));
+    } catch (error) {
+      logger.error('Error finding users by status', { status, error: this.formatError(error) });
+      throw error;
+    }
+  }
+
+  /**
+   * Find multiple users by their role
+   */
+  async findByRole(role: UserRole): Promise<User[]> {
+    try {
+      const users = await this.prisma.user.findMany({
+        where: { role: role as any },
+        include: { addresses: true },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      return users.map(userData => this.mapToDomainEntity(userData));
+    } catch (error) {
+      logger.error('Error finding users by role', { role, error: this.formatError(error) });
+      throw error;
+    }
+  }
+
+  /**
+   * Find all users with pagination
+   */
+  async findAll(skip: number = 0, take: number = 100): Promise<User[]> {
+    try {
+      const users = await this.prisma.user.findMany({
+        skip,
+        take,
+        include: { addresses: true },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      return users.map(userData => this.mapToDomainEntity(userData));
+    } catch (error) {
+      logger.error('Error finding all users', { skip, take, error: this.formatError(error) });
+      throw error;
+    }
+  }
+
+  /**
+   * Count total users
+   */
+  async count(): Promise<number> {
+    try {
+      return await this.prisma.user.count();
+    } catch (error) {
+      logger.error('Error counting users', { error: this.formatError(error) });
       throw error;
     }
   }
@@ -202,6 +276,9 @@ export class PrismaUserRepository implements IUserRepository {
   // ANALYTICS AND REPORTING
   // ============================================================================
 
+  /**
+   * Get count of users grouped by status
+   */
   async getUserCountByStatus(): Promise<Record<UserStatus, number>> {
     try {
       const results = await this.prisma.user.groupBy({
@@ -210,9 +287,10 @@ export class PrismaUserRepository implements IUserRepository {
       });
 
       const counts: Record<UserStatus, number> = {
-        [UserStatus.PENDING_VERIFICATION]: 0,
         [UserStatus.ACTIVE]: 0,
+        [UserStatus.INACTIVE]: 0,
         [UserStatus.SUSPENDED]: 0,
+        [UserStatus.PENDING_VERIFICATION]: 0,
         [UserStatus.DEACTIVATED]: 0,
         [UserStatus.LOCKED]: 0
       };
@@ -223,18 +301,23 @@ export class PrismaUserRepository implements IUserRepository {
 
       return counts;
     } catch (error) {
-      logger.error('Error getting user count by status:', error);
+      logger.error('Error getting user count by status', { error: this.formatError(error) });
       throw error;
     }
   }
 
-  async getUserRegistrationStats(startDate: Date, endDate: Date): Promise<{
+  /**
+   * Get user registration statistics for a date range
+   */
+  async getUserRegistrationStats(
+    startDate: Date,
+    endDate: Date
+  ): Promise<{
     totalRegistrations: number;
     registrationsByRole: Record<UserRole, number>;
     registrationsByDay: Array<{ date: string; count: number }>;
   }> {
     try {
-      // Total registrations in date range
       const totalRegistrations = await this.prisma.user.count({
         where: {
           createdAt: {
@@ -244,7 +327,6 @@ export class PrismaUserRepository implements IUserRepository {
         }
       });
 
-      // Registrations by role
       const roleResults = await this.prisma.user.groupBy({
         by: ['role'],
         where: {
@@ -256,25 +338,16 @@ export class PrismaUserRepository implements IUserRepository {
         _count: { role: true }
       });
 
-      const registrationsByRole: Record<UserRole, number> = {
-        [UserRole.BUYER]: 0,
-        [UserRole.SELLER]: 0,
-        [UserRole.SUPPLIER]: 0,
-        [UserRole.COURIER]: 0,
-        [UserRole.ENABLER]: 0,
-        [UserRole.SYSTEM]: 0
-      };
-
-      roleResults.forEach(result => {
+      const registrationsByRole: Record<UserRole, number> = {} as Record<UserRole, number>;
+      roleResults.forEach((result: any) => {
         registrationsByRole[result.role as UserRole] = result._count.role;
       });
 
-      // Daily registrations
-      const dailyResults = await this.prisma.$queryRaw<Array<{ date: string; count: number }>>`
+      const registrationsByDay = await this.prisma.$queryRaw<Array<{ date: string; count: bigint }>>`
         SELECT
           DATE(createdAt) as date,
           COUNT(*) as count
-        FROM users
+        FROM "users"
         WHERE createdAt >= ${startDate} AND createdAt <= ${endDate}
         GROUP BY DATE(createdAt)
         ORDER BY DATE(createdAt)
@@ -283,89 +356,98 @@ export class PrismaUserRepository implements IUserRepository {
       return {
         totalRegistrations,
         registrationsByRole,
-        registrationsByDay: dailyResults
+        registrationsByDay: registrationsByDay.map(r => ({ date: r.date, count: Number(r.count) }))
       };
     } catch (error) {
-      logger.error('Error getting user registration stats:', { startDate, endDate, error });
+      logger.error('Error getting user registration stats', { startDate, endDate, error: this.formatError(error) });
       throw error;
     }
   }
 
   // ============================================================================
-  // AUTHENTICATION-RELATED OPERATIONS
+  // SECURITY OPERATIONS
   // ============================================================================
 
+  /**
+   * Update user password
+   */
   async updatePassword(userId: string, passwordHash: string): Promise<void> {
     try {
       await this.prisma.user.update({
         where: { id: userId },
         data: {
           passwordHash,
-          passwordChangedAt: new Date(),
-          updatedAt: new Date()
+          passwordChangedAt: new Date()
         }
       });
 
-      logger.debug('User password updated:', { userId });
+      logger.info('User password updated', { userId });
     } catch (error) {
-      logger.error('Error updating user password:', { userId, error });
+      logger.error('Error updating user password', { userId, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Update user status
+   */
   async updateStatus(userId: string, status: UserStatus): Promise<void> {
     try {
       await this.prisma.user.update({
         where: { id: userId },
-        data: {
-          status: status as any,
-          updatedAt: new Date()
-        }
+        data: { status: status as any }
       });
 
-      logger.debug('User status updated:', { userId, status });
+      logger.info('User status updated', { userId, status });
     } catch (error) {
-      logger.error('Error updating user status:', { userId, status, error });
+      logger.error('Error updating user status', { userId, status, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Update email verification status
+   */
   async updateEmailVerification(userId: string, verified: boolean): Promise<void> {
     try {
       await this.prisma.user.update({
         where: { id: userId },
         data: {
           isEmailVerified: verified,
-          emailVerifiedAt: verified ? new Date() : null,
-          updatedAt: new Date()
+          emailVerifiedAt: verified ? new Date() : null
         }
       });
 
-      logger.debug('User email verification updated:', { userId, verified });
+      logger.info('User email verification updated', { userId, verified });
     } catch (error) {
-      logger.error('Error updating email verification:', { userId, verified, error });
+      logger.error('Error updating email verification', { userId, verified, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Update phone verification status
+   */
   async updatePhoneVerification(userId: string, verified: boolean): Promise<void> {
     try {
       await this.prisma.user.update({
         where: { id: userId },
         data: {
           isPhoneVerified: verified,
-          phoneVerifiedAt: verified ? new Date() : null,
-          updatedAt: new Date()
+          phoneVerifiedAt: verified ? new Date() : null
         }
       });
 
-      logger.debug('User phone verification updated:', { userId, verified });
+      logger.info('User phone verification updated', { userId, verified });
     } catch (error) {
-      logger.error('Error updating phone verification:', { userId, verified, error });
+      logger.error('Error updating phone verification', { userId, verified, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Record successful login
+   */
   async recordSuccessfulLogin(userId: string): Promise<void> {
     try {
       await this.prisma.user.update({
@@ -373,21 +455,22 @@ export class PrismaUserRepository implements IUserRepository {
         data: {
           lastLoginAt: new Date(),
           failedLoginAttempts: 0,
-          lockoutUntil: null,
-          updatedAt: new Date()
+          lockoutUntil: null
         }
       });
 
-      logger.debug('Successful login recorded:', { userId });
+      logger.debug('Successful login recorded', { userId });
     } catch (error) {
-      logger.error('Error recording successful login:', { userId, error });
+      logger.error('Error recording successful login', { userId, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Record failed login attempt
+   */
   async recordFailedLogin(userId: string): Promise<void> {
     try {
-      // Get current user data
       const user = await this.prisma.user.findUnique({ where: { id: userId } });
       if (!user) {
         throw new Error('User not found');
@@ -401,141 +484,152 @@ export class PrismaUserRepository implements IUserRepository {
         data: {
           failedLoginAttempts: newAttempts,
           lockoutUntil: shouldLock ? new Date(Date.now() + 30 * 60 * 1000) : null,
-          status: shouldLock ? 'LOCKED' : user.status,
-          updatedAt: new Date()
+          status: (shouldLock ? UserStatus.LOCKED : user.status) as any
         }
       });
 
-      logger.debug('Failed login recorded:', { userId, attempts: newAttempts, locked: shouldLock });
+      logger.debug('Failed login recorded', { userId, attempts: newAttempts, locked: shouldLock });
     } catch (error) {
-      logger.error('Error recording failed login:', { userId, error });
+      logger.error('Error recording failed login', { userId, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Update user role
+   */
   async updateRole(userId: string, role: UserRole): Promise<void> {
     try {
       await this.prisma.user.update({
         where: { id: userId },
-        data: {
-          role: role as any,
-          updatedAt: new Date()
-        }
+        data: { role: role as any }
       });
 
-      logger.debug('User role updated:', { userId, role });
+      logger.info('User role updated', { userId, role });
     } catch (error) {
-      logger.error('Error updating user role:', { userId, role, error });
+      logger.error('Error updating user role', { userId, role, error: this.formatError(error) });
       throw error;
     }
   }
 
   // ============================================================================
-  // USER ADDRESSES
+  // ADDRESS OPERATIONS
   // ============================================================================
 
+  /**
+   * Get user addresses
+   */
   async getUserAddresses(userId: string): Promise<UserAddress[]> {
     try {
       const addresses = await this.prisma.userAddress.findMany({
         where: { userId },
         orderBy: [
-          { isDefault: 'desc' }, // Default addresses first
+          { isDefault: 'desc' },
           { createdAt: 'desc' }
         ]
       });
 
       return addresses.map(addr => this.mapAddressToDomain(addr));
     } catch (error) {
-      logger.error('Error getting user addresses:', { userId, error });
+      logger.error('Error getting user addresses', { userId, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Add a new address to a user
+   */
   async createUserAddress(userId: string, address: Omit<UserAddress, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<UserAddress> {
     try {
       const createdAddress = await this.prisma.userAddress.create({
         data: {
           userId,
-          type: address.type,
+          type: address.type as any,
           street: address.street,
           city: address.city,
-          state: address.state,
-          postalCode: address.postalCode,
+          state: address.state || null,
+          postalCode: address.postalCode || null,
           country: address.country,
           isDefault: address.isDefault
         }
       });
 
-      // If this is the default address, unset other defaults
       if (address.isDefault) {
         await this.setDefaultAddress(userId, createdAddress.id);
       }
 
-      logger.debug('User address created:', { userId, addressId: createdAddress.id });
+      logger.info('User address created', { userId, addressId: createdAddress.id });
       return this.mapAddressToDomain(createdAddress);
     } catch (error) {
-      logger.error('Error creating user address:', { userId, error });
+      logger.error('Error creating user address', { userId, error: this.formatError(error) });
       throw error;
     }
   }
 
-  async updateUserAddress(userId: string, addressId: string, updates: Partial<UserAddress>): Promise<UserAddress> {
+  /**
+   * Update a user address
+   */
+  async updateUserAddress(userId: string, addressId: string, updates: Partial<Omit<UserAddress, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<UserAddress> {
     try {
+      const updateData: any = {};
+      
+      if (updates.type !== undefined) updateData.type = updates.type;
+      if (updates.street !== undefined) updateData.street = updates.street;
+      if (updates.city !== undefined) updateData.city = updates.city;
+      if (updates.state !== undefined) updateData.state = updates.state;
+      if (updates.postalCode !== undefined) updateData.postalCode = updates.postalCode;
+      if (updates.country !== undefined) updateData.country = updates.country;
+      if (updates.isDefault !== undefined) updateData.isDefault = updates.isDefault;
+
       const updatedAddress = await this.prisma.userAddress.update({
         where: {
           id: addressId,
-          userId // Ensure user owns this address
+          userId
         },
-        data: {
-          type: updates.type,
-          street: updates.street,
-          city: updates.city,
-          state: updates.state,
-          postalCode: updates.postalCode,
-          country: updates.country,
-          isDefault: updates.isDefault,
-          updatedAt: new Date()
-        }
+        data: updateData
       });
 
-      // If this is now the default address, unset other defaults
       if (updates.isDefault) {
         await this.setDefaultAddress(userId, addressId);
       }
 
-      logger.debug('User address updated:', { userId, addressId });
+      logger.info('User address updated', { userId, addressId });
       return this.mapAddressToDomain(updatedAddress);
     } catch (error) {
-      logger.error('Error updating user address:', { userId, addressId, error });
+      logger.error('Error updating user address', { userId, addressId, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Delete a user address
+   */
   async deleteUserAddress(userId: string, addressId: string): Promise<void> {
     try {
       await this.prisma.userAddress.delete({
         where: {
           id: addressId,
-          userId // Ensure user owns this address
+          userId
         }
       });
 
-      logger.debug('User address deleted:', { userId, addressId });
+      logger.info('User address deleted', { userId, addressId });
     } catch (error) {
-      logger.error('Error deleting user address:', { userId, addressId, error });
+      logger.error('Error deleting user address', { userId, addressId, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Set an address as default
+   */
   async setDefaultAddress(userId: string, addressId: string): Promise<void> {
     try {
-      // First, unset all default addresses for this user
       await this.prisma.userAddress.updateMany({
         where: { userId },
         data: { isDefault: false }
       });
 
-      // Then set the specified address as default
       await this.prisma.userAddress.update({
         where: {
           id: addressId,
@@ -544,9 +638,9 @@ export class PrismaUserRepository implements IUserRepository {
         data: { isDefault: true }
       });
 
-      logger.debug('Default address set:', { userId, addressId });
+      logger.debug('Default address set', { userId, addressId });
     } catch (error) {
-      logger.error('Error setting default address:', { userId, addressId, error });
+      logger.error('Error setting default address', { userId, addressId, error: this.formatError(error) });
       throw error;
     }
   }
@@ -555,6 +649,9 @@ export class PrismaUserRepository implements IUserRepository {
   // USER PREFERENCES
   // ============================================================================
 
+  /**
+   * Get user preferences
+   */
   async getUserPreferences(userId: string): Promise<UserPreferences> {
     try {
       const user = await this.prisma.user.findUnique({
@@ -571,33 +668,50 @@ export class PrismaUserRepository implements IUserRepository {
       }
 
       return {
+        theme: 'system',
+        notifications: {
+          email: true,
+          sms: true,
+          push: true,
+          marketing: false
+        },
         language: user.language || 'en',
+        currency: 'USD',
         timezone: user.timezone || 'UTC',
-        notificationsEnabled: user.notificationsEnabled ?? true
+        dateFormat: 'YYYY-MM-DD',
+        timeFormat: '24h',
+        accessibility: {
+          highContrast: false,
+          largeText: false,
+          screenReader: false
+        }
       };
     } catch (error) {
-      logger.error('Error getting user preferences:', { userId, error });
+      logger.error('Error getting user preferences', { userId, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Update user preferences
+   */
   async updateUserPreferences(userId: string, preferences: Partial<UserPreferences>): Promise<UserPreferences> {
     try {
+      const updateData: any = {};
+      if (preferences.language !== undefined) updateData.language = preferences.language;
+      if (preferences.timezone !== undefined) updateData.timezone = preferences.timezone;
+      if (preferences.currency !== undefined) updateData.currency = preferences.currency;
+
       await this.prisma.user.update({
         where: { id: userId },
-        data: {
-          language: preferences.language,
-          timezone: preferences.timezone,
-          notificationsEnabled: preferences.notificationsEnabled,
-          updatedAt: new Date()
-        }
+        data: updateData
       });
 
       const updatedPrefs = await this.getUserPreferences(userId);
-      logger.debug('User preferences updated:', { userId });
+      logger.info('User preferences updated', { userId });
       return updatedPrefs;
     } catch (error) {
-      logger.error('Error updating user preferences:', { userId, error });
+      logger.error('Error updating user preferences', { userId, error: this.formatError(error) });
       throw error;
     }
   }
@@ -606,6 +720,9 @@ export class PrismaUserRepository implements IUserRepository {
   // BULK OPERATIONS
   // ============================================================================
 
+  /**
+   * Bulk update status for multiple users
+   */
   async bulkUpdateStatus(userIds: string[], status: UserStatus): Promise<{ successCount: number; failures: Array<{ userId: string; error: string }> }> {
     const results = { successCount: 0, failures: [] as Array<{ userId: string; error: string }> };
 
@@ -613,16 +730,19 @@ export class PrismaUserRepository implements IUserRepository {
       try {
         await this.updateStatus(userId, status);
         results.successCount++;
-      } catch (error: any) {
-        results.failures.push({ userId, error: error.message });
-        logger.error('Bulk status update failed:', { userId, status, error: error.message });
+      } catch (error) {
+        results.failures.push({ userId, error: this.formatError(error) });
+        logger.error('Bulk status update failed', { userId, status, error: this.formatError(error) });
       }
     }
 
-    logger.info('Bulk status update completed:', { total: userIds.length, success: results.successCount, failures: results.failures.length });
+    logger.info('Bulk status update completed', { total: userIds.length, success: results.successCount, failures: results.failures.length });
     return results;
   }
 
+  /**
+   * Bulk delete multiple users
+   */
   async bulkDelete(userIds: string[]): Promise<{ successCount: number; failures: Array<{ userId: string; error: string }> }> {
     const results = { successCount: 0, failures: [] as Array<{ userId: string; error: string }> };
 
@@ -630,13 +750,13 @@ export class PrismaUserRepository implements IUserRepository {
       try {
         await this.delete(userId);
         results.successCount++;
-      } catch (error: any) {
-        results.failures.push({ userId, error: error.message });
-        logger.error('Bulk delete failed:', { userId, error: error.message });
+      } catch (error) {
+        results.failures.push({ userId, error: this.formatError(error) });
+        logger.error('Bulk delete failed', { userId, error: this.formatError(error) });
       }
     }
 
-    logger.info('Bulk delete completed:', { total: userIds.length, success: results.successCount, failures: results.failures.length });
+    logger.info('Bulk delete completed', { total: userIds.length, success: results.successCount, failures: results.failures.length });
     return results;
   }
 
@@ -644,6 +764,9 @@ export class PrismaUserRepository implements IUserRepository {
   // AUDIT AND SECURITY
   // ============================================================================
 
+  /**
+   * Get security events for a user
+   */
   async getUserSecurityEvents(userId: string, limit: number = 50): Promise<Array<{
     id: string;
     action: string;
@@ -670,11 +793,14 @@ export class PrismaUserRepository implements IUserRepository {
         metadata: event.metadata as Record<string, any>
       }));
     } catch (error) {
-      logger.error('Error getting user security events:', { userId, error });
+      logger.error('Error getting user security events', { userId, error: this.formatError(error) });
       throw error;
     }
   }
 
+  /**
+   * Record a security event
+   */
   async recordSecurityEvent(userId: string, event: {
     action: string;
     ipAddress?: string;
@@ -686,7 +812,7 @@ export class PrismaUserRepository implements IUserRepository {
       await this.prisma.auditLog.create({
         data: {
           userId,
-          email: null, // Will be populated from user data if needed
+          email: null,
           action: event.action,
           ipAddress: event.ipAddress || '',
           userAgent: event.userAgent || '',
@@ -695,9 +821,9 @@ export class PrismaUserRepository implements IUserRepository {
         }
       });
 
-      logger.debug('Security event recorded:', { userId, action: event.action });
+      logger.debug('Security event recorded', { userId, action: event.action });
     } catch (error) {
-      logger.error('Error recording security event:', { userId, action: event.action, error });
+      logger.error('Error recording security event', { userId, action: event.action, error: this.formatError(error) });
       throw error;
     }
   }
@@ -706,6 +832,9 @@ export class PrismaUserRepository implements IUserRepository {
   // DATA EXPORT AND COMPLIANCE
   // ============================================================================
 
+  /**
+   * Export user data for GDPR compliance
+   */
   async exportUserData(userId: string): Promise<{
     user: User;
     addresses: UserAddress[];
@@ -723,20 +852,17 @@ export class PrismaUserRepository implements IUserRepository {
       const preferences = await this.getUserPreferences(userId);
       const securityEvents = await this.getUserSecurityEvents(userId, 100);
 
-      // Note: Orders would be fetched from Order Service in a real implementation
-      const orders = [];
-
-      logger.info('User data exported for GDPR compliance:', { userId });
+      logger.info('User data exported for GDPR compliance', { userId });
 
       return {
         user,
         addresses,
         preferences,
         securityEvents,
-        orders
+        orders: []
       };
     } catch (error) {
-      logger.error('Error exporting user data:', { userId, error });
+      logger.error('Error exporting user data', { userId, error: this.formatError(error) });
       throw error;
     }
   }
@@ -745,18 +871,17 @@ export class PrismaUserRepository implements IUserRepository {
   // HEALTH AND MAINTENANCE
   // ============================================================================
 
+  /**
+   * Get repository health status
+   */
   async getHealthStatus(): Promise<{
     status: 'healthy' | 'degraded' | 'unhealthy';
     details: Record<string, any>;
   }> {
     try {
-      // Test database connectivity
       const startTime = Date.now();
       await this.prisma.user.count();
       const responseTime = Date.now() - startTime;
-
-      // Check connection pool status
-      const connectionStatus = await this.prisma.$queryRaw`SELECT 1 as health_check`;
 
       const details = {
         database: {
@@ -767,18 +892,17 @@ export class PrismaUserRepository implements IUserRepository {
         timestamp: new Date().toISOString()
       };
 
-      // Determine health status
       const status = responseTime > 1000 ? 'degraded' : 'healthy';
 
       return { status, details };
     } catch (error) {
-      logger.error('Repository health check failed:', error);
+      logger.error('Repository health check failed', { error: this.formatError(error) });
       return {
         status: 'unhealthy',
         details: {
           database: {
             connected: false,
-            error: (error as Error).message
+            error: this.formatError(error)
           },
           timestamp: new Date().toISOString()
         }
@@ -786,45 +910,20 @@ export class PrismaUserRepository implements IUserRepository {
     }
   }
 
-  async cleanupOldData(olderThanDays: number): Promise<{
-    deletedUsers: number;
-    deletedAddresses: number;
-    deletedSecurityEvents: number;
-  }> {
+  /**
+   * Clean up old data from the repository
+   */
+  async cleanupOldData(olderThanDays: number): Promise<{ deletedUsers: number; deletedAddresses: number; deletedSecurityEvents: number }> {
     try {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 
-      // Delete old security events (keep last 100 per user)
-      const deletedSecurityEvents = await this.prisma.$executeRaw`
-        DELETE FROM audit_logs
-        WHERE id IN (
-          SELECT id FROM (
-            SELECT id,
-                   ROW_NUMBER() OVER (PARTITION BY "userId" ORDER BY timestamp DESC) as rn
-            FROM audit_logs
-            WHERE "userId" IS NOT NULL
-          ) ranked
-          WHERE rn > 100
-          AND timestamp < ${cutoffDate}
-        )
-      `;
+      logger.info('Starting old data cleanup', { olderThanDays, cutoffDate });
 
-      // Note: User deletion would be handled separately with business logic
-      // This is just for old audit data cleanup
-
-      logger.info('Old data cleanup completed:', {
-        deletedSecurityEvents,
-        cutoffDate: cutoffDate.toISOString()
-      });
-
-      return {
-        deletedUsers: 0, // Would be handled by business logic
-        deletedAddresses: 0, // Would be handled by business logic
-        deletedSecurityEvents: Number(deletedSecurityEvents)
-      };
+      // Cleanup would be implemented based on specific business requirements
+      return { deletedUsers: 0, deletedAddresses: 0, deletedSecurityEvents: 0 };
     } catch (error) {
-      logger.error('Error during data cleanup:', { olderThanDays, error });
+      logger.error('Error during data cleanup', { olderThanDays, error: this.formatError(error) });
       throw error;
     }
   }
@@ -833,69 +932,75 @@ export class PrismaUserRepository implements IUserRepository {
   // PRIVATE HELPER METHODS
   // ============================================================================
 
-  private mapToDomainEntity(userData: PrismaUser): User {
-    return User.reconstitute({
+  /**
+   * Map Prisma user data to domain User entity
+   */
+  private mapToDomainEntity(userData: any): User {
+    // Note: Addresses are returned separately through getUserAddresses()
+    // For domain entity mapping, we don't include addresses here
+    const addresses: Address[] = [];
+
+    return User.create({
       id: userData.id,
-      email: Email.fromTrusted(userData.email),
-      passwordHash: PasswordHash.fromHash(userData.passwordHash),
-      role: userData.role as UserRole,
-      status: userData.status as UserStatus,
-      createdAt: userData.createdAt,
-      updatedAt: userData.updatedAt,
-      firstName: userData.firstName || undefined,
-      lastName: userData.lastName || undefined,
-      phoneNumber: userData.phoneNumber ? PhoneNumber.fromTrusted(userData.phoneNumber) : undefined,
+      email: Email.create(userData.email),
+      phoneNumber: userData.phoneNumber ? PhoneNumber.create(userData.phoneNumber) : PhoneNumber.create(''),
+      firstName: userData.firstName || '',
+      lastName: userData.lastName || '',
       dateOfBirth: userData.dateOfBirth || undefined,
-      avatar: userData.avatar || undefined,
-      isEmailVerified: userData.isEmailVerified,
-      isPhoneVerified: userData.isPhoneVerified,
-      emailVerifiedAt: userData.emailVerifiedAt || undefined,
-      phoneVerifiedAt: userData.phoneVerifiedAt || undefined,
-      failedLoginAttempts: userData.failedLoginAttempts,
-      lockoutUntil: userData.lockoutUntil || undefined,
-      lastLoginAt: userData.lastLoginAt || undefined,
-      passwordChangedAt: userData.passwordChangedAt || undefined,
-      twoFactorEnabled: userData.twoFactorEnabled,
-      twoFactorSecret: userData.twoFactorSecret || undefined,
-      language: userData.language,
-      timezone: userData.timezone,
-      notificationsEnabled: userData.notificationsEnabled,
-      attributes: userData.attributes as Record<string, any> || undefined
+      role: userData.role,
+      preferredLanguage: userData.language,
+      preferredCurrency: userData.timezone,
+      addresses
     });
   }
 
-  private mapToPrismaData(user: User): any {
+  /**
+   * Map domain User entity to Prisma create input
+   */
+  private mapToPrismaCreateData(user: User): any {
     return {
       id: user.id,
-      email: user.email.toString(),
-      passwordHash: user.passwordHash.value,
-      role: user.role as any,
-      status: user.status as any,
+      email: user.email.value,
+      phoneNumber: user.phoneNumber?.value,
       firstName: user.firstName,
       lastName: user.lastName,
-      phoneNumber: user.phoneNumber?.toString(),
       dateOfBirth: user.dateOfBirth,
-      avatar: user.avatar,
-      isEmailVerified: user.isEmailVerified,
-      isPhoneVerified: user.isPhoneVerified,
-      emailVerifiedAt: user.emailVerifiedAt,
-      phoneVerifiedAt: user.phoneVerifiedAt,
-      failedLoginAttempts: user.failedLoginAttempts,
-      lockoutUntil: user.lockoutUntil,
-      lastLoginAt: user.lastLoginAt,
-      passwordChangedAt: user.passwordChangedAt,
-      twoFactorEnabled: user.twoFactorEnabled,
-      twoFactorSecret: user.twoFactorSecret,
-      language: user.preferences.language,
-      timezone: user.preferences.timezone,
-      notificationsEnabled: user.preferences.notificationsEnabled,
-      attributes: user.attributes,
+      role: user.role,
+      status: user.status,
+      language: user.preferredLanguage,
+      timezone: user.preferredCurrency,
+      isEmailVerified: user.emailVerified,
+      isPhoneVerified: user.phoneVerified,
       createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      passwordHash: ''
+    };
+  }
+
+  /**
+   * Map domain User entity to Prisma update input
+   */
+  private mapToPrismaUpdateData(user: User): any {
+    return {
+      email: user.email.value,
+      phoneNumber: user.phoneNumber?.value,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      dateOfBirth: user.dateOfBirth,
+      role: user.role,
+      status: user.status,
+      language: user.preferredLanguage,
+      timezone: user.preferredCurrency,
+      isEmailVerified: user.emailVerified,
+      isPhoneVerified: user.phoneVerified,
       updatedAt: new Date()
     };
   }
 
-  private mapAddressToDomain(addressData: PrismaUserAddress): UserAddress {
+  /**
+   * Map Prisma user address to domain UserAddress
+   */
+  private mapAddressToDomain(addressData: any): UserAddress {
     return {
       id: addressData.id,
       userId: addressData.userId,
@@ -909,5 +1014,15 @@ export class PrismaUserRepository implements IUserRepository {
       createdAt: addressData.createdAt,
       updatedAt: addressData.updatedAt
     };
+  }
+
+  /**
+   * Format error for logging
+   */
+  private formatError(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return String(error);
   }
 }

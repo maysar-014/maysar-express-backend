@@ -3,6 +3,10 @@ import * as dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
+// Type definitions for configuration
+type LogLevel = 'error' | 'warn' | 'info' | 'debug';
+type LogFormat = 'json' | 'simple' | 'dev';
+
 // Configuration validation schema
 interface ConfigSchema {
   // Service configuration
@@ -189,17 +193,17 @@ class ConfigManager {
 
       // Logging configuration
       logging: {
-        level: this.parseLogLevel(process.env.LOG_LEVEL || 'info'),
-        format: this.parseLogFormat(process.env.LOG_FORMAT || 'json'),
-        externalUrl: process.env.LOG_EXTERNAL_URL,
-        externalApiKey: process.env.LOG_EXTERNAL_API_KEY
+        level: process.env.LOG_LEVEL as LogLevel || 'info',
+        format: process.env.LOG_FORMAT as LogFormat || 'json',
+        externalUrl: process.env.EXTERNAL_LOG_URL || '',
+        externalApiKey: process.env.EXTERNAL_LOG_API_KEY || ''
       },
 
       // Event publishing configuration
       events: {
         enabled: process.env.EVENT_PUBLISHING_ENABLED !== 'false',
         messageQueueType: this.parseMessageQueueType(process.env.MESSAGE_QUEUE_TYPE || 'memory'),
-        messageQueueUrl: process.env.MESSAGE_QUEUE_URL,
+        messageQueueUrl: process.env.MESSAGE_QUEUE_URL || '',
         batchSize: parseInt(process.env.EVENT_PUBLISHING_BATCH_SIZE || '10', 10),
         timeout: parseInt(process.env.EVENT_PUBLISHING_TIMEOUT || '5000', 10)
       },
@@ -214,12 +218,12 @@ class ConfigManager {
 
       // External services
       external: {
-        emailServiceUrl: process.env.EMAIL_SERVICE_URL,
-        emailServiceApiKey: process.env.EMAIL_SERVICE_API_KEY,
-        notificationServiceUrl: process.env.NOTIFICATION_SERVICE_URL,
-        notificationServiceApiKey: process.env.NOTIFICATION_SERVICE_API_KEY,
+        emailServiceUrl: process.env.EMAIL_SERVICE_URL || '',
+        emailServiceApiKey: process.env.EMAIL_SERVICE_API_KEY || '',
+        notificationServiceUrl: process.env.NOTIFICATION_SERVICE_URL || '',
+        notificationServiceApiKey: process.env.NOTIFICATION_SERVICE_API_KEY || '',
         redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
-        redisPassword: process.env.REDIS_PASSWORD,
+        redisPassword: process.env.REDIS_PASSWORD || '',
         redisDb: parseInt(process.env.REDIS_DB || '0', 10)
       },
 
@@ -263,15 +267,15 @@ class ConfigManager {
         debugMode: process.env.DEBUG_MODE === 'true',
         enableSwaggerDocs: process.env.ENABLE_SWAGGER_DOCS !== 'false',
         enableRequestBodyLogging: process.env.ENABLE_REQUEST_BODY_LOGGING === 'true',
-        testDatabaseUrl: process.env.TEST_DATABASE_URL
+        testDatabaseUrl: process.env.TEST_DATABASE_URL || ''
       },
 
       // Deployment configuration
       deployment: {
         env: process.env.DEPLOYMENT_ENV || 'development',
         namespace: process.env.NAMESPACE || 'default',
-        podName: process.env.POD_NAME,
-        serviceAccount: process.env.SERVICE_ACCOUNT,
+        podName: process.env.POD_NAME || '',
+        serviceAccount: process.env.SERVICE_ACCOUNT || '',
         healthCheckPath: process.env.HEALTH_CHECK_PATH || '/health',
         readinessCheckPath: process.env.READINESS_CHECK_PATH || '/health/ready',
         livenessCheckPath: process.env.LIVENESS_CHECK_PATH || '/health/live'
@@ -327,27 +331,7 @@ class ConfigManager {
     return env as ConfigSchema['nodeEnv'];
   }
 
-  /**
-   * Parse log level with validation
-   */
-  private parseLogLevel(level: string): ConfigSchema['logging']['level'] {
-    const validLevels = ['error', 'warn', 'info', 'debug'];
-    if (!validLevels.includes(level)) {
-      throw new Error(`LOG_LEVEL must be one of: ${validLevels.join(', ')}`);
-    }
-    return level as ConfigSchema['logging']['level'];
-  }
 
-  /**
-   * Parse log format with validation
-   */
-  private parseLogFormat(format: string): ConfigSchema['logging']['format'] {
-    const validFormats = ['json', 'simple', 'dev'];
-    if (!validFormats.includes(format)) {
-      throw new Error(`LOG_FORMAT must be one of: ${validFormats.join(', ')}`);
-    }
-    return format as ConfigSchema['logging']['format'];
-  }
 
   /**
    * Parse message queue type with validation

@@ -167,7 +167,7 @@ export class UserValidationService implements DomainService {
   /**
    * Validate user metadata updates
    */
-  validateMetadataUpdate(user: User, newMetadata: Partial<UserMetadata>): { isValid: boolean; errors: string[] } {
+  validateMetadataUpdate(_user: User, newMetadata: Partial<UserMetadata>): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
 
     // Validate risk score bounds

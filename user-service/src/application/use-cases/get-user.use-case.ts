@@ -96,19 +96,20 @@ export class GetUserUseCase {
   /**
    * Filter user fields based on requested fields
    */
-  private filterUserFields(user: User, requestedFields: string[]): User {
+  private filterUserFields(user: User, _requestedFields: string[]): User {
     // Create a filtered version of the user
     // In a real implementation, this would create a User DTO or filtered entity
     // For now, we'll return the full user (in production, implement proper field filtering)
 
     // Basic field filtering logic (simplified)
-    const allowedFields = [
-      'id', 'email', 'firstName', 'lastName', 'phoneNumber',
-      'dateOfBirth', 'avatar', 'role', 'status', 'isEmailVerified',
-      'isPhoneVerified', 'createdAt', 'updatedAt'
-    ];
+    // const allowedFields = [
+    //   'id', 'email', 'firstName', 'lastName', 'phoneNumber',
+    //   'dateOfBirth', 'avatar', 'role', 'status', 'isEmailVerified',
+    //   'isPhoneVerified', 'createdAt', 'updatedAt'
+    // ];
 
-    const filteredFields = requestedFields.filter(field => allowedFields.includes(field));
+    // Filter requested fields to allowed fields (currently unused in this implementation)
+    // const filteredFields = requestedFields.filter(field => allowedFields.includes(field));
 
     // In a real implementation, you'd return a UserDTO with only the requested fields
     // For now, return the full user

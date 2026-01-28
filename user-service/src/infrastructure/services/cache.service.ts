@@ -23,7 +23,7 @@ export class InMemoryCacheService implements CacheService {
 
   async set(key: string, value: any, ttl?: number): Promise<void> {
     const expiresAt = ttl ? Date.now() + ttl * 1000 : undefined;
-    this.cache.set(key, { value, expiresAt });
+    this.cache.set(key, { value, expiresAt } as { value: any; expiresAt?: number });
   }
 
   async get<T>(key: string): Promise<T | null> {

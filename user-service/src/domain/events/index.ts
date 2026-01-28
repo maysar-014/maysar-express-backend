@@ -3,7 +3,7 @@
  * Defines all domain events that can be raised by the User aggregate
  */
 
-import { User, UserRole, UserStatus } from '../entities/user.entity';
+import { UserRole, UserStatus } from '../entities/user.entity';
 
 /**
  * Base domain event interface
@@ -15,7 +15,7 @@ export interface DomainEvent {
   aggregateType: string;
   eventVersion: number;
   occurredAt: Date;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, any> | undefined;
 }
 
 /**
@@ -28,16 +28,18 @@ export class UserRegisteredEvent implements DomainEvent {
   readonly aggregateType = 'User';
   readonly eventVersion = 1;
   readonly occurredAt: Date;
+  readonly metadata?: Record<string, any> | undefined;
 
   constructor(
     public readonly aggregateId: string, // userId
     public readonly email: string,
     public readonly role: UserRole,
     public readonly registrationMethod: 'email' | 'phone' | 'social',
-    public readonly metadata?: Record<string, any>
+    metadata?: Record<string, any>
   ) {
     this.eventId = `user-registered-${aggregateId}-${Date.now()}`;
     this.occurredAt = new Date();
+    this.metadata = metadata;
   }
 }
 
@@ -51,6 +53,7 @@ export class UserProfileUpdatedEvent implements DomainEvent {
   readonly aggregateType = 'User';
   readonly eventVersion = 1;
   readonly occurredAt: Date;
+  readonly metadata?: Record<string, any> | undefined;
 
   constructor(
     public readonly aggregateId: string, // userId
@@ -58,10 +61,11 @@ export class UserProfileUpdatedEvent implements DomainEvent {
     public readonly oldValues: Record<string, any>,
     public readonly newValues: Record<string, any>,
     public readonly updatedBy: string, // userId of who made the change
-    public readonly metadata?: Record<string, any>
+    metadata?: Record<string, any>
   ) {
     this.eventId = `user-profile-updated-${aggregateId}-${Date.now()}`;
     this.occurredAt = new Date();
+    this.metadata = metadata;
   }
 }
 
@@ -75,15 +79,17 @@ export class UserEmailVerifiedEvent implements DomainEvent {
   readonly aggregateType = 'User';
   readonly eventVersion = 1;
   readonly occurredAt: Date;
+  readonly metadata?: Record<string, any> | undefined;
 
   constructor(
     public readonly aggregateId: string, // userId
     public readonly email: string,
     public readonly verificationMethod: 'token' | 'admin',
-    public readonly metadata?: Record<string, any>
+    metadata?: Record<string, any>
   ) {
     this.eventId = `user-email-verified-${aggregateId}-${Date.now()}`;
     this.occurredAt = new Date();
+    this.metadata = metadata;
   }
 }
 
@@ -97,16 +103,18 @@ export class UserPhoneVerifiedEvent implements DomainEvent {
   readonly aggregateType = 'User';
   readonly eventVersion = 1;
   readonly occurredAt: Date;
+  readonly metadata?: Record<string, any> | undefined;
 
   constructor(
     public readonly aggregateId: string, // userId
     public readonly phoneNumber: string,
     public readonly carrier: string,
     public readonly verificationMethod: 'sms' | 'call' | 'admin',
-    public readonly metadata?: Record<string, any>
+    metadata?: Record<string, any>
   ) {
     this.eventId = `user-phone-verified-${aggregateId}-${Date.now()}`;
     this.occurredAt = new Date();
+    this.metadata = metadata;
   }
 }
 
@@ -120,6 +128,7 @@ export class UserStatusChangedEvent implements DomainEvent {
   readonly aggregateType = 'User';
   readonly eventVersion = 1;
   readonly occurredAt: Date;
+  readonly metadata?: Record<string, any> | undefined;
 
   constructor(
     public readonly aggregateId: string, // userId
@@ -127,10 +136,11 @@ export class UserStatusChangedEvent implements DomainEvent {
     public readonly newStatus: UserStatus,
     public readonly changedBy: string, // userId of who made the change
     public readonly reason?: string,
-    public readonly metadata?: Record<string, any>
+    metadata?: Record<string, any>
   ) {
     this.eventId = `user-status-changed-${aggregateId}-${Date.now()}`;
     this.occurredAt = new Date();
+    this.metadata = metadata;
   }
 }
 
@@ -144,6 +154,7 @@ export class UserRoleChangedEvent implements DomainEvent {
   readonly aggregateType = 'User';
   readonly eventVersion = 1;
   readonly occurredAt: Date;
+  readonly metadata?: Record<string, any> | undefined;
 
   constructor(
     public readonly aggregateId: string, // userId
@@ -151,10 +162,11 @@ export class UserRoleChangedEvent implements DomainEvent {
     public readonly newRole: UserRole,
     public readonly changedBy: string, // userId of who made the change
     public readonly promotionReason?: string,
-    public readonly metadata?: Record<string, any>
+    metadata?: Record<string, any>
   ) {
     this.eventId = `user-role-changed-${aggregateId}-${Date.now()}`;
     this.occurredAt = new Date();
+    this.metadata = metadata;
   }
 }
 
@@ -168,15 +180,17 @@ export class UserPasswordChangedEvent implements DomainEvent {
   readonly aggregateType = 'User';
   readonly eventVersion = 1;
   readonly occurredAt: Date;
+  readonly metadata?: Record<string, any> | undefined;
 
   constructor(
     public readonly aggregateId: string, // userId
     public readonly changedBy: string, // userId of who made the change (could be self)
     public readonly changeReason: 'user_initiated' | 'admin_reset' | 'security_policy',
-    public readonly metadata?: Record<string, any>
+    metadata?: Record<string, any>
   ) {
     this.eventId = `user-password-changed-${aggregateId}-${Date.now()}`;
     this.occurredAt = new Date();
+    this.metadata = metadata;
   }
 }
 
@@ -190,16 +204,18 @@ export class UserLoginSuccessEvent implements DomainEvent {
   readonly aggregateType = 'User';
   readonly eventVersion = 1;
   readonly occurredAt: Date;
+  readonly metadata?: Record<string, any> | undefined;
 
   constructor(
     public readonly aggregateId: string, // userId
     public readonly ipAddress: string,
     public readonly userAgent: string,
     public readonly loginMethod: 'password' | 'social' | 'sso',
-    public readonly metadata?: Record<string, any>
+    metadata?: Record<string, any>
   ) {
     this.eventId = `user-login-success-${aggregateId}-${Date.now()}`;
     this.occurredAt = new Date();
+    this.metadata = metadata;
   }
 }
 
@@ -213,6 +229,7 @@ export class UserLoginFailedEvent implements DomainEvent {
   readonly aggregateType = 'User';
   readonly eventVersion = 1;
   readonly occurredAt: Date;
+  readonly metadata?: Record<string, any> | undefined;
 
   constructor(
     public readonly aggregateId: string, // userId
@@ -220,10 +237,11 @@ export class UserLoginFailedEvent implements DomainEvent {
     public readonly userAgent: string,
     public readonly failureReason: 'invalid_password' | 'account_locked' | 'account_disabled',
     public readonly attemptCount: number,
-    public readonly metadata?: Record<string, any>
+    metadata?: Record<string, any>
   ) {
     this.eventId = `user-login-failed-${aggregateId}-${Date.now()}`;
     this.occurredAt = new Date();
+    this.metadata = metadata;
   }
 }
 
@@ -237,16 +255,18 @@ export class UserAccountLockedEvent implements DomainEvent {
   readonly aggregateType = 'User';
   readonly eventVersion = 1;
   readonly occurredAt: Date;
+  readonly metadata?: Record<string, any> | undefined;
 
   constructor(
     public readonly aggregateId: string, // userId
     public readonly lockReason: 'failed_attempts' | 'admin_action' | 'suspicious_activity',
     public readonly lockDurationMinutes: number,
     public readonly failedAttemptCount: number,
-    public readonly metadata?: Record<string, any>
+    metadata?: Record<string, any>
   ) {
     this.eventId = `user-account-locked-${aggregateId}-${Date.now()}`;
     this.occurredAt = new Date();
+    this.metadata = metadata;
   }
 }
 
@@ -260,16 +280,18 @@ export class UserAddressAddedEvent implements DomainEvent {
   readonly aggregateType = 'User';
   readonly eventVersion = 1;
   readonly occurredAt: Date;
+  readonly metadata?: Record<string, any> | undefined;
 
   constructor(
     public readonly aggregateId: string, // userId
     public readonly addressId: string,
     public readonly addressType: 'home' | 'work' | 'billing' | 'shipping',
     public readonly isDefault: boolean,
-    public readonly metadata?: Record<string, any>
+    metadata?: Record<string, any>
   ) {
     this.eventId = `user-address-added-${aggregateId}-${addressId}-${Date.now()}`;
     this.occurredAt = new Date();
+    this.metadata = metadata;
   }
 }
 
@@ -283,16 +305,18 @@ export class UserPreferencesUpdatedEvent implements DomainEvent {
   readonly aggregateType = 'User';
   readonly eventVersion = 1;
   readonly occurredAt: Date;
+  readonly metadata?: Record<string, any> | undefined;
 
   constructor(
     public readonly aggregateId: string, // userId
     public readonly changedPreferences: string[], // preference keys that changed
     public readonly oldPreferences: Record<string, any>,
     public readonly newPreferences: Record<string, any>,
-    public readonly metadata?: Record<string, any>
+    metadata?: Record<string, any>
   ) {
     this.eventId = `user-preferences-updated-${aggregateId}-${Date.now()}`;
     this.occurredAt = new Date();
+    this.metadata = metadata;
   }
 }
 
@@ -306,6 +330,7 @@ export class UserDeletedEvent implements DomainEvent {
   readonly aggregateType = 'User';
   readonly eventVersion = 1;
   readonly occurredAt: Date;
+  readonly metadata?: Record<string, any> | undefined;
 
   constructor(
     public readonly aggregateId: string, // userId
@@ -318,10 +343,11 @@ export class UserDeletedEvent implements DomainEvent {
       registeredAt: Date;
       lastLoginAt?: Date;
     },
-    public readonly metadata?: Record<string, any>
+    metadata?: Record<string, any>
   ) {
     this.eventId = `user-deleted-${aggregateId}-${Date.now()}`;
     this.occurredAt = new Date();
+    this.metadata = metadata;
   }
 }
 

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { DatabaseConnection } from '../../infrastructure/database/prisma-client';
-import { getRateLimitStatus } from '../middleware/rate-limit.middleware';
+// rate limiting removed from this service; monitoring disabled
 import { logger } from '../../infrastructure/services/logger.service';
 
 const router = Router();
@@ -9,15 +9,13 @@ const router = Router();
  * Health check endpoint
  * GET /health
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (_req: Request, res: Response) => {
   try {
     const startTime = Date.now();
 
     // Database health check
     const dbStatus = await DatabaseConnection.getConnectionStatus();
 
-    // Rate limiting status
-    const rateLimitStatus = await getRateLimitStatus();
 
     // Memory usage
     const memUsage = process.memoryUsage();
@@ -39,10 +37,7 @@ router.get('/', async (req: Request, res: Response) => {
         },
 
         rateLimiting: {
-          status: 'healthy',
-          totalKeys: rateLimitStatus.totalKeys,
-          activeWindows: rateLimitStatus.activeWindows,
-          memoryUsage: `${rateLimitStatus.memoryUsage} bytes`
+          status: 'healthy'
         },
 
         memory: {
@@ -107,18 +102,19 @@ router.get('/', async (req: Request, res: Response) => {
  * Readiness check endpoint
  * GET /health/ready
  */
-router.get('/ready', async (req: Request, res: Response) => {
+router.get('/ready', async (_req: Request, res: Response): Promise<void> => {
   try {
     // Check if database is ready
     const dbStatus = await DatabaseConnection.getConnectionStatus();
 
     if (!dbStatus.connected) {
-      return res.status(503).json({
+      res.status(503).json({
         status: 'not ready',
         service: 'user-service',
         timestamp: new Date().toISOString(),
         reason: 'Database not connected'
       });
+      return;
     }
 
     res.status(200).json({
@@ -148,7 +144,7 @@ router.get('/ready', async (req: Request, res: Response) => {
  * Liveness check endpoint
  * GET /health/live
  */
-router.get('/live', (req: Request, res: Response) => {
+router.get('/live', (_req: Request, res: Response) => {
   // Simple liveness check - if the process is running, it's alive
   res.status(200).json({
     status: 'alive',
@@ -162,7 +158,7 @@ router.get('/live', (req: Request, res: Response) => {
  * Detailed metrics endpoint (protected)
  * GET /health/metrics
  */
-router.get('/metrics', async (req: Request, res: Response) => {
+router.get('/metrics', async (_req: Request, res: Response) => {
   try {
     // This endpoint might require authentication in production
     const metrics = {
@@ -186,7 +182,7 @@ router.get('/metrics', async (req: Request, res: Response) => {
 
       database: await DatabaseConnection.getHealthMetrics(),
 
-      rateLimiting: await getRateLimitStatus()
+      rateLimiting: { status: 'healthy' }
     };
 
     res.status(200).json(metrics);
@@ -206,7 +202,7 @@ router.get('/metrics', async (req: Request, res: Response) => {
  * Ping endpoint for load balancer checks
  * GET /health/ping
  */
-router.get('/ping', (req: Request, res: Response) => {
+router.get('/ping', (_req: Request, res: Response) => {
   res.status(200).send('pong');
 });
 

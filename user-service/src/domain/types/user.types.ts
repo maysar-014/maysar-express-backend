@@ -6,12 +6,26 @@
 /**
  * User roles in the system
  */
-export type UserRole = 'customer' | 'seller' | 'admin' | 'moderator' | 'support';
+export enum UserRole {
+  BUYER = 'buyer',
+  SELLER = 'seller',
+  SUPPLIER = 'supplier',
+  COURIER = 'courier',
+  ENABLER = 'enabler',
+  SYSTEM = 'system'
+}
 
 /**
  * User status in the system
  */
-export type UserStatus = 'active' | 'inactive' | 'suspended' | 'pending_verification';
+export enum UserStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  SUSPENDED = 'suspended',
+  PENDING_VERIFICATION = 'pending_verification',
+  DEACTIVATED = 'deactivated',
+  LOCKED = 'locked'
+}
 
 /**
  * User metadata for tracking account information
@@ -19,20 +33,20 @@ export type UserStatus = 'active' | 'inactive' | 'suspended' | 'pending_verifica
 export interface UserMetadata {
   accountAge: number;
   loginAttempts: number;
-  lastFailedLoginAttempt?: Date;
-  accountLockedUntil?: Date;
-  emailVerificationAttempts?: number;
-  phoneVerificationAttempts?: number;
-  passwordChangeRequired?: boolean;
-  twoFactorEnabled?: boolean;
-  lastPasswordChange?: Date;
-  riskScore?: number;
-  trustedDeviceCount?: number;
-  suspiciousActivityCount?: number;
-  accountRecoveryAttempts?: number;
-  lastProfileUpdate?: Date;
-  termsAcceptedVersion?: string;
-  privacyPolicyAcceptedVersion?: string;
+  lastFailedLoginAttempt?: Date | undefined;
+  accountLockedUntil?: Date | undefined;
+  emailVerificationAttempts?: number | undefined;
+  phoneVerificationAttempts?: number | undefined;
+  passwordChangeRequired?: boolean | undefined;
+  twoFactorEnabled?: boolean | undefined;
+  lastPasswordChange?: Date | undefined;
+  riskScore?: number | undefined;
+  trustedDeviceCount?: number | undefined;
+  suspiciousActivityCount?: number | undefined;
+  accountRecoveryAttempts?: number | undefined;
+  lastProfileUpdate?: Date | undefined;
+  termsAcceptedVersion?: string | undefined;
+  privacyPolicyAcceptedVersion?: string | undefined;
 }
 
 /**

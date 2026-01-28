@@ -23,9 +23,9 @@ export interface ValidationResult {
  * Request validation middleware factory
  */
 export const validateRequest = (schema: any) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (_req: Request, _res: Response, next: NextFunction) => {
     try {
-      const { error, value } = schema.validate(req.body, {
+      const { error, value } = schema.validate(_req.body, {
         abortEarly: false,
         stripUnknown: true,
         convert: true
@@ -39,8 +39,8 @@ export const validateRequest = (schema: any) => {
         }));
 
         logger.warn('Request validation failed', {
-          path: req.path,
-          method: req.method,
+          path: _req.path,
+          method: _req.method,
           errors: errors.map(e => `${e.field}: ${e.message}`)
         });
 
@@ -48,10 +48,10 @@ export const validateRequest = (schema: any) => {
       }
 
       // Replace request body with validated and sanitized data
-      req.body = value;
+      _req.body = value;
       next();
     } catch (err) {
-      logger.error('Validation middleware error', { error: err, path: req.path });
+      logger.error('Validation middleware error', { error: err, path: _req.path });
       next(createError.internalServerError('Validation processing failed'));
     }
   };
@@ -61,9 +61,9 @@ export const validateRequest = (schema: any) => {
  * Query parameter validation middleware
  */
 export const validateQuery = (schema: any) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (_req: Request, _res: Response, next: NextFunction) => {
     try {
-      const { error, value } = schema.validate(req.query, {
+      const { error, value } = schema.validate(_req.query, {
         abortEarly: false,
         stripUnknown: true,
         convert: true
@@ -77,9 +77,9 @@ export const validateQuery = (schema: any) => {
         }));
 
         logger.warn('Query validation failed', {
-          path: req.path,
-          method: req.method,
-          query: req.query,
+          path: _req.path,
+          method: _req.method,
+          query: _req.query,
           errors: errors.map(e => `${e.field}: ${e.message}`)
         });
 
@@ -87,10 +87,10 @@ export const validateQuery = (schema: any) => {
       }
 
       // Replace query with validated and sanitized data
-      req.query = value;
+      _req.query = value;
       next();
     } catch (err) {
-      logger.error('Query validation error', { error: err, path: req.path });
+      logger.error('Query validation error', { error: err, path: _req.path });
       next(createError.internalServerError('Query validation failed'));
     }
   };
@@ -100,9 +100,9 @@ export const validateQuery = (schema: any) => {
  * Route parameter validation middleware
  */
 export const validateParams = (schema: any) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (_req: Request, _res: Response, next: NextFunction) => {
     try {
-      const { error, value } = schema.validate(req.params, {
+      const { error, value } = schema.validate(_req.params, {
         abortEarly: false,
         convert: true
       });
@@ -115,9 +115,9 @@ export const validateParams = (schema: any) => {
         }));
 
         logger.warn('Parameter validation failed', {
-          path: req.path,
-          method: req.method,
-          params: req.params,
+          path: _req.path,
+          method: _req.method,
+          params: _req.params,
           errors: errors.map(e => `${e.field}: ${e.message}`)
         });
 
@@ -125,10 +125,10 @@ export const validateParams = (schema: any) => {
       }
 
       // Replace params with validated data
-      req.params = value;
+      _req.params = value;
       next();
     } catch (err) {
-      logger.error('Parameter validation error', { error: err, path: req.path });
+      logger.error('Parameter validation error', { error: err, path: _req.path });
       next(createError.internalServerError('Parameter validation failed'));
     }
   };
@@ -142,7 +142,7 @@ export const validationErrorHandler = (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): void => {
   // Handle Joi validation errors
   if (error && error.isJoi) {
     const errors: ValidationError[] = error.details.map((detail: any) => ({
@@ -157,7 +157,7 @@ export const validationErrorHandler = (
       errors: errors.map(e => `${e.field}: ${e.message}`)
     });
 
-    return res.status(422).json({
+    res.status(422).json({
       error: {
         message: 'Validation failed',
         code: 'VALIDATION_FAILED',
@@ -173,7 +173,7 @@ export const validationErrorHandler = (
 /**
  * Sanitization middleware for request data
  */
-export const sanitizeRequest = (req: Request, res: Response, next: NextFunction) => {
+export const sanitizeRequest = (req: Request, _res: Response, next: NextFunction) => {
   // Trim string fields in body
   if (req.body && typeof req.body === 'object') {
     sanitizeObject(req.body);
@@ -205,12 +205,12 @@ function sanitizeObject(obj: any): void {
 /**
  * File upload validation (placeholder for future implementation)
  */
-export const validateFileUpload = (options: {
+export const validateFileUpload = (_options?: {
   maxSize?: number;
   allowedTypes?: string[];
   required?: boolean;
 }) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (_req: Request, _res: Response, next: NextFunction) => {
     // File upload validation logic would go here
     // This is a placeholder for future implementation
     next();
@@ -220,11 +220,11 @@ export const validateFileUpload = (options: {
 /**
  * Authentication validation middleware (placeholder)
  */
-export const validateAuth = (options: {
+export const validateAuth = (_options?: {
   required?: boolean;
   roles?: string[];
-} = {}) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+}) => {
+  return (_req: Request, _res: Response, next: NextFunction) => {
     // Authentication validation logic would go here
     // This is a placeholder - in a real implementation, this would validate JWT tokens
     // and set req.user with user information
@@ -238,8 +238,8 @@ export const validateAuth = (options: {
  * Authorization middleware for role-based access
  */
 export const requireRole = (...allowedRoles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const user = (req as any).user;
+  return (_req: Request, _res: Response, next: NextFunction) => {
+    const user = (_req as any).user;
 
     if (!user) {
       return next(createError.unauthorized('Authentication required'));
@@ -250,7 +250,7 @@ export const requireRole = (...allowedRoles: string[]) => {
         userId: user.id,
         userRole: user.role,
         requiredRoles: allowedRoles,
-        path: req.path
+        path: _req.path
       });
 
       return next(createError.forbidden('Insufficient permissions'));
@@ -264,9 +264,9 @@ export const requireRole = (...allowedRoles: string[]) => {
  * Ownership validation middleware
  */
 export const validateOwnership = (resourceIdParam: string) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const user = (req as any).user;
-    const resourceId = req.params[resourceIdParam];
+  return (_req: Request, _res: Response, next: NextFunction) => {
+    const user = (_req as any).user;
+    const resourceId = _req.params[resourceIdParam];
 
     if (!user) {
       return next(createError.unauthorized('Authentication required'));
@@ -280,7 +280,7 @@ export const validateOwnership = (resourceIdParam: string) => {
       logger.warn('Access denied due to ownership mismatch', {
         userId: user.id,
         resourceId,
-        path: req.path
+        path: _req.path
       });
 
       return next(createError.forbidden('Access denied'));
@@ -293,12 +293,12 @@ export const validateOwnership = (resourceIdParam: string) => {
 /**
  * Rate limiting validation (additional checks beyond rate limiting)
  */
-export const validateRateLimit = (options: {
-  maxRequests: number;
-  windowMs: number;
+export const validateRateLimit = (_options?: {
+  maxRequests?: number;
+  windowMs?: number;
   keyGenerator?: (req: Request) => string;
 }) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (_req: Request, _res: Response, next: NextFunction) => {
     // Additional rate limit validation logic
     // This could check for suspicious patterns or whitelist/blacklist
     next();
@@ -308,7 +308,7 @@ export const validateRateLimit = (options: {
 /**
  * Input sanitization for SQL injection prevention
  */
-export const sanitizeSqlInput = (req: Request, res: Response, next: NextFunction) => {
+export const sanitizeSqlInput = (req: Request, _res: Response, next: NextFunction) => {
   // Additional SQL injection prevention
   // This is a safety net - the main protection should be in the repository layer
 
@@ -332,7 +332,7 @@ export const sanitizeSqlInput = (req: Request, res: Response, next: NextFunction
   if (checkForDangerousInput(req.body) || checkForDangerousInput(req.query)) {
     logger.warn('Potentially dangerous input detected', {
       ip: req.ip,
-      path: req.path,
+        path: req.path,
       userAgent: req.get('User-Agent')
     });
 

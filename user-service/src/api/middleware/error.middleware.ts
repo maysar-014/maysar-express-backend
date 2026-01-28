@@ -7,7 +7,7 @@ import { logger } from '../../infrastructure/services/logger.service';
 export class APIError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
-  public readonly code?: string;
+  public readonly code: string | undefined;
 
   constructor(
     message: string,
@@ -32,7 +32,7 @@ export const errorHandler = (
   error: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void => {
   let statusCode = 500;
   let message = 'Internal server error';
@@ -49,7 +49,7 @@ export const errorHandler = (
     statusCode = 400;
     message = 'Validation failed';
     code = 'VALIDATION_ERROR';
-    details = error.details;
+    details = (error as any).details;
   } else if (error.name === 'PrismaClientKnownRequestError') {
     // Prisma known errors
     const prismaError = error as any;
@@ -173,7 +173,7 @@ export const createError = {
 /**
  * Handle 404 errors
  */
-export const notFoundHandler = (req: Request, res: Response, next: NextFunction) => {
+export const notFoundHandler = (req: Request, _res: Response, next: NextFunction) => {
   const error = new APIError(
     `Route ${req.method} ${req.path} not found`,
     404,

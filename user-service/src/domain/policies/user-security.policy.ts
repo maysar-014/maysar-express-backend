@@ -1,6 +1,6 @@
 import { DomainPolicy } from '@domain/interfaces';
-import { User } from '@domain/entities/user.entity';
-import { UserMetadata } from '@domain/types/user.types';
+import { User, UserRole } from '@domain/entities/user.entity';
+// import { UserMetadata } from '@domain/types/user.types'; // Currently unused
 
 /**
  * User Security Policy
@@ -101,7 +101,7 @@ export class UserSecurityPolicy implements DomainPolicy {
   /**
    * Check if user is rate limited
    */
-  isRateLimited(identifier: string): boolean {
+  isRateLimited(_identifier: string): boolean {
     // This would typically check a cache/database for rate limiting
     // For now, return false to allow registration
     return false;
@@ -129,7 +129,7 @@ export class UserSecurityPolicy implements DomainPolicy {
   /**
    * Check if user can perform high-value transactions
    */
-  canPerformHighValueTransaction(user: User, amount: number): boolean {
+  canPerformHighValueTransaction(user: User, _amount: number): boolean {
     if (!user.isActive()) {
       return false;
     }
@@ -174,7 +174,7 @@ export class UserSecurityPolicy implements DomainPolicy {
    * Check if user can access admin features
    */
   canAccessAdminFeatures(user: User): boolean {
-    if (user.role !== 'admin') {
+    if (user.role !== UserRole.SYSTEM) {
       return false;
     }
 
@@ -222,7 +222,7 @@ export class UserSecurityPolicy implements DomainPolicy {
   /**
    * Check if location is unusual for user
    */
-  private isUnusualLocation(user: User, location: string): boolean {
+  private isUnusualLocation(user: User, _location: string): boolean {
     // In a real implementation, this would check against user's historical locations
     // For now, we'll assume any location change is suspicious for high-risk users
     if (user.metadata.riskScore && user.metadata.riskScore > 40) {
@@ -241,12 +241,4 @@ export class UserSecurityPolicy implements DomainPolicy {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
 
-  /**
-   * Get hours since a date
-   */
-  private getHoursSince(date: Date): number {
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60));
-  }
 }

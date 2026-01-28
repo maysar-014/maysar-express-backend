@@ -45,7 +45,7 @@ export class InMemoryEmailService implements EmailService {
       html,
       text,
       sentAt: new Date()
-    });
+    } as any);
   }
 
   async sendVerificationEmail(userEmail: string, verificationToken: string): Promise<void> {

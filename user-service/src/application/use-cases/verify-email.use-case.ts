@@ -65,7 +65,7 @@ export class VerifyEmailUseCase {
       }
 
       // If already verified, return success
-      if (user.isEmailVerified) {
+      if (user.emailVerified) {
         return {
           success: true,
           message: 'Email already verified',
@@ -158,7 +158,7 @@ export class VerifyEmailUseCase {
   /**
    * Mark verification token as used
    */
-  private async markTokenAsUsed(userId: string, token: string): Promise<void> {
+  private async markTokenAsUsed(userId: string, _token: string): Promise<void> {
     try {
       // In a real implementation, this would be a repository method
       logger.debug('Marking verification token as used', { userId });

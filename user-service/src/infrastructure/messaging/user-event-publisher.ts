@@ -20,6 +20,7 @@ export class UserEventPublisher implements IDomainEventPublisher {
         aggregateId: event.aggregateId,
         eventVersion: event.eventVersion,
         occurredAt: event.occurredAt,
+        metadata: event.metadata || {},
         eventData: this.sanitizeEventData(event)
       });
 
@@ -55,21 +56,36 @@ export class UserEventPublisher implements IDomainEventPublisher {
    * Publish user registered event
    */
   async publishUserRegistered(event: UserRegisteredEvent): Promise<void> {
-    await this.publish(event);
+    // Ensure metadata is defined for type compatibility
+    const eventWithMetadata = {
+      ...event,
+      metadata: event.metadata || {}
+    };
+    await this.publish(eventWithMetadata as DomainEvent);
   }
 
   /**
    * Publish user profile updated event
    */
   async publishUserProfileUpdated(event: UserProfileUpdatedEvent): Promise<void> {
-    await this.publish(event);
+    // Ensure metadata is defined for type compatibility
+    const eventWithMetadata = {
+      ...event,
+      metadata: event.metadata || {}
+    };
+    await this.publish(eventWithMetadata as DomainEvent);
   }
 
   /**
    * Publish user email verified event
    */
   async publishUserEmailVerified(event: UserEmailVerifiedEvent): Promise<void> {
-    await this.publish(event);
+    // Ensure metadata is defined for type compatibility
+    const eventWithMetadata = {
+      ...event,
+      metadata: event.metadata || {}
+    };
+    await this.publish(eventWithMetadata as DomainEvent);
   }
 
   /**
@@ -108,7 +124,7 @@ export class UserEventPublisher implements IDomainEventPublisher {
    * Simulate async publish operation
    * In production, this would be actual message queue publishing
    */
-  private async simulateAsyncPublish(event: any): Promise<void> {
+  private async simulateAsyncPublish(_event?: DomainEvent): Promise<void> {
     // Simulate network latency
     await new Promise(resolve => setTimeout(resolve, 10));
 
@@ -124,7 +140,14 @@ export class UserEventPublisher implements IDomainEventPublisher {
    * Useful for bulk operations
    */
   async publishBatch(events: Array<UserRegisteredEvent | UserProfileUpdatedEvent | UserEmailVerifiedEvent>): Promise<void> {
-    const promises = events.map(event => this.publish(event));
+    const promises = events.map(event => {
+      // Ensure metadata is defined for type compatibility
+      const eventWithMetadata = {
+        ...event,
+        metadata: event.metadata || {}
+      };
+      return this.publish(eventWithMetadata as DomainEvent);
+    });
     await Promise.all(promises);
   }
 }

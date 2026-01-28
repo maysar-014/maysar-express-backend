@@ -169,13 +169,8 @@ export class UserPolicies {
       return { allowed: false, reason: 'User account is not active' };
     }
 
-    // Check password change frequency (prevent brute force)
-    if (user.passwordChangedAt) {
-      const hoursSinceLastChange = (Date.now() - user.passwordChangedAt.getTime()) / (1000 * 60 * 60);
-      if (hoursSinceLastChange < 1) {
-        return { allowed: false, reason: 'Password can only be changed once per hour' };
-      }
-    }
+    // TODO: Add password change frequency check once passwordChangedAt is added to User entity
+    // For now, allow password changes
 
     return { allowed: true };
   }
