@@ -1,0 +1,36 @@
+export interface IOrderService {
+  createOrder(checkoutSessionId: string, userId: string, totalAmount: number): Promise<any>;
+  getOrder(orderId: string): Promise<any>;
+  updateOrderStatus(orderId: string, status: string): Promise<void>;
+}
+
+export class OrderService implements IOrderService {
+  constructor(private prisma: any) {}
+
+  async createOrder(checkoutSessionId: string, userId: string, totalAmount: number): Promise<any> {
+    return this.prisma.order.create({
+      data: {
+        checkoutSessionId,
+        userId,
+        status: 'pending',
+        totalAmount,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    });
+  }
+
+  async getOrder(orderId: string): Promise<any> {
+    return this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true }
+    });
+  }
+
+  async updateOrderStatus(orderId: string, status: string): Promise<void> {
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: { status, updatedAt: new Date() }
+    });
+  }
+}
