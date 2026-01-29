@@ -3,35 +3,27 @@ import { CreateUserUseCase } from '@application/use-cases/create-user.use-case';
 import { UserMapper } from '@application/mappers/user-mapper';
 import { UserAlreadyExistsError } from '@domain/errors/user.errors';
 
-/**
- * User Controller
- * Handles HTTP requests for user operations
- */
 export class UserController {
   constructor(
-    private createUserUseCase: CreateUserUseCase
+    private createUserUseCase: CreateUserUseCase,
+    private changePasswordUseCase?: any,
+    private deleteAccountUseCase?: any,
+    private suspendAccountUseCase?: any,
+    private changeRoleUseCase?: any,
+    private verifyPhoneUseCase?: any,
+    private setupTwoFactorUseCase?: any,
+    private reportSecurityBreachUseCase?: any
   ) {}
 
-  /**
-   * Create a new user
-   */
   async createUser(req: Request, res: Response): Promise<void> {
     try {
       const userDto = req.body;
-
-      // TODO: Add validation logic here if needed
-      // For now, pass directly to use case which will handle validation
-
-      // Create user
       const createdUser = await this.createUserUseCase.execute(userDto);
-
-      // Return success response
       res.status(201).json({
         success: true,
         data: UserMapper.toResponseDto(createdUser),
         message: 'User created successfully'
       });
-
     } catch (error) {
       if (error instanceof UserAlreadyExistsError) {
         res.status(409).json({
@@ -42,7 +34,6 @@ export class UserController {
           }
         });
       } else {
-        console.error('Error creating user:', error);
         res.status(500).json({
           success: false,
           error: {
@@ -54,16 +45,8 @@ export class UserController {
     }
   }
 
-  /**
-   * Get user by ID
-   */
   async getUserById(_req: Request, res: Response): Promise<void> {
     try {
-      // const userId = req.params.id; // TODO: Use when implementing getUserById use case
-
-      // TODO: Implement getUserById use case
-      // const user = await this.getUserByIdUseCase.execute(userId);
-
       res.status(501).json({
         success: false,
         error: {
@@ -71,9 +54,7 @@ export class UserController {
           message: 'Get user by ID is not yet implemented'
         }
       });
-
     } catch (error) {
-      console.error('Error getting user:', error);
       res.status(500).json({
         success: false,
         error: {
@@ -84,17 +65,8 @@ export class UserController {
     }
   }
 
-  /**
-   * Update user
-   */
   async updateUser(_req: Request, res: Response): Promise<void> {
     try {
-      // const userId = req.params.id; // TODO: Use when implementing updateUser use case
-      // const userDto = req.body; // TODO: Use when implementing updateUser use case
-
-      // TODO: Implement updateUser use case
-      // const updatedUser = await this.updateUserUseCase.execute(userId, userDto);
-
       res.status(501).json({
         success: false,
         error: {
@@ -102,9 +74,7 @@ export class UserController {
           message: 'Update user is not yet implemented'
         }
       });
-
     } catch (error) {
-      console.error('Error updating user:', error);
       res.status(500).json({
         success: false,
         error: {
@@ -115,16 +85,8 @@ export class UserController {
     }
   }
 
-  /**
-   * Delete user
-   */
   async deleteUser(_req: Request, res: Response): Promise<void> {
     try {
-      // const userId = req.params.id; // TODO: Use when implementing deleteUser use case
-
-      // TODO: Implement deleteUser use case
-      // await this.deleteUserUseCase.execute(userId);
-
       res.status(501).json({
         success: false,
         error: {
@@ -132,9 +94,7 @@ export class UserController {
           message: 'Delete user is not yet implemented'
         }
       });
-
     } catch (error) {
-      console.error('Error deleting user:', error);
       res.status(500).json({
         success: false,
         error: {
@@ -145,16 +105,8 @@ export class UserController {
     }
   }
 
-  /**
-   * Verify email
-   */
   async verifyEmail(_req: Request, res: Response): Promise<void> {
     try {
-      // const { token } = req.params; // TODO: Use when implementing email verification
-
-      // TODO: Implement email verification
-      // const result = await this.verifyEmailUseCase.execute(token);
-
       res.status(501).json({
         success: false,
         error: {
@@ -162,9 +114,7 @@ export class UserController {
           message: 'Email verification is not yet implemented'
         }
       });
-
     } catch (error) {
-      console.error('Error verifying email:', error);
       res.status(500).json({
         success: false,
         error: {
@@ -175,16 +125,8 @@ export class UserController {
     }
   }
 
-  /**
-   * Request password reset
-   */
   async requestPasswordReset(_req: Request, res: Response): Promise<void> {
     try {
-      // const { email } = req.body; // TODO: Use when implementing password reset
-
-      // TODO: Implement password reset request
-      // await this.requestPasswordResetUseCase.execute(email);
-
       res.status(501).json({
         success: false,
         error: {
@@ -192,9 +134,7 @@ export class UserController {
           message: 'Password reset request is not yet implemented'
         }
       });
-
     } catch (error) {
-      console.error('Error requesting password reset:', error);
       res.status(500).json({
         success: false,
         error: {
@@ -205,17 +145,8 @@ export class UserController {
     }
   }
 
-  /**
-   * Reset password
-   */
   async resetPassword(_req: Request, res: Response): Promise<void> {
     try {
-      // const { token } = req.params; // TODO: Use when implementing password reset
-      // const { newPassword } = req.body; // TODO: Use when implementing password reset
-
-      // TODO: Implement password reset
-      // await this.resetPasswordUseCase.execute(token, newPassword);
-
       res.status(501).json({
         success: false,
         error: {
@@ -223,9 +154,7 @@ export class UserController {
           message: 'Password reset is not yet implemented'
         }
       });
-
     } catch (error) {
-      console.error('Error resetting password:', error);
       res.status(500).json({
         success: false,
         error: {
@@ -236,15 +165,9 @@ export class UserController {
     }
   }
 
-  /**
-   * Get user profile
-   */
   async getProfile(req: Request, res: Response): Promise<void> {
     try {
-      // Extract user ID from authenticated request
-      // TODO: Implement proper authentication middleware to attach user to request
       const userId = req.headers['x-user-id'] as string;
-
       if (!userId) {
         res.status(401).json({
           success: false,
@@ -255,10 +178,6 @@ export class UserController {
         });
         return;
       }
-
-      // TODO: Implement getProfile use case
-      // const userProfile = await this.getProfileUseCase.execute(userId);
-
       res.status(501).json({
         success: false,
         error: {
@@ -266,9 +185,7 @@ export class UserController {
           message: 'Get profile is not yet implemented'
         }
       });
-
     } catch (error) {
-      console.error('Error getting user profile:', error);
       res.status(500).json({
         success: false,
         error: {
@@ -279,16 +196,9 @@ export class UserController {
     }
   }
 
-  /**
-   * Update user profile
-   */
   async updateProfile(req: Request, res: Response): Promise<void> {
     try {
-      // Extract user ID from authenticated request
-      // TODO: Implement proper authentication middleware to attach user to request
       const userId = req.headers['x-user-id'] as string;
-      // const profileData = req.body; // TODO: Use when implementing updateProfile use case
-
       if (!userId) {
         res.status(401).json({
           success: false,
@@ -299,10 +209,6 @@ export class UserController {
         });
         return;
       }
-
-      // TODO: Implement updateProfile use case
-      // const updatedProfile = await this.updateProfileUseCase.execute(userId, profileData);
-
       res.status(501).json({
         success: false,
         error: {
@@ -310,9 +216,7 @@ export class UserController {
           message: 'Update profile is not yet implemented'
         }
       });
-
     } catch (error) {
-      console.error('Error updating user profile:', error);
       res.status(500).json({
         success: false,
         error: {
@@ -320,6 +224,136 @@ export class UserController {
           message: 'An unexpected error occurred while updating user profile'
         }
       });
+    }
+  }
+
+  async changePassword(req: Request, res: Response): Promise<void> {
+    try {
+      if (!this.changePasswordUseCase) {
+        res.status(501).json({ success: false, error: { code: 'NOT_IMPLEMENTED', message: 'Not implemented' } });
+        return;
+      }
+      const { id } = req.params;
+      const result = await this.changePasswordUseCase.execute({
+        userId: id,
+        newPassword: req.body.newPassword,
+        changedBy: req.headers['x-user-id'] as string,
+        currentPassword: req.body.currentPassword
+      });
+      res.status(result.success ? 200 : 400).json(result);
+    } catch (error) {
+      res.status(500).json({ success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: 'Failed' } });
+    }
+  }
+
+  async deleteAccount(req: Request, res: Response): Promise<void> {
+    try {
+      if (!this.deleteAccountUseCase) {
+        res.status(501).json({ success: false, error: { code: 'NOT_IMPLEMENTED', message: 'Not implemented' } });
+        return;
+      }
+      const { id } = req.params;
+      const result = await this.deleteAccountUseCase.execute({
+        userId: id,
+        deletedBy: req.headers['x-user-id'] as string,
+        reason: req.body.reason
+      });
+      res.status(result.success ? 200 : 400).json(result);
+    } catch (error) {
+      res.status(500).json({ success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: 'Failed' } });
+    }
+  }
+
+  async suspendAccount(req: Request, res: Response): Promise<void> {
+    try {
+      if (!this.suspendAccountUseCase) {
+        res.status(501).json({ success: false, error: { code: 'NOT_IMPLEMENTED', message: 'Not implemented' } });
+        return;
+      }
+      const { id } = req.params;
+      const result = await this.suspendAccountUseCase.execute({
+        userId: id,
+        suspendedBy: req.headers['x-user-id'] as string,
+        reason: req.body.reason,
+        duration: req.body.duration
+      });
+      res.status(result.success ? 200 : 400).json(result);
+    } catch (error) {
+      res.status(500).json({ success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: 'Failed' } });
+    }
+  }
+
+  async changeRole(req: Request, res: Response): Promise<void> {
+    try {
+      if (!this.changeRoleUseCase) {
+        res.status(501).json({ success: false, error: { code: 'NOT_IMPLEMENTED', message: 'Not implemented' } });
+        return;
+      }
+      const { id } = req.params;
+      const result = await this.changeRoleUseCase.execute({
+        userId: id,
+        newRole: req.body.newRole,
+        changedBy: req.headers['x-user-id'] as string
+      });
+      res.status(result.success ? 200 : 400).json(result);
+    } catch (error) {
+      res.status(500).json({ success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: 'Failed' } });
+    }
+  }
+
+  async verifyPhone(req: Request, res: Response): Promise<void> {
+    try {
+      if (!this.verifyPhoneUseCase) {
+        res.status(501).json({ success: false, error: { code: 'NOT_IMPLEMENTED', message: 'Not implemented' } });
+        return;
+      }
+      const { id } = req.params;
+      const result = await this.verifyPhoneUseCase.execute({
+        userId: id,
+        phoneNumber: req.body.phoneNumber,
+        otp: req.body.otp,
+        verificationMethod: req.body.verificationMethod || 'otp'
+      });
+      res.status(result.success ? 200 : 400).json(result);
+    } catch (error) {
+      res.status(500).json({ success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: 'Failed' } });
+    }
+  }
+
+  async setupTwoFactor(req: Request, res: Response): Promise<void> {
+    try {
+      if (!this.setupTwoFactorUseCase) {
+        res.status(501).json({ success: false, error: { code: 'NOT_IMPLEMENTED', message: 'Not implemented' } });
+        return;
+      }
+      const { id } = req.params;
+      const result = await this.setupTwoFactorUseCase.execute({
+        userId: id,
+        method: req.body.method,
+        deviceId: req.body.deviceId
+      });
+      res.status(result.success ? 200 : 400).json(result);
+    } catch (error) {
+      res.status(500).json({ success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: 'Failed' } });
+    }
+  }
+
+  async reportSecurityBreach(req: Request, res: Response): Promise<void> {
+    try {
+      if (!this.reportSecurityBreachUseCase) {
+        res.status(501).json({ success: false, error: { code: 'NOT_IMPLEMENTED', message: 'Not implemented' } });
+        return;
+      }
+      const result = await this.reportSecurityBreachUseCase.execute({
+        userId: req.body.userId,
+        breachType: req.body.breachType,
+        severity: req.body.severity,
+        details: req.body.details,
+        reportedBy: req.headers['x-user-id'] as string
+      });
+      res.status(result.success ? 200 : 400).json(result);
+    } catch (error) {
+      res.status(500).json({ success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: 'Failed' } });
     }
   }
 }

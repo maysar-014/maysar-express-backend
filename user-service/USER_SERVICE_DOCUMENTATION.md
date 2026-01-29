@@ -74,11 +74,11 @@ No business logic exists outside the domain layer.
 
 User-related workflows that span multiple services use sagas:
 
-- User registration saga (coordinates with Auth Service, Notification Service)
-- Email verification saga (coordinates with Notification Service)
-- Password reset saga (coordinates with Auth Service, Notification Service)
+- UserRegistrationSaga: Orchestrates welcome email and registration notifications
+- EmailVerificationSaga: Orchestrates user status updates and confirmation emails
+- PasswordResetSaga: Orchestrates session invalidation and password change notifications
 
-Sagas never contain business logic—they orchestrate domain decisions made by policies and engines.
+Sagas implement the saga pattern with automatic compensation on failure. Each saga step has execute and compensate methods for forward and backward recovery.
 
 ---
 
@@ -120,7 +120,11 @@ src/
 │   ├── sagas/
 │   │   ├── user-registration.saga.ts
 │   │   ├── email-verification.saga.ts
-│   │   └── password-reset.saga.ts
+│   │   ├── password-reset.saga.ts
+│   │   ├── saga-event-handler.ts
+│   │   ├── index.ts
+│   │   └── __tests__/
+│   │       └── user-registration.saga.test.ts
 │   ├── dto/
 │   │   ├── create-user.dto.ts
 │   │   ├── user-response.dto.ts
@@ -190,9 +194,11 @@ src/
 - VerifyEmailUseCase: Validates token, updates user state, publishes event
 - UpdateUserUseCase: Validates changes, updates entity, publishes events
 
-**Sagas**: Coordinate multi-service workflows:
-- UserRegistrationSaga: Coordinates user creation, email sending, notification
-- EmailVerificationSaga: Coordinates verification, status update, notification
+**Sagas**: Coordinate multi-service workflows with automatic compensation:
+- UserRegistrationSaga: Executes welcome email and registration notification steps
+- EmailVerificationSaga: Executes user status update and confirmation email steps
+- PasswordResetSaga: Executes session invalidation and notification steps
+- SagaEventHandler: Routes domain events to appropriate saga handlers
 
 **DTOs**: Transfer data across service boundaries without exposing domain entities
 
@@ -273,9 +279,10 @@ Limited synchronous calls to other services:
 3. CreateUserUseCase validates input
 4. User entity created in domain
 5. UserRegisteredEvent published
-6. Notification Service receives event
-7. Welcome email sent
-8. User receives confirmation
+6. SagaEventHandler routes to UserRegistrationSaga
+7. Saga executes steps: SendWelcomeEmail, SendNotification
+8. On failure, saga compensates in reverse order
+9. User receives confirmation or error notification
 ```
 
 #### Email Verification Workflow
@@ -285,9 +292,10 @@ Limited synchronous calls to other services:
 2. VerifyEmailUseCase validates token
 3. User entity updated
 4. UserEmailVerifiedEvent published
-5. Notification Service receives event
-6. Confirmation email sent
-7. User account activated
+5. SagaEventHandler routes to EmailVerificationSaga
+6. Saga executes steps: UpdateUserStatus, SendConfirmationEmail
+7. On failure, saga compensates by reverting status
+8. User account activated or error notification sent
 ```
 
 ---

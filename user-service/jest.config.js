@@ -61,7 +61,15 @@ module.exports = {
     '!src/**/*.d.ts',
     '!src/**/index.ts',
     '!src/**/*.config.ts',
-    '!src/**/*.types.ts'
+    '!src/**/*.types.ts',
+    '!src/**/*setup*.ts'
+  ],
+
+  coveragePathIgnorePatterns: [
+    '<rootDir>/node_modules/',
+    '<rootDir>/dist/',
+    '<rootDir>/tests/',
+    '.*setup.*\\.ts$'
   ],
 
   coverageDirectory: '<rootDir>/coverage',

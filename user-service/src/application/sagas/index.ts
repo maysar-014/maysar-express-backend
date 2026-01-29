@@ -1,0 +1,13 @@
+export { UserRegistrationSaga, executeUserRegistrationSaga } from './user-registration.saga';
+export { EmailVerificationSaga, executeEmailVerificationSaga } from './email-verification.saga';
+export { PasswordResetSaga, executePasswordResetSaga } from './password-reset.saga';
+export { executeProfileUpdateSaga } from './profile-update.saga';
+export { executeTwoFactorSetupSaga, TwoFactorSetupEvent } from './two-factor-setup.saga';
+export { executeAccountSuspensionSaga, AccountSuspensionEvent } from './account-suspension.saga';
+export { executeAccountDeletionSaga, AccountDeletionEvent } from './account-deletion.saga';
+export { executeRoleChangeSaga, RoleChangeEvent } from './role-change.saga';
+export { executePhoneVerificationSaga, PhoneVerificationEvent } from './phone-verification.saga';
+export { executeSecurityPolicyBreachSaga, SecurityPolicyBreachEvent } from './security-policy-breach.saga';
+export { BaseSaga, SagaStep, SagaCompensationRecord } from './saga-base';
+export { SagaEventHandler, sagaEventHandler } from './saga-event-handler';
+export { notificationClient, auditClient, sessionClient } from './service-clients';

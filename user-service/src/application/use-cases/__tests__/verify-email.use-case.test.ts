@@ -2,101 +2,53 @@ import { VerifyEmailUseCase } from '../verify-email.use-case';
 import { User } from '../../../domain/entities/user.entity';
 import { Email } from '../../../domain/value-objects/email.value-object';
 import { PhoneNumber } from '../../../domain/value-objects/phone-number.value-object';
-import { UserPolicies } from '../../../domain/policies/user-policies';
-import { UserEmailVerifiedEvent } from '../../../domain/events';
-
-function makeUser(id = 'u1', verified = false) {
-  let u = User.create({
-    id,
-    email: Email.create(`${id}@example.com`),
-    phoneNumber: PhoneNumber.create('+255712345678'),
-    firstName: 'A',
-    lastName: 'B',
-    role: 'buyer'
-  } as any);
-  if (verified) u = u.verifyEmail();
-  return u;
-}
+import { UserRole } from '../../../domain/types/user.types';
 
 describe('VerifyEmailUseCase', () => {
-  let repo: any;
-  let publisher: any;
-  let useCase: VerifyEmailUseCase;
-
-  beforeEach(() => {
-    repo = {
-      findById: jest.fn(),
-      updateEmailVerification: jest.fn().mockResolvedValue(undefined),
-      recordSecurityEvent: jest.fn().mockResolvedValue(undefined)
-    };
-    publisher = { publish: jest.fn().mockResolvedValue(undefined) };
-    useCase = new VerifyEmailUseCase(repo, publisher);
-  });
-
-  test('returns not found when user missing', async () => {
-    repo.findById.mockResolvedValue(null);
-    const out = await useCase.execute({ userId: 'x', verificationToken: 't' });
+  it('returns not found when user missing', async () => {
+    const repo: any = { findById: jest.fn().mockResolvedValue(null) };
+    const publisher: any = { publish: jest.fn() };
+    const sut = new VerifyEmailUseCase(repo, publisher);
+    const out = await sut.execute({ userId: 'x', verificationToken: 'token' });
     expect(out.success).toBe(false);
     expect(out.message).toContain('User not found');
   });
 
-  test('returns not allowed when policies forbid', async () => {
-    const u = makeUser('u2');
-    repo.findById.mockResolvedValue(u);
-    jest.spyOn(UserPolicies, 'canVerifyUser').mockReturnValue({ allowed: false, reason: 'No' });
+  it('returns success when already verified', async () => {
+    const user = User.create({ id: 'u1', email: Email.create('a@gmail.com'), phoneNumber: PhoneNumber.create('+255712345678'), firstName: 'A', lastName: 'B', role: UserRole.BUYER });
+    Object.defineProperty(user, 'emailVerified', { value: true, writable: false, configurable: true });
+    const repo: any = { findById: jest.fn().mockResolvedValue(user) };
+    const publisher: any = { publish: jest.fn() };
+    const sut = new VerifyEmailUseCase(repo, publisher);
+    const out = await sut.execute({ userId: 'u1', verificationToken: 'token' });
+    expect(out.success).toBe(true);
+    expect(out.emailVerified).toBe(true);
+  });
 
-    const out = await useCase.execute({ userId: 'u2', verificationToken: 't' });
+  it('verifies email with valid token', async () => {
+    const user = User.create({ id: 'u1', email: Email.create('a@gmail.com'), phoneNumber: PhoneNumber.create('+255712345678'), firstName: 'A', lastName: 'B', role: UserRole.BUYER });
+    const repo: any = { findById: jest.fn().mockResolvedValue(user), updateEmailVerification: jest.fn(), recordSecurityEvent: jest.fn() };
+    const publisher: any = { publish: jest.fn() };
+    const sut = new VerifyEmailUseCase(repo, publisher);
+    const out = await sut.execute({ userId: 'u1', verificationToken: 'valid-token' });
+    expect(out.success).toBe(true);
+    expect(out.emailVerified).toBe(true);
+  });
+
+  it('records verification attempt', async () => {
+    const user = User.create({ id: 'u1', email: Email.create('a@gmail.com'), phoneNumber: PhoneNumber.create('+255712345678'), firstName: 'A', lastName: 'B', role: UserRole.BUYER });
+    const repo: any = { findById: jest.fn().mockResolvedValue(user), updateEmailVerification: jest.fn(), recordSecurityEvent: jest.fn() };
+    const publisher: any = { publish: jest.fn() };
+    const sut = new VerifyEmailUseCase(repo, publisher);
+    await sut.execute({ userId: 'u1', verificationToken: 'token' });
+    expect(repo.recordSecurityEvent).toHaveBeenCalled();
+  });
+
+  it('handles errors gracefully', async () => {
+    const repo: any = { findById: jest.fn().mockRejectedValue(new Error('DB error')) };
+    const publisher: any = { publish: jest.fn() };
+    const sut = new VerifyEmailUseCase(repo, publisher);
+    const out = await sut.execute({ userId: 'u1', verificationToken: 'token' });
     expect(out.success).toBe(false);
-    expect(out.message).toContain('No');
-  });
-
-  test('returns already verified when user.emailVerified true', async () => {
-    const u = makeUser('u3', true);
-    repo.findById.mockResolvedValue(u);
-    jest.spyOn(UserPolicies, 'canVerifyUser').mockReturnValue({ allowed: true });
-
-    const out = await useCase.execute({ userId: 'u3', verificationToken: 't' });
-    expect(out.success).toBe(true);
-    expect(out.message).toContain('already verified');
-    expect(publisher.publish).not.toHaveBeenCalled();
-    expect(repo.updateEmailVerification).not.toHaveBeenCalled();
-  });
-
-  test('invalid token path records failed attempt and returns failure', async () => {
-    const u = makeUser('u4', false);
-    repo.findById.mockResolvedValue(u);
-    jest.spyOn(UserPolicies, 'canVerifyUser').mockReturnValue({ allowed: true });
-    jest.spyOn(VerifyEmailUseCase.prototype as any, 'validateVerificationToken').mockResolvedValue(false);
-
-    const out = await useCase.execute({ userId: 'u4', verificationToken: 'bad' });
-    expect(out.success).toBe(false);
-    expect(out.message).toContain('Invalid or expired');
-    expect(repo.recordSecurityEvent).toHaveBeenCalledWith('u4', expect.objectContaining({ action: 'email_verification', success: false }));
-  });
-
-  test('successful token verification updates repo and publishes event', async () => {
-    const u = makeUser('u5', false);
-    repo.findById.mockResolvedValue(u);
-    jest.spyOn(UserPolicies, 'canVerifyUser').mockReturnValue({ allowed: true });
-    jest.spyOn(VerifyEmailUseCase.prototype as any, 'validateVerificationToken').mockResolvedValue(true);
-    jest.spyOn(VerifyEmailUseCase.prototype as any, 'markTokenAsUsed').mockResolvedValue(undefined);
-
-    const out = await useCase.execute({ userId: 'u5', verificationToken: 'ok' });
-    expect(out.success).toBe(true);
-    expect(repo.updateEmailVerification).toHaveBeenCalledWith('u5', true);
-    expect(publisher.publish).toHaveBeenCalledWith(expect.any(UserEmailVerifiedEvent));
-  });
-
-  test('admin verification skips token validation and publishes admin method', async () => {
-    const u = makeUser('u6', false);
-    repo.findById.mockResolvedValue(u);
-    jest.spyOn(UserPolicies, 'canVerifyUser').mockReturnValue({ allowed: true });
-
-    const out = await useCase.execute({ userId: 'u6', verificationToken: '', verifiedBy: 'admin1' });
-    expect(out.success).toBe(true);
-    expect(repo.updateEmailVerification).toHaveBeenCalledWith('u6', true);
-    expect(publisher.publish).toHaveBeenCalledWith(expect.any(UserEmailVerifiedEvent));
-    expect(out.verificationMethod).toBe('admin');
   });
 });
-

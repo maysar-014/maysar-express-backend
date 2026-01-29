@@ -4,6 +4,8 @@ import { UserSecurityPolicy } from '../../domain/policies/user-security.policy';
 import { CreateUserDto } from '../dto/user.dto';
 import { UserMapper } from '../mappers/user-mapper';
 import { UserAlreadyExistsError, UserValidationError } from '../../domain/errors/user.errors';
+import { sagaEventHandler } from '../sagas/saga-event-handler';
+import { UserRegisteredEvent } from '../../domain/events';
 
 /**
  * Create User Use Case
@@ -37,6 +39,10 @@ export class CreateUserUseCase {
 
       // 6. Apply additional business rules
       this.applyBusinessRules(user);
+
+      // 7. Trigger registration saga
+      const event = new UserRegisteredEvent(user.id, user.email.getValue(), user.role, 'email');
+      await sagaEventHandler.handleUserRegisteredEvent(event);
 
       return user;
     } catch (error) {

@@ -1,0 +1,99 @@
+
+> user-service@1.0.0 test
+> jest
+
+[GLOBAL SETUP] Initializing test environment...
+[GLOBAL SETUP] Test Environment: test
+[GLOBAL SETUP] Test environment initialized successfully
+---------------------------------------|---------|----------|---------|---------|------------------------------------------------------
+File                                   | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                                    
+---------------------------------------|---------|----------|---------|---------|------------------------------------------------------
+All files                              |   83.51 |    74.73 |   82.43 |   84.12 |                                                      
+ src                                   |      50 |    17.14 |   40.54 |   50.42 |                                                      
+  main.ts                              |   81.33 |    54.54 |   78.94 |   81.94 | 72,95,190-191,209-210,220-221,225-226,244-246        
+  test-setup.ts                        |       0 |        0 |       0 |       0 | 7-138                                                
+ src/api/controllers                   |   93.06 |    91.17 |     100 |   93.06 |                                                      
+  change-password.controller.ts        |     100 |      100 |     100 |     100 |                                                      
+  change-role.controller.ts            |     100 |      100 |     100 |     100 |                                                      
+  delete-account.controller.ts         |     100 |      100 |     100 |     100 |                                                      
+  report-security-breach.controller.ts |     100 |      100 |     100 |     100 |                                                      
+  setup-two-factor.controller.ts       |     100 |      100 |     100 |     100 |                                                      
+  suspend-account.controller.ts        |     100 |      100 |     100 |     100 |                                                      
+  user.controller.ts                   |   86.66 |    77.77 |     100 |   86.66 | 58,78,98,118,138,158,189,220,263,282,300,319,337,356 
+  verify-phone.controller.ts           |     100 |      100 |     100 |     100 |                                                      
+ src/api/middleware                    |   93.52 |       94 |   96.22 |   93.69 |                                                      
+  error.middleware.ts                  |     100 |    95.55 |     100 |     100 | 161-164                                              
+  request-logger.middleware.ts         |   92.15 |     90.9 |    87.5 |   93.61 | 115,132,147                                          
+  validation.middleware.ts             |   90.08 |    93.93 |   96.87 |   89.32 | 54-55,93-94,128-132,325,329,342                      
+ src/api/routes                        |   83.72 |    71.42 |   39.13 |   83.72 |                                                      
+  health.routes.ts                     |     100 |    69.23 |     100 |     100 | 27-30,167-180                                        
+  user.routes.ts                       |   68.88 |      100 |   17.64 |   68.88 | 52,60-108                                            
+ src/application/mappers               |   72.13 |    58.09 |   96.29 |   74.07 |                                                      
+  user-mapper.ts                       |   72.13 |    58.09 |   96.29 |   74.07 | 231,243-263,341,368-369,378,387-392                  
+ src/application/sagas                 |   61.93 |    33.33 |    56.3 |   63.61 |                                                      
+  account-deletion.saga.ts             |   78.26 |        0 |   54.54 |   78.26 | 24,36-37,50,65                                       
+  account-suspension.saga.ts           |    87.5 |      100 |   55.55 |    87.5 | 24,39                                                
+  email-verification.saga.ts           |    9.67 |        0 |       0 |   10.34 | 11-41,48-70                                          
+  password-reset.saga.ts               |   54.83 |        0 |    62.5 |   58.62 | 27-41,56,66                                          
+  phone-verification.saga.ts           |   82.35 |      100 |   55.55 |   82.35 | 24,36,50                                             
+  profile-update.saga.ts               |   91.66 |        0 |   57.14 |   91.66 | 19                                                   
+  role-change.saga.ts                  |   82.35 |      100 |   55.55 |   82.35 | 25,37,52                                             
+  saga-base.ts                         |      48 |    33.33 |   55.55 |      50 | 7-13,60-61,71-73,92-117                              
+  saga-event-handler.ts                |   58.73 |      100 |      80 |   58.73 | 20-31,40-51,60-61,70-71,80-81,90-91,100-101,110-111  
+  security-policy-breach.saga.ts       |   85.71 |      100 |   55.55 |   85.71 | 30,45,60                                             
+  service-clients.ts                   |   84.61 |      100 |   66.66 |   84.61 | 29,45                                                
+  two-factor-setup.saga.ts             |      80 |        0 |   55.55 |      80 | 25,38-39,54                                          
+  user-registration.saga.ts            |   57.62 |    18.18 |   66.66 |   61.11 | 68-77,115-124,157-175,192-198                        
+ src/application/use-cases             |   89.32 |    80.47 |   90.76 |   89.72 |                                                      
+  change-password.use-case.ts          |     100 |      100 |     100 |     100 |                                                      
+  change-role.use-case.ts              |     100 |      100 |     100 |     100 |                                                      
+  create-user.use-case.ts              |   83.07 |    87.87 |   78.57 |   83.07 | 55,96,184-220                                        
+  delete-account.use-case.ts           |   95.23 |    85.71 |     100 |   95.23 | 58                                                   
+  get-user.use-case.ts                 |   81.81 |    66.66 |      75 |   81.81 | 73-74,88,116                                         
+  phone-verification.use-case.ts       |   81.25 |     87.5 |      80 |   81.25 | 89-102,137-142                                       
+  report-security-breach.use-case.ts   |     100 |      100 |     100 |     100 |                                                      
+  search-users.use-case.ts             |   87.67 |    73.33 |     100 |   90.76 | 133-139,218,230,234-235                              
+  setup-two-factor.use-case.ts         |     100 |      100 |     100 |     100 |                                                      
+  suspend-account.use-case.ts          |     100 |      100 |     100 |     100 |                                                      
+  update-user.use-case.ts              |   84.61 |    65.38 |     100 |   84.61 | 69,79,192-205                                        
+  verify-email.use-case.ts             |   83.33 |       60 |     100 |   83.33 | 59,84-86,153-154,167,190                             
+  verify-phone.use-case.ts             |   96.29 |    83.33 |     100 |   96.29 | 44                                                   
+ src/domain/entities                   |   92.04 |     84.9 |     100 |   92.85 |                                                      
+  user.entity.ts                       |   92.04 |     84.9 |     100 |   92.85 | 341,347,361,365,380,384                              
+ src/domain/errors                     |     100 |      100 |     100 |     100 |                                                      
+  user.errors.ts                       |     100 |      100 |     100 |     100 |                                                      
+ src/domain/policies                   |   85.08 |    79.48 |   93.75 |   84.74 |                                                      
+  user-policies.ts                     |    90.9 |    88.57 |   93.33 |   90.82 | 58,62,66,97,129,168-175,241,303                      
+  user-security.policy.ts              |   76.05 |    65.95 |   94.11 |      75 | 24-32,52,107,115,119,134,138,170,178,182,186,204,232 
+ src/domain/services                   |    93.9 |       85 |     100 |   93.82 |                                                      
+  user-validation.service.ts           |    93.9 |       85 |     100 |   93.82 | 21,146,150,154,249                                   
+ src/domain/value-objects              |   96.15 |    77.69 |     100 |   95.93 |                                                      
+  address.value-object.ts              |     100 |    80.55 |     100 |     100 | 108-109,111-112,135,258-262                          
+  email.value-object.ts                |     100 |    81.81 |     100 |     100 | 44-52                                                
+  password-hash.value-object.ts        |   95.65 |       75 |     100 |   94.73 | 13,41                                                
+  phone-number.value-object.ts         |   89.36 |    69.56 |     100 |   89.36 | 93,95,99,131,159                                     
+ src/infrastructure/adapters           |     100 |      100 |     100 |     100 |                                                      
+  user-event-publisher.ts              |     100 |      100 |     100 |     100 |                                                      
+ src/infrastructure/database           |   11.94 |    18.75 |       0 |    10.6 |                                                      
+  prisma-client.ts                     |   11.94 |    18.75 |       0 |    10.6 | 31-208                                               
+ src/infrastructure/messaging          |   83.33 |       75 |   84.61 |   81.81 |                                                      
+  user-event-publisher.ts              |   83.33 |       75 |   84.61 |   81.81 | 35-42,72-88                                          
+ src/infrastructure/repositories       |   95.77 |    70.51 |   97.82 |   98.51 |                                                      
+  prisma-user.repository.ts            |   94.56 |       65 |   96.07 |   98.07 | 54,75,593,926-927                                    
+  user.repository.ts                   |     100 |    88.88 |     100 |     100 | 80-85                                                
+ src/infrastructure/services           |    95.6 |       80 |   90.24 |   95.55 |                                                      
+  cache.service.ts                     |     100 |      100 |     100 |     100 |                                                      
+  email.service.ts                     |   85.18 |      100 |   71.42 |   84.61 | 196-211                                              
+  logger.service.ts                    |     100 |     62.5 |     100 |     100 | 21-127                                               
+---------------------------------------|---------|----------|---------|---------|------------------------------------------------------
+
+=============================== Coverage summary ===============================
+Statements   : 83.51% ( 2259/2705 )
+Branches     : 74.73% ( 763/1021 )
+Functions    : 82.43% ( 549/666 )
+Lines        : 84.12% ( 2189/2602 )
+================================================================================
+[GLOBAL TEARDOWN] Cleaning up test environment...
+[GLOBAL TEARDOWN] Closing open handles...
+[GLOBAL TEARDOWN] Flushing pending operations...
+[GLOBAL TEARDOWN] Test environment cleanup completed

@@ -16,6 +16,9 @@
 // ENVIRONMENT SETUP
 // =====================================================================================
 
+// Increase max event listeners to prevent warnings with many test suites
+process.setMaxListeners(20);
+
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret-for-testing-only-do-not-use-in-production';
 process.env.LOG_LEVEL = process.env.LOG_LEVEL || 'error'; // Minimize log noise in tests

@@ -9,6 +9,9 @@ module.exports = async (): Promise<void> => {
   // ENVIRONMENT INITIALIZATION
   // =====================================================================================
 
+  // Increase max event listeners to prevent warnings with many test suites
+  process.setMaxListeners(20);
+
   process.env.NODE_ENV = 'test';
   process.env.JWT_SECRET =
     process.env.JWT_SECRET || 'test-jwt-secret-for-testing-only-do-not-use-in-production';

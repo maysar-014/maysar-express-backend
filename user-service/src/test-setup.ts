@@ -5,9 +5,7 @@
 
 // Mock console methods to reduce noise in tests
 global.console = {
-  
   ...console,
-  // Uncomment to suppress console.log in tests
   log: jest.fn(),
   debug: jest.fn(),
   info: jest.fn(),
@@ -139,3 +137,18 @@ afterEach(() => {
 afterAll(() => {
   jest.restoreAllMocks();
 });
+
+// Export empty to make this a module for declare global
+export {};
+
+// Extend Jest matchers type
+declare global {
+  namespace jest {
+    interface Matchers<R> {
+      toBeValidUser(): R;
+      toBeValidEmail(): R;
+      toBeValidPhoneNumber(): R;
+      toBeValidAddress(): R;
+    }
+  }
+}

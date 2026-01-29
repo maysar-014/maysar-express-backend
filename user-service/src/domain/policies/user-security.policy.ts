@@ -88,14 +88,14 @@ export class UserSecurityPolicy implements DomainPolicy {
    * Check if phone number is suspicious
    */
   isSuspiciousPhoneNumber(phoneNumber: string): boolean {
-    // Check for VoIP numbers (often used for fraud)
-    const voipPatterns = [
-      /^(\+?255)?(71[0-9]|72[0-9]|73[0-9]|74[0-9]|75[0-9]|76[0-9]|77[0-9]|78[0-9]|79[0-9])\d{7}$/, // Tanzanian mobile
-      /^(\+?255)?(2[0-9])\d{7}$/, // Tanzanian landline
+    // Check for valid Tanzanian phone numbers
+    // Format: +255 followed by 10 digits (7xx, 6xx, or 2xx area codes)
+    const validPatterns = [
+      /^\+?255(7\d{9}|6\d{9}|2\d{9})$/, // Tanzanian mobile and landline
     ];
 
-    // If it doesn't match valid Tanzanian patterns, it might be suspicious
-    return !voipPatterns.some(pattern => pattern.test(phoneNumber));
+    // If it matches valid Tanzanian patterns, it's not suspicious
+    return !validPatterns.some(pattern => pattern.test(phoneNumber));
   }
 
   /**

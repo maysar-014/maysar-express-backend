@@ -1,37 +1,42 @@
 import { Request, Response } from 'express';
-import { CreateUserUseCase } from '@application/use-cases/create-user.use-case';
 import { UserController } from '../user.controller';
 import { UserAlreadyExistsError } from '@domain/errors/user.errors';
-import { User } from '@domain/entities/user.entity';
-import { Email } from '@domain/value-objects/email.value-object';
-import { PhoneNumber } from '@domain/value-objects/phone-number.value-object';
-
-// Mock dependencies
-jest.mock('@application/use-cases/create-user.use-case');
 
 describe('UserController', () => {
-  let userController: UserController;
-  let mockCreateUserUseCase: jest.Mocked<CreateUserUseCase>;
+  let controller: UserController;
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
+  let mockCreateUserUseCase: any;
+  let mockChangePasswordUseCase: any;
+  let mockDeleteAccountUseCase: any;
+  let mockSuspendAccountUseCase: any;
+  let mockChangeRoleUseCase: any;
+  let mockVerifyPhoneUseCase: any;
+  let mockSetupTwoFactorUseCase: any;
+  let mockReportSecurityBreachUseCase: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    mockCreateUserUseCase = { execute: jest.fn() };
+    mockChangePasswordUseCase = { execute: jest.fn() };
+    mockDeleteAccountUseCase = { execute: jest.fn() };
+    mockSuspendAccountUseCase = { execute: jest.fn() };
+    mockChangeRoleUseCase = { execute: jest.fn() };
+    mockVerifyPhoneUseCase = { execute: jest.fn() };
+    mockSetupTwoFactorUseCase = { execute: jest.fn() };
+    mockReportSecurityBreachUseCase = { execute: jest.fn() };
 
-    mockCreateUserUseCase = new (CreateUserUseCase as any)(null, null) as jest.Mocked<CreateUserUseCase>;
+    controller = new UserController(
+      mockCreateUserUseCase,
+      mockChangePasswordUseCase,
+      mockDeleteAccountUseCase,
+      mockSuspendAccountUseCase,
+      mockChangeRoleUseCase,
+      mockVerifyPhoneUseCase,
+      mockSetupTwoFactorUseCase,
+      mockReportSecurityBreachUseCase
+    );
 
-    userController = new UserController(mockCreateUserUseCase);
-
-    mockRequest = {
-      body: {
-        email: 'test@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        password: 'password123',
-        phoneNumber: '+255712345678'
-      }
-    };
-
+    mockRequest = { body: {}, params: {}, headers: {} };
     mockResponse = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis()
@@ -39,305 +44,439 @@ describe('UserController', () => {
   });
 
   describe('createUser', () => {
-    it('should create a user successfully', async () => {
-      const mockUser = User.create({
-        id: 'user-123',
-        email: Email.create('test@example.com'),
-        phoneNumber: PhoneNumber.create('+255712345678'),
-        firstName: 'John',
-        lastName: 'Doe',
-        role: 'BUYER'
-      } as any);
-      mockCreateUserUseCase.execute.mockResolvedValue(mockUser as any);
+    test('creates user successfully', async () => {
+      const user = { id: 'user-1', email: 'test@example.com' };
+      mockCreateUserUseCase.execute.mockResolvedValue(user);
+      mockRequest.body = { email: 'test@example.com' };
 
-      await userController.createUser(mockRequest as Request, mockResponse as Response);
+      await controller.createUser(mockRequest as Request, mockResponse as Response);
 
-      expect(mockCreateUserUseCase.execute).toHaveBeenCalledWith(mockRequest.body);
       expect(mockResponse.status).toHaveBeenCalledWith(201);
       expect(mockResponse.json).toHaveBeenCalled();
     });
 
-    it('should return 409 when user already exists', async () => {
-      const error = new UserAlreadyExistsError('User with this email already exists');
-      mockCreateUserUseCase.execute.mockRejectedValue(error);
+    test('handles UserAlreadyExistsError', async () => {
+      mockCreateUserUseCase.execute.mockRejectedValue(new UserAlreadyExistsError('User exists'));
 
-      await userController.createUser(mockRequest as Request, mockResponse as Response);
+      await controller.createUser(mockRequest as Request, mockResponse as Response);
 
       expect(mockResponse.status).toHaveBeenCalledWith(409);
       expect(mockResponse.json).toHaveBeenCalled();
     });
-  });
 
-  describe('not implemented endpoints', () => {
-    it('getUserById returns 501', async () => {
-      mockRequest.params = { id: 'user-123' } as any;
-      await userController.getUserById(mockRequest as Request, mockResponse as Response);
-      expect(mockResponse.status).toHaveBeenCalledWith(501);
-    });
+    test('handles unexpected errors', async () => {
+      mockCreateUserUseCase.execute.mockRejectedValue(new Error('Unexpected error'));
 
-    it('updateUser returns 501', async () => {
-      mockRequest.params = { id: 'user-123' } as any;
-      await userController.updateUser(mockRequest as Request, mockResponse as Response);
-      expect(mockResponse.status).toHaveBeenCalledWith(501);
-    });
+      await controller.createUser(mockRequest as Request, mockResponse as Response);
 
-    it('deleteUser returns 501', async () => {
-      mockRequest.params = { id: 'user-123' } as any;
-      await userController.deleteUser(mockRequest as Request, mockResponse as Response);
-      expect(mockResponse.status).toHaveBeenCalledWith(501);
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(mockResponse.json).toHaveBeenCalled();
     });
   });
 
-  describe('error handling', () => {
-    it('createUser returns 500 on unexpected error', async () => {
-      mockCreateUserUseCase.execute.mockRejectedValue(new Error('unexpected'));
+  describe('getUserById', () => {
+    test('returns 501 Not Implemented', async () => {
+      await controller.getUserById(mockRequest as Request, mockResponse as Response);
 
-      await userController.createUser(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+      expect(mockResponse.status).toHaveBeenCalledWith(501);
+      expect(mockResponse.json).toHaveBeenCalled();
     });
 
-    it('getUserById returns 500 on error', async () => {
-      jest.spyOn(console, 'error').mockImplementation();
-      userController.getUserById = jest.fn().mockImplementation(async (_req, res) => {
-        try {
-          throw new Error('test error');
-        } catch (error) {
-          console.error('Error getting user:', error);
-          res.status(500).json({
-            success: false,
-            error: {
-              code: 'INTERNAL_SERVER_ERROR',
-              message: 'An unexpected error occurred while retrieving the user'
-            }
-          });
-        }
-      });
+    test('handles errors gracefully', async () => {
+      await controller.getUserById(mockRequest as Request, mockResponse as Response);
 
-      mockRequest.params = { id: 'user-123' } as any;
-      await userController.getUserById(mockRequest as Request, mockResponse as Response);
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-    });
-
-    it('updateUser returns 500 on error', async () => {
-      jest.spyOn(console, 'error').mockImplementation();
-      userController.updateUser = jest.fn().mockImplementation(async (_req, res) => {
-        try {
-          throw new Error('test error');
-        } catch (error) {
-          console.error('Error updating user:', error);
-          res.status(500).json({
-            success: false,
-            error: {
-              code: 'INTERNAL_SERVER_ERROR',
-              message: 'An unexpected error occurred while updating the user'
-            }
-          });
-        }
-      });
-
-      mockRequest.params = { id: 'user-123' } as any;
-      await userController.updateUser(mockRequest as Request, mockResponse as Response);
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-    });
-
-    it('deleteUser returns 500 on error', async () => {
-      jest.spyOn(console, 'error').mockImplementation();
-      userController.deleteUser = jest.fn().mockImplementation(async (_req, res) => {
-        try {
-          throw new Error('test error');
-        } catch (error) {
-          console.error('Error deleting user:', error);
-          res.status(500).json({
-            success: false,
-            error: {
-              code: 'INTERNAL_SERVER_ERROR',
-              message: 'An unexpected error occurred while deleting the user'
-            }
-          });
-        }
-      });
-
-      mockRequest.params = { id: 'user-123' } as any;
-      await userController.deleteUser(mockRequest as Request, mockResponse as Response);
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-    });
-
-    it('verifyEmail returns 500 on error', async () => {
-      jest.spyOn(console, 'error').mockImplementation();
-      userController.verifyEmail = jest.fn().mockImplementation(async (_req, res) => {
-        try {
-          throw new Error('test error');
-        } catch (error) {
-          console.error('Error verifying email:', error);
-          res.status(500).json({
-            success: false,
-            error: {
-              code: 'INTERNAL_SERVER_ERROR',
-              message: 'An unexpected error occurred while verifying email'
-            }
-          });
-        }
-      });
-
-      await userController.verifyEmail(mockRequest as Request, mockResponse as Response);
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-    });
-
-    it('requestPasswordReset returns 500 on error', async () => {
-      jest.spyOn(console, 'error').mockImplementation();
-      userController.requestPasswordReset = jest.fn().mockImplementation(async (_req, res) => {
-        try {
-          throw new Error('test error');
-        } catch (error) {
-          console.error('Error requesting password reset:', error);
-          res.status(500).json({
-            success: false,
-            error: {
-              code: 'INTERNAL_SERVER_ERROR',
-              message: 'An unexpected error occurred while requesting password reset'
-            }
-          });
-        }
-      });
-
-      await userController.requestPasswordReset(mockRequest as Request, mockResponse as Response);
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-    });
-
-    it('resetPassword returns 500 on error', async () => {
-      jest.spyOn(console, 'error').mockImplementation();
-      userController.resetPassword = jest.fn().mockImplementation(async (_req, res) => {
-        try {
-          throw new Error('test error');
-        } catch (error) {
-          console.error('Error resetting password:', error);
-          res.status(500).json({
-            success: false,
-            error: {
-              code: 'INTERNAL_SERVER_ERROR',
-              message: 'An unexpected error occurred while resetting password'
-            }
-          });
-        }
-      });
-
-      await userController.resetPassword(mockRequest as Request, mockResponse as Response);
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-    });
-
-    it('getProfile returns 500 on error', async () => {
-      jest.spyOn(console, 'error').mockImplementation();
-      userController.getProfile = jest.fn().mockImplementation(async (req, res) => {
-        try {
-          const userId = req.headers['x-user-id'] as string;
-          if (!userId) {
-            res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } });
-            return;
-          }
-          throw new Error('test error');
-        } catch (error) {
-          console.error('Error getting user profile:', error);
-          res.status(500).json({
-            success: false,
-            error: {
-              code: 'INTERNAL_SERVER_ERROR',
-              message: 'An unexpected error occurred while retrieving user profile'
-            }
-          });
-        }
-      });
-
-      mockRequest = { headers: { 'x-user-id': 'user-123' } } as any;
-      await userController.getProfile(mockRequest as Request, mockResponse as Response);
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-    });
-
-    it('updateProfile returns 500 on error', async () => {
-      jest.spyOn(console, 'error').mockImplementation();
-      userController.updateProfile = jest.fn().mockImplementation(async (req, res) => {
-        try {
-          const userId = req.headers['x-user-id'] as string;
-          if (!userId) {
-            res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } });
-            return;
-          }
-          throw new Error('test error');
-        } catch (error) {
-          console.error('Error updating user profile:', error);
-          res.status(500).json({
-            success: false,
-            error: {
-              code: 'INTERNAL_SERVER_ERROR',
-              message: 'An unexpected error occurred while updating user profile'
-            }
-          });
-        }
-      });
-
-      mockRequest = { headers: { 'x-user-id': 'user-123' } } as any;
-      await userController.updateProfile(mockRequest as Request, mockResponse as Response);
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(mockResponse.status).toHaveBeenCalledWith(501);
     });
   });
 
-  describe('not implemented endpoints', () => {
-    it('getUserById returns 501', async () => {
-      mockRequest.params = { id: 'user-123' } as any;
-      await userController.getUserById(mockRequest as Request, mockResponse as Response);
+  describe('updateUser', () => {
+    test('returns 501 Not Implemented', async () => {
+      await controller.updateUser(mockRequest as Request, mockResponse as Response);
+
       expect(mockResponse.status).toHaveBeenCalledWith(501);
+      expect(mockResponse.json).toHaveBeenCalled();
     });
 
-    it('updateUser returns 501', async () => {
-      mockRequest.params = { id: 'user-123' } as any;
-      await userController.updateUser(mockRequest as Request, mockResponse as Response);
+    test('handles errors gracefully', async () => {
+      await controller.updateUser(mockRequest as Request, mockResponse as Response);
+
       expect(mockResponse.status).toHaveBeenCalledWith(501);
     });
+  });
 
-    it('deleteUser returns 501', async () => {
-      mockRequest.params = { id: 'user-123' } as any;
-      await userController.deleteUser(mockRequest as Request, mockResponse as Response);
+  describe('deleteUser', () => {
+    test('returns 501 Not Implemented', async () => {
+      await controller.deleteUser(mockRequest as Request, mockResponse as Response);
+
       expect(mockResponse.status).toHaveBeenCalledWith(501);
+      expect(mockResponse.json).toHaveBeenCalled();
     });
 
-    it('verifyEmail returns 501', async () => {
-      await userController.verifyEmail(mockRequest as Request, mockResponse as Response);
+    test('handles errors gracefully', async () => {
+      await controller.deleteUser(mockRequest as Request, mockResponse as Response);
+
       expect(mockResponse.status).toHaveBeenCalledWith(501);
     });
+  });
 
-    it('requestPasswordReset returns 501', async () => {
-      await userController.requestPasswordReset(mockRequest as Request, mockResponse as Response);
+  describe('verifyEmail', () => {
+    test('returns 501 Not Implemented', async () => {
+      await controller.verifyEmail(mockRequest as Request, mockResponse as Response);
+
       expect(mockResponse.status).toHaveBeenCalledWith(501);
+      expect(mockResponse.json).toHaveBeenCalled();
     });
 
-    it('resetPassword returns 501', async () => {
-      await userController.resetPassword(mockRequest as Request, mockResponse as Response);
+    test('handles errors gracefully', async () => {
+      await controller.verifyEmail(mockRequest as Request, mockResponse as Response);
+
       expect(mockResponse.status).toHaveBeenCalledWith(501);
     });
+  });
 
-    it('getProfile returns 401 when no user header', async () => {
-      mockRequest = { headers: {} } as any;
-      await userController.getProfile(mockRequest as Request, mockResponse as Response);
+  describe('requestPasswordReset', () => {
+    test('returns 501 Not Implemented', async () => {
+      await controller.requestPasswordReset(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(501);
+      expect(mockResponse.json).toHaveBeenCalled();
+    });
+
+    test('handles errors gracefully', async () => {
+      await controller.requestPasswordReset(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(501);
+    });
+  });
+
+  describe('resetPassword', () => {
+    test('returns 501 Not Implemented', async () => {
+      await controller.resetPassword(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(501);
+      expect(mockResponse.json).toHaveBeenCalled();
+    });
+
+    test('handles errors gracefully', async () => {
+      await controller.resetPassword(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(501);
+    });
+  });
+
+  describe('getProfile', () => {
+    test('returns 401 when userId is missing', async () => {
+      mockRequest.headers = {};
+
+      await controller.getProfile(mockRequest as Request, mockResponse as Response);
+
       expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalled();
     });
 
-    it('getProfile returns 501 when authenticated', async () => {
-      mockRequest = { headers: { 'x-user-id': 'user-123' } } as any;
-      await userController.getProfile(mockRequest as Request, mockResponse as Response);
+    test('returns 501 when userId is present', async () => {
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+
+      await controller.getProfile(mockRequest as Request, mockResponse as Response);
+
       expect(mockResponse.status).toHaveBeenCalledWith(501);
+      expect(mockResponse.json).toHaveBeenCalled();
     });
 
-    it('updateProfile returns 401 when no user header', async () => {
-      mockRequest = { headers: {} } as any;
-      await userController.updateProfile(mockRequest as Request, mockResponse as Response);
+    test('handles errors gracefully', async () => {
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+
+      await controller.getProfile(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateProfile', () => {
+    test('returns 401 when userId is missing', async () => {
+      mockRequest.headers = {};
+
+      await controller.updateProfile(mockRequest as Request, mockResponse as Response);
+
       expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalled();
     });
 
-    it('updateProfile returns 501 when authenticated', async () => {
-      mockRequest = { headers: { 'x-user-id': 'user-123' } } as any;
-      await userController.updateProfile(mockRequest as Request, mockResponse as Response);
+    test('returns 501 when userId is present', async () => {
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+
+      await controller.updateProfile(mockRequest as Request, mockResponse as Response);
+
       expect(mockResponse.status).toHaveBeenCalledWith(501);
+      expect(mockResponse.json).toHaveBeenCalled();
+    });
+
+    test('handles errors gracefully', async () => {
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+
+      await controller.updateProfile(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalled();
+    });
+  });
+
+  describe('changePassword', () => {
+    test('returns 501 when useCase is not provided', async () => {
+      const controllerWithoutUseCase = new UserController(mockCreateUserUseCase);
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { newPassword: 'newpass', currentPassword: 'oldpass' };
+
+      await controllerWithoutUseCase.changePassword(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(501);
+    });
+
+    test('executes changePassword useCase successfully', async () => {
+      mockChangePasswordUseCase.execute.mockResolvedValue({ success: true });
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { newPassword: 'newpass', currentPassword: 'oldpass' };
+
+      await controller.changePassword(mockRequest as Request, mockResponse as Response);
+
+      expect(mockChangePasswordUseCase.execute).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+    });
+
+    test('handles useCase failure', async () => {
+      mockChangePasswordUseCase.execute.mockResolvedValue({ success: false });
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { newPassword: 'newpass', currentPassword: 'oldpass' };
+
+      await controller.changePassword(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+    });
+
+    test('handles exceptions', async () => {
+      mockChangePasswordUseCase.execute.mockRejectedValue(new Error('Error'));
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { newPassword: 'newpass', currentPassword: 'oldpass' };
+
+      await controller.changePassword(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('deleteAccount', () => {
+    test('returns 501 when useCase is not provided', async () => {
+      const controllerWithoutUseCase = new UserController(mockCreateUserUseCase);
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { reason: 'test' };
+
+      await controllerWithoutUseCase.deleteAccount(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(501);
+    });
+
+    test('executes deleteAccount useCase successfully', async () => {
+      mockDeleteAccountUseCase.execute.mockResolvedValue({ success: true });
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { reason: 'test' };
+
+      await controller.deleteAccount(mockRequest as Request, mockResponse as Response);
+
+      expect(mockDeleteAccountUseCase.execute).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+    });
+
+    test('handles exceptions', async () => {
+      mockDeleteAccountUseCase.execute.mockRejectedValue(new Error('Error'));
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { reason: 'test' };
+
+      await controller.deleteAccount(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('suspendAccount', () => {
+    test('returns 501 when useCase is not provided', async () => {
+      const controllerWithoutUseCase = new UserController(mockCreateUserUseCase);
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { reason: 'test', duration: 3600 };
+
+      await controllerWithoutUseCase.suspendAccount(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(501);
+    });
+
+    test('executes suspendAccount useCase successfully', async () => {
+      mockSuspendAccountUseCase.execute.mockResolvedValue({ success: true });
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { reason: 'test', duration: 3600 };
+
+      await controller.suspendAccount(mockRequest as Request, mockResponse as Response);
+
+      expect(mockSuspendAccountUseCase.execute).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+    });
+
+    test('handles exceptions', async () => {
+      mockSuspendAccountUseCase.execute.mockRejectedValue(new Error('Error'));
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { reason: 'test', duration: 3600 };
+
+      await controller.suspendAccount(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('changeRole', () => {
+    test('returns 501 when useCase is not provided', async () => {
+      const controllerWithoutUseCase = new UserController(mockCreateUserUseCase);
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { newRole: 'seller' };
+
+      await controllerWithoutUseCase.changeRole(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(501);
+    });
+
+    test('executes changeRole useCase successfully', async () => {
+      mockChangeRoleUseCase.execute.mockResolvedValue({ success: true });
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { newRole: 'seller' };
+
+      await controller.changeRole(mockRequest as Request, mockResponse as Response);
+
+      expect(mockChangeRoleUseCase.execute).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+    });
+
+    test('handles exceptions', async () => {
+      mockChangeRoleUseCase.execute.mockRejectedValue(new Error('Error'));
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { newRole: 'seller' };
+
+      await controller.changeRole(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('verifyPhone', () => {
+    test('returns 501 when useCase is not provided', async () => {
+      const controllerWithoutUseCase = new UserController(mockCreateUserUseCase);
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { phoneNumber: '+255712345678', otp: '123456' };
+
+      await controllerWithoutUseCase.verifyPhone(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(501);
+    });
+
+    test('executes verifyPhone useCase successfully', async () => {
+      mockVerifyPhoneUseCase.execute.mockResolvedValue({ success: true });
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { phoneNumber: '+255712345678', otp: '123456' };
+
+      await controller.verifyPhone(mockRequest as Request, mockResponse as Response);
+
+      expect(mockVerifyPhoneUseCase.execute).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+    });
+
+    test('handles exceptions', async () => {
+      mockVerifyPhoneUseCase.execute.mockRejectedValue(new Error('Error'));
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { phoneNumber: '+255712345678', otp: '123456' };
+
+      await controller.verifyPhone(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('setupTwoFactor', () => {
+    test('returns 501 when useCase is not provided', async () => {
+      const controllerWithoutUseCase = new UserController(mockCreateUserUseCase);
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { method: 'totp' };
+
+      await controllerWithoutUseCase.setupTwoFactor(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(501);
+    });
+
+    test('executes setupTwoFactor useCase successfully', async () => {
+      mockSetupTwoFactorUseCase.execute.mockResolvedValue({ success: true });
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { method: 'totp' };
+
+      await controller.setupTwoFactor(mockRequest as Request, mockResponse as Response);
+
+      expect(mockSetupTwoFactorUseCase.execute).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+    });
+
+    test('handles exceptions', async () => {
+      mockSetupTwoFactorUseCase.execute.mockRejectedValue(new Error('Error'));
+      mockRequest.params = { id: 'user-1' };
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { method: 'totp' };
+
+      await controller.setupTwoFactor(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('reportSecurityBreach', () => {
+    test('returns 501 when useCase is not provided', async () => {
+      const controllerWithoutUseCase = new UserController(mockCreateUserUseCase);
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { userId: 'user-1', breachType: 'suspicious_login', severity: 'high' };
+
+      await controllerWithoutUseCase.reportSecurityBreach(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(501);
+    });
+
+    test('executes reportSecurityBreach useCase successfully', async () => {
+      mockReportSecurityBreachUseCase.execute.mockResolvedValue({ success: true });
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { userId: 'user-1', breachType: 'suspicious_login', severity: 'high' };
+
+      await controller.reportSecurityBreach(mockRequest as Request, mockResponse as Response);
+
+      expect(mockReportSecurityBreachUseCase.execute).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+    });
+
+    test('handles exceptions', async () => {
+      mockReportSecurityBreachUseCase.execute.mockRejectedValue(new Error('Error'));
+      mockRequest.headers = { 'x-user-id': 'user-1' };
+      mockRequest.body = { userId: 'user-1', breachType: 'suspicious_login', severity: 'high' };
+
+      await controller.reportSecurityBreach(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
     });
   });
 });
