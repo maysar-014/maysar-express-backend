@@ -1,56 +1,50 @@
 import { IDomainEventPublisher, DomainEvent, UserRegisteredEvent, UserProfileUpdatedEvent, UserEmailVerifiedEvent } from '../../domain/events';
 import { logger } from '../services/logger.service';
+import { IOutboxRepository, OutboxStatus } from '../../../../shared/outbox/outbox.repository';
 
 /**
  * User Event Publisher
- * Handles publishing domain events for user-related operations
- * In production, this would integrate with message queues like Kafka, RabbitMQ, etc.
+ * Handles saving domain events for user-related operations using the Outbox pattern
  */
 export class UserEventPublisher implements IDomainEventPublisher {
+  constructor(private readonly outboxRepository: IOutboxRepository) { }
+
   /**
-   * Publish a single domain event
-   * In a real implementation, this would publish to a message queue
+   * Save a single domain event to the outbox table
    */
-  async publish(event: DomainEvent): Promise<void> {
+  async publish(event: DomainEvent, transaction?: any): Promise<void> {
     try {
-      // Log the event for now (in production, publish to message queue)
-      logger.info('Domain Event Published', {
+      await this.outboxRepository.save({
+        eventId: event.eventId,
+        eventType: event.eventType,
+        eventData: this.sanitizeEventData(event),
+        status: OutboxStatus.PENDING
+      }, transaction);
+
+      logger.info('Domain Event Saved to Outbox', {
         eventType: event.constructor.name,
         eventId: event.eventId,
-        aggregateId: event.aggregateId,
-        eventVersion: event.eventVersion,
-        occurredAt: event.occurredAt,
-        metadata: event.metadata || {},
-        eventData: this.sanitizeEventData(event)
+        aggregateId: event.aggregateId
       });
 
-      // In production, this would publish to Kafka/RabbitMQ/etc.
-      // Example:
-      // await this.messageQueue.publish('user.events', event.eventType, event);
-
-      // For now, just simulate async operation
-      await this.simulateAsyncPublish(event);
-
     } catch (error) {
-      logger.error('Failed to publish domain event', {
+      logger.error('Failed to save domain event to Outbox', {
         eventType: event.constructor.name,
         eventId: event.eventId,
         error
       });
-
-      // In production, you might want to implement dead letter queue handling
       throw error;
     }
   }
 
   /**
-   * Publish multiple domain events
-   * Useful for bulk operations or transaction boundaries
+   * Save multiple domain events to the outbox table
    */
-  async publishMany(events: DomainEvent[]): Promise<void> {
-    const promises = events.map(event => this.publish(event));
-    await Promise.all(promises);
+  async publishMany(events: DomainEvent[], transaction?: any): Promise<void> {
+    await Promise.all(events.map(event => this.publish(event, transaction)));
   }
+
+
 
   /**
    * Publish user registered event

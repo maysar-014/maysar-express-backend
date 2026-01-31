@@ -1,4 +1,5 @@
 import { EventPublisherPort } from '../../domain/engines/ports/event-publisher.port';
+import { IOutboxRepository, OutboxStatus } from '../../../../shared/outbox/outbox.repository';
 
 export interface DomainEvent {
   eventId: string;
@@ -31,35 +32,45 @@ export class EventPublisher implements EventPublisherPort {
   private eventStore: DomainEvent[] = [];
   private deadLetterQueue: DomainEvent[] = [];
 
-  constructor(private eventStoreEnabled: boolean = true) {}
+  constructor(
+    private readonly outboxRepository: IOutboxRepository,
+    private eventStoreEnabled: boolean = true
+  ) { }
 
-  async publish(event: DomainEvent): Promise<void> {
+  async publish(event: DomainEvent, transaction?: any): Promise<void> {
     try {
       // Store event if persistence is enabled
       if (this.eventStoreEnabled) {
         this.eventStore.push(event);
-        console.log(`Event stored: ${event.eventType} (${event.eventId})`);
       }
 
-      // Publish to subscribers
+      // Publish to Outbox
+      await this.outboxRepository.save({
+        eventId: event.eventId,
+        eventType: event.eventType,
+        eventData: event.eventData,
+        status: OutboxStatus.PENDING
+      }, transaction);
+
+      // Publish to local subscribers
       const subscribers = this.subscriptions.get(event.eventType) || [];
       const publishPromises = subscribers.map(sub => this.publishToSubscriber(event, sub));
 
       await Promise.allSettled(publishPromises);
 
-      console.log(`Event published: ${event.eventType} (${event.eventId}) to ${subscribers.length} subscribers`);
+      console.log(`Event saved to Outbox and published to local subscribers: ${event.eventType} (${event.eventId})`);
 
     } catch (error) {
-      console.error('Error publishing event:', error);
+      console.error('Error saving event to Outbox:', error);
       // Add to dead letter queue for retry
       this.deadLetterQueue.push(event);
       throw new Error('Failed to publish event');
     }
   }
 
-  async publishBatch(events: DomainEvent[]): Promise<void> {
+  async publishBatch(events: DomainEvent[], transaction?: any): Promise<void> {
     try {
-      const publishPromises = events.map(event => this.publish(event));
+      const publishPromises = events.map(event => this.publish(event, transaction));
       await Promise.allSettled(publishPromises);
 
       console.log(`Batch published: ${events.length} events`);

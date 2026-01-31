@@ -142,24 +142,19 @@ enum ComplianceType {
 }
 
 model OutboxEvent {
-  id            String   @id @default(cuid())
-  eventId       String   @unique
-  eventType     String
-  aggregateId   String
-  aggregateType String
-  payload       Json
-  status        OutboxStatus @default(PENDING)
-  createdAt     DateTime @default(now())
-  publishedAt   DateTime?
-  retryCount    Int      @default(0)
-  lastError     String?
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  eventType   String
+  eventData   Json
+  status      String   @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
+  createdAt   DateTime @default(now())
+  processedAt DateTime?
+  attempts    Int      @default(0)
+  lastError   String?
+  nextRetryAt DateTime?
 
-  @@index([status, createdAt])
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
   @@map("outbox_events")
 }
 
-enum OutboxStatus {
-  PENDING
-  PUBLISHED
-  FAILED
-}

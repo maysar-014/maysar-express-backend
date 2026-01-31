@@ -1,0 +1,22 @@
+useCaseDiagram
+    actor "System" as S
+    actor "User" as U
+    actor "Admin" as A
+    
+    package "Notification Service" {
+        usecase "Send Notification" as UC1
+        usecase "Render Template" as UC2
+        usecase "Manage Preferences" as UC3
+        usecase "Track Delivery Status" as UC4
+        usecase "Manage Templates" as UC5
+        usecase "Retry Failed Delivery" as UC6
+    }
+    
+    S --> UC1
+    U --> UC3
+    U --> UC4
+    A --> UC5
+    A --> UC6
+    
+    UC1 ..> UC2 : <<include>>
+    UC1 ..> UC3 : <<include>>

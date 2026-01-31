@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant OS as "Order Service"
+    participant UC as "CreateDeliveryUseCase"
+    participant ENG as "LogisticsEngine"
+    participant CP as "CourierPort"
+    participant RP as "RoutePort"
+    participant POL as "CourierAssignmentPolicy"
+
+    OS->>UC: execute(input)
+    UC->>ENG: validateDeliveryInput(input)
+    
+    par Find Infrastructure Data
+        UC->>CP: findAvailableCouriers(geopoint)
+        UC->>RP: getRouteAlternatives(points)
+    end
+    
+    UC->>POL: selectOptimalCourier(couriers, requirements)
+    POL-->>UC: optimalCourier
+    
+    UC->>ENG: calculateTimeEstimates(route, weather, traffic)
+    UC->>ENG: calculateDeliveryCost(distance, weight, priority)
+    
+    UC-->>OS: deliveryOutput(id, courier, ETA, cost, route)

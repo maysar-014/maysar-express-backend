@@ -8,6 +8,7 @@ import {
 import { IOutboxRepository, OutboxEventRecord } from '../repositories/outbox.repository';
 import { SagaEventHandler } from '../../application/sagas/saga-event-handler';
 import { logger } from '../services/logger.service';
+import { eventBus } from '../../../../shared/events/eventBus';
 
 /**
  * Outbox Processor - Reads pending events from outbox, publishes to event bus,
@@ -17,7 +18,7 @@ export class OutboxProcessor {
   constructor(
     private readonly outboxRepository: IOutboxRepository,
     private readonly sagaEventHandler: SagaEventHandler
-  ) {}
+  ) { }
 
   async processPending(): Promise<number> {
     const pending = await this.outboxRepository.getPending(20);
@@ -45,8 +46,13 @@ export class OutboxProcessor {
   private async processEvent(record: OutboxEventRecord): Promise<void> {
     const { eventType } = record;
 
-    // Publish to event bus (TODO: integrate with Kafka/Redis when available)
-    logger.debug('Publishing event to bus', { eventType, aggregateId: record.aggregateId });
+    // Publish to Kafka event bus
+    await eventBus.publish(eventType, record.eventData, {
+      eventId: record.eventId,
+      source: 'business-registry-service'
+    });
+
+    logger.debug('Published event to Kafka', { eventType, eventId: record.eventId });
 
     // Invoke saga handler based on event type
     const domainEvent = this.reconstructEvent(record);
@@ -77,8 +83,8 @@ export class OutboxProcessor {
   }
 
   private reconstructEvent(record: OutboxEventRecord): unknown {
-    const { eventType, payload } = record;
-    const p = payload as Record<string, unknown>;
+    const { eventType, eventData } = record;
+    const p = eventData as Record<string, unknown>;
 
     switch (eventType) {
       case 'BusinessRegistered':

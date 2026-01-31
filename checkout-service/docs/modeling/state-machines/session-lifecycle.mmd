@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> INITIATED : initiateCheckout()
+    INITIATED --> PRICED : calculatePricingSuccess()
+    PRICED --> COMPLETED : paymentConfirmed()
+    PRICED --> EXPIRED : timeout()
+    INITIATED --> EXPIRED : timeout()
+    COMPLETED --> [*]
+    EXPIRED --> [*]

@@ -1,0 +1,22 @@
+useCaseDiagram
+    actor "User" as U
+    actor "System" as S
+    
+    package "User Service" {
+        usecase "Register Account" as UC1
+        usecase "Verify Email" as UC2
+        usecase "Verify Phone" as UC3
+        usecase "Complete Profile" as UC4
+        usecase "Reset Password" as UC5
+        usecase "Manage Addresses" as UC6
+    }
+    
+    U --> UC1
+    U --> UC2
+    U --> UC3
+    U --> UC4
+    U --> UC5
+    U --> UC6
+    
+    S --> UC2
+    S --> UC3

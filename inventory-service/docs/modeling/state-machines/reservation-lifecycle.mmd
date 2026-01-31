@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> ACTIVE : createReservation()
+    ACTIVE --> FULFILLED : orderShipped()
+    ACTIVE --> CANCELLED : orderCancelled()
+    ACTIVE --> EXPIRED : timeout()
+    FULFILLED --> [*]
+    CANCELLED --> [*]
+    EXPIRED --> [*]

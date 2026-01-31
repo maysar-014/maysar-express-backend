@@ -1,0 +1,18 @@
+stateDiagram-v2
+    [*] --> PENDING : CreateOrder
+    PENDING --> CONFIRMED : SellerAcceptance
+    PENDING --> CANCELLED : CancelByBuyer
+    CONFIRMED --> PROCESSING : StartFulfillment
+    CONFIRMED --> CANCELLED : CancelByBuyer/Seller
+    PROCESSING --> ASSIGNED : AssignCourier
+    ASSIGNED --> SHIPPED : CourierPickup
+    SHIPPED --> IN_TRANSIT : MovingToDestination
+    IN_TRANSIT --> DELIVERED : HandoverToBuyer
+    DELIVERED --> [*]
+    CANCELLED --> [*]
+
+    state PROCESSING {
+        [*] --> InternalValidation
+        InternalValidation --> Packing
+        Packing --> [*]
+    }

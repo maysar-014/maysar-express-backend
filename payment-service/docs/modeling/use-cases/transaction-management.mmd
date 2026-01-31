@@ -1,0 +1,22 @@
+useCaseDiagram
+    actor "User" as U
+    actor "Admin" as A
+    actor "Event Bus" as EB
+    
+    package "Payment Service" {
+        usecase "Process Payment" as UC1
+        usecase "Monitor Transactions" as UC2
+        usecase "Flag Suspicious Transaction" as UC3
+        usecase "Process Refund" as UC4
+        usecase "Resolve Dispute" as UC5
+        usecase "Calculate Commission" as UC6
+    }
+    
+    U --> UC1
+    U --> UC4
+    U --> UC5
+    A --> UC2
+    A --> UC3
+    A --> UC5
+    EB --> UC6
+    EB --> UC1

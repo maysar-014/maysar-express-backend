@@ -1,0 +1,19 @@
+useCaseDiagram
+    actor "Buyer" as B
+    actor "Cart Service" as CS
+    
+    package "Checkout Service" {
+        usecase "Initiate Checkout" as UC1
+        usecase "Validate Order Details" as UC2
+        usecase "Calculate Final Totals" as UC3
+        usecase "Apply Discounts" as UC4
+        usecase "Save Checkout Session" as UC5
+    }
+    
+    B --> UC1
+    CS --> UC1
+    
+    UC1 ..> UC2 : <<include>>
+    UC1 ..> UC3 : <<include>>
+    UC3 ..> UC4 : <<extend>>
+    UC1 ..> UC5 : <<include>>

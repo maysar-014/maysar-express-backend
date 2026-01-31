@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> PENDING_VERIFICATION : register()
+    PENDING_VERIFICATION --> ACTIVE : verifyEmail() and verifyPhone()
+    ACTIVE --> INACTIVE : deactivate()
+    INACTIVE --> ACTIVE : activate()
+    ACTIVE --> SUSPENDED : suspend()
+    SUSPENDED --> ACTIVE : reactivate()
+    ACTIVE --> DELETED : delete()
+    SUSPENDED --> DELETED : delete()
+    INACTIVE --> DELETED : delete()
+    DELETED --> [*]

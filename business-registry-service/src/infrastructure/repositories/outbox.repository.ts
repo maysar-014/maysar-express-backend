@@ -5,24 +5,21 @@ export interface OutboxEventRecord {
   id: string;
   eventId: string;
   eventType: string;
-  aggregateId: string;
-  aggregateType: string;
-  payload: Record<string, unknown>;
-  status: 'PENDING' | 'PUBLISHED' | 'FAILED';
+  eventData: Record<string, unknown>;
+  status: string;
   createdAt: Date;
-  publishedAt?: Date | null;
-  retryCount: number;
+  processedAt?: Date | null;
+  attempts: number;
   lastError?: string | null;
+  nextRetryAt?: Date | null;
 }
 
 export interface IOutboxRepository {
   create(payload: {
     eventId: string;
     eventType: string;
-    aggregateId: string;
-    aggregateType: string;
-    payload: Record<string, unknown>;
-  }): Promise<OutboxEventRecord>;
+    eventData: Record<string, unknown>;
+  }, transaction?: any): Promise<OutboxEventRecord>;
 
   getPending(limit?: number): Promise<OutboxEventRecord[]>;
 
@@ -30,27 +27,25 @@ export interface IOutboxRepository {
 
   markFailed(id: string, error: string): Promise<void>;
 
-  incrementRetry(id: string, error: string): Promise<void>;
+  incrementRetry(id: string, error: string, nextRetryAt?: Date): Promise<void>;
 }
 
 export class PrismaOutboxRepository implements IOutboxRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaClient) { }
 
   async create(payload: {
     eventId: string;
     eventType: string;
-    aggregateId: string;
-    aggregateType: string;
-    payload: Record<string, unknown>;
-  }): Promise<OutboxEventRecord> {
-    const record = await this.prisma.outboxEvent.create({
+    eventData: Record<string, unknown>;
+  }, transaction?: any): Promise<OutboxEventRecord> {
+    const client = transaction || this.prisma;
+    const record = await client.outboxEvent.create({
       data: {
         eventId: payload.eventId,
         eventType: payload.eventType,
-        aggregateId: payload.aggregateId,
-        aggregateType: payload.aggregateType,
-        payload: payload.payload as object,
-        status: 'PENDING'
+        eventData: payload.eventData as object,
+        status: 'PENDING',
+        attempts: 0
       }
     });
     return this.mapToRecord(record);
@@ -58,7 +53,13 @@ export class PrismaOutboxRepository implements IOutboxRepository {
 
   async getPending(limit = 50): Promise<OutboxEventRecord[]> {
     const records = await this.prisma.outboxEvent.findMany({
-      where: { status: 'PENDING' },
+      where: {
+        status: 'PENDING',
+        OR: [
+          { nextRetryAt: null },
+          { nextRetryAt: { lte: new Date() } }
+        ]
+      },
       orderBy: { createdAt: 'asc' },
       take: limit
     });
@@ -68,9 +69,13 @@ export class PrismaOutboxRepository implements IOutboxRepository {
   async markPublished(id: string): Promise<void> {
     await this.prisma.outboxEvent.update({
       where: { id },
-      data: { status: 'PUBLISHED', publishedAt: new Date() }
+      data: {
+        status: 'SENT',
+        processedAt: new Date(),
+        attempts: { increment: 1 }
+      }
     });
-    logger.debug('Outbox event published', { outboxId: id });
+    logger.debug('Outbox event marked as SENT', { outboxId: id });
   }
 
   async markFailed(id: string, error: string): Promise<void> {
@@ -80,41 +85,29 @@ export class PrismaOutboxRepository implements IOutboxRepository {
     });
   }
 
-  async incrementRetry(id: string, error: string): Promise<void> {
+  async incrementRetry(id: string, error: string, nextRetryAt?: Date): Promise<void> {
     await this.prisma.outboxEvent.update({
       where: { id },
       data: {
-        retryCount: { increment: 1 },
-        lastError: error
+        attempts: { increment: 1 },
+        lastError: error,
+        nextRetryAt: nextRetryAt
       }
     });
   }
 
-  private mapToRecord(data: {
-    id: string;
-    eventId: string;
-    eventType: string;
-    aggregateId: string;
-    aggregateType: string;
-    payload: unknown;
-    status: string;
-    createdAt: Date;
-    publishedAt: Date | null;
-    retryCount: number;
-    lastError: string | null;
-  }): OutboxEventRecord {
+  private mapToRecord(data: any): OutboxEventRecord {
     return {
       id: data.id,
       eventId: data.eventId,
       eventType: data.eventType,
-      aggregateId: data.aggregateId,
-      aggregateType: data.aggregateType,
-      payload: data.payload as Record<string, unknown>,
-      status: data.status as 'PENDING' | 'PUBLISHED' | 'FAILED',
+      eventData: data.eventData as Record<string, unknown>,
+      status: data.status,
       createdAt: data.createdAt,
-      publishedAt: data.publishedAt ?? undefined,
-      retryCount: data.retryCount,
-      lastError: data.lastError ?? undefined
+      processedAt: data.processedAt,
+      attempts: data.attempts,
+      lastError: data.lastError,
+      nextRetryAt: data.nextRetryAt
     };
   }
 }

@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant EB as "Event Bus"
+    participant UC as "PaymentVerificationRequested"
+    participant DB as "Prisma / Database"
+
+    EB->>UC: Trigger(orderId, amount)
+    
+    rect rgb(240, 248, 255)
+    Note over UC, DB: Risk Assessment
+    UC->>UC: calculateRiskScore(amount)
+    UC->>EB: publish(TransactionRiskAssessed.v1)
+    end
+
+    rect rgb(240, 248, 255)
+    Note over UC, DB: Fraud Screen
+    UC->>UC: runFraudRules()
+    UC->>EB: publish(FraudScreeningCompleted.v1)
+    end
+
+    alt Decision: Approve
+        UC->>DB: transaction.create(COMPLETED)
+        UC->>EB: publish(PaymentVerified.v1)
+    else Decision: Review/Block
+        UC->>DB: transaction.create(PENDING/BLOCKED)
+        UC->>EB: publish(PaymentFailed.v1 or AdminReviewRequested)
+    end

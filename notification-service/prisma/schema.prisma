@@ -86,5 +86,23 @@ model NotificationLog {
 
   @@index([notificationId])
   @@index([createdAt])
-  @@map("notification_logs")
+// ============================================================================
+// TRANSACTIONAL OUTBOX
+// ============================================================================
+
+model OutboxEvent {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  eventType   String
+  eventData   Json
+  status      String   @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  processedAt DateTime? @db.Timestamp(6)
+  attempts    Int      @default(0)
+  lastError   String?
+  nextRetryAt DateTime? @db.Timestamp(6)
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@map("outbox_events")
 }

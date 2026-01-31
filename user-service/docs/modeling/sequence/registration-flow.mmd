@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant U as "User"
+    participant UC as "CreateUserUseCase"
+    participant VAL as "UserValidationService"
+    participant POL as "UserSecurityPolicy"
+    participant SAGA as "SagaEventHandler"
+    participant EVT as "UserRegisteredEvent"
+
+    U->>UC: execute(dto)
+    UC->>UC: validateInput(dto)
+    UC->>POL: isSuspicious(data)
+    POL-->>UC: boolean
+    UC->>VAL: validateUser(entity)
+    VAL-->>UC: void
+    UC->>SAGA: handleUserRegisteredEvent(event)
+    SAGA->>EVT: publish()
+    UC-->>U: user

@@ -1,0 +1,21 @@
+useCaseDiagram
+    actor "Warehouse Manager" as WM
+    actor "Order Service" as OS
+    actor "Catalog Service" as CS
+    
+    package "Inventory Service" {
+        usecase "Receive Stock" as UC1
+        usecase "Update Stock Level" as UC2
+        usecase "Reserve Stock for Order" as UC3
+        usecase "Release Reserved Stock" as UC4
+        usecase "Check Stock Availability" as UC5
+        usecase "Manage Warehouses" as UC6
+    }
+    
+    WM --> UC1
+    WM --> UC2
+    WM --> UC6
+    OS --> UC3
+    OS --> UC4
+    OS --> UC5
+    CS --> UC2

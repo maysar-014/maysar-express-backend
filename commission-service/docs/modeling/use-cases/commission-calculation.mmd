@@ -1,0 +1,17 @@
+useCaseDiagram
+    actor "System" as S
+    actor "Admin" as A
+    
+    package "Commission Service" {
+        usecase "Calculate Commission" as UC1
+        usecase "Approve Commission" as UC2
+        usecase "Disburse Funds" as UC3
+        usecase "View Commission History" as UC4
+        usecase "Manage Commission Policies" as UC5
+    }
+    
+    S --> UC1
+    S --> UC3
+    A --> UC2
+    A --> UC4
+    A --> UC5

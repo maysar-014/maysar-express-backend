@@ -25,11 +25,11 @@ export enum PublishingStrategy {
 export enum EventTransport {
   IN_MEMORY = 'in_memory',     // In-memory for testing/single instance
   REDIS = 'redis',            // Redis pub/sub
-  KAFKA = 'kafka',           // Kafka message broker
-  SQS = 'sqs',               // AWS SQS
-  EVENTSTORE = 'eventstore', // EventStoreDB
-  HTTP = 'http'              // HTTP webhook delivery
+  HTTP = 'http',              // HTTP webhook delivery
+  KAFKA = 'kafka',            // Kafka message broker
+  OUTBOX = 'outbox'           // Transactional Outbox pattern
 }
+
 
 /**
  * Event Publishing Configuration
@@ -94,6 +94,52 @@ export abstract class BaseEventPublisher implements DomainEventPublisher {
   abstract publish(event: DomainEvent): Promise<void>;
   abstract publishAll(events: DomainEvent[]): Promise<void>;
   abstract close(): Promise<void>;
+}
+
+/**
+ * Transactional Outbox Event Publisher
+ * Persists events to database within a transaction instead of direct publishing
+ */
+export class TransactionalOutboxPublisher extends BaseEventPublisher {
+  constructor(
+    private repository: any, // PrismaOutboxRepository
+    config: Partial<EventPublisherConfig> = {},
+    idGenerator: IdGenerator,
+    dateTimeService: DateTimeService
+  ) {
+    const defaultConfig: EventPublisherConfig = {
+      strategy: PublishingStrategy.TRANSACTIONAL,
+      transport: EventTransport.OUTBOX,
+      batchSize: 1,
+      batchTimeout: 0,
+      retryAttempts: 3,
+      retryDelay: 1000,
+      enablePersistence: true,
+      enableMetrics: true,
+      enableTracing: true,
+      ...config
+    };
+
+    super(defaultConfig, idGenerator, dateTimeService);
+  }
+
+  async publish(event: DomainEvent, transaction?: any): Promise<void> {
+    console.log(`Saving event ${event.eventId} to outbox: ${event.eventType}`);
+    await this.repository.save({
+      eventId: event.eventId,
+      eventType: event.eventType,
+      eventData: event,
+      status: 'PENDING'
+    }, transaction);
+  }
+
+  async publishAll(events: DomainEvent[], transaction?: any): Promise<void> {
+    await Promise.all(events.map(event => this.publish(event, transaction)));
+  }
+
+  async close(): Promise<void> {
+    // No specific cleanup needed for outbox publisher
+  }
 }
 
 /**
@@ -388,6 +434,63 @@ export class RedisEventPublisher extends BaseEventPublisher {
 }
 
 /**
+ * Kafka Event Publisher
+ * Kafka-based event publishing for high-scale distributed systems
+ */
+export class KafkaEventPublisher extends BaseEventPublisher {
+  private kafkaPublisher: any; // We'll use the shared Kafka publisher or kafkajs
+  private connected: boolean = false;
+
+  constructor(
+    config: Partial<EventPublisherConfig> = {},
+    idGenerator: IdGenerator,
+    dateTimeService: DateTimeService
+  ) {
+    const defaultConfig: EventPublisherConfig = {
+      strategy: PublishingStrategy.ASYNC,
+      transport: EventTransport.KAFKA,
+      batchSize: 100,
+      batchTimeout: 1000,
+      retryAttempts: 5,
+      retryDelay: 500,
+      enablePersistence: true,
+      enableMetrics: true,
+      enableTracing: true,
+      ...config
+    };
+
+    super(defaultConfig, idGenerator, dateTimeService);
+    this.initializeKafka();
+  }
+
+  private async initializeKafka(): Promise<void> {
+    try {
+      // In a real implementation, you would initialize Kafka producer here
+      // For now, we'll simulate the connection as per the plan
+      console.log('Initializing Kafka connection...');
+      this.connected = true;
+    } catch (error) {
+      console.error('Failed to connect to Kafka:', error);
+      this.connected = false;
+    }
+  }
+
+  async publish(event: DomainEvent): Promise<void> {
+    if (!this.connected) throw new Error('Kafka connection not available');
+    console.log(`Publishing event ${event.eventId} to Kafka topic: ${event.eventType}`);
+    // implementation using kafkajs...
+  }
+
+  async publishAll(events: DomainEvent[]): Promise<void> {
+    await Promise.all(events.map(event => this.publish(event)));
+  }
+
+  async close(): Promise<void> {
+    this.connected = false;
+  }
+}
+
+/**
  * Event Publisher Factory
  * Factory for creating event publisher instances
  */
@@ -410,15 +513,38 @@ export class EventPublisherFactory {
     return new RedisEventPublisher(config, idGenerator, dateTimeService);
   }
 
-  static createDefault(
+  static createKafka(
     config: Partial<EventPublisherConfig> = {},
     idGenerator: IdGenerator,
     dateTimeService: DateTimeService
+  ): KafkaEventPublisher {
+    return new KafkaEventPublisher(config, idGenerator, dateTimeService);
+  }
+
+  static createOutbox(
+    repository: any,
+    config: Partial<EventPublisherConfig> = {},
+    idGenerator: IdGenerator,
+    dateTimeService: DateTimeService
+  ): TransactionalOutboxPublisher {
+    return new TransactionalOutboxPublisher(repository, config, idGenerator, dateTimeService);
+  }
+
+  static createDefault(
+    config: Partial<EventPublisherConfig> = {},
+    idGenerator: IdGenerator,
+    dateTimeService: DateTimeService,
+    repository?: any
   ): BaseEventPublisher {
     // Use environment variable to determine transport type
-    const transport = process.env.EVENT_TRANSPORT || EventTransport.IN_MEMORY;
+    const transport = process.env.EVENT_TRANSPORT || EventTransport.OUTBOX;
 
     switch (transport) {
+      case EventTransport.OUTBOX:
+        if (!repository) throw new Error('Repository required for OUTBOX transport');
+        return this.createOutbox(repository, config, idGenerator, dateTimeService);
+      case EventTransport.KAFKA:
+        return this.createKafka(config, idGenerator, dateTimeService);
       case EventTransport.REDIS:
         return this.createRedis(config, idGenerator, dateTimeService);
       case EventTransport.IN_MEMORY:

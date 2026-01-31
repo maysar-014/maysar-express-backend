@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant S as "Sender (Source Service)"
+    participant UC as "SendNotificationUseCase"
+    participant POL as "DeliveryPolicy"
+    participant PREF as "PreferenceRepository"
+    participant SAGA as "DeliverySaga"
+    participant PROV as "ChannelProvider (Email/SMS/Push)"
+
+    S->>UC: execute(dto)
+    UC->>PREF: findByUserAndChannel(userId, channel)
+    PREF-->>UC: preference
+    UC->>POL: canSendNotification(notification, preference)
+    POL-->>UC: allowed/denied
+    
+    alt Allowed
+        UC->>SAGA: triggerDeliverySaga(notification)
+        SAGA->>PROV: send(content)
+        PROV-->>SAGA: deliveryReceipt
+        SAGA->>UC: updateStatus(DELIVERED/FAILED)
+    else Denied
+        UC-->>S: Error: Preference/Policy Restriction
+    end

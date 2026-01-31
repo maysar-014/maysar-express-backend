@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant OS as "Order Service"
+    participant SM as "StockManager"
+    participant DB as "Prisma / Database"
+    participant EB as "Event Bus"
+
+    OS->>SM: reserveStock(params)
+    SM->>DB: $transaction (start)
+    SM->>DB: stockItem.findUnique()
+    DB-->>SM: stockItem
+    
+    alt Insufficient Stock
+        SM-->>OS: Error: Insufficient stock
+    else Available Stock
+        SM->>DB: reservation.create(Pending)
+        SM->>DB: stockItem.update(quantityReserved increment)
+        SM->>DB: $transaction (commit)
+        SM-->>OS: Success
+    end
+    
+    Note over SM, EB: If stock level drops below threshold
+    SM->>EB: emit(LowStockAlert.v1)

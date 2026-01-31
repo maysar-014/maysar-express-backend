@@ -207,5 +207,23 @@ model UserIndex {
   createdAt DateTime @default(now())
 
   @@unique([userId, indexType])
-  @@map("user_indexes")
+// ============================================================================
+// TRANSACTIONAL OUTBOX
+// ============================================================================
+
+model OutboxEvent {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  eventType   String
+  eventData   Json
+  status      String   @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
+  createdAt   DateTime @default(now())
+  processedAt DateTime?
+  attempts    Int      @default(0)
+  lastError   String?
+  nextRetryAt DateTime?
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@map("outbox_events")
 }

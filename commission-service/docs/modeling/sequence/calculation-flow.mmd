@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant S as "Source (Order/Payment)"
+    participant UC as "CalculateCommissionUseCase"
+    participant POL as "CommissionPolicies"
+    participant ENG as "CommissionCalculationEngine"
+    participant REPO as "CommissionRepository"
+    participant ES as "EventStore"
+
+    S->>UC: execute(input)
+    UC->>POL: canCreateCommission(orderAmount, type, recipient)
+    POL-->>UC: allowed/denied
+    
+    alt Allowed
+        UC->>ENG: calculateCommission(params)
+        ENG-->>UC: calculationResult
+        UC->>REPO: save(commissionEntity)
+        UC->>ES: saveEvent(CommissionCalculated)
+        UC-->>S: commissionOutput
+    else Denied
+        UC-->>S: Error: Policy Violation
+    end

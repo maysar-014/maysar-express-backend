@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> PENDING : calculateCommission()
+    PENDING --> APPROVED : approve()
+    PENDING --> REJECTED : reject()
+    APPROVED --> DISBURSED : disburse()
+    REJECTED --> [*]
+    DISBURSED --> [*]

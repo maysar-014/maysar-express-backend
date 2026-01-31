@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant U as "User"
+    participant CS as "KYCComplianceService"
+    participant EB as "EventBus"
+    participant CO as "Compliance Officer"
+    participant DB as "Prisma / Database"
+
+    U->>CS: submitKYCVerification(docs)
+    CS->>DB: kYCRecord.create(Submitted)
+    CS->>EB: publish(KYCVerificationSubmitted.v1)
+    
+    rect rgb(240, 248, 255)
+    Note over CS: Risk Assessment
+    CS->>CS: performRiskAssessment(data)
+    Note right of CS: Check country, volume, age
+    end
+
+    CO->>CS: processKYCVerification(decision, risk)
+    
+    alt Decision: Approved
+        CS->>DB: kYCRecord.update(Approved, expiry)
+        CS->>EB: publish(KYCVerificationApproved.v1)
+    else Decision: Rejected
+        CS->>DB: kYCRecord.update(Rejected, reason)
+        CS->>EB: publish(KYCVerificationCompleted.v1)
+    end

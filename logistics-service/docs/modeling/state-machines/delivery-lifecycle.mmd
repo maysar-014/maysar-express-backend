@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> PENDING : createDelivery()
+    PENDING --> ASSIGNED : assignCourier()
+    ASSIGNED --> PICKED_UP : markAsPickedUp()
+    PICKED_UP --> IN_TRANSIT : markAsInTransit()
+    IN_TRANSIT --> OUT_FOR_DELIVERY : markAsOutForDelivery()
+    OUT_FOR_DELIVERY --> DELIVERED : markAsDelivered()
+    
+    PENDING --> CANCELLED : cancel()
+    ASSIGNED --> CANCELLED : cancel()
+    PICKED_UP --> FAILED : markAsFailed()
+    IN_TRANSIT --> FAILED : markAsFailed()
+    OUT_FOR_DELIVERY --> FAILED : markAsFailed()
+    
+    DELIVERED --> [*]
+    FAILED --> [*]
+    CANCELLED --> [*]

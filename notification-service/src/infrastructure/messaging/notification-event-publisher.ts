@@ -1,23 +1,31 @@
 import { DomainEvent, IDomainEventPublisher } from '../../domain/events';
 import { logger } from '../services/logger.service';
+import { IOutboxRepository, OutboxStatus } from '../../../../shared/outbox/outbox.repository';
 
 /**
- * Notification event publisher - Kafka/RabbitMQ
+ * Notification event publisher - Outbox-based
  */
 export class NotificationEventPublisher implements IDomainEventPublisher {
-  constructor(private publishToBus?: (event: DomainEvent) => Promise<void>) {}
+  constructor(private readonly outboxRepository: IOutboxRepository) { }
 
-  async publish(event: DomainEvent): Promise<void> {
-    if (this.publishToBus) {
-      await this.publishToBus(event);
-    } else {
-      logger.info('Event published (no bus)', { eventType: event.eventType, aggregateId: event.aggregateId });
+  async publish(event: DomainEvent, transaction?: any): Promise<void> {
+    try {
+      await this.outboxRepository.save({
+        eventId: event.eventId,
+        eventType: event.eventType,
+        eventData: event,
+        status: OutboxStatus.PENDING
+      }, transaction);
+      logger.info('Event saved to Outbox', { eventType: event.eventType, aggregateId: event.aggregateId });
+    } catch (error) {
+      logger.error('Failed to save event to Outbox', { eventType: event.eventType, error });
+      throw error;
     }
   }
 
-  async publishMany(events: DomainEvent[]): Promise<void> {
-    for (const event of events) {
-      await this.publish(event);
-    }
+  async publishMany(events: DomainEvent[], transaction?: any): Promise<void> {
+    await Promise.all(events.map(event => this.publish(event, transaction)));
   }
 }
+
+

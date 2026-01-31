@@ -104,8 +104,9 @@ sequenceDiagram
 - **Sequence Diagrams**: Implementation level. Document coordination of Sagas and Use Cases.
 
 ### 4.3 Version Control Purity
-- Only text-based Mermaid files (`.md` or `.mmd`) are allowed.
-- Binary image exports must NOT be committed; they should be rendered by the IDE or CI/CD platform.
+- Standalone modeling files MUST use the `.mmd` extension.
+- `.mmd` files must contain ONLY the raw Mermaid code (no Markdown headers or code fences).
+- For complex documentation requiring both text and diagrams, Mermaid blocks may be used within `.md` files, but the primary behavioral models must be kept as `.mmd` in the `docs/modeling/` directories.
 
 ---
 
