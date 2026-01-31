@@ -6,6 +6,7 @@ import {
   BusinessUpdatedEvent,
   ComplianceStatusChangedEvent
 } from '../../domain/events';
+import { IOutboxRepository } from '../repositories/outbox.repository';
 import { logger } from '../services/logger.service';
 
 export type BusinessDomainEvent =
@@ -16,24 +17,43 @@ export type BusinessDomainEvent =
   | BusinessUpdatedEvent
   | ComplianceStatusChangedEvent;
 
+export type OutboxProcessorFn = () => Promise<number>;
+
 /**
  * Business Event Publisher
- * Publishes domain events to event bus
- * Uses outbox pattern for reliability in production
+ * Uses outbox pattern for reliable event publishing to event bus
+ * Events are written to outbox table first, then processed by OutboxProcessor
  */
 export class BusinessEventPublisher {
+  constructor(
+    private readonly outboxRepository: IOutboxRepository,
+    private readonly processOutbox?: OutboxProcessorFn
+  ) {}
+
   async publish(event: BusinessDomainEvent): Promise<void> {
+    const payload = this.toEventPayload(event);
+
     try {
-      const payload = this.toEventPayload(event);
-      logger.info('Publishing business event', {
+      await this.outboxRepository.create({
+        eventId: event.eventId,
+        eventType: event.eventType,
+        aggregateId: event.aggregateId,
+        aggregateType: event.aggregateType,
+        payload
+      });
+
+      logger.info('Business event saved to outbox', {
         eventType: event.eventType,
         aggregateId: event.aggregateId,
         eventId: event.eventId
       });
-      // TODO: Integrate with shared event bus (Redis/RabbitMQ)
-      // await eventBus.publish(payload);
+
+      // Process outbox immediately to trigger sagas (synchronous behavior)
+      if (this.processOutbox) {
+        await this.processOutbox();
+      }
     } catch (error) {
-      logger.error('Failed to publish business event', {
+      logger.error('Failed to publish business event to outbox', {
         eventType: event.eventType,
         aggregateId: event.aggregateId,
         error: error instanceof Error ? error.message : String(error)

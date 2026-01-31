@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  analytics-service:
+    build: .
+    ports:
+      - "3004:3000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/analytics_db?schema=public
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=analytics_db
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"

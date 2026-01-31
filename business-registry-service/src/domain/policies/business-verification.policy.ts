@@ -51,6 +51,18 @@ export class BusinessVerificationPolicy {
   }
 
   /**
+   * Check if business can be verified (alias for isEligibleForVerification)
+   * Returns allowed/reason format for use case compatibility
+   */
+  static canVerify(business: Business): { allowed: boolean; reason?: string } {
+    const eligibility = this.isEligibleForVerification(business);
+    return {
+      allowed: eligibility.eligible,
+      reason: eligibility.reason
+    };
+  }
+
+  /**
    * Compliance check requirements for verification
    */
   static getComplianceRequirements(businessType: string): string[] {

@@ -109,24 +109,75 @@ export class PrismaBusinessRepository implements IBusinessRepository {
 
   async update(business: Business): Promise<Business> {
     try {
-      const data = await this.prisma.business.update({
-        where: { id: business.id },
-        data: {
-          name: business.name,
-          status: business.status,
-          verificationStatus: business.verificationStatus,
-          complianceStatus: business.complianceStatus,
-          description: business.description,
-          industry: business.industry,
-          website: business.website,
-          email: business.email,
-          phoneNumber: business.phoneNumber,
-          verifiedAt: business.verifiedAt,
-          verifiedBy: business.verifiedBy,
-          updatedAt: new Date()
-        },
-        include: { addresses: true }
+      const data = await this.prisma.$transaction(async (tx) => {
+        await tx.business.update({
+          where: { id: business.id },
+          data: {
+            name: business.name,
+            status: business.status,
+            verificationStatus: business.verificationStatus,
+            complianceStatus: business.complianceStatus,
+            description: business.description,
+            industry: business.industry,
+            website: business.website,
+            email: business.email,
+            phoneNumber: business.phoneNumber,
+            verifiedAt: business.verifiedAt,
+            verifiedBy: business.verifiedBy,
+            updatedAt: new Date()
+          }
+        });
+
+        const existingAddresses = await tx.businessAddress.findMany({
+          where: { businessId: business.id },
+          select: { id: true }
+        });
+        const existingIds = new Set(existingAddresses.map((a) => a.id));
+        const providedIds = new Set(business.addresses.map((a) => a.getId()));
+
+        const toDelete = [...existingIds].filter((id) => !providedIds.has(id));
+        if (toDelete.length > 0) {
+          await tx.businessAddress.deleteMany({
+            where: { id: { in: toDelete }, businessId: business.id }
+          });
+        }
+
+        for (const addr of business.addresses) {
+          const addrId = addr.getId();
+          const addrData = {
+            type: addr.getType() as 'MAIN' | 'BRANCH' | 'WAREHOUSE' | 'OTHER',
+            street: addr.getStreet(),
+            city: addr.getCity(),
+            region: addr.getRegion(),
+            postalCode: addr.getPostalCode() ?? null,
+            country: addr.getCountry(),
+            isPrimary: addr.isPrimary
+          };
+
+          if (existingIds.has(addrId)) {
+            await tx.businessAddress.update({
+              where: { id: addrId },
+              data: addrData
+            });
+          } else {
+            await tx.businessAddress.create({
+              data: {
+                businessId: business.id,
+                ...addrData
+              }
+            });
+          }
+        }
+
+        return tx.business.findUnique({
+          where: { id: business.id },
+          include: { addresses: true }
+        });
       });
+
+      if (!data) {
+        throw new Error(`Business ${business.id} not found after update`);
+      }
       return this.mapToDomain(data);
     } catch (error) {
       logger.error('Error updating business', { businessId: business.id, error: this.formatError(error) });

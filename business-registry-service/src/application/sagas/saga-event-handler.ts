@@ -5,16 +5,51 @@ import {
   BusinessUpdatedEvent,
   BusinessReactivatedEvent
 } from '../../domain/events';
-import { executeBusinessRegistrationSaga } from './business-registration.saga';
-import { executeBusinessVerificationSaga } from './business-verification.saga';
+import { executeBusinessRegistrationSaga, BusinessRegistrationSagaDeps } from './business-registration.saga';
+import { executeBusinessVerificationSaga, BusinessVerificationSagaDeps } from './business-verification.saga';
+import { IMailerAdapter, IComplianceAdapter, ICapabilityAdapter } from '../../domain/ports';
+import { IBusinessRepository } from '../../domain/repositories';
+
+export interface SagaEventHandlerDeps {
+  mailer: IMailerAdapter;
+  compliance: IComplianceAdapter;
+  capability: ICapabilityAdapter;
+  businessRepository: IBusinessRepository;
+}
 
 export class SagaEventHandler {
+  constructor(private readonly deps: SagaEventHandlerDeps) {
+    // Validate required dependencies
+    if (!deps.mailer) {
+      throw new Error('SagaEventHandler requires mailer adapter');
+    }
+    if (!deps.compliance) {
+      throw new Error('SagaEventHandler requires compliance adapter');
+    }
+    if (!deps.capability) {
+      throw new Error('SagaEventHandler requires capability adapter');
+    }
+    if (!deps.businessRepository) {
+      throw new Error('SagaEventHandler requires business repository');
+    }
+  }
+
   async handleBusinessRegisteredEvent(event: BusinessRegisteredEvent): Promise<void> {
-    await executeBusinessRegistrationSaga(event);
+    const registrationDeps: BusinessRegistrationSagaDeps = {
+      mailer: this.deps.mailer,
+      compliance: this.deps.compliance,
+      businessRepository: this.deps.businessRepository
+    };
+    await executeBusinessRegistrationSaga(event, registrationDeps);
   }
 
   async handleBusinessVerifiedEvent(event: BusinessVerifiedEvent): Promise<void> {
-    await executeBusinessVerificationSaga(event);
+    const verificationDeps: BusinessVerificationSagaDeps = {
+      mailer: this.deps.mailer,
+      capability: this.deps.capability,
+      businessRepository: this.deps.businessRepository
+    };
+    await executeBusinessVerificationSaga(event, verificationDeps);
   }
 
   async handleBusinessSuspendedEvent(event: BusinessSuspendedEvent): Promise<void> {
@@ -30,4 +65,5 @@ export class SagaEventHandler {
   }
 }
 
-export const sagaEventHandler = new SagaEventHandler();
+// Note: This default instance is deprecated and should be replaced with proper dependency injection
+// export const sagaEventHandler = new SagaEventHandler();

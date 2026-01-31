@@ -140,3 +140,26 @@ enum ComplianceType {
   HEALTH_PERMIT
   ENVIRONMENTAL_CLEARANCE
 }
+
+model OutboxEvent {
+  id            String   @id @default(cuid())
+  eventId       String   @unique
+  eventType     String
+  aggregateId   String
+  aggregateType String
+  payload       Json
+  status        OutboxStatus @default(PENDING)
+  createdAt     DateTime @default(now())
+  publishedAt   DateTime?
+  retryCount    Int      @default(0)
+  lastError     String?
+
+  @@index([status, createdAt])
+  @@map("outbox_events")
+}
+
+enum OutboxStatus {
+  PENDING
+  PUBLISHED
+  FAILED
+}

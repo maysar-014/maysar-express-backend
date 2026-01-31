@@ -1,0 +1,12 @@
+# AnalyticsEvent Lifecycle State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending : EventArrival
+    Pending --> Processed : EngineProcessingSuccess
+    Pending --> Failed : EngineProcessingError
+    Processed --> Aggregated : BatchProcessing
+    Failed --> Pending : RetryOperation
+    Aggregated --> Archived : DataRetentionPolicy
+    Archived --> [*]
+```

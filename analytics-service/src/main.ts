@@ -2,25 +2,113 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 
-const app = express();
-const PORT = process.env.PORT || 3011;
+// Infrastructure
+import { EventBusAdapter } from './infrastructure/messaging/EventBusAdapter';
+import { SellerAnalyticsRepository } from './infrastructure/repositories/SellerAnalyticsRepository';
+import { CourierAnalyticsRepository } from './infrastructure/repositories/CourierAnalyticsRepository';
+import { SupplierAnalyticsRepository } from './infrastructure/repositories/SupplierAnalyticsRepository';
+import { EnablerAnalyticsRepository } from './infrastructure/repositories/EnablerAnalyticsRepository';
+import { MetricRepository } from './infrastructure/repositories/MetricRepository';
+import { AnalyticsEventRepository } from './infrastructure/repositories/AnalyticsEventRepository';
+import { EventSubscriber } from './infrastructure/messaging/EventSubscriber';
 
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
+// Domain Engines
+import { SellerAnalyticsEngine } from './domain/engines/SellerAnalyticsEngine';
+import { CourierAnalyticsEngine } from './domain/engines/CourierAnalyticsEngine';
+import { EnablerAnalyticsEngine } from './domain/engines/EnablerAnalyticsEngine';
+import { AnalyticsProcessingEngine } from './domain/engines/AnalyticsProcessingEngine';
+import { MetricCalculationService } from './domain/services/MetricCalculationService';
+import { StatisticalAlgorithm } from './domain/algorithms/StatisticalAlgorithm';
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', service: 'analytics-service', port: PORT });
-});
+// Application Use Cases
+import { GetSellerDashboard } from './application/use-cases/GetSellerDashboard';
+import { GetSalesAnalytics } from './application/use-cases/GetSalesAnalytics';
+import { GetSupplierAnalytics } from './application/use-cases/GetSupplierAnalytics';
+import { GetCourierAnalytics } from './application/use-cases/GetCourierAnalytics';
+import { ProcessAnalyticsEventUseCase } from './application/use-cases/ProcessAnalyticsEventUseCase';
 
-app.post('/api/v1/events', (req, res) => {
-  res.json({ message: 'Event tracking endpoint' });
-});
+// Application Sagas
+import { SellerAnalyticsSaga } from './application/sagas/SellerAnalyticsSaga';
+import { CourierAnalyticsSaga } from './application/sagas/CourierAnalyticsSaga';
+import { SupplierAnalyticsSaga } from './application/sagas/SupplierAnalyticsSaga';
+import { EnablerAnalyticsSaga } from './application/sagas/EnablerAnalyticsSaga';
 
-app.get('/api/v1/metrics', (req, res) => {
-  res.json({ message: 'Business metrics endpoint' });
-});
+// API
+import { AnalyticsController } from './api/controllers/AnalyticsController';
+import { createAnalyticsRoutes } from './api/routes/analyticsRoutes';
 
-app.listen(PORT, () => {
-  console.log(`Analytics Service running on port ${PORT}`);
+async function bootstrap() {
+  const app = express();
+  const PORT = process.env.PORT || 3011;
+
+  // Middleware
+  app.use(helmet());
+  app.use(cors());
+  app.use(express.json());
+
+  // --- Dependency Injection ---
+
+  // 1. Infrastructure
+  const eventBus = new EventBusAdapter();
+  const sellerRepo = new SellerAnalyticsRepository();
+  const courierRepo = new CourierAnalyticsRepository();
+  const supplierRepo = new SupplierAnalyticsRepository();
+  const enablerRepo = new EnablerAnalyticsRepository();
+  const metricRepo = new MetricRepository();
+  const eventRepo = new AnalyticsEventRepository();
+
+  // 2. Domain Engines
+  const sellerEngine = new SellerAnalyticsEngine();
+  const courierEngine = new CourierAnalyticsEngine();
+  const enablerEngine = new EnablerAnalyticsEngine();
+
+  const metricService = new MetricCalculationService();
+  const statsAlgorithm = new StatisticalAlgorithm();
+  const generalEngine = new AnalyticsProcessingEngine(metricService, statsAlgorithm);
+
+  // 3. Application Use Cases
+  const getSellerDashboard = new GetSellerDashboard(sellerRepo);
+  const getSalesAnalytics = new GetSalesAnalytics(sellerRepo);
+  const getSupplierAnalytics = new GetSupplierAnalytics(supplierRepo);
+  const getCourierAnalytics = new GetCourierAnalytics(courierRepo);
+  const processAnalyticsEvent = new ProcessAnalyticsEventUseCase(generalEngine, eventRepo, metricRepo, eventBus);
+
+  // 4. Infrastructure Subscribers
+  const subscriber = new EventSubscriber(eventBus, processAnalyticsEvent);
+  subscriber.initialize();
+
+  // 5. Application Sagas (Initialize listeners)
+  new SellerAnalyticsSaga(eventBus, sellerEngine, sellerRepo);
+  new CourierAnalyticsSaga(eventBus, courierEngine, courierRepo);
+  new SupplierAnalyticsSaga(eventBus, supplierRepo);
+  new EnablerAnalyticsSaga(eventBus, enablerEngine, enablerRepo);
+
+  // 6. API Controllers & Routes
+  const analyticsController = new AnalyticsController(
+    getSellerDashboard,
+    getSalesAnalytics,
+    getSupplierAnalytics,
+    getCourierAnalytics
+  );
+
+  const analyticsRoutes = createAnalyticsRoutes(analyticsController);
+
+  // Mount Routes
+  app.use('/api', analyticsRoutes);
+
+  // Health Check
+  app.get('/health', (req, res) => {
+    res.json({ status: 'healthy', service: 'analytics-service', port: PORT });
+  });
+
+  // Start Server
+  app.listen(PORT, () => {
+    console.log(`Analytics Service running on port ${PORT}`);
+    console.log('Clean Architecture layers initialized with General Analytics foundation');
+  });
+}
+
+bootstrap().catch(err => {
+  console.error('Failed to start application:', err);
+  process.exit(1);
 });

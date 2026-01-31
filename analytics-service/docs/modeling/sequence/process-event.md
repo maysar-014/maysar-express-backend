@@ -1,0 +1,33 @@
+# Process Event Flow Sequence
+
+```mermaid
+sequenceDiagram
+    participant EB as "Event Bus (RabbitMQ/EventBridge)"
+    participant ES as "Event Subscriber"
+    participant UC as "ProcessAnalyticsEventUseCase"
+    participant REPO_E as "AnalyticsEventRepository"
+    participant ENGINE as "AnalyticsProcessingEngine"
+    participant CALC as "MetricCalculationService"
+    participant REPO_M as "MetricRepository"
+
+    EB->>ES: Trigger(eventType, data)
+    ES->>UC: execute(AnalyticsInput)
+    
+    UC->>REPO_E: save(AnalyticsEvent)
+    REPO_E-->>UC: success
+    
+    UC->>ENGINE: processEvent(event, context)
+    
+    ENGINE->>CALC: calculate(event)
+    CALC-->>ENGINE: MetricValue
+    
+    ENGINE-->>UC: AnalyticsOutput (metrics)
+    
+    loop for each metric in output
+        UC->>REPO_M: save(metric)
+        REPO_M-->>UC: success
+    end
+    
+    UC->>EB: publish(analytics.metrics.calculated)
+    UC-->>ES: void
+```

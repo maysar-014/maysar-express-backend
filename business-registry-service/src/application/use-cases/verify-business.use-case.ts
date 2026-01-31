@@ -8,14 +8,17 @@ import {
   UnauthorizedBusinessOperationError
 } from '../../domain/errors/business.errors';
 import { BusinessVerifiedEvent } from '../../domain/events';
-import { sagaEventHandler } from '../sagas/saga-event-handler';
+import { SagaEventHandler } from '../sagas/saga-event-handler';
 
 /**
  * Verify Business Use Case
  * Handles business verification workflow
  */
 export class VerifyBusinessUseCase {
-  constructor(private readonly businessRepository: IBusinessRepository) {}
+  constructor(
+    private readonly businessRepository: IBusinessRepository,
+    private readonly sagaEventHandler: SagaEventHandler
+  ) {}
 
   async execute(dto: VerifyBusinessDto): Promise<Business> {
     const business = await this.businessRepository.findById(dto.businessId);
@@ -44,7 +47,7 @@ export class VerifyBusinessUseCase {
     const updated = await this.businessRepository.update(verifiedBusiness);
 
     const event = new BusinessVerifiedEvent(updated.id, dto.verifiedBy, updated.ownerId);
-    await sagaEventHandler.handleBusinessVerifiedEvent(event);
+    await this.sagaEventHandler.handleBusinessVerifiedEvent(event);
 
     return updated;
   }

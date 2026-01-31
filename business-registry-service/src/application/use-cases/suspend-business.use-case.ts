@@ -8,14 +8,17 @@ import {
   UnauthorizedBusinessOperationError
 } from '../../domain/errors/business.errors';
 import { BusinessSuspendedEvent } from '../../domain/events';
-import { sagaEventHandler } from '../sagas/saga-event-handler';
+import { SagaEventHandler } from '../sagas/saga-event-handler';
 
 /**
  * Suspend Business Use Case
  * Handles business suspension with authorization checks
  */
 export class SuspendBusinessUseCase {
-  constructor(private readonly businessRepository: IBusinessRepository) {}
+  constructor(
+    private readonly businessRepository: IBusinessRepository,
+    private readonly sagaEventHandler: SagaEventHandler
+  ) {}
 
   async execute(dto: SuspendBusinessDto): Promise<Business> {
     const business = await this.businessRepository.findById(dto.businessId);
@@ -32,7 +35,7 @@ export class SuspendBusinessUseCase {
     const updated = await this.businessRepository.update(suspendedBusiness);
 
     const event = new BusinessSuspendedEvent(updated.id, dto.suspendedBy, dto.reason);
-    await sagaEventHandler.handleBusinessSuspendedEvent(event);
+    await this.sagaEventHandler.handleBusinessSuspendedEvent(event);
 
     return updated;
   }

@@ -14,21 +14,37 @@ import {
   validateVerifyBusiness,
   validateSuspendBusiness
 } from '../middleware/validation.middleware';
+import { SagaEventHandler } from '../../application/sagas/saga-event-handler';
+import { MailerAdapter, ComplianceAdapter, CapabilityAdapter } from '../../infrastructure/adapters';
 
 let businessController: BusinessController;
 let businessRepository: PrismaBusinessRepository;
+let sagaEventHandler: SagaEventHandler;
 
 function initializeController(): BusinessController {
   if (!businessController) {
     const prisma = getPrismaClient();
     businessRepository = new PrismaBusinessRepository(prisma);
     const businessValidationService = new BusinessValidationService();
+    
+    // Initialize adapters for saga event handling
+    const mailerAdapter = new MailerAdapter();
+    const complianceAdapter = new ComplianceAdapter();
+    const capabilityAdapter = new CapabilityAdapter();
+    
+    // Initialize saga event handler with dependencies
+    sagaEventHandler = new SagaEventHandler({
+      mailer: mailerAdapter,
+      compliance: complianceAdapter,
+      capability: capabilityAdapter,
+      businessRepository
+    });
 
-    const registerBusinessUseCase = new RegisterBusinessUseCase(businessRepository, businessValidationService);
-    const verifyBusinessUseCase = new VerifyBusinessUseCase(businessRepository);
-    const updateBusinessUseCase = new UpdateBusinessUseCase(businessRepository);
-    const suspendBusinessUseCase = new SuspendBusinessUseCase(businessRepository);
-    const reactivateBusinessUseCase = new ReactivateBusinessUseCase(businessRepository);
+    const registerBusinessUseCase = new RegisterBusinessUseCase(businessRepository, businessValidationService, sagaEventHandler);
+    const verifyBusinessUseCase = new VerifyBusinessUseCase(businessRepository, sagaEventHandler);
+    const updateBusinessUseCase = new UpdateBusinessUseCase(businessRepository, sagaEventHandler);
+    const suspendBusinessUseCase = new SuspendBusinessUseCase(businessRepository, sagaEventHandler);
+    const reactivateBusinessUseCase = new ReactivateBusinessUseCase(businessRepository, sagaEventHandler);
 
     businessController = new BusinessController(
       registerBusinessUseCase,

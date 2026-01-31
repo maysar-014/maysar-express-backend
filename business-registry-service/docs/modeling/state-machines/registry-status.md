@@ -1,0 +1,22 @@
+# Business Registry Status State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING : register()
+    PENDING --> ACTIVE : verify()
+    ACTIVE --> SUSPENDED : suspend()
+    SUSPENDED --> ACTIVE : reactivate()
+    ACTIVE --> DELETED : delete()
+    
+    state Verification {
+        [*] --> UNVERIFIED
+        UNVERIFIED --> VERIFIED : verify()
+    }
+    
+    state Compliance {
+        [*] --> UNDER_REVIEW
+        UNDER_REVIEW --> COMPLIANT : approve()
+        UNDER_REVIEW --> NON_COMPLIANT : reject()
+        COMPLIANT --> UNDER_REVIEW : updateDetails()
+    }
+```

@@ -6,7 +6,7 @@ import { SuspendBusinessUseCase } from '../../application/use-cases/suspend-busi
 import { ReactivateBusinessUseCase } from '../../application/use-cases/reactivate-business.use-case';
 import { BusinessMapper } from '../../application/mappers/business-mapper';
 import { IBusinessRepository } from '../../domain/repositories';
-import { BusinessNotFoundError } from '../../domain/errors/business.errors';
+import { BusinessNotFoundError, UnauthorizedBusinessOperationError } from '../../domain/errors/business.errors';
 
 export class BusinessController {
   constructor(
@@ -52,7 +52,10 @@ export class BusinessController {
     try {
       const { id } = req.params;
       const dto = req.body;
-      const updatedBy = (req.headers['x-user-id'] as string) || id;
+      const updatedBy = req.headers['x-user-id'] as string;
+      if (!updatedBy || updatedBy.trim().length === 0) {
+        throw new UnauthorizedBusinessOperationError('User ID (x-user-id header) is required for update');
+      }
       const business = await this.updateBusinessUseCase.execute(id, dto, updatedBy);
       res.status(200).json({
         success: true,

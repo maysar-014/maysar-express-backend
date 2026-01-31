@@ -8,6 +8,7 @@ import { BusinessAlreadyExistsError, BusinessValidationError } from '../../../do
 describe('RegisterBusinessUseCase', () => {
   let mockRepository: jest.Mocked<IBusinessRepository>;
   let validationService: BusinessValidationService;
+  let mockSagaEventHandler: any;
   let useCase: RegisterBusinessUseCase;
 
   const validDto = {
@@ -26,7 +27,7 @@ describe('RegisterBusinessUseCase', () => {
     } as unknown as jest.Mocked<IBusinessRepository>;
 
     validationService = new BusinessValidationService();
-    useCase = new RegisterBusinessUseCase(mockRepository, validationService);
+    useCase = new RegisterBusinessUseCase(mockRepository, validationService, mockSagaEventHandler);
   });
 
   it('should register business successfully', async () => {

@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model EnablerAnalytics {
+  enablerId              String   @id
+  trainingsScheduled     Int?     @default(0)
+  lastTrainingDate       DateTime?
+  certificatesIssued     Int?     @default(0)
+  sellersOnboarded       Int?     @default(0)
+  totalEarnings          Float?   @default(0.0)
+  lastActivity           DateTime?
+  supportTicketsResolved Int?     @default(0)
+  successRate            Float?   @default(0.0)
+  salesSupported         Int?     @default(0)
+  totalSalesValue        Float?   @default(0.0)
+  conversionRate         Float?   @default(0.0)
+  skillCertifications    Int?     @default(0)
+  skillLevel             String?
+  createdAt              DateTime @default(now())
+}
+
+model SellerMetrics {
+  sellerId              String   @id
+  averageOrderValue     Float?
+  conversionRate        Float?
+  customerLifetimeValue Float?
+  returnRate            Float?
+  profitMargin          Float?
+  activeVisitors        Int?
+  cartAbandonment       Int?
+  liveOrders            Int?
+  inventoryAlerts       Int?
+  customerInquiries     Int?
+  createdAt             DateTime @default(now())
+}
+
+model SalesAnalytics {
+  id        String   @id @default(uuid())
+  sellerId  String
+  date      DateTime
+  insights  String?  // JSON string
+  createdAt DateTime @default(now())
+}
+
+model SupplierAnalytics {
+  supplierId          String   @id
+  resourceUtilization Json?
+  lastUpdated         DateTime?
+  qualityScore        Float?
+  certificatesIssued  Int?     @default(0)
+  ordersShipped       Int?     @default(0)
+  lastShipment        DateTime?
+  totalRevenue        Float?   @default(0.0)
+  paymentsReceived    Int?     @default(0)
+  pricingUpdates      Int?     @default(0)
+  activeProducts      Int?     @default(0)
+  createdAt           DateTime @default(now())
+}
+
+model CourierAnalytics {
+  courierId           String   @id
+  performanceScore    Float?
+  lastAnalysis        DateTime?
+  totalEarnings       Float?   @default(0.0)
+  deliveriesCompleted Int?     @default(0)
+  lastDelivery        DateTime?
+  totalPayouts        Float?   @default(0.0)
+  payoutsReceived     Int?     @default(0)
+  vehicleStatus       String?
+  lastVehicleUpdate   DateTime?
+  kycStatus           String?
+  kycCompletedAt      DateTime?
+  createdAt           DateTime @default(now())
+}
+
+model Metric {
+  id         String   @id @default(uuid())
+  metricType String
+  value      Float
+  dimension  String
+  period     String
+  timestamp  DateTime
+  confidence Float
+  createdAt  DateTime @default(now())
+
+  @@index([metricType, timestamp])
+  @@index([dimension, metricType])
+}

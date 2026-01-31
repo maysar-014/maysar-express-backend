@@ -2,4 +2,4 @@ export { BaseSaga, SagaError, SagaStep, SagaStepOptions, SagaCompensationRecord 
 export { BusinessRegistrationSaga, executeBusinessRegistrationSaga } from './business-registration.saga';
 export { BusinessVerificationSaga, executeBusinessVerificationSaga } from './business-verification.saga';
 export { BusinessOnboardingSaga, executeBusinessOnboardingSaga } from './business-onboarding.saga';
-export { SagaEventHandler, sagaEventHandler } from './saga-event-handler';
+export { SagaEventHandler } from './saga-event-handler';

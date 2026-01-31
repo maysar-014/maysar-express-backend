@@ -7,14 +7,17 @@ import {
   UnauthorizedBusinessOperationError
 } from '../../domain/errors/business.errors';
 import { BusinessReactivatedEvent } from '../../domain/events';
-import { sagaEventHandler } from '../sagas/saga-event-handler';
+import { SagaEventHandler } from '../sagas/saga-event-handler';
 
 /**
  * Reactivate Business Use Case
  * Handles business reactivation from suspended state
  */
 export class ReactivateBusinessUseCase {
-  constructor(private readonly businessRepository: IBusinessRepository) {}
+  constructor(
+    private readonly businessRepository: IBusinessRepository,
+    private readonly sagaEventHandler: SagaEventHandler
+  ) {}
 
   async execute(businessId: string, reactivatedBy: string): Promise<Business> {
     const business = await this.businessRepository.findById(businessId);
@@ -35,7 +38,7 @@ export class ReactivateBusinessUseCase {
     const updated = await this.businessRepository.update(reactivatedBusiness);
 
     const event = new BusinessReactivatedEvent(updated.id, reactivatedBy);
-    await sagaEventHandler.handleBusinessReactivatedEvent(event);
+    await this.sagaEventHandler.handleBusinessReactivatedEvent(event);
 
     return updated;
   }

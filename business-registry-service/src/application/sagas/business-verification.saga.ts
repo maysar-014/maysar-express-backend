@@ -1,16 +1,25 @@
 import { BusinessVerifiedEvent } from '../../domain/events';
 import { BaseSaga, SagaStep, SagaError } from './saga-base';
+import { IMailerAdapter, ICapabilityAdapter } from '../../domain/ports';
+import { IBusinessRepository } from '../../domain/repositories';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface BusinessVerificationContext {
   event: BusinessVerifiedEvent;
   ownerNotified: boolean;
   capabilitiesEnabled: boolean;
+  capabilityIds: string[];
   metadata: {
     correlationId: string;
     businessId: string;
     timestamp: Date;
   };
+}
+
+export interface BusinessVerificationSagaDeps {
+  mailer: IMailerAdapter;
+  capability: ICapabilityAdapter;
+  businessRepository: IBusinessRepository;
 }
 
 const DEFAULT_RETRY_OPTIONS = {
@@ -19,13 +28,19 @@ const DEFAULT_RETRY_OPTIONS = {
   timeoutMs: 30000
 };
 
+const DEFAULT_CAPABILITIES = ['catalog', 'orders', 'payments', 'shipping'];
+
 export class BusinessVerificationSaga extends BaseSaga<BusinessVerificationContext> {
-  constructor(event: BusinessVerifiedEvent) {
+  constructor(
+    event: BusinessVerifiedEvent,
+    private readonly deps: BusinessVerificationSagaDeps
+  ) {
     const correlationId = (event.metadata?.correlationId as string) || uuidv4();
     const context: BusinessVerificationContext = {
       event,
       ownerNotified: false,
       capabilitiesEnabled: false,
+      capabilityIds: [],
       metadata: {
         correlationId,
         businessId: event.aggregateId,
@@ -48,6 +63,15 @@ export class BusinessVerificationSaga extends BaseSaga<BusinessVerificationConte
       execute: async (context) => {
         await this.withRetry(
           async () => {
+            const business = await this.deps.businessRepository.findById(context.event.aggregateId);
+            const email = business?.email ?? undefined;
+            if (email) {
+              await this.deps.mailer.sendBusinessVerifiedEmail({
+                to: email,
+                businessName: business!.name,
+                businessId: context.event.aggregateId
+              });
+            }
             context.ownerNotified = true;
           },
           { ...DEFAULT_RETRY_OPTIONS, operation: 'notify_owner', context: context.metadata }
@@ -55,6 +79,7 @@ export class BusinessVerificationSaga extends BaseSaga<BusinessVerificationConte
       },
       compensate: async (context) => {
         if (!context.ownerNotified) return;
+        // Cannot unsend email - log compensation
         await this.withRetry(
           async () => {
             context.ownerNotified = false;
@@ -72,16 +97,29 @@ export class BusinessVerificationSaga extends BaseSaga<BusinessVerificationConte
       execute: async (context) => {
         await this.withRetry(
           async () => {
+            const ids = await this.deps.capability.enableCapabilities({
+              businessId: context.event.aggregateId,
+              ownerId: context.event.ownerId,
+              capabilities: DEFAULT_CAPABILITIES,
+              correlationId: context.metadata.correlationId
+            });
+            context.capabilityIds = ids;
             context.capabilitiesEnabled = true;
           },
           { ...DEFAULT_RETRY_OPTIONS, operation: 'enable_capabilities', context: context.metadata }
         );
       },
       compensate: async (context) => {
-        if (!context.capabilitiesEnabled) return;
+        if (!context.capabilitiesEnabled || context.capabilityIds.length === 0) return;
         await this.withRetry(
           async () => {
+            await this.deps.capability.disableCapabilities({
+              businessId: context.event.aggregateId,
+              capabilityIds: context.capabilityIds,
+              correlationId: context.metadata.correlationId
+            });
             context.capabilitiesEnabled = false;
+            context.capabilityIds = [];
           },
           { ...DEFAULT_RETRY_OPTIONS, operation: 'compensate_capabilities', context: context.metadata }
         );
@@ -115,7 +153,10 @@ export class BusinessVerificationSaga extends BaseSaga<BusinessVerificationConte
   }
 }
 
-export async function executeBusinessVerificationSaga(event: BusinessVerifiedEvent): Promise<void> {
-  const saga = new BusinessVerificationSaga(event);
+export async function executeBusinessVerificationSaga(
+  event: BusinessVerifiedEvent,
+  deps: BusinessVerificationSagaDeps
+): Promise<void> {
+  const saga = new BusinessVerificationSaga(event, deps);
   await saga.execute();
 }

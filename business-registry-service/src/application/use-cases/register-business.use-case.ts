@@ -11,7 +11,7 @@ import {
   InvalidRegistrationNumberError
 } from '../../domain/errors/business.errors';
 import { BusinessRegisteredEvent } from '../../domain/events';
-import { sagaEventHandler } from '../sagas/saga-event-handler';
+import { SagaEventHandler } from '../sagas/saga-event-handler';
 
 /**
  * Register Business Use Case
@@ -20,7 +20,8 @@ import { sagaEventHandler } from '../sagas/saga-event-handler';
 export class RegisterBusinessUseCase {
   constructor(
     private readonly businessRepository: IBusinessRepository,
-    private readonly businessValidationService: BusinessValidationService
+    private readonly businessValidationService: BusinessValidationService,
+    private readonly sagaEventHandler: SagaEventHandler
   ) {}
 
   async execute(dto: CreateBusinessDto): Promise<Business> {
@@ -55,7 +56,7 @@ export class RegisterBusinessUseCase {
       created.businessType,
       created.registrationNumber.getValue()
     );
-    await sagaEventHandler.handleBusinessRegisteredEvent(event);
+    await this.sagaEventHandler.handleBusinessRegisteredEvent(event);
 
     return created;
   }

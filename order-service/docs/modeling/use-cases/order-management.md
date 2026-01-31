@@ -1,0 +1,23 @@
+# Order Management Use Case
+
+```mermaid
+useCaseDiagram
+    actor "Buyer" as B
+    actor "Seller" as S
+    actor "Logistics Operator" as LO
+    
+    package "Order Service" {
+        usecase "Place Order" as UC1
+        usecase "Confirm Order" as UC2
+        usecase "Cancel Order" as UC3
+        usecase "View Order History" as UC4
+        usecase "Update Order Status" as UC5
+    }
+    
+    B --> UC1
+    B --> UC3
+    B --> UC4
+    S --> UC2
+    S --> UC4
+    LO --> UC5
+```
