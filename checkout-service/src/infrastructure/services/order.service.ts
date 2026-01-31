@@ -1,21 +1,25 @@
-export interface IOrderService {
-  createOrder(checkoutSessionId: string, userId: string, totalAmount: number): Promise<any>;
-  getOrder(orderId: string): Promise<any>;
-  updateOrderStatus(orderId: string, status: string): Promise<void>;
-}
+/**
+ * Order Service
+ * 
+ * Creates and manages orders.
+ * Infrastructure layer - external service integration.
+ */
 
-export class OrderService implements IOrderService {
+export class OrderService {
   constructor(private prisma: any) {}
 
-  async createOrder(checkoutSessionId: string, userId: string, totalAmount: number): Promise<any> {
+  async createOrder(
+    checkoutSessionId: string,
+    userId: string,
+    totalAmount: number
+  ): Promise<any> {
     return this.prisma.order.create({
       data: {
         checkoutSessionId,
         userId,
-        status: 'pending',
         totalAmount,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        status: 'pending',
+        createdAt: new Date()
       }
     });
   }
@@ -30,7 +34,10 @@ export class OrderService implements IOrderService {
   async updateOrderStatus(orderId: string, status: string): Promise<void> {
     await this.prisma.order.update({
       where: { id: orderId },
-      data: { status, updatedAt: new Date() }
+      data: {
+        status,
+        updatedAt: new Date()
+      }
     });
   }
 }

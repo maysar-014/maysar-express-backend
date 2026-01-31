@@ -1,47 +1,65 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
 import { CartRepository } from './infrastructure/repositories/cart.repository';
 import { CheckoutRepository } from './infrastructure/repositories/checkout.repository';
 import { EventBusAdapter } from './infrastructure/messaging/event-bus.adapter';
-import { InventoryReservationService } from './infrastructure/services/inventory-reservation.service';
-import { DiscountService } from './infrastructure/services/discount.service';
-import { OrderService } from './infrastructure/services/order.service';
 import { CheckoutEventHandlers } from './application/handlers/checkout-event.handlers';
 import { createCheckoutRoutes } from './api/routes/checkout.routes';
-import { validateRequest, errorHandler, authMiddleware } from './api/middleware/checkout.middleware';
+import { errorHandler } from './api/middleware/checkout.middleware';
+import { CartController } from './api/controllers/cart.controller';
+import { CheckoutController } from './api/controllers/checkout.controller';
+import { logger } from './shared/logger/logger';
+import { config } from './shared/config';
 
 const app = express();
-const prisma = new PrismaClient();
 
 app.use(express.json());
-app.use(validateRequest);
-app.use(authMiddleware);
 
 // Initialize repositories and services
-const cartRepository = new CartRepository(prisma);
-const checkoutRepository = new CheckoutRepository(prisma);
+const cartRepository = new CartRepository();
+const checkoutRepository = new CheckoutRepository();
 const eventBus = new EventBusAdapter();
-const inventoryService = new InventoryReservationService(prisma);
-const discountService = new DiscountService(prisma);
-const orderService = new OrderService(prisma);
+// const inventoryService = new InventoryReservationService(prisma);
+// const discountService = new DiscountService(prisma);
+// const orderService = new OrderService(prisma);
+
+// Initialize controllers
+const cartController = new CartController(cartRepository);
+const checkoutController = new CheckoutController(checkoutRepository, eventBus);
 
 // Initialize event handlers
 new CheckoutEventHandlers(eventBus, checkoutRepository);
 
 // Register routes
-app.use('/api/checkout', createCheckoutRoutes(cartRepository, checkoutRepository, eventBus));
+app.use('/api/checkout', createCheckoutRoutes(cartController, checkoutController));
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', service: 'checkout-service' });
+// Health check endpoints
+app.get('/health/live', (_req, res) => {
+  res.json({
+    status: 'alive',
+    timestamp: new Date()
+  });
+});
+
+app.get('/health/ready', async (_req, res) => {
+  res.status(200).json({
+    status: 'ready',
+    timestamp: new Date()
+  });
+});
+
+app.get('/health', async (_req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date()
+  });
 });
 
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 3008;
+const PORT = config.app.port;
 
 app.listen(PORT, () => {
-  console.log(`Checkout Service running on port ${PORT}`);
+  logger.info(`Checkout Service running on port ${PORT}`, { port: PORT });
 });
 
 export default app;

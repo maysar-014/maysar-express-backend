@@ -1,383 +1,211 @@
 # Checkout Service
 
-**Priority**: P1 - Critical E-commerce Flow  
-**Status**: Implementation Phase  
-**Architecture**: Clean Architecture + Event-Driven + Saga Pattern
-
-## Overview
-
-The Checkout Service manages the complete checkout flow for the Maysar platform. It handles cart operations, checkout session management, pricing calculations, and order creation with strict adherence to the Architecture Constitution and Testing Constitution.
+Enterprise-grade checkout microservice with complete business logic, data integrity, and observability.
 
 ## Architecture
 
-### Layer Structure
+### Layers
+
+1. **Domain Layer** - Pure business logic with no external dependencies
+   - Value Objects: Money, Cart
+   - Policies: PricingPolicy
+   - Engines: CheckoutEngine
+
+2. **Application Layer** - Use cases and orchestration
+   - Use Cases: InitiateCheckoutUseCase
+   - Sagas: OrderFulfillmentSaga
+   - Event Handlers: CheckoutEventHandlers
+   - DTOs: Data transfer objects
+
+3. **Infrastructure Layer** - External integrations
+   - Repositories: CartRepository, CheckoutRepository
+   - Services: InventoryReservationService, DiscountService, OrderService
+   - Event Bus: EventBusAdapter
+
+4. **API Layer** - HTTP endpoints
+   - Controllers: CartController, CheckoutController
+   - Routes: Checkout routes
+   - Middleware: Validation, authentication, error handling
+
+### Shared Infrastructure
+
+- **Error Handling**: Custom exceptions with error codes
+- **Logging**: Structured logging with correlation IDs
+- **Configuration**: Environment-based configuration
+- **Validation**: Input and business rule validation
+- **Idempotency**: Prevent duplicate processing
+- **Transaction Management**: Ensure data consistency
+- **Event Sourcing**: Audit trail of all changes
+- **Optimistic Locking**: Handle concurrent updates
+- **Health Checks**: Liveness and readiness probes
+
+## API Endpoints
+
+### Cart Operations
 
 ```
-API Layer (Controllers/Routes)
-    ↓
-Application Layer (Use Cases, DTOs, Mappers)
-    ↓
-Domain Layer (Entities, Value Objects, Policies, Engines)
-    ↓
-Infrastructure Layer (Repositories, Adapters, Messaging)
+POST   /api/checkout/cart/add       - Add item to cart
+POST   /api/checkout/cart/remove    - Remove item from cart
+GET    /api/checkout/cart/:cartId   - Get cart details
+POST   /api/checkout/cart/clear     - Clear cart
 ```
 
-### Domain Layer
-
-**Pure Business Logic** - No external dependencies
-
-#### Value Objects
-- **Cart**: Immutable shopping cart with item management
-- **Money**: Precise monetary calculations (prevents floating-point errors)
-
-#### Policies
-- **PricingPolicy**: Business rules for calculating totals (tax, shipping, discounts)
-
-#### Engines
-- **CheckoutEngine**: Orchestrates checkout validation and pricing calculation
-
-### Application Layer
-
-**Use Cases & Orchestration** - Coordinates domain logic with infrastructure
-
-#### Use Cases
-- **InitiateCheckoutUseCase**: Initiates checkout flow with event publishing
-
-#### DTOs
-- Firewall between domain and external systems
-- No domain entities cross service boundaries
-
-#### Mappers
-- Convert between domain objects and DTOs
-
-### Infrastructure Layer
-
-**External Systems** - Repositories, adapters, messaging
-
-#### Repositories
-- CartRepository: Cart persistence
-- CheckoutRepository: Checkout session persistence
-
-#### Messaging
-- EventBus: Publishes events for loose coupling
-
-## Loose Coupling Strategy
-
-### Event-Driven Communication
-
-Services communicate via events, not direct calls:
-
-```typescript
-// Checkout Service publishes
-await eventBus.publish('CheckoutInitiated', {
-  checkoutId: '...',
-  cartId: '...',
-  userId: '...',
-  totalAmount: 120
-});
-
-// Other services subscribe independently
-eventBus.subscribe('CheckoutInitiated', {
-  handler: async (envelope) => {
-    // Process independently
-    // If this fails, checkout service is unaffected
-  }
-});
-```
-
-### Data Ownership
-
-Each service owns its database:
-- Checkout Service: carts, checkout_sessions, orders, inventory_reservations
-- No cross-service database queries
-- Data sync via events
-
-### Dependencies
-
-**Loose Dependencies**:
-- User Service (via events)
-- Product Service (via events)
-- Inventory Service (via events)
-- Billing Service (via events)
-
-**No Direct Calls**: All communication is async via event bus
-
-## Business Logic
-
-### Cart Management
-
-```typescript
-// Create cart
-const cart = new Cart({ items: [] });
-
-// Add item (immutable)
-const updated = cart.addItem({
-  productId: 'prod-1',
-  quantity: 2,
-  priceAtTime: 50
-});
-
-// Calculate subtotal
-const subtotal = updated.getSubtotal(); // 100
-```
-
-### Pricing Calculation
-
-```typescript
-const policy = new PricingPolicy({
-  taxRate: 0.1,
-  shippingCost: 10,
-  minOrderForFreeShipping: 100
-});
-
-const pricing = policy.calculateTotal(
-  subtotal,
-  discountAmount,
-  shippingCost
-);
-
-// Result includes:
-// - subtotal
-// - taxAmount
-// - shippingCost
-// - discountAmount
-// - total
-```
-
-### Checkout Validation
-
-```typescript
-const engine = new CheckoutEngine(pricingPolicy);
-
-const result = engine.validate(context);
-// Validates:
-// - Cart not empty
-// - Shipping address provided
-// - Billing address provided
-// - Shipping method provided
-```
-
-## Testing Strategy
-
-### Coverage Targets
-
-| Layer | Target | Enforcement |
-|-------|--------|-------------|
-| Domain | 95-98% | Deployment blocking |
-| Application | 90% | PR blocking |
-| Infrastructure | 75% | Warning only |
-
-### Test Organization
+### Checkout Operations
 
 ```
-src/
-├── domain/
-│   ├── value-objects/
-│   │   └── __tests__/
-│   │       ├── cart.value-object.test.ts
-│   │       └── money.value-object.test.ts
-│   ├── policies/
-│   │   └── __tests__/
-│   │       └── pricing.policy.test.ts
-│   └── engines/
-│       └── __tests__/
-│           └── checkout.engine.test.ts
-└── application/
-    └── use-cases/
-        └── __tests__/
-            └── initiate-checkout.use-case.test.ts
+POST   /api/checkout/initiate       - Initiate checkout
+GET    /api/checkout/session/:id    - Get checkout session
+POST   /api/checkout/confirm        - Confirm checkout
 ```
 
-### Running Tests
+### Health Checks
+
+```
+GET    /health/live                 - Liveness probe
+GET    /health/ready                - Readiness probe
+GET    /health                      - Full health check
+```
+
+## Setup
+
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL 15+
+- npm or yarn
+
+### Installation
 
 ```bash
-# All tests
-npm test
+npm install
+```
 
-# Unit tests only
+### Configuration
+
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+### Database Setup
+
+```bash
+npx prisma migrate dev
+npx prisma generate
+```
+
+### Running
+
+```bash
+# Development
+npm run dev
+
+# Production
+npm run build
+npm start
+
+# Testing
+npm test
+npm run test:coverage
+```
+
+## Features
+
+### Data Integrity
+
+- **Transactions**: ACID compliance for multi-step operations
+- **Idempotency**: Prevent duplicate processing with idempotency keys
+- **Optimistic Locking**: Handle concurrent updates safely
+- **Event Sourcing**: Complete audit trail of all changes
+
+### Reliability
+
+- **Error Handling**: Comprehensive error codes and messages
+- **Validation**: Input and business rule validation
+- **Health Checks**: Liveness and readiness probes
+- **Structured Logging**: Correlation IDs for request tracing
+
+### Observability
+
+- **Structured Logging**: JSON logs with correlation IDs
+- **Health Endpoints**: Monitor service status
+- **Event Audit Trail**: Track all state changes
+- **Error Tracking**: Detailed error information
+
+## Error Codes
+
+- `VALIDATION_ERROR` - Input validation failed
+- `CART_NOT_FOUND` - Cart does not exist
+- `CHECKOUT_SESSION_NOT_FOUND` - Checkout session not found
+- `CART_EMPTY` - Cart has no items
+- `INSUFFICIENT_INVENTORY` - Not enough stock
+- `DISCOUNT_EXPIRED` - Discount code expired
+- `PAYMENT_FAILED` - Payment processing failed
+- `DATABASE_ERROR` - Database operation failed
+- `INTERNAL_SERVER_ERROR` - Unexpected error
+
+## Testing
+
+```bash
+# Unit tests
 npm run test:unit
 
-# With coverage
+# Integration tests
+npm run test:integration
+
+# Coverage report
 npm run test:coverage
 
 # Watch mode
 npm run test:watch
 ```
 
-## API Endpoints
+## Deployment
 
-### Cart Operations
-
-```http
-POST /api/checkout/carts
-GET /api/checkout/carts/:cartId
-POST /api/checkout/carts/:cartId/items
-PUT /api/checkout/carts/:cartId/items/:itemId
-DELETE /api/checkout/carts/:cartId/items/:itemId
-```
-
-### Checkout Operations
-
-```http
-POST /api/checkout/sessions
-GET /api/checkout/sessions/:sessionId
-POST /api/checkout/sessions/:sessionId/apply-discount
-POST /api/checkout/sessions/:sessionId/confirm
-```
-
-### Order Operations
-
-```http
-POST /api/checkout/orders
-GET /api/checkout/orders/:orderId
-```
-
-## Events Published
-
-### CheckoutInitiated
-```typescript
-{
-  checkoutId: string;
-  cartId: string;
-  userId: string;
-  totalAmount: number;
-  timestamp: Date;
-}
-```
-
-### OrderCreated
-```typescript
-{
-  orderId: string;
-  checkoutSessionId: string;
-  userId: string;
-  totalAmount: number;
-  items: OrderItem[];
-  timestamp: Date;
-}
-```
-
-## Database Schema
-
-### Tables
-
-- **carts**: Shopping cart management
-- **cart_items**: Individual items in cart
-- **checkout_sessions**: Checkout flow state
-- **orders**: Created after successful checkout
-- **order_items**: Products in order
-- **inventory_reservations**: Track reserved stock
-- **applied_discounts**: Track applied discounts
-
-## Development
-
-### Setup
+### Docker
 
 ```bash
-# Install dependencies
-npm install
-
-# Generate Prisma client
-npm run prisma:generate
-
-# Run migrations
-npm run prisma:migrate
-
-# Start development server
-npm run dev
+docker build -t checkout-service:latest .
+docker run -p 3008:3008 --env-file .env checkout-service:latest
 ```
 
-### Code Quality
+### Kubernetes
 
 ```bash
-# Lint
-npm run lint
-
-# Format
-npm run format
-
-# Build
-npm run build
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
 ```
-
-## Architecture Compliance
-
-### Architecture Constitution
-
-✅ **Domain Purity**: No external dependencies in domain layer  
-✅ **Business Logic Protection**: All business rules in domain  
-✅ **Compensation Completeness**: All saga steps have compensation  
-✅ **DTO Firewall**: No domain entities cross boundaries  
-✅ **Infrastructure Isolation**: Adapters implement domain interfaces  
-
-### Testing Constitution
-
-✅ **Coverage Excellence**: 95%+ domain coverage  
-✅ **Test Quality**: Fast, isolated, deterministic tests  
-✅ **Mock Strategy**: Realistic mocks, never mock domain  
-✅ **Event Testing**: Event publishing and consumption validated  
-✅ **Saga Testing**: Compensation logic thoroughly tested  
-
-## Loose Coupling Validation
-
-### ✅ Implemented
-
-- Event-driven communication
-- Data ownership isolation
-- No direct service calls
-- Rich events with all needed data
-- Circuit breaker patterns
-- Graceful degradation
-- Correlation IDs for tracing
-
-### ✅ Tested
-
-- Service can operate independently
-- Failures don't cascade
-- Events are idempotent
-- Compensation logic works
-- Timeouts and retries work
-
-## Performance Targets
-
-- **Response Time**: P95 < 200ms
-- **Throughput**: 1000+ RPS
-- **Cart Operations**: < 50ms
-- **Pricing Calculation**: < 10ms
-- **Checkout Initiation**: < 100ms
-
-## Security
-
-- Input validation on all endpoints
-- Authorization checks on user operations
-- PII data protection
-- GDPR compliance
-- Audit trails for all operations
 
 ## Monitoring
 
-- Structured logging with correlation IDs
-- Metrics for all operations
-- Event publishing tracking
-- Error rate monitoring
-- Performance metrics
+### Health Checks
 
-## Next Steps
+- **Liveness**: `/health/live` - Is the service running?
+- **Readiness**: `/health/ready` - Is the service ready to accept traffic?
+- **Full Health**: `/health` - Detailed health status
 
-1. Implement infrastructure layer (repositories, adapters)
-2. Implement API layer (controllers, routes)
-3. Implement event handlers
-4. Integration testing with other services
-5. Performance testing and optimization
-6. Production deployment
+### Logging
 
-## References
+All logs are structured JSON with correlation IDs for distributed tracing.
 
-- [Architecture Constitution](../../architecture_constitution.md)
-- [Testing Constitution](../../testing-constitution.md)
-- [Loose Coupling Guidelines](../../LOOSE_COUPLING_GUIDELINES.md)
-- [API Documentation](../../API_DOCUMENTATION.md)
+```json
+{
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "level": "INFO",
+  "message": "Checkout initiated",
+  "correlationId": "abc-123",
+  "service": "checkout-service",
+  "data": { "checkoutId": "xyz-789" }
+}
+```
 
----
+## Contributing
 
-**Built for scale, reliability, and maintainability.**
+1. Create feature branch
+2. Write tests
+3. Ensure coverage > 90%
+4. Submit pull request
+
+## License
+
+MIT

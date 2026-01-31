@@ -130,7 +130,7 @@ describe('Money Value Object', () => {
     it('should handle rounding correctly', () => {
       const money = new Money(100);
       const result = money.multiply(0.333);
-      expect(result.getCents()).toBe(33300);
+      expect(result.getCents()).toBe(3330);
     });
 
     it('should prevent floating-point errors', () => {
@@ -155,6 +155,7 @@ describe('Money Value Object', () => {
     it('should handle multiple decimal places', () => {
       const money = new Money(123.456);
       expect(money.getAmount()).toBe(123.46);
+      expect(money.getCents()).toBe(12346);
     });
   });
 });

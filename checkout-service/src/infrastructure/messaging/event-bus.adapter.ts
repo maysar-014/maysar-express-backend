@@ -1,27 +1,49 @@
-export interface IEventBus {
-  publish(eventType: string, data: any): Promise<void>;
-  subscribe(eventType: string, handler: (data: any) => Promise<void>): void;
+/**
+ * Event Bus Adapter
+ * Handles event publishing and subscription
+ */
+
+export interface EventEnvelope {
+  eventId: string;
+  eventType: string;
+  payload: any;
+  timestamp: Date;
 }
 
-export class EventBusAdapter implements IEventBus {
-  private subscribers: Map<string, Array<(data: any) => Promise<void>>> = new Map();
+export type EventHandler = (event: EventEnvelope) => Promise<void>;
 
-  async publish(eventType: string, data: any): Promise<void> {
+export class EventBusAdapter {
+  private subscribers: Map<string, EventHandler[]> = new Map();
+  private eventHistory: EventEnvelope[] = [];
+
+  async publish(eventType: string, payload: any): Promise<void> {
+    const envelope: EventEnvelope = {
+      eventId: `${eventType}-${Date.now()}-${Math.random()}`,
+      eventType,
+      payload,
+      timestamp: new Date()
+    };
+
+    this.eventHistory.push(envelope);
+
     const handlers = this.subscribers.get(eventType) || [];
-    
-    for (const handler of handlers) {
-      try {
-        await handler(data);
-      } catch (error) {
-        console.error(`Error in event handler for ${eventType}:`, error);
-      }
-    }
+    await Promise.all(handlers.map(handler => handler(envelope).catch(err => {
+      console.error(`Error handling ${eventType}:`, err);
+    })));
   }
 
-  subscribe(eventType: string, handler: (data: any) => Promise<void>): void {
+  async subscribe(eventType: string, handler: EventHandler): Promise<void> {
     if (!this.subscribers.has(eventType)) {
       this.subscribers.set(eventType, []);
     }
     this.subscribers.get(eventType)!.push(handler);
+  }
+
+  getEventHistory(): EventEnvelope[] {
+    return [...this.eventHistory];
+  }
+
+  clearHistory(): void {
+    this.eventHistory = [];
   }
 }

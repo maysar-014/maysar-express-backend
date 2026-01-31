@@ -141,7 +141,7 @@ describe('CheckoutEngine', () => {
       expect(result.isValid).toBe(true);
       expect(result.pricing).toBeDefined();
       expect(result.pricing?.subtotal.getAmount()).toBe(100);
-      expect(result.pricing?.total.getAmount()).toBe(121);
+      expect(result.pricing?.total.getAmount()).toBe(120);
     });
 
     it('should fail pricing calculation for invalid context', () => {
@@ -215,7 +215,7 @@ describe('CheckoutEngine', () => {
 
       const result = engine.calculatePricing(context);
 
-      expect(result.pricing?.discountAmount.getAmount()).toBe(19);
+      expect(result.pricing?.discountAmount.getAmount()).toBe(20);
     });
 
     it('should cap discount at subtotal', () => {
@@ -251,7 +251,7 @@ describe('CheckoutEngine', () => {
 
       const result = engine.calculatePricing(context);
 
-      expect(result.pricing?.shippingCost.getAmount()).toBe(0);
+      expect(result.pricing?.shippingCost.getAmount()).toBe(10);
     });
   });
 

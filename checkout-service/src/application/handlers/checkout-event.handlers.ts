@@ -1,65 +1,76 @@
-import { IEventBus } from '../../infrastructure/messaging/event-bus.adapter';
-import { ICheckoutRepository } from '../../infrastructure/repositories/checkout.repository';
+/**
+ * Checkout Event Handlers
+ * Handles checkout-related domain events
+ */
+
+import { EventEnvelope } from '../../infrastructure/messaging/event-bus.adapter';
 
 export class CheckoutEventHandlers {
   constructor(
-    private eventBus: IEventBus,
-    private checkoutRepository: ICheckoutRepository
+    private eventBus: any,
+    private checkoutRepository: any
   ) {
     this.registerHandlers();
   }
 
   private registerHandlers(): void {
-    this.eventBus.subscribe('InventoryReserved', (data) => this.onInventoryReserved(data));
-    this.eventBus.subscribe('InventoryReservationFailed', (data) => this.onInventoryFailed(data));
-    this.eventBus.subscribe('PaymentProcessed', (data) => this.onPaymentProcessed(data));
-    this.eventBus.subscribe('PaymentFailed', (data) => this.onPaymentFailed(data));
+    this.eventBus.subscribe('InventoryReserved', (event: EventEnvelope) =>
+      this.handleInventoryReserved(event)
+    );
+    this.eventBus.subscribe('InventoryReservationFailed', (event: EventEnvelope) =>
+      this.handleInventoryReservationFailed(event)
+    );
+    this.eventBus.subscribe('PaymentProcessed', (event: EventEnvelope) =>
+      this.handlePaymentProcessed(event)
+    );
+    this.eventBus.subscribe('PaymentFailed', (event: EventEnvelope) =>
+      this.handlePaymentFailed(event)
+    );
+    this.eventBus.subscribe('OrderCreated', (event: EventEnvelope) =>
+      this.handleOrderCreated(event)
+    );
   }
 
-  private async onInventoryReserved(data: any): Promise<void> {
-    const session = await this.checkoutRepository.getSession(data.checkoutId);
+  private async handleOrderCreated(event: EventEnvelope): Promise<void> {
+    const session = await this.checkoutRepository.getSession(event.payload.checkoutId);
     if (session) {
-      await this.checkoutRepository.saveSession({
-        ...session,
-        status: 'inventory_reserved'
-      });
+      session.status = 'completed';
+      await this.checkoutRepository.saveSession(session);
     }
   }
 
-  private async onInventoryFailed(data: any): Promise<void> {
-    const session = await this.checkoutRepository.getSession(data.checkoutId);
+  private async handleInventoryReserved(event: EventEnvelope): Promise<void> {
+    const session = await this.checkoutRepository.getSession(event.payload.checkoutId);
     if (session) {
-      await this.checkoutRepository.saveSession({
-        ...session,
-        status: 'failed',
-        paymentStatus: 'cancelled'
-      });
+      session.status = 'inventory_reserved';
+      await this.checkoutRepository.saveSession(session);
     }
   }
 
-  private async onPaymentProcessed(data: any): Promise<void> {
-    const session = await this.checkoutRepository.getSession(data.checkoutId);
+  private async handleInventoryReservationFailed(event: EventEnvelope): Promise<void> {
+    const session = await this.checkoutRepository.getSession(event.payload.checkoutId);
     if (session) {
-      await this.checkoutRepository.saveSession({
-        ...session,
-        status: 'payment_completed',
-        paymentStatus: 'completed'
-      });
+      session.status = 'failed';
+      await this.checkoutRepository.saveSession(session);
     }
   }
 
-  private async onPaymentFailed(data: any): Promise<void> {
-    const session = await this.checkoutRepository.getSession(data.checkoutId);
+  private async handlePaymentProcessed(event: EventEnvelope): Promise<void> {
+    const session = await this.checkoutRepository.getSession(event.payload.checkoutId);
     if (session) {
-      await this.checkoutRepository.saveSession({
-        ...session,
-        status: 'failed',
-        paymentStatus: 'failed'
-      });
+      session.status = 'payment_completed';
+      session.paymentMethodId = event.payload.paymentMethodId;
+      await this.checkoutRepository.saveSession(session);
+    }
+  }
 
+  private async handlePaymentFailed(event: EventEnvelope): Promise<void> {
+    const session = await this.checkoutRepository.getSession(event.payload.checkoutId);
+    if (session) {
+      session.status = 'failed';
+      await this.checkoutRepository.saveSession(session);
       await this.eventBus.publish('InventoryReleaseRequested', {
-        checkoutId: data.checkoutId,
-        timestamp: new Date()
+        checkoutId: event.payload.checkoutId
       });
     }
   }

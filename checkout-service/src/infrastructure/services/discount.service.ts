@@ -1,12 +1,19 @@
-export interface IDiscountService {
-  validateCode(code: string): Promise<{ valid: boolean; discount?: any }>;
-  applyDiscount(checkoutId: string, code: string, value: number, type: string): Promise<void>;
+/**
+ * Discount Service
+ * 
+ * Validates and applies discount codes.
+ * Infrastructure layer - external service integration.
+ */
+
+export interface DiscountValidationResult {
+  valid: boolean;
+  discount?: any;
 }
 
-export class DiscountService implements IDiscountService {
+export class DiscountService {
   constructor(private prisma: any) {}
 
-  async validateCode(code: string): Promise<{ valid: boolean; discount?: any }> {
+  async validateCode(code: string): Promise<DiscountValidationResult> {
     const discount = await this.prisma.appliedDiscount.findFirst({
       where: { discountCode: code }
     });
@@ -15,6 +22,7 @@ export class DiscountService implements IDiscountService {
       return { valid: false };
     }
 
+    // Check if discount is expired (max uses reached)
     if (discount.maxUses && discount.currentUses >= discount.maxUses) {
       return { valid: false };
     }
@@ -22,13 +30,18 @@ export class DiscountService implements IDiscountService {
     return { valid: true, discount };
   }
 
-  async applyDiscount(checkoutId: string, code: string, value: number, type: string): Promise<void> {
+  async applyDiscount(
+    checkoutId: string,
+    code: string,
+    value: number,
+    type: 'fixed' | 'percentage'
+  ): Promise<void> {
     await this.prisma.appliedDiscount.create({
       data: {
         checkoutId,
         discountCode: code,
-        discountType: type,
-        discountValue: value
+        value,
+        type
       }
     });
   }

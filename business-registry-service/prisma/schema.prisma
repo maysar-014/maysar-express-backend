@@ -1,0 +1,142 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Business {
+  id                   String   @id @default(cuid())
+  name                 String
+  businessType         BusinessType
+  registrationNumber   String   @unique
+  taxId                String?  @unique
+  status               BusinessStatus @default(PENDING)
+  verificationStatus   VerificationStatus @default(UNVERIFIED)
+  complianceStatus     ComplianceStatus @default(UNDER_REVIEW)
+  ownerId              String
+  description          String?
+  industry             String?
+  website              String?
+  email                String?
+  phoneNumber          String?
+
+  verifiedAt           DateTime?
+  verifiedBy           String?
+
+  attributes           Json?
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  addresses            BusinessAddress[]
+  documents            BusinessDocument[]
+  complianceRecords    ComplianceRecord[]
+
+  @@map("businesses")
+}
+
+model BusinessAddress {
+  id          String   @id @default(cuid())
+  businessId  String
+  type        AddressType @default(MAIN)
+  street      String
+  city        String
+  region      String
+  postalCode  String?
+  country     String   @default("Tanzania")
+  isPrimary   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("business_addresses")
+}
+
+model BusinessDocument {
+  id          String   @id @default(cuid())
+  businessId  String
+  type        DocumentType
+  fileName    String
+  fileUrl     String
+  status      DocumentStatus @default(PENDING)
+  uploadedAt  DateTime @default(now())
+  verifiedAt  DateTime?
+
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("business_documents")
+}
+
+model ComplianceRecord {
+  id          String   @id @default(cuid())
+  businessId  String
+  type        ComplianceType
+  status      ComplianceStatus
+  checkedAt   DateTime @default(now())
+  expiresAt   DateTime?
+  notes       String?
+
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("compliance_records")
+}
+
+enum BusinessType {
+  SOLE_PROPRIETORSHIP
+  PARTNERSHIP
+  LIMITED_LIABILITY
+  CORPORATION
+}
+
+enum BusinessStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+  CLOSED
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+}
+
+enum ComplianceStatus {
+  COMPLIANT
+  NON_COMPLIANT
+  UNDER_REVIEW
+}
+
+enum AddressType {
+  MAIN
+  BRANCH
+  WAREHOUSE
+  OTHER
+}
+
+enum DocumentType {
+  REGISTRATION_CERTIFICATE
+  TAX_CERTIFICATE
+  BUSINESS_LICENSE
+  PROOF_OF_ADDRESS
+  OWNER_ID
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ComplianceType {
+  TAX_COMPLIANCE
+  BUSINESS_LICENSE
+  HEALTH_PERMIT
+  ENVIRONMENTAL_CLEARANCE
+}

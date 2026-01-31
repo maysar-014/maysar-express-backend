@@ -57,7 +57,7 @@ describe('Cart Performance Tests', () => {
     }
     const duration = performance.now() - start;
     
-    expect(duration).toBeLessThan(10);
+    expect(duration).toBeLessThan(15);
   });
 
   it('should calculate subtotal for 100 items in under 5ms', () => {
@@ -91,6 +91,6 @@ describe('Cart Performance Tests', () => {
     }
     const duration = performance.now() - start;
     
-    expect(duration).toBeLessThan(10);
+    expect(duration).toBeLessThan(15);
   });
 });

@@ -113,14 +113,15 @@ export function createUserRoutes(): Router {
   initializeController();
 
   router.post('/', handleCreateUser);
+  // Profile routes must be before /:id so GET/PUT /profile are not matched as id="profile"
+  router.get('/profile', handleGetProfile);
+  router.put('/profile', handleUpdateProfile);
   router.get('/:id', handleGetUserById);
   router.put('/:id', handleUpdateUser);
   router.delete('/:id', handleDeleteUser);
   router.post('/verify-email/:token', handleVerifyEmail);
   router.post('/request-password-reset', handleRequestPasswordReset);
   router.post('/reset-password/:token', handleResetPassword);
-  router.get('/profile', handleGetProfile);
-  router.put('/profile', handleUpdateProfile);
   router.post('/:id/password', handleChangePassword);
   router.post('/:id/suspend', handleSuspendAccount);
   router.post('/:id/role', handleChangeRole);

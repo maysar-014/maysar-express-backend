@@ -55,19 +55,6 @@ This document provides a comprehensive implementation plan for all 13 missing mi
 - **Dependencies**: User Service, Business Registry Service
 - **Estimated Effort**: 3-4 weeks
 
-### 8. **Shipping Service** (`shipping-service/`)
-**Priority: P3 - Logistics Management**
-- **Purpose**: Shipping logistics, carrier integration, and delivery tracking
-- **Business Value**: Customer experience and operational efficiency
-- **Dependencies**: Order Service (via Checkout), Inventory Service
-- **Estimated Effort**: 3-4 weeks
-
-### 9. **Product Service** (`product-service/`)
-**Priority: P1 - Core Catalog Management**
-- **Purpose**: Product catalog, listings, and product lifecycle management
-- **Business Value**: Core marketplace functionality
-- **Dependencies**: Business Registry Service
-- **Estimated Effort**: 4-5 weeks
 
 ### 10. **Inventory Service** (`inventory-service/`)
 **Priority: P2 - Stock Management**
@@ -122,13 +109,6 @@ This document provides a comprehensive implementation plan for all 13 missing mi
 - Infrastructure: Payment gateway integration
 - API: Checkout flow endpoints
 - Tests: Comprehensive checkout flow testing
-
-**Week 5-6: Product Service**
-- Domain layer: Product, category, listing entities
-- Application layer: Product management use cases
-- Infrastructure: Product catalog database
-- API: Product catalog endpoints
-- Tests: Product lifecycle testing
 
 ### Phase 2: Business Operations (Weeks 7-12)
 **Goal**: Enable core business operations and financial flows

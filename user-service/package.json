@@ -10,6 +10,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:e2e": "jest --testPathPattern=\\.e2e\\.test\\.ts$ --no-coverage",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
@@ -61,6 +62,8 @@
     "jest-environment-node": "^29.7.0",
     "nodemon": "^3.1.0",
     "prettier": "^3.2.5",
+    "supertest": "^6.3.4",
+    "@types/supertest": "^6.0.2",
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"

@@ -1,56 +1,69 @@
-import { IEventBus } from '../../infrastructure/messaging/event-bus.adapter';
-import { ICheckoutRepository } from '../../infrastructure/repositories/checkout.repository';
-import { ICartRepository } from '../../infrastructure/repositories/cart.repository';
+/**
+ * Order Fulfillment Saga
+ * 
+ * Coordinates checkout to order creation with compensation logic.
+ * Implements saga pattern for distributed transactions.
+ */
+
+export interface EventBus {
+  publish(eventType: string, data: any): Promise<void>;
+}
+
+export interface CheckoutRepository {
+  getSession(id: string): Promise<any>;
+}
+
+export interface CartRepository {
+  delete(id: string): Promise<void>;
+}
 
 export class OrderFulfillmentSaga {
   constructor(
-    private eventBus: IEventBus,
-    private checkoutRepository: ICheckoutRepository,
-    private cartRepository: ICartRepository
+    private eventBus: EventBus,
+    private checkoutRepository: CheckoutRepository,
+    private cartRepository: CartRepository
   ) {}
 
-  async execute(checkoutSessionId: string): Promise<void> {
-    const session = await this.checkoutRepository.getSession(checkoutSessionId);
-    if (!session) throw new Error('Session not found');
-
+  async execute(checkoutId: string): Promise<void> {
     try {
-      // Step 1: Reserve inventory
+      // Get checkout session
+      const session = await this.checkoutRepository.getSession(checkoutId);
+      if (!session) {
+        throw new Error('Session not found');
+      }
+
+      // Step 1: Request inventory reservation
       await this.eventBus.publish('InventoryReservationRequested', {
-        checkoutId: checkoutSessionId,
+        checkoutId,
         items: session.items,
-        timestamp: new Date()
+        cartId: session.cartId
       });
 
-      // Step 2: Process payment
+      // Step 2: Request payment processing
       await this.eventBus.publish('PaymentProcessingRequested', {
-        checkoutId: checkoutSessionId,
+        checkoutId,
         amount: session.totalAmount,
-        paymentMethodId: session.paymentMethodId,
-        timestamp: new Date()
+        paymentMethodId: session.paymentMethodId
       });
 
-      // Step 3: Create order
+      // Step 3: Request order creation
       await this.eventBus.publish('OrderCreationRequested', {
-        checkoutId: checkoutSessionId,
+        checkoutId,
         userId: session.userId,
-        totalAmount: session.totalAmount,
-        timestamp: new Date()
+        items: session.items,
+        totalAmount: session.totalAmount
       });
 
       // Step 4: Clear cart
       await this.cartRepository.delete(session.cartId);
-
     } catch (error) {
-      // Compensation: Release inventory
+      // Compensation: Release inventory and refund payment
       await this.eventBus.publish('InventoryReleaseRequested', {
-        checkoutId: checkoutSessionId,
-        timestamp: new Date()
+        checkoutId
       });
 
-      // Compensation: Refund payment
       await this.eventBus.publish('PaymentRefundRequested', {
-        checkoutId: checkoutSessionId,
-        timestamp: new Date()
+        checkoutId
       });
 
       throw error;

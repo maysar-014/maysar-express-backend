@@ -1,0 +1,39 @@
+
+> checkout-service@1.0.0 test
+> jest
+
+-----------------------------------|---------|----------|---------|---------|-------------------
+File                               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-----------------------------------|---------|----------|---------|---------|-------------------
+All files                          |   64.78 |    36.47 |   60.81 |   66.82 |                   
+ application/mappers               |       0 |      100 |       0 |       0 |                   
+  checkout.mapper.ts               |       0 |      100 |       0 |       0 | 8-35              
+ application/sagas                 |   93.33 |        0 |     100 |   93.33 |                   
+  order-fulfillment.saga.ts        |   93.33 |        0 |     100 |   93.33 | 32                
+ domain/engines                    |       0 |        0 |       0 |       0 |                   
+  checkout.engine.ts               |       0 |        0 |       0 |       0 | 7-126             
+ domain/policies                   |     100 |      100 |     100 |     100 |                   
+  pricing.policy.ts                |     100 |      100 |     100 |     100 |                   
+ domain/value-objects              |      42 |    17.64 |    42.3 |      40 |                   
+  cart.value-object.ts             |       0 |        0 |       0 |       0 | 15-81             
+  money.value-object.ts            |     100 |      100 |     100 |     100 |                   
+ infrastructure/services           |   95.23 |       75 |     100 |   95.23 |                   
+  discount.service.ts              |   88.88 |       75 |     100 |   88.88 | 22                
+  inventory-reservation.service.ts |     100 |      100 |     100 |     100 |                   
+  order.service.ts                 |     100 |      100 |     100 |     100 |                   
+ shared                            |       0 |        0 |       0 |       0 |                   
+  config.ts                        |       0 |        0 |     100 |       0 | 31                
+  health-check.ts                  |       0 |      100 |       0 |       0 | 6-9               
+  transaction-manager.ts           |       0 |      100 |       0 |       0 | 6                 
+ shared/errors                     |     100 |      100 |     100 |     100 |                   
+  app.error.ts                     |     100 |      100 |     100 |     100 |                   
+ shared/logger                     |     100 |     87.5 |     100 |     100 |                   
+  logger.ts                        |     100 |     87.5 |     100 |     100 | 31                
+-----------------------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 64.78% ( 149/230 )
+Branches     : 36.47% ( 31/85 )
+Functions    : 60.81% ( 45/74 )
+Lines        : 66.82% ( 145/217 )
+================================================================================

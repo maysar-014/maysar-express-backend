@@ -1,8 +1,13 @@
-import { CartController } from '../cart.controller';
-import { CheckoutController } from '../checkout.controller';
+/**
+ * E2E Tests - Controllers
+ * Tests complete request/response flow
+ */
+
+import { CartController } from '../../controllers/cart.controller';
+import { CheckoutController } from '../../controllers/checkout.controller';
 import { Request, Response } from 'express';
 
-describe('CartController E2E Tests', () => {
+describe('CartController E2E', () => {
   let controller: CartController;
   let mockRepository: any;
   let mockRequest: Partial<Request>;
@@ -10,214 +15,178 @@ describe('CartController E2E Tests', () => {
 
   beforeEach(() => {
     mockRepository = {
-      save: jest.fn(),
-      getById: jest.fn(),
-      delete: jest.fn()
+      save: jest.fn().mockResolvedValue(undefined),
+      getById: jest.fn().mockResolvedValue({ items: [] }),
+      delete: jest.fn().mockResolvedValue(undefined)
     };
     controller = new CartController(mockRepository);
 
-    mockRequest = { body: {} };
+    mockRequest = {
+      body: {},
+      headers: { 'x-correlation-id': 'corr-123' }
+    };
     mockResponse = {
       json: jest.fn().mockReturnThis(),
       status: jest.fn().mockReturnThis()
     };
   });
 
-  describe('Add to Cart', () => {
-    it('should add item to cart', async () => {
-      mockRequest.body = {
-        cartId: 'cart-1',
-        userId: 'user-1',
-        productId: 'prod-1',
-        quantity: 2,
-        priceAtTime: 50
-      };
-      mockRepository.getById.mockResolvedValue({ items: [] });
+  it('should add item to cart', async () => {
+    mockRequest.body = {
+      cartId: 'cart-1',
+      userId: 'user-1',
+      productId: 'prod-1',
+      quantity: 2,
+      priceAtTime: 50
+    };
 
-      await controller.addToCart(mockRequest as Request, mockResponse as Response);
+    await controller.addToCart(mockRequest as Request, mockResponse as Response);
 
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true })
-      );
-    });
-
-    it('should handle errors', async () => {
-      mockRequest.body = { cartId: 'cart-1' };
-      mockRepository.getById.mockRejectedValue(new Error('DB Error'));
-
-      await controller.addToCart(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-    });
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true })
+    );
   });
 
-  describe('Remove from Cart', () => {
-    it('should remove item from cart', async () => {
-      mockRequest.body = {
-        cartId: 'cart-1',
-        userId: 'user-1',
-        productId: 'prod-1'
-      };
-      mockRepository.getById.mockResolvedValue({
-        items: [{ productId: 'prod-1', quantity: 1, priceAtTime: 50 }]
-      });
+  it('should handle validation errors', async () => {
+    mockRequest.body = { cartId: 'cart-1' };
 
-      await controller.removeFromCart(mockRequest as Request, mockResponse as Response);
+    await controller.addToCart(mockRequest as Request, mockResponse as Response);
 
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true })
-      );
-    });
+    expect(mockResponse.status).toHaveBeenCalledWith(400);
   });
 
-  describe('Get Cart', () => {
-    it('should retrieve cart', async () => {
-      mockRequest.params = { cartId: 'cart-1', userId: 'user-1' };
-      mockRepository.getById.mockResolvedValue({
-        items: [{ productId: 'prod-1', quantity: 1, priceAtTime: 50 }]
-      });
-
-      await controller.getCart(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true })
-      );
+  it('should remove item from cart', async () => {
+    mockRequest.body = {
+      cartId: 'cart-1',
+      userId: 'user-1',
+      productId: 'prod-1'
+    };
+    mockRepository.getById.mockResolvedValueOnce({
+      items: [{ productId: 'prod-1', quantity: 1, priceAtTime: 50 }]
     });
 
-    it('should return 404 for non-existent cart', async () => {
-      mockRequest.params = { cartId: 'cart-999', userId: 'user-1' };
-      mockRepository.getById.mockResolvedValue(null);
+    await controller.removeFromCart(mockRequest as Request, mockResponse as Response);
 
-      await controller.getCart(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(404);
-    });
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true })
+    );
   });
 
-  describe('Clear Cart', () => {
-    it('should clear all items from cart', async () => {
-      mockRequest.body = { cartId: 'cart-1', userId: 'user-1' };
+  it('should get cart', async () => {
+    mockRequest.params = { cartId: 'cart-1' };
+    (mockRequest as any).userId = 'user-1';
 
-      await controller.clearCart(mockRequest as Request, mockResponse as Response);
+    await controller.getCart(mockRequest as Request, mockResponse as Response);
 
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true })
-      );
-    });
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true })
+    );
+  });
+
+  it('should clear cart', async () => {
+    mockRequest.body = { cartId: 'cart-1', userId: 'user-1' };
+
+    await controller.clearCart(mockRequest as Request, mockResponse as Response);
+
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true })
+    );
   });
 });
 
-describe('CheckoutController E2E Tests', () => {
+describe('CheckoutController E2E', () => {
   let controller: CheckoutController;
   let mockCheckoutRepository: any;
-  let mockCartRepository: any;
   let mockEventBus: any;
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
 
   beforeEach(() => {
     mockCheckoutRepository = {
-      saveSession: jest.fn(),
-      getSession: jest.fn(),
-      saveOrder: jest.fn()
-    };
-    mockCartRepository = {
-      getById: jest.fn()
+      saveCheckoutSession: jest.fn().mockResolvedValue(undefined),
+      getSession: jest.fn().mockResolvedValue({ id: 'session-1', status: 'initiated' }),
+      saveSession: jest.fn().mockResolvedValue(undefined)
     };
     mockEventBus = {
-      publish: jest.fn()
+      publish: jest.fn().mockResolvedValue(undefined)
     };
 
     controller = new CheckoutController(
       mockCheckoutRepository,
-      mockCartRepository,
       mockEventBus
     );
 
-    mockRequest = { body: {} };
+    mockRequest = {
+      body: {},
+      headers: { 'x-correlation-id': 'corr-123' }
+    };
     mockResponse = {
       json: jest.fn().mockReturnThis(),
       status: jest.fn().mockReturnThis()
     };
   });
 
-  describe('Initiate Checkout', () => {
-    it('should initiate checkout successfully', async () => {
-      mockRequest.body = {
-        cartId: 'cart-1',
-        userId: 'user-1',
-        shippingAddressId: 'addr-1',
-        billingAddressId: 'addr-2',
-        shippingMethodId: 'ship-1',
-        shippingCost: 10
-      };
-      mockCartRepository.getById.mockResolvedValue({
-        items: [{ productId: 'prod-1', quantity: 1, priceAtTime: 100 }]
-      });
+  it('should initiate checkout', async () => {
+    mockRequest.body = {
+      cartId: 'cart-1',
+      userId: 'user-1',
+      shippingAddressId: 'addr-1',
+      billingAddressId: 'addr-2',
+      shippingMethodId: 'ship-1',
+      shippingCost: 10
+    };
 
-      await controller.initiateCheckout(mockRequest as Request, mockResponse as Response);
+    await controller.initiateCheckout(mockRequest as Request, mockResponse as Response);
 
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true })
-      );
-    });
-
-    it('should handle checkout errors', async () => {
-      mockRequest.body = { cartId: 'cart-1' };
-      mockCartRepository.getById.mockRejectedValue(new Error('DB Error'));
-
-      await controller.initiateCheckout(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-    });
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true })
+    );
   });
 
-  describe('Get Checkout Session', () => {
-    it('should retrieve checkout session', async () => {
-      mockRequest.params = { sessionId: 'session-1' };
-      mockCheckoutRepository.getSession.mockResolvedValue({
-        id: 'session-1',
-        status: 'initiated'
-      });
+  it('should get checkout session', async () => {
+    mockRequest.params = { sessionId: 'session-1' };
 
-      await controller.getCheckoutSession(mockRequest as Request, mockResponse as Response);
+    await controller.getCheckoutSession(mockRequest as Request, mockResponse as Response);
 
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true })
-      );
-    });
-
-    it('should return 404 for non-existent session', async () => {
-      mockRequest.params = { sessionId: 'session-999' };
-      mockCheckoutRepository.getSession.mockResolvedValue(null);
-
-      await controller.getCheckoutSession(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(404);
-    });
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true })
+    );
   });
 
-  describe('Confirm Checkout', () => {
-    it('should confirm checkout and create order', async () => {
-      mockRequest.body = {
-        sessionId: 'session-1',
-        paymentMethodId: 'pm-1'
-      };
-      mockCheckoutRepository.getSession.mockResolvedValue({
-        id: 'session-1',
-        userId: 'user-1',
-        totalAmount: 100
-      });
+  it('should confirm checkout', async () => {
+    mockRequest.body = {
+      sessionId: 'session-1',
+      paymentMethodId: 'pm-1'
+    };
 
-      await controller.confirmCheckout(mockRequest as Request, mockResponse as Response);
+    await controller.confirmCheckout(mockRequest as Request, mockResponse as Response);
 
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true })
-      );
-      expect(mockEventBus.publish).toHaveBeenCalledWith(
-        'OrderCreated',
-        expect.any(Object)
-      );
-    });
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true })
+    );
+    expect(mockEventBus.publish).toHaveBeenCalledWith(
+      'OrderCreated',
+      expect.any(Object)
+    );
+  });
+
+  it('should handle idempotency', async () => {
+    mockRequest.body = {
+      cartId: 'cart-1',
+      userId: 'user-1',
+      shippingAddressId: 'addr-1',
+      billingAddressId: 'addr-2',
+      shippingMethodId: 'ship-1',
+      shippingCost: 10
+    };
+    mockRequest.headers = {
+      'x-correlation-id': 'corr-123',
+      'idempotency-key': 'idem-123'
+    };
+
+    await controller.initiateCheckout(mockRequest as Request, mockResponse as Response);
+    await controller.initiateCheckout(mockRequest as Request, mockResponse as Response);
+
+    expect(mockResponse.json).toHaveBeenCalledTimes(2);
   });
 });

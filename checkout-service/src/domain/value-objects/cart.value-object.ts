@@ -1,11 +1,9 @@
 /**
  * Cart Value Object
- * 
- * Represents a shopping cart with immutable business rules.
- * Pure domain logic - no external dependencies.
+ * Represents a shopping cart
  */
 
-export interface CartItemData {
+export interface CartItemVO {
   productId: string;
   variantId?: string;
   quantity: number;
@@ -13,126 +11,126 @@ export interface CartItemData {
 }
 
 export class CartItem {
-  readonly productId: string;
-  readonly variantId?: string;
-  readonly quantity: number;
-  readonly priceAtTime: number;
-
-  constructor(data: CartItemData) {
-    if (data.quantity <= 0) {
+  constructor(
+    public productId: string,
+    public variantId: string | undefined,
+    public quantity: number,
+    public priceAtTime: number
+  ) {
+    if (quantity <= 0) {
       throw new Error('Quantity must be greater than 0');
     }
-    if (data.priceAtTime < 0) {
+    if (priceAtTime < 0) {
       throw new Error('Price cannot be negative');
     }
+  }
 
-    this.productId = data.productId;
-    this.variantId = data.variantId;
-    this.quantity = data.quantity;
-    this.priceAtTime = data.priceAtTime;
+  static fromObject(obj: CartItemVO): CartItem {
+    return new CartItem(obj.productId, obj.variantId, obj.quantity, obj.priceAtTime);
   }
 
   getLineTotal(): number {
     return this.quantity * this.priceAtTime;
   }
 
-  updateQuantity(newQuantity: number): CartItem {
-    return new CartItem({
-      productId: this.productId,
-      variantId: this.variantId,
-      quantity: newQuantity,
-      priceAtTime: this.priceAtTime
-    });
+  updateQuantity(quantity: number): CartItem {
+    return new CartItem(this.productId, this.variantId, quantity, this.priceAtTime);
   }
 }
 
-export interface CartData {
-  items: CartItemData[];
+export interface CartConstructorParams {
+  id?: string;
+  userId?: string;
+  items?: CartItemVO[];
 }
 
 export class Cart {
-  private readonly items: CartItem[];
+  public id: string;
+  public userId: string;
+  public items: CartItemVO[];
 
-  constructor(data: CartData) {
-    this.items = data.items.map(item => new CartItem(item));
-  }
-
-  getItems(): CartItem[] {
-    return [...this.items];
-  }
-
-  getSubtotal(): number {
-    return this.items.reduce((sum, item) => sum + item.getLineTotal(), 0);
-  }
-
-  getItemCount(): number {
-    return this.items.reduce((sum, item) => sum + item.quantity, 0);
+  constructor(params: CartConstructorParams = {}) {
+    this.id = params.id || '';
+    this.userId = params.userId || '';
+    this.items = params.items || [];
   }
 
   isEmpty(): boolean {
     return this.items.length === 0;
   }
 
-  addItem(item: CartItemData): Cart {
-    const newItem = new CartItem(item);
-    const existingIndex = this.items.findIndex(
+  getTotalItems(): number {
+    return this.items.reduce((sum, item) => sum + item.quantity, 0);
+  }
+
+  getItemCount(): number {
+    return this.getTotalItems();
+  }
+
+  getSubtotal(): number {
+    return this.items.reduce((sum, item) => sum + item.priceAtTime * item.quantity, 0);
+  }
+
+  getItems(): CartItemVO[] {
+    return [...this.items];
+  }
+
+  addItem(item: CartItemVO): Cart {
+    const newItems = [...this.items];
+    const existingItem = newItems.find(
       i => i.productId === item.productId && i.variantId === item.variantId
     );
 
-    let updatedItems: CartItem[];
-    if (existingIndex >= 0) {
-      const existing = this.items[existingIndex];
-      updatedItems = [
-        ...this.items.slice(0, existingIndex),
-        existing.updateQuantity(existing.quantity + item.quantity),
-        ...this.items.slice(existingIndex + 1)
-      ];
+    if (existingItem) {
+      existingItem.quantity += item.quantity;
     } else {
-      updatedItems = [...this.items, newItem];
+      newItems.push({ ...item });
     }
 
-    return new Cart({ items: updatedItems.map(i => ({
-      productId: i.productId,
-      variantId: i.variantId,
-      quantity: i.quantity,
-      priceAtTime: i.priceAtTime
-    })) });
+    return new Cart({
+      id: this.id,
+      userId: this.userId,
+      items: newItems
+    });
   }
 
   removeItem(productId: string, variantId?: string): Cart {
-    const filtered = this.items.filter(
+    const newItems = this.items.filter(
       i => !(i.productId === productId && i.variantId === variantId)
     );
-
-    return new Cart({ items: filtered.map(i => ({
-      productId: i.productId,
-      variantId: i.variantId,
-      quantity: i.quantity,
-      priceAtTime: i.priceAtTime
-    })) });
+    return new Cart({
+      id: this.id,
+      userId: this.userId,
+      items: newItems
+    });
   }
 
   updateItemQuantity(productId: string, quantity: number, variantId?: string): Cart {
-    if (quantity <= 0) {
-      return this.removeItem(productId, variantId);
+    const newItems = [...this.items];
+    const itemIndex = newItems.findIndex(
+      i => i.productId === productId && i.variantId === variantId
+    );
+
+    if (itemIndex !== -1) {
+      if (quantity <= 0) {
+        return this.removeItem(productId, variantId);
+      } else {
+        newItems[itemIndex] = { ...newItems[itemIndex], quantity };
+      }
     }
 
-    const updated = this.items.map(item => {
-      if (item.productId === productId && item.variantId === variantId) {
-        return item.updateQuantity(quantity);
-      }
-      return item;
+    return new Cart({
+      id: this.id,
+      userId: this.userId,
+      items: newItems
     });
-
-    return new Cart({ items: updated.map(i => ({
-      productId: i.productId,
-      variantId: i.variantId,
-      quantity: i.quantity,
-      priceAtTime: i.priceAtTime
-    })) });
   }
 
   clear(): Cart {
-    return new Cart({ items: [] });
+    return new Cart({
+      id: this.id,
+      userId: this.userId,
+      items: []
+    });
   }
 }

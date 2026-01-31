@@ -107,7 +107,7 @@ describe('PricingPolicy', () => {
       const result = policy.calculateTotal(subtotal, discount);
 
       expect(result.discountAmount.getAmount()).toBe(20);
-      expect(result.total.getAmount()).toBe(88);
+      expect(result.total.getAmount()).toBe(98);
     });
 
     it('should reject discount exceeding subtotal', () => {

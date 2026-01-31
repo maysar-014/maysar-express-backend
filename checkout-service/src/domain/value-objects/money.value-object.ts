@@ -1,20 +1,14 @@
 /**
  * Money Value Object
- * 
- * Handles monetary calculations with precision.
- * Prevents floating-point arithmetic errors.
+ * Handles monetary calculations with precision
  */
 
 export class Money {
   private readonly amountInCents: number;
 
   constructor(amountInDollars: number) {
-    // Convert to cents to avoid floating-point errors
     this.amountInCents = Math.round(amountInDollars * 100);
-    
-    if (this.amountInCents < 0) {
-      throw new Error('Money amount cannot be negative');
-    }
+    if (this.amountInCents < 0) throw new Error('Money amount cannot be negative');
   }
 
   static fromCents(cents: number): Money {
@@ -37,16 +31,12 @@ export class Money {
 
   subtract(other: Money): Money {
     const result = this.amountInCents - other.amountInCents;
-    if (result < 0) {
-      throw new Error('Cannot subtract more than available');
-    }
+    if (result < 0) throw new Error('Cannot subtract more than available');
     return Money.fromCents(result);
   }
 
   multiply(factor: number): Money {
-    if (factor < 0) {
-      throw new Error('Multiplication factor cannot be negative');
-    }
+    if (factor < 0) throw new Error('Multiplication factor cannot be negative');
     return Money.fromCents(Math.round(this.amountInCents * factor));
   }
 

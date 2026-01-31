@@ -1,15 +1,63 @@
 /**
- * Checkout Service DTOs
- * 
- * Data Transfer Objects for API boundaries.
- * No domain entities cross service boundaries.
+ * Data Transfer Objects (DTOs)
+ * Defines request/response structures
  */
+
+export interface AddToCartRequest {
+  cartId: string;
+  userId: string;
+  productId: string;
+  variantId?: string;
+  quantity: number;
+  priceAtTime: number;
+}
+
+export interface RemoveFromCartRequest {
+  cartId: string;
+  userId: string;
+  productId: string;
+  variantId?: string;
+}
+
+export interface GetCartRequest {
+  cartId: string;
+  userId: string;
+}
+
+export interface ClearCartRequest {
+  cartId: string;
+  userId: string;
+}
+
+export interface InitiateCheckoutRequest {
+  cartId: string;
+  userId: string;
+  shippingAddressId: string;
+  billingAddressId: string;
+  shippingMethodId: string;
+  shippingCost: number;
+  idempotencyKey?: string;
+}
+
+export interface ConfirmCheckoutRequest {
+  sessionId: string;
+  paymentMethodId: string;
+  idempotencyKey?: string;
+}
+
+export interface ApplyDiscountRequest {
+  checkoutId: string;
+  code: string;
+  value: number;
+  type: 'fixed' | 'percentage';
+}
 
 export interface CartItemDTO {
   productId: string;
   variantId?: string;
   quantity: number;
   priceAtTime: number;
+  lineTotal: number;
 }
 
 export interface CartDTO {
@@ -22,20 +70,12 @@ export interface CartDTO {
   updatedAt: Date;
 }
 
-export interface AddToCartRequestDTO {
-  productId: string;
-  variantId?: string;
-  quantity: number;
-  priceAtTime: number;
-}
-
-export interface UpdateCartItemRequestDTO {
-  quantity: number;
-}
-
-export interface RemoveCartItemRequestDTO {
-  productId: string;
-  variantId?: string;
+export interface PricingDTO {
+  subtotal: number;
+  taxAmount: number;
+  shippingCost: number;
+  discountAmount: number;
+  total: number;
 }
 
 export interface CheckoutSessionDTO {
@@ -43,32 +83,9 @@ export interface CheckoutSessionDTO {
   cartId: string;
   userId: string;
   status: string;
-  subtotal: number;
-  shippingCost: number;
-  taxAmount: number;
-  discountAmount: number;
-  totalAmount: number;
-  shippingAddressId?: string;
-  billingAddressId?: string;
-  shippingMethodId?: string;
-  paymentMethodId?: string;
-  paymentStatus?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  pricing: PricingDTO;
   expiresAt: Date;
-}
-
-export interface InitiateCheckoutRequestDTO {
-  cartId: string;
-  shippingAddressId: string;
-  billingAddressId: string;
-  shippingMethodId: string;
-}
-
-export interface ApplyDiscountRequestDTO {
-  code: string;
-  value: number;
-  type: 'percentage' | 'fixed';
+  createdAt: Date;
 }
 
 export interface OrderDTO {
@@ -76,48 +93,18 @@ export interface OrderDTO {
   checkoutSessionId: string;
   userId: string;
   status: string;
-  items: OrderItemDTO[];
-  subtotal: number;
-  shippingCost: number;
-  taxAmount: number;
-  discountAmount: number;
   totalAmount: number;
-  paymentStatus: string;
-  trackingNumber?: string;
+  items: any[];
   createdAt: Date;
-  updatedAt: Date;
 }
 
-export interface OrderItemDTO {
-  id: string;
-  productId: string;
-  variantId?: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-}
-
-export interface CreateOrderRequestDTO {
-  checkoutSessionId: string;
-  paymentMethodId: string;
-}
-
-export interface PricingCalculationDTO {
-  subtotal: number;
-  shippingCost: number;
-  taxAmount: number;
-  discountAmount: number;
-  total: number;
-}
-
-export interface CheckoutValidationErrorDTO {
-  field: string;
-  message: string;
-}
-
-export interface CheckoutResponseDTO {
+export interface ApiResponse<T> {
   success: boolean;
-  data?: CheckoutSessionDTO;
-  errors?: CheckoutValidationErrorDTO[];
-  pricing?: PricingCalculationDTO;
+  data?: T;
+  error?: {
+    code: string;
+    message: string;
+    details?: Record<string, any>;
+  };
+  timestamp: Date;
 }

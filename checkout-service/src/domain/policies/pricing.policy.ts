@@ -1,14 +1,12 @@
 /**
  * Pricing Policy
- * 
- * Business rules for calculating checkout totals.
- * Configurable, versioned, and testable.
+ * Business rules for calculating checkout totals
  */
 
 import { Money } from '../value-objects/money.value-object';
 
 export interface PricingPolicyConfig {
-  taxRate: number; // 0.0 to 1.0
+  taxRate: number;
   minOrderForFreeShipping?: number;
   shippingCost?: number;
   maxDiscount?: number;
@@ -37,12 +35,10 @@ export class PricingPolicy {
     discountAmount: Money = new Money(0),
     shippingCost?: Money
   ): PricingCalculation {
-    // Validate discount doesn't exceed subtotal
     if (discountAmount.isGreaterThan(subtotal)) {
       throw new Error('Discount cannot exceed subtotal');
     }
 
-    // Validate max discount if configured
     if (this.config.maxDiscount) {
       const maxDiscount = new Money(this.config.maxDiscount);
       if (discountAmount.isGreaterThan(maxDiscount)) {
@@ -50,16 +46,9 @@ export class PricingPolicy {
       }
     }
 
-    // Calculate after-discount subtotal
     const discountedSubtotal = subtotal.subtract(discountAmount);
-
-    // Calculate shipping
     const finalShippingCost = this.calculateShipping(discountedSubtotal, shippingCost);
-
-    // Calculate tax on discounted subtotal (before shipping)
     const taxAmount = discountedSubtotal.multiply(this.config.taxRate);
-
-    // Calculate total
     const total = discountedSubtotal.add(taxAmount).add(finalShippingCost);
 
     return {
@@ -72,12 +61,8 @@ export class PricingPolicy {
   }
 
   private calculateShipping(subtotal: Money, providedShipping?: Money): Money {
-    // If shipping provided, use it
-    if (providedShipping) {
-      return providedShipping;
-    }
+    if (providedShipping) return providedShipping;
 
-    // Check for free shipping threshold
     if (this.config.minOrderForFreeShipping) {
       const minOrder = new Money(this.config.minOrderForFreeShipping);
       if (subtotal.isGreaterThan(minOrder) || subtotal.isEqual(minOrder)) {
@@ -85,7 +70,6 @@ export class PricingPolicy {
       }
     }
 
-    // Return configured shipping cost
     return new Money(this.config.shippingCost || 0);
   }
 }

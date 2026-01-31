@@ -1,34 +1,56 @@
+/**
+ * Checkout Controller
+ * 
+ * Handles HTTP requests for checkout operations.
+ * API layer - request/response handling.
+ */
+
 import { Request, Response } from 'express';
 import { InitiateCheckoutUseCase } from '../../application/use-cases/initiate-checkout.use-case';
-import { ICheckoutRepository } from '../../infrastructure/repositories/checkout.repository';
-import { ICartRepository } from '../../infrastructure/repositories/cart.repository';
-import { IEventBus } from '../../infrastructure/messaging/event-bus.adapter';
 import { PricingPolicy } from '../../domain/policies/pricing.policy';
+import { validateCheckoutRequest } from '../../shared/validators';
+import { AppError } from '../../shared/errors/app.error';
+import { logger } from '../../shared/logger/logger';
+import { idempotencyManager } from '../../shared/idempotency';
+import { CheckoutMapper } from '../../application/mappers/checkout.mapper';
+import { config } from '../../shared/config';
 
 export class CheckoutController {
   private initiateCheckoutUseCase: InitiateCheckoutUseCase;
 
   constructor(
-    private checkoutRepository: ICheckoutRepository,
-    private cartRepository: ICartRepository,
-    private eventBus: IEventBus
+    private checkoutRepository: any,
+    private eventBus: any
   ) {
     const pricingPolicy = new PricingPolicy({
-      taxRate: 0.1,
-      shippingCost: 10,
-      minOrderForFreeShipping: 100
+      taxRate: config.pricing.taxRate,
+      shippingCost: config.pricing.shippingCost,
+      minOrderForFreeShipping: config.pricing.minOrderForFreeShipping
     });
 
     this.initiateCheckoutUseCase = new InitiateCheckoutUseCase(
       pricingPolicy,
       checkoutRepository,
-      cartRepository,
+      undefined,
       eventBus
     );
   }
 
   async initiateCheckout(req: Request, res: Response): Promise<void> {
+    const correlationId = req.headers['x-correlation-id'] as string;
+    const idempotencyKey = req.headers['idempotency-key'] as string;
+
     try {
+      // Check idempotency
+      if (idempotencyKey) {
+        const cached = idempotencyManager.retrieve(idempotencyKey);
+        if (cached) {
+          logger.info('Idempotent request - returning cached result', { idempotencyKey }, correlationId);
+          res.json(cached);
+          return;
+        }
+      }
+
       const {
         cartId,
         userId,
@@ -37,6 +59,15 @@ export class CheckoutController {
         shippingMethodId,
         shippingCost
       } = req.body;
+
+      validateCheckoutRequest({
+        cartId,
+        userId,
+        shippingAddressId,
+        billingAddressId,
+        shippingMethodId,
+        shippingCost
+      });
 
       const result = await this.initiateCheckoutUseCase.execute(
         cartId,
@@ -47,78 +78,143 @@ export class CheckoutController {
         shippingCost
       );
 
-      res.json(result);
+      if (!result.success) {
+        logger.warn('Checkout initiation failed', { errors: result.errors }, correlationId);
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'CHECKOUT_VALIDATION_FAILED',
+            message: 'Checkout validation failed',
+            details: result.errors
+          },
+          timestamp: new Date()
+        });
+        return;
+      }
+
+      const response = {
+        success: true,
+        data: CheckoutMapper.checkoutSessionToDTO(result.data),
+        timestamp: new Date()
+      };
+
+      if (idempotencyKey) {
+        idempotencyManager.store(idempotencyKey, response);
+      }
+
+      logger.info('Checkout initiated', { checkoutId: result.data.id, userId }, correlationId);
+      res.json(response);
     } catch (error) {
-      res.status(500).json({
+      const statusCode = error instanceof AppError ? error.statusCode : 500;
+      logger.error('Error initiating checkout', error as Error, { cartId: req.body.cartId }, correlationId);
+      res.status(statusCode).json({
         success: false,
-        errors: [{
-          field: 'system',
-          message: error instanceof Error ? error.message : 'Checkout failed'
-        }]
+        error: {
+          code: error instanceof AppError ? error.code : 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          details: error instanceof AppError ? error.details : undefined
+        },
+        timestamp: new Date()
       });
     }
   }
 
   async getCheckoutSession(req: Request, res: Response): Promise<void> {
+    const correlationId = req.headers['x-correlation-id'] as string;
     try {
       const { sessionId } = req.params;
 
       const session = await this.checkoutRepository.getSession(sessionId);
       if (!session) {
-        res.status(404).json({ success: false, error: 'Session not found' });
+        logger.warn('Checkout session not found', { sessionId }, correlationId);
+        res.status(404).json({
+          success: false,
+          error: { code: 'CHECKOUT_SESSION_NOT_FOUND', message: 'Session not found' },
+          timestamp: new Date()
+        });
         return;
       }
 
-      res.json({ success: true, data: session });
+      logger.info('Checkout session retrieved', { sessionId }, correlationId);
+      res.json({
+        success: true,
+        data: CheckoutMapper.checkoutSessionToDTO(session),
+        timestamp: new Date()
+      });
     } catch (error) {
-      res.status(500).json({
+      const statusCode = error instanceof AppError ? error.statusCode : 500;
+      logger.error('Error retrieving checkout session', error as Error, { sessionId: req.params.sessionId }, correlationId);
+      res.status(statusCode).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to get session'
+        error: {
+          code: error instanceof AppError ? error.code : 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown error'
+        },
+        timestamp: new Date()
       });
     }
   }
 
   async confirmCheckout(req: Request, res: Response): Promise<void> {
+    const correlationId = req.headers['x-correlation-id'] as string;
+    const idempotencyKey = req.headers['idempotency-key'] as string;
+
     try {
+      // Check idempotency
+      if (idempotencyKey) {
+        const cached = idempotencyManager.retrieve(idempotencyKey);
+        if (cached) {
+          logger.info('Idempotent request - returning cached result', { idempotencyKey }, correlationId);
+          res.json(cached);
+          return;
+        }
+      }
+
       const { sessionId, paymentMethodId } = req.body;
 
       const session = await this.checkoutRepository.getSession(sessionId);
       if (!session) {
-        res.status(404).json({ success: false, error: 'Session not found' });
+        logger.warn('Checkout session not found', { sessionId }, correlationId);
+        res.status(404).json({
+          success: false,
+          error: { code: 'CHECKOUT_SESSION_NOT_FOUND', message: 'Session not found' },
+          timestamp: new Date()
+        });
         return;
       }
 
-      const order = {
-        id: `order_${Date.now()}`,
-        checkoutSessionId: sessionId,
-        userId: session.userId,
-        status: 'pending',
-        items: [],
-        subtotal: session.subtotal,
-        shippingCost: session.shippingCost,
-        taxAmount: session.taxAmount,
-        discountAmount: session.discountAmount,
-        totalAmount: session.totalAmount,
-        paymentMethodId,
-        paymentStatus: 'pending',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+      session.paymentMethodId = paymentMethodId;
+      session.status = 'payment_pending';
+      await this.checkoutRepository.saveSession(session);
 
-      await this.checkoutRepository.saveOrder(order);
       await this.eventBus.publish('OrderCreated', {
-        orderId: order.id,
-        checkoutSessionId: sessionId,
+        checkoutId: sessionId,
         userId: session.userId,
-        totalAmount: order.totalAmount,
-        timestamp: new Date()
+        totalAmount: session.totalAmount
       });
 
-      res.json({ success: true, data: order });
+      const response = {
+        success: true,
+        data: CheckoutMapper.checkoutSessionToDTO(session),
+        timestamp: new Date()
+      };
+
+      if (idempotencyKey) {
+        idempotencyManager.store(idempotencyKey, response);
+      }
+
+      logger.info('Checkout confirmed', { sessionId, userId: session.userId }, correlationId);
+      res.json(response);
     } catch (error) {
-      res.status(500).json({
+      const statusCode = error instanceof AppError ? error.statusCode : 500;
+      logger.error('Error confirming checkout', error as Error, { sessionId: req.body.sessionId }, correlationId);
+      res.status(statusCode).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to confirm checkout'
+        error: {
+          code: error instanceof AppError ? error.code : 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown error'
+        },
+        timestamp: new Date()
       });
     }
   }

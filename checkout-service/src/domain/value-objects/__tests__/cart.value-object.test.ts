@@ -10,7 +10,7 @@ import { Cart, CartItem } from '../cart.value-object';
 describe('CartItem Value Object', () => {
   describe('Construction', () => {
     it('should create cart item with valid data', () => {
-      const item = new CartItem({
+      const item = CartItem.fromObject({
         productId: 'prod-1',
         quantity: 2,
         priceAtTime: 50
@@ -22,7 +22,7 @@ describe('CartItem Value Object', () => {
     });
 
     it('should reject zero quantity', () => {
-      expect(() => new CartItem({
+      expect(() => CartItem.fromObject({
         productId: 'prod-1',
         quantity: 0,
         priceAtTime: 50
@@ -30,7 +30,7 @@ describe('CartItem Value Object', () => {
     });
 
     it('should reject negative quantity', () => {
-      expect(() => new CartItem({
+      expect(() => CartItem.fromObject({
         productId: 'prod-1',
         quantity: -5,
         priceAtTime: 50
@@ -38,7 +38,7 @@ describe('CartItem Value Object', () => {
     });
 
     it('should reject negative price', () => {
-      expect(() => new CartItem({
+      expect(() => CartItem.fromObject({
         productId: 'prod-1',
         quantity: 1,
         priceAtTime: -10
@@ -46,7 +46,7 @@ describe('CartItem Value Object', () => {
     });
 
     it('should handle variant ID', () => {
-      const item = new CartItem({
+      const item = CartItem.fromObject({
         productId: 'prod-1',
         variantId: 'var-1',
         quantity: 1,
@@ -59,7 +59,7 @@ describe('CartItem Value Object', () => {
 
   describe('Line Total Calculation', () => {
     it('should calculate line total', () => {
-      const item = new CartItem({
+      const item = CartItem.fromObject({
         productId: 'prod-1',
         quantity: 3,
         priceAtTime: 25
@@ -69,7 +69,7 @@ describe('CartItem Value Object', () => {
     });
 
     it('should handle decimal prices', () => {
-      const item = new CartItem({
+      const item = CartItem.fromObject({
         productId: 'prod-1',
         quantity: 2,
         priceAtTime: 19.99
@@ -81,7 +81,7 @@ describe('CartItem Value Object', () => {
 
   describe('Immutability', () => {
     it('should create new item on quantity update', () => {
-      const original = new CartItem({
+      const original = CartItem.fromObject({
         productId: 'prod-1',
         quantity: 2,
         priceAtTime: 50
@@ -95,7 +95,7 @@ describe('CartItem Value Object', () => {
     });
 
     it('should preserve other properties on update', () => {
-      const original = new CartItem({
+      const original = CartItem.fromObject({
         productId: 'prod-1',
         variantId: 'var-1',
         quantity: 2,
