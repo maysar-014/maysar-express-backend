@@ -1,0 +1,96 @@
+sequenceDiagram
+    participant CLIENT as Client/API Gateway
+    participant ORDER as Order Service
+    participant INVENTORY as Inventory Service
+    participant PAYMENT as Payment Service
+    participant LOGISTICS as Logistics Service
+    participant NOTIFICATION as Notification Service
+    participant ANALYTICS as Analytics Service
+    participant KAFKA as Kafka Event Bus
+
+    Note over CLIENT,ANALYTICS: Order Fulfillment Saga - Happy Path
+
+    CLIENT->>ORDER: POST /orders (create order)
+    activate ORDER
+    ORDER->>ORDER: Validate order data
+    ORDER->>ORDER: Create order (PENDING)
+    ORDER->>KAFKA: Publish OrderCreated event
+    ORDER-->>CLIENT: 201 Created (orderId)
+    deactivate ORDER
+
+    KAFKA->>INVENTORY: OrderCreated event
+    activate INVENTORY
+    INVENTORY->>INVENTORY: Check stock availability
+    alt Stock Available
+        INVENTORY->>INVENTORY: Reserve stock
+        INVENTORY->>KAFKA: Publish StockReserved event
+        INVENTORY-->>KAFKA: Success
+    else Insufficient Stock
+        INVENTORY->>KAFKA: Publish StockReservationFailed event
+        INVENTORY-->>KAFKA: Failure
+    end
+    deactivate INVENTORY
+
+    KAFKA->>ORDER: StockReserved event
+    activate ORDER
+    ORDER->>ORDER: Update order status (STOCK_RESERVED)
+    ORDER->>KAFKA: Publish OrderStockReserved event
+    deactivate ORDER
+
+    KAFKA->>PAYMENT: OrderStockReserved event
+    activate PAYMENT
+    PAYMENT->>PAYMENT: Initiate payment processing
+    PAYMENT->>PAYMENT: Fraud check
+    alt Payment Successful
+        PAYMENT->>PAYMENT: Process payment (Pesapal/M-Pesa)
+        PAYMENT->>KAFKA: Publish PaymentCompleted event
+    else Payment Failed
+        PAYMENT->>KAFKA: Publish PaymentFailed event
+    end
+    deactivate PAYMENT
+
+    KAFKA->>ORDER: PaymentCompleted event
+    activate ORDER
+    ORDER->>ORDER: Update order status (CONFIRMED)
+    ORDER->>KAFKA: Publish OrderConfirmed event
+    deactivate ORDER
+
+    KAFKA->>LOGISTICS: OrderConfirmed event
+    activate LOGISTICS
+    LOGISTICS->>LOGISTICS: Create shipment
+    LOGISTICS->>LOGISTICS: Assign courier
+    LOGISTICS->>KAFKA: Publish ShipmentCreated event
+    deactivate LOGISTICS
+
+    KAFKA->>NOTIFICATION: OrderConfirmed event
+    activate NOTIFICATION
+    NOTIFICATION->>NOTIFICATION: Send order confirmation email
+    NOTIFICATION->>NOTIFICATION: Send SMS to customer
+    NOTIFICATION->>KAFKA: Publish EmailSent event
+    deactivate NOTIFICATION
+
+    KAFKA->>ANALYTICS: OrderCreated, PaymentCompleted, OrderConfirmed
+    activate ANALYTICS
+    ANALYTICS->>ANALYTICS: Process analytics events
+    ANALYTICS->>ANALYTICS: Update dashboards
+    deactivate ANALYTICS
+
+    Note over CLIENT,ANALYTICS: Compensation Flow - Payment Failure
+
+    KAFKA->>ORDER: PaymentFailed event
+    activate ORDER
+    ORDER->>ORDER: Trigger compensation saga
+    ORDER->>KAFKA: Publish OrderCancelled event
+    deactivate ORDER
+
+    KAFKA->>INVENTORY: OrderCancelled event
+    activate INVENTORY
+    INVENTORY->>INVENTORY: Release reserved stock
+    INVENTORY->>KAFKA: Publish StockReleased event
+    deactivate INVENTORY
+
+    KAFKA->>NOTIFICATION: OrderCancelled event
+    activate NOTIFICATION
+    NOTIFICATION->>NOTIFICATION: Send cancellation email
+    NOTIFICATION->>KAFKA: Publish EmailSent event
+    deactivate NOTIFICATION

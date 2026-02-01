@@ -1,0 +1,123 @@
+graph TB
+    subgraph "Client Layer"
+        API_GW[API Gateway<br/>Port: 8080<br/>Routing & Auth]
+        ADMIN_UI[Admin Console<br/>Port: 3100]
+        SELLER_UI[Seller Console<br/>Port: 3200]
+        SUPPLIER_UI[Supplier Console<br/>Port: 3300]
+        ENABLER_UI[Enabler Console<br/>Port: 3400]
+        COURIER_UI[Courier Console<br/>Port: 3500]
+    end
+
+    subgraph "Core E-Commerce Services"
+        AUTH[Auth Service<br/>Port: 3001<br/>JWT & RBAC]
+        ORDER[Order Service<br/>Port: 3002<br/>Order Lifecycle]
+        INVENTORY[Inventory Service<br/>Port: 3003<br/>Stock Management]
+        PAYMENT[Payment Service<br/>Port: 3004<br/>Payment Processing]
+        CATALOG[Catalog Service<br/>Port: 3005<br/>Product Catalog]
+    end
+
+    subgraph "Business Support Services"
+        BIZ_REG[Business Registry<br/>Port: 3006<br/>Seller KYC]
+        LOGISTICS[Logistics Service<br/>Port: 3007<br/>Shipping & Delivery]
+        COMMISSION[Commission Service<br/>Port: 3008<br/>Revenue Sharing]
+        CHECKOUT[Checkout Service<br/>Port: 3009<br/>Cart & Pricing]
+        NOTIFICATION[Notification Service<br/>Port: 3010<br/>Multi-channel Comms]
+    end
+
+    subgraph "Analytics & Compliance Services"
+        ANALYTICS[Analytics Service<br/>Port: 3011<br/>Business Intelligence]
+        COMPLIANCE[Compliance Service<br/>Port: 3013<br/>GDPR & Regulations]
+        USER[User Service<br/>Port: 3014<br/>User Profiles]
+    end
+
+    subgraph "Infrastructure Layer"
+        KAFKA[Apache Kafka<br/>Event Bus<br/>Message Streaming]
+        REDIS[Redis Cluster<br/>Caching & Sessions<br/>Idempotency]
+        POSTGRES[(PostgreSQL<br/>13 Databases<br/>Service Isolation)]
+        EVENT_STORE[(Event Store<br/>Event Sourcing<br/>Audit Trail)]
+    end
+
+    subgraph "Shared Components"
+        SAGA[Saga Orchestrator<br/>Distributed Transactions]
+        OUTBOX[Outbox Processor<br/>Guaranteed Delivery]
+        EVENT_REG[Event Registry<br/>Schema Validation]
+    end
+
+    %% Client to Gateway
+    ADMIN_UI --> API_GW
+    SELLER_UI --> API_GW
+    SUPPLIER_UI --> API_GW
+    ENABLER_UI --> API_GW
+    COURIER_UI --> API_GW
+
+    %% Gateway to Services
+    API_GW --> AUTH
+    API_GW --> ORDER
+    API_GW --> CATALOG
+    API_GW --> BIZ_REG
+    API_GW --> LOGISTICS
+    API_GW --> ANALYTICS
+    API_GW --> USER
+    API_GW --> CHECKOUT
+
+    %% Services to Infrastructure
+    AUTH --> POSTGRES
+    ORDER --> POSTGRES
+    INVENTORY --> POSTGRES
+    PAYMENT --> POSTGRES
+    CATALOG --> POSTGRES
+    BIZ_REG --> POSTGRES
+    LOGISTICS --> POSTGRES
+    COMMISSION --> POSTGRES
+    CHECKOUT --> POSTGRES
+    NOTIFICATION --> POSTGRES
+    ANALYTICS --> POSTGRES
+    COMPLIANCE --> POSTGRES
+    USER --> POSTGRES
+
+    %% Services to Redis
+    AUTH --> REDIS
+    ORDER --> REDIS
+    PAYMENT --> REDIS
+    CATALOG --> REDIS
+    CHECKOUT --> REDIS
+
+    %% Event-driven communication
+    ORDER --> KAFKA
+    INVENTORY --> KAFKA
+    PAYMENT --> KAFKA
+    CATALOG --> KAFKA
+    BIZ_REG --> KAFKA
+    LOGISTICS --> KAFKA
+    COMMISSION --> KAFKA
+    NOTIFICATION --> KAFKA
+    ANALYTICS --> KAFKA
+    CHECKOUT --> KAFKA
+
+    KAFKA --> ORDER
+    KAFKA --> INVENTORY
+    KAFKA --> PAYMENT
+    KAFKA --> NOTIFICATION
+    KAFKA --> ANALYTICS
+    KAFKA --> LOGISTICS
+
+    %% Shared components
+    SAGA --> KAFKA
+    OUTBOX --> KAFKA
+    KAFKA --> EVENT_STORE
+    EVENT_REG --> KAFKA
+
+    %% Key cross-service dependencies
+    ORDER -.->|Reserve Stock| INVENTORY
+    ORDER -.->|Process Payment| PAYMENT
+    ORDER -.->|Schedule Delivery| LOGISTICS
+    CATALOG -.->|Check Stock| INVENTORY
+    BIZ_REG -.->|Verify Compliance| COMPLIANCE
+    CHECKOUT -.->|Calculate Commission| COMMISSION
+
+    style API_GW fill:#FF6B6B,stroke:#C92A2A,stroke-width:3px,color:#fff
+    style KAFKA fill:#231F20,stroke:#000,stroke-width:3px,color:#fff
+    style REDIS fill:#DC382D,stroke:#A41E11,stroke-width:2px,color:#fff
+    style POSTGRES fill:#336791,stroke:#1A3A52,stroke-width:2px,color:#fff
+    style SAGA fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff
+    style OUTBOX fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff

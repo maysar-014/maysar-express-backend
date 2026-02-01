@@ -1,0 +1,78 @@
+graph TB
+    subgraph "Event Publishers"
+        ORDER_PUB[Order Service<br/>Publisher]
+        CATALOG_PUB[Catalog Service<br/>Publisher]
+        PAYMENT_PUB[Payment Service<br/>Publisher]
+        INVENTORY_PUB[Inventory Service<br/>Publisher]
+        BIZ_PUB[Business Registry<br/>Publisher]
+        USER_PUB[User Service<br/>Publisher]
+    end
+
+    subgraph "Event Bus Infrastructure"
+        OUTBOX_PROC[Outbox Processor<br/>Polling & Publishing]
+        KAFKA_BROKER[Apache Kafka Broker<br/>Topics & Partitions]
+        SCHEMA_REG[Schema Registry<br/>Event Validation]
+        DLQ[Dead Letter Queue<br/>Failed Events]
+    end
+
+    subgraph "Event Subscribers"
+        ORDER_SUB[Order Service<br/>Subscriber]
+        INVENTORY_SUB[Inventory Service<br/>Subscriber]
+        PAYMENT_SUB[Payment Service<br/>Subscriber]
+        NOTIFICATION_SUB[Notification Service<br/>Subscriber]
+        ANALYTICS_SUB[Analytics Service<br/>Subscriber]
+        LOGISTICS_SUB[Logistics Service<br/>Subscriber]
+    end
+
+    subgraph "Persistence & Monitoring"
+        OUTBOX_TABLE[(Outbox Table<br/>Transactional Outbox)]
+        EVENT_STORE[(Event Store<br/>Complete History)]
+        MONITOR[Event Monitor<br/>Metrics & Alerts]
+    end
+
+    %% Publishing flow
+    ORDER_PUB -->|1. Save to Outbox| OUTBOX_TABLE
+    CATALOG_PUB -->|1. Save to Outbox| OUTBOX_TABLE
+    PAYMENT_PUB -->|1. Save to Outbox| OUTBOX_TABLE
+    INVENTORY_PUB -->|1. Save to Outbox| OUTBOX_TABLE
+    BIZ_PUB -->|1. Save to Outbox| OUTBOX_TABLE
+    USER_PUB -->|1. Save to Outbox| OUTBOX_TABLE
+
+    OUTBOX_TABLE -->|2. Poll Unpublished| OUTBOX_PROC
+    OUTBOX_PROC -->|3. Validate Schema| SCHEMA_REG
+    SCHEMA_REG -->|4. Publish Event| KAFKA_BROKER
+
+    %% Event routing
+    KAFKA_BROKER -->|Route by Topic| ORDER_SUB
+    KAFKA_BROKER -->|Route by Topic| INVENTORY_SUB
+    KAFKA_BROKER -->|Route by Topic| PAYMENT_SUB
+    KAFKA_BROKER -->|Route by Topic| NOTIFICATION_SUB
+    KAFKA_BROKER -->|Route by Topic| ANALYTICS_SUB
+    KAFKA_BROKER -->|Route by Topic| LOGISTICS_SUB
+
+    %% Error handling
+    ORDER_SUB -.->|Processing Failed| DLQ
+    INVENTORY_SUB -.->|Processing Failed| DLQ
+    PAYMENT_SUB -.->|Processing Failed| DLQ
+    NOTIFICATION_SUB -.->|Processing Failed| DLQ
+
+    %% Event persistence
+    KAFKA_BROKER -->|Archive All Events| EVENT_STORE
+
+    %% Monitoring
+    KAFKA_BROKER --> MONITOR
+    OUTBOX_PROC --> MONITOR
+    DLQ --> MONITOR
+
+    %% Idempotency check
+    ORDER_SUB -->|Check Processed| REDIS_IDEM[Redis<br/>Idempotency Keys]
+    INVENTORY_SUB -->|Check Processed| REDIS_IDEM
+    PAYMENT_SUB -->|Check Processed| REDIS_IDEM
+
+    style KAFKA_BROKER fill:#231F20,stroke:#000,stroke-width:3px,color:#fff
+    style OUTBOX_PROC fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff
+    style SCHEMA_REG fill:#3498DB,stroke:#2874A6,stroke-width:2px,color:#fff
+    style DLQ fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
+    style EVENT_STORE fill:#16A085,stroke:#117A65,stroke-width:2px,color:#fff
+    style MONITOR fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#fff
+    style REDIS_IDEM fill:#DC382D,stroke:#A41E11,stroke-width:2px,color:#fff

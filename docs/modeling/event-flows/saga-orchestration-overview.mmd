@@ -1,0 +1,80 @@
+graph TB
+    subgraph "Saga Initiation"
+        USE_CASE[Use Case<br/>Business Logic]
+        SAGA_FACTORY[Saga Factory<br/>Create Saga Instance]
+        SAGA_MANAGER[Saga Manager<br/>Lifecycle Management]
+    end
+
+    subgraph "Saga Execution"
+        SAGA_INSTANCE[Saga Instance<br/>State Machine]
+        STEP_EXECUTOR[Step Executor<br/>Execute Operations]
+        EVENT_PUBLISHER[Event Publisher<br/>Publish Commands]
+    end
+
+    subgraph "Event Correlation"
+        CORRELATOR[Event Correlator<br/>Match Responses]
+        CORRELATION_STORE[(Correlation Store<br/>Active Sagas)]
+        TIMEOUT_MONITOR[Timeout Monitor<br/>Detect Stale Sagas]
+    end
+
+    subgraph "Event Handlers"
+        HANDLER_REGISTRY[Handler Registry<br/>Event → Handler Mapping]
+        EVENT_HANDLERS[Event Handlers<br/>Process Responses]
+        STATE_UPDATER[State Updater<br/>Update Saga State]
+    end
+
+    subgraph "Compensation"
+        COMP_DETECTOR[Failure Detector<br/>Identify Failures]
+        COMP_EXECUTOR[Compensation Executor<br/>Reverse Operations]
+        COMP_TRACKER[Compensation Tracker<br/>Track Rollback]
+    end
+
+    subgraph "Persistence"
+        SAGA_LOG[(Saga Log<br/>Audit Trail)]
+        SAGA_STATE[(Saga State Store<br/>Current State)]
+    end
+
+    %% Saga initiation flow
+    USE_CASE -->|1. Start Saga| SAGA_FACTORY
+    SAGA_FACTORY -->|2. Create Instance| SAGA_INSTANCE
+    SAGA_INSTANCE -->|3. Register| SAGA_MANAGER
+    SAGA_MANAGER -->|4. Store Correlation| CORRELATION_STORE
+
+    %% Execution flow
+    SAGA_INSTANCE -->|5. Execute Step| STEP_EXECUTOR
+    STEP_EXECUTOR -->|6. Publish Command| EVENT_PUBLISHER
+    EVENT_PUBLISHER -->|7. Send Event| KAFKA[Kafka Event Bus]
+
+    %% Response handling
+    KAFKA -->|8. Event Response| CORRELATOR
+    CORRELATOR -->|9. Match Saga| CORRELATION_STORE
+    CORRELATOR -->|10. Route to Handler| HANDLER_REGISTRY
+    HANDLER_REGISTRY -->|11. Invoke Handler| EVENT_HANDLERS
+    EVENT_HANDLERS -->|12. Update State| STATE_UPDATER
+    STATE_UPDATER -->|13. Continue Saga| SAGA_INSTANCE
+
+    %% Compensation flow
+    EVENT_HANDLERS -.->|Failure Detected| COMP_DETECTOR
+    COMP_DETECTOR -.->|Trigger Compensation| COMP_EXECUTOR
+    COMP_EXECUTOR -.->|Execute Rollback| STEP_EXECUTOR
+    COMP_EXECUTOR -.->|Track Progress| COMP_TRACKER
+
+    %% Persistence
+    SAGA_INSTANCE --> SAGA_LOG
+    STATE_UPDATER --> SAGA_STATE
+    COMP_EXECUTOR --> SAGA_LOG
+
+    %% Timeout monitoring
+    TIMEOUT_MONITOR -->|Check Timeouts| CORRELATION_STORE
+    TIMEOUT_MONITOR -.->|Timeout Expired| COMP_DETECTOR
+
+    %% Saga completion
+    SAGA_INSTANCE -->|Completed/Failed| SAGA_MANAGER
+    SAGA_MANAGER -->|Cleanup| CORRELATION_STORE
+
+    style SAGA_INSTANCE fill:#9B59B6,stroke:#6C3483,stroke-width:3px,color:#fff
+    style SAGA_MANAGER fill:#8E44AD,stroke:#5B2C6F,stroke-width:2px,color:#fff
+    style KAFKA fill:#231F20,stroke:#000,stroke-width:2px,color:#fff
+    style COMP_EXECUTOR fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
+    style CORRELATOR fill:#3498DB,stroke:#2874A6,stroke-width:2px,color:#fff
+    style SAGA_LOG fill:#16A085,stroke:#117A65,stroke-width:2px,color:#fff

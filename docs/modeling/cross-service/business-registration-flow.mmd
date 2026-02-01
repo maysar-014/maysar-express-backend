@@ -1,0 +1,94 @@
+sequenceDiagram
+    participant CLIENT as Seller/API Gateway
+    participant BIZ_REG as Business Registry Service
+    participant USER as User Service
+    participant COMPLIANCE as Compliance Service
+    participant NOTIFICATION as Notification Service
+    participant ANALYTICS as Analytics Service
+    participant KAFKA as Kafka Event Bus
+
+    Note over CLIENT,ANALYTICS: Business Registration Saga
+
+    CLIENT->>BIZ_REG: POST /businesses (register business)
+    activate BIZ_REG
+    BIZ_REG->>BIZ_REG: Validate business data
+    BIZ_REG->>BIZ_REG: Create business (PENDING)
+    BIZ_REG->>KAFKA: Publish BusinessRegistered event
+    BIZ_REG-->>CLIENT: 201 Created (businessId)
+    deactivate BIZ_REG
+
+    Note over BIZ_REG,KAFKA: Saga Step 1: User Account Creation
+
+    KAFKA->>USER: BusinessRegistered event
+    activate USER
+    USER->>USER: Create seller user account
+    USER->>USER: Assign SELLER role
+    USER->>KAFKA: Publish UserCreated event
+    deactivate USER
+
+    Note over BIZ_REG,KAFKA: Saga Step 2: Compliance Check
+
+    KAFKA->>COMPLIANCE: BusinessRegistered event
+    activate COMPLIANCE
+    COMPLIANCE->>COMPLIANCE: Create compliance record
+    COMPLIANCE->>COMPLIANCE: Initiate KYC verification
+    COMPLIANCE->>COMPLIANCE: Check business documents
+    alt KYC Documents Valid
+        COMPLIANCE->>COMPLIANCE: Update compliance status (VERIFIED)
+        COMPLIANCE->>KAFKA: Publish KYCCompleted event
+    else KYC Documents Invalid
+        COMPLIANCE->>COMPLIANCE: Update compliance status (REJECTED)
+        COMPLIANCE->>KAFKA: Publish KYCRejected event
+    end
+    deactivate COMPLIANCE
+
+    Note over BIZ_REG,KAFKA: Saga Step 3: Business Verification
+
+    KAFKA->>BIZ_REG: KYCCompleted event
+    activate BIZ_REG
+    BIZ_REG->>BIZ_REG: Update business status (VERIFIED)
+    BIZ_REG->>KAFKA: Publish BusinessVerified event
+    deactivate BIZ_REG
+
+    Note over BIZ_REG,KAFKA: Saga Step 4: Notifications
+
+    KAFKA->>NOTIFICATION: BusinessRegistered event
+    activate NOTIFICATION
+    NOTIFICATION->>NOTIFICATION: Send verification email
+    NOTIFICATION->>KAFKA: Publish EmailSent event
+    deactivate NOTIFICATION
+
+    KAFKA->>NOTIFICATION: BusinessVerified event
+    activate NOTIFICATION
+    NOTIFICATION->>NOTIFICATION: Send welcome email
+    NOTIFICATION->>NOTIFICATION: Send onboarding guide
+    NOTIFICATION->>KAFKA: Publish EmailSent event
+    deactivate NOTIFICATION
+
+    Note over BIZ_REG,KAFKA: Analytics & Tracking
+
+    KAFKA->>ANALYTICS: BusinessRegistered, BusinessVerified
+    activate ANALYTICS
+    ANALYTICS->>ANALYTICS: Track seller onboarding
+    ANALYTICS->>ANALYTICS: Update seller metrics
+    deactivate ANALYTICS
+
+    Note over CLIENT,ANALYTICS: Compensation Flow - KYC Rejection
+
+    KAFKA->>BIZ_REG: KYCRejected event
+    activate BIZ_REG
+    BIZ_REG->>BIZ_REG: Update business status (REJECTED)
+    BIZ_REG->>KAFKA: Publish BusinessRejected event
+    deactivate BIZ_REG
+
+    KAFKA->>NOTIFICATION: BusinessRejected event
+    activate NOTIFICATION
+    NOTIFICATION->>NOTIFICATION: Send rejection email with reasons
+    NOTIFICATION->>KAFKA: Publish EmailSent event
+    deactivate NOTIFICATION
+
+    KAFKA->>USER: BusinessRejected event
+    activate USER
+    USER->>USER: Disable seller account
+    USER->>KAFKA: Publish UserDisabled event
+    deactivate USER

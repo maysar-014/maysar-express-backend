@@ -1,0 +1,97 @@
+graph TB
+    subgraph "Kafka Cluster - Event Streaming Platform"
+        BROKER1[Kafka Broker 1<br/>Leader for Topics 1-5]
+        BROKER2[Kafka Broker 2<br/>Leader for Topics 6-10]
+        BROKER3[Kafka Broker 3<br/>Leader for Topics 11-15]
+        ZOOKEEPER[ZooKeeper Ensemble<br/>Cluster Coordination]
+    end
+
+    subgraph "Kafka Topics - Domain Events"
+        ORDER_TOPIC[order-events<br/>Partitions: 5<br/>Replication: 3]
+        PAYMENT_TOPIC[payment-events<br/>Partitions: 3<br/>Replication: 3]
+        INVENTORY_TOPIC[inventory-events<br/>Partitions: 3<br/>Replication: 3]
+        CATALOG_TOPIC[catalog-events<br/>Partitions: 5<br/>Replication: 3]
+        BUSINESS_TOPIC[business-events<br/>Partitions: 2<br/>Replication: 3]
+        USER_TOPIC[user-events<br/>Partitions: 3<br/>Replication: 3]
+        NOTIFICATION_TOPIC[notification-events<br/>Partitions: 5<br/>Replication: 3]
+        ANALYTICS_TOPIC[analytics-events<br/>Partitions: 3<br/>Replication: 3]
+        LOGISTICS_TOPIC[logistics-events<br/>Partitions: 3<br/>Replication: 3]
+        SAGA_TOPIC[saga-events<br/>Partitions: 3<br/>Replication: 3]
+    end
+
+    subgraph "Event Publishers"
+        OUTBOX_PROC[Outbox Processor<br/>Polls & Publishes<br/>At-Least-Once Delivery]
+    end
+
+    subgraph "Consumer Groups"
+        ORDER_CONSUMERS[Order Service Consumers<br/>Group: order-service<br/>3 Instances]
+        PAYMENT_CONSUMERS[Payment Service Consumers<br/>Group: payment-service<br/>3 Instances]
+        INVENTORY_CONSUMERS[Inventory Service Consumers<br/>Group: inventory-service<br/>3 Instances]
+        NOTIFICATION_CONSUMERS[Notification Service Consumers<br/>Group: notification-service<br/>5 Instances]
+        ANALYTICS_CONSUMERS[Analytics Service Consumers<br/>Group: analytics-service<br/>3 Instances]
+    end
+
+    subgraph "Event Processing Infrastructure"
+        SCHEMA_REGISTRY[Schema Registry<br/>Avro/JSON Schemas<br/>Version Management]
+        CONNECT[Kafka Connect<br/>Event Store Sink<br/>External Integrations]
+        STREAMS[Kafka Streams<br/>Event Aggregation<br/>Real-time Processing]
+    end
+
+    subgraph "Monitoring & Management"
+        KAFKA_MANAGER[Kafka Manager<br/>Topic Management<br/>Consumer Lag Monitoring]
+        METRICS[Prometheus Exporter<br/>Broker Metrics<br/>Consumer Metrics]
+    end
+
+    %% Broker coordination
+    BROKER1 --> ZOOKEEPER
+    BROKER2 --> ZOOKEEPER
+    BROKER3 --> ZOOKEEPER
+
+    %% Publishing flow
+    OUTBOX_PROC -->|Validate Schema| SCHEMA_REGISTRY
+    OUTBOX_PROC -->|Publish| ORDER_TOPIC
+    OUTBOX_PROC -->|Publish| PAYMENT_TOPIC
+    OUTBOX_PROC -->|Publish| INVENTORY_TOPIC
+    OUTBOX_PROC -->|Publish| CATALOG_TOPIC
+    OUTBOX_PROC -->|Publish| BUSINESS_TOPIC
+
+    %% Topic to broker distribution
+    ORDER_TOPIC -.->|Stored on| BROKER1
+    PAYMENT_TOPIC -.->|Stored on| BROKER2
+    INVENTORY_TOPIC -.->|Stored on| BROKER3
+    CATALOG_TOPIC -.->|Stored on| BROKER1
+
+    %% Consumer subscriptions
+    ORDER_TOPIC --> ORDER_CONSUMERS
+    PAYMENT_TOPIC --> PAYMENT_CONSUMERS
+    INVENTORY_TOPIC --> INVENTORY_CONSUMERS
+    ORDER_TOPIC --> NOTIFICATION_CONSUMERS
+    PAYMENT_TOPIC --> NOTIFICATION_CONSUMERS
+    ORDER_TOPIC --> ANALYTICS_CONSUMERS
+    CATALOG_TOPIC --> ANALYTICS_CONSUMERS
+
+    %% Event store sink
+    ORDER_TOPIC --> CONNECT
+    PAYMENT_TOPIC --> CONNECT
+    CATALOG_TOPIC --> CONNECT
+    CONNECT -->|Write to| EVENT_STORE[(Event Store)]
+
+    %% Stream processing
+    ORDER_TOPIC --> STREAMS
+    PAYMENT_TOPIC --> STREAMS
+    STREAMS -->|Aggregated Events| ANALYTICS_TOPIC
+
+    %% Monitoring
+    BROKER1 --> METRICS
+    BROKER2 --> METRICS
+    BROKER3 --> METRICS
+    ORDER_CONSUMERS --> KAFKA_MANAGER
+    PAYMENT_CONSUMERS --> KAFKA_MANAGER
+
+    style BROKER1 fill:#231F20,stroke:#000,stroke-width:2px,color:#fff
+    style BROKER2 fill:#231F20,stroke:#000,stroke-width:2px,color:#fff
+    style BROKER3 fill:#231F20,stroke:#000,stroke-width:2px,color:#fff
+    style SCHEMA_REGISTRY fill:#3498DB,stroke:#2874A6,stroke-width:2px,color:#fff
+    style OUTBOX_PROC fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff
+    style EVENT_STORE fill:#16A085,stroke:#117A65,stroke-width:2px,color:#fff
+    style KAFKA_MANAGER fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#fff

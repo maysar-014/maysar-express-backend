@@ -40,15 +40,15 @@ model StockItem {
   productVariantId  String   @db.Uuid
   warehouseId       String   @db.Uuid
   sku               String   @unique @db.VarChar(100)
-  quantityAvailable Integer  @default(0)
-  quantityReserved  Integer  @default(0)
-  quantityDamaged   Integer  @default(0)
-  quantityOnOrder   Integer  @default(0)
-  reorderPoint      Integer  @default(0)
-  maxStock          Integer?
+  quantityAvailable Int  @default(0)
+  quantityReserved  Int  @default(0)
+  quantityDamaged   Int  @default(0)
+  quantityOnOrder   Int  @default(0)
+  reorderPoint      Int  @default(0)
+  maxStock          Int?
   unitCost          Decimal? @db.Decimal(10, 2)
   lastInventoryCount DateTime? @db.Timestamp(6)
-  expiryDate        Date?
+  expiryDate        DateTime? @db.Date
   batchNumber       String?  @db.VarChar(100)
   locationCode      String?  @db.VarChar(50) // Aisle, shelf, bin location
   status            StockStatus @default(active)
@@ -74,7 +74,7 @@ model Reservation {
   orderItemId       String   @db.Uuid
   productVariantId  String   @db.Uuid
   warehouseId       String   @db.Uuid
-  quantityReserved  Integer
+  quantityReserved  Int
   status            ReservationStatus @default(active)
   expiresAt         DateTime @db.Timestamp(6)
   fulfilledAt       DateTime? @db.Timestamp(6)
@@ -94,7 +94,7 @@ model InventoryMovement {
   productVariantId String   @db.Uuid
   warehouseId      String   @db.Uuid
   movementType     MovementType
-  quantity         Integer
+  quantity         Int
   referenceType    String?  // order, return, adjustment, transfer
   referenceId      String?  @db.Uuid
   reason           String?  @db.VarChar(255)
@@ -119,8 +119,8 @@ model InventoryCount {
   countedAt       DateTime @default(now()) @db.Timestamp(6)
   status          CountStatus @default(in_progress)
   countType       CountType @default(full) // full, spot, cycle
-  itemsCounted    Integer  @default(0)
-  discrepanciesFound Integer @default(0)
+  itemsCounted    Int  @default(0)
+  discrepanciesFound Int @default(0)
   totalValue      Decimal  @default(0) @db.Decimal(12, 2)
   notes           String?  @db.Text
   completedAt     DateTime? @db.Timestamp(6)
@@ -140,15 +140,16 @@ model InventoryCountItem {
   id                String   @id @default(uuid()) @db.Uuid
   inventoryCountId  String   @db.Uuid
   productVariantId  String   @db.Uuid
-  systemQuantity    Integer
-  countedQuantity   Integer
+  warehouseId       String   @db.Uuid
+  systemQuantity    Int
+  countedQuantity   Int
   discrepancy       Int      // Computed field: counted - system
   notes             String?  @db.Text
   createdAt         DateTime @default(now()) @db.Timestamp(6)
 
   // Relations
   inventoryCount    InventoryCount @relation(fields: [inventoryCountId], references: [id], onDelete: Cascade)
-  stockItem         StockItem @relation(fields: [productVariantId], references: [productVariantId], onDelete: Cascade)
+  stockItem         StockItem @relation(fields: [productVariantId, warehouseId], references: [productVariantId, warehouseId], onDelete: Cascade)
 
   @@map("inventory_count_items")
 }
@@ -198,4 +199,25 @@ enum CountType {
   full
   spot
   cycle
+}
+
+// ============================================================================
+// TRANSACTIONAL OUTBOX
+// ============================================================================
+
+model OutboxEvent {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  eventType   String
+  eventData   Json
+  status      String   @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
+  createdAt   DateTime @default(now())
+  processedAt DateTime?
+  attempts    Int      @default(0)
+  lastError   String?
+  nextRetryAt DateTime?
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@map("outbox_events")
 }

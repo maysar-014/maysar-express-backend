@@ -1,0 +1,81 @@
+graph TB
+    subgraph "Service Databases - Isolated PostgreSQL Instances"
+        AUTH_DB[(Auth Service DB<br/>users, roles, sessions<br/>permissions)]
+        ORDER_DB[(Order Service DB<br/>orders, order_items<br/>order_history)]
+        INVENTORY_DB[(Inventory Service DB<br/>stock_items, reservations<br/>warehouses)]
+        PAYMENT_DB[(Payment Service DB<br/>payments, transactions<br/>refunds)]
+        CATALOG_DB[(Catalog Service DB<br/>products, variants<br/>categories)]
+        BIZ_DB[(Business Registry DB<br/>businesses, kyc_records<br/>verifications)]
+        LOGISTICS_DB[(Logistics Service DB<br/>shipments, deliveries<br/>routes)]
+        COMMISSION_DB[(Commission Service DB<br/>commissions, earnings<br/>payouts)]
+        CHECKOUT_DB[(Checkout Service DB<br/>carts, sessions<br/>pricing)]
+        NOTIFICATION_DB[(Notification Service DB<br/>notifications, templates<br/>delivery_logs)]
+        ANALYTICS_DB[(Analytics Service DB<br/>events, metrics<br/>aggregations)]
+        COMPLIANCE_DB[(Compliance Service DB<br/>compliance_records<br/>audit_logs)]
+        USER_DB[(User Service DB<br/>user_profiles<br/>preferences)]
+    end
+
+    subgraph "Shared Infrastructure"
+        EVENT_STORE[(Event Store DB<br/>All Domain Events<br/>Immutable Log)]
+        SAGA_LOG[(Saga Log DB<br/>Saga State<br/>Compensation History)]
+        OUTBOX_TABLES[Outbox Tables<br/>Per Service<br/>Transactional Outbox]
+    end
+
+    subgraph "Database Patterns"
+        DB_PER_SERVICE[Database per Service<br/>Strong Isolation<br/>Independent Scaling]
+        SHARED_NOTHING[Shared Nothing<br/>No Cross-DB Joins<br/>Event-Driven Integration]
+    end
+
+    subgraph "Backup & Replication"
+        PRIMARY[Primary Instances<br/>Read/Write]
+        REPLICAS[Read Replicas<br/>Read-Only<br/>Analytics Queries]
+        BACKUP[Automated Backups<br/>Point-in-Time Recovery<br/>Daily Snapshots]
+    end
+
+    %% Services to databases
+    AUTH_SVC[Auth Service] --> AUTH_DB
+    ORDER_SVC[Order Service] --> ORDER_DB
+    INVENTORY_SVC[Inventory Service] --> INVENTORY_DB
+    PAYMENT_SVC[Payment Service] --> PAYMENT_DB
+    CATALOG_SVC[Catalog Service] --> CATALOG_DB
+    BIZ_SVC[Business Registry] --> BIZ_DB
+    LOGISTICS_SVC[Logistics Service] --> LOGISTICS_DB
+    COMMISSION_SVC[Commission Service] --> COMMISSION_DB
+    CHECKOUT_SVC[Checkout Service] --> CHECKOUT_DB
+    NOTIFICATION_SVC[Notification Service] --> NOTIFICATION_DB
+    ANALYTICS_SVC[Analytics Service] --> ANALYTICS_DB
+    COMPLIANCE_SVC[Compliance Service] --> COMPLIANCE_DB
+    USER_SVC[User Service] --> USER_DB
+
+    %% Outbox pattern
+    ORDER_SVC -.->|Write Events| OUTBOX_TABLES
+    CATALOG_SVC -.->|Write Events| OUTBOX_TABLES
+    PAYMENT_SVC -.->|Write Events| OUTBOX_TABLES
+    INVENTORY_SVC -.->|Write Events| OUTBOX_TABLES
+
+    %% Event store
+    OUTBOX_TABLES -->|Archive Events| EVENT_STORE
+
+    %% Saga log
+    SAGA_ORCHESTRATOR[Saga Orchestrator] --> SAGA_LOG
+
+    %% Replication
+    AUTH_DB -.->|Replicate| REPLICAS
+    ORDER_DB -.->|Replicate| REPLICAS
+    CATALOG_DB -.->|Replicate| REPLICAS
+    ANALYTICS_DB -.->|Replicate| REPLICAS
+
+    %% Backup
+    AUTH_DB -.->|Backup| BACKUP
+    ORDER_DB -.->|Backup| BACKUP
+    PAYMENT_DB -.->|Backup| BACKUP
+    CATALOG_DB -.->|Backup| BACKUP
+
+    %% Analytics reads from replicas
+    ANALYTICS_SVC -.->|Read-Only Queries| REPLICAS
+
+    style EVENT_STORE fill:#16A085,stroke:#117A65,stroke-width:3px,color:#fff
+    style SAGA_LOG fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff
+    style OUTBOX_TABLES fill:#E67E22,stroke:#CA6F1E,stroke-width:2px,color:#fff
+    style BACKUP fill:#3498DB,stroke:#2874A6,stroke-width:2px,color:#fff
+    style REPLICAS fill:#95A5A6,stroke:#7F8C8D,stroke-width:2px,color:#fff

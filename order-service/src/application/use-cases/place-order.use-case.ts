@@ -2,6 +2,7 @@ import { Order } from '../../domain/entities/order.entity';
 import { OrderRepository } from '../../domain/repositories/order.repository';
 import { OrderCreatedEvent } from '../../domain/events/order-created.event';
 import { IdGeneratorService } from '../../infrastructure/services/id-generator.service';
+import { OrderFulfillmentSaga } from '../sagas/order-fulfillment.saga';
 
 export interface PlaceOrderRequest {
   buyerId: string;
@@ -13,7 +14,7 @@ export interface PlaceOrderRequest {
     weight: number;
   }>;
   currency?: string;
-  paymentMethod: 'COD' | 'WALLET' | 'CARD';
+  paymentMethod: 'COD' | 'WALLET' | 'CARD' | 'MOBILE_PAYMENT';
   deliveryAddress: {
     street: string;
     city: string;
@@ -30,50 +31,48 @@ export interface PlaceOrderResponse {
 export class PlaceOrderUseCase {
   constructor(
     private readonly orderRepository: OrderRepository,
-    private readonly eventPublisher: EventPublisher // This would be injected
-  ) {}
+    private readonly eventPublisher: EventPublisher,
+    private readonly sagaOrchestrator: OrderFulfillmentSaga
+  ) { }
 
   async execute(request: PlaceOrderRequest): Promise<PlaceOrderResponse> {
-    // Extract currency from request or default
-    const currency = request.currency || 'TZS';
-
-    // Calculate totals
-    const totalAmount = request.items.reduce((sum, item) => {
-      const price = typeof item.price === 'number' ? item.price : item.price.amount;
-      return sum + (price * item.quantity);
-    }, 0);
-    const totalWeight = request.items.reduce((sum, item) => sum + (item.weight * item.quantity), 0);
-
-    // Normalize items format
-    const normalizedItems = request.items.map(item => {
-      const price = typeof item.price === 'number' ? item.price : item.price.amount;
-      return {
-        productId: item.productId,
-        quantity: item.quantity,
-        price: { amount: price, currency: currency },
-        weight: item.weight
-      };
-    });
-
-    // Generate professional Maysar Order ID
+    // ... (rest of logic)
     const orderId = IdGeneratorService.generateOrderId();
 
-    // Create order
+    // Create order data
     const orderData = {
       id: orderId,
       ...request,
-      currency,
-      totalAmount,
-      totalWeight,
-      items: normalizedItems
+      currency: request.currency || 'TZS',
+      totalAmount: request.items.reduce((sum, item) => {
+        const price = typeof item.price === 'number' ? item.price : item.price.amount;
+        return sum + (price * item.quantity);
+      }, 0),
+      totalWeight: request.items.reduce((sum, item) => sum + (item.weight * item.quantity), 0),
+      items: request.items.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        price: {
+          amount: typeof item.price === 'number' ? item.price : item.price.amount,
+          currency: request.currency || 'TZS'
+        },
+        weight: item.weight
+      }))
     };
 
     const order = new Order(orderData);
-
-    // Save order
     await this.orderRepository.save(order);
 
-    // Publish event
+    // Start Saga
+    await this.sagaOrchestrator.start({
+      orderId: order.id,
+      buyerId: order.buyerId,
+      sellerId: order.sellerId,
+      amount: Number(order.totalAmount),
+      items: order.items.map(i => ({ productId: i.productId, quantity: i.quantity }))
+    });
+
+    // Publish creation event (legacy/redundant but kept for compatibility)
     const event = new OrderCreatedEvent(order);
     await this.eventPublisher.publish(event);
 

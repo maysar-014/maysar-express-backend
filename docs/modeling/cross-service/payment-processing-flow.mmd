@@ -1,0 +1,131 @@
+sequenceDiagram
+    participant ORDER as Order Service
+    participant PAYMENT as Payment Service
+    participant PESAPAL as Pesapal Gateway
+    participant WALLET as Wallet Service
+    participant NOTIFICATION as Notification Service
+    participant ANALYTICS as Analytics Service
+    participant KAFKA as Kafka Event Bus
+
+    Note over ORDER,ANALYTICS: Payment Processing Saga
+
+    ORDER->>KAFKA: Publish OrderStockReserved event
+    
+    KAFKA->>PAYMENT: OrderStockReserved event
+    activate PAYMENT
+    PAYMENT->>PAYMENT: Create payment record (PENDING)
+    PAYMENT->>PAYMENT: Extract payment details
+    PAYMENT->>KAFKA: Publish PaymentInitiated event
+    deactivate PAYMENT
+
+    Note over PAYMENT,KAFKA: Saga Step 1: Fraud Detection
+
+    KAFKA->>PAYMENT: PaymentInitiated event
+    activate PAYMENT
+    PAYMENT->>PAYMENT: Run fraud detection rules
+    PAYMENT->>PAYMENT: Check transaction limits
+    PAYMENT->>PAYMENT: Verify customer history
+    alt Fraud Check Passed
+        PAYMENT->>PAYMENT: Update status (FRAUD_CHECK_PASSED)
+        PAYMENT->>KAFKA: Publish FraudCheckPassed event
+    else Fraud Detected
+        PAYMENT->>PAYMENT: Update status (FRAUD_REJECTED)
+        PAYMENT->>KAFKA: Publish FraudCheckFailed event
+    end
+    deactivate PAYMENT
+
+    Note over PAYMENT,KAFKA: Saga Step 2: Payment Processing
+
+    KAFKA->>PAYMENT: FraudCheckPassed event
+    activate PAYMENT
+    PAYMENT->>PAYMENT: Determine payment method
+    
+    alt Card/Mobile Money Payment
+        PAYMENT->>PESAPAL: POST /payment/initiate
+        activate PESAPAL
+        PESAPAL->>PESAPAL: Process payment
+        PESAPAL-->>PAYMENT: Payment response
+        deactivate PESAPAL
+        
+        alt Payment Successful
+            PAYMENT->>PAYMENT: Update status (COMPLETED)
+            PAYMENT->>KAFKA: Publish PaymentCompleted event
+        else Payment Failed
+            PAYMENT->>PAYMENT: Update status (FAILED)
+            PAYMENT->>KAFKA: Publish PaymentFailed event
+        end
+        
+    else Wallet Payment
+        PAYMENT->>WALLET: Check balance
+        activate WALLET
+        WALLET-->>PAYMENT: Balance available
+        deactivate WALLET
+        
+        alt Sufficient Balance
+            PAYMENT->>WALLET: Deduct amount
+            activate WALLET
+            WALLET->>WALLET: Update wallet balance
+            WALLET-->>PAYMENT: Success
+            deactivate WALLET
+            PAYMENT->>PAYMENT: Update status (COMPLETED)
+            PAYMENT->>KAFKA: Publish PaymentCompleted event
+        else Insufficient Balance
+            PAYMENT->>PAYMENT: Update status (FAILED)
+            PAYMENT->>KAFKA: Publish PaymentFailed event
+        end
+        
+    else Cash on Delivery
+        PAYMENT->>PAYMENT: Update status (COD_PENDING)
+        PAYMENT->>KAFKA: Publish PaymentCODScheduled event
+    end
+    deactivate PAYMENT
+
+    Note over PAYMENT,KAFKA: Saga Step 3: Notifications
+
+    KAFKA->>NOTIFICATION: PaymentCompleted event
+    activate NOTIFICATION
+    NOTIFICATION->>NOTIFICATION: Send payment receipt email
+    NOTIFICATION->>NOTIFICATION: Send SMS confirmation
+    NOTIFICATION->>KAFKA: Publish EmailSent event
+    deactivate NOTIFICATION
+
+    KAFKA->>NOTIFICATION: PaymentFailed event
+    activate NOTIFICATION
+    NOTIFICATION->>NOTIFICATION: Send payment failure email
+    NOTIFICATION->>NOTIFICATION: Include retry instructions
+    NOTIFICATION->>KAFKA: Publish EmailSent event
+    deactivate NOTIFICATION
+
+    Note over PAYMENT,KAFKA: Saga Step 4: Analytics
+
+    KAFKA->>ANALYTICS: PaymentInitiated, PaymentCompleted
+    activate ANALYTICS
+    ANALYTICS->>ANALYTICS: Track payment metrics
+    ANALYTICS->>ANALYTICS: Update revenue dashboards
+    ANALYTICS->>ANALYTICS: Detect payment patterns
+    deactivate ANALYTICS
+
+    Note over ORDER,ANALYTICS: Compensation Flow - Refund Processing
+
+    ORDER->>KAFKA: Publish OrderCancelled event
+    
+    KAFKA->>PAYMENT: OrderCancelled event
+    activate PAYMENT
+    PAYMENT->>PAYMENT: Check if payment completed
+    alt Payment Completed
+        PAYMENT->>PAYMENT: Initiate refund
+        PAYMENT->>PESAPAL: POST /payment/refund
+        activate PESAPAL
+        PESAPAL->>PESAPAL: Process refund
+        PESAPAL-->>PAYMENT: Refund response
+        deactivate PESAPAL
+        PAYMENT->>PAYMENT: Update status (REFUNDED)
+        PAYMENT->>KAFKA: Publish RefundProcessed event
+    end
+    deactivate PAYMENT
+
+    KAFKA->>NOTIFICATION: RefundProcessed event
+    activate NOTIFICATION
+    NOTIFICATION->>NOTIFICATION: Send refund confirmation
+    NOTIFICATION->>KAFKA: Publish EmailSent event
+    deactivate NOTIFICATION

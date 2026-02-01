@@ -48,7 +48,7 @@ export class OutboxProcessor {
                 await this.outbox.markAsProcessing(event.eventId);
 
                 const envelope = event.eventData as EventEnvelope;
-                await this.kafkaPublisher.publish(envelope.eventType, envelope.data, envelope);
+                await this.kafkaPublisher.publish(envelope.eventType, envelope.data, envelope.metadata);
 
                 await this.outbox.markAsSent(event.eventId);
                 console.log(`Outbox published event ${event.eventId} to Kafka`);

@@ -74,6 +74,81 @@ export class InventoryEventHandlers {
     eventBus.on('OrderCreated.v1', this.handleOrderCreated.bind(this));
     eventBus.on('OrderCancelled.v1', this.handleOrderCancelled.bind(this));
     eventBus.on('ShipmentDelivered.v1', this.handleShipmentDelivered.bind(this));
+
+    // Saga Handlers
+    eventBus.on('StockReservation.Command.v1', this.handleStockReservationCommand.bind(this));
+    eventBus.on('StockRelease.Command.v1', this.handleStockReleaseCommand.bind(this));
+  }
+
+  /**
+   * Handle stock reservation command for Saga
+   */
+  async handleStockReservationCommand(event: any): Promise<void> {
+    const { sagaId, orderId, items, shippingAddress } = event.payload || event.data;
+    console.log(`[Saga] Processing StockReservation command for saga ${sagaId}, order ${orderId}`);
+
+    try {
+      const result = await this.reservationEngine.reserveStock({
+        orderId,
+        items: items.map((i: any) => ({
+          id: i.productId, // Map productId to id for reservation engine
+          variantId: i.productId,
+          quantity: i.quantity,
+          price: 0 // Price not strictly needed for reservation logic here
+        })),
+        shippingAddress
+      });
+
+      if (result.success) {
+        await eventBus.emit('StockReservation.Success.v1', {
+          sagaId,
+          orderId,
+          reservations: result.reservations,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        await eventBus.emit('StockReservation.Failure.v1', {
+          sagaId,
+          orderId,
+          reason: result.error || 'Insufficient stock',
+          unavailableItems: result.unavailableItems,
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error: any) {
+      console.error(`[Saga] Error in StockReservation handler:`, error);
+      await eventBus.emit('StockReservation.Failure.v1', {
+        sagaId,
+        orderId,
+        reason: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
+   * Handle stock release command for Saga compensation
+   */
+  async handleStockReleaseCommand(event: any): Promise<void> {
+    const { sagaId, orderId } = event.payload || event.data;
+    console.log(`[Saga] Processing StockRelease command (compensation) for saga ${sagaId}, order ${orderId}`);
+
+    try {
+      await this.reservationEngine.cancelReservations(orderId);
+      await eventBus.emit('StockRelease.Success.v1', {
+        sagaId,
+        orderId,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      console.error(`[Saga] Error in StockRelease handler:`, error);
+      await eventBus.emit('StockRelease.Failure.v1', {
+        sagaId,
+        orderId,
+        reason: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
   }
 
   /**

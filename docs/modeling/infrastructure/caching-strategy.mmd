@@ -1,0 +1,90 @@
+graph TB
+    subgraph "Redis Cluster - High Availability"
+        MASTER1[Redis Master 1<br/>Shard 1<br/>Slots: 0-5460]
+        MASTER2[Redis Master 2<br/>Shard 2<br/>Slots: 5461-10922]
+        MASTER3[Redis Master 3<br/>Shard 3<br/>Slots: 10923-16383]
+        REPLICA1[Redis Replica 1<br/>Shard 1 Backup]
+        REPLICA2[Redis Replica 2<br/>Shard 2 Backup]
+        REPLICA3[Redis Replica 3<br/>Shard 3 Backup]
+    end
+
+    subgraph "Cache Use Cases"
+        SESSION_CACHE[Session Cache<br/>JWT Tokens<br/>User Sessions<br/>TTL: 24h]
+        API_CACHE[API Response Cache<br/>Product Listings<br/>Catalog Data<br/>TTL: 5-15min]
+        RATE_LIMIT[Rate Limiting<br/>API Throttling<br/>Per User/IP<br/>Sliding Window]
+        IDEMPOTENCY[Idempotency Keys<br/>Event Deduplication<br/>Request Tracking<br/>TTL: 24h]
+    end
+
+    subgraph "Services Using Cache"
+        AUTH_SVC[Auth Service<br/>Session Management]
+        CATALOG_SVC[Catalog Service<br/>Product Cache]
+        ORDER_SVC[Order Service<br/>Idempotency]
+        PAYMENT_SVC[Payment Service<br/>Idempotency]
+        API_GW[API Gateway<br/>Rate Limiting]
+        CHECKOUT_SVC[Checkout Service<br/>Cart Cache]
+    end
+
+    subgraph "Cache Patterns"
+        CACHE_ASIDE[Cache-Aside<br/>Lazy Loading<br/>Read-Through]
+        WRITE_THROUGH[Write-Through<br/>Update Cache on Write<br/>Consistency]
+        INVALIDATION[Cache Invalidation<br/>Event-Driven<br/>TTL-Based]
+    end
+
+    subgraph "Performance Metrics"
+        HIT_RATE[Cache Hit Rate<br/>Target: 75%+<br/>Current: 78%]
+        LATENCY[Response Latency<br/>P95: <5ms<br/>P99: <10ms]
+        BANDWIDTH[Bandwidth Savings<br/>2.8 GB/day<br/>$12.5K/month saved]
+    end
+
+    %% Replication
+    MASTER1 -.->|Async Replication| REPLICA1
+    MASTER2 -.->|Async Replication| REPLICA2
+    MASTER3 -.->|Async Replication| REPLICA3
+
+    %% Failover
+    REPLICA1 -.->|Promote on Failure| MASTER1
+    REPLICA2 -.->|Promote on Failure| MASTER2
+    REPLICA3 -.->|Promote on Failure| REPLICA3
+
+    %% Service connections
+    AUTH_SVC -->|Read/Write| MASTER1
+    AUTH_SVC -->|Session Data| SESSION_CACHE
+    
+    CATALOG_SVC -->|Read/Write| MASTER2
+    CATALOG_SVC -->|Product Data| API_CACHE
+    
+    ORDER_SVC -->|Read/Write| MASTER3
+    ORDER_SVC -->|Event Dedup| IDEMPOTENCY
+    
+    PAYMENT_SVC -->|Read/Write| MASTER1
+    PAYMENT_SVC -->|Transaction Dedup| IDEMPOTENCY
+    
+    API_GW -->|Read/Write| MASTER2
+    API_GW -->|Throttling| RATE_LIMIT
+    
+    CHECKOUT_SVC -->|Read/Write| MASTER3
+    CHECKOUT_SVC -->|Cart Data| API_CACHE
+
+    %% Cache patterns
+    CATALOG_SVC -.->|Implements| CACHE_ASIDE
+    ORDER_SVC -.->|Implements| WRITE_THROUGH
+    
+    %% Invalidation via events
+    KAFKA[Kafka Event Bus] -.->|ProductUpdated| INVALIDATION
+    INVALIDATION -.->|Clear Cache| MASTER2
+
+    %% Monitoring
+    MASTER1 --> METRICS[Redis Metrics<br/>Prometheus]
+    MASTER2 --> METRICS
+    MASTER3 --> METRICS
+    METRICS --> HIT_RATE
+    METRICS --> LATENCY
+
+    style MASTER1 fill:#DC382D,stroke:#A41E11,stroke-width:3px,color:#fff
+    style MASTER2 fill:#DC382D,stroke:#A41E11,stroke-width:3px,color:#fff
+    style MASTER3 fill:#DC382D,stroke:#A41E11,stroke-width:3px,color:#fff
+    style REPLICA1 fill:#E8B4B8,stroke:#DC382D,stroke-width:2px
+    style REPLICA2 fill:#E8B4B8,stroke:#DC382D,stroke-width:2px
+    style REPLICA3 fill:#E8B4B8,stroke:#DC382D,stroke-width:2px
+    style IDEMPOTENCY fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff
+    style HIT_RATE fill:#27AE60,stroke:#1E8449,stroke-width:2px,color:#fff

@@ -1,0 +1,104 @@
+graph LR
+    subgraph "User Domain Events"
+        USER_CREATED[UserCreated]
+        USER_UPDATED[UserUpdated]
+        USER_VERIFIED[UserVerified]
+    end
+
+    subgraph "Business Registry Events"
+        BIZ_REGISTERED[BusinessRegistered]
+        BIZ_VERIFIED[BusinessVerified]
+        KYC_COMPLETED[KYCCompleted]
+    end
+
+    subgraph "Catalog Domain Events"
+        PRODUCT_CREATED[ProductCreated]
+        PRODUCT_PUBLISHED[ProductPublished]
+        PRODUCT_UPDATED[ProductUpdated]
+        INVENTORY_VERIFIED[InventoryVerified]
+    end
+
+    subgraph "Order Domain Events"
+        ORDER_CREATED[OrderCreated]
+        ORDER_CONFIRMED[OrderConfirmed]
+        ORDER_CANCELLED[OrderCancelled]
+        ORDER_COMPLETED[OrderCompleted]
+    end
+
+    subgraph "Inventory Domain Events"
+        STOCK_RESERVED[StockReserved]
+        STOCK_RELEASED[StockReleased]
+        LOW_STOCK_ALERT[LowStockAlert]
+    end
+
+    subgraph "Payment Domain Events"
+        PAYMENT_INITIATED[PaymentInitiated]
+        PAYMENT_COMPLETED[PaymentCompleted]
+        PAYMENT_FAILED[PaymentFailed]
+        REFUND_PROCESSED[RefundProcessed]
+    end
+
+    subgraph "Logistics Domain Events"
+        SHIPMENT_CREATED[ShipmentCreated]
+        DELIVERY_ASSIGNED[DeliveryAssigned]
+        DELIVERY_COMPLETED[DeliveryCompleted]
+    end
+
+    subgraph "Notification Domain Events"
+        EMAIL_SENT[EmailSent]
+        SMS_SENT[SMSSent]
+        PUSH_SENT[PushNotificationSent]
+    end
+
+    %% User Service publishes
+    USER_CREATED -->|Analytics| ANALYTICS_SVC[Analytics Service]
+    USER_VERIFIED -->|Notification| NOTIFICATION_SVC[Notification Service]
+
+    %% Business Registry publishes
+    BIZ_REGISTERED -->|Compliance| COMPLIANCE_SVC[Compliance Service]
+    BIZ_REGISTERED -->|Notification| NOTIFICATION_SVC
+    BIZ_VERIFIED -->|Analytics| ANALYTICS_SVC
+    BIZ_VERIFIED -->|Notification| NOTIFICATION_SVC
+
+    %% Catalog publishes
+    PRODUCT_CREATED -->|Inventory Check| INVENTORY_SVC[Inventory Service]
+    PRODUCT_PUBLISHED -->|Analytics| ANALYTICS_SVC
+    PRODUCT_PUBLISHED -->|Notification| NOTIFICATION_SVC
+    INVENTORY_VERIFIED -->|Catalog| CATALOG_SVC[Catalog Service]
+
+    %% Order publishes
+    ORDER_CREATED -->|Inventory| INVENTORY_SVC
+    ORDER_CREATED -->|Payment| PAYMENT_SVC[Payment Service]
+    ORDER_CREATED -->|Analytics| ANALYTICS_SVC
+    ORDER_CONFIRMED -->|Logistics| LOGISTICS_SVC[Logistics Service]
+    ORDER_CONFIRMED -->|Notification| NOTIFICATION_SVC
+    ORDER_CANCELLED -->|Inventory| INVENTORY_SVC
+    ORDER_CANCELLED -->|Payment| PAYMENT_SVC
+    ORDER_COMPLETED -->|Commission| COMMISSION_SVC[Commission Service]
+
+    %% Inventory publishes
+    STOCK_RESERVED -->|Order| ORDER_SVC[Order Service]
+    STOCK_RELEASED -->|Order| ORDER_SVC
+    LOW_STOCK_ALERT -->|Notification| NOTIFICATION_SVC
+    LOW_STOCK_ALERT -->|Analytics| ANALYTICS_SVC
+
+    %% Payment publishes
+    PAYMENT_COMPLETED -->|Order| ORDER_SVC
+    PAYMENT_COMPLETED -->|Notification| NOTIFICATION_SVC
+    PAYMENT_FAILED -->|Order| ORDER_SVC
+    PAYMENT_FAILED -->|Notification| NOTIFICATION_SVC
+    REFUND_PROCESSED -->|Order| ORDER_SVC
+    REFUND_PROCESSED -->|Notification| NOTIFICATION_SVC
+
+    %% Logistics publishes
+    SHIPMENT_CREATED -->|Order| ORDER_SVC
+    DELIVERY_ASSIGNED -->|Notification| NOTIFICATION_SVC
+    DELIVERY_COMPLETED -->|Order| ORDER_SVC
+    DELIVERY_COMPLETED -->|Commission| COMMISSION_SVC
+    DELIVERY_COMPLETED -->|Analytics| ANALYTICS_SVC
+
+    style ORDER_CREATED fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
+    style PAYMENT_COMPLETED fill:#27AE60,stroke:#1E8449,stroke-width:2px,color:#fff
+    style STOCK_RESERVED fill:#3498DB,stroke:#2874A6,stroke-width:2px,color:#fff
+    style PRODUCT_PUBLISHED fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff
+    style BIZ_VERIFIED fill:#F39C12,stroke:#D68910,stroke-width:2px,color:#fff

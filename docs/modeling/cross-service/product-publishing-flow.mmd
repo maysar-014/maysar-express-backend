@@ -1,0 +1,97 @@
+sequenceDiagram
+    participant SELLER as Seller/API Gateway
+    participant CATALOG as Catalog Service
+    participant INVENTORY as Inventory Service
+    participant ANALYTICS as Analytics Service
+    participant NOTIFICATION as Notification Service
+    participant KAFKA as Kafka Event Bus
+
+    Note over SELLER,ANALYTICS: Product Publishing Saga
+
+    SELLER->>CATALOG: POST /products (create product)
+    activate CATALOG
+    CATALOG->>CATALOG: Validate product data
+    CATALOG->>CATALOG: Process media files (images)
+    CATALOG->>CATALOG: Create product (DRAFT)
+    CATALOG->>KAFKA: Publish ProductCreated event
+    CATALOG-->>SELLER: 201 Created (productId)
+    deactivate CATALOG
+
+    Note over CATALOG,KAFKA: Saga Step 1: Inventory Verification
+
+    KAFKA->>INVENTORY: ProductCreated event
+    activate INVENTORY
+    INVENTORY->>INVENTORY: Verify inventory setup required
+    INVENTORY->>INVENTORY: Create stock item placeholder
+    INVENTORY->>KAFKA: Publish InventoryVerified event
+    deactivate INVENTORY
+
+    Note over CATALOG,KAFKA: Saga Step 2: Product Publishing
+
+    SELLER->>CATALOG: PUT /products/:id/publish
+    activate CATALOG
+    CATALOG->>CATALOG: Validate product completeness
+    CATALOG->>CATALOG: Check inventory verification
+    alt All Validations Pass
+        CATALOG->>CATALOG: Update product status (PUBLISHED)
+        CATALOG->>KAFKA: Publish ProductPublished event
+        CATALOG-->>SELLER: 200 OK
+    else Validation Failed
+        CATALOG->>KAFKA: Publish ProductPublishFailed event
+        CATALOG-->>SELLER: 400 Bad Request
+    end
+    deactivate CATALOG
+
+    Note over CATALOG,KAFKA: Saga Step 3: Analytics Tracking
+
+    KAFKA->>ANALYTICS: ProductCreated, ProductPublished
+    activate ANALYTICS
+    ANALYTICS->>ANALYTICS: Track product creation
+    ANALYTICS->>ANALYTICS: Update seller metrics
+    ANALYTICS->>ANALYTICS: Update catalog statistics
+    deactivate ANALYTICS
+
+    Note over CATALOG,KAFKA: Saga Step 4: Seller Notification
+
+    KAFKA->>NOTIFICATION: ProductPublished event
+    activate NOTIFICATION
+    NOTIFICATION->>NOTIFICATION: Send product published email
+    NOTIFICATION->>NOTIFICATION: Send tips for optimization
+    NOTIFICATION->>KAFKA: Publish EmailSent event
+    deactivate NOTIFICATION
+
+    Note over SELLER,ANALYTICS: Product Update Flow
+
+    SELLER->>CATALOG: PUT /products/:id (update product)
+    activate CATALOG
+    CATALOG->>CATALOG: Validate updates
+    CATALOG->>CATALOG: Update product data
+    CATALOG->>KAFKA: Publish ProductUpdated event
+    CATALOG-->>SELLER: 200 OK
+    deactivate CATALOG
+
+    KAFKA->>INVENTORY: ProductUpdated event
+    activate INVENTORY
+    INVENTORY->>INVENTORY: Update stock item metadata
+    INVENTORY->>KAFKA: Publish InventoryUpdated event
+    deactivate INVENTORY
+
+    KAFKA->>ANALYTICS: ProductUpdated event
+    activate ANALYTICS
+    ANALYTICS->>ANALYTICS: Track product changes
+    deactivate ANALYTICS
+
+    Note over SELLER,ANALYTICS: Compensation Flow - Publish Failure
+
+    KAFKA->>CATALOG: ProductPublishFailed event
+    activate CATALOG
+    CATALOG->>CATALOG: Revert to DRAFT status
+    CATALOG->>KAFKA: Publish ProductReverted event
+    deactivate CATALOG
+
+    KAFKA->>NOTIFICATION: ProductPublishFailed event
+    activate NOTIFICATION
+    NOTIFICATION->>NOTIFICATION: Send failure notification
+    NOTIFICATION->>NOTIFICATION: Include validation errors
+    NOTIFICATION->>KAFKA: Publish EmailSent event
+    deactivate NOTIFICATION

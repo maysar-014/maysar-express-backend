@@ -1,0 +1,113 @@
+graph TB
+    subgraph "Kubernetes Cluster - Production"
+        subgraph "Ingress Layer"
+            INGRESS[Nginx Ingress Controller<br/>SSL Termination<br/>Load Balancing]
+        end
+
+        subgraph "API Layer - Namespace: api"
+            API_GW_POD1[API Gateway Pod 1]
+            API_GW_POD2[API Gateway Pod 2]
+            API_GW_POD3[API Gateway Pod 3]
+            API_SVC[API Gateway Service<br/>ClusterIP]
+        end
+
+        subgraph "Core Services - Namespace: core"
+            AUTH_PODS[Auth Service<br/>3 Replicas]
+            ORDER_PODS[Order Service<br/>5 Replicas]
+            PAYMENT_PODS[Payment Service<br/>3 Replicas]
+            INVENTORY_PODS[Inventory Service<br/>3 Replicas]
+            CATALOG_PODS[Catalog Service<br/>5 Replicas]
+        end
+
+        subgraph "Business Services - Namespace: business"
+            BIZ_PODS[Business Registry<br/>2 Replicas]
+            LOGISTICS_PODS[Logistics Service<br/>3 Replicas]
+            COMMISSION_PODS[Commission Service<br/>2 Replicas]
+            CHECKOUT_PODS[Checkout Service<br/>3 Replicas]
+        end
+
+        subgraph "Support Services - Namespace: support"
+            NOTIFICATION_PODS[Notification Service<br/>3 Replicas]
+            ANALYTICS_PODS[Analytics Service<br/>2 Replicas]
+            COMPLIANCE_PODS[Compliance Service<br/>2 Replicas]
+            USER_PODS[User Service<br/>3 Replicas]
+        end
+
+        subgraph "Data Layer - Namespace: data"
+            KAFKA_CLUSTER[Kafka Cluster<br/>3 Brokers<br/>StatefulSet]
+            REDIS_CLUSTER[Redis Cluster<br/>3 Masters + 3 Replicas<br/>StatefulSet]
+            POSTGRES_OPERATOR[PostgreSQL Operator<br/>Manages 13 Databases]
+        end
+
+        subgraph "Monitoring - Namespace: monitoring"
+            PROMETHEUS[Prometheus<br/>Metrics Collection]
+            GRAFANA[Grafana<br/>Dashboards]
+            LOKI[Loki<br/>Log Aggregation]
+        end
+    end
+
+    subgraph "External Services - AWS"
+        RDS[AWS RDS PostgreSQL<br/>13 Databases<br/>Multi-AZ]
+        MSK[AWS MSK<br/>Managed Kafka<br/>3 Brokers]
+        ELASTICACHE[AWS ElastiCache<br/>Redis Cluster]
+        S3[AWS S3<br/>Media Storage]
+        CLOUDWATCH[AWS CloudWatch<br/>Logs & Metrics]
+    end
+
+    subgraph "External Integrations"
+        PESAPAL_EXT[Pesapal API]
+        SENDGRID_EXT[SendGrid API]
+        TWILIO_EXT[Twilio API]
+    end
+
+    %% Traffic flow
+    INTERNET[Internet] --> INGRESS
+    INGRESS --> API_SVC
+    API_SVC --> API_GW_POD1
+    API_SVC --> API_GW_POD2
+    API_SVC --> API_GW_POD3
+
+    %% API Gateway to services
+    API_GW_POD1 --> AUTH_PODS
+    API_GW_POD1 --> ORDER_PODS
+    API_GW_POD1 --> CATALOG_PODS
+    API_GW_POD1 --> CHECKOUT_PODS
+
+    %% Services to data layer
+    ORDER_PODS --> KAFKA_CLUSTER
+    CATALOG_PODS --> KAFKA_CLUSTER
+    PAYMENT_PODS --> KAFKA_CLUSTER
+    INVENTORY_PODS --> KAFKA_CLUSTER
+
+    AUTH_PODS --> REDIS_CLUSTER
+    ORDER_PODS --> REDIS_CLUSTER
+    CHECKOUT_PODS --> REDIS_CLUSTER
+
+    %% Kubernetes to AWS
+    POSTGRES_OPERATOR -.->|Manages| RDS
+    KAFKA_CLUSTER -.->|Alternative| MSK
+    REDIS_CLUSTER -.->|Alternative| ELASTICACHE
+
+    %% Services to external
+    PAYMENT_PODS --> PESAPAL_EXT
+    NOTIFICATION_PODS --> SENDGRID_EXT
+    NOTIFICATION_PODS --> TWILIO_EXT
+
+    %% Monitoring
+    PROMETHEUS --> AUTH_PODS
+    PROMETHEUS --> ORDER_PODS
+    PROMETHEUS --> CATALOG_PODS
+    GRAFANA --> PROMETHEUS
+    LOKI --> AUTH_PODS
+    LOKI --> ORDER_PODS
+
+    %% Logging
+    AUTH_PODS -.->|Logs| CLOUDWATCH
+    ORDER_PODS -.->|Logs| CLOUDWATCH
+
+    style INGRESS fill:#FF6B6B,stroke:#C92A2A,stroke-width:3px,color:#fff
+    style KAFKA_CLUSTER fill:#231F20,stroke:#000,stroke-width:2px,color:#fff
+    style REDIS_CLUSTER fill:#DC382D,stroke:#A41E11,stroke-width:2px,color:#fff
+    style POSTGRES_OPERATOR fill:#336791,stroke:#1A3A52,stroke-width:2px,color:#fff
+    style RDS fill:#FF9900,stroke:#CC7A00,stroke-width:2px,color:#fff
+    style MSK fill:#FF9900,stroke:#CC7A00,stroke-width:2px,color:#fff

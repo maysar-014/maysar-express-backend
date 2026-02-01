@@ -16,6 +16,11 @@ import { logMonitoringConfigSummary } from './config/monitoring.config';
 import { databaseManager, loadDatabaseConfig } from './config/database.config';
 import { logStartup, logShutdown, flushLogs } from './infrastructure/monitoring/logger';
 import { RateLimitingMiddleware } from './middleware/rate-limiting.middleware';
+import { PrismaClient } from '@prisma/client';
+import { PrismaSagaLogRepository } from '../../shared/saga/prisma.saga-log.repository';
+import { OrderFulfillmentSaga } from './application/sagas/order-fulfillment.saga';
+import { SagaReplyHandler } from './infrastructure/messaging/saga-reply-handler';
+import { eventBus } from '../../shared/events/eventBus';
 
 // Load environment variables
 dotenv.config();
@@ -78,7 +83,23 @@ async function initializeService() {
     // Dependency injection with database repository
     const orderRepository = new SupabaseOrderRepository();
     const eventPublisher = new EventPublisherImpl();
-    const placeOrderUseCase = new PlaceOrderUseCase(orderRepository, eventPublisher);
+
+    // SAGA INFRASTRUCTURE
+    const prisma = new PrismaClient();
+    const sagaLogRepo = new PrismaSagaLogRepository(prisma);
+    const orderFulfillmentSaga = new OrderFulfillmentSaga(sagaLogRepo);
+    const sagaReplyHandler = new SagaReplyHandler(orderFulfillmentSaga);
+
+    // Initializing Saga Subscriptions
+    await eventBus.connect();
+    eventBus.subscribe('StockReservation.Success', { name: 'order-saga-stock', handler: (e) => sagaReplyHandler.handleStockReserved(e) });
+    eventBus.subscribe('StockReservation.Failure', { name: 'order-saga-stock-fail', handler: (e) => sagaReplyHandler.handleStockFailed(e) });
+    eventBus.subscribe('Payment.Success', { name: 'order-saga-payment', handler: (e) => sagaReplyHandler.handlePaymentSuccess(e) });
+    eventBus.subscribe('Payment.Failure', { name: 'order-saga-payment-fail', handler: (e) => sagaReplyHandler.handlePaymentFailed(e) });
+    eventBus.subscribe('Delivery.Success', { name: 'order-saga-delivery', handler: (e) => sagaReplyHandler.handleDeliverySuccess(e) });
+    eventBus.subscribe('Delivery.Failure', { name: 'order-saga-delivery-fail', handler: (e) => sagaReplyHandler.handleDeliveryFailed(e) });
+
+    const placeOrderUseCase = new PlaceOrderUseCase(orderRepository, eventPublisher, orderFulfillmentSaga);
     const orderController = new OrderController(placeOrderUseCase);
 
     // Setup routes

@@ -12,7 +12,7 @@ app.use(express.json());
 // Transaction Monitoring Saga Events
 eventBus.subscribe('TransactionDetailsRequested', async (event) => {
   const { transactionId, adminId, includeRelatedTransactions } = event.payload;
-  
+
   try {
     const transaction = await prisma.transaction.findUnique({
       where: { id: transactionId },
@@ -22,7 +22,7 @@ eventBus.subscribe('TransactionDetailsRequested', async (event) => {
         order: true
       }
     });
-    
+
     let relatedTransactions = [];
     if (includeRelatedTransactions) {
       relatedTransactions = await prisma.transaction.findMany({
@@ -35,7 +35,7 @@ eventBus.subscribe('TransactionDetailsRequested', async (event) => {
         take: 10
       });
     }
-    
+
     await eventBus.publish('TransactionDetailsFetched', {
       transactionId, transaction, relatedTransactions, adminId,
       correlationId: event.correlationId
@@ -50,12 +50,12 @@ eventBus.subscribe('TransactionDetailsRequested', async (event) => {
 
 eventBus.subscribe('FraudAnalysisRequested', async (event) => {
   const { transactionId, analysisType, adminId } = event.payload;
-  
+
   try {
     const transaction = await prisma.transaction.findUnique({
       where: { id: transactionId }
     });
-    
+
     const fraudAnalysis = {
       velocityCheck: transaction.amount > 10000 ? 'HIGH_RISK' : 'LOW_RISK',
       patternAnalysis: 'NORMAL',
@@ -64,7 +64,7 @@ eventBus.subscribe('FraudAnalysisRequested', async (event) => {
       riskScore: transaction.amount > 50000 ? 85 : 25,
       recommendation: transaction.amount > 50000 ? 'MANUAL_REVIEW' : 'APPROVE'
     };
-    
+
     await eventBus.publish('FraudAnalysisCompleted', {
       transactionId, fraudAnalysis, adminId,
       correlationId: event.correlationId
@@ -79,7 +79,7 @@ eventBus.subscribe('FraudAnalysisRequested', async (event) => {
 
 eventBus.subscribe('TransactionFlaggedSuspicious', async (event) => {
   const { transactionId, adminId, flagType, reason } = event.payload;
-  
+
   try {
     await prisma.transaction.update({
       where: { id: transactionId },
@@ -91,7 +91,7 @@ eventBus.subscribe('TransactionFlaggedSuspicious', async (event) => {
         flagType: flagType
       }
     });
-    
+
     await eventBus.publish('TransactionFlagged', {
       transactionId, adminId, flagType, reason,
       correlationId: event.correlationId
@@ -106,7 +106,7 @@ eventBus.subscribe('TransactionFlaggedSuspicious', async (event) => {
 
 eventBus.subscribe('TransactionBlocked', async (event) => {
   const { transactionId, adminId, reason } = event.payload;
-  
+
   try {
     await prisma.transaction.update({
       where: { id: transactionId },
@@ -117,7 +117,7 @@ eventBus.subscribe('TransactionBlocked', async (event) => {
         blockReason: reason
       }
     });
-    
+
     await eventBus.publish('TransactionBlocked', {
       transactionId, adminId, reason,
       correlationId: event.correlationId
@@ -132,10 +132,10 @@ eventBus.subscribe('TransactionBlocked', async (event) => {
 
 eventBus.subscribe('TransactionRefundRequested', async (event) => {
   const { transactionId, adminId, refundAmount } = event.payload;
-  
+
   try {
     const refundId = `REFUND-${Date.now()}`;
-    
+
     await prisma.transaction.create({
       data: {
         id: refundId,
@@ -149,7 +149,7 @@ eventBus.subscribe('TransactionRefundRequested', async (event) => {
         relatedTransactionId: transactionId
       }
     });
-    
+
     await eventBus.publish('TransactionRefundProcessed', {
       transactionId, refundId, refundAmount, adminId,
       correlationId: event.correlationId
@@ -165,7 +165,7 @@ eventBus.subscribe('TransactionRefundRequested', async (event) => {
 // Dispute Resolution Saga Events
 eventBus.subscribe('DisputeEvidenceGatheringRequested', async (event) => {
   const { disputeId, adminId, includeOrderHistory, includePaymentHistory } = event.payload;
-  
+
   try {
     const evidence = {
       orderHistory: includeOrderHistory ? await getOrderHistory(disputeId) : null,
@@ -173,7 +173,7 @@ eventBus.subscribe('DisputeEvidenceGatheringRequested', async (event) => {
       communicationHistory: await getCommunicationHistory(disputeId),
       documents: await getDisputeDocuments(disputeId)
     };
-    
+
     await eventBus.publish('DisputeEvidenceGathered', {
       disputeId, evidence, adminId,
       correlationId: event.correlationId
@@ -188,10 +188,10 @@ eventBus.subscribe('DisputeEvidenceGatheringRequested', async (event) => {
 
 eventBus.subscribe('DisputeFinancialAdjustmentRequested', async (event) => {
   const { disputeId, refundAmount, compensationAmount, adminId } = event.payload;
-  
+
   try {
     const adjustments = [];
-    
+
     if (refundAmount > 0) {
       const refundId = `REFUND-${Date.now()}`;
       await prisma.transaction.create({
@@ -208,7 +208,7 @@ eventBus.subscribe('DisputeFinancialAdjustmentRequested', async (event) => {
       });
       adjustments.push({ type: 'REFUND', id: refundId, amount: refundAmount });
     }
-    
+
     if (compensationAmount > 0) {
       const compensationId = `COMP-${Date.now()}`;
       await prisma.transaction.create({
@@ -225,7 +225,7 @@ eventBus.subscribe('DisputeFinancialAdjustmentRequested', async (event) => {
       });
       adjustments.push({ type: 'COMPENSATION', id: compensationId, amount: compensationAmount });
     }
-    
+
     await eventBus.publish('DisputeFinancialAdjustmentProcessed', {
       disputeId, adjustments, adminId,
       correlationId: event.correlationId
@@ -268,7 +268,7 @@ function initializeEnablerSagaHandlers() {
   // Training Payment Events
   eventBus.subscribe('TrainingDeliveryStarted', async (event) => {
     const { enablerId, trainingId } = event.data;
-    
+
     await eventBus.publish({
       type: 'TrainingPaymentCalculated',
       data: { enablerId, trainingId, amount: 30, sagaId: event.sagaId }
@@ -277,10 +277,10 @@ function initializeEnablerSagaHandlers() {
 
   eventBus.subscribe('TrainingAssessmentCompleted', async (event) => {
     const { enablerId, passed, actualScore } = event.data;
-    
+
     if (passed) {
       const bonus = actualScore > 90 ? 10 : 0;
-      
+
       await eventBus.publish({
         type: 'TrainingBonusCalculated',
         data: { enablerId, bonus, sagaId: event.sagaId }
@@ -291,10 +291,10 @@ function initializeEnablerSagaHandlers() {
   // Support Service Payments
   eventBus.subscribe('LogisticsSolutionImplemented', async (event) => {
     const { enablerId, solutionResult } = event.data;
-    
+
     if (solutionResult.success) {
       const paymentAmount = 25;
-      
+
       await prisma.transaction.create({
         data: {
           id: `TXN-${Date.now()}`,
@@ -311,10 +311,10 @@ function initializeEnablerSagaHandlers() {
 
   eventBus.subscribe('SalesOutcomeTracked', async (event) => {
     const { enablerId, outcome, saleValue } = event.data;
-    
+
     if (outcome === 'sale') {
       const commission = saleValue * 0.05;
-      
+
       await prisma.transaction.create({
         data: {
           id: `TXN-${Date.now()}`,
@@ -332,9 +332,9 @@ function initializeEnablerSagaHandlers() {
   // Onboarding Payments
   eventBus.subscribe('SellerOnboardingCompleted', async (event) => {
     const { enablerId, sellerId } = event.data;
-    
+
     const onboardingFee = 50;
-    
+
     await prisma.transaction.create({
       data: {
         id: `TXN-${Date.now()}`,
@@ -353,7 +353,7 @@ function initializeSellerSagaHandlers() {
   // Payment Management Saga Events
   eventBus.subscribe('SellerPayoutRequested', async (event) => {
     const { sellerId, payoutDetails } = event.data;
-    
+
     await eventBus.publish({
       type: 'PayoutValidationInitiated',
       data: { sellerId, payoutDetails, sagaId: event.sagaId }
@@ -362,12 +362,12 @@ function initializeSellerSagaHandlers() {
 
   eventBus.subscribe('PayoutValidationInitiated', async (event) => {
     const { sellerId, payoutDetails } = event.data;
-    
+
     const isValid = payoutDetails.amount > 0;
-    
+
     if (isValid) {
       const payoutId = `PAYOUT-${Date.now()}`;
-      
+
       await eventBus.publish({
         type: 'SellerPayoutProcessed',
         data: { sellerId, payoutId, sagaId: event.sagaId }
@@ -377,7 +377,7 @@ function initializeSellerSagaHandlers() {
 
   eventBus.subscribe('SellerPayoutProcessed', async (event) => {
     const { sellerId, payoutId } = event.data;
-    
+
     await prisma.transaction.create({
       data: {
         id: payoutId,
@@ -389,7 +389,7 @@ function initializeSellerSagaHandlers() {
         processedAt: new Date()
       }
     });
-    
+
     await eventBus.publish({
       type: 'PayoutNotificationSent',
       data: { sellerId, payoutId, sagaId: event.sagaId }
@@ -399,7 +399,7 @@ function initializeSellerSagaHandlers() {
   // Order Payment Processing Events
   eventBus.subscribe('PaymentVerificationRequested', async (event) => {
     const { orderId } = event.data;
-    
+
     await eventBus.publish({
       type: 'PaymentVerified',
       data: { orderId, verifiedAt: new Date(), sagaId: event.sagaId }
@@ -408,11 +408,77 @@ function initializeSellerSagaHandlers() {
 
   eventBus.subscribe('PaymentFailed', async (event) => {
     const { orderId } = event.data;
-    
+
     await eventBus.publish({
       type: 'PaymentRefunded',
       data: { orderId, sagaId: event.sagaId }
     });
+  });
+
+  // Order Fulfillment Saga Handlers
+  eventBus.subscribe('Payment.Command.v1', async (event) => {
+    const { sagaId, orderId, amount, currency, userId } = event.payload || event.data;
+    console.log(`[Saga] Processing Payment command for saga ${sagaId}, order ${orderId}`);
+
+    try {
+      // Simulate/Execute payment logic
+      const paymentId = `PAY-${Date.now()}`;
+      await prisma.payment.create({
+        data: {
+          id: paymentId,
+          orderId,
+          userId: userId || '00000000-0000-4000-a000-000000000000', // Default if missing
+          amount,
+          currency: currency || 'TZS',
+          method: 'card', // Default for now
+          provider: 'system',
+          status: 'completed',
+          processedAt: new Date()
+        }
+      });
+
+      await eventBus.publish('Payment.Success.v1', {
+        sagaId,
+        orderId,
+        paymentId,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      console.error(`[Saga] Payment failed:`, error);
+      await eventBus.publish('Payment.Failure.v1', {
+        sagaId,
+        orderId,
+        reason: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  eventBus.subscribe('PaymentRefund.Command.v1', async (event) => {
+    const { sagaId, orderId, paymentId } = event.payload || event.data;
+    console.log(`[Saga] Processing PaymentRefund command for saga ${sagaId}, order ${orderId}`);
+
+    try {
+      // Logic to refund payment
+      await prisma.payment.updateMany({
+        where: { orderId },
+        data: { status: 'refunded', updatedAt: new Date() }
+      });
+
+      await eventBus.publish('PaymentRefund.Success.v1', {
+        sagaId,
+        orderId,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      console.error(`[Saga] Payment refund failed:`, error);
+      await eventBus.publish('PaymentRefund.Failure.v1', {
+        sagaId,
+        orderId,
+        reason: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
   });
 }
 
@@ -420,9 +486,9 @@ function initializeSupplierPaymentHandlers() {
   // Supplier Payment Processing Events
   eventBus.subscribe('SupplierPaymentRequested', async (event) => {
     const { supplierId, bulkOrderId, amount } = event.data;
-    
+
     const validationPassed = await validateSupplierPayment(supplierId, bulkOrderId, amount);
-    
+
     await eventBus.publish({
       type: 'SupplierPaymentValidated',
       data: { supplierId, bulkOrderId, amount, validationPassed, sagaId: event.sagaId }
@@ -431,10 +497,10 @@ function initializeSupplierPaymentHandlers() {
 
   eventBus.subscribe('SupplierPaymentValidated', async (event) => {
     const { supplierId, bulkOrderId, amount, validationPassed } = event.data;
-    
+
     if (validationPassed) {
       const transactionId = `TXN-${Date.now()}`;
-      
+
       await eventBus.publish({
         type: 'SupplierPaymentProcessed',
         data: { supplierId, bulkOrderId, amount, transactionId, sagaId: event.sagaId }
@@ -444,7 +510,7 @@ function initializeSupplierPaymentHandlers() {
 
   eventBus.subscribe('SupplierPaymentProcessed', async (event) => {
     const { supplierId, bulkOrderId, transactionId } = event.data;
-    
+
     await eventBus.publish({
       type: 'SupplierPaymentConfirmed',
       data: { supplierId, bulkOrderId, transactionId, confirmedAt: new Date(), sagaId: event.sagaId }
@@ -453,7 +519,7 @@ function initializeSupplierPaymentHandlers() {
 
   eventBus.subscribe('SupplierPaymentConfirmed', async (event) => {
     const { supplierId, bulkOrderId, transactionId } = event.data;
-    
+
     await eventBus.publish({
       type: 'SupplierPaymentNotificationSent',
       data: { supplierId, bulkOrderId, transactionId, sagaId: event.sagaId }
@@ -468,12 +534,12 @@ async function validateSupplierPayment(supplierId, bulkOrderId, amount) {
 // ADMIN APIs
 app.get('/api/admin/transactions', async (req, res) => {
   const { status, flagged, page = 1, limit = 20 } = req.query;
-  
+
   try {
     const where = {};
     if (status) where.status = status;
     if (flagged === 'true') where.flaggedAt = { not: null };
-    
+
     const transactions = await prisma.transaction.findMany({
       where,
       skip: (page - 1) * limit,
@@ -484,7 +550,7 @@ app.get('/api/admin/transactions', async (req, res) => {
       },
       orderBy: { createdAt: 'desc' }
     });
-    
+
     res.json({ success: true, transactions });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
@@ -494,7 +560,7 @@ app.get('/api/admin/transactions', async (req, res) => {
 app.post('/api/admin/transactions/:id/flag', async (req, res) => {
   const { id } = req.params;
   const { flagType, reason, adminId } = req.body;
-  
+
   try {
     await prisma.transaction.update({
       where: { id },
@@ -506,11 +572,11 @@ app.post('/api/admin/transactions/:id/flag', async (req, res) => {
         flagType: flagType
       }
     });
-    
+
     await eventBus.publish('AdminTransactionFlagged', {
       transactionId: id, flagType, reason, adminId
     });
-    
+
     res.json({ success: true });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
@@ -519,15 +585,15 @@ app.post('/api/admin/transactions/:id/flag', async (req, res) => {
 
 app.post('/api/admin/disputes', async (req, res) => {
   const { orderId, buyerId, sellerId, reason, adminId } = req.body;
-  
+
   try {
     const disputeId = `DISPUTE-${Date.now()}`;
-    
+
     // Create dispute record (would be in a disputes table)
     await eventBus.publish('AdminDisputeCreated', {
       disputeId, orderId, buyerId, sellerId, reason, adminId
     });
-    
+
     res.json({ success: true, disputeId });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
@@ -560,7 +626,7 @@ app.post('/api/payment/process', async (req, res) => {
     let riskScore = 0;
     if (amount > 50000) riskScore += 30;
     else if (amount > 10000) riskScore += 15;
-    
+
     const riskLevel = riskScore >= 80 ? 'critical' : riskScore >= 60 ? 'high' : 'low';
 
     await eventBus.publish('TransactionRiskAssessed.v1', {

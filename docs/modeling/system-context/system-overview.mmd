@@ -1,0 +1,74 @@
+graph TB
+    subgraph "External Actors"
+        CUSTOMER[Customer]
+        SELLER[Seller/Merchant]
+        SUPPLIER[Supplier/Manufacturer]
+        ENABLER[Enabler/Facilitator]
+        COURIER[Courier/Delivery Partner]
+        ADMIN[Platform Administrator]
+    end
+
+    subgraph "Maysar Digital Community Trade Platform"
+        PLATFORM[Maysar E-Commerce Platform<br/>13 Microservices + Event Bus<br/>Saga Orchestration]
+    end
+
+    subgraph "External Systems"
+        PAYMENT[Payment Providers<br/>Pesapal, M-Pesa, Cards]
+        EMAIL[Email Service<br/>SendGrid]
+        SMS[SMS Service<br/>Twilio]
+        MAPS[Maps & Geolocation<br/>Google Maps]
+        STORAGE[Cloud Storage<br/>AWS S3]
+        ANALYTICS_EXT[External Analytics<br/>Google Analytics]
+    end
+
+    %% Customer interactions
+    CUSTOMER -->|Browse & Purchase| PLATFORM
+    CUSTOMER -->|Track Orders| PLATFORM
+    CUSTOMER -->|Reviews & Ratings| PLATFORM
+    PLATFORM -->|Order Confirmations| CUSTOMER
+    PLATFORM -->|Delivery Updates| CUSTOMER
+
+    %% Seller interactions
+    SELLER -->|Manage Products| PLATFORM
+    SELLER -->|Process Orders| PLATFORM
+    SELLER -->|View Analytics| PLATFORM
+    PLATFORM -->|Sales Notifications| SELLER
+    PLATFORM -->|Performance Reports| SELLER
+
+    %% Supplier interactions
+    SUPPLIER -->|Bulk Fulfillment| PLATFORM
+    SUPPLIER -->|Inventory Management| PLATFORM
+    PLATFORM -->|Production Orders| SUPPLIER
+
+    %% Enabler interactions
+    ENABLER -->|Onboard Sellers| PLATFORM
+    ENABLER -->|Support Buyers| PLATFORM
+    PLATFORM -->|Commission Tracking| ENABLER
+
+    %% Courier interactions
+    COURIER -->|Accept Deliveries| PLATFORM
+    COURIER -->|Update Status| PLATFORM
+    PLATFORM -->|Delivery Assignments| COURIER
+    PLATFORM -->|Route Optimization| COURIER
+
+    %% Admin interactions
+    ADMIN -->|System Monitoring| PLATFORM
+    ADMIN -->|User Management| PLATFORM
+    ADMIN -->|Compliance Review| PLATFORM
+    PLATFORM -->|System Alerts| ADMIN
+
+    %% External system integrations
+    PLATFORM <-->|Process Payments| PAYMENT
+    PLATFORM -->|Send Emails| EMAIL
+    PLATFORM -->|Send SMS| SMS
+    PLATFORM <-->|Location Services| MAPS
+    PLATFORM -->|Store Media| STORAGE
+    PLATFORM -->|Track Events| ANALYTICS_EXT
+
+    style PLATFORM fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    style PAYMENT fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+    style EMAIL fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+    style SMS fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+    style MAPS fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+    style STORAGE fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px
+    style ANALYTICS_EXT fill:#FCE4EC,stroke:#E91E63,stroke-width:2px

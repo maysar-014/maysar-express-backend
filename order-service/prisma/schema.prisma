@@ -132,3 +132,41 @@ model OutboxEvent {
   @@index([createdAt])
   @@map("outbox_events")
 }
+
+// ============================================================================
+// SAGA LOGS
+// ============================================================================
+
+model SagaLog {
+  id          String   @id @default(uuid())
+  sagaId      String   @unique
+  sagaType    String
+  status      String   @default("STARTED") // STARTED, IN_PROGRESS, COMPLETED, FAILED, COMPENSATING, COMPENSATED
+  currentStep String
+  payload     Json
+  context     Json
+  error       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  steps       SagaStepLog[]
+
+  @@index([status])
+  @@index([sagaType])
+  @@map("saga_logs")
+}
+
+model SagaStepLog {
+  id          String   @id @default(uuid())
+  sagaId      String
+  stepName    String
+  status      String   @default("PENDING") // PENDING, STARTED, COMPLETED, FAILED, COMPENSATED
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  error       String?
+
+  saga        SagaLog  @relation(fields: [sagaId], references: [sagaId], onDelete: Cascade)
+
+  @@index([sagaId])
+  @@map("saga_step_logs")
+}
