@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Saga
+    participant UR as UserRepository
+    participant SecS as SecurityService
+    participant NS as NotificationService
+    participant EB as EventBus
+
+    Saga->>SecS: detectBreach(userId, incidentData)
+    SecS-->>Saga: breachConfirmed
+    
+    Saga->>UR: lockAccount(userId)
+    UR-->>Saga: success
+    
+    Saga->>NS: notifyUser(userId, "Security Breach Detected")
+    NS-->>Saga: success
+    
+    Saga->>SecS: logIncident(incidentData)
+    SecS-->>Saga: logged
+    
+    Saga->>EB: publish(SecurityBreachDetectedEvent)

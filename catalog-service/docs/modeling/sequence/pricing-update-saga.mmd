@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Saga
+    participant PR as ProductRepository
+    participant IS as InventoryService
+    participant EB as EventBus
+
+    Saga->>PR: validatePricing(productId, newPrice)
+    PR-->>Saga: valid
+    
+    Saga->>PR: updateProductPrice(productId, newPrice)
+    PR-->>Saga: success
+    
+    Saga->>IS: syncInventoryPricing(productId, newPrice)
+    IS-->>Saga: success
+    
+    Saga->>EB: publish(PriceUpdatedEvent)

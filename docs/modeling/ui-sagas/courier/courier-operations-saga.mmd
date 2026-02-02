@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant UI as CourierUI
+    participant Saga
+    participant LS as LogisticsService
+    participant EB as EventBus
+
+    UI->>Saga: manageAvailability(status)
+    Saga->>LS: updateCourierStatus(courierId, status)
+    LS-->>Saga: success
+    
+    alt New Delivery Assigned
+        Saga->>UI: promptAcceptance(deliveryData)
+        UI->>Saga: acceptDelivery(deliveryId)
+        Saga->>LS: assignDelivery(courierId, deliveryId)
+        LS-->>Saga: success
+        Saga->>EB: publish(DeliveryAcceptedEvent)
+    end

@@ -1,0 +1,26 @@
+stateDiagram-v2
+    [*] --> ACTIVE
+    
+    ACTIVE --> FROZEN : freezeWallet()
+    ACTIVE --> SUSPENDED : suspend()
+    ACTIVE --> CLOSED : close() [balance == 0 && frozenAmount == 0]
+    
+    FROZEN --> ACTIVE : unfreezeWallet()
+    FROZEN --> SUSPENDED : suspend()
+    
+    SUSPENDED --> ACTIVE : activate()
+    SUSPENDED --> CLOSED : close() [balance == 0 && frozenAmount == 0]
+    
+    CLOSED --> [*]
+
+    note right of ACTIVE
+        Normal operations allowed
+    end note
+    
+    note right of FROZEN
+        Funds locked, no outgoing transactions
+    end note
+
+    note right of SUSPENDED
+        All operations restricted
+    end note

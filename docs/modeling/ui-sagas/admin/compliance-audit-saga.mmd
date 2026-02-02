@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant UI as AdminUI
+    participant Saga
+    participant CS as ComplianceService
+    participant EB as EventBus
+
+    UI->>Saga: initiateAudit(scope)
+    Saga->>CS: collectComplianceData(scope)
+    CS-->>Saga: auditData
+    
+    Saga->>CS: generateReport(auditData)
+    CS-->>Saga: reportLink
+    
+    Saga->>EB: publish(AuditCompletedEvent)
+    Saga->>UI: reportReady(reportLink)

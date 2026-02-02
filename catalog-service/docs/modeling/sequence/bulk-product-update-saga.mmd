@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Saga
+    participant PR as ProductRepository
+    participant VS as ValidationService
+    participant EB as EventBus
+
+    Saga->>VS: validateBatch(products)
+    VS-->>Saga: validItems, invalidItems
+    
+    Saga->>PR: updateProducts(validItems)
+    PR-->>Saga: success
+    
+    alt Some Failures
+        Saga->>Saga: handleFailures(invalidItems)
+    end
+    
+    Saga->>EB: publish(BulkUpdateCompletedEvent)

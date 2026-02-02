@@ -1,0 +1,27 @@
+stateDiagram-v2
+    [*] --> PENDING
+    
+    PENDING --> RECORDED : confirm()
+    PENDING --> REVERSED : reject()
+    
+    RECORDED --> REVERSED : reverse()
+    
+    REVERSED --> [*]
+    RECORDED --> [*]
+
+    state "Transaction Types" as Types {
+        [*] --> CREDIT
+        [*] --> DEBIT
+        [*] --> FREEZE
+        [*] --> UNFREEZE
+        [*] --> DEBIT_FROZEN
+        [*] --> REFUND
+        [*] --> PAYOUT
+        [*] --> TRANSFER_IN
+        [*] --> TRANSFER_OUT
+    }
+
+    note right of RECORDED
+        Immutability: Once recorded,
+        cannot be modified, only reversed.
+    end note

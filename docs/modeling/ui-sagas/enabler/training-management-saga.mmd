@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant UI as EnablerUI
+    participant Saga
+    participant TS as TrainingService
+    participant EB as EventBus
+
+    UI->>Saga: scheduleTraining(data)
+    Saga->>TS: assignResources(data)
+    TS-->>Saga: resourcesAssigned
+    
+    Saga->>TS: createTrainingSession(data)
+    TS-->>Saga: sessionId
+    
+    loop During Session
+        UI->>Saga: trackProgress(status)
+        Saga->>TS: updateProgress(sessionId, status)
+    end
+    
+    Saga->>EB: publish(TrainingCompletedEvent)
+    Saga->>UI: trainingFinalized()

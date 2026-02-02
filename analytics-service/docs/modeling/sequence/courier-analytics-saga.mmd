@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Saga
+    participant AR as AnalyticsRepository
+    participant LS as LogisticsService
+    participant EB as EventBus
+
+    Saga->>LS: getDeliveryData(courierId)
+    LS-->>Saga: deliveryData
+    
+    Saga->>AR: calculatePerformance(deliveryData)
+    AR-->>Saga: metrics
+    
+    Saga->>AR: updateDashboard(courierId, metrics)
+    AR-->>Saga: success
+    
+    Saga->>EB: publish(AnalyticsUpdatedEvent)

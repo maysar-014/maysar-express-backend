@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant UI as AdminUI
+    participant Saga
+    participant CS as ComplianceService
+    participant US as UserService
+    participant EB as EventBus
+
+    UI->>Saga: reviewKYC(userId)
+    Saga->>CS: getKYCStatus(userId)
+    CS-->>Saga: pendingDocuments
+    
+    UI->>Saga: approveKYC(userId)
+    Saga->>US: updateUserStatus(userId, KYC_APPROVED)
+    US-->>Saga: success
+    
+    Saga->>EB: publish(KYCApprovedEvent)
+    Saga->>UI: notifyCompletion()

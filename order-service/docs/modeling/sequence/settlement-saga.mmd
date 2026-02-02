@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Saga
+    participant OR as OrderRepository
+    participant PS as PayoutService
+    participant CS as CommissionService
+    participant EB as EventBus
+
+    Saga->>OR: getCompletedOrders(criteria)
+    OR-->>Saga: orders
+    
+    Saga->>CS: calculateCommission(orders)
+    CS-->>Saga: commissions
+    
+    Saga->>PS: createPayouts(orders, netAmounts)
+    PS-->>Saga: success
+    
+    Saga->>OR: recordCommissions(commissions)
+    OR-->>Saga: success
+    
+    Saga->>EB: publish(SettlementCompletedEvent)

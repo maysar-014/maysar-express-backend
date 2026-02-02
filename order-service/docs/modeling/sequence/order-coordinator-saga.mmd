@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Saga
+    participant OR as OrderRepository
+    participant PS as PaymentSaga
+    participant FS as FulfillmentSaga
+    participant EB as EventBus
+
+    Saga->>OR: coordinateOrder(orderId)
+    OR-->>Saga: orderData
+    
+    Saga->>PS: triggerPayment(orderId, totalAmount)
+    PS-->>Saga: paymentInitiated
+    
+    note over Saga, PS: Wait for Payment Resolution
+    
+    alt Payment Success
+        Saga->>FS: triggerFulfillment(orderId)
+        FS-->>Saga: fulfillmentStarted
+    else Payment Failed
+        Saga->>OR: updateStatus(orderId, CANCELLED)
+        Saga->>EB: publish(OrderCancelledEvent)
+    end
+
+    note over Saga, FS: Handle compensations if fulfillment fails

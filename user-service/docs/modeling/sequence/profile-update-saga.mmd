@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Saga
+    participant UR as UserRepository
+    participant VS as ValidationService
+    participant EB as EventBus
+
+    Saga->>VS: validateProfileChanges(changes)
+    VS-->>Saga: valid
+    
+    Saga->>UR: updateProfile(userId, changes)
+    UR-->>Saga: success
+    
+    Saga->>EB: publish(ProfileUpdatedEvent)

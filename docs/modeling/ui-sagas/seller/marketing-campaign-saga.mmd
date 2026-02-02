@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant UI as SellerUI
+    participant Saga
+    participant CS as CampaignService
+    participant EB as EventBus
+
+    UI->>Saga: createCampaign(data)
+    Saga->>CS: setBudget(data.budget)
+    CS-->>Saga: budgetSet
+    
+    Saga->>CS: launchCampaign(data.criteria)
+    CS-->>Saga: active
+    
+    loop During Campaign
+        Saga->>CS: trackPerformance(campaignId)
+        CS-->>Saga: performanceMetrics
+        Saga->>UI: showLiveStats(performanceMetrics)
+    end
+    
+    Saga->>EB: publish(CampaignLaunchedEvent)

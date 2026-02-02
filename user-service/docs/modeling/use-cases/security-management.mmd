@@ -1,0 +1,21 @@
+useCaseDiagram
+    actor "User" as U
+    actor "System" as S
+    actor "Admin" as A
+
+    package "User Service - Security Management" {
+        usecase "Setup Two-Factor Auth" as UC1
+        usecase "Verify Email" as UC2
+        usecase "Verify Phone" as UC3
+        usecase "Reset Password" as UC4
+        usecase "Report Security Breach" as UC5
+    }
+
+    U --> UC1
+    U --> UC2
+    U --> UC3
+    U --> UC4
+    U --> UC5
+
+    S --> UC5
+    A --> UC5

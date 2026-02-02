@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant UI as SellerUI
+    participant Saga
+    participant OS as OrderService
+    participant LS as LogisticsService
+    participant EB as EventBus
+
+    UI->>Saga: processOrder(orderId)
+    Saga->>OS: markOrderAsProcessing(orderId)
+    OS-->>Saga: success
+    
+    UI->>Saga: prepareShipment(packageData)
+    Saga->>LS: requestPickup(orderId, packageData)
+    LS-->>Saga: pickupScheduled
+    
+    Saga->>EB: publish(OrderFulfilledEvent)
+    Saga->>UI: orderUpdatesSent()

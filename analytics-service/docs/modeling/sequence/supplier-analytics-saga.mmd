@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Saga
+    participant AR as AnalyticsRepository
+    participant PS as ProductionService
+    participant EB as EventBus
+
+    Saga->>PS: getProductionData(supplierId)
+    PS-->>Saga: productionData
+    
+    Saga->>AR: calculateSupplyMetrics(productionData)
+    AR-->>Saga: metrics
+    
+    Saga->>AR: updateDashboard(supplierId, metrics)
+    AR-->>Saga: success
+    
+    Saga->>EB: publish(AnalyticsUpdatedEvent)

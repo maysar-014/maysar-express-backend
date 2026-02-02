@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant UI as CourierUI
+    participant Saga
+    participant AS as AnalyticsService
+    participant PS as PayoutService
+    participant EB as EventBus
+
+    Saga->>AS: calculatePerformance(courierId)
+    AS-->>Saga: performanceMetrics
+    
+    Saga->>PS: calculateEarnings(courierId, period)
+    PS-->>Saga: earningsData
+    
+    Saga->>UI: updateDashboard(performanceMetrics, earningsData)
+    Saga->>EB: publish(EarningsCalculatedEvent)

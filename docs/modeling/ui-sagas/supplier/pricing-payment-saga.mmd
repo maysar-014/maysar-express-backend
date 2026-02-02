@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant UI as SupplierUI
+    participant Saga
+    participant PS as PricingService
+    participant PayS as PaymentService
+    participant EB as EventBus
+
+    UI->>Saga: setPricing(productId, pricingData)
+    Saga->>PS: updatePricing(productId, pricingData)
+    PS-->>Saga: pricingUpdated
+    
+    Saga->>PayS: trackReceivables(supplierId)
+    PayS-->>Saga: receivableStatus
+    
+    Saga->>EB: publish(PricingUpdatedEvent)
+    Saga->>UI: dashboardUpdated(receivableStatus)

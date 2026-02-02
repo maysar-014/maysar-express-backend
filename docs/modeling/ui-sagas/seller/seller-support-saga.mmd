@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant UI as SellerUI
+    participant Saga
+    participant SS as SupportService
+    participant EB as EventBus
+
+    UI->>Saga: createTicket(subject, detail)
+    Saga->>SS: openTicket(sellerId, subject, detail)
+    SS-->>Saga: ticketId
+    
+    loop Waiting for Resolution
+        Saga->>SS: trackStatus(ticketId)
+        SS-->>Saga: currentStatus
+        Saga->>UI: updateTicketStatus(currentStatus)
+    end
+    
+    alt Resolved
+        Saga->>EB: publish(TicketResolvedEvent)
+        Saga->>UI: ticketFinalized()
+    end

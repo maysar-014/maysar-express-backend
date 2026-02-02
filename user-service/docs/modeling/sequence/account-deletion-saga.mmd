@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Saga
+    participant UR as UserRepository
+    participant WS as WalletService
+    participant OS as OrderService
+    participant EB as EventBus
+
+    Saga->>UR: validateDeletion(userId)
+    UR-->>Saga: valid
+    
+    Saga->>OS: cancelActiveOrders(userId)
+    OS-->>Saga: success
+    
+    Saga->>WS: closeWallet(userId)
+    WS-->>Saga: success
+    
+    Saga->>UR: deleteUserData(userId)
+    UR-->>Saga: success
+    
+    Saga->>EB: publish(UserDeletedEvent)
+    Saga->>EB: publish(UserDataPurgedEvent)

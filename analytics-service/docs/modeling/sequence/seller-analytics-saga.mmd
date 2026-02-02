@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Saga
+    participant AR as AnalyticsRepository
+    participant OS as OrderService
+    participant PS as ProductService
+    participant EB as EventBus
+
+    Saga->>OS: getSalesData(sellerId)
+    OS-->>Saga: salesData
+    
+    Saga->>PS: getProductMetrics(sellerId)
+    PS-->>Saga: metrics
+    
+    Saga->>AR: updateDashboard(sellerId, aggregatedData)
+    AR-->>Saga: success
+    
+    Saga->>EB: publish(AnalyticsUpdatedEvent)

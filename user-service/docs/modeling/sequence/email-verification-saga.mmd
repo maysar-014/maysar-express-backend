@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Saga
+    participant UR as UserRepository
+    participant NS as NotificationService
+    participant EB as EventBus
+
+    Saga->>UR: generateVerificationToken(userId)
+    UR-->>Saga: token
+    
+    Saga->>NS: sendVerificationEmail(email, token)
+    NS-->>Saga: success
+    
+    note over Saga: Wait for User Action
+    
+    Saga->>UR: verifyToken(token)
+    UR-->>Saga: valid
+    
+    Saga->>UR: updateEmailVerifiedStatus(userId, true)
+    UR-->>Saga: success
+    
+    Saga->>EB: publish(EmailVerifiedEvent)

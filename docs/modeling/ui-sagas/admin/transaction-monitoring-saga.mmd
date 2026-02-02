@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant UI as AdminUI
+    participant Saga
+    participant PS as PaymentService
+    participant WS as WalletService
+    participant EB as EventBus
+
+    Saga->>PS: monitorTransactions(criteria)
+    PS-->>Saga: transactions
+    
+    Saga->>Saga: detectAnomalies(transactions)
+    
+    alt Anomaly Detected
+        Saga->>UI: alertAdmin(anomalyData)
+        UI->>Saga: takeAction(payoutId, "BLOCK")
+        Saga->>WS: blockFunds(payoutId)
+        WS-->>Saga: success
+        Saga->>EB: publish(AnomalyBlockedEvent)
+    end

@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant UI as SupplierUI
+    participant Saga
+    participant OS as OrderService
+    participant LS as LogisticsService
+    participant EB as EventBus
+
+    UI->>Saga: processBulkOrders(orderIds)
+    Saga->>OS: validateOrders(orderIds)
+    OS-->>Saga: valid
+    
+    Saga->>LS: coordinateLogistics(orderIds)
+    LS-->>Saga: logisticsAssigned
+    
+    loop Logistics Loop
+        Saga->>LS: trackShipments(orderIds)
+        LS-->>Saga: shipmentStatus
+        Saga->>UI: updateShipmentStatus(shipmentStatus)
+    end
+    
+    Saga->>EB: publish(BulkOrderFulfilledEvent)

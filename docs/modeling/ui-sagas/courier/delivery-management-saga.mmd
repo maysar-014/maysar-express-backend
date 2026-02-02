@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant UI as CourierUI
+    participant Saga
+    participant LS as LogisticsService
+    participant EB as EventBus
+
+    UI->>Saga: updateDeliveryStatus(deliveryId, status)
+    Saga->>LS: validateLocation(courierId, deliveryId)
+    LS-->>Saga: locationOK
+    
+    Saga->>LS: updateStatus(deliveryId, status)
+    LS-->>Saga: success
+    
+    Saga->>EB: publish(DeliveryUpdatedEvent)
+    Saga->>EB: publish(NotifyCustomerEvent)
+    Saga->>UI: statusSynced()

@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant UI as SellerUI
+    participant Saga
+    participant AS as AnalyticsService
+    participant EB as EventBus
+
+    UI->>Saga: requestAnalytics(period)
+    Saga->>AS: aggregateSalesData(sellerId, period)
+    AS-->>Saga: aggregatedData
+    
+    Saga->>AS: generateInsights(aggregatedData)
+    AS-->>Saga: insights
+    
+    Saga->>EB: publish(SalesAnalyticsGeneratedEvent)
+    Saga->>UI: showAnalytics(insights)

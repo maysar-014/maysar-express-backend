@@ -1,0 +1,38 @@
+useCaseDiagram
+    actor "Customer" as C
+    actor "System" as S
+    actor "Admin" as A
+
+    package "Wallet Service" {
+        usecase "Credit Wallet" as UC1
+        usecase "Debit Wallet" as UC2
+        usecase "Freeze Funds" as UC3
+        usecase "Unfreeze Funds" as UC4
+        usecase "View Balance" as UC5
+        usecase "View Transaction History" as UC6
+        usecase "Suspend Wallet" as UC7
+        usecase "Close Wallet" as UC8
+        usecase "Record Transaction" as UC9
+        usecase "Trigger Fraud Detection" as UC10
+    }
+
+    C --> UC1
+    C --> UC2
+    C --> UC5
+    C --> UC6
+    
+    A --> UC3
+    A --> UC4
+    A --> UC7
+    A --> UC8
+    A --> UC5
+    A --> UC6
+
+    S --> UC1
+    S --> UC2
+    S --> UC3
+    S --> UC10
+
+    UC1 ..> UC9 : <<include>>
+    UC2 ..> UC9 : <<include>>
+    UC10 ..> UC3 : <<extend>>

@@ -1,0 +1,18 @@
+stateDiagram-v2
+    [*] --> PENDING
+    
+    PENDING --> PROCESSING : process()
+    PENDING --> CANCELLED : cancel()
+    
+    PROCESSING --> COMPLETED : complete()
+    PROCESSING --> FAILED : fail()
+    
+    FAILED --> PROCESSING : retry()
+    FAILED --> CANCELLED : cancel()
+    
+    COMPLETED --> [*]
+    CANCELLED --> [*]
+
+    note right of PROCESSING
+        Waiting for payment provider response
+    end note

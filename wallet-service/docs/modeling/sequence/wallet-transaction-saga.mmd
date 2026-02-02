@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant API as API Controller
+    participant Saga as WalletTransactionSaga
+    participant WR as WalletRepository
+    participant TR as TransactionRepository
+    participant EB as EventBus
+
+    API->>Saga: startTransaction(data)
+    Saga->>WR: findById(walletId)
+    WR-->>Saga: wallet
+    
+    alt Wallet Valid
+        Saga->>Saga: calculateNewBalance()
+        Saga->>WR: updateBalance(walletId, newBalance)
+        WR-->>Saga: success
+        
+        Saga->>TR: createTransaction(transactionData)
+        TR-->>Saga: transaction
+        
+        Saga->>EB: publish(TransactionCompletedEvent)
+        Saga-->>API: confirmation
+    else Wallet Invalid/Insufficient Funds
+        Saga->>EB: publish(TransactionFailedEvent)
+        Saga-->>API: error
+    end
+
+    note over Saga, EB: Compensating actions if DB fails after balance update

@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Saga
+    participant UR as UserRepository
+    participant SMS as SMSService
+    participant EB as EventBus
+
+    Saga->>UR: generateOTP(userId)
+    UR-->>Saga: otp
+    
+    Saga->>SMS: sendSMS(phone, otp)
+    SMS-->>Saga: success
+    
+    note over Saga: Wait for User Action
+    
+    Saga->>UR: verifyOTP(userId, otp)
+    UR-->>Saga: valid
+    
+    Saga->>UR: updatePhoneVerifiedStatus(userId, true)
+    UR-->>Saga: success
+    
+    Saga->>EB: publish(PhoneVerifiedEvent)

@@ -1,0 +1,48 @@
+useCaseDiagram
+    actor "Customer" as C
+    actor "Seller" as S
+    actor "Moderator" as M
+    actor "System" as Sys
+
+    package "Community Service" {
+        usecase "Create Post" as UC1
+        usecase "Publish Post" as UC2
+        usecase "Edit Post" as UC3
+        usecase "Delete Post" as UC4
+        usecase "Pin Post" as UC5
+        usecase "Feature Post" as UC6
+        usecase "Moderate Post" as UC7
+        usecase "Hide Post" as UC8
+        usecase "View Feed" as UC9
+        usecase "Comment" as UC10
+        usecase "Like" as UC11
+        usecase "Share" as UC12
+    }
+
+    C --> UC1
+    C --> UC3
+    C --> UC4
+    C --> UC9
+    C --> UC10
+    C --> UC11
+    C --> UC12
+
+    S --> UC1
+    S --> UC3
+    S --> UC4
+    S --> UC5
+    S --> UC6
+    S --> UC9
+    S --> UC10
+    S --> UC11
+    S --> UC12
+
+    M --> UC7
+    M --> UC8
+    M --> UC4
+
+    Sys --> UC7
+    Sys --> UC9
+
+    UC1 ..> UC7 : <<include>>
+    UC2 ..> UC7 : <<include>>

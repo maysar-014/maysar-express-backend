@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Saga
+    participant AR as AnalyticsRepository
+    participant TS as TrainingService
+    participant EB as EventBus
+
+    Saga->>TS: getTrainingData(enablerId)
+    TS-->>Saga: trainingData
+    
+    Saga->>AR: calculateTrainingMetrics(trainingData)
+    AR-->>Saga: metrics
+    
+    Saga->>AR: updateDashboard(enablerId, metrics)
+    AR-->>Saga: success
+    
+    Saga->>EB: publish(AnalyticsUpdatedEvent)

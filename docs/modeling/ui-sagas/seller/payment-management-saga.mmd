@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant UI as SellerUI
+    participant Saga
+    participant PS as PaymentService
+    participant PayS as PayoutService
+    participant EB as EventBus
+
+    UI->>Saga: viewPayments()
+    Saga->>PS: getSellerPayments(sellerId)
+    PS-->>Saga: payments
+    
+    UI->>Saga: requestPayout(amount)
+    Saga->>PayS: initiatePayout(sellerId, amount)
+    PayS-->>Saga: payoutResponse
+    
+    Saga->>EB: publish(PayoutRequestedEvent)
+    Saga->>UI: trackPayoutStatus(payoutId)

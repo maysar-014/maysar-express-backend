@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Saga
+    participant OR as OrderRepository
+    participant IS as InventoryService
+    participant LS as LogisticsService
+    participant EB as EventBus
+
+    Saga->>IS: reserveInventory(items)
+    IS-->>Saga: success
+    
+    Saga->>LS: createDelivery(orderId, destination)
+    LS-->>Saga: deliveryId
+    
+    Saga->>OR: updateOrderStatus(orderId, IN_TRANSIT)
+    OR-->>Saga: success
+    
+    Saga->>EB: publish(FulfillmentStartedEvent)
+    Saga->>EB: publish(OrderInTransitEvent)

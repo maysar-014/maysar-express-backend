@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Saga
+    participant BR as BusinessRepository
+    participant CS as ComplianceService
+    participant EB as EventBus
+
+    Saga->>BR: getDocuments(businessId)
+    BR-->>Saga: documents
+    
+    Saga->>CS: verifyDocuments(documents)
+    CS-->>Saga: verificationResult
+    
+    Saga->>CS: checkCompliance(businessId)
+    CS-->>Saga: complianceStatus
+    
+    Saga->>BR: updateStatus(businessId, VERIFIED)
+    BR-->>Saga: success
+    
+    Saga->>EB: publish(BusinessVerifiedEvent)

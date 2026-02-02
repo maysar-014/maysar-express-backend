@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant UI as SellerUI
+    participant Saga
+    participant ES as EnablerService
+    participant EB as EventBus
+
+    UI->>Saga: requestEnabler(area)
+    Saga->>ES: findMatchingEnabler(area)
+    ES-->>Saga: enablerId
+    
+    Saga->>ES: coordinateTraining(sellerId, enablerId)
+    ES-->>Saga: coordinationReady
+    
+    Saga->>EB: publish(EnablerCollaborationStartedEvent)
+    Saga->>UI: startSession()

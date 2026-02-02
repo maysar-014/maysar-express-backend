@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant UI as AdminUI
+    participant Saga
+    participant CS as ConfigService
+    participant EB as EventBus
+
+    UI->>Saga: updateConfig(newConfig)
+    Saga->>CS: validateChanges(newConfig)
+    CS-->>Saga: valid
+    
+    Saga->>CS: applyConfig(newConfig)
+    CS-->>Saga: success
+    
+    Saga->>EB: publish(SystemConfigUpdatedEvent)
+    Saga->>UI: configApplied()

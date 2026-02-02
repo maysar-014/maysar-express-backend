@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Saga
+    participant NR as NotificationRepository
+    participant CP as ChannelProviders
+    participant EB as EventBus
+
+    Saga->>NR: getBatchData(batchId)
+    NR-->>Saga: notifications
+    
+    par For each Notification
+        Saga->>CP: sendNotification(notification)
+        CP-->>Saga: result
+    end
+    
+    Saga->>NR: trackDelivery(results)
+    NR-->>Saga: tracked
+    
+    Saga->>EB: publish(BatchCompletedEvent)

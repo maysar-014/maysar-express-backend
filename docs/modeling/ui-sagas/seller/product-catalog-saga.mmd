@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant UI as SellerUI
+    participant Saga
+    participant CS as CatalogService
+    participant EB as EventBus
+
+    UI->>Saga: manageProducts(action, productData)
+    Saga->>CS: updateCatalog(sellerId, action, productData)
+    CS-->>Saga: catalogSuccess
+    
+    Saga->>CS: syncInventory(productData)
+    CS-->>Saga: inventorySynced
+    
+    Saga->>EB: publish(CatalogUpdatedEvent)
+    Saga->>UI: productListUpdated()

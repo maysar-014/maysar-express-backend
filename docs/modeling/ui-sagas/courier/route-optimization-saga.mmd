@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant UI as CourierUI
+    participant Saga
+    participant LS as LogisticsService
+    participant MS as MapsService
+    participant EB as EventBus
+
+    UI->>Saga: requestRoute(deliveryIds)
+    Saga->>MS: calculateOptimalPath(deliveryIds)
+    MS-->>Saga: routeData
+    
+    Saga->>LS: updateDeliveries(routeData)
+    LS-->>Saga: success
+    
+    Saga->>EB: publish(RouteOptimizedEvent)
+    Saga->>UI: showRoute(routeData)

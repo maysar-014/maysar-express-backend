@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant UI as AdminUI
+    participant Saga
+    participant AS as AnalyticsService
+    participant EB as EventBus
+
+    UI->>Saga: requestDashboardData(period)
+    Saga->>AS: aggregateMetrics(period)
+    AS-->>Saga: metrics
+    
+    Saga->>Saga: formatResponse(metrics)
+    Saga->>UI: dashboardUpdated(formattedData)
+    
+    Saga->>EB: publish(DashboardUpdatedEvent)

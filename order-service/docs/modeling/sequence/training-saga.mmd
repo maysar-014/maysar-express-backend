@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Saga
+    participant OR as OrderRepository
+    participant TS as TrainingService
+    participant EB as EventBus
+
+    Saga->>TS: scheduleTraining(orderId, type)
+    TS-->>Saga: trainingId
+    
+    Saga->>TS: assignEnabler(trainingId)
+    TS-->>Saga: enablerId
+    
+    Saga->>EB: publish(TrainingScheduledEvent)
+    Saga->>EB: publish(NotifyPartiesEvent)

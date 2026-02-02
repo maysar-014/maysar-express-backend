@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant UI as SellerUI
+    participant Saga
+    participant CS as CommunityService
+    participant NS as NotificationService
+    participant EB as EventBus
+
+    UI->>Saga: engageCustomers(message)
+    Saga->>CS: postCommunityUpdate(message)
+    CS-->>Saga: success
+    
+    Saga->>NS: sendTargetedNotification(audience, message)
+    NS-->>Saga: processing
+    
+    loop Engagements
+        Saga->>CS: trackResponses(engagementId)
+        CS-->>Saga: responseMetrics
+        Saga->>UI: updateEngagementStats(responseMetrics)
+    end
+    
+    Saga->>EB: publish(CustomerEngagementTrackedEvent)

@@ -1,0 +1,22 @@
+stateDiagram-v2
+    [*] --> DRAFT
+    
+    DRAFT --> PUBLISHED : publish() [moderationPassed]
+    DRAFT --> DELETED : delete()
+    
+    PUBLISHED --> HIDDEN : hide()
+    PUBLISHED --> DELETED : delete()
+    
+    HIDDEN --> PUBLISHED : unhide()
+    HIDDEN --> DELETED : delete()
+    
+    DELETED --> [*]
+
+    note right of DRAFT
+        Content being created,
+        not visible to others
+    end note
+    
+    note right of PUBLISHED
+        Visible in community feeds
+    end note

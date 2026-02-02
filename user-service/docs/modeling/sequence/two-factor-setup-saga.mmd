@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Saga
+    participant UR as UserRepository
+    participant TS as TwoFactorService
+    participant EB as EventBus
+
+    Saga->>TS: generateSecret(userId)
+    TS-->>Saga: secret, qrCode
+    
+    note over Saga: Wait for User Action
+    
+    Saga->>TS: verifyVerificationCode(userId, code)
+    TS-->>Saga: valid
+    
+    Saga->>UR: enableTwoFactor(userId, secret)
+    UR-->>Saga: success
+    
+    Saga->>EB: publish(TwoFactorEnabledEvent)

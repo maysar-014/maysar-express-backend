@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Saga
+    participant NR as NotificationRepository
+    participant S as Scheduler
+    participant EB as EventBus
+
+    Saga->>S: scheduleNotification(notificationData, scheduledTime)
+    S-->>Saga: scheduledId
+    
+    note over S: At scheduledTime
+    
+    S->>Saga: triggerNotification(scheduledId)
+    
+    Saga->>NR: sendNotification(notificationData)
+    NR-->>Saga: success
+    
+    Saga->>EB: publish(ScheduledNotificationSentEvent)

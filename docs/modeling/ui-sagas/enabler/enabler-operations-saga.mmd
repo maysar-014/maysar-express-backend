@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant UI as EnablerUI
+    participant Saga
+    participant ES as EnablerService
+    participant EB as EventBus
+
+    UI->>Saga: manageOperations(data)
+    Saga->>ES: updateAvailability(enablerId, data.availability)
+    ES-->>Saga: success
+    
+    Saga->>ES: trackPerformance(enablerId)
+    ES-->>Saga: performanceMetrics
+    
+    Saga->>UI: showMetrics(performanceMetrics)
+    Saga->>EB: publish(EnablerOperationsUpdatedEvent)

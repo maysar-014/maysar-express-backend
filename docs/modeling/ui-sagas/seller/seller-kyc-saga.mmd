@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant UI as SellerUI
+    participant Saga
+    participant CS as ComplianceService
+    participant EB as EventBus
+
+    UI->>Saga: submitKYC(kycData)
+    Saga->>CS: uploadDocuments(kycData.docs)
+    CS-->>Saga: uploadSuccess
+    
+    Saga->>CS: initiateVerification(sellerId)
+    CS-->>Saga: verificationPending
+    
+    Saga->>EB: publish(KYCSubmittedEvent)
+    Saga->>UI: trackVerificationStatus()

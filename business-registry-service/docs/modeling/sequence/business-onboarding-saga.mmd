@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Saga
+    participant BR as BusinessRepository
+    participant US as UserService
+    participant WS as WalletService
+    participant EB as EventBus
+
+    Saga->>BR: createBusiness(businessData)
+    BR-->>Saga: businessId
+    
+    Saga->>US: createOwnerAccount(ownerData)
+    US-->>Saga: userId
+    
+    Saga->>WS: createWallet(userId, "BUSINESS")
+    WS-->>Saga: walletId
+    
+    Saga->>EB: publish(BusinessOnboardedEvent)

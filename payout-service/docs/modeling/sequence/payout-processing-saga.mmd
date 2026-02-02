@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant API
+    participant Saga as PayoutProcessingSaga
+    participant PR as PayoutRepository
+    participant WS as WalletService
+    participant PP as PaymentProvider
+    participant EB as EventBus
+
+    API->>Saga: initiateStage(payoutId)
+    Saga->>PR: findById(payoutId)
+    PR-->>Saga: payout
+    
+    Saga->>WS: checkSellerBalance(sellerId, amount)
+    WS-->>Saga: sufficient
+    
+    Saga->>WS: debitWallet(sellerId, amount)
+    WS-->>Saga: success
+    
+    Saga->>PP: processPayout(payoutData)
+    PP-->>Saga: providerResponse(PENDING/SUCCESS/FAIL)
+    
+    alt Success
+        Saga->>PR: updateStatus(payoutId, COMPLETED)
+        Saga->>EB: publish(PayoutCompletedEvent)
+    else Failure
+        Saga->>PR: updateStatus(payoutId, FAILED)
+        Saga->>WS: creditWallet(sellerId, amount) [Compensate]
+        Saga->>EB: publish(PayoutFailedEvent)
+    end
+    
+    Saga-->>API: result

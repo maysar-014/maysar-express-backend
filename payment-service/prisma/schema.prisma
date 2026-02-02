@@ -20,9 +20,9 @@ model Payment {
   amount        Decimal  @db.Decimal(10, 2)
   currency      String   @default("TZS") @db.VarChar(3)
   method        PaymentMethod
-  provider      String   @db.VarChar(50) // pesapal, stripe, paypal, etc.
+  provider      String   @db.VarChar(50) // PESAPAL, INTERNAL_WALLET
   providerRef   String?  @db.VarChar(255)
-  status        PaymentStatus @default(pending)
+  status        PaymentStatus @default(PENDING)
   description   String?  @db.VarChar(500)
   metadata      Json?
   processedAt   DateTime? @db.Timestamp(6)
@@ -33,52 +33,7 @@ model Payment {
   createdAt     DateTime @default(now()) @db.Timestamp(6)
   updatedAt     DateTime @updatedAt @db.Timestamp(6)
 
-  // Relations
-  transactions  Transaction[]
-
   @@map("payments")
-}
-
-// User wallets for platform currency
-model Wallet {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @db.Uuid
-  balance     Decimal  @default(0) @db.Decimal(10, 2)
-  currency    String   @default("TZS") @db.VarChar(3)
-  status      WalletStatus @default(active)
-  frozenAmount Decimal @default(0) @db.Decimal(10, 2)
-  metadata    Json?
-  createdAt   DateTime @default(now()) @db.Timestamp(6)
-  updatedAt   DateTime @updatedAt @db.Timestamp(6)
-
-  // Relations
-  transactions Transaction[]
-
-  @@map("wallets")
-}
-
-// Complete transaction ledger (append-only)
-model Transaction {
-  id            String   @id @default(uuid()) @db.Uuid
-  walletId      String?  @db.Uuid
-  paymentId     String?  @db.Uuid
-  userId        String   @db.Uuid
-  type          TransactionType
-  amount        Decimal  @db.Decimal(10, 2)
-  currency      String   @default("TZS") @db.VarChar(3)
-  balanceBefore Decimal  @db.Decimal(10, 2)
-  balanceAfter  Decimal  @db.Decimal(10, 2)
-  referenceType String?  @db.VarChar(50) // order, refund, transfer, etc.
-  referenceId   String?  @db.Uuid
-  description   String?  @db.VarChar(255)
-  metadata      Json?
-  processedAt   DateTime @default(now()) @db.Timestamp(6)
-
-  // Relations
-  wallet        Wallet? @relation(fields: [walletId], references: [id])
-  payment       Payment? @relation(fields: [paymentId], references: [id])
-
-  @@map("transactions")
 }
 
 // Refund processing
@@ -90,7 +45,8 @@ model Refund {
   amount        Decimal  @db.Decimal(10, 2)
   currency      String   @default("TZS") @db.VarChar(3)
   reason        String   @db.VarChar(255)
-  status        RefundStatus @default(pending)
+  reasonDetails String?  @db.Text
+  status        RefundStatus @default(PENDING)
   providerRef   String?  @db.VarChar(255)
   processedAt   DateTime? @db.Timestamp(6)
   completedAt   DateTime? @db.Timestamp(6)
@@ -101,28 +57,6 @@ model Refund {
   updatedAt     DateTime @updatedAt @db.Timestamp(6)
 
   @@map("refunds")
-}
-
-// Payout processing for sellers
-model Payout {
-  id            String   @id @default(uuid()) @db.Uuid
-  sellerId      String   @db.Uuid
-  amount        Decimal  @db.Decimal(10, 2)
-  currency      String   @default("TZS") @db.VarChar(3)
-  method        PayoutMethod
-  status        PayoutStatus @default(pending)
-  bankDetails   Json?    // Encrypted bank account details
-  reference     String?  @db.VarChar(255)
-  processedAt   DateTime? @db.Timestamp(6)
-  completedAt   DateTime? @db.Timestamp(6)
-  failedAt      DateTime? @db.Timestamp(6)
-  failureReason String?
-  fee           Decimal  @default(0) @db.Decimal(8, 2)
-  metadata      Json?
-  createdAt     DateTime @default(now()) @db.Timestamp(6)
-  updatedAt     DateTime @updatedAt @db.Timestamp(6)
-
-  @@map("payouts")
 }
 
 // Webhook processing for payment providers
@@ -144,65 +78,33 @@ model WebhookEvent {
 
 // Enums
 enum PaymentMethod {
-  card
-  mobile_money_mpesa
-  mobile_money_airtel
-  mobile_money_tigo
-  mobile_money_mixed
-  bank_transfer
-  wallet
-  cash_on_delivery
+  MPESA
+  AIRTEL_MONEY
+  TIGO_PESA
+  HALOPESA
+  WALLET
+  BANK_TRANSFER
+  CARD
 }
 
 enum PaymentStatus {
-  pending
-  processing
-  completed
-  failed
-  cancelled
-  refunded
-  disputed
-}
-
-enum WalletStatus {
-  active
-  frozen
-  suspended
-  closed
-}
-
-enum TransactionType {
-  credit
-  debit
-  transfer_in
-  transfer_out
-  refund
-  fee
-  adjustment
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
 }
 
 enum RefundStatus {
-  pending
-  processing
-  completed
-  failed
-  cancelled
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
 }
 
-enum PayoutMethod {
-  bank_transfer
-  mobile_money
-  wallet_transfer
-  check
-}
-
-enum PayoutStatus {
-  pending
-  processing
-  completed
-  failed
-  cancelled
-}
 
 // ============================================================================
 // TRANSACTIONAL OUTBOX
@@ -223,4 +125,20 @@ model OutboxEvent {
   @@index([status, nextRetryAt])
   @@index([createdAt])
   @@map("outbox_events")
+}
+
+// Fraud Detection
+model FraudAssessment {
+  id              String   @id @default(uuid()) @db.Uuid
+  transactionId   String   @unique
+  riskScore       Int
+  riskLevel       String
+  recommendation  String
+  confidence      Float
+  flags           Json
+  processingTime  Int
+  createdAt       DateTime @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime @updatedAt @db.Timestamp(6)
+
+  @@map("fraud_assessments")
 }

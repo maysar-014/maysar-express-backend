@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Saga
+    participant UR as UserRepository
+    participant PS as PermissionService
+    participant EB as EventBus
+
+    Saga->>UR: validateRoleChange(userId, newRole)
+    UR-->>Saga: valid
+    
+    Saga->>PS: updatePermissions(userId, newRole)
+    PS-->>Saga: success
+    
+    Saga->>UR: updateRole(userId, newRole)
+    UR-->>Saga: success
+    
+    Saga->>EB: publish(RoleChangedEvent)

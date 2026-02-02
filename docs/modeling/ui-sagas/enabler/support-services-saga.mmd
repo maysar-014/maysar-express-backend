@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant UI as EnablerUI
+    participant Saga
+    participant SS as SupportService
+    participant EB as EventBus
+
+    UI->>Saga: provideSupport(ticketId, response)
+    Saga->>SS: updateTicket(ticketId, response)
+    SS-->>Saga: success
+    
+    Saga->>SS: trackResolutionTime(ticketId)
+    SS-->>Saga: tracked
+    
+    alt Issue Resolved
+        Saga->>SS: closeTicket(ticketId)
+        Saga->>EB: publish(SupportCompletedEvent)
+        Saga->>UI: ticketClosed()
+    end

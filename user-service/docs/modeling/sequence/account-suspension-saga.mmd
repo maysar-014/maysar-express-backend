@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Saga
+    participant UR as UserRepository
+    participant SS as SessionService
+    participant EB as EventBus
+
+    Saga->>UR: suspendAccount(userId, reason)
+    UR-->>Saga: success
+    
+    Saga->>SS: invalidateSessions(userId)
+    SS-->>Saga: success
+    
+    Saga->>EB: publish(AccountSuspendedEvent)
+    Saga->>EB: publish(NotifyUserEvent)

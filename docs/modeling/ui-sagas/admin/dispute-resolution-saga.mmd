@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant UI as AdminUI
+    participant Saga
+    participant OS as OrderService
+    participant PS as PaymentService
+    participant EB as EventBus
+
+    UI->>Saga: reviewDispute(disputeId)
+    Saga->>OS: getDisputeDetails(disputeId)
+    OS-->>Saga: details
+    
+    Saga->>Saga: investigate(details)
+    
+    UI->>Saga: resolveDispute(decision)
+    Saga->>PS: executeResolution(decision)
+    PS-->>Saga: resolutionSuccess
+    
+    Saga->>EB: publish(DisputeResolvedEvent)
+    Saga->>UI: resolutionLogged()

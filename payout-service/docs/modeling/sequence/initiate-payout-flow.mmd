@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant API
+    participant UC as InitiatePayoutUseCase
+    participant PE as Payout Entity
+    participant PR as PayoutRepository
+    participant EB as EventBus
+
+    API->>UC: execute(command)
+    UC->>UC: validateDetails(command)
+    UC->>UC: calculateFees(command.amount)
+    
+    UC->>PE: create(command, fees)
+    PE-->>UC: payout
+    
+    UC->>PR: save(payout)
+    PR-->>UC: success
+    
+    UC->>EB: publish(PayoutInitiatedEvent)
+    UC-->>API: success

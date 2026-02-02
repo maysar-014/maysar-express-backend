@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant UI as SupplierUI
+    participant Saga
+    participant PS as ProductionService
+    participant EB as EventBus
+
+    UI->>Saga: planProduction(planDetails)
+    Saga->>PS: trackProgress(planId)
+    PS-->>Saga: productionStatus
+    
+    loop Completion Loop
+        Saga->>PS: updateInventory(planId, count)
+        PS-->>Saga: success
+    end
+    
+    Saga->>EB: publish(ProductionCompletedEvent)
+    Saga->>UI: inventoryUpdated()
