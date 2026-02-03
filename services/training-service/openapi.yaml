@@ -1,0 +1,86 @@
+openapi: 3.1.0
+info:
+  title: Training Service API
+  version: 1.0.0
+  description: API for managing training modules and certifications for all roles.
+servers:
+  - url: http://localhost:3010
+    description: Local Server
+paths:
+  /api/v1/training/start:
+    post:
+      summary: Start a training module
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                learnerId:
+                  type: string
+                learnerRole:
+                  type: string
+                  enum: [buyer, seller, supplier, courier, enabler, system]
+                moduleId:
+                  type: string
+      responses:
+        '201':
+          description: Training started
+  /api/v1/training/{id}/complete:
+    post:
+      summary: Complete a training module
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                score:
+                  type: number
+      responses:
+        '200':
+          description: Training completed
+  /api/v1/training/progress/{learnerId}:
+    get:
+      summary: Get training progress for a learner
+      parameters:
+        - name: learnerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Progress retrieved
+  /api/v1/training/eligibility/{learnerId}:
+    get:
+      summary: Check delivery eligibility for a learner
+      parameters:
+        - name: learnerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Eligibility checked
+  /api/v1/modules:
+    get:
+      summary: List all training modules
+      responses:
+        '200':
+          description: List of modules
+  /api/health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Service health

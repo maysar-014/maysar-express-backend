@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant Saga as "TrainingCompletionSaga"
+    participant UC as "CompleteTrainingUseCase"
+    participant Bus as "EventBus / Kafka"
+    participant Outbox as "Outbox Table"
+    participant Job as "OutboxProcessorJob"
+    participant Courier as "Courier Service"
+
+    Note over Saga: Triggered by TrainingCompletionRequested
+    
+    Saga->>UC: execute(command)
+    UC-->>Saga: result (COMPLETED)
+    
+    Saga->>Outbox: save(TrainingCompletedEvent)
+    Saga->>Outbox: save(EligibilityChangedEvent)
+    
+    Note over Job: Async Polling
+    Job->>Outbox: fetchPending()
+    Outbox-->>Job: events
+    
+    Job->>Bus: publish(TrainingCompleted)
+    Job->>Bus: publish(EligibilityChanged)
+    
+    Note over Courier: Listens to EligibilityChanged
+    Bus-->>Courier: consume(EligibilityChanged)
+    Courier->>Courier: Update Courier Status

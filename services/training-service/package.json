@@ -1,0 +1,11 @@
+﻿{
+    "private": true,
+    "name": "training-service",
+    "version": "1.0.0",
+    "main": "dist/main.js",
+    "scripts": {
+        "start:dev": "ts-node-dev src/main.ts",
+        "build": "tsc",
+        "test": "jest"
+    }
+}

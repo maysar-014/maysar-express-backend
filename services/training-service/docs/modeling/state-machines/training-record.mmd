@@ -1,0 +1,18 @@
+stateDiagram-v2
+    [*] --> NOT_STARTED
+    
+    NOT_STARTED --> IN_PROGRESS : start()
+    
+    IN_PROGRESS --> COMPLETED : complete(score >= passing)
+    IN_PROGRESS --> FAILED : complete(score < passing)
+    IN_PROGRESS --> FAILED : fail()
+    
+    COMPLETED --> EXPIRED : expire()
+    COMPLETED --> EXPIRED : isExpired() == true
+    
+    FAILED --> IN_PROGRESS : start() [attempts < maxAttempts]
+    EXPIRED --> IN_PROGRESS : start() [attempts < maxAttempts]
+    
+    COMPLETED --> [*]
+    FAILED --> [*] : [attempts >= maxAttempts]
+    EXPIRED --> [*] : [attempts >= maxAttempts]

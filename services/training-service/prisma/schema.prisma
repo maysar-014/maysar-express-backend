@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TrainingRecord {
+  id          String   @id @default(uuid())
+  learnerId   String
+  learnerRole String
+  moduleId    String
+  status      String
+  startedAt   DateTime?
+  completedAt DateTime?
+  score       Int?
+  attempts    Int      @default(0)
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  module      TrainingModule @relation(fields: [moduleId], references: [id])
+
+  @@index([learnerId])
+  @@index([learnerRole])
+  @@index([moduleId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+
+model CertificationRequirement {
+  module             String  @id
+  minimumScore       Int
+  validityPeriodDays Int
+  mandatory          Boolean @default(true)
+  maxAttempts        Int     @default(3)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+enum ContentType {
+  TEXT
+  VIDEO
+  INTERACTIVE
+}
+
+model TrainingModule {
+  id              String      @id @default(uuid())
+  name            String
+  description     String
+  contentType     ContentType @default(TEXT)
+  content         Json
+  durationMinutes Int
+  category        String
+  prerequisites   String[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  records         TrainingRecord[]
+}
+
+
+model Outbox {
+  id          String   @id @default(uuid())
+  type        String
+  payload     Json
+  status      String   @default("PENDING") // PENDING, PROCESSING, PUBLISHED, FAILED
+  attempts    Int      @default(0)
+  lastError   String?
+  nextRetryAt DateTime?
+  createdAt   DateTime @default(now())
+  publishedAt DateTime?
+
+  @@index([status, nextRetryAt])
+}

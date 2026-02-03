@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant API as "API Controller"
+    participant UC as "StartTrainingUseCase"
+    participant ModRepo as "TrainingModuleRepo"
+    participant ReqRepo as "CertRequirementRepo"
+    participant RecRepo as "TrainingRecordRepo"
+    participant Policy as "TrainingPolicy"
+    participant Record as "TrainingRecord Entity"
+
+    API->>UC: execute(learnerId, moduleId)
+    UC->>ModRepo: findById(moduleId)
+    ModRepo-->>UC: module
+    UC->>ReqRepo: findByModule(moduleId)
+    ReqRepo-->>UC: requirement
+    UC->>RecRepo: findByLearnerId(learnerId)
+    RecRepo-->>UC: existingRecords
+    
+    UC->>Policy: canStartTraining(learnerId, module, existingRecords, requirement)
+    Policy-->>UC: validation (canStart: boolean)
+    
+    alt canStart is true
+        alt record exists
+            UC->>Record: start()
+            Record-->>UC: updated status
+        else record not found
+            UC->>Record: createNew(...)
+            UC->>Record: start()
+        end
+        UC->>RecRepo: save(record)
+        UC-->>API: success (trainingId)
+    else canStart is false
+        UC-->>API: throw BusinessRuleError
+    end

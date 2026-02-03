@@ -1,0 +1,11 @@
+﻿{
+    "private":  true,
+    "name":  "pricing-service",
+    "version":  "1.0.0",
+    "main":  "dist/api/main.js",
+    "scripts":  {
+                    "start:dev":  "ts-node-dev src/api/main.ts",
+                    "build":  "tsc",
+                    "test":  "jest"
+                }
+}
