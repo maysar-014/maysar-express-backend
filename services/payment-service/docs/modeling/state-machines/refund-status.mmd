@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> PENDING : Created
+    PENDING --> PROCESSING : Process
+    PENDING --> FAILED : Fail
+    PENDING --> CANCELLED : Cancel
+    PROCESSING --> COMPLETED : Complete
+    PROCESSING --> FAILED : Fail
+    PROCESSING --> CANCELLED : Cancel
+    COMPLETED --> [*]
+    FAILED --> [*]
+    CANCELLED --> [*]

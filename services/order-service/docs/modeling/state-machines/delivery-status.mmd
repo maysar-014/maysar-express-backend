@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> pending : Created
+    pending --> assigned : Assign Courier
+    assigned --> picked_up : Pickup
+    picked_up --> in_transit : Start Transit
+    in_transit --> delivered : Deliver
+    in_transit --> failed : Fail
+    pending --> cancelled : Cancel
+    assigned --> cancelled : Cancel
+    failed --> [*]
+    cancelled --> [*]
+    delivered --> [*]

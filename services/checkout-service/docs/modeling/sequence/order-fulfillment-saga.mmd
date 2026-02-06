@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Saga as OrderFulfillmentSaga
+    participant Bus as EventBus
+    participant Repo as CheckoutRepository
+    participant Cart as CartRepository
+    
+    Saga->>Repo: getSession(checkoutId)
+    Repo-->>Saga: session
+    
+    Saga->>Bus: InventoryReservationRequested
+    Saga->>Bus: PaymentProcessingRequested
+    Saga->>Bus: OrderCreationRequested
+    
+    Saga->>Cart: delete(cartId)
+    
+    opt Compensation (on error)
+        Saga->>Bus: InventoryReleaseRequested
+        Saga->>Bus: PaymentRefundRequested
+    end

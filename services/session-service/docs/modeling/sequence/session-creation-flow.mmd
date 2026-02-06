@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant User
+    participant Gateway
+    participant Session as SessionService
+    participant Cache as Redis/Store
+    
+    User->>Gateway: Login Credentials
+    Gateway->>Session: createSession(userId, role)
+    Session->>Session: generateToken()
+    Session->>Cache: store(token, sessionData)
+    Cache-->>Session: ok
+    Session-->>Gateway: token
+    Gateway-->>User: token

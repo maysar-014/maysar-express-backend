@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant User
+    participant API as CampaignAPI
+    participant Service as CampaignService
+    participant Repo as CampaignRepository
+    
+    User->>API: createCampaign(data)
+    API->>Service: create(data)
+    Service->>Service: validate(data)
+    Service->>Repo: save(campaign)
+    Repo-->>Service: campaignId
+    Service-->>API: campaignId
+    API-->>User: success(campaignId)

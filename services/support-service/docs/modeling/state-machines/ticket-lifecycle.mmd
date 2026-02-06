@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> OPEN : Create
+    OPEN --> IN_PROGRESS : Assign/Start
+    IN_PROGRESS --> RESOLVED : Resolve
+    RESOLVED --> CLOSED : User Confirm / Timeout
+    RESOLVED --> IN_PROGRESS : Reopen
+    CLOSED --> [*]
+    OPEN --> CLOSED : Cancel
+    IN_PROGRESS --> CLOSED : Cancel

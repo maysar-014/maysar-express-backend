@@ -10,6 +10,7 @@ export interface TrainingRecordDTO {
     completedAt?: Date;
     score?: number;
     attempts: number;
+    progress?: any;
     expiresAt?: Date;
 }
 

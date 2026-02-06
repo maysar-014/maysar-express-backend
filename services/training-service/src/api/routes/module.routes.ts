@@ -20,5 +20,16 @@ export function createModuleRoutes(controller: ModuleController): Router {
         controller.getContent.bind(controller)
     );
 
+    router.get(
+        '/leaderboard',
+        controller.getLeaderboard.bind(controller)
+    );
+
+    router.get(
+        '/badges/:learnerId',
+        validationMiddleware((data) => TrainingValidator.validateIdParam(data, 'learnerId'), 'params'),
+        controller.getLearnerBadges.bind(controller)
+    );
+
     return router;
 }

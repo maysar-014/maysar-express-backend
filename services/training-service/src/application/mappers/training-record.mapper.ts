@@ -13,6 +13,7 @@ export class TrainingRecordMapper {
             completedAt: entity.completedAt,
             score: entity.score?.getValue(),
             attempts: entity.attempts,
+            progress: entity.progress,
             expiresAt: entity.expiresAt
         };
     }
@@ -28,6 +29,7 @@ export class TrainingRecordMapper {
             completedAt: props.completedAt,
             score: props.score ? TrainingScore.create(props.score) : undefined,
             attempts: props.attempts,
+            progress: props.progress,
             expiresAt: props.expiresAt
         });
     }
@@ -43,6 +45,7 @@ export class TrainingRecordMapper {
             completedAt: entity.completedAt,
             score: entity.score?.getValue(),
             attempts: entity.attempts,
+            progress: entity.progress,
             expiresAt: entity.expiresAt
         };
     }

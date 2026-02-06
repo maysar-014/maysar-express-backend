@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant Saga as DeliverySaga
+    participant CourierPort as CourierRepository
+    participant TrackingPort as RealTimeTracking
+    participant RouteRepo as RouteRepository
+    
+    Saga->>CourierPort: assignCourier(pickupLoc)
+    activate CourierPort
+    CourierPort-->>Saga: assigned(courierId)
+    deactivate CourierPort
+    
+    Saga->>Saga: waitForPickup()
+    note right of Saga: Simulating delay / event wait
+    Saga-->>Saga: pickedUp
+    
+    Saga->>TrackingPort: trackDelivery(route)
+    note right of Saga: IRREVERSIBLE ACTION
+    
+    Saga->>Saga: confirmDelivery()
+    note right of Saga: Simulating confirmation
+    Saga-->>Saga: delivered
+    
+    opt Compensation (e.g., if step fails)
+        Saga->>CourierPort: unassignCourier()
+    end

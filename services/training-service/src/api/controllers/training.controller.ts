@@ -3,13 +3,17 @@ import { StartTrainingUseCase } from '../../application/use-cases/start-training
 import { CompleteTrainingUseCase } from '../../application/use-cases/complete-training.use-case';
 import { GetTrainingProgressUseCase } from '../../application/use-cases/get-training-progress.use-case';
 import { CheckEligibilityUseCase } from '../../application/use-cases/check-eligibility.use-case';
+import { TrackModuleProgressUseCase } from '../../application/use-cases/track-module-progress.use-case';
+import { GetAvailableModulesUseCase } from '../../application/use-cases/get-available-modules.use-case';
 
 export class TrainingController {
     constructor(
         private readonly startTrainingUseCase: StartTrainingUseCase,
         private readonly completeTrainingUseCase: CompleteTrainingUseCase,
         private readonly getProgressUseCase: GetTrainingProgressUseCase,
-        private readonly checkEligibilityUseCase: CheckEligibilityUseCase
+        private readonly checkEligibilityUseCase: CheckEligibilityUseCase,
+        private readonly trackProgressUseCase: TrackModuleProgressUseCase,
+        private readonly getAvailableModulesUseCase: GetAvailableModulesUseCase
     ) { }
 
     public async start(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -48,6 +52,32 @@ export class TrainingController {
         try {
             const { learnerId } = req.params;
             const result = await this.checkEligibilityUseCase.execute({ learnerId });
+            res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    public async trackProgress(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { id } = req.params;
+            const result = await this.trackProgressUseCase.execute({
+                trainingRecordId: id,
+                progressData: req.body
+            });
+            res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    public async getAvailableModules(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { learnerId, learnerRole } = req.query;
+            const result = await this.getAvailableModulesUseCase.execute({
+                learnerId: learnerId as string,
+                learnerRole: learnerRole as string
+            });
             res.status(200).json(result);
         } catch (error) {
             next(error);

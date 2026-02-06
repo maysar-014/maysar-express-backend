@@ -1,0 +1,7 @@
+graph TD
+    Seller((Seller)) --> UC1[Calculate Price]
+    System((System)) --> UC2[Apply Rules]
+    Admin((Admin)) --> UC3[Override Price]
+    
+    UC1 -.->|uses| UC2
+    UC3 -.->|extends| UC1

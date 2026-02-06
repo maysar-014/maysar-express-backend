@@ -11,6 +11,7 @@ export interface TrainingRecordProps {
     completedAt?: Date;
     score?: TrainingScore;
     attempts: number;
+    progress?: any;
     expiresAt?: Date;
 }
 
@@ -41,7 +42,16 @@ export class TrainingRecord {
     get completedAt(): Date | undefined { return this.props.completedAt; }
     get score(): TrainingScore | undefined { return this.props.score; }
     get attempts(): number { return this.props.attempts; }
+    get progress(): any { return this.props.progress; }
     get expiresAt(): Date | undefined { return this.props.expiresAt; }
+
+    public updateProgress(progress: any): void {
+        this.props.progress = {
+            ...this.props.progress,
+            ...progress,
+            updatedAt: new Date()
+        };
+    }
 
 
     public start(): void {

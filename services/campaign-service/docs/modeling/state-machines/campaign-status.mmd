@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> Draft : Create
+    Draft --> Scheduled : Schedule
+    Draft --> Active : Launch (Immediate)
+    Scheduled --> Active : Start Time Reached
+    Active --> Paused : Pause
+    Paused --> Active : Resume
+    Active --> Completed : End Time Reached
+    Active --> Cancelled : Cancel
+    Scheduled --> Cancelled : Cancel
+    Completed --> [*]
+    Cancelled --> [*]

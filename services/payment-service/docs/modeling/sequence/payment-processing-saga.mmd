@@ -1,0 +1,38 @@
+sequenceDiagram
+    participant Saga as PaymentProcessingSaga
+    participant Bus as EventBus
+    participant Fraud as FraudEngine
+    participant Wallet as WalletService (Async)
+    participant Provider as PaymentProvider
+    
+    Saga->>Bus: PaymentInitiated (Step 1)
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: Fraud Check (Step 2)
+        Saga->>Fraud: assessTransaction()
+        Fraud-->>Saga: Assessment Result
+    end
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: Process Payment (Step 3)
+        alt Wallet Payment
+            Saga->>Bus: WalletPaymentRequested
+            Saga-->>Saga: Status=PAYMENT_PROCESSED (Async)
+        else External Provider
+            Saga->>Provider: processPayment()
+            Provider-->>Saga: Success
+            Saga->>Bus: PaymentCompleted
+        end
+    end
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: Update Order (Step 4)
+        Saga->>Bus: Payment.Success.v1
+    end
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: Notify User (Step 5)
+        Saga->>Bus: PaymentNotificationRequested
+    end
+    
+    Saga->>Bus: PaymentSagaCompleted

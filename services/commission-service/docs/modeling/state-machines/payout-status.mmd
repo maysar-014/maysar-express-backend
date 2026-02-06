@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> PENDING : Created
+    PENDING --> SCHEDULED : Schedule
+    SCHEDULED --> PROCESSED : Process
+    SCHEDULED --> CANCELLED : Cancel
+    PENDING --> CANCELLED : Cancel
+    PROCESSED --> [*]
+    CANCELLED --> [*]

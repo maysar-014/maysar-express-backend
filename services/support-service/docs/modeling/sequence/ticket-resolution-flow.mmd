@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant User
+    participant API as SupportAPI
+    participant Service as SupportService
+    participant Agent
+    
+    User->>API: createTicket(subject, description)
+    API->>Service: create(ticket)
+    Service-->>User: ticketId
+    
+    Agent->>API: getAssignedTickets()
+    API->>Service: listTickets(agentId)
+    Service-->>Agent: tickets
+    
+    Agent->>API: updateTicket(id, message)
+    API->>Service: addMessage(id, message)
+    Service->>User: notify(message)
+    
+    Agent->>API: resolveTicket(id, resolution)
+    API->>Service: updateStatus(RESOLVED)
+    Service->>User: notify(resolved)
+    
+    User->>API: confirmResolution(id)
+    API->>Service: updateStatus(CLOSED)

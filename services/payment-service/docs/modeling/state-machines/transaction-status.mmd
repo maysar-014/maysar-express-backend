@@ -1,11 +1,14 @@
 stateDiagram-v2
-    [*] --> PENDING : TransactionDetected
-    PENDING --> COMPLETED : ApproveDecision
-    PENDING --> FAILED : Reject/BlockDecision
-    PENDING --> FLAGGED : SuspiciousPatternDetected
-    FLAGGED --> COMPLETED : AdminApproval
-    FLAGGED --> BLOCKED : AdminRejection
-    COMPLETED --> REFUNDED : RefundRequested
+    [*] --> PENDING : Created
+    PENDING --> PROCESSING : Process
+    PENDING --> FAILED : Fail
+    PENDING --> CANCELLED : Cancel
+    PROCESSING --> COMPLETED : Complete
+    PROCESSING --> FAILED : Fail
+    PROCESSING --> CANCELLED : Cancel
+    COMPLETED --> REFUNDED : Full Refund
+    COMPLETED --> PARTIALLY_REFUNDED : Partial Refund
+    PARTIALLY_REFUNDED --> REFUNDED : Full Refund (Remaining)
     REFUNDED --> [*]
-    BLOCKED --> [*]
     FAILED --> [*]
+    CANCELLED --> [*]

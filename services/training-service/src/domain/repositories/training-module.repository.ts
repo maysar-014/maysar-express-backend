@@ -5,4 +5,5 @@ export interface ITrainingModuleRepository {
     findById(id: string): Promise<TrainingModule | null>;
     findByCategory(category: string): Promise<TrainingModule[]>;
     findWithPrerequisites(): Promise<TrainingModule[]>;
+    findAvailable(role: string): Promise<TrainingModule[]>;
 }

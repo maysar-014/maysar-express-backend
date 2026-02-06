@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Gateway
+    participant Session as SessionService
+    participant Cache
+    
+    Gateway->>Session: validate(token)
+    Session->>Cache: get(token)
+    alt Found and Valid
+        Cache-->>Session: sessionData
+        Session-->>Gateway: valid(sessionData)
+    else Not Found or Expired
+        Cache-->>Session: null
+        Session-->>Gateway: invalid
+    end

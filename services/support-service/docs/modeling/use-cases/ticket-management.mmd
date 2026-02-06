@@ -1,0 +1,9 @@
+graph TD
+    User((User)) --> UC1[Create Ticket]
+    User --> UC2[View My Tickets]
+    Agent((Support Agent)) --> UC3[View Assigned Tickets]
+    Agent --> UC4[Update Ticket]
+    Agent --> UC5[Resolve Ticket]
+    Admin((Admin)) --> UC6[Assign Ticket]
+    UC1 --> UC7[Upload Attachments]
+    UC5 --> UC8[Notify User]

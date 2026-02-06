@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Pending : Init
+    Pending --> Sent : Code Sent
+    Sent --> Verified : Correct Code
+    Sent --> Failed : Incorrect Code / Max Attempts
+    Sent --> Expired : Time Expired
+    Verified --> [*]
+    Failed --> [*]
+    Expired --> [*]

@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> active : Reserve
+    active --> fulfilled : Confirm
+    active --> cancelled : Release
+    active --> expired : TTL Expire
+    fulfilled --> [*]
+    cancelled --> [*]
+    expired --> [*]

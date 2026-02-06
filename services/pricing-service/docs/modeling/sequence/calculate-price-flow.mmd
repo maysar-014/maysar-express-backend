@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Client
+    participant UC as CalculatePriceUseCase
+    participant Config as PriceConfiguration
+    participant Rule as PricingRule
+    
+    Client->>UC: execute(request)
+    note right of UC: Fetch configuration (mocked)
+    UC->>Config: calculateFinalPrice(basePrice)
+    loop For each active rule
+        Config->>Rule: calculate(basePrice)
+        Rule-->>Config: adjustment amount
+    end
+    Config-->>UC: finalPrice
+    UC-->>Client: response

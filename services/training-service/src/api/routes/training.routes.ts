@@ -30,5 +30,15 @@ export function createTrainingRoutes(controller: TrainingController): Router {
         controller.checkEligibility.bind(controller)
     );
 
+    router.get(
+        '/available',
+        controller.getAvailableModules.bind(controller)
+    );
+
+    router.post(
+        '/:id/progress',
+        controller.trackProgress.bind(controller)
+    );
+
     return router;
 }

@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> PLANNED : Created
+    PLANNED --> ASSIGNED : Assign Courier
+    ASSIGNED --> IN_PROGRESS : Start Route
+    IN_PROGRESS --> COMPLETED : Complete Route
+    IN_PROGRESS --> CANCELLED : Cancel
+    ASSIGNED --> CANCELLED : Cancel
+    PLANNED --> CANCELLED : Cancel
+    COMPLETED --> [*]
+    CANCELLED --> [*]

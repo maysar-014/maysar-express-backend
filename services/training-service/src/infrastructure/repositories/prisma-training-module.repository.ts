@@ -35,4 +35,16 @@ export class PrismaTrainingModuleRepository implements ITrainingModuleRepository
         });
         return modules.map(m => TrainingModuleMapper.toDomain(m));
     }
+
+    public async findAvailable(role: string): Promise<TrainingModule[]> {
+        const modules = await this.prisma.trainingModule.findMany({
+            where: {
+                OR: [
+                    { isPublic: true },
+                    { targetRoles: { has: role } }
+                ]
+            }
+        });
+        return modules.map(m => TrainingModuleMapper.toDomain(m));
+    }
 }

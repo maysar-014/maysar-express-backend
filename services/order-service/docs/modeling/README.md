@@ -1,12 +1,12 @@
-# Order Service Modeling Docs
+# Order Service Modeling Documentation
 
-This directory contains the software modeling documentation for the Order Service.
+Follows [Software Modeling Constitution](../../../software-modeling-constitution.md).
 
-## Sequence Diagrams
-- [order-coordinator-saga.mmd](./sequence/order-coordinator-saga.mmd): Top-level order orchestration.
-- [order-fulfillment-saga.mmd](./sequence/order-fulfillment-saga.mmd): Inventory and logistics coordination.
-- [settlement-saga.mmd](./sequence/settlement-saga.mmd): Payment and commission settlement.
-- [training-saga.mmd](./sequence/training-saga.mmd): Training service interaction.
+## Contents
+- [State Machines](./state-machines/) - Entity lifecycle diagrams
 
----
-*Last Updated: 2026-02-02*
+## Diagrams Index
+
+### State Machines
+- [Payment Status](./state-machines/payment-status.mmd) - Order payment lifecycle
+- [Delivery Status](./state-machines/delivery-status.mmd) - Order delivery lifecycle

@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> pending : Created
+    pending --> processing : Process
+    pending --> failed : Fail
+    pending --> cancelled : Cancel
+    processing --> completed : Complete
+    processing --> failed : Fail
+    processing --> cancelled : Cancel
+    completed --> refunded : Refund
+    failed --> [*]
+    cancelled --> [*]
+    refunded --> [*]

@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Active : Created
+    Active --> Expired : Time To Live Passed
+    Active --> Invalidated : Logout / Security Trigger
+    Active --> Refreshed : Token Refresh
+    Refreshed --> Active
+    Expired --> [*]
+    Invalidated --> [*]

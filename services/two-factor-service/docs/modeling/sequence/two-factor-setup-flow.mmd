@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant User
+    participant Gateway
+    participant 2FA as TwoFactorService
+    participant Repo
+    
+    User->>Gateway: Setup 2FA
+    Gateway->>2FA: setup(userId)
+    2FA->>2FA: generateSecret()
+    2FA->>Repo: store(userId, secret, status=PENDING)
+    2FA-->>Gateway: secret/URI
+    Gateway-->>User: QR Code
