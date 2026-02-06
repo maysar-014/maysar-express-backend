@@ -1,1261 +1,1138 @@
-// Combined Prisma Schema for Modular Monolith
-generator client {
-  provider = "prisma-client-js"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// Auth Models
-model User {
+generator client {
+  provider = "prisma-client-js"
+}
+
+// --- analytics-service Service Models ---
+
+
+
+
+
+model Analytics_EnablerAnalytics {
+  enablerId              String   @id
+  trainingsScheduled     Int?     @default(0)
+  lastTrainingDate       DateTime?
+  certificatesIssued     Int?     @default(0)
+  sellersOnboarded       Int?     @default(0)
+  totalEarnings          Float?   @default(0.0)
+  lastActivity           DateTime?
+  supportTicketsResolved Int?     @default(0)
+  successRate            Float?   @default(0.0)
+  salesSupported         Int?     @default(0)
+  totalSalesValue        Float?   @default(0.0)
+  conversionRate         Float?   @default(0.0)
+  skillCertifications    Int?     @default(0)
+  skillLevel             String?
+  createdAt              DateTime @default(now())
+}
+
+model Analytics_SellerMetrics {
+  sellerId              String   @id
+  averageOrderValue     Float?
+  conversionRate        Float?
+  customerLifetimeValue Float?
+  returnRate            Float?
+  profitMargin          Float?
+  activeVisitors        Int?
+  cartAbandonment       Int?
+  liveOrders            Int?
+  inventoryAlerts       Int?
+  customerInquiries     Int?
+  createdAt             DateTime @default(now())
+}
+
+model Analytics_SalesAnalytics {
   id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  role      String   // buyer, seller, admin
-  isActive  Boolean  @default(true)
+  sellerId  String
+  date      DateTime
+  insights  String?  // JSON string
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Enhanced Auth Fields
-  emailVerified     Boolean   @default(false)
-  accountStatus     String    @default("active") // active, suspended, locked, deactivated
-  accountLockedUntil DateTime?
-  loginAttempts     Int       @default(0)
-  lastLoginAt       DateTime?
-  suspensionReason  String?
-  suspendedAt       DateTime?
-  suspendedBy       String?
-  deactivatedAt     DateTime?
-
-  // Profile Information - Enhanced with JSONB for flexible attributes
-  profile           Json?     // {firstName, lastName, phone, dateOfBirth, gender, address, preferences}
-
-  // Flexible user attributes for custom fields, preferences, metadata
-  attributes        Json?     // Flexible JSONB for custom user attributes, tags, metadata
-
-  sessions Session[]
-  otps     OTP[]
-  refreshTokens RefreshToken[]
-  referralsMade Referral[] @relation("ReferrerReferrals")
-  referralsReceived Referral[] @relation("RefereeReferrals")
-  rewards  Reward[]
-  seller   Seller?
-
-  @@map("auth_users")
 }
 
-// Seller Models
-model Seller {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  businessName String
-  businessType String   // individual, sole_proprietorship, partnership, company, ngo
-  taxId       String?  // TIN (Tax Identification Number) for Tanzania
+model Analytics_SupplierAnalytics {
+  supplierId          String   @id
+  resourceUtilization Json?
+  lastUpdated         DateTime?
+  qualityScore        Float?
+  certificatesIssued  Int?     @default(0)
+  ordersShipped       Int?     @default(0)
+  lastShipment        DateTime?
+  totalRevenue        Float?   @default(0.0)
+  paymentsReceived    Int?     @default(0)
+  pricingUpdates      Int?     @default(0)
+  activeProducts      Int?     @default(0)
+  createdAt           DateTime @default(now())
+}
 
-  // Contact Information
-  phone       String
-  website     String?
-  address     Json     // {street, city, region, postalCode, country}
+model Analytics_CourierAnalytics {
+  courierId           String   @id
+  performanceScore    Float?
+  lastAnalysis        DateTime?
+  totalEarnings       Float?   @default(0.0)
+  deliveriesCompleted Int?     @default(0)
+  lastDelivery        DateTime?
+  totalPayouts        Float?   @default(0.0)
+  payoutsReceived     Int?     @default(0)
+  vehicleStatus       String?
+  lastVehicleUpdate   DateTime?
+  kycStatus           String?
+  kycCompletedAt      DateTime?
+  createdAt           DateTime @default(now())
+}
 
-  // Business Details
-  description String?
-  logoUrl     String?
-  bannerUrl   String?
+model Analytics_Metric {
+  id         String   @id @default(uuid())
+  metricType String
+  value      Float
+  dimension  String
+  period     String
+  timestamp  DateTime
+  confidence Float
+  createdAt  DateTime @default(now())
 
-  // Verification Status
-  kycStatus   String   @default("pending") // pending, submitted, under_review, verified, rejected, expired
-  verificationDate DateTime?
-  verifiedBy  String?  // Admin who verified
+  @@index([metricType, timestamp])
+  @@index([dimension, metricType])
+}
 
-  // Seller Status
-  status      String   @default("pending") // pending, active, suspended, deactivated
-  isActive    Boolean  @default(false)
-  suspensionReason String?
-  suspendedAt DateTime?
-  suspendedBy String?
 
-  // Performance & Reputation
-  rating      Float    @default(0.0) // Average rating 0-5
-  totalReviews Int     @default(0)
-  totalSales  Int     @default(0) // Total orders fulfilled
-  totalRevenue Int    @default(0) // Total revenue in cents
+// --- auth-service Service Models ---
 
-  // Badges & Achievements
-  badges      SellerBadge[]
+// Prisma schema for Authentication Service
+// This schema defines the database structure for user authentication and authorization
 
-  // KYC Documents
-  kycDocuments KYCDocument[]
 
-  // Business Documents
-  businessLicense String?
-  taxCertificate String?
 
-  // Preferences
-  preferences Json     // {notifications, language, timezone, currency}
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+// ============================================================================
+// USER MANAGEMENT
+// ============================================================================
+
+model Auth_User {
+  id                      String   @id @default(cuid())
+  email                   String   @unique
+  passwordHash            String
+  role                    Auth_UserRole @default(BUYER)
+  status                  Auth_UserStatus @default(PENDING_VERIFICATION)
+
+  // Profile Information
+  phoneNumber             String?
+  isEmailVerified         Boolean  @default(false)
+  isPhoneVerified         Boolean  @default(false)
+
+  // Security Tracking
+  failedLoginAttempts     Int      @default(0)
+  lockoutUntil            DateTime?
+  lastLoginAt             DateTime?
+  passwordChangedAt       DateTime?
+
+  // Two-Factor Authentication
+  twoFactorEnabled        Boolean  @default(false)
+  twoFactorSecret         String?
+
+  // Timestamps
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  // Relations
+  sessions                Auth_Session[]
+  passwordResetTokens     Auth_PasswordResetToken[]
+  emailVerificationTokens Auth_EmailVerificationToken[]
+  auditLogs               Auth_AuditLog[]
+
+  @@map("users")
+}
+
+// ============================================================================
+// SESSION MANAGEMENT
+// ============================================================================
+
+model Auth_Session {
+  id          String   @id @default(cuid())
+  userId      String
+  token       String   @unique
+  ipAddress   String
+  userAgent   String
+  expiresAt   DateTime
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
-  @@map("seller_sellers")
+  // Relations
+  user        Auth_User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
 }
 
-model KYCDocument {
-  id          String   @id @default(uuid())
-  sellerId    String
-  documentType String   // national_id, passport, business_license, tax_certificate, proof_of_address
-  documentNumber String?
-  documentUrl String   // CDN URL for document
-  expiryDate  DateTime?
-  status      String   @default("pending") // pending, approved, rejected
-  rejectionReason String?
-  verifiedBy  String?  // Admin who verified
-  verifiedAt  DateTime?
+// ============================================================================
+// PASSWORD RESET TOKENS
+// ============================================================================
 
-  seller      Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-
-  @@map("seller_kyc_documents")
-}
-
-model SellerBadge {
-  id          String   @id @default(uuid())
-  sellerId    String
-  badgeType   String   // top_seller, fast_shipper, high_rated, verified, premium
-  badgeName   String
-  description String?
-  iconUrl     String?
-  earnedAt    DateTime @default(now())
-  isActive    Boolean  @default(true)
-
-  seller      Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-
-  @@map("seller_badges")
-}
-
-model Session {
-  id        String   @id @default(uuid())
+model Auth_PasswordResetToken {
+  id        String   @id @default(cuid())
   userId    String
   token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("auth_sessions")
-}
-
-model OTP {
-  id        String   @id @default(uuid())
-  userId    String
-  code      String
-  type      String   // email_verification, password_reset
   expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relations
+  user      Auth_User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("auth_otps")
+  @@map("password_reset_tokens")
 }
 
-model RefreshToken {
-  id        String   @id @default(uuid())
+// ============================================================================
+// EMAIL VERIFICATION TOKENS
+// ============================================================================
+
+model Auth_EmailVerificationToken {
+  id        String   @id @default(cuid())
   userId    String
   token     String   @unique
   expiresAt DateTime
-  isActive  Boolean  @default(true)
+  used      Boolean  @default(false)
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("auth_refresh_tokens")
-}
-
-// Order Models
-model Order {
-  id          String   @id @default(uuid())
-  buyerId     String
-  sellerId    String
-  status      String   @default("pending") // pending, paid, shipped, delivered, cancelled
-  totalAmount Int      // in cents
-  currency    String   @default("TZS")
-
-  // Flexible order attributes for custom business rules
-  attributes  Json?    // Custom order attributes, business rules, metadata
-
-  // Order configuration and business rules
-  rules       Json?    // Business rules: payment_terms, delivery_sla, return_policy
-
-  // Order metadata and context
-  metadata    Json?    // Additional metadata: source, campaign, tags
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  items OrderItem[]
-
-  @@map("order_orders")
-}
-
-model OrderItem {
-  id        String  @id @default(uuid())
-  orderId   String
-  productId String
-  quantity  Int
-  price     Int     // in cents
-  currency  String  @default("TZS")
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@map("order_order_items")
-}
-
-// Payment Models
-model Payment {
-  id        String   @id @default(uuid())
-  orderId   String
-  buyerId   String
-  amount    Int      // in cents
-  currency  String   @default("TZS")
-  status    String   @default("pending") // pending, succeeded, failed, refunded
-  method    String   // card, mpesa, etc.
-
-  // Flexible payment attributes for gateway-specific data
-  attributes Json?   // Gateway-specific metadata, payment method details
-
-  // Payment rules and business logic
-  rules     Json?    // Business rules: retry_policy, fraud_checks, settlement_terms
-
-  // Payment metadata
-  metadata  Json?    // Additional context: device_info, ip_address, user_agent
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  transactions Transaction[]
-
-  @@map("payment_payments")
-}
-
-model Wallet {
-  id       String @id @default(uuid())
-  userId   String @unique
-  balance  Int    @default(0) // in cents
-  currency String @default("TZS")
-
-  transactions Transaction[]
-
-  @@map("payment_wallets")
-}
-
-model Transaction {
-  id          String   @id @default(uuid())
-  walletId    String?
-  paymentId   String?
-  type        String   // credit, debit
-  amount      Int      // in cents
-  currency    String   @default("TZS")
-  description String?
-  createdAt   DateTime @default(now())
-
-  wallet  Wallet?  @relation(fields: [walletId], references: [id])
-  payment Payment? @relation(fields: [paymentId], references: [id])
-
-  @@map("payment_transactions")
-}
-
-// Admin Models
-model Admin {
-  id       String    @id @default(uuid())
-  email    String    @unique
-  password String
-  role     String    // support, ops, finance, compliance, super
-  isActive Boolean   @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  auditLogs AuditLog[]
-
-  @@map("admin_admins")
-}
-
-model AuditLog {
-  id           String   @id @default(uuid())
-  adminId      String
-  action       String
-  entityType   String
-  entityId     String
-  reason       String
-  previousState String?
-  newState     String?
-  timestamp    DateTime @default(now())
-  approvers    String[] // JSON array of approver IDs
-
-  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
-
-  @@map("admin_audit_logs")
-}
-
-// Inventory Models
-model Warehouse {
-  id          String   @id @default(uuid())
-  name        String
-  location    String
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  stockItems StockItem[]
-
-  @@map("inventory_warehouses")
-}
-
-model StockItem {
-  id          String   @id @default(uuid())
-  productId   String
-  warehouseId String
-  quantity    Int      @default(0)
-  reserved    Int      @default(0)
-  available   Int      @default(0) // computed: quantity - reserved
-  minStock    Int      @default(0)
-  maxStock    Int?
-  unitCost    Int?     // in cents
-  location    String?  // shelf location in warehouse
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  warehouse       Warehouse        @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  reservations    Reservation[]
-
-  @@map("inventory_stock_items")
-}
-
-model Reservation {
-  id          String   @id @default(uuid())
-  stockItemId String
-  orderId     String
-  quantity    Int
-  expiresAt   DateTime
-  status      String   @default("active") // active, fulfilled, expired, cancelled
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  stockItem StockItem @relation(fields: [stockItemId], references: [id], onDelete: Cascade)
-
-  @@map("inventory_reservations")
-}
-
-// Logistics Models
-model Carrier {
-  id          String   @id @default(uuid())
-  name        String   // DHL, TNT, Local Courier, etc.
-  code        String   @unique // Carrier code for API integration
-  isActive    Boolean  @default(true)
-  apiKey      String?  // For carrier API integration
-  apiSecret   String?  // For carrier API integration
-  webhookUrl  String?  // Carrier webhook URL
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  shipments Shipment[]
-
-  @@map("logistics_carriers")
-}
-
-model Shipment {
-  id                String   @id @default(uuid())
-  orderId           String   @unique
-  carrierId         String
-  trackingNumber    String   @unique
-  status            String   @default("pending") // pending, picked_up, in_transit, out_for_delivery, delivered, failed, returned
-  shippingCost      Int      // in cents
-  currency          String   @default("TZS")
-  estimatedDelivery DateTime?
-  actualDelivery    DateTime?
-
-  // Addresses
-  originAddress     Json     // {street, city, region, postalCode, country}
-  destinationAddress Json    // {street, city, region, postalCode, country}
-
-  // Package details
-  weight            Float?   // in kg
-  dimensions        Json?    // {length, width, height} in cm
-  packageCount      Int      @default(1)
-
-  // Tracking events
-  trackingEvents    TrackingEvent[]
-
-  // POD (Proof of Delivery)
-  proofOfDelivery   POD[]
-
-  carrier           Carrier  @relation(fields: [carrierId], references: [id])
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  @@map("logistics_shipments")
-}
-
-model TrackingEvent {
-  id          String   @id @default(uuid())
-  shipmentId  String
-  status      String   // picked_up, in_transit, out_for_delivery, delivered, etc.
-  description String
-  location    String?  // Current location
-  timestamp   DateTime
-  carrierData Json?    // Additional data from carrier API
-
-  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
-
-  @@map("logistics_tracking_events")
-}
-
-model POD {
-  id            String   @id @default(uuid())
-  shipmentId    String
-  recipientName String?
-  recipientSignature String?  // Base64 encoded signature
-  recipientPhoto String?     // Base64 encoded photo
-  deliveryNotes String?
-  deliveredBy   String   // Delivery person name/ID
-  deliveredAt   DateTime
-  latitude      Float?   // GPS coordinates
-  longitude     Float?   // GPS coordinates
-  accuracy      Float?   // GPS accuracy in meters
-
-  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
-
-  @@map("logistics_pod")
-}
-
-// Commission & Rewards Models
-model Referral {
-  id          String   @id @default(uuid())
-  referrerId  String   // User who referred
-  refereeId   String   // User who was referred
-  code        String   @unique // Referral code used
-  status      String   @default("pending") // pending, completed, expired
-  rewardType  String   // discount, cashback, points
-  rewardValue Int      // Reward amount in cents or percentage
-  currency    String   @default("TZS")
-  expiresAt   DateTime?
-  completedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  referrer User @relation("ReferrerReferrals", fields: [referrerId], references: [id])
-  referee  User @relation("RefereeReferrals", fields: [refereeId], references: [id])
-
-  @@map("commission_referrals")
-}
-
-model Commission {
-  id             String   @id @default(uuid())
-  orderId        String   @unique
-  sellerId       String   // Seller who sold the product
-  enablerId      String?  // Delivery enabler who delivered (optional)
-  productId      String   // Product that was sold
-  orderAmount    Int      // Total order amount in cents
-  currency       String   @default("TZS")
-
-  // Commission structure
-  sellerCommission  Int      // Amount seller earns in cents
-  enablerCommission Int?     // Amount enabler earns in cents (for delivery)
-  platformFee      Int      // Platform fee in cents
-
-  // Commission rates (stored for auditing)
-  sellerRate       Float    // Seller commission rate (e.g., 0.85 = 85%)
-  enablerRate      Float?   // Enabler commission rate
-  platformRate     Float    // Platform fee rate
-
-  status         String   @default("pending") // pending, paid, failed
-  paidAt         DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@map("commission_commissions")
-}
-
-model Reward {
-  id          String   @id @default(uuid())
-  userId      String
-  type        String   // loyalty, referral, promotional
-  description String
-  points      Int?     // Loyalty points earned/spent
-  amount      Int?     // Cash reward in cents
-  currency    String   @default("TZS")
-  status      String   @default("active") // active, redeemed, expired
-  expiresAt   DateTime?
-  redeemedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("commission_rewards")
-}
-
-model LoyaltyProgram {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  isActive    Boolean  @default(true)
-
-  // Loyalty rules
-  pointsPerTZS    Float   @default(1.0)  // Points earned per TZS spent
-  minOrderAmount  Int     @default(0)    // Minimum order amount for points
-  pointsExpiryDays Int?   // Days until points expire
-
-  // Redemption rules
-  pointsToTZS     Float   @default(0.01) // TZS value per point
-  minRedemptionPoints Int @default(100)  // Minimum points for redemption
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("commission_loyalty_programs")
-}
-
-// Catalog Models
-model Category {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  slug        String   @unique
-  parentId    String?
-  level       Int      @default(1) // 1 = root, 2 = subcategory, etc.
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  imageUrl    String?
-
-  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children    Category[] @relation("CategoryHierarchy")
-  products    Product[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("catalog_categories")
-}
-
-model Product {
-  id            String   @id @default(uuid())
-  sellerId      String
-  categoryId    String
-  name          String
-  description   String?
-  slug          String   @unique
-  sku           String   @unique
-  barcode       String?
-
-  // Pricing
-  basePrice     Int      // Base price in cents
-  currency      String   @default("TZS")
-  salePrice     Int?     // Sale price in cents
-  costPrice     Int?     // Cost price for margin calculations
-
-  // Inventory
-  trackInventory Boolean @default(true)
-  totalStock     Int     @default(0)
-  lowStockThreshold Int @default(5)
-
-  // Status
-  status        String   @default("draft") // draft, pending_review, published, archived, suspended
-  isActive      Boolean @default(false)
-  isFeatured    Boolean @default(false)
-
-  // SEO
-  metaTitle     String?
-  metaDescription String?
-
-  // Timestamps
-  publishedAt   DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  category      Category     @relation(fields: [categoryId], references: [id])
-  variants      ProductVariant[]
-  media         ProductMedia[]
-  attributes    ProductAttribute[]
-
-  @@map("catalog_products")
-}
-
-model ProductVariant {
-  id            String   @id @default(uuid())
-  productId     String
-  sku           String   @unique
-  name          String   // e.g., "Large - Red", "256GB - Black"
-
-  // Variant attributes
-  attributes    Json     // { "size": "Large", "color": "Red", "material": "Cotton" }
-
-  // Pricing (can override base product price)
-  price         Int?     // Price in cents (null = use base price)
-  salePrice     Int?     // Sale price in cents
-  costPrice     Int?     // Cost price in cents
-
-  // Inventory per variant
-  stock         Int      @default(0)
-  lowStockThreshold Int @default(5)
-
-  // Status
-  isActive      Boolean  @default(true)
-  sortOrder     Int      @default(0)
-
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("catalog_product_variants")
-}
-
-model ProductMedia {
-  id          String   @id @default(uuid())
-  productId   String
-  variantId   String?  // If media is specific to a variant
-
-  // Media details
-  type        String   // image, video, document
-  url         String   // CDN URL
-  thumbnailUrl String?
-  altText     String?
-
-  // File metadata
-  filename    String
-  mimeType    String
-  fileSize    Int      // in bytes
-  dimensions  Json?    // { width: 1920, height: 1080 } for images
-
-  // Display settings
-  isPrimary   Boolean  @default(false)
-  sortOrder   Int      @default(0)
-
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("catalog_product_media")
-}
-
-model ProductAttribute {
-  id          String   @id @default(uuid())
-  productId   String
-  name        String   // e.g., "Brand", "Material", "Warranty"
-  value       String   // e.g., "Nike", "Cotton", "2 Years"
-
-  // Attribute metadata
-  type        String   @default("text") // text, number, boolean, date
-  isFilterable Boolean @default(false)
-  isSearchable Boolean @default(false)
-  sortOrder   Int      @default(0)
-
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("catalog_product_attributes")
-}
-
-// Trust & Reviews Models
-model Review {
-  id          String   @id @default(uuid())
-  orderId     String   @unique // One review per order
-  reviewerId  String   // User who wrote the review
-  productId   String   // Product being reviewed
-  sellerId    String   // Seller being reviewed
-
-  // Review content
-  title       String?
-  content     String
-  rating      Int      // 1-5 stars
-
-  // Review metadata
-  isVerified  Boolean  @default(false) // Purchased and delivered
-  isAnonymous Boolean  @default(false)
-  helpful     Int      @default(0)     // Helpfulness votes
-  notHelpful  Int      @default(0)
-
-  // Moderation
-  status      String   @default("active") // active, pending, rejected, hidden
-  moderatedBy String?
-  moderatedAt DateTime?
-  moderationReason String?
-
-  // Response from seller
-  sellerResponse String?
-  sellerRespondedAt DateTime?
-
-  votes       ReviewVote[]
-  reports     ReviewReport[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("trust_reviews")
-}
-
-model ReviewVote {
-  id        String   @id @default(uuid())
-  reviewId  String
-  userId    String
-  voteType  String   // helpful, not_helpful
-  createdAt DateTime @default(now())
-
-  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-
-  @@unique([reviewId, userId])
-  @@map("trust_review_votes")
-}
-
-model ReviewReport {
-  id          String   @id @default(uuid())
-  reviewId    String
-  reporterId  String
-  reason      String   // spam, offensive, fake, inappropriate, other
-  description String?
-  status      String   @default("pending") // pending, investigated, resolved
-  resolvedBy  String?
-  resolvedAt  DateTime?
-  resolution  String?
-
-  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("trust_review_reports")
-}
-
-model TrustScore {
-  id          String   @id @default(uuid())
-  entityId    String   // Product or seller ID
-  entityType  String   // product, seller
-  score       Float    @default(0.0) // 0-100 trust score
-  rating      Float    @default(0.0) // Average rating 0-5
-  totalReviews Int     @default(0)
-
-  // Score components
-  communicationScore Float @default(0.0) // For sellers
-  shippingScore     Float @default(0.0) // For sellers
-  productQuality    Float @default(0.0) // For products
-  accuracyScore     Float @default(0.0) // Product description accuracy
-
-  // Risk indicators
-  disputeRate       Float @default(0.0) // Disputes per order
-  returnRate        Float @default(0.0) // Returns per order
-  fraudFlags        Int   @default(0)   // Fraudulent activity flags
-
-  lastCalculated DateTime @default(now())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([entityId, entityType])
-  @@map("trust_scores")
-}
-
-model Dispute {
-  id            String   @id @default(uuid())
-  orderId       String   @unique
-  buyerId       String
-  sellerId      String
-  productId     String
-
-  // Dispute details
-  reason        String   // damaged_product, wrong_item, not_received, poor_quality, other
-  description   String
-  evidence      String[] // URLs to evidence files
-
-  // Dispute status
-  status        String   @default("opened") // opened, under_review, evidence_collected, decided, resolved
-  priority      String   @default("normal") // low, normal, high, urgent
-
-  // Resolution
-  decision      String?  // refund, replacement, partial_refund, uphold_seller
-  decisionReason String?
-  refundAmount  Int?     // in cents
-  decidedBy     String?  // Admin who decided
-  decidedAt     DateTime?
-
-  // SLA tracking
-  openedAt      DateTime @default(now())
-  dueDate       DateTime // SLA deadline
-  escalatedAt   DateTime?
-  resolvedAt    DateTime?
-
-  // Participants
-  enablerId     String?  // Delivery partner if relevant
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("trust_disputes")
-}
-
-// Notification Models
-model NotificationTemplate {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  type        String   // order_update, payment, review, marketing, system
-  channel     String   // email, sms, push, in_app
-
-  // Template content
-  subject     String?  // For email
-  body        String   // Template content with {{variables}}
-  variables   Json     // Available variables for this template
-
-  // Metadata
-  language    String   @default("en") // en, sw (Swahili)
-  isActive    Boolean  @default(true)
-  description String?
-
-  // Usage tracking
-  usageCount  Int      @default(0)
-  lastUsedAt  DateTime?
-
-  notifications Notification[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("notification_templates")
-}
-
-model Notification {
-  id            String   @id @default(uuid())
-  userId        String
-  templateId    String?
-  type          String   // order_update, payment, review, marketing, system
-  channel       String   // email, sms, push, in_app
-
-  // Content
-  subject       String?
-  body          String
-  variables     Json?    // Template variables used
-  priority      String   @default("normal") // low, normal, high, urgent
-
-  // Status
-  status        String   @default("pending") // pending, sent, delivered, failed, cancelled
-  scheduledAt   DateTime?
-  sentAt        DateTime?
-  deliveredAt   DateTime?
-
-  // Recipient info
-  recipientEmail String?
-  recipientPhone String?
-
-  // Retry logic
-  maxRetries    Int      @default(3)
-  retryCount    Int      @default(0)
-  nextRetryAt   DateTime?
-
-  // Error handling
-  errorMessage  String?
-  errorCode     String?
-
-  // Relationships
-  template      NotificationTemplate? @relation(fields: [templateId], references: [id])
-  logs          DeliveryLog[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("notification_notifications")
-}
-
-model DeliveryLog {
-  id            String   @id @default(uuid())
-  notificationId String
-  attempt       Int      // Attempt number
-  status        String   // sent, delivered, failed, bounced
-  provider      String?  // email_provider, sms_provider, push_provider
-  providerId    String?  // Provider's message ID
-  response      Json?    // Provider response data
-  errorMessage  String?
-  deliveredAt   DateTime?
-
-  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@map("notification_delivery_logs")
-}
-
-model UserNotificationPreference {
-  id                String   @id @default(uuid())
-  userId            String   @unique
-
-  // Channel preferences
-  emailEnabled      Boolean  @default(true)
-  smsEnabled        Boolean  @default(true)
-  pushEnabled       Boolean  @default(true)
-  inAppEnabled      Boolean  @default(true)
-
-  // Type preferences
-  orderUpdates      Boolean  @default(true)
-  paymentUpdates    Boolean  @default(true)
-  reviewUpdates     Boolean  @default(true)
-  marketingEmails   Boolean  @default(false)
-  systemAlerts      Boolean  @default(true)
-
-  // Quiet hours
-  quietHoursStart   String?  // "22:00"
-  quietHoursEnd     String?  // "08:00"
-  timezone          String   @default("Africa/Dar_es_Salaam")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("notification_user_preferences")
-}
-
-model NotificationCampaign {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-
-  // Campaign settings
-  templateId  String
-  targetUsers String[] // User IDs or "all", "buyers", "sellers"
-  scheduledAt DateTime?
-  status      String   @default("draft") // draft, scheduled, running, completed, cancelled
-
-  // Campaign metrics
-  totalRecipients Int     @default(0)
-  sentCount       Int     @default(0)
-  deliveredCount  Int     @default(0)
-  failedCount     Int     @default(0)
-  openRate        Float?
-  clickRate       Float?
-
-  // Campaign content
-  subject     String?
-  variables   Json?    // Campaign-specific variables
-
-  createdBy   String   // Admin who created
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("notification_campaigns")
-}
-
-// Community Models
-model Post {
-  id          String   @id @default(uuid())
-  authorId    String
-  content     String
-  privacy     String   @default("public") // public, followers, private
-
-  // Media and metadata
-  mediaUrls   String[] // Array of media URLs (images/videos)
-  tags        String[] // Array of tag strings
-  isPinned    Boolean  @default(false)
-
-  // Engagement metrics
-  likedBy     String[] // Array of user IDs who liked
-  commentCount Int     @default(0)
-  shareCount   Int     @default(0)
-  viewCount    Int     @default(0)
-
-  // Status and moderation
-  status      String   @default("active") // active, hidden, reported, deleted
-  moderatedBy String?
-  moderatedAt DateTime?
-
-  // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
   // Relations
-  comments    Comment[]
-  savedBy     UserSavedPost[]
+  user      Auth_User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("community_posts")
+  @@map("email_verification_tokens")
 }
 
-model Comment {
+// ============================================================================
+// AUDIT LOGGING
+// ============================================================================
+
+model Auth_AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  email       String?
+  action      String
+  ipAddress   String
+  userAgent   String
+  success     Boolean
+  reason      String?
+  metadata    Json?
+  timestamp   DateTime @default(now())
+
+  // Relations
+  user        Auth_User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum Auth_UserRole {
+  BUYER     @map("buyer")
+  SELLER    @map("seller")
+  SUPPLIER  @map("supplier")
+  COURIER   @map("courier")
+  ENABLER   @map("enabler")
+  SYSTEM    @map("system")
+}
+
+enum Auth_UserStatus {
+  PENDING_VERIFICATION @map("pending_verification")
+  ACTIVE               @map("active")
+  SUSPENDED            @map("suspended")
+  DEACTIVATED          @map("deactivated")
+  LOCKED               @map("locked")
+}
+
+// ============================================================================
+// INDEXES AND CONSTRAINTS
+// ============================================================================
+
+// Additional indexes for performance
+model Auth_UserIndex {
+  userId    String
+  indexType String
+  value     String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, indexType])
+  @@map("user_indexes")
+}
+
+
+// --- business-registry-service Service Models ---
+
+
+
+
+
+model BusinessRegistry_Business {
+  id                   String   @id @default(cuid())
+  name                 String
+  businessType         BusinessRegistry_BusinessType
+  registrationNumber   String   @unique
+  taxId                String?  @unique
+  status               BusinessRegistry_BusinessStatus @default(PENDING)
+  verificationStatus   BusinessRegistry_VerificationStatus @default(UNVERIFIED)
+  complianceStatus     BusinessRegistry_ComplianceStatus @default(UNDER_REVIEW)
+  ownerId              String
+  description          String?
+  industry             String?
+  website              String?
+  email                String?
+  phoneNumber          String?
+
+  verifiedAt           DateTime?
+  verifiedBy           String?
+
+  attributes           Json?
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  addresses            BusinessRegistry_BusinessAddress[]
+  documents            BusinessRegistry_BusinessDocument[]
+  complianceRecords    BusinessRegistry_ComplianceRecord[]
+
+  @@map("businesses")
+}
+
+model BusinessRegistry_BusinessAddress {
+  id          String   @id @default(cuid())
+  businessId  String
+  type        BusinessRegistry_AddressType @default(MAIN)
+  street      String
+  city        String
+  region      String
+  postalCode  String?
+  country     String   @default("Tanzania")
+  isPrimary   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business    BusinessRegistry_Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("business_addresses")
+}
+
+model BusinessRegistry_BusinessDocument {
+  id          String   @id @default(cuid())
+  businessId  String
+  type        BusinessRegistry_DocumentType
+  fileName    String
+  fileUrl     String
+  status      BusinessRegistry_DocumentStatus @default(PENDING)
+  uploadedAt  DateTime @default(now())
+  verifiedAt  DateTime?
+
+  business    BusinessRegistry_Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("business_documents")
+}
+
+model BusinessRegistry_ComplianceRecord {
+  id          String   @id @default(cuid())
+  businessId  String
+  type        BusinessRegistry_ComplianceType
+  status      BusinessRegistry_ComplianceStatus
+  checkedAt   DateTime @default(now())
+  expiresAt   DateTime?
+  notes       String?
+
+  business    BusinessRegistry_Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("compliance_records")
+}
+
+enum BusinessRegistry_BusinessType {
+  SOLE_PROPRIETORSHIP
+  PARTNERSHIP
+  LIMITED_LIABILITY
+  CORPORATION
+}
+
+enum BusinessRegistry_BusinessStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+  CLOSED
+}
+
+enum BusinessRegistry_VerificationStatus {
+  UNVERIFIED
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+}
+
+enum BusinessRegistry_ComplianceStatus {
+  COMPLIANT
+  NON_COMPLIANT
+  UNDER_REVIEW
+}
+
+enum BusinessRegistry_AddressType {
+  MAIN
+  BRANCH
+  WAREHOUSE
+  OTHER
+}
+
+enum BusinessRegistry_DocumentType {
+  REGISTRATION_CERTIFICATE
+  TAX_CERTIFICATE
+  BUSINESS_LICENSE
+  PROOF_OF_ADDRESS
+  OWNER_ID
+}
+
+enum BusinessRegistry_DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BusinessRegistry_ComplianceType {
+  TAX_COMPLIANCE
+  BUSINESS_LICENSE
+  HEALTH_PERMIT
+  ENVIRONMENTAL_CLEARANCE
+}
+
+model BusinessRegistry_OutboxEvent {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  eventType   String
+  eventData   Json
+  status      String   @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
+  createdAt   DateTime @default(now())
+  processedAt DateTime?
+  attempts    Int      @default(0)
+  lastError   String?
+  nextRetryAt DateTime?
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@map("outbox_events")
+}
+
+
+
+// --- catalog-service Service Models ---
+
+// Catalog Service Database Schema
+// Complete product catalog management with categories and variants
+
+
+
+
+
+// Hierarchical category system
+model Catalog_Category {
+  id          Catalog_String   @id @default(uuid()) @db.Uuid
+  parentId    Catalog_String?  @db.Uuid
+  name        Catalog_String   @db.VarChar(255)
+  slug        Catalog_String   @unique @db.VarChar(255)
+  description Catalog_String?
+  imageUrl    Catalog_String?  @db.VarChar(500)
+  displayOrder Int  @default(0)
+  isActive    Boolean  @default(true)
+  seoMetadata Json?
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  parent      Catalog_Category? @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Catalog_Category[] @relation("CategoryHierarchy")
+  products    Catalog_Product[]
+
+  @@map("categories")
+}
+
+// Catalog_Product management with SEO
+model Catalog_Product {
+  id          Catalog_String   @id @default(uuid()) @db.Uuid
+  sellerId    Catalog_String   @db.Uuid
+  title       Catalog_String   @db.VarChar(255)
+  description Catalog_String?
+  categoryId  Catalog_String   @db.Uuid
+  brand       Catalog_String?  @db.VarChar(100)
+  model       Catalog_String?  @db.VarChar(100)
+  status      Catalog_ProductStatus @default(draft)
+  visibility  Catalog_Visibility @default(public)
+  seoMetadata Json?
+  tags        Catalog_String[]
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime @updatedAt @db.Timestamp(6)
+
+  // Relations
+  category    Catalog_Category @relation(fields: [categoryId], references: [id])
+  variants    Catalog_ProductVariant[]
+
+  @@map("products")
+}
+
+// Catalog_Product variants with inventory policy
+model Catalog_ProductVariant {
+  id              Catalog_String   @id @default(uuid()) @db.Uuid
+  productId       Catalog_String   @db.Uuid
+  sku             Catalog_String   @unique @db.VarChar(100)
+  name            Catalog_String?  @db.VarChar(255)
+  price           Decimal  @db.Decimal(10, 2)
+  compareAtPrice  Decimal? @db.Decimal(10, 2)
+  costPrice       Decimal? @db.Decimal(10, 2)
+  inventoryPolicy Catalog_InventoryPolicy @default(deny)
+  weight          Decimal? @db.Decimal(8, 3)
+  dimensions      Json?
+  attributes      Json?    // color, size, material, etc.
+  images          Json?
+  status          Catalog_VariantStatus @default(active)
+  createdAt       DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  product         Catalog_Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_variants")
+}
+
+// Media management for products and categories
+model Catalog_MediaRef {
+  id           Catalog_String   @id @default(uuid()) @db.Uuid
+  entityType   Catalog_String   @db.VarChar(50) // product, category, seller
+  entityId     Catalog_String   @db.Uuid
+  mediaType    Catalog_String   @db.VarChar(50) // image, video, document
+  url          Catalog_String   @db.VarChar(500)
+  altText      Catalog_String?  @db.VarChar(255)
+  displayOrder Int  @default(0)
+  isPrimary    Boolean  @default(false)
+  metadata     Json?
+  uploadedBy   Catalog_String   @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamp(6)
+
+  @@map("media_refs")
+}
+
+// Enums
+enum Catalog_ProductStatus {
+  draft
+  pending
+  published
+  suspended
+  archived
+}
+
+enum Catalog_Visibility {
+  public
+  private
+  unlisted
+}
+
+enum Catalog_InventoryPolicy {
+  deny   // Don't allow sales when out of stock
+  allow  // Allow backorders
+}
+
+enum Catalog_VariantStatus {
+  active
+  inactive
+  // ============================================================================
+// TRANSACTIONAL OUTBOX
+// ============================================================================
+
+model Catalog_OutboxEvent {
+  id          Catalog_String   @id @default(uuid()) @db.Uuid
+  eventId     Catalog_String   @unique
+  eventType   Catalog_String
+  eventData   Json
+  status      Catalog_String   @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  processedAt DateTime? @db.Timestamp(6)
+  attempts    Int      @default(0)
+  lastError   Catalog_String?
+  nextRetryAt DateTime? @db.Timestamp(6)
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@map("outbox_events")
+}
+
+
+// --- checkout-service Service Models ---
+
+// Checkout Service Database Schema
+// Isolated data ownership - no cross-service queries
+
+
+
+
+
+// Checkout_Cart entity - shopping cart management
+model Checkout_Cart {
+  id            String   @id @default(uuid())
+  userId        String   @db.Uuid
+  status        String   @default("active") // active, abandoned, converted
+  items         Checkout_CartItem[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  expiresAt     DateTime @default(dbgenerated("now() + interval '7 days'"))
+
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+// Checkout_Cart items - individual products in cart
+model Checkout_CartItem {
   id              String   @id @default(uuid())
-  postId          String
-  authorId        String
-  content         String
-  parentCommentId String?  // For nested replies
-
-  // Engagement
-  likedBy         String[] // Array of user IDs who liked
-  replyCount      Int      @default(0)
-  isEdited        Boolean  @default(false)
-
-  // Status
-  status          String   @default("active") // active, hidden, reported, deleted
-
-  // Timestamps
+  cartId          String
+  cart            Checkout_Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId       String   @db.Uuid
+  variantId       String?  @db.Uuid
+  quantity        Int
+  priceAtTime     Decimal  @db.Decimal(12, 2)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  // Relations
-  post            Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  replies         Comment[] @relation("CommentReplies")
-  parentComment   Comment? @relation("CommentReplies", fields: [parentCommentId], references: [id])
-
-  @@map("community_comments")
+  @@unique([cartId, productId, variantId])
+  @@index([cartId])
 }
 
-model UserSavedPost {
-  id        String   @id @default(uuid())
-  userId    String
-  postId    String
-  createdAt DateTime @default(now())
+// Checkout session - checkout flow state
+model Checkout_CheckoutSession {
+  id                String   @id @default(uuid())
+  cartId            String
+  userId            String   @db.Uuid
+  status            String   @default("initiated") // initiated, payment_pending, completed, failed, abandoned
+  
+  // Checkout data
+  shippingAddressId String?
+  billingAddressId  String?
+  shippingMethodId  String?
+  
+  // Pricing
+  subtotal          Decimal  @db.Decimal(12, 2)
+  shippingCost      Decimal  @db.Decimal(12, 2) @default(0)
+  taxAmount         Decimal  @db.Decimal(12, 2) @default(0)
+  discountAmount    Decimal  @db.Decimal(12, 2) @default(0)
+  totalAmount       Decimal  @db.Decimal(12, 2)
+  
+  // Payment
+  paymentMethodId   String?
+  paymentStatus     String?  // pending, processing, completed, failed
+  
+  // Metadata
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  expiresAt         DateTime @default(dbgenerated("now() + interval '1 hour'"))
 
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, postId])
-  @@map("community_saved_posts")
+  @@index([userId])
+  @@index([status])
+  @@index([cartId])
+  @@index([expiresAt])
 }
 
-model PostTag {
-  id        String   @id @default(uuid())
-  tag       String   @unique
-  postCount Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// Checkout_Order - created after successful checkout
+model Checkout_Order {
+  id                String   @id @default(uuid())
+  checkoutSessionId String
+  userId            String   @db.Uuid
+  status            String   @default("pending") // pending, confirmed, shipped, delivered, cancelled
+  
+  // Checkout_Order details
+  items             Checkout_OrderItem[]
+  shippingAddressId String?
+  billingAddressId  String?
+  shippingMethodId  String?
+  
+  // Pricing
+  subtotal          Decimal  @db.Decimal(12, 2)
+  shippingCost      Decimal  @db.Decimal(12, 2)
+  taxAmount         Decimal  @db.Decimal(12, 2)
+  discountAmount    Decimal  @db.Decimal(12, 2)
+  totalAmount       Decimal  @db.Decimal(12, 2)
+  
+  // Payment
+  paymentMethodId   String?
+  paymentStatus     String   @default("pending")
+  
+  // Tracking
+  trackingNumber    String?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  @@map("community_tags")
+  @@index([userId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
 }
 
-// Analytics Models
-model EventFact {
+// Checkout_Order items - products in order
+model Checkout_OrderItem {
   id          String   @id @default(uuid())
-  eventType   String   // e.g., 'UserRegistered', 'OrderCreated'
-  eventId     String   // Original event ID
-  aggregateId String   // Entity ID (user, order, product, etc.)
-  eventData   Json     // Full event payload
-  metadata    Json     // Additional context (user agent, IP, etc.)
-  timestamp   DateTime
-  processedAt DateTime?
-  version     String   @default("v1")
-
-  @@map("analytics_event_facts")
-}
-
-model Metric {
-  id          String   @id @default(uuid())
-  name        String   // e.g., 'total_orders', 'revenue'
-  value       Float
-  dimensions  Json     // e.g., { "period": "daily", "category": "electronics" }
-  timestamp   DateTime
-  source      String   // Service that generated the metric
-  tags        String[] // For filtering and grouping
-
-  @@map("analytics_metrics")
-}
-
-model Dashboard {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  config      Json     // Dashboard layout and widget configurations
-  isPublic    Boolean  @default(false)
-  createdBy   String   // User ID
-  tags        String[]
+  orderId     String
+  order       Checkout_Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String   @db.Uuid
+  variantId   String?  @db.Uuid
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(12, 2)
+  totalPrice  Decimal  @db.Decimal(12, 2)
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
-  @@map("analytics_dashboards")
+  @@index([orderId])
 }
 
-model Report {
-  id          String   @id @default(uuid())
-  name        String
-  type        String   // scheduled, on_demand, automated
-  config      Json     // Report configuration (metrics, filters, format)
-  schedule    Json?    // Cron schedule for automated reports
-  recipients  String[] // Email recipients
-  status      String   @default("active") // active, paused, completed
-  lastRunAt   DateTime?
-  nextRunAt   DateTime?
-  createdBy   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// Inventory reservation - track reserved stock during checkout
+model Checkout_InventoryReservation {
+  id            String   @id @default(uuid())
+  checkoutId    String
+  productId     String   @db.Uuid
+  variantId     String?  @db.Uuid
+  quantity      Int
+  status        String   @default("reserved") // reserved, confirmed, released
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  @@map("analytics_reports")
+  @@unique([checkoutId, productId, variantId])
+  @@index([checkoutId])
+  @@index([status])
+  @@index([expiresAt])
 }
 
-model Alert {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  metric      String   // Metric name to monitor
-  condition   Json     // Alert condition (threshold, operator, etc.)
-  severity    String   @default("medium") // low, medium, high, critical
-  channels    String[] // notification channels (email, sms, webhook)
-  isActive    Boolean  @default(true)
-  cooldownMinutes Int  @default(60) // Minutes between alerts
-  lastTriggeredAt DateTime?
-  createdBy   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("analytics_alerts")
-}
-
-model UserSession {
-  id          String   @id @default(uuid())
-  userId      String
-  sessionId   String   // Link to auth session
-  deviceInfo  Json     // { platform, browser, device, screenSize }
-  location    Json?    // { country, city, ip }
-  startedAt   DateTime
-  endedAt     DateTime?
-  duration    Int?     // Session duration in seconds
-  pageViews   Int      @default(0)
-  events      Json[]   // User events during session
-
-  @@map("analytics_user_sessions")
-}
-
-model ProductView {
-  id         String   @id @default(uuid())
-  productId  String
-  userId     String?
-  sessionId  String?
-  source     String?  // search, category, recommendation, etc.
-  timestamp  DateTime
-  duration   Int?     // Time spent viewing in seconds
-  interacted Boolean  @default(false) // Did user interact (add to cart, etc.)
-
-  @@map("analytics_product_views")
-}
-
-model RevenueMetric {
+// Discount application - track applied discounts
+model Checkout_AppliedDiscount {
   id              String   @id @default(uuid())
-  period          String   // daily, weekly, monthly
-  periodStart     DateTime
-  periodEnd       DateTime
-  totalRevenue    Int      // Total revenue in cents
-  orderCount      Int
-  averageOrderValue Int   // In cents
-  currency        String   @default("TZS")
-  breakdown       Json     // Revenue by category, seller, payment method
-  growth          Float?   // Percentage growth from previous period
+  checkoutId      String
+  discountCode    String?
+  discountType    String   // percentage, fixed, shipping_free
+  discountValue   Decimal  @db.Decimal(12, 2)
+  maxUses         Int?
+  currentUses     Int      @default(0)
   createdAt       DateTime @default(now())
 
-  @@map("analytics_revenue_metrics")
+  @@index([checkoutId])
+  @@index([discountCode])
 }
 
-model PerformanceMetric {
-  id            String   @id @default(uuid())
-  service       String   // Service name
-  endpoint      String   // API endpoint
-  method        String   // HTTP method
-  responseTime  Int      // Response time in milliseconds
-  statusCode    Int      // HTTP status code
-  timestamp     DateTime
-  userId        String?
-  ipAddress     String?
-  userAgent     String?
 
-  @@map("analytics_performance_metrics")
+// --- commission-service Service Models ---
+
+// Commission_Commission Service Database Schema
+// Revenue sharing, referrals, and loyalty rewards management
+
+
+
+
+
+// Commission_Commission calculations and payouts
+model Commission_Commission {
+  id       String   @id @default(uuid()) @db.Uuid
+  orderId  String   @db.Uuid
+  sellerId String   @db.Uuid
+  amount   Decimal  @db.Decimal(10, 2)
+  rate     Decimal  @db.Decimal(5, 4)
+  type     Commission_CommissionType
+  status   Commission_CommissionStatus @default(pending)
+  paidAt   DateTime? @db.Timestamp(6)
+  payoutId String?  @db.Uuid
+  metadata Json?
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+
+  @@map("commissions")
 }
 
-// Event Processing Models - For Delivery Semantics
+// Commission_Referral program management
+model Commission_Referral {
+  id            String   @id @default(uuid()) @db.Uuid
+  referrerId    String   @db.Uuid
+  refereeId     String   @db.Uuid
+  referralCode  String   @unique @db.VarChar(50)
+  status        Commission_ReferralStatus @default(pending)
+  rewardAmount  Decimal? @db.Decimal(8, 2)
+  rewardPaid    Boolean  @default(false)
+  completedAt   DateTime? @db.Timestamp(6)
+  expiresAt     DateTime @db.Timestamp(6)
+  metadata      Json?
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
 
-// Compliance Enums
-enum SubjectRightsRequestType {
-  access
-  delete
-  portability
-  rectification
+  @@map("referrals")
 }
 
-enum SubjectRightsRequestStatus {
+// Loyalty rewards and bonuses
+model Commission_Reward {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  type       Commission_RewardType
+  amount     Decimal  @db.Decimal(8, 2)
+  description String?
+  status     Commission_RewardStatus @default(earned)
+  expiresAt  DateTime? @db.Timestamp(6)
+  redeemedAt DateTime? @db.Timestamp(6)
+  referenceId String? @db.Uuid // order_id, referral_id, etc.
+  createdAt  DateTime @default(now()) @db.Timestamp(6)
+
+  @@map("rewards")
+}
+
+// Commission_Payout management
+model Commission_Payout {
+  id            String   @id @default(uuid()) @db.Uuid
+  recipientId   String   @db.Uuid
+  recipientType String
+  amount        Decimal  @db.Decimal(10, 2)
+  status        Commission_PayoutStatus @default(pending)
+  scheduledDate DateTime? @db.Timestamp(6)
+  processedDate DateTime? @db.Timestamp(6)
+  reference     String?
+  metadata      Json?
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+
+  @@map("payouts")
+}
+
+// Event store for domain events
+model Commission_EventStore {
+  id          String   @id @default(uuid()) @db.Uuid
+  aggregateId String
+  eventType   String
+  eventData   Json
+  occurredAt  DateTime @default(now()) @db.Timestamp(6)
+  eventVersion Int      @default(1)
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+
+  @@map("event_store")
+}
+
+// Enums
+enum Commission_CommissionType {
+  sale
+  referral
+  bonus
+  adjustment
+  task_assignment
+  task_completion
+  collaboration_setup
+}
+
+enum Commission_CommissionStatus {
   pending
-  processing
-  completed
-  rejected
-}
-
-enum PCIComplianceLevel {
-  level1 // >6M transactions/year
-  level2 // 1-6M transactions/year
-  level3 // <1M transactions/year
-  level4 // <1M transactions/year (small merchants)
-}
-
-enum SOXComplianceStatus {
-  compliant
-  non_compliant
-  remediation_required
-  under_review
-}
-
-enum ComplianceStatus {
-  active
-  expired
-  revoked
-}
-
-enum KYCStatus {
-  pending
-  submitted
-  under_review
   approved
+  paid
   rejected
-  expired
+  cancelled
 }
 
-enum KYCRiskLevel {
-  low
-  medium
-  high
-  critical
-}
-
-enum RiskLevel {
-  low
-  medium
-  high
-  critical
-}
-
-enum AssessmentStatus {
-  in_progress
+enum Commission_ReferralStatus {
+  pending
   completed
-  requires_action
+  expired
+  cancelled
 }
 
-enum SOXControlArea {
-  access_control
-  change_management
-  financial_reporting
-  data_integrity
-  segregation_duties
+enum Commission_RewardType {
+  referral
+  loyalty
+  bonus
+  milestone
+  promotional
 }
 
-enum SOXFrequency {
-  daily
-  weekly
-  monthly
-  quarterly
-  annually
+enum Commission_RewardStatus {
+  earned
+  redeemed
+  expired
+  cancelled
 }
 
-enum SOXControlStatus {
-  effective
-  ineffective
-  compensating_control
+enum Commission_PayoutStatus {
+  pending
+  scheduled
+  processed
+  cancelled
+  failed
 }
 
-// Compliance Service Models
-model CompensatingControl {
+
+// --- community-service Service Models ---
+
+// Community Service Database Schema
+// Social features, posts, comments, and user engagement
+
+
+
+
+
+// Social posts and content
+model Community_Post {
+  id            String   @id @default(uuid()) @db.Uuid
+  authorId      String   @db.Uuid
+  title         String?  @db.VarChar(255)
+  content       String
+  type          Community_PostType @default(text)
+  visibility    Community_Visibility @default(public)
+  tags          String[]
+  location      Json?    // Geolocation data
+  metadata      Json?
+  isPinned      Boolean  @default(false)
+  isFeatured    Boolean  @default(false)
+  likesCount    Int      @default(0)
+  commentsCount Int      @default(0)
+  sharesCount   Int      @default(0)
+  status        Community_PostStatus @default(published)
+  publishedAt   DateTime? @db.Timestamp(6)
+  moderatedBy   String?  @db.Uuid
+  moderatedAt   DateTime? @db.Timestamp(6)
+  moderationReason String?
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime @updatedAt @db.Timestamp(6)
+
+  // Relations
+  author        Community_User @relation("PostAuthor", fields: [authorId], references: [id])
+  likes         Community_Like[]
+  comments      Community_Comment[]
+  shares        Community_Share[]
+
+  @@map("posts")
+}
+
+// Community_User entity for community features
+model Community_User {
+  id          String   @id @default(uuid()) @db.Uuid
+  username    String   @unique @db.VarChar(50)
+  displayName String   @db.VarChar(100)
+  avatarUrl   String?  @db.VarChar(500)
+  bio         String?  @db.VarChar(500)
+  location    String?  @db.VarChar(100)
+  website     String?  @db.VarChar(255)
+  isVerified  Boolean  @default(false)
+  reputation  Int      @default(0)
+  followersCount Int   @default(0)
+  followingCount Int  @default(0)
+  status      Community_UserStatus @default(active)
+  lastActiveAt DateTime @db.Timestamp(6)
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime @updatedAt @db.Timestamp(6)
+
+  // Relations
+  posts       Community_Post[]    @relation("PostAuthor")
+  comments    Community_Comment[]
+  likes       Community_Like[]
+  shares      Community_Share[]
+  followers   Community_Follow[]  @relation("UserFollowers")
+  following   Community_Follow[]  @relation("UserFollowing")
+
+  @@map("users")
+}
+
+// Nested comments system
+model Community_Comment {
+  id            String   @id @default(uuid()) @db.Uuid
+  postId        String   @db.Uuid
+  authorId      String   @db.Uuid
+  parentId      String?  @db.Uuid
+  content       String
+  likesCount    Int      @default(0)
+  repliesCount  Int      @default(0)
+  status        Community_CommentStatus @default(published)
+  moderatedBy   String?  @db.Uuid
+  moderatedAt   DateTime? @db.Timestamp(6)
+  moderationReason String?
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime @updatedAt @db.Timestamp(6)
+
+  // Relations
+  post          Community_Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author        Community_User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent        Community_Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies       Community_Comment[] @relation("CommentReplies")
+  likes         Community_Like[]
+
+  @@map("comments")
+}
+
+// Community_User engagement metrics
+model Community_Like {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  postId    String?  @db.Uuid
+  commentId String?  @db.Uuid
+  type      Community_LikeType @default(like)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  user    Community_User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post    Community_Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment Community_Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+  @@map("likes")
+}
+
+// Social sharing
+model Community_Share {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  postId    String   @db.Uuid
+  platform  String?  @db.VarChar(50) // twitter, facebook, etc.
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  user Community_User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Community_Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("shares")
+}
+
+// Community_Follow relationships
+model Community_Follow {
+  id          String   @id @default(uuid()) @db.Uuid
+  followerId  String   @db.Uuid
+  followingId String   @db.Uuid
+  status      Community_FollowStatus @default(accepted)
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  follower  Community_User @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following Community_User @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+// Content moderation reports
+model Community_Report {
+  id            String   @id @default(uuid()) @db.Uuid
+  reporterId    String   @db.Uuid
+  entityType    String   @db.VarChar(50) // post, comment, user
+  entityId      String   @db.Uuid
+  reason        Community_ReportReason
+  description   String?  @db.VarChar(1000)
+  status        Community_ReportStatus @default(pending)
+  reviewedBy    String?  @db.Uuid
+  reviewedAt    DateTime? @db.Timestamp(6)
+  resolution    String?
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+
+  @@map("reports")
+}
+
+// Trending topics and hashtags
+model Community_Hashtag {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique @db.VarChar(100)
+  usageCount Int     @default(0)
+  trendingScore Decimal @default(0) @db.Decimal(5, 2)
+  lastUsedAt DateTime @db.Timestamp(6)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+
+  @@map("hashtags")
+}
+
+// Community_User bookmarks/saves
+model Community_Bookmark {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  postId    String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  user Community_User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Community_Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("bookmarks")
+}
+
+// Enums
+enum Community_PostType {
+  text
+  image
+  video
+  link
+  poll
+  event
+}
+
+enum Community_Visibility {
+  public
+  followers
+  private
+}
+
+enum Community_PostStatus {
+  draft
+  published
+  hidden
+  deleted
+}
+
+enum Community_UserStatus {
+  active
+  suspended
+  deactivated
+}
+
+enum Community_CommentStatus {
+  published
+  hidden
+  deleted
+}
+
+enum Community_LikeType {
+  like
+  love
+  laugh
+  angry
+  sad
+}
+
+enum Community_FollowStatus {
+  pending
+  accepted
+  blocked
+}
+
+enum Community_ReportReason {
+  spam
+  harassment
+  inappropriate_content
+  copyright_violation
+  hate_speech
+  misinformation
+  other
+}
+
+enum Community_ReportStatus {
+  pending
+  reviewed
+  resolved
+  dismissed
+}
+
+
+// --- compliance-service Service Models ---
+
+// Compliance Service Database Schema
+// Handles GDPR, PCI DSS, SOX compliance automation
+
+
+
+
+
+// Compensating Controls for PCI DSS
+model Compliance_CompensatingControl {
   id             String   @id @default(cuid())
   requirement    String
   description    String
   implementation String
   evidence       Json?
-  status         String   @default("pending") // approved, rejected, expired
+  status         String   @default(pending) // approved, rejected, expired
   approvedBy     String?
   approvedAt     DateTime?
   expiryDate     DateTime
@@ -1266,11 +1143,12 @@ model CompensatingControl {
   @@map("compensating_controls")
 }
 
-model SubjectRightsRequest {
+// GDPR Subject Rights Requests
+model Compliance_SubjectRightsRequest {
   id           String   @id @default(cuid())
   userId       String
-  requestType  SubjectRightsRequestType
-  status       SubjectRightsRequestStatus @default(pending)
+  requestType  Compliance_SubjectRightsRequestType
+  status       Compliance_SubjectRightsRequestStatus @default(pending)
   requestedAt  DateTime @default(now())
   completedAt  DateTime?
   data         Json?
@@ -1279,26 +1157,28 @@ model SubjectRightsRequest {
   @@map("subject_rights_requests")
 }
 
-model PCIComplianceRecord {
+// PCI DSS Compliance Tracking
+model Compliance_PCIComplianceRecord {
   id              String   @id @default(cuid())
   assessmentDate  DateTime @default(now())
   assessor        String
-  complianceLevel PCIComplianceLevel
+  complianceLevel Compliance_PCIComplianceLevel
   expiryDate      DateTime
   vulnerabilities Json?
   remediationPlan Json?
-  status          ComplianceStatus @default(active)
+  status          Compliance_ComplianceStatus @default(active)
 
   @@map("pci_compliance_records")
 }
 
-model SOXAComplianceRecord {
+// SOX Audit Trail
+model Compliance_SOXAComplianceRecord {
   id             String   @id @default(cuid())
   controlId      String
   controlArea    String
   assessmentDate DateTime @default(now())
   assessor       String
-  status         SOXComplianceStatus
+  status         Compliance_SOXComplianceStatus
   findings       Json?
   remediation    Json?
   nextReviewDate DateTime
@@ -1306,14 +1186,15 @@ model SOXAComplianceRecord {
   @@map("sox_compliance_records")
 }
 
-model SOXControl {
+// SOX Controls (for storing control definitions)
+model Compliance_SOXControl {
   id             String   @id @default(cuid())
   controlId      String   @unique
-  controlArea    SOXControlArea
+  controlArea    Compliance_SOXControlArea
   description    String
-  frequency      SOXFrequency
+  frequency      Compliance_SOXFrequency
   owner          String
-  status         SOXControlStatus @default(effective)
+  status         Compliance_SOXControlStatus @default(effective)
   lastTested     DateTime?
   nextReviewDate DateTime
   evidence       Json?
@@ -1323,7 +1204,8 @@ model SOXControl {
   @@map("sox_controls")
 }
 
-model DataRetentionPolicy {
+// Data Retention Policies
+model Compliance_DataRetentionPolicy {
   id             String   @id @default(cuid())
   dataType       String
   retentionPeriod Int // days
@@ -1336,7 +1218,8 @@ model DataRetentionPolicy {
   @@map("data_retention_policies")
 }
 
-model DataDeletionLog {
+// Data Deletion Logs
+model Compliance_DataDeletionLog {
   id            String   @id @default(cuid())
   userId        String
   dataType      String
@@ -1348,22 +1231,24 @@ model DataDeletionLog {
   @@map("data_deletion_logs")
 }
 
-model KYCRecord {
+// KYC Records (Know Your Customer)
+model Compliance_KYCRecord {
   id                String   @id @default(cuid())
   userId            String
-  verificationStatus KYCStatus @default(pending)
+  verificationStatus Compliance_KYCStatus @default(pending)
   submittedAt       DateTime @default(now())
   verifiedAt        DateTime?
   verifiedBy        String?
   documents         Json? // File paths/URLs to verification documents
   rejectionReason   String?
   expiryDate        DateTime?
-  riskLevel         KYCRiskLevel @default(medium)
+  riskLevel         Compliance_KYCRiskLevel @default(medium)
 
   @@map("kyc_records")
 }
 
-model ComplianceAuditLog {
+// Compliance Audit Logs
+model Compliance_ComplianceAuditLog {
   id          String   @id @default(cuid())
   action      String
   resource    String
@@ -1376,7 +1261,8 @@ model ComplianceAuditLog {
   @@map("compliance_audit_logs")
 }
 
-model DataProcessingRecord {
+// Data Processing Records (GDPR Article 30)
+model Compliance_DataProcessingRecord {
   id              String   @id @default(cuid())
   purpose         String
   categories      Json // Personal data categories
@@ -1388,49 +1274,954 @@ model DataProcessingRecord {
   @@map("data_processing_records")
 }
 
-model PrivacyImpactAssessment {
+// Privacy Impact Assessments
+model Compliance_PrivacyImpactAssessment {
   id             String   @id @default(cuid())
   projectName    String
   assessmentDate DateTime @default(now())
   assessor       String
-  riskLevel      RiskLevel
+  riskLevel      Compliance_RiskLevel
   findings       Json?
   recommendations Json?
-  status         AssessmentStatus @default(in_progress)
+  status         Compliance_AssessmentStatus @default(in_progress)
 
   @@map("privacy_impact_assessments")
 }
 
-model ProcessedEvent {
-  id            String   @id @default(uuid())
-  eventId       String   @unique // Original event ID
-  eventType     String   // Event type (OrderPaid, PaymentSucceeded, etc.)
-  consumerName  String   // Consumer that processed the event
-  idempotencyKey String  @unique // Unique key for idempotency
-  eventVersion  String   // Event version
-  eventPayload  Json     // Full event payload for auditing
-  producer      String   // Service that produced the event
-  processedAt   DateTime @default(now())
-  processingDuration Int? // Processing time in milliseconds
-
-  // Critical flow flags
-  isCriticalFlow Boolean @default(false) // True for payments, orders, etc.
-  flowType       String? // payment, order, inventory, etc.
-
-  // Business entity references
-  orderId        String?
-  paymentId      String?
-  userId         String?
-
-  // Retry information
-  retryCount     Int      @default(0)
-  lastRetryAt    DateTime?
-  errorMessage   String?
-
-  @@map("events_processed_events")
+// Enums
+enum Compliance_SubjectRightsRequestType {
+  access
+  delete
+  portability
+  rectification
 }
-// Training Models
-model TrainingRecord {
+
+enum Compliance_SubjectRightsRequestStatus {
+  pending
+  processing
+  completed
+  rejected
+}
+
+enum Compliance_PCIComplianceLevel {
+  level1 // >6M transactions/year
+  level2 // 1-6M transactions/year
+  level3 // <1M transactions/year
+  level4 // <1M transactions/year (small merchants)
+}
+
+enum Compliance_SOXComplianceStatus {
+  compliant
+  non_compliant
+  remediation_required
+  under_review
+}
+
+enum Compliance_ComplianceStatus {
+  active
+  expired
+  revoked
+}
+
+enum Compliance_KYCStatus {
+  pending
+  submitted
+  under_review
+  approved
+  rejected
+  expired
+}
+
+enum Compliance_KYCRiskLevel {
+  low
+  medium
+  high
+  critical
+}
+
+enum Compliance_RiskLevel {
+  low
+  medium
+  high
+  critical
+}
+
+enum Compliance_AssessmentStatus {
+  in_progress
+  completed
+  requires_action
+}
+
+enum Compliance_SOXControlArea {
+  access_control
+  change_management
+  financial_reporting
+  data_integrity
+  segregation_duties
+}
+
+enum Compliance_SOXFrequency {
+  daily
+  weekly
+  monthly
+  quarterly
+  annually
+}
+
+enum Compliance_SOXControlStatus {
+  effective
+  ineffective
+  compensating_control
+}
+
+
+// --- inventory-service Service Models ---
+
+// Inventory Service Database Schema
+// Multi-warehouse inventory management with advanced tracking
+
+
+
+
+
+// Core warehouse management
+model Inventory_Warehouse {
+  id          String   @id @default(uuid()) @db.Uuid
+  code        String   @unique @db.VarChar(50)
+  name        String   @db.VarChar(255)
+  address     Json     // Structured address with coordinates
+  type        Inventory_WarehouseType // central, regional, store
+  status      Inventory_WarehouseStatus @default(active)
+  capacity    Json?    // Storage capacity by category
+  operatingHours Json? // Operating hours and holidays
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime @updatedAt @db.Timestamp(6)
+
+  // Relations
+  stockItems      Inventory_StockItem[]
+  reservations    Inventory_Reservation[]
+  inventoryMovements Inventory_InventoryMovement[]
+  inventoryCounts Inventory_InventoryCount[]
+
+  @@map("warehouses")
+}
+
+// Advanced stock item tracking
+model Inventory_StockItem {
+  id                String   @id @default(uuid()) @db.Uuid
+  productVariantId  String   @db.Uuid
+  warehouseId       String   @db.Uuid
+  sku               String   @unique @db.VarChar(100)
+  quantityAvailable Int  @default(0)
+  quantityReserved  Int  @default(0)
+  quantityDamaged   Int  @default(0)
+  quantityOnOrder   Int  @default(0)
+  reorderPoint      Int  @default(0)
+  maxStock          Int?
+  unitCost          Decimal? @db.Decimal(10, 2)
+  lastInventoryCount DateTime? @db.Timestamp(6)
+  expiryDate        DateTime? @db.Date
+  batchNumber       String?  @db.VarChar(100)
+  locationCode      String?  @db.VarChar(50) // Aisle, shelf, bin location
+  status            Inventory_StockStatus @default(active)
+  metadata          Json?
+  createdAt         DateTime @default(now()) @db.Timestamp(6)
+  updatedAt         DateTime @updatedAt @db.Timestamp(6)
+
+  // Relations
+  warehouse         Inventory_Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  reservations      Inventory_Reservation[]
+  inventoryMovements Inventory_InventoryMovement[]
+  inventoryCountItems Inventory_InventoryCountItem[]
+
+  // Constraints
+  @@unique([productVariantId, warehouseId])
+  @@map("stock_items")
+}
+
+// Stock reservation with expiration
+model Inventory_Reservation {
+  id                String   @id @default(uuid()) @db.Uuid
+  orderId           String   @db.Uuid
+  orderItemId       String   @db.Uuid
+  productVariantId  String   @db.Uuid
+  warehouseId       String   @db.Uuid
+  quantityReserved  Int
+  status            Inventory_ReservationStatus @default(active)
+  expiresAt         DateTime @db.Timestamp(6)
+  fulfilledAt       DateTime? @db.Timestamp(6)
+  createdAt         DateTime @default(now()) @db.Timestamp(6)
+  updatedAt         DateTime @updatedAt @db.Timestamp(6)
+
+  // Relations
+  warehouse         Inventory_Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  stockItem         Inventory_StockItem @relation(fields: [productVariantId, warehouseId], references: [productVariantId, warehouseId], onDelete: Cascade)
+
+  @@map("reservations")
+}
+
+// Complete audit trail for inventory movements
+model Inventory_InventoryMovement {
+  id               String   @id @default(uuid()) @db.Uuid
+  productVariantId String   @db.Uuid
+  warehouseId      String   @db.Uuid
+  movementType     Inventory_MovementType
+  quantity         Int
+  referenceType    String?  // order, return, adjustment, transfer
+  referenceId      String?  @db.Uuid
+  reason           String?  @db.VarChar(255)
+  performedBy      String?  @db.Uuid // user or system
+  unitCost         Decimal? @db.Decimal(10, 2)
+  notes            String?  @db.Text
+  createdAt        DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  warehouse        Inventory_Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  stockItem        Inventory_StockItem @relation(fields: [productVariantId, warehouseId], references: [productVariantId, warehouseId], onDelete: Cascade)
+
+  @@map("inventory_movements")
+}
+
+// Inventory counting with cycle counting support
+model Inventory_InventoryCount {
+  id              String   @id @default(uuid()) @db.Uuid
+  warehouseId     String   @db.Uuid
+  productVariantId String? @db.Uuid // null for full warehouse count
+  countedBy       String   @db.Uuid
+  countedAt       DateTime @default(now()) @db.Timestamp(6)
+  status          Inventory_CountStatus @default(in_progress)
+  countType       Inventory_CountType @default(full) // full, spot, cycle
+  itemsCounted    Int  @default(0)
+  discrepanciesFound Int @default(0)
+  totalValue      Decimal  @default(0) @db.Decimal(12, 2)
+  notes           String?  @db.Text
+  completedAt     DateTime? @db.Timestamp(6)
+  approvedBy      String?  @db.Uuid
+  approvedAt      DateTime? @db.Timestamp(6)
+  createdAt       DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  warehouse         Inventory_Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  inventoryCountItems Inventory_InventoryCountItem[]
+
+  @@map("inventory_counts")
+}
+
+// Individual count items with discrepancy tracking
+model Inventory_InventoryCountItem {
+  id                String   @id @default(uuid()) @db.Uuid
+  inventoryCountId  String   @db.Uuid
+  productVariantId  String   @db.Uuid
+  warehouseId       String   @db.Uuid
+  systemQuantity    Int
+  countedQuantity   Int
+  discrepancy       Int      // Computed field: counted - system
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  inventoryCount    Inventory_InventoryCount @relation(fields: [inventoryCountId], references: [id], onDelete: Cascade)
+  stockItem         Inventory_StockItem @relation(fields: [productVariantId, warehouseId], references: [productVariantId, warehouseId], onDelete: Cascade)
+
+  @@map("inventory_count_items")
+}
+
+// Enums
+enum Inventory_WarehouseType {
+  central
+  regional
+  store
+}
+
+enum Inventory_WarehouseStatus {
+  active
+  inactive
+  maintenance
+}
+
+enum Inventory_StockStatus {
+  active
+  discontinued
+  damaged
+}
+
+enum Inventory_ReservationStatus {
+  active
+  fulfilled
+  cancelled
+  expired
+}
+
+enum Inventory_MovementType {
+  inbound
+  outbound
+  transfer
+  adjustment
+  damage
+}
+
+enum Inventory_CountStatus {
+  in_progress
+  completed
+  reconciled
+  cancelled
+}
+
+enum Inventory_CountType {
+  full
+  spot
+  cycle
+}
+
+// ============================================================================
+// TRANSACTIONAL OUTBOX
+// ============================================================================
+
+model Inventory_OutboxEvent {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  eventType   String
+  eventData   Json
+  status      String   @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
+  createdAt   DateTime @default(now())
+  processedAt DateTime?
+  attempts    Int      @default(0)
+  lastError   String?
+  nextRetryAt DateTime?
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@map("outbox_events")
+}
+
+
+// --- logistics-service Service Models ---
+
+
+
+
+
+model Logistics_Courier {
+  id                    String   @id @default(uuid())
+  name                  String
+  phone                 String   @unique
+  email                 String   @unique
+  status                String   @default("active")
+  vehicleType           String
+  vehicleLicensePlate   String
+  vehicleCapacity       Float
+  vehicleFuelType       String
+  currentLatitude       Float?
+  currentLongitude      Float?
+  locationAccuracy      Float?
+  locationTimestamp     DateTime?
+  onTimeDeliveryRate    Float    @default(0)
+  customerRating        Float    @default(0)
+  completedDeliveries   Int      @default(0)
+  totalEarnings         Float    @default(0)
+  averageDeliveryTime   Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  deliveries            Logistics_Delivery[]
+  locationHistory       Logistics_LocationHistory[]
+  earnings              Logistics_Earning[]
+
+  @@map("couriers")
+}
+
+model Logistics_Delivery {
+  id                    String   @id @default(uuid())
+  orderId               String
+  courierId             String?
+  status                String   @default("pending")
+  trackingNumber        String?  @unique
+  
+  pickupStreet          String
+  pickupCity            String
+  pickupRegion          String
+  pickupLatitude        Float
+  pickupLongitude       Float
+  pickupContactName     String
+  pickupContactPhone    String
+  
+  deliveryStreet        String
+  deliveryCity          String
+  deliveryRegion        String
+  deliveryLatitude      Float
+  deliveryLongitude     Float
+  deliveryContactName   String
+  deliveryContactPhone  String
+  
+  packageWeight         Float
+  packageValue          Float
+  packageFragile        Boolean  @default(false)
+  
+  estimatedDeliveryTime DateTime?
+  actualDeliveryTime    DateTime?
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  courier               Logistics_Courier? @relation(fields: [courierId], references: [id])
+
+  @@map("deliveries")
+}
+
+model Logistics_LocationHistory {
+  id          String   @id @default(uuid())
+  courierId   String
+  latitude    Float
+  longitude   Float
+  accuracy    Float?
+  timestamp   DateTime
+  createdAt   DateTime @default(now())
+
+  courier     Logistics_Courier  @relation(fields: [courierId], references: [id])
+
+  @@map("location_history")
+}
+
+model Logistics_Earning {
+  id              String   @id @default(uuid())
+  courierId       String
+  date            DateTime @db.Date
+  baseEarnings    Float    @default(0)
+  totalEarnings   Float
+  createdAt       DateTime @default(now())
+
+  courier         Logistics_Courier  @relation(fields: [courierId], references: [id])
+
+  @@map("earnings")
+}
+
+// ============================================================================
+// TRANSACTIONAL OUTBOX
+// ============================================================================
+
+model Logistics_OutboxEvent {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  eventType   String
+  eventData   Json
+  status      String   @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
+  createdAt   DateTime @default(now())
+  processedAt DateTime?
+  attempts    Int      @default(0)
+  lastError   String?
+  nextRetryAt DateTime?
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@map("outbox_events")
+}
+
+// --- notification-service Service Models ---
+
+// Notification_Notification Service Database Schema
+// Multi-channel communication templates and delivery tracking
+
+
+
+
+
+// Notification_Notification templates with localization
+model Notification_Template {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique @db.VarChar(100)
+  type      Notification_NotificationType
+  subject   String?  @db.VarChar(255)
+  content   String
+  variables Json?    // Notification_Template variables schema
+  locale    String   @default("en") @db.VarChar(10)
+  status    Notification_TemplateStatus @default(active)
+  createdBy String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @db.Timestamp(6)
+
+  // Relations
+  notifications Notification_Notification[]
+
+  @@map("templates")
+}
+
+// Individual notifications with delivery tracking
+model Notification_Notification {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  templateId    String?  @db.Uuid
+  type          Notification_NotificationType
+  priority      Notification_NotificationPriority @default(normal)
+  subject       String?  @db.VarChar(255)
+  content       String?
+  data          Json?    // Notification_Template data for rendering
+  status        Notification_NotificationStatus @default(pending)
+  scheduledAt   DateTime? @db.Timestamp(6)
+  sentAt        DateTime? @db.Timestamp(6)
+  deliveredAt   DateTime? @db.Timestamp(6)
+  failedAt      DateTime? @db.Timestamp(6)
+  failureReason String?
+  retryCount    Int      @default(0)
+  maxRetries    Int      @default(3)
+  metadata      Json?
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  template      Notification_Template? @relation(fields: [templateId], references: [id])
+  deliveryLogs  Notification_DeliveryLog[]
+
+  @@map("notifications")
+}
+
+// Detailed delivery tracking and analytics
+model Notification_DeliveryLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  notificationId String   @db.Uuid
+  provider       String   @db.VarChar(50) // twilio, firebase, sendgrid, etc.
+  providerMessageId String? @db.VarChar(255)
+  status         Notification_DeliveryStatus
+  statusCode     String?  @db.VarChar(10)
+  responseBody   String?
+  errorMessage   String?
+  deliveryCost   Decimal? @db.Decimal(6, 4)
+  userAgent      String?
+  ipAddress      String?  // Using text for flexibility
+  createdAt      DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  notification   Notification_Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@map("delivery_logs")
+}
+
+// Enums
+enum Notification_NotificationType {
+  email
+  sms
+  push
+  in_app
+  webhook
+}
+
+enum Notification_NotificationPriority {
+  low
+  normal
+  high
+  critical
+}
+
+enum Notification_NotificationStatus {
+  pending
+  sent
+  delivered
+  failed
+  cancelled
+  expired
+}
+
+enum Notification_DeliveryStatus {
+  sent
+  delivered
+  failed
+  bounced
+  complained
+  opened
+  clicked
+  unsubscribed
+}
+
+enum Notification_TemplateStatus {
+  active
+  inactive
+  draft
+  archived
+}
+
+
+// --- order-service Service Models ---
+
+// Prisma schema for Order_Order Service
+
+
+
+
+model Order_Order {
+  id              String   @id @default(cuid())
+  buyerId         String
+  sellerId        String
+  status          Order_OrderStatus @default(PENDING)
+  paymentMethod   Order_PaymentMethod
+  totalAmount     Decimal
+  currency        String   @default("TZS")
+  totalWeight     Float
+  deliveryAddress Json // Address value object
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  items           Order_OrderItem[]
+  payments        Order_Payment[]
+  settlements     Order_Settlement[]
+
+  @@map("orders")
+}
+
+model Order_OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  productId   String
+  quantity    Int
+  price       Decimal
+  weight      Float
+  currency    String  @default("TZS")
+
+  // Relations
+  order       Order_Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model Order_Payment {
+  id            String        @id @default(cuid())
+  orderId       String
+  amount        Decimal
+  currency      String        @default("TZS")
+  method        Order_PaymentMethod
+  status        Order_PaymentStatus @default(PENDING)
+  transactionId String?
+  externalRef   String?
+  metadata      Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  order         Order_Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Order_Settlement {
+  id              String   @id @default(cuid())
+  orderId         String
+  settlementId    String   @unique
+  sellerPayout    Decimal
+  platformCommission Decimal
+  courierEarnings Decimal?
+  currency        String   @default("TZS")
+  status          Order_SettlementStatus @default(PENDING)
+  processedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  order           Order_Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("settlements")
+}
+
+// Enums
+enum Order_OrderStatus {
+  PENDING
+  CONFIRMED
+  ASSIGNED
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+enum Order_PaymentMethod {
+  COD
+  WALLET
+  CARD
+  MOBILE_MONEY
+}
+
+enum Order_PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum Order_SettlementStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+// ============================================================================
+// TRANSACTIONAL OUTBOX
+// ============================================================================
+
+model Order_OutboxEvent {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  eventType   String
+  eventData   Json
+  status      String   @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
+  createdAt   DateTime @default(now())
+  processedAt DateTime?
+  attempts    Int      @default(0)
+  lastError   String?
+  nextRetryAt DateTime?
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@map("outbox_events")
+}
+
+// ============================================================================
+// SAGA LOGS
+// ============================================================================
+
+model Order_SagaLog {
+  id          String   @id @default(uuid())
+  sagaId      String   @unique
+  sagaType    String
+  status      String   @default("STARTED") // STARTED, IN_PROGRESS, COMPLETED, FAILED, COMPENSATING, COMPENSATED
+  currentStep String
+  payload     Json
+  context     Json
+  error       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  steps       Order_SagaStepLog[]
+
+  @@index([status])
+  @@index([sagaType])
+  @@map("saga_logs")
+}
+
+model Order_SagaStepLog {
+  id          String   @id @default(uuid())
+  sagaId      String
+  stepName    String
+  status      String   @default("PENDING") // PENDING, STARTED, COMPLETED, FAILED, COMPENSATED
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  error       String?
+
+  saga        Order_SagaLog  @relation(fields: [sagaId], references: [sagaId], onDelete: Cascade)
+
+  @@index([sagaId])
+  @@map("saga_step_logs")
+}
+
+
+// --- payment-service Service Models ---
+
+// Payment_Payment Service Database Schema
+// Complete payment processing, wallet management, and financial transactions
+
+
+
+
+
+// Payment_Payment transactions with PCI compliance
+model Payment_Payment {
+  id            String   @id @default(uuid()) @db.Uuid
+  orderId       String   @db.Uuid
+  userId        String   @db.Uuid
+  amount        Decimal  @db.Decimal(10, 2)
+  currency      String   @default("TZS") @db.VarChar(3)
+  method        Payment_PaymentMethod
+  provider      String   @db.VarChar(50) // PESAPAL, INTERNAL_WALLET
+  providerRef   String?  @db.VarChar(255)
+  status        Payment_PaymentStatus @default(PENDING)
+  description   String?  @db.VarChar(500)
+  metadata      Json?
+  processedAt   DateTime? @db.Timestamp(6)
+  completedAt   DateTime? @db.Timestamp(6)
+  failedAt      DateTime? @db.Timestamp(6)
+  failureReason String?
+  refundedAmount Decimal  @default(0) @db.Decimal(10, 2)
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime @updatedAt @db.Timestamp(6)
+
+  @@map("payments")
+}
+
+// Payment_Refund processing
+model Payment_Refund {
+  id            String   @id @default(uuid()) @db.Uuid
+  paymentId     String   @db.Uuid
+  orderId       String   @db.Uuid
+  userId        String   @db.Uuid
+  amount        Decimal  @db.Decimal(10, 2)
+  currency      String   @default("TZS") @db.VarChar(3)
+  reason        String   @db.VarChar(255)
+  reasonDetails String?  @db.Text
+  status        Payment_RefundStatus @default(PENDING)
+  providerRef   String?  @db.VarChar(255)
+  processedAt   DateTime? @db.Timestamp(6)
+  completedAt   DateTime? @db.Timestamp(6)
+  failedAt      DateTime? @db.Timestamp(6)
+  failureReason String?
+  metadata      Json?
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime @updatedAt @db.Timestamp(6)
+
+  @@map("refunds")
+}
+
+// Webhook processing for payment providers
+model Payment_WebhookEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  provider      String   @db.VarChar(50)
+  eventType     String   @db.VarChar(100)
+  eventId       String   @db.VarChar(255)
+  payload       Json
+  processed     Boolean  @default(false)
+  processedAt   DateTime? @db.Timestamp(6)
+  errorMessage  String?
+  retryCount    Int      @default(0)
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+
+  @@unique([provider, eventId])
+  @@map("webhook_events")
+}
+
+// Enums
+enum Payment_PaymentMethod {
+  MPESA
+  AIRTEL_MONEY
+  TIGO_PESA
+  HALOPESA
+  WALLET
+  BANK_TRANSFER
+  CARD
+}
+
+enum Payment_PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum Payment_RefundStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+
+// ============================================================================
+// TRANSACTIONAL OUTBOX
+// ============================================================================
+
+model Payment_OutboxEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  eventId     String   @unique
+  eventType   String
+  eventData   Json
+  status      String   @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  processedAt DateTime? @db.Timestamp(6)
+  attempts    Int      @default(0)
+  lastError   String?
+  nextRetryAt DateTime? @db.Timestamp(6)
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@map("outbox_events")
+}
+
+// Fraud Detection
+model Payment_FraudAssessment {
+  id              String   @id @default(uuid()) @db.Uuid
+  transactionId   String   @unique
+  riskScore       Int
+  riskLevel       String
+  recommendation  String
+  confidence      Float
+  flags           Json
+  processingTime  Int
+  createdAt       DateTime @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime @updatedAt @db.Timestamp(6)
+
+  @@map("fraud_assessments")
+}
+
+
+// --- payout-service Service Models ---
+
+// Payout_Payout Service Database Schema
+// Platform to seller disbursements
+
+
+
+
+
+// Payout_Payout processing for sellers
+model Payout_Payout {
+  id            String   @id @default(uuid()) @db.Uuid
+  sellerId      String   @db.Uuid
+  amount        Decimal  @db.Decimal(10, 2)
+  currency      String   @default("TZS") @db.VarChar(3)
+  method        Payout_PayoutMethod
+  status        Payout_PayoutStatus @default(PENDING)
+  bankDetails   Json?    // Encrypted bank account details
+  mobileMoneyDetails Json?
+  reference     String?  @db.VarChar(255)
+  processedAt   DateTime? @db.Timestamp(6)
+  completedAt   DateTime? @db.Timestamp(6)
+  failedAt      DateTime? @db.Timestamp(6)
+  failureReason String?
+  fee           Decimal  @default(0) @db.Decimal(8, 2)
+  netAmount     Decimal  @default(0) @db.Decimal(10, 2)
+  metadata      Json?
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime @updatedAt @db.Timestamp(6)
+
+  @@map("payouts")
+}
+
+enum Payout_PayoutMethod {
+  BANK_TRANSFER
+  MOBILE_MONEY
+  WALLET
+}
+
+enum Payout_PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model Payout_OutboxEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  eventId     String   @unique
+  eventType   String
+  eventData   Json
+  status      String   @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  processedAt DateTime? @db.Timestamp(6)
+  attempts    Int      @default(0)
+  lastError   String?
+  nextRetryAt DateTime? @db.Timestamp(6)
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@map("outbox_events")
+}
+
+
+// --- training-service Service Models ---
+
+
+
+
+
+model Training_TrainingRecord {
   id          String   @id @default(uuid())
   learnerId   String
   learnerRole String
@@ -1440,21 +2231,22 @@ model TrainingRecord {
   completedAt DateTime?
   score       Int?
   attempts    Int      @default(0)
+  progress    Json?
   expiresAt   DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  module      TrainingModule @relation(fields: [moduleId], references: [id])
+  module      Training_TrainingModule @relation(fields: [moduleId], references: [id])
 
   @@index([learnerId])
   @@index([learnerRole])
   @@index([moduleId])
   @@index([status])
   @@index([expiresAt])
-  @@map("training_records")
 }
 
-model CertificationRequirement {
+
+model Training_CertificationRequirement {
   module             String  @id
   minimumScore       Int
   validityPeriodDays Int
@@ -1462,29 +2254,376 @@ model CertificationRequirement {
   maxAttempts        Int     @default(3)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
-
-  @@map("training_certification_requirements")
 }
 
-enum ContentType {
+enum Training_ContentType {
   TEXT
   VIDEO
   INTERACTIVE
 }
 
-model TrainingModule {
-  id              String      @id @default(uuid())
+enum Training_DifficultyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+model Training_TrainingModule {
+  id              String         @id @default(uuid())
   name            String
   description     String
-  contentType     ContentType @default(TEXT)
+  contentType     Training_ContentType    @default(TEXT)
   content         Json
   durationMinutes Int
   category        String
   prerequisites   String[]
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  targetRoles     String[]
+  isPublic        Boolean        @default(true)
+  difficulty      Training_DifficultyLevel @default(BEGINNER)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
-  records         TrainingRecord[]
-
-  @@map("training_modules")
+  records         Training_TrainingRecord[]
 }
+
+model Training_Badge {
+  id        String   @id @default(uuid())
+  learnerId String
+  type      String
+  reason    String
+  metadata  Json?
+  awardedAt DateTime @default(now())
+
+  @@index([learnerId])
+  @@index([type])
+}
+
+model Training_LeaderboardEntry {
+  learnerId    String @id
+  totalScore   Int    @default(0)
+  modulesCount Int    @default(0)
+  badgesCount  Int    @default(0)
+  updatedAt    DateTime @updatedAt
+
+  @@index([totalScore.desc])
+}
+
+
+
+
+
+// --- user-service Service Models ---
+
+// Prisma schema for User_User Service
+// This schema defines the database structure for user management and profiles
+
+
+
+
+
+// ============================================================================
+// USER MANAGEMENT
+// ============================================================================
+
+model User_User {
+  id                      String   @id @default(cuid())
+  email                   String   @unique
+  passwordHash            String
+  role                    User_UserRole @default(BUYER)
+  status                  User_UserStatus @default(PENDING_VERIFICATION)
+
+  // Profile Information
+  firstName               String?
+  lastName                String?
+  phoneNumber             String?
+  dateOfBirth             DateTime?
+  avatar                  String?
+
+  // Verification Status
+  isEmailVerified         Boolean  @default(false)
+  isPhoneVerified         Boolean  @default(false)
+  emailVerifiedAt         DateTime?
+  phoneVerifiedAt         DateTime?
+
+  // Security Tracking
+  failedLoginAttempts     Int      @default(0)
+  lockoutUntil            DateTime?
+  lastLoginAt             DateTime?
+  passwordChangedAt       DateTime?
+
+  // Two-Factor Authentication
+  twoFactorEnabled        Boolean  @default(false)
+  twoFactorSecret         String?
+
+  // Preferences
+  language                String   @default("en")
+  timezone                String   @default("UTC")
+  notificationsEnabled    Boolean  @default(true)
+
+  // Metadata
+  attributes              Json?
+
+  // Timestamps
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  // Relations
+  addresses               User_UserAddress[]
+  sessions                User_Session[]
+  passwordResetTokens     User_PasswordResetToken[]
+  emailVerificationTokens User_EmailVerificationToken[]
+  auditLogs               User_AuditLog[]
+
+  @@map("users")
+}
+
+// ============================================================================
+// USER ADDRESSES
+// ============================================================================
+
+model User_UserAddress {
+  id          String   @id @default(cuid())
+  userId      String
+  type        User_AddressType @default(HOME)
+  street      String
+  city        String
+  state       String?
+  postalCode  String?
+  country     String
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User_User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_addresses")
+}
+
+// ============================================================================
+// SESSION MANAGEMENT
+// ============================================================================
+
+model User_Session {
+  id          String   @id @default(cuid())
+  userId      String
+  token       String   @unique
+  ipAddress   String
+  userAgent   String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user        User_User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ============================================================================
+// PASSWORD RESET TOKENS
+// ============================================================================
+
+model User_PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User_User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+// ============================================================================
+// EMAIL VERIFICATION TOKENS
+// ============================================================================
+
+model User_EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User_User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_verification_tokens")
+}
+
+// ============================================================================
+// AUDIT LOGGING
+// ============================================================================
+
+model User_AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  email       String?
+  action      String
+  ipAddress   String
+  userAgent   String
+  success     Boolean
+  reason      String?
+  metadata    Json?
+  timestamp   DateTime @default(now())
+
+  // Relations
+  user        User_User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum User_UserRole {
+  BUYER     @map("buyer")
+  SELLER    @map("seller")
+  SUPPLIER  @map("supplier")
+  COURIER   @map("courier")
+  ENABLER   @map("enabler")
+  SYSTEM    @map("system")
+}
+
+enum User_UserStatus {
+  PENDING_VERIFICATION @map("pending_verification")
+  ACTIVE               @map("active")
+  SUSPENDED            @map("suspended")
+  DEACTIVATED          @map("deactivated")
+  LOCKED               @map("locked")
+}
+
+enum User_AddressType {
+  HOME      @map("home")
+  WORK      @map("work")
+  BILLING   @map("billing")
+  SHIPPING  @map("shipping")
+}
+
+// ============================================================================
+// INDEXES AND CONSTRAINTS
+// ============================================================================
+
+// Additional indexes for performance
+model User_UserIndex {
+  userId    String
+  indexType String
+  value     String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, indexType])
+// ============================================================================
+// TRANSACTIONAL OUTBOX
+// ============================================================================
+
+model User_OutboxEvent {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  eventType   String
+  eventData   Json
+  status      String   @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
+  createdAt   DateTime @default(now())
+  processedAt DateTime?
+  attempts    Int      @default(0)
+  lastError   String?
+  nextRetryAt DateTime?
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@map("outbox_events")
+}
+
+
+// --- wallet-service Service Models ---
+
+// Wallet_Wallet Service Database Schema
+// Balance management and transaction ledger
+
+
+
+
+
+// User wallets for platform currency
+model Wallet_Wallet {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  balance       Decimal  @default(0) @db.Decimal(10, 2)
+  currency      String   @default("TZS") @db.VarChar(3)
+  status        Wallet_WalletStatus @default(ACTIVE)
+  frozenAmount  Decimal  @default(0) @db.Decimal(10, 2)
+  metadata      Json?
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime @updatedAt @db.Timestamp(6)
+
+  // Relations
+  transactions  Wallet_Transaction[]
+
+  @@map("wallets")
+}
+
+// Complete transaction ledger (append-only)
+model Wallet_Transaction {
+  id                 String   @id @default(uuid()) @db.Uuid
+  walletId           String   @db.Uuid
+  userId             String   @db.Uuid
+  type               Wallet_TransactionType
+  amount             Decimal  @db.Decimal(10, 2)
+  currency           String   @default("TZS") @db.VarChar(3)
+  balanceBefore      Decimal  @db.Decimal(10, 2)
+  balanceAfter       Decimal  @db.Decimal(10, 2)
+  frozenAmountBefore Decimal  @default(0) @db.Decimal(10, 2)
+  frozenAmountAfter  Decimal  @default(0) @db.Decimal(10, 2)
+  referenceType      String?  @db.VarChar(50) // order, refund, transfer, etc.
+  referenceId        String?  @db.Uuid
+  description        String?  @db.VarChar(255)
+  metadata           Json?
+  createdAt          DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  wallet        Wallet_Wallet @relation(fields: [walletId], references: [id])
+
+  @@map("transactions")
+}
+
+enum Wallet_WalletStatus {
+  ACTIVE
+  FROZEN
+  SUSPENDED
+  CLOSED
+}
+
+enum Wallet_TransactionType {
+  CREDIT
+  DEBIT
+  FREEZE
+  UNFREEZE
+  TRANSFER_IN
+  TRANSFER_OUT
+  REFUND
+  FEE
+  ADJUSTMENT
+  DEBIT_FROZEN
+}
+
+model Wallet_OutboxEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  eventId     String   @unique
+  eventType   String
+  eventData   Json
+  status      String   @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  processedAt DateTime? @db.Timestamp(6)
+  attempts    Int      @default(0)
+  lastError   String?
+  nextRetryAt DateTime? @db.Timestamp(6)
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@map("outbox_events")
+}
+

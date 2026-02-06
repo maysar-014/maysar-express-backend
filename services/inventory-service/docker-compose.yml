@@ -1,8 +1,0 @@
-version: '3.8'
-services:
-  inventory-service:
-    build: .
-    ports:
-      - "3006:3006"
-    environment:
-      - NODE_ENV=development

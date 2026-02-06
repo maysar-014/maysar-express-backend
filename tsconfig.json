@@ -11,13 +11,115 @@
         "forceConsistentCasingInFileNames": true,
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
+        "outDir": "dist",
+        "rootDir": ".",
         "baseUrl": ".",
+        "declaration": true,
         "paths": {
             "@shared/*": [
                 "shared/*"
+            ],
+            "@events/*": [
+                "shared/events/*"
+            ],
+            "@config/*": [
+                "config/*"
+            ],
+            "@modules/*": [
+                "services/*"
+            ],
+            "@analytics/*": [
+                "services/analytics-service/src/*"
+            ],
+            "@api-gateway/*": [
+                "services/api-gateway/src/*"
+            ],
+            "@auth/*": [
+                "services/auth-service/src/*"
+            ],
+            "@business-registry/*": [
+                "services/business-registry-service/src/*"
+            ],
+            "@campaign/*": [
+                "services/campaign-service/src/*"
+            ],
+            "@catalog/*": [
+                "services/catalog-service/src/*"
+            ],
+            "@checkout/*": [
+                "services/checkout-service/src/*"
+            ],
+            "@commission/*": [
+                "services/commission-service/src/*"
+            ],
+            "@community/*": [
+                "services/community-service/src/*"
+            ],
+            "@enabler/*": [
+                "services/enabler-service/src/*"
+            ],
+            "@inventory/*": [
+                "services/inventory-service/src/*"
+            ],
+            "@logistics/*": [
+                "services/logistics-service/src/*"
+            ],
+            "@maps/*": [
+                "services/maps-service/src/*"
+            ],
+            "@moderation/*": [
+                "services/moderation-service/src/*"
+            ],
+            "@notification/*": [
+                "services/notification-service/src/*"
+            ],
+            "@order/*": [
+                "services/order-service/src/*"
+            ],
+            "@payment/*": [
+                "services/payment-service/src/*"
+            ],
+            "@payout/*": [
+                "services/payout-service/src/*"
+            ],
+            "@permission/*": [
+                "services/permission-service/src/*"
+            ],
+            "@pricing/*": [
+                "services/pricing-service/src/*"
+            ],
+            "@production/*": [
+                "services/production-service/src/*"
+            ],
+            "@session/*": [
+                "services/session-service/src/*"
+            ],
+            "@sms/*": [
+                "services/sms-service/src/*"
+            ],
+            "@support/*": [
+                "services/support-service/src/*"
+            ],
+            "@training/*": [
+                "services/training-service/src/*"
+            ],
+            "@two-factor/*": [
+                "services/two-factor-service/src/*"
+            ],
+            "@user/*": [
+                "services/user-service/src/*"
+            ],
+            "@wallet/*": [
+                "services/wallet-service/src/*"
             ]
         }
     },
+    "include": [
+        "services/**/*",
+        "shared/**/*",
+        "events/**/*",
+        "src/**/*"
+    ],
     "exclude": [
         "node_modules",
         "dist"
