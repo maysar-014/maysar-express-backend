@@ -384,7 +384,7 @@ npm install --save-dev @percy/playwright
 
 ### Universal File Structure Standards
 
-The following structure applies to all services and projects:
+The following structure applies to all modules and projects:
 
 ```
 src/
@@ -877,7 +877,7 @@ Brief description of what this service does and why testing is critical.
 
 ## Test Structure
 - **Unit Tests**: Domain logic validation
-- **Integration Tests**: Service interaction validation
+- **Integration Tests**: Module interaction validation
 - **E2E Tests**: Complete workflow validation
 - **Performance Tests**: Load and stress testing
 - **Security Tests**: Vulnerability and compliance testing

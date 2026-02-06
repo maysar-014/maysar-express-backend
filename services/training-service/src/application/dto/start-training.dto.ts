@@ -7,4 +7,7 @@ export class StartTrainingRequest {
 export class StartTrainingResponse {
     trainingRecordId!: string;
     status!: string;
+    warnings?: string[];
+    recommendations?: string[];
 }
+

@@ -4,8 +4,8 @@
  */
 
 import { Payment } from '../../domain/entities/payment.entity';
-import { IPaymentRepository } from '../../domain/ports/payment.repository.port';
-import { IPaymentProvider } from '../../domain/ports/payment-provider.port';
+import { IPaymentRepository } from '../../domain/repositories/payment.repository';
+import { IPaymentProvider } from '../../domain/repositories/payment-provider.gateway';
 import { PaymentProvider } from '../../domain/entities/payment.entity';
 
 export interface CheckPaymentStatusDTO {

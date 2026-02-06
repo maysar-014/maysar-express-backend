@@ -1,7 +1,7 @@
-# Architecture Constitution
+# Maysar Monolithic Architecture Constitution
 
-> **Purpose**: This document is the binding architectural law for all services in this platform.  
-> **Goal**: Protect business logic, enforce consistency, and enable safe scaling using **Clean Architecture + Saga Orchestration**.
+> **Purpose**: This document is the binding architectural law for all modules in this platform. This document is binding for all current and future development.
+> **Goal**: Protect business logic, enforce consistency, maintain module independence, enable safe orchestration, and ensure scalability and maintainability using **Clean Architecture + Saga Orchestration**.
 
 ---
 
@@ -11,13 +11,13 @@
 **Coordination is controlled.**  
 **Side effects are contained.**
 
-Any design or code change must preserve these truths.
+Any design or code change must preserve these truths. These principles apply to **module boundaries** within the monolith. Modules are logical boundaries, not physical service boundaries.
 
 ---
 
 ## 2. The Sovereign Layer Model
 
-Each service is divided into sovereign layers with strict responsibilities.
+Each module is divided into sovereign layers with strict responsibilities. These layers apply **within each module** of the monolith.
 
 ```
 API → Application → Domain
@@ -44,7 +44,7 @@ Infrastructure → Domain (implements ports)
 > **All side effects live in Infrastructure.**  
 > **No layer may violate another’s sovereignty.**
 
-Violation of this principle is considered a critical architectural defect.
+Violation of this principle is considered a critical architectural defect, regardless of whether the system is implemented as a monolith or microservices.
 
 ---
 
@@ -89,7 +89,7 @@ Examples: eligibility, fraud rules, limits
 - Make business decisions
 - No side effects
 
-> **Engines may compute and decide — never persist or communicate externally.**
+> **Engines may compute and decide — never persist or communicate externally. Engines operate within module boundaries.**
 
 ---
 
@@ -97,10 +97,10 @@ Examples: eligibility, fraud rules, limits
 
 ### 6.1 Orchestration Exclusivity Rule
 
-> **Only Sagas may coordinate multiple services.**
+> **Only Sagas may coordinate multiple modules.**
 
 Forbidden locations for orchestration:
-- Controllers
+- Module controllers
 - Domain entities
 - Infrastructure adapters
 
@@ -108,6 +108,8 @@ Allowed location:
 ```
 application/sagas/
 ```
+
+Note: Sagas may coordinate **across modules** within the monolith.
 
 ### 6.2 Decision vs Coordination Rule
 
@@ -140,7 +142,7 @@ Undocumented irreversible steps are forbidden.
 
 ## 8. Infrastructure Isolation Rule
 
-Infrastructure adapts to the Domain — never the reverse.
+Infrastructure adapts to the Domain within each module — never the reverse.
 
 ### Required Pattern
 
@@ -154,9 +156,18 @@ Infrastructure may change freely without affecting Domain logic.
 
 ---
 
-## 9. DTO Firewall Rule
+## 9. Module Communication Rule (NEW)
 
-> **No Domain Entity crosses a service boundary. Ever.**
+- **Preferred**: Event-driven via **in-memory event bus** (Node.js EventEmitter, NestJS EventBus).
+- **Allowed**: Direct service calls for synchronous, internal operations only via public module service interfaces.
+- **Forbidden**: Modules directly accessing each other's repositories or entities.
+- Note: "This ensures loose coupling and future microservices readiness."
+
+---
+
+## 10. DTO Firewall Rule
+
+> **No Domain Entity crosses a module boundary. Ever.**
 
 ### Allowed Across Boundaries
 - DTOs
@@ -171,13 +182,13 @@ Infrastructure may change freely without affecting Domain logic.
 This rule applies to:
 - HTTP
 - Messaging
-- Internal service-to-service calls
+- Internal module-to-module calls
 
 ---
 
-## 10. File Structure Mandate
+## 11. File Structure Mandate
 
-Every microservice MUST follow this structure:
+Every module MUST follow this structure:
 
 ```
 src/
@@ -207,11 +218,11 @@ src/
       └── validators/
 ```
 
-Deviation requires architectural approval.
+Deviation requires architectural approval. Each module in the `services/` directory follows this structure.
 
 ---
 
-## 11. Testing Constitution
+## 12. Testing Constitution
 
 | Test Type | Scope |
 |---------|------|
@@ -223,30 +234,42 @@ No infrastructure dependency is allowed in domain tests.
 
 ---
 
-## 12. Enforcement Mechanisms
+## 13. Enforcement Mechanisms
 
 This constitution is enforced via:
 
 1. **Code reviews** — violations are blockers
 2. **Static analysis** — forbidden imports
 3. **Architectural tests** — dependency rules
-4. **Folder ownership** — restricted write access
+4. **Folder ownership** — restricted write access (references module changes)
 
 ---
 
-## 13. Change Governance
+## 14. Change Governance
 
 - Domain changes require senior approval
 - Policy changes require versioning
 - Saga changes require compensation review
+- Module boundary changes require architectural review
 
 ---
 
-## 14. The Final Law
+---
+
+## 15. Future-Proofing Clause (NEW)
+
+This monolithic constitution prepares the platform for microservices.
+- When modules are split into separate services, enforcement can be tightened for service boundaries, messaging, and external communication.
+- Current module boundaries are designed to become service boundaries.
+- Business logic will not require rewriting during microservices migration.
+
+---
+
+## 16. The Final Law
 
 > **If business logic leaks, the architecture has failed.**
 
-This document is binding for all current and future services.
+This document is binding for all current and future modules.
 
 ---
 

@@ -2,6 +2,7 @@ import { StartTrainingRequest, StartTrainingResponse } from '../dto/start-traini
 import { ITrainingRecordRepository } from '../../domain/repositories/training-record.repository';
 import { ITrainingModuleRepository } from '../../domain/repositories/training-module.repository';
 import { ICertificationRequirementRepository } from '../../domain/repositories/certification-requirement.repository';
+import { IEventPublisher, eventBus } from '../../../../../shared/events/eventBus';
 import { TrainingPolicy } from '../../domain/policies/training.policy';
 import { TrainingRecord } from '../../domain/entities/training-record.entity';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,7 +13,8 @@ export class StartTrainingUseCase {
         private readonly trainingRecordRepo: ITrainingRecordRepository,
         private readonly moduleRepo: ITrainingModuleRepository,
         private readonly requirementRepo: ICertificationRequirementRepository,
-        private readonly trainingPolicy: TrainingPolicy
+        private readonly trainingPolicy: TrainingPolicy,
+        private readonly events: IEventPublisher = eventBus
     ) { }
 
     public async execute(request: StartTrainingRequest): Promise<StartTrainingResponse> {
@@ -35,15 +37,15 @@ export class StartTrainingUseCase {
 
         const validation = this.trainingPolicy.canStartTraining(
             learnerId,
+            learnerRole,
             module,
             existingRecords,
             requirement,
             completedModuleIds
         );
 
-        if (!validation.canStart) {
-            throw new BusinessRuleError(validation.reason || 'Cannot start training');
-        }
+        // Training is always accessible, but we may have warnings/recommendations
+        // These are informational only and don't block access
 
         let record = existingRecords.find(r => r.moduleId === moduleId);
 
@@ -56,11 +58,20 @@ export class StartTrainingUseCase {
 
         await this.trainingRecordRepo.save(record);
 
-        // TODO: Publish TrainingStartedEvent via outbox
+        await this.events.publish('TrainingStarted.v1', {
+            trainingRecordId: record.id,
+            learnerId: record.learnerId,
+            learnerRole: record.learnerRole,
+            moduleId: record.moduleId,
+            startedAt: record.startedAt,
+            attemptNumber: record.attempts
+        });
 
         return {
             trainingRecordId: record.id,
-            status: record.status
+            status: record.status,
+            warnings: validation.warnings,
+            recommendations: validation.recommendations
         };
     }
 }

@@ -5,7 +5,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { Payment, PaymentProps, PaymentStatus, PaymentMethod, PaymentProvider } from '../../domain/entities/payment.entity';
-import { IPaymentRepository } from '../../domain/ports/payment.repository.port';
+import { IPaymentRepository } from '../../domain/repositories/payment.repository';
 
 export class PaymentRepository implements IPaymentRepository {
     constructor(private readonly prisma: PrismaClient) { }

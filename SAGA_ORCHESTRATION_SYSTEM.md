@@ -2,7 +2,7 @@
 
 ## 🏗️ **Enterprise Saga Orchestration Architecture**
 
-*Beautifully designed distributed transaction coordination system with event-driven microservice communication*
+*Beautifully designed transaction coordination system with event-driven module communication within a monolith*
 
 ---
 
@@ -27,13 +27,13 @@
 
 ### **What is Saga Orchestration?**
 
-Saga orchestration is a **distributed transaction coordination pattern** that manages complex business workflows spanning multiple microservices. Unlike traditional ACID transactions, sagas provide **eventual consistency** through **compensation actions** and **event-driven communication**.
+Saga orchestration is a **transaction coordination pattern** that manages complex business workflows spanning multiple modules. In the current monolith, sagas provide **eventual consistency** through **compensation actions** and **in-memory event-driven communication**, while remaining ready for future microservices decomposition.
 
 ### **Key Benefits**
 
-✅ **Microservice Decoupling**: Services communicate via events, not direct calls
+✅ **Module Decoupling**: Modules communicate via events, not direct calls
 ✅ **Fault Tolerance**: Automatic rollback on failures with compensation
-✅ **Scalability**: Asynchronous processing across service boundaries
+✅ **Scalability**: Asynchronous processing across module boundaries
 ✅ **Business Alignment**: Workflows mirror real-world business processes
 ✅ **Observability**: Complete audit trails and monitoring capabilities
 
@@ -123,7 +123,7 @@ API Request → Use Case → Saga Start → Event Publishing → Service Coordin
 
 ### **Saga Definition**
 
-A **Saga** is a **long-running business transaction** that coordinates multiple operations across different services. Each operation has a corresponding **compensation action** for rollback scenarios.
+A **Saga** is a **long-running business transaction** that coordinates multiple operations across different modules. Each operation has a corresponding **compensation action** for rollback scenarios.
 
 ### **Saga Characteristics**
 

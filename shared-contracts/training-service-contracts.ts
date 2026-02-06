@@ -1,27 +1,40 @@
 export interface TrainingStartedEvent {
-    courierId: string;
+    learnerId: string;
+    learnerRole: string;
     moduleId: string;
     startedAt: Date;
     attemptNumber: number;
 }
 
 export interface TrainingCompletedEvent {
-    courierId: string;
+    learnerId: string;
+    learnerRole: string;
     moduleId: string;
     score: number;
     passed: boolean;
     completedAt: Date;
     expiresAt?: Date;
+    remainingAttempts: number;
+}
+
+export interface TrainingFailedEvent {
+    learnerId: string;
+    learnerRole: string;
+    moduleId: string;
+    score: number;
+    failedAt: Date;
+    remainingAttempts: number;
 }
 
 export interface CertificationExpiredEvent {
-    courierId: string;
+    learnerId: string;
     moduleId: string;
     expiredAt: Date;
 }
 
-export interface CourierEligibilityChangedEvent {
-    courierId: string;
+export interface LearnerEligibilityChangedEvent {
+    learnerId: string;
+    learnerRole: string;
     eligible: boolean;
     missingRequirements: string[];
     changedAt: Date;

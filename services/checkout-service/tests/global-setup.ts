@@ -1,9 +1,5 @@
-// =====================================================================================
-// JEST GLOBAL SETUP - Test Suite Initialization
-// =====================================================================================
-
 module.exports = async () => {
-  // Initialize test environment
+  // @ts-ignore
   process.env.NODE_ENV = 'test';
-  process.env.LOG_LEVEL = 'error';
+  console.log('[GLOBAL SETUP] Initializing checkout-service test environment...');
 };

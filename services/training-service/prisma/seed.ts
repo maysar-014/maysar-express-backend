@@ -14,7 +14,10 @@ async function main() {
             content: 'Detailed safety content...',
             durationMinutes: 60,
             category: 'Safety',
-            prerequisites: []
+            prerequisites: [],
+            targetRoles: ['courier'],
+            isPublic: true,
+            difficulty: 'BEGINNER'
         }
     });
 
@@ -28,7 +31,10 @@ async function main() {
             content: 'detailed customer service content...',
             durationMinutes: 45,
             category: 'Service',
-            prerequisites: []
+            prerequisites: [],
+            targetRoles: [],
+            isPublic: true,
+            difficulty: 'BEGINNER'
         }
     });
 

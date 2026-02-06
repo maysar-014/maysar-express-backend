@@ -1,22 +1,11 @@
-// =====================================================================================
-// JEST SETUP - Test Environment Configuration
-// =====================================================================================
-
-// Suppress console output during tests unless DEBUG is set
-if (!process.env.DEBUG) {
-  global.console = {
-    ...console,
-    log: jest.fn(),
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  };
-}
-
-// Set test environment variables
+// @ts-nocheck
 process.env.NODE_ENV = 'test';
-process.env.LOG_LEVEL = 'error';
-
-// Global test timeout
-jest.setTimeout(10000);
+global.testUtils = {
+  createMockRequest: (o = {}) => ({ body: {}, query: {}, params: {}, headers: {}, ...o }),
+  createMockResponse: () => {
+    const r = {};
+    r.status = jest.fn().mockReturnValue(r);
+    r.json = jest.fn().mockReturnValue(r);
+    return r;
+  }
+};

@@ -20,6 +20,49 @@ export interface IEventPublisher {
   publish(eventType: string, data: any, metadata?: Partial<EventMetadata>): Promise<void>;
 }
 
+export interface IEventSubscriber {
+  subscribe(eventType: string, consumer: EventConsumer): Promise<void>;
+  start?(): Promise<void>;
+}
+
+export class InMemoryEventBus implements IEventPublisher, IEventSubscriber {
+  private handlers: Map<string, Set<(envelope: EventEnvelope) => Promise<void>>> = new Map();
+
+  async publish(eventType: string, data: any, metadata?: Partial<EventMetadata>): Promise<void> {
+    const source = metadata?.source || process.env.SERVICE_NAME || 'monolith';
+    const standardMetadata = createEventMetadata(source, metadata);
+
+    const envelope: EventEnvelope = {
+      metadata: standardMetadata,
+      data,
+      eventType
+    };
+
+    const handlers = this.handlers.get(eventType);
+    if (handlers) {
+      // Execute handlers asynchronously to avoid blocking the publisher
+      handlers.forEach(handler => {
+        handler(envelope).catch(err => {
+          console.error(`Error in in-memory event handler for ${eventType}:`, err);
+        });
+      });
+    }
+    return Promise.resolve();
+  }
+
+  async subscribe(eventType: string, consumer: EventConsumer): Promise<void> {
+    if (!this.handlers.has(eventType)) {
+      this.handlers.set(eventType, new Set());
+    }
+    this.handlers.get(eventType)!.add(consumer.handler);
+    return Promise.resolve();
+  }
+
+  async start(): Promise<void> {
+    return Promise.resolve();
+  }
+}
+
 export class KafkaEventPublisher implements IEventPublisher {
   private producer: Producer;
   private kafka: Kafka;
@@ -69,7 +112,7 @@ export class KafkaEventPublisher implements IEventPublisher {
   }
 }
 
-export class KafkaEventSubscriber {
+export class KafkaEventSubscriber implements IEventSubscriber {
   private consumer: Consumer;
   private kafka: Kafka;
   private handlers: Map<string, (envelope: EventEnvelope) => Promise<void>> = new Map();
@@ -87,8 +130,8 @@ export class KafkaEventSubscriber {
     await this.consumer.disconnect();
   }
 
-  async subscribe(topic: string, handler: (envelope: EventEnvelope) => Promise<void>): Promise<void> {
-    this.handlers.set(topic, handler);
+  async subscribe(topic: string, consumer: EventConsumer): Promise<void> {
+    this.handlers.set(topic, consumer.handler);
     await this.consumer.subscribe({ topic, fromBeginning: true });
   }
 
@@ -123,7 +166,7 @@ export class KafkaEventSubscriber {
   }
 }
 
-export class KafkaEventBus {
+export class KafkaEventBus implements IEventPublisher, IEventSubscriber {
   private publisher: KafkaEventPublisher;
   private subscriber: KafkaEventSubscriber;
 
@@ -142,7 +185,7 @@ export class KafkaEventBus {
   }
 
   async subscribe(eventType: string, consumer: EventConsumer): Promise<void> {
-    await this.subscriber.subscribe(eventType, consumer.handler);
+    await this.subscriber.subscribe(eventType, consumer);
   }
 
   async start(): Promise<void> {
@@ -150,4 +193,6 @@ export class KafkaEventBus {
   }
 }
 
-export const eventBus = new KafkaEventBus();
+// Default to InMemoryEventBus for Monolithic Architecture as per Constitution
+export const eventBus = new InMemoryEventBus();
+export const kafkaEventBus = new KafkaEventBus();

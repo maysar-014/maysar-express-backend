@@ -1,12 +1,15 @@
 # Maysar Containerization Constitution
 
 > **Proprietor**: Maysar Corporation - All rights reserved
-> **Authority**: Supreme containerization law binding all Maysar microservices and infrastructure
+> **Authority**: Supreme containerization law binding all Maysar monolithic modules and infrastructure
 > **Mission**: Establish enterprise-grade containerization standards that guarantee security, efficiency, and operational excellence
 > **Vision**: Seamless portability and unwavering reliability through standardized, battle-hardened container patterns
-> **Commitment**: Every image is minimal, every container is secure, every service is resource-aware
+> **Commitment**: Every image is minimal, every container is secure, every module is resource-aware
 
 ---
+
+> [!NOTE]
+> In the current monolithic architecture, containerization applies to the entire monolith deployment. Individual modules are not separately containerized, but their boundaries are maintained for future microservices decomposition.
 
 ## 1. Core Container Philosophy
 

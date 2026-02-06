@@ -7,4 +7,7 @@ export class TrainingModuleDTO {
     durationMinutes!: number;
     category!: string;
     prerequisites!: string[];
+    targetRoles!: string[];
+    isPublic!: boolean;
+    difficulty!: string;
 }

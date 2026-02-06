@@ -12,11 +12,11 @@ import { CalculateCommissionUseCase } from './application/use-cases/calculate-co
 import { ApproveCommissionUseCase } from './application/use-cases/approve-commission.use-case';
 import { CommissionController } from './api/controllers/commission.controller';
 import { validateCalculateCommission, validateApproveCommission } from './api/middleware/validation.middleware';
-import { errorHandler, notFoundHandler } from './api/middleware/error.middleware';
-
-// Import routes
+import { errorHandler } from './api/middleware/error.middleware';
 import commissionRoutes from './api/routes/commission.routes';
-import healthRoutes from './api/routes/health.routes';
+import { healthRoutes } from './api/routes/health.routes';
+import { logger } from './infrastructure/services/logger.service';
+import { requestLogger } from './api/middleware/request-logger.middleware';
 
 // Initialize Express app
 const app = express();
@@ -28,6 +28,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(compression());
+app.use(requestLogger);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -40,7 +41,6 @@ app.use('/health', healthRoutes);
 app.use('/api/commissions', commissionRoutes);
 
 // Error handling middleware (must be last)
-app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Graceful shutdown

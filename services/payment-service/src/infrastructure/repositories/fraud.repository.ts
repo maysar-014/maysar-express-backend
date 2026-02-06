@@ -6,7 +6,7 @@ import {
     UserBehavior,
     UserLocation,
     UserProfile
-} from '../../domain/ports/fraud.repository.port';
+} from '../../domain/repositories/fraud.repository';
 
 export class FraudRepository implements IFraudRepository {
     constructor(private readonly prisma: PrismaClient) { }
@@ -186,5 +186,28 @@ export class FraudRepository implements IFraudRepository {
             activeHours: Array.from(activeHoursSet).sort((a, b) => a - b),
             paymentMethods: Array.from(paymentMethodsSet)
         };
+    }
+
+    async saveResult(paymentId: string, result: any): Promise<void> {
+        // Legacy/Simplified method implementation
+        await this.prisma.fraudAssessment.upsert({
+            where: { transactionId: paymentId },
+            update: { confidence: result.score || 0 },
+            create: {
+                transactionId: paymentId,
+                riskScore: result.score || 0,
+                riskLevel: result.level || 'LOW',
+                recommendation: 'APPROVE',
+                confidence: 1,
+                flags: [],
+                processingTime: 0
+            }
+        });
+    }
+
+    async findResultByPaymentId(paymentId: string): Promise<any> {
+        return this.prisma.fraudAssessment.findUnique({
+            where: { transactionId: paymentId }
+        });
     }
 }

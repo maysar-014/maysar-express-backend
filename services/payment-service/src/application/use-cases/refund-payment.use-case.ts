@@ -5,7 +5,7 @@
 
 import { Payment } from '../../domain/entities/payment.entity';
 import { Refund, RefundStatus, RefundReason } from '../../domain/entities/refund.entity';
-import { IPaymentRepository } from '../../domain/ports/payment.repository.port';
+import { IPaymentRepository } from '../../domain/repositories/payment.repository';
 import { RefundPolicy } from '../../domain/policies/refund.policy';
 
 export interface RefundPaymentDTO {
@@ -24,7 +24,7 @@ export interface RefundResultDTO {
     message?: string;
 }
 
-import { IRefundRepository } from '../../domain/ports/refund.repository.port';
+import { IRefundRepository } from '../../domain/repositories/refund.repository';
 
 export class RefundPaymentUseCase {
     constructor(

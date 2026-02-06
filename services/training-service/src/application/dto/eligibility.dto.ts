@@ -4,5 +4,9 @@ export class CheckEligibilityRequest {
 
 export class EligibilityResponse {
     eligible!: boolean;
+    completionPercentage!: number;
     missingRequirements!: string[];
+    completedModules!: string[];
+    inProgressModules!: string[];
 }
+

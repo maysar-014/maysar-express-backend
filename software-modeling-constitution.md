@@ -15,17 +15,17 @@
 
 ## 2. Integrated Modeling Structure
 
-Every microservice MUST maintain a `docs/modeling/` directory to house its UML definitions. This ensures that behavioral specs are updated alongside code changes.
+Every module MUST maintain a `docs/modeling/` directory to house its UML definitions. This ensures that behavioral specs are updated alongside code changes.
 
 ### Folder Structure Mandate
 
 ```
-service-root/
+module-root/
  └── docs/
       └── modeling/
            ├── use-cases/      # User interactions & goals
            ├── state-machines/ # Entity lifecycles & complex states
-           ├── sequence/       # Sagas, Use Cases, & Cross-service flows
+           ├── sequence/       # Sagas, Use Cases, & Cross-module flows
            └── README.md       # Index of all models
 ```
 

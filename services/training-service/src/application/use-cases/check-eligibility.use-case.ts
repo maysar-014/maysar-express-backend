@@ -20,7 +20,11 @@ export class CheckEligibilityUseCase {
 
         return {
             eligible: result.eligible,
-            missingRequirements: result.missingRequirements
+            completionPercentage: result.completionPercentage,
+            missingRequirements: result.missingRequirements,
+            completedModules: result.completedModules,
+            inProgressModules: result.inProgressModules
         };
     }
 }
+

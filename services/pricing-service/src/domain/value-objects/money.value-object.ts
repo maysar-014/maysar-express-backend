@@ -1,0 +1,17 @@
+export class Money {
+    constructor(
+        public readonly amount: number,
+        public readonly currency: string
+    ) {
+        if (amount < 0) throw new Error('Amount cannot be negative');
+    }
+
+    add(other: Money): Money {
+        if (this.currency !== other.currency) throw new Error('Currencies must match');
+        return new Money(this.amount + other.amount, this.currency);
+    }
+
+    multiply(factor: number): Money {
+        return new Money(this.amount * factor, this.currency);
+    }
+}

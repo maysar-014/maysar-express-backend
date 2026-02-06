@@ -1,76 +1,91 @@
-/**
- * Error Handling Middleware
- * Centralized error handling for the API
- */
-
 import { Request, Response, NextFunction } from 'express';
+import { logger } from '../../infrastructure/services/logger.service';
 
-export interface AppError extends Error {
-  statusCode?: number;
-  isOperational?: boolean;
+export class APIError extends Error {
+  public readonly statusCode: number;
+  public readonly isOperational: boolean;
+  public readonly code: string | undefined;
+
+  constructor(
+    message: string,
+    statusCode: number = 500,
+    isOperational: boolean = true,
+    code?: string
+  ) {
+    super(message);
+    this.statusCode = statusCode;
+    this.isOperational = isOperational;
+    this.code = code;
+
+    Error.captureStackTrace(this, this.constructor);
+  }
 }
 
 export const errorHandler = (
-  error: AppError,
+  error: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void => {
-  let statusCode = error.statusCode || 500;
-  let message = error.message || 'Internal Server Error';
-  let isOperational = error.isOperational || false;
+  let statusCode = 500;
+  let message = 'Internal server error';
+  let code: string | undefined;
 
-  // Log error for monitoring
-  console.error(`[${new Date().toISOString()}] Error ${statusCode}: ${message}`);
-  console.error('Stack:', error.stack);
-
-  // Handle specific error types
-  if (error.name === 'ValidationError') {
-    statusCode = 400;
-    message = 'Validation Error';
-    isOperational = true;
-  } else if (error.name === 'UnauthorizedError') {
-    statusCode = 401;
-    message = 'Unauthorized';
-    isOperational = true;
-  } else if (error.name === 'ForbiddenError') {
-    statusCode = 403;
-    message = 'Forbidden';
-    isOperational = true;
-  } else if (error.name === 'NotFoundError') {
-    statusCode = 404;
-    message = 'Not Found';
-    isOperational = true;
+  if (error instanceof APIError) {
+    statusCode = error.statusCode;
+    message = error.message;
+    code = error.code;
   }
 
-  // Don't leak error details in production
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  const errorResponse = {
-    success: false,
+  const logData = {
+    method: req.method,
+    url: req.url,
+    statusCode,
+    message,
+    code,
+    error: {
+      name: error.name,
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }
+  };
+
+  if (statusCode >= 500) {
+    logger.error('API Error', logData);
+  } else {
+    logger.warn('API Error', logData);
+  }
+
+  res.status(statusCode).json({
     error: {
       message,
-      ...(isDevelopment && {
-        stack: error.stack,
-        name: error.name
-      }),
+      code,
       timestamp: new Date().toISOString(),
       path: req.path,
       method: req.method
     }
-  };
-
-  res.status(statusCode).json(errorResponse);
+  });
 };
 
-export const notFoundHandler = (req: Request, res: Response, next: NextFunction): void => {
-  const error: AppError = new Error(`Route ${req.originalUrl} not found`);
-  error.statusCode = 404;
-  error.isOperational = true;
-  next(error);
-};
-
-export const asyncErrorHandler = (fn: Function) => {
+export const asyncHandler = (fn: Function) => {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
+};
+
+export const createError = {
+  badRequest: (message: string, code?: string) =>
+    new APIError(message, 400, true, code || 'BAD_REQUEST'),
+
+  unauthorized: (message: string = 'Authentication required', code?: string) =>
+    new APIError(message, 401, true, code || 'UNAUTHORIZED'),
+
+  forbidden: (message: string = 'Access denied', code?: string) =>
+    new APIError(message, 403, true, code || 'FORBIDDEN'),
+
+  notFound: (message: string = 'Resource not found', code?: string) =>
+    new APIError(message, 404, true, code || 'NOT_FOUND'),
+
+  internalServerError: (message: string = 'Internal server error', code?: string) =>
+    new APIError(message, 500, false, code || 'INTERNAL_SERVER_ERROR')
 };

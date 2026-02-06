@@ -1,14 +1,10 @@
-import { container } from '../infrastructure/container';
-import { createServer } from '../app';
+import { createApp } from '../app';
+import { logger } from '../infrastructure/services/logger.service';
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3009;
 
-async function bootstrap() {
-    const app = createServer(container);
+const app = createApp();
 
-    app.listen(PORT, () => {
-        console.log(`✅ Training Service started on port ${PORT}`);
-    });
-}
-
-bootstrap().catch(console.error);
+app.listen(PORT, () => {
+    logger.info(`Pricing Service running on port ${PORT}`);
+});

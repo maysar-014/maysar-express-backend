@@ -5,6 +5,8 @@
 
 import { PrismaClient } from '@prisma/client';
 import { PaymentRepository } from './infrastructure/repositories/payment.repository';
+import { IRefundRepository } from './domain/repositories/refund.repository';
+import { IFraudRepository } from './domain/repositories/fraud.repository';
 import { RefundRepository } from './infrastructure/repositories/refund.repository';
 import { FraudRepository } from './infrastructure/repositories/fraud.repository';
 
@@ -24,11 +26,8 @@ import { WalletServiceClient } from './infrastructure/clients/wallet-service.cli
 import { SagaEventHandler } from './api/sagas/saga.event-handler';
 import { PaymentProcessingSaga } from './application/sagas/payment-processing.saga';
 import { PaymentProvider } from './domain/entities/payment.entity';
-import { IPaymentProvider } from './domain/ports/payment-provider.port';
-import { IFraudRepository } from './domain/ports/fraud.repository.port';
-import { ITransactionRepository } from './domain/ports/transaction.repository.port';
-import { IPayoutRepository } from './domain/ports/payout.repository.port';
-import { IRefundRepository } from './domain/ports/refund.repository.port';
+import { IPaymentProvider } from './domain/repositories/payment-provider.gateway';
+import { PaymentEventHandlers } from './infrastructure/events/payment.event-handlers';
 
 export class Container {
     private static instance: Container;
@@ -50,6 +49,7 @@ export class Container {
     // Saga
     public paymentProcessingSaga: PaymentProcessingSaga;
     public sagaEventHandler: SagaEventHandler;
+    public paymentEventHandlers: PaymentEventHandlers;
 
     // Providers
     public pesapalAdapter: PesapalAdapter;
@@ -146,6 +146,10 @@ export class Container {
         this.sagaEventHandler = new SagaEventHandler(
             this.paymentProcessingSaga,
             this.eventBus
+        );
+
+        this.paymentEventHandlers = new PaymentEventHandlers(
+            this.paymentRepository
         );
     }
 

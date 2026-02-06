@@ -6,4 +6,5 @@ export interface TrainingCompletedEvent {
     passed: boolean;
     completedAt: Date;
     expiresAt?: Date;
+    remainingAttempts: number;
 }

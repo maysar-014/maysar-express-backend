@@ -1,14 +1,26 @@
 import 'reflect-metadata';
 import express from 'express';
-import { Container } from 'inversify';
-import { InversifyExpressServer } from 'inversify-express-utils';
+import helmet from 'helmet';
+import cors from 'cors';
+import { healthRoutes } from './api/routes/health.routes';
+import { errorHandler } from './api/middleware/error.middleware';
+import { requestLogger } from './api/middleware/request-logger.middleware';
 
-export function createServer(container: Container) {
-    const server = new InversifyExpressServer(container);
+export function createApp() {
+    const app = express();
 
-    server.setConfig((app) => {
-        app.use(express.json());
-    });
+    app.use(helmet());
+    app.use(cors());
+    app.use(requestLogger);
+    app.use(express.json());
 
-    return server.build();
+    // Health checks
+    app.use('/health', healthRoutes);
+
+    // TODO: Add pricing routes
+
+    // Error handling
+    app.use(errorHandler);
+
+    return app;
 }

@@ -1,5 +1,5 @@
-import { IWalletRepository } from '../../domain/ports/wallet.repository.port';
-import { ITransactionRepository } from '../../domain/ports/transaction.repository.port';
+import { IWalletRepository } from '../../domain/repositories/wallet.repository';
+import { ITransactionRepository } from '../../domain/repositories/transaction.repository';
 import { Transaction, TransactionType } from '../../domain/entities/transaction.entity';
 
 export interface FreezeFundsDTO {

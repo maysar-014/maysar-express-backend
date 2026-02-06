@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { IRefundRepository } from '../../domain/ports/refund.repository.port';
+import { IRefundRepository } from '../../domain/repositories/refund.repository';
 import { Refund, RefundStatus, RefundReason } from '../../domain/entities/refund.entity';
 
 export class RefundRepository implements IRefundRepository {

@@ -1,104 +1,120 @@
-# Maysar Integration Constitution
+# Maysar Monolithic Integration Constitution
 
-> **Authority**: Supreme integration law binding all Maysar services and systems.
-> **Mission**: Establish a tool-agnostic, hybrid integration standard that guarantees seamless, reliable, and scalable communication across the microservices ecosystem.
-> **Core Mandate**: Every integration point must be contract-first, battle-tested, and secure by design.
+> **Authority**: Binding integration law for all Maysar modules.
+> **Mission**: Establish a disciplined, reliable, and maintainable integration standard for **internal module communication**.
+> **Core Mandate**: Ensure all module interactions are clear, traceable, and safe, while preparing for future microservices scaling.
 
 ---
 
 ## Core Integration Philosophy
 
 ### The Hybrid Model
-Maysar follows a **Hybrid Integration Strategy**, balancing immediate consistency with asynchronous scalability.
+Maysar follows a **Hybrid Integration Strategy**, balancing immediate consistency with asynchronous scalability within the monolith.
 
-1.  **Synchronous (Direct)**: Used for user-facing interactions where immediate feedback is required (e.g., Auth, Payments).
-2.  **Asynchronous (Event-Driven)**: The default for cross-service business processes, data synchronization, and long-running workflows.
+1.  **Synchronous (Direct)**: Used for internal workflows where immediate feedback is required (e.g., user signup, wallet credit).
+2.  **Asynchronous (Event-Driven)**: For cross-module business processes, long-running workflows, and Saga orchestration.
 
 ### Integration Truth Principles (ITP)
-*   **Contract-First**: No integration starts without a defined and versioned contract (OpenAPI, Protobuf, or AsyncAPI).
-*   **Data Sovereignty**: Services own their data. No database sharing. No cross-service foreign keys.
-*   **Idempotency Required**: All consumers must handle duplicate messages gracefully.
-*   **Outbox Pattern**: All state changes and their resulting events must be persisted atomically to ensure reliability.
+*   **Contract-First**: All module interactions must be defined via DTOs, Commands, or Events.
+*   **Module Independence**: Modules remain independent. No module should access another module's database directly. No cross-module foreign keys.
+*   **Idempotency Required**: All async event handlers must handle repeated events gracefully.
+*   **Logging, Traceability, Error Handling**: Mandatory for all interactions.
 
 ---
 
-## Communication Standards
+## Module Communication Rules (CRITICAL)
 
-### Protocol Strategy
-| Context | Pattern | Standard |
-| :--- | :--- | :--- |
-| **External/Public** | Request/Response | RESTful API |
-| **Internal High-Perf** | Request/Response | gRPC |
-| **Cross-Service** | Pub/Sub | Message Broker (Events) |
-| **Streaming** | Stream Processing | Event Log |
+### Section 1 - Preferred Communication
+- Event-driven via **in-memory event bus** (Node.js EventEmitter, NestJS EventBus, etc.).
+- Supports Saga orchestration, compensating actions, async workflows.
+- Reference implementation: `file:shared/events/eventBus.ts`
+
+### Section 2 - Synchronous Calls
+- Allowed only for internal, immediate-response workflows.
+- Must use public module service interfaces.
+- **Forbidden**: Direct repository or domain object access across modules.
+
+### Section 3 - Contracts
+- All module interactions must be defined via DTOs, Commands, or Events.
+- Internal interfaces must be versioned and documented.
+- Modules must not share entities, value objects, or ORM models.
 
 ### Canonical Identity & Tracing
-Every integration request or event **must** carry the following headers/metadata:
-*   `X-Correlation-ID`: Unified ID for tracing a request across the entire system.
-*   `X-Request-ID`: Unique ID for the specific call instance.
-*   `X-User-ID`: (When applicable) The authenticated user context.
+Every event or sync call **must** carry the following headers/metadata (where applicable):
+*   `X-Correlation-ID`: Unified identifier for the workflow (tracing across modules).
+*   `X-Request-ID`: Unique identifier for this specific call.
+*   `X-User-ID`: Authenticated user context.
 
 ---
 
 ## Event-Driven Excellence
 
 ### Event Classification
-1.  **Domain Events**: Significant business state changes (e.g., `OrderPlaced`). Carries the "minimum viable data."
-2.  **Integration Events**: Specifically designed for cross-boundary synchronization.
-3.  **Command Events**: Direct requests for another service to perform an action asynchronously.
+1.  **Domain Events**: Significant business state changes within a module (e.g., `ReferralCompleted`). Carries "minimum viable data."
+2.  **Integration Events**: Specifically designed for cross-module boundary synchronization (e.g., `WalletCredited`).
+3.  **Command Events**: Requests for another module to perform an action asynchronously.
 
 ### Reliability Mandates
-*   **The Outbox Pattern**: Services must use a local outbox table to ensure events are published *only* if the local transaction succeeds.
-*   **Exactly-Once Processing**: Achieved through Idempotent Consumers and deduplication keys.
-*   **Dead Letter Handling**: Every failed message must be routed to a Dead Letter Queue (DLQ) with automated alerting.
+*   **Idempotency**: All async event handlers must handle repeated events gracefully.
+*   **Compensation**: All Saga steps must have compensating action or be explicitly irreversible.
+*   **Traceability**: Every event or sync call must include correlation and request IDs in logs.
 
 ---
 
-## Service Integration Workflow
-*How to establish a new connection between services*
+## Synchronous vs Asynchronous Guidelines
 
-1.  **Define Contract**: Create the OpenAPI or AsyncAPI specification.
-2.  **Propose Changes**: Submit an RFC or PR with the contract for consumer review.
-3.  **Implement Mock**: Provide a mock endpoint or event example for the consumer team.
-4.  **Integrate**: Developer implements the logic using standard libraries (mTLS, correlation handlers).
-5.  **Verify**: Run contract tests (e.g., Pact) to ensure compatibility.
-6.  **Deploy**: Use Canary releases to monitor the new integration in production.
+| Context | Pattern | Applicability Examples |
+| :--- | :--- | :--- |
+| **Immediate Feedback** | Synchronous | Signup, Login, Payment confirmation |
+| **Workflows** | Asynchronous | Referral bonus, Wallet credit, Notifications |
+| **Orchestration** | Event-Driven | Saga compensation, retry flows |
+| **Analytics/Logs** | Async/Queued | Internal aggregations, metrics |
 
 ---
 
-## Cross-Cutting Concerns
+## Security & Access
+*   **Internal calls**: In-memory function calls — **network security not required** (no mTLS or internal JWT).
+*   **Perimeter Security**: Security boundaries are at the application perimeter, not between modules.
+*   **Secrets**: Use secured configuration (no direct environment variable dependency in domain).
 
-### Security & Access
-*   **Zero Trust**: Mutual TLS (mTLS) is mandatory for all internal communication.
-*   **Identity**: Use short-lived JWT tokens for service-to-service authentication.
-*   **Authorization**: Formal RBAC/ABAC checks must be implemented at the service boundary.
-
-### Resilience & Performance
-*   **Circuit Breakers**: Mandatory for all synchronous dependencies.
-*   **Timeout Management**: Strict timeouts on all network calls.
-*   **Bulkheading**: Isolate resources for critical integration paths.
-*   **Caching**: Prefer event-driven cache invalidation over TTL-only strategies.
+## Observability & Logging
+*   **Consistency**: All module interactions must be logged with correlation IDs.
+*   **Error Handling**: Errors must be handled and propagated to Sagas for compensation.
+*   **Monitoring**: Workflow completion monitoring required for critical modules (e.g., Wallet, Referral, Payment).
 
 ---
 
 ## Developer Integration Checklist
 *Must be verified during PR review*
 
-- [ ] Does this follow a defined contract?
-- [ ] Is the `X-Correlation-ID` propagated?
-- [ ] For events: Is the Outbox Pattern used?
-- [ ] For consumers: Is processing idempotent?
-- [ ] Are timeouts and retry policies configured?
-- [ ] Is there a health check reflecting this dependency?
-- [ ] Are secrets managed via the secured Secret Store (no env vars)?
+- [ ] Is a contract defined and documented?
+- [ ] Are DTOs, Commands, or Events used instead of entities?
+- [ ] Are async handlers idempotent?
+- [ ] Are synchronous calls restricted to service interfaces?
+- [ ] Are correlation and request IDs logged for traceability?
+- [ ] Are errors handled and propagated to allow compensation?
 
 ---
 
 ## Enforcement & Compliance
 
 Compliance with this constitution is enforced through:
-1.  **Architecture Review**: Mandatory for new integration patterns.
-2.  **Contract Testing**: CI/CD failure on breaking changes.
-3.  **Observability Audits**: Automated detection of missing correlation IDs or failing circuit breakers.
+1.  **Code Reviews**: Violations are blockers.
+2.  **Unit & Integration Tests**: Must cover async workflows and Saga coordination.
+3.  **Logging Monitoring**: Missing correlation IDs or unhandled errors are reported.
 
-> **"I commit to the relentless pursuit of integration excellence, ensuring our systems are decoupled, resilient, and always reliable."**
+---
+
+## Future-Proofing Clause (NEW)
+
+While currently monolithic:
+- Modules are decoupled and event-driven.
+- Contracts, DTOs, and Sagas are microservices-ready.
+- The in-memory event bus can be replaced with Kafka/RabbitMQ without changing module code.
+- Current module boundaries are designed to become service boundaries.
+
+---
+
+## Binding Principle
+
+> **Every module interaction must be clear, traceable, and reliable. Violations of contract, improper direct access, or leaking domain logic outside a module constitute integration defects.**

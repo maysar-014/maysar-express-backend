@@ -6,4 +6,5 @@ export interface ITrainingRecordRepository {
     findByLearnerId(learnerId: string): Promise<TrainingRecord[]>;
     findByModule(learnerId: string, moduleId: string): Promise<TrainingRecord | null>;
     findActive(learnerId: string): Promise<TrainingRecord[]>;
+    findExpired(): Promise<TrainingRecord[]>;
 }

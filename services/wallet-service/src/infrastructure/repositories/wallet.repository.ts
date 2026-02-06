@@ -5,7 +5,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { Wallet, WalletProps, WalletStatus } from '../../domain/entities/wallet.entity';
-import { IWalletRepository } from '../../domain/ports/wallet.repository.port';
+import { IWalletRepository } from '../../domain/repositories/wallet.repository';
 
 export class WalletRepository implements IWalletRepository {
     constructor(private readonly prisma: PrismaClient) { }

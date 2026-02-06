@@ -4,8 +4,8 @@
  */
 
 import { Payment, PaymentStatus, PaymentMethod, PaymentProvider } from '../../domain/entities/payment.entity';
-import { IPaymentRepository } from '../../domain/ports/payment.repository.port';
-import { IPaymentProvider } from '../../domain/ports/payment-provider.port';
+import { IPaymentRepository } from '../../domain/repositories/payment.repository';
+import { IPaymentProvider } from '../../domain/repositories/payment-provider.gateway';
 import { FraudEngine } from '../../domain/engines/fraud.engine';
 import { PaymentProcessingEngine } from '../../domain/engines/payment-processing.engine';
 import { PaymentLimitsPolicy } from '../../domain/policies/payment-limits.policy';

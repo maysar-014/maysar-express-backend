@@ -16,7 +16,12 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
   },
-  "keywords": ["commission", "revenue", "rewards", "microservice"],
+  "keywords": [
+    "commission",
+    "revenue",
+    "rewards",
+    "microservice"
+  ],
   "author": "Maysar",
   "license": "ISC",
   "dependencies": {
@@ -31,7 +36,8 @@
     "kafkajs": "^2.2.4",
     "redis": "^4.6.11",
     "opossum": "^8.1.0",
-    "axios": "^1.6.2"
+    "axios": "^1.6.2",
+    "winston": "^3.11.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

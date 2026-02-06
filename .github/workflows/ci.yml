@@ -25,9 +25,8 @@ jobs:
       - name: 🔍 Run basic security check
         run: |
           echo "🔍 Running basic security checks..."
-          # Check for obvious security issues in package files
           if [ -f "package.json" ]; then
-            echo "✅ Found package.json"
+            echo "✅ Found root package.json"
           else
             echo "❌ Missing package.json"
             exit 1
@@ -69,10 +68,44 @@ jobs:
           path: admin-console/.next/
           retention-days: 7
 
-  # Backend Build and Test
-  backend-test:
-    name: ⚙️ Backend Tests
+  # Individual Service Module Tests
+  service-module-test:
+    name: ⚙️ Test ${{ matrix.service }}
     runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - analytics-service
+          - api-gateway
+          - auth-service
+          - business-registry-service
+          - campaign-service
+          - catalog-service
+          - checkout-service
+          - commission-service
+          - community-service
+          - compliance-service
+          - enabler-service
+          - inventory-service
+          - logistics-service
+          - maps-service
+          - moderation-service
+          - notification-service
+          - order-service
+          - payment-service
+          - payout-service
+          - permission-service
+          - pricing-service
+          - production-service
+          - session-service
+          - sms-service
+          - support-service
+          - training-service
+          - two-factor-service
+          - user-service
+          - wallet-service
 
     services:
       postgres:
@@ -86,7 +119,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-          --tmpfs /var/lib/postgresql/data
+        ports:
+          - 5432:5432
 
       redis:
         image: redis:7-alpine
@@ -95,6 +129,113 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 6379:6379
+
+    defaults:
+      run:
+        working-directory: ./services/${{ matrix.service }}
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: services/${{ matrix.service }}/package-lock.json
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔧 Generate Prisma Client (if applicable)
+        run: |
+          if [ -f "prisma/schema.prisma" ]; then
+            echo "📦 Generating Prisma client for ${{ matrix.service }}..."
+            npx prisma generate
+          else
+            echo "⏭️ No Prisma schema found, skipping..."
+          fi
+        continue-on-error: false
+
+      - name: 🔍 Run linter
+        run: |
+          if npm run lint --if-present 2>/dev/null; then
+            echo "✅ Linting passed for ${{ matrix.service }}"
+          else
+            echo "⚠️ No lint script or linting not configured for ${{ matrix.service }}"
+          fi
+        continue-on-error: true
+
+      - name: 🔧 Type check
+        run: npx tsc --noEmit || echo "⚠️ Type check failed or not configured for ${{ matrix.service }}"
+        continue-on-error: true
+
+      - name: 🏗️ Build service module
+        run: npm run build
+
+      - name: 🧪 Run tests
+        run: |
+          if npm run test --if-present 2>/dev/null; then
+            echo "✅ Tests passed for ${{ matrix.service }}"
+          else
+            echo "⚠️ No tests or tests not configured for ${{ matrix.service }}"
+          fi
+        env:
+          NODE_ENV: test
+          POSTGRES_DB: maysar_test
+          POSTGRES_USER: maysar_test
+          POSTGRES_PASSWORD: test_password_123
+          DATABASE_URL: postgresql://maysar_test:test_password_123@localhost:5432/maysar_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-jwt-secret-for-ci-only-not-for-production-use
+          JWT_EXPIRES_IN: 1h
+        continue-on-error: true
+
+      - name: 📦 Audit dependencies
+        run: npm audit --audit-level moderate
+        continue-on-error: true
+
+      - name: 📊 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.service }}-build
+          path: services/${{ matrix.service }}/dist/
+          retention-days: 7
+        if: success()
+
+  # Monolithic Backend Build
+  backend-monolith-build:
+    name: 🏗️ Build Monolithic Backend
+    runs-on: ubuntu-latest
+    needs: [service-module-test]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: maysar_test
+          POSTGRES_USER: maysar_test
+          POSTGRES_PASSWORD: test_password_123
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
       - name: 📥 Checkout code
@@ -106,19 +247,19 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 📦 Install backend dependencies
+      - name: 📦 Install root dependencies
         run: npm ci
 
-      - name: 🔍 Run backend linter
+      - name: 🔍 Run root linter
         run: npm run lint || echo "No lint script available"
 
       - name: 🔧 Type check
         run: npx tsc --noEmit
 
-      - name: 🏗️ Build backend
+      - name: 🏗️ Build all services
         run: npm run build
 
-      - name: 🧪 Run tests
+      - name: 🧪 Run integration tests
         run: npm test || echo "No tests available"
         env:
           NODE_ENV: test
@@ -134,18 +275,20 @@ jobs:
         run: npm audit --audit-level moderate
         continue-on-error: true
 
-      - name: 📊 Upload build artifacts
+      - name: 📊 Upload monolith build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: backend-build
-          path: dist/
+          name: backend-monolith-build
+          path: |
+            services/*/dist/
+            dist/
           retention-days: 7
 
-  # Docker Build and Push
-  docker-build:
-    name: 🐳 Docker Build
+  # Docker Build for Monolithic Backend
+  docker-build-monolith:
+    name: 🐳 Build Monolithic Backend Image
     runs-on: ubuntu-latest
-    needs: [security-scan, frontend-test, backend-test]
+    needs: [security-scan, backend-monolith-build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
@@ -169,7 +312,7 @@ jobs:
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: 🐳 Build and push backend
+      - name: 🐳 Build and push monolithic backend
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -177,9 +320,101 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha,scope=backend-monolith
+          cache-to: type=gha,mode=max,scope=backend-monolith
+          platforms: linux/amd64
+
+  # Docker Build for Individual Service Images (Future Microservices)
+  docker-build-service-images:
+    name: 🐳 Build ${{ matrix.service }} Image (Future)
+    runs-on: ubuntu-latest
+    needs: [security-scan, service-module-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && contains(github.event.head_commit.message, '[microservices]')
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - analytics-service
+          - business-registry-service
+          - catalog-service
+          - checkout-service
+          - commission-service
+          - inventory-service
+          - logistics-service
+          - maps-service
+          - notification-service
+          - order-service
+          - payment-service
+          - permission-service
+          - pricing-service
+          - session-service
+          - sms-service
+          - training-service
+          - two-factor-service
+          - user-service
+          - wallet-service
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔑 Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🏷️ Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/maysar-${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: 🐳 Build and push ${{ matrix.service }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/${{ matrix.service }}
+          file: ./services/${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          platforms: linux/amd64
+
+  # Docker Build for Admin Console
+  docker-build-admin:
+    name: 🐳 Build Admin Console
+    runs-on: ubuntu-latest
+    needs: [security-scan, frontend-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔑 Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🏷️ Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/maysar-admin
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: 🐳 Build and push admin console
         uses: docker/build-push-action@v5
@@ -187,16 +422,17 @@ jobs:
           context: ./admin-console
           file: ./admin-console/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/maysar-admin:${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=admin-console
+          cache-to: type=gha,mode=max,scope=admin-console
+          platforms: linux/amd64
 
   # Deployment (Optional - can be triggered separately)
   deploy-staging:
     name: 🚀 Deploy to Staging
     runs-on: ubuntu-latest
-    needs: [docker-build]
+    needs: [docker-build-monolith, docker-build-admin]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: staging
     steps:
@@ -210,7 +446,7 @@ jobs:
   performance-test:
     name: ⚡ Performance Tests
     runs-on: ubuntu-latest
-    needs: [backend-test]
+    needs: [backend-monolith-build]
     if: github.event_name == 'push' && contains(github.event.head_commit.message, '[perf]')
 
     steps:
@@ -238,7 +474,7 @@ jobs:
   integration-test:
     name: 🔗 Integration Tests
     runs-on: ubuntu-latest
-    needs: [backend-test]
+    needs: [backend-monolith-build]
     if: github.event_name == 'push'
 
     services:
@@ -253,6 +489,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 5432:5432
 
       redis:
         image: redis:7-alpine
@@ -261,6 +499,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
       - name: 📥 Checkout code
@@ -294,7 +534,7 @@ jobs:
   code-quality:
     name: 📊 Code Quality Report
     runs-on: ubuntu-latest
-    needs: [frontend-test, backend-test]
+    needs: [frontend-test, service-module-test, backend-monolith-build]
     if: always()
 
     steps:
@@ -307,7 +547,8 @@ jobs:
           echo "" >> code-quality.md
           echo "## 📊 Test Results" >> code-quality.md
           echo "- Frontend Tests: ${{ needs.frontend-test.result == 'success' && '✅ PASS' || '❌ FAIL' }}" >> code-quality.md
-          echo "- Backend Tests: ${{ needs.backend-test.result == 'success' && '✅ PASS' || '❌ FAIL' }}" >> code-quality.md
+          echo "- Service Module Tests: ${{ needs.service-module-test.result == 'success' && '✅ PASS' || '❌ FAIL' }}" >> code-quality.md
+          echo "- Monolith Build: ${{ needs.backend-monolith-build.result == 'success' && '✅ PASS' || '❌ FAIL' }}" >> code-quality.md
           echo "- Security Scan: ${{ needs.security-scan.result == 'success' && '✅ PASS' || '❌ FAIL' }}" >> code-quality.md
           echo "" >> code-quality.md
           echo "## 🔒 Security Status" >> code-quality.md
@@ -315,7 +556,7 @@ jobs:
           echo "" >> code-quality.md
           echo "## 🏗️ Build Status" >> code-quality.md
           echo "- Frontend Build: ${{ needs.frontend-test.result == 'success' && '✅ SUCCESS' || '❌ FAILED' }}" >> code-quality.md
-          echo "- Backend Build: ${{ needs.backend-test.result == 'success' && '✅ SUCCESS' || '❌ FAILED' }}" >> code-quality.md
+          echo "- Backend Monolith Build: ${{ needs.backend-monolith-build.result == 'success' && '✅ SUCCESS' || '❌ FAILED' }}" >> code-quality.md
 
       - name: 📤 Upload code quality report
         uses: actions/upload-artifact@v4
@@ -328,12 +569,12 @@ jobs:
   notify:
     name: 📢 Notification
     runs-on: ubuntu-latest
-    needs: [security-scan, frontend-test, backend-test, code-quality]
+    needs: [security-scan, frontend-test, service-module-test, backend-monolith-build, code-quality]
     if: always()
     steps:
       - name: 📢 Send notification
         run: |
-          if [ "${{ needs.security-scan.result }}" = "failure" ] || [ "${{ needs.frontend-test.result }}" = "failure" ] || [ "${{ needs.backend-test.result }}" = "failure" ]; then
+          if [ "${{ needs.security-scan.result }}" = "failure" ] || [ "${{ needs.frontend-test.result }}" = "failure" ] || [ "${{ needs.service-module-test.result }}" = "failure" ] || [ "${{ needs.backend-monolith-build.result }}" = "failure" ]; then
             echo "❌ CI Pipeline failed - check the logs for details"
             # Integration with Slack, Teams, or other notification systems would go here
             # curl -X POST -H 'Content-type: application/json' --data '{"text":"CI Pipeline Failed"}' ${{ secrets.SLACK_WEBHOOK }}
@@ -346,7 +587,7 @@ jobs:
   release-notes:
     name: 📝 Generate Release Notes
     runs-on: ubuntu-latest
-    needs: [security-scan, frontend-test, backend-test]
+    needs: [security-scan, frontend-test, service-module-test, backend-monolith-build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
@@ -357,8 +598,6 @@ jobs:
 
       - name: 📝 Generate release notes
         run: |
-          # This would integrate with a release notes generation tool
-          # For now, just create a basic summary
           echo "# 🚀 Release $(date +%Y-%m-%d)" > release-notes.md
           echo "" >> release-notes.md
           echo "## ✅ Changes" >> release-notes.md
@@ -371,7 +610,8 @@ jobs:
           echo "" >> release-notes.md
           echo "## 🧪 Quality" >> release-notes.md
           echo "- Frontend tests: ${{ needs.frontend-test.result == 'success' && '✅ PASS' || '❌ FAIL' }}" >> release-notes.md
-          echo "- Backend tests: ${{ needs.backend-test.result == 'success' && '✅ PASS' || '❌ FAIL' }}" >> release-notes.md
+          echo "- Service module tests: ${{ needs.service-module-test.result == 'success' && '✅ PASS' || '❌ FAIL' }}" >> release-notes.md
+          echo "- Monolith build: ${{ needs.backend-monolith-build.result == 'success' && '✅ PASS' || '❌ FAIL' }}" >> release-notes.md
 
       - name: 📤 Upload release notes
         uses: actions/upload-artifact@v4

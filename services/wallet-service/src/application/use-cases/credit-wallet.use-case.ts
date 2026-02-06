@@ -1,7 +1,7 @@
 import { Wallet, WalletStatus } from '../../domain/entities/wallet.entity';
 import { Transaction, TransactionType } from '../../domain/entities/transaction.entity';
-import { IWalletRepository } from '../../domain/ports/wallet.repository.port';
-import { ITransactionRepository } from '../../domain/ports/transaction.repository.port';
+import { IWalletRepository } from '../../domain/repositories/wallet.repository';
+import { ITransactionRepository } from '../../domain/repositories/transaction.repository';
 
 export interface CreditWalletDTO {
     userId: string;

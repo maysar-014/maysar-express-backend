@@ -11,7 +11,10 @@ export class TrainingModuleMapper {
             content: entity.content,
             durationMinutes: entity.durationMinutes,
             category: entity.category,
-            prerequisites: entity.prerequisites
+            prerequisites: entity.prerequisites,
+            targetRoles: entity.targetRoles,
+            isPublic: entity.isPublic,
+            difficulty: entity.difficulty
         };
     }
 
@@ -24,7 +27,10 @@ export class TrainingModuleMapper {
             content: props.content,
             durationMinutes: props.durationMinutes,
             category: props.category,
-            prerequisites: props.prerequisites
+            prerequisites: props.prerequisites || [],
+            targetRoles: props.targetRoles || [],
+            isPublic: props.isPublic !== undefined ? props.isPublic : true,
+            difficulty: props.difficulty || 'BEGINNER'
         });
     }
 
@@ -37,7 +43,10 @@ export class TrainingModuleMapper {
             content: entity.content,
             durationMinutes: entity.durationMinutes,
             category: entity.category,
-            prerequisites: entity.prerequisites
+            prerequisites: entity.prerequisites,
+            targetRoles: entity.targetRoles,
+            isPublic: entity.isPublic,
+            difficulty: entity.difficulty
         };
     }
 }

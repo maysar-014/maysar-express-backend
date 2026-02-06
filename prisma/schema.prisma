@@ -1429,3 +1429,62 @@ model ProcessedEvent {
 
   @@map("events_processed_events")
 }
+// Training Models
+model TrainingRecord {
+  id          String   @id @default(uuid())
+  learnerId   String
+  learnerRole String
+  moduleId    String
+  status      String
+  startedAt   DateTime?
+  completedAt DateTime?
+  score       Int?
+  attempts    Int      @default(0)
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  module      TrainingModule @relation(fields: [moduleId], references: [id])
+
+  @@index([learnerId])
+  @@index([learnerRole])
+  @@index([moduleId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("training_records")
+}
+
+model CertificationRequirement {
+  module             String  @id
+  minimumScore       Int
+  validityPeriodDays Int
+  mandatory          Boolean @default(true)
+  maxAttempts        Int     @default(3)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("training_certification_requirements")
+}
+
+enum ContentType {
+  TEXT
+  VIDEO
+  INTERACTIVE
+}
+
+model TrainingModule {
+  id              String      @id @default(uuid())
+  name            String
+  description     String
+  contentType     ContentType @default(TEXT)
+  content         Json
+  durationMinutes Int
+  category        String
+  prerequisites   String[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  records         TrainingRecord[]
+
+  @@map("training_modules")
+}

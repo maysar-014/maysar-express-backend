@@ -1,15 +1,18 @@
 import { CompleteTrainingRequest, CompleteTrainingResponse } from '../dto/complete-training.dto';
 import { ITrainingRecordRepository } from '../../domain/repositories/training-record.repository';
 import { ICertificationRequirementRepository } from '../../domain/repositories/certification-requirement.repository';
+import { IEventPublisher, eventBus } from '../../../../../shared/events/eventBus';
 import { TrainingScore } from '../../domain/value-objects/training-score.value-object';
 import { EligibilityEngine } from '../../domain/engines/eligibility.engine';
 import { NotFoundError } from '../../domain/errors/domain.error';
+import { TrainingStatus } from '../../domain/value-objects/training-status.value-object';
 
 export class CompleteTrainingUseCase {
     constructor(
         private readonly trainingRecordRepo: ITrainingRecordRepository,
         private readonly requirementRepo: ICertificationRequirementRepository,
-        private readonly eligibilityEngine: EligibilityEngine
+        private readonly eligibilityEngine: EligibilityEngine,
+        private readonly events: IEventPublisher = eventBus
     ) { }
 
     public async execute(request: CompleteTrainingRequest): Promise<CompleteTrainingResponse> {
@@ -30,7 +33,8 @@ export class CompleteTrainingUseCase {
 
         await this.trainingRecordRepo.save(record);
 
-        const passed = record.status === 'COMPLETED';
+        const passed = record.status === TrainingStatus.COMPLETED;
+        const remainingAttempts = Math.max(0, requirement.maxAttempts - record.attempts);
 
         if (passed) {
             // Trigger eligibility check
@@ -38,10 +42,36 @@ export class CompleteTrainingUseCase {
             const allRequirements = await this.requirementRepo.findAll();
             const eligibility = this.eligibilityEngine.checkEligibility(allRecords, allRequirements);
 
-            // TODO: Publish LearnerEligibilityChangedEvent if eligibility changed
-        }
+            await this.events.publish('LearnerEligibilityChanged.v1', {
+                learnerId: record.learnerId,
+                learnerRole: record.learnerRole,
+                eligible: eligibility.eligible,
+                missingRequirements: eligibility.missingRequirements,
+                changedAt: new Date()
+            });
 
-        // TODO: Publish TrainingCompletedEvent or TrainingFailedEvent
+            await this.events.publish('TrainingCompleted.v1', {
+                trainingRecordId: record.id,
+                learnerId: record.learnerId,
+                learnerRole: record.learnerRole,
+                moduleId: record.moduleId,
+                score: record.score?.getValue(),
+                passed: true,
+                completedAt: record.completedAt,
+                expiresAt: record.expiresAt,
+                remainingAttempts
+            });
+        } else {
+            await this.events.publish('TrainingFailed.v1', {
+                trainingRecordId: record.id,
+                learnerId: record.learnerId,
+                learnerRole: record.learnerRole,
+                moduleId: record.moduleId,
+                score: record.score?.getValue(),
+                failedAt: record.completedAt,
+                remainingAttempts
+            });
+        }
 
         return {
             passed,

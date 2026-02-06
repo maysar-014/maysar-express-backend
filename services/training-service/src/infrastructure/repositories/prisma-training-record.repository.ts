@@ -45,4 +45,14 @@ export class PrismaTrainingRecordRepository implements ITrainingRecordRepository
         });
         return records.map(record => TrainingRecordMapper.toDomain(record));
     }
+
+    public async findExpired(): Promise<TrainingRecord[]> {
+        const records = await this.prisma.trainingRecord.findMany({
+            where: {
+                status: 'COMPLETED',
+                expiresAt: { lt: new Date() }
+            }
+        });
+        return records.map(record => TrainingRecordMapper.toDomain(record));
+    }
 }

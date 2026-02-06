@@ -1,83 +1,82 @@
-/**
- * Health Routes
- * Health check endpoints for monitoring
- */
-
 import { Router, Request, Response } from 'express';
+import { HealthCheckService } from '../../infrastructure/services/health-check.service';
 
 const router = Router();
 
 /**
  * GET /health
- * Basic health check
+ * Comprehensive health check with all dependencies
+ * Returns 200 if healthy, 503 if unhealthy or degraded
  */
-router.get('/', (req: Request, res: Response) => {
-  res.json({
-    status: 'healthy',
-    service: 'commission-service',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
-
-/**
- * GET /health/detailed
- * Detailed health check with dependencies
- */
-router.get('/detailed', async (req: Request, res: Response) => {
+router.get('/', async (_req: Request, res: Response) => {
   try {
-    const { HealthCheckService } = await import('../../infrastructure/services/health-check.service');
-    const dependencies = await HealthCheckService.checkAll();
+    const health = await HealthCheckService.checkAll();
 
-    const health = {
-      status: 'healthy',
-      service: 'commission-service',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      version: process.env.npm_package_version || '1.0.0',
-      environment: process.env.NODE_ENV || 'development',
-      dependencies
-    };
+    const statusCode = health.status === 'healthy' ? 200 : 503;
 
-    // Check if all dependencies are healthy
-    const allHealthy = Object.values(dependencies).every(dep => dep.status === 'healthy');
-    health.status = allHealthy ? 'healthy' : 'unhealthy';
-
-    const statusCode = allHealthy ? 200 : 503;
     res.status(statusCode).json(health);
   } catch (error) {
     res.status(503).json({
       status: 'unhealthy',
       service: 'commission-service',
       timestamp: new Date().toISOString(),
-      error: 'Health check failed'
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
 
 /**
- * GET /health/ready
- * Readiness check for Kubernetes
+ * GET /ready
+ * Readiness probe - checks critical dependencies
+ * Returns 200 if ready, 503 if not ready
  */
-router.get('/ready', (req: Request, res: Response) => {
-  // TODO: Implement actual readiness checks (database connections, etc.)
-  res.status(200).json({
-    status: 'ready',
-    service: 'commission-service',
-    timestamp: new Date().toISOString()
-  });
+router.get('/ready', async (_req: Request, res: Response) => {
+  try {
+    const readiness = await HealthCheckService.checkReadiness();
+
+    const statusCode = readiness.ready ? 200 : 503;
+
+    res.status(statusCode).json({
+      status: readiness.ready ? 'ready' : 'not_ready',
+      service: 'commission-service',
+      timestamp: new Date().toISOString(),
+      checks: readiness.checks
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'not_ready',
+      service: 'commission-service',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
 });
 
 /**
- * GET /health/live
- * Liveness check for Kubernetes
+ * GET /live
+ * Liveness probe - basic process health
+ * Always returns 200 unless process is dying
  */
-router.get('/live', (req: Request, res: Response) => {
-  res.status(200).json({
-    status: 'alive',
-    service: 'commission-service',
-    timestamp: new Date().toISOString()
-  });
+router.get('/live', (_req: Request, res: Response) => {
+  try {
+    const liveness = HealthCheckService.checkLiveness();
+
+    res.status(200).json({
+      status: 'alive',
+      service: 'commission-service',
+      timestamp: new Date().toISOString(),
+      ...liveness
+    });
+  } catch (error) {
+    // Even if liveness check fails, return 200 if we can respond
+    res.status(200).json({
+      status: 'alive',
+      service: 'commission-service',
+      timestamp: new Date().toISOString(),
+      uptime: `${Math.floor(process.uptime())}s`
+    });
+  }
 });
 
-export default router;
+export { router as healthRoutes };
+

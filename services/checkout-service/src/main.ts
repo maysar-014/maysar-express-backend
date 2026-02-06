@@ -4,23 +4,22 @@ import { CheckoutRepository } from './infrastructure/repositories/checkout.repos
 import { EventBusAdapter } from './infrastructure/messaging/event-bus.adapter';
 import { CheckoutEventHandlers } from './application/handlers/checkout-event.handlers';
 import { createCheckoutRoutes } from './api/routes/checkout.routes';
-import { errorHandler } from './api/middleware/checkout.middleware';
 import { CartController } from './api/controllers/cart.controller';
 import { CheckoutController } from './api/controllers/checkout.controller';
-import { logger } from './shared/logger/logger';
-import { config } from './shared/config';
+import { healthRoutes } from './api/routes/health.routes';
+import { errorHandler } from './api/middleware/error.middleware';
+import { requestLogger } from './api/middleware/request-logger.middleware';
+import { logger } from './infrastructure/services/logger.service';
 
 const app = express();
 
 app.use(express.json());
+app.use(requestLogger);
 
 // Initialize repositories and services
 const cartRepository = new CartRepository();
 const checkoutRepository = new CheckoutRepository();
 const eventBus = new EventBusAdapter();
-// const inventoryService = new InventoryReservationService(prisma);
-// const discountService = new DiscountService(prisma);
-// const orderService = new OrderService(prisma);
 
 // Initialize controllers
 const cartController = new CartController(cartRepository);
@@ -29,37 +28,19 @@ const checkoutController = new CheckoutController(checkoutRepository, eventBus);
 // Initialize event handlers
 new CheckoutEventHandlers(eventBus, checkoutRepository);
 
+// Health check routes
+app.use('/health', healthRoutes);
+
 // Register routes
 app.use('/api/checkout', createCheckoutRoutes(cartController, checkoutController));
 
-// Health check endpoints
-app.get('/health/live', (_req, res) => {
-  res.json({
-    status: 'alive',
-    timestamp: new Date()
-  });
-});
-
-app.get('/health/ready', async (_req, res) => {
-  res.status(200).json({
-    status: 'ready',
-    timestamp: new Date()
-  });
-});
-
-app.get('/health', async (_req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date()
-  });
-});
-
+// Error handling middleware (must be last)
 app.use(errorHandler);
 
-const PORT = config.app.port;
+const PORT = process.env.PORT || 3005;
 
 app.listen(PORT, () => {
-  logger.info(`Checkout Service running on port ${PORT}`, { port: PORT });
+  logger.info(`Checkout Service running on port ${PORT}`);
 });
 
 export default app;
