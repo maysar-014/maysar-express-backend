@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  maysar-backend:
+    build: .
+    image: maysar-backend:latest
+    environment:
+      # See .env.example for required configuration
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      REDIS_URL: redis://redis:6379
+      PORT: 3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    # No volume mounts or dev dependencies in production
+    networks:
+      - maysar-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.2'
+          memory: 128M
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-maysar}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-maysar}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # No ports exposed to host in production-like setup
+    networks:
+      - maysar-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.2'
+          memory: 128M
+
+  redis:
+    image: redis:7-alpine
+    command: [ "redis-server", "--requirepass", "${REDIS_PASSWORD:-redis}" ]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    # No ports exposed to host in production-like setup
+    networks:
+      - maysar-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+volumes:
+  postgres_data:
+  redis_data:
+
+
+networks:
+  maysar-network:
+    driver: bridge

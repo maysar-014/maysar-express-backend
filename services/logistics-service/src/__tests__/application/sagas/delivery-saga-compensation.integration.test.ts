@@ -6,13 +6,13 @@
  */
 
 import { DeliverySaga, createDeliverySaga } from '../../../application/sagas/delivery.saga';
-import { CourierRepositoryPort } from '../../../domain/engines/ports/courier.port';
+import { ICourierRepository } from '../../../domain/repositories';
 import { RealTimeTrackingPort } from '../../../domain/engines/ports/tracking.port';
 import { CourierEntity } from '../../../domain/entities/courier.entity';
 import { GeoPoint } from '../../../domain/value-objects/geopoint.value-object';
 
 // Mock implementations using Jest mocks
-const mockCourierPort: jest.Mocked<CourierRepositoryPort> = {
+const mockCourierRepository: jest.Mocked<ICourierRepository> = {
   findAvailableCouriers: jest.fn(),
   findAvailable: jest.fn(),
   assignCourier: jest.fn(),
@@ -68,18 +68,17 @@ describe('DeliverySaga Compensation Integration Tests', () => {
     completionRate: 0.97,
     currentLocation: GeoPoint.create(-6.8, 39.25, 'Courier Location'),
     isAvailable: true,
-    estimatedArrivalTime: 10,
     trafficExperience: 0.8
   });
 
   beforeEach(() => {
     jest.clearAllMocks();
 
-    mockCourierPort.findAvailableCouriers.mockResolvedValue([availableCourier]);
-    mockCourierPort.assignCourier.mockResolvedValue(undefined);
-    mockCourierPort.updateCourierAvailability.mockResolvedValue(undefined);
+    mockCourierRepository.findAvailableCouriers.mockResolvedValue([availableCourier]);
+    mockCourierRepository.assignCourier.mockResolvedValue(undefined);
+    mockCourierRepository.updateCourierAvailability.mockResolvedValue(undefined);
 
-    deliverySaga = createDeliverySaga(mockCourierPort, mockTrackingPort);
+    deliverySaga = createDeliverySaga(mockCourierRepository, mockTrackingPort);
   });
 
   describe('compensation completeness validation', () => {
@@ -134,7 +133,7 @@ describe('DeliverySaga Compensation Integration Tests', () => {
         fail('Expected saga to fail');
       } catch (error) {
         // Verify courier was unassigned during compensation
-        expect(mockCourierPort.updateCourierAvailability).toHaveBeenCalledWith('courier_789', true);
+        expect(mockCourierRepository.updateCourierAvailability).toHaveBeenCalledWith('courier_789', true);
 
         // Verify compensation events were published
         const compensationEvents = consoleSpy.mock.calls.filter(call =>
@@ -308,7 +307,7 @@ describe('DeliverySaga Compensation Integration Tests', () => {
       // Test that compensation actually reverses the business effect
 
       // First, run successful saga to establish baseline
-      const successfulSaga = createDeliverySaga(mockCourierPort, mockTrackingPort);
+      const successfulSaga = createDeliverySaga(mockCourierRepository, mockTrackingPort);
       await successfulSaga.start(deliveryData);
 
       const successfulContext = successfulSaga.getContext();
@@ -325,7 +324,7 @@ describe('DeliverySaga Compensation Integration Tests', () => {
         const failedContext = deliverySaga.getContext();
 
         // Verify compensation reversed the courier assignment
-        expect(mockCourierPort.updateCourierAvailability).toHaveBeenCalledWith('courier_789', true);
+        expect(mockCourierRepository.updateCourierAvailability).toHaveBeenCalledWith('courier_789', true);
         expect(failedContext!.data.courierId).toBeUndefined();
         expect(failedContext!.data.status).toBe('cancelled');
       }

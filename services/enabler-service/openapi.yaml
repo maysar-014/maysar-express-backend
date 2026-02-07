@@ -1,0 +1,54 @@
+openapi: 3.0.0
+info:
+  title: Enabler Service API
+  description: API for managing Enablers, Product Listings, and Commissions.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3006/api/v1
+    description: Local Development Server
+tags:
+  - name: Enablers
+    description: Enabler profile management
+  - name: Listings
+    description: Product listing management
+  - name: Orders
+    description: Order facilitation and tracking
+paths:
+  /enablers/register:
+    post:
+      summary: Register a new Enabler
+      tags: [Enablers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterEnablerDto'
+      responses:
+        '201':
+          description: Enabler registered successfully
+  /enablers/{enablerId}/listings:
+    post:
+      summary: List a product for sale
+      tags: [Listings]
+      parameters:
+        - in: path
+          name: enablerId
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Product listed successfully
+components:
+  schemas:
+    RegisterEnablerDto:
+      type: object
+      properties:
+        userId:
+          type: string
+        businessName:
+          type: string
+      required:
+        - userId
+        - businessName

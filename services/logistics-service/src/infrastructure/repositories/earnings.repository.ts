@@ -1,26 +1,9 @@
-import { EarningsRepositoryPort } from '../../domain/engines/ports/earnings.port';
+import { IEarningsRepository, Earnings } from '../../domain/repositories';
 
-export interface EarningsEntity {
-  id: string;
-  courierId: string;
-  deliveryId: string;
-  baseFare: number;
-  distanceFee: number;
-  weightFee: number;
-  priorityFee: number;
-  totalEarnings: number;
-  commission: number;
-  netEarnings: number;
-  paymentStatus: 'pending' | 'paid' | 'failed';
-  paymentDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export class EarningsRepository implements IEarningsRepository {
+  constructor(private supabaseClient: any) { }
 
-export class EarningsRepository implements EarningsRepositoryPort {
-  constructor(private supabaseClient: any) {}
-
-  async save(earnings: EarningsEntity): Promise<void> {
+  async save(earnings: Earnings): Promise<void> {
     try {
       const earningsData = {
         id: earnings.id,
@@ -54,7 +37,7 @@ export class EarningsRepository implements EarningsRepositoryPort {
     }
   }
 
-  async findByCourierId(courierId: string, timeRange?: { start: Date; end: Date }): Promise<EarningsEntity[]> {
+  async findByCourierId(courierId: string, timeRange?: { start: Date; end: Date }): Promise<Earnings[]> {
     try {
       let query = this.supabaseClient
         .from('earnings')
@@ -118,7 +101,7 @@ export class EarningsRepository implements EarningsRepositoryPort {
     }
   }
 
-  async findByDeliveryId(deliveryId: string): Promise<EarningsEntity | null> {
+  async findByDeliveryId(deliveryId: string): Promise<Earnings | null> {
     try {
       const { data: earning, error } = await this.supabaseClient
         .from('earnings')
@@ -174,7 +157,7 @@ export class EarningsRepository implements EarningsRepositoryPort {
     }
   }
 
-  async findAllEarnings(timeRange?: { start: Date; end: Date }): Promise<EarningsEntity[]> {
+  async findAllEarnings(timeRange?: { start: Date; end: Date }): Promise<Earnings[]> {
     try {
       let query = this.supabaseClient
         .from('earnings')

@@ -1,5 +1,5 @@
+import { ICourierRepository } from '../../domain/repositories';
 import { LogisticsEngine } from '../../domain/engines/logistics.engine';
-import { CourierRepositoryPort } from '../../domain/engines/ports/courier.port';
 import { WeatherServicePort } from '../../domain/engines/ports/weather.port';
 import { TrafficServicePort } from '../../domain/engines/ports/traffic.port';
 import { RouteOptimizationPort } from '../../domain/engines/ports/route-optimization.port';
@@ -54,13 +54,13 @@ export interface CreateDeliveryOutput {
 export class CreateDeliveryUseCase {
   constructor(
     private logisticsEngine: LogisticsEngine,
-    private courierPort: CourierRepositoryPort,
+    private courierRepository: ICourierRepository,
     private weatherPort: WeatherServicePort,
     private trafficPort: TrafficServicePort,
     private routePort: RouteOptimizationPort,
     private trackingPort: RealTimeTrackingPort,
     private courierPolicy: CourierAssignmentPolicy
-  ) {}
+  ) { }
 
   async execute(input: CreateDeliveryInput): Promise<CreateDeliveryOutput> {
     // APPLICATION LAYER: Pure orchestration - no business logic
@@ -92,7 +92,7 @@ export class CreateDeliveryUseCase {
 
     // Parallel infrastructure calls (orchestration only)
     const [availableCouriers, routeAlternatives, weatherData, trafficData] = await Promise.allSettled([
-      this.courierPort.findAvailableCouriers(pickupGeoPoint, 50),
+      this.courierRepository.findAvailableCouriers(pickupGeoPoint, 50),
       this.routePort.getRouteAlternatives(pickupGeoPoint, deliveryGeoPoint, 3),
       this.weatherPort.getWeatherData(deliveryGeoPoint),
       this.trafficPort.getTrafficData(pickupGeoPoint, deliveryGeoPoint)
@@ -118,11 +118,11 @@ export class CreateDeliveryUseCase {
 
     if (routes.length === 0) {
       console.warn('⚠️ No routes available from route optimization service, using fallback calculation');
-      
+
       // Create a basic fallback route with actual distance calculation
       const straightLineDistance = pickupGeoPoint.distanceTo(deliveryGeoPoint);
       const estimatedDuration = (straightLineDistance / 30) * 60; // 30 km/h average speed
-      
+
       const fallbackRoute = {
         totalDistance: straightLineDistance,
         totalDuration: estimatedDuration,
@@ -132,7 +132,7 @@ export class CreateDeliveryUseCase {
         confidence: 0.5,
         alternatives: []
       };
-      
+
       routes = [fallbackRoute];
     }
 
@@ -209,17 +209,17 @@ export class CreateDeliveryUseCase {
             type: 'waypoint' as const
           };
         }) || [
-          {
-            lat: input.pickupLocation.lat,
-            lng: input.pickupLocation.lng,
-            type: 'pickup' as const
-          },
-          {
-            lat: input.deliveryLocation.lat,
-            lng: input.deliveryLocation.lng,
-            type: 'delivery' as const
-          }
-        ]
+            {
+              lat: input.pickupLocation.lat,
+              lng: input.pickupLocation.lng,
+              type: 'pickup' as const
+            },
+            {
+              lat: input.deliveryLocation.lat,
+              lng: input.deliveryLocation.lng,
+              type: 'delivery' as const
+            }
+          ]
       }
     };
   }

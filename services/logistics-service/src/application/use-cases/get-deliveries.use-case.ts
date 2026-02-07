@@ -1,5 +1,4 @@
-import { DeliveryRepositoryPort } from '../../domain/engines/ports/delivery.port';
-import { CourierRepositoryPort } from '../../domain/engines/ports/courier.port';
+import { IDeliveryRepository, ICourierRepository } from '../../domain/repositories';
 
 export interface GetDeliveriesInput {
   page?: number;
@@ -61,9 +60,9 @@ export interface GetDeliveriesOutput {
 
 export class GetDeliveriesUseCase {
   constructor(
-    private deliveryRepository: DeliveryRepositoryPort,
-    private courierRepository: CourierRepositoryPort
-  ) {}
+    private deliveryRepository: IDeliveryRepository,
+    private courierRepository: ICourierRepository
+  ) { }
 
   async execute(input: GetDeliveriesInput): Promise<GetDeliveriesOutput> {
     const page = input.page || 1;

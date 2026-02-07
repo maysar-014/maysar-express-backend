@@ -12,6 +12,7 @@ useCaseDiagram
         usecase "View Transaction History" as UC6
         usecase "Suspend Wallet" as UC7
         usecase "Close Wallet" as UC8
+        usecase "Top-up Wallet" as UC11
         usecase "Record Transaction" as UC9
         usecase "Trigger Fraud Detection" as UC10
     }
@@ -20,6 +21,7 @@ useCaseDiagram
     C --> UC2
     C --> UC5
     C --> UC6
+    C --> UC11
     
     A --> UC3
     A --> UC4
@@ -35,4 +37,5 @@ useCaseDiagram
 
     UC1 ..> UC9 : <<include>>
     UC2 ..> UC9 : <<include>>
+    UC11 ..> UC9 : <<include>>
     UC10 ..> UC3 : <<extend>>

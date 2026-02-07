@@ -1,18 +1,18 @@
 import { Request, Response } from 'express';
 import { DependencyContainer } from '../../infrastructure/container';
 import { RouteOptimizationPort } from '../../domain/engines/ports/route-optimization.port';
-import { RouteRepositoryPort } from '../../domain/engines/ports/route.port';
+import { IRouteRepository } from '../../domain/repositories';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 import { RouteProgress } from '../../domain/value-objects/route-progress.value-object';
 
 export class RouteController {
-  private routeRepository?: RouteRepositoryPort;
+  private routeRepository?: IRouteRepository;
 
   constructor(
     private routeOptimizationAdapter: RouteOptimizationPort = DependencyContainer.getInstance().getRouteOptimizationProvider()
-  ) {}
+  ) { }
 
-  private getRouteRepository(): RouteRepositoryPort {
+  private getRouteRepository(): IRouteRepository {
     if (!this.routeRepository) {
       this.routeRepository = DependencyContainer.getInstance().getRouteRepository();
     }

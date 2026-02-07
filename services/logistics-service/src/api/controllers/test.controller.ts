@@ -2,10 +2,7 @@ import { Request, Response } from 'express';
 import { DependencyContainer } from '../../infrastructure/container';
 import { LogisticsEngine } from '../../domain/engines/logistics.engine';
 import { RouteOptimizationPort } from '../../domain/engines/ports/route-optimization.port';
-import { DeliveryRepositoryPort } from '../../domain/engines/ports/delivery.port';
-import { CourierRepositoryPort } from '../../domain/engines/ports/courier.port';
-import { TrackingRepositoryPort } from '../../domain/engines/ports/tracking.port';
-import { EarningsRepositoryPort } from '../../domain/engines/ports/earnings.port';
+import { IDeliveryRepository, ICourierRepository, ITrackingRepository, IEarningsRepository, IRouteRepository } from '../../domain/repositories';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 import { Weight } from '../../domain/value-objects/weight.value-object';
 import { getHealthCheckData, getDetailedMetrics } from '../../infrastructure/monitoring';
@@ -25,11 +22,11 @@ interface TestResult {
 export class TestController {
   constructor(
     private routeOptimizationAdapter: RouteOptimizationPort = DependencyContainer.getInstance().getRouteOptimizationProvider(),
-    private deliveryRepository: DeliveryRepositoryPort = DependencyContainer.getInstance().getDeliveryRepository(),
-    private courierRepository: CourierRepositoryPort = DependencyContainer.getInstance().getCourierRepository(),
-    private trackingRepository: TrackingRepositoryPort = DependencyContainer.getInstance().getTrackingRepository(),
-    private earningsRepository: EarningsRepositoryPort = DependencyContainer.getInstance().getEarningsRepository()
-  ) {}
+    private deliveryRepository: IDeliveryRepository = DependencyContainer.getInstance().getDeliveryRepository(),
+    private courierRepository: ICourierRepository = DependencyContainer.getInstance().getCourierRepository(),
+    private trackingRepository: ITrackingRepository = DependencyContainer.getInstance().getTrackingRepository(),
+    private earningsRepository: IEarningsRepository = DependencyContainer.getInstance().getEarningsRepository()
+  ) { }
 
   async testAllEngines(req: Request, res: Response): Promise<void> {
     try {
@@ -468,7 +465,7 @@ export class TestController {
 
       // Return appropriate HTTP status based on health
       const httpStatus = healthData.status === 'healthy' ? 200 :
-                        healthData.status === 'degraded' ? 200 : 503; // unhealthy = service unavailable
+        healthData.status === 'degraded' ? 200 : 503; // unhealthy = service unavailable
 
       res.status(httpStatus).json({
         status: healthData.status,

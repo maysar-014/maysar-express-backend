@@ -78,9 +78,58 @@ export interface WalletStatusChanged extends DomainEvent {
     };
 }
 
+export interface HoldPlaced extends DomainEvent {
+    eventType: 'HoldPlaced';
+    aggregateType: 'Wallet';
+    payload: {
+        holdId: string;
+        walletId: string;
+        userId: string;
+        amount: number;
+        reason: string;
+        expiresAt: Date;
+    };
+}
+
+export interface HoldReleased extends DomainEvent {
+    eventType: 'HoldReleased';
+    aggregateType: 'Wallet';
+    payload: {
+        holdId: string;
+        walletId: string;
+        userId: string;
+        reason: string;
+    };
+}
+
+export interface HoldCaptured extends DomainEvent {
+    eventType: 'HoldCaptured';
+    aggregateType: 'Wallet';
+    payload: {
+        holdId: string;
+        walletId: string;
+        userId: string;
+        transactionId: string;
+        amount: number;
+    };
+}
+
+export interface HoldExpired extends DomainEvent {
+    eventType: 'HoldExpired';
+    aggregateType: 'Wallet';
+    payload: {
+        holdId: string;
+        walletId: string;
+    };
+}
+
 export type WalletDomainEvent =
     | WalletCredited
     | WalletDebited
     | FundsFrozen
     | FundsUnfrozen
-    | WalletStatusChanged;
+    | WalletStatusChanged
+    | HoldPlaced
+    | HoldReleased
+    | HoldCaptured
+    | HoldExpired;

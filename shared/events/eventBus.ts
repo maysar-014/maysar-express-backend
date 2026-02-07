@@ -4,6 +4,7 @@ export interface EventEnvelope {
   eventType: string;
   data: any;
   metadata?: any;
+  eventId?: string;
 }
 
 export class EventBus extends EventEmitter {
@@ -11,7 +12,8 @@ export class EventBus extends EventEmitter {
     const envelope: EventEnvelope = {
       eventType,
       data,
-      metadata
+      metadata,
+      eventId: metadata?.eventId // simple mapping if present
     };
     console.log(`[EventBus] Publishing: ${eventType}`);
     this.emit(eventType, envelope);

@@ -1,5 +1,4 @@
-import { DeliveryRepositoryPort } from '../../domain/engines/ports/delivery.port';
-import { CourierRepositoryPort } from '../../domain/engines/ports/courier.port';
+import { IDeliveryRepository, ICourierRepository } from '../../domain/repositories';
 
 export interface GetDeliveryInput {
   deliveryId: string;
@@ -42,9 +41,9 @@ export interface GetDeliveryOutput {
 
 export class GetDeliveryUseCase {
   constructor(
-    private deliveryRepository: DeliveryRepositoryPort,
-    private courierRepository: CourierRepositoryPort
-  ) {}
+    private deliveryRepository: IDeliveryRepository,
+    private courierRepository: ICourierRepository
+  ) { }
 
   async execute(input: GetDeliveryInput): Promise<GetDeliveryOutput> {
     const delivery = await this.deliveryRepository.findById(input.deliveryId);

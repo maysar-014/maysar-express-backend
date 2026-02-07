@@ -46,10 +46,10 @@ env:
 # Resource limits
 resources:
   limits:
-    cpu: 500m
+    cpu: 1000m
     memory: 512Mi
   requests:
-    cpu: 100m
+    cpu: 200m
     memory: 128Mi
 
 # Node selector
@@ -60,6 +60,33 @@ tolerations: []
 
 # Affinity
 affinity: {}
+
+# Probes
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 3000
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+startupProbe:
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  failureThreshold: 30
 
 # Pod disruption budget
 podDisruptionBudget:
@@ -77,12 +104,14 @@ autoscaling:
 # Security Context
 securityContext:
   runAsNonRoot: true
-  runAsUser: 101
-  runAsGroup: 101
+  runAsUser: 1001
+  runAsGroup: 1001
   allowPrivilegeEscalation: false
+  fsGroup: 1001
   capabilities:
     drop:
       - ALL
+  readOnlyRootFilesystem: false # Set to true if app writes only to tmp
 
 # Service Account
 serviceAccount:

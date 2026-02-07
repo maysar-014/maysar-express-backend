@@ -53,23 +53,4 @@ export interface RealTimeTrackingPort {
   }>;
 }
 
-export interface TrackingEntity {
-  id: string;
-  deliveryId: string;
-  courierId: string;
-  location: GeoPoint;
-  speed: number;
-  heading: number;
-  timestamp: Date;
-  status: string;
-  batteryLevel?: number;
-  accuracy: number;
-}
 
-export interface TrackingRepositoryPort {
-  save(tracking: TrackingEntity): Promise<void>;
-  findByDeliveryId(deliveryId: string): Promise<TrackingEntity[]>;
-  findByCourierId(courierId: string, timeRange?: { start: Date; end: Date }): Promise<TrackingEntity[]>;
-  getLatestTracking(deliveryId: string): Promise<TrackingEntity | null>;
-  deleteOldTracking(olderThanHours: number): Promise<number>;
-}

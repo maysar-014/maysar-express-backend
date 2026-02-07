@@ -1,7 +1,6 @@
 /**
- * Campaign Management Saga
- * Orchestrates promotional pricing campaigns with complex rules and scheduling
- * Handles campaign lifecycle, pricing rules, and automated campaign management
+ * @deprecated This saga has been moved to the standalone campaign-service.
+ * Use CampaignLifecycleSaga, CampaignPricingSaga, and CampaignSchedulingSaga in the new service.
  */
 
 import {
@@ -108,7 +107,7 @@ export class CampaignManagementSaga extends BaseSaga {
     context: CampaignContext
   ) {
     super();
-    this.sagaId = `campaign-${context.campaignId}`;
+    this.sagaId = `campaign - ${context.campaignId} `;
 
     this.initializeState(context);
     this.setupSagaSteps();
@@ -180,7 +179,7 @@ export class CampaignManagementSaga extends BaseSaga {
             const categoryProducts = await this.getProductsInCategory(categoryId);
             categoryProducts.forEach(productId => allProductIds.add(productId));
           } catch (error) {
-            console.warn(`Failed to get products for category ${categoryId}:`, error);
+            console.warn(`Failed to get products for category ${categoryId}: `, error);
           }
         }
 
@@ -212,7 +211,7 @@ export class CampaignManagementSaga extends BaseSaga {
             this.state.validatedRules.push(rule.ruleId);
           } catch (error) {
             this.results.errors.push({
-              error: `Rule validation failed for ${rule.ruleId}: ${error instanceof Error ? error.message : String(error)}`
+              error: `Rule validation failed for ${rule.ruleId}: ${error instanceof Error ? error.message : String(error)} `
             });
           }
         }
@@ -235,7 +234,7 @@ export class CampaignManagementSaga extends BaseSaga {
     this.addStep(
       'schedule_campaign',
       async () => {
-        console.log(`[${this.sagaId}] Scheduling campaign ${this.state.campaignId}`);
+        console.log(`[${this.sagaId}] Scheduling campaign ${this.state.campaignId} `);
 
         const now = this.dateTimeService.now();
 
@@ -283,7 +282,7 @@ export class CampaignManagementSaga extends BaseSaga {
           } catch (error) {
             this.results.errors.push({
               productId,
-              error: `Failed to apply campaign pricing: ${error instanceof Error ? error.message : String(error)}`
+              error: `Failed to apply campaign pricing: ${error instanceof Error ? error.message : String(error)} `
             });
           }
         }
@@ -304,7 +303,7 @@ export class CampaignManagementSaga extends BaseSaga {
           try {
             await this.applyCampaignPrice(productId, originalPrice);
           } catch (error) {
-            console.error(`[${this.sagaId}] Failed to revert pricing for product ${productId}:`, error instanceof Error ? error.message : String(error));
+            console.error(`[${this.sagaId}] Failed to revert pricing for product ${productId}: `, error instanceof Error ? error.message : String(error));
           }
         }
 
@@ -368,7 +367,7 @@ export class CampaignManagementSaga extends BaseSaga {
             await step.operation();
           }
         } catch (error) {
-          console.error(`[${this.sagaId}] Step ${stepId} failed:`, error);
+          console.error(`[${this.sagaId}] Step ${stepId} failed: `, error);
 
           // Record error
           this.state.errors.push({
@@ -631,7 +630,7 @@ export class CampaignManagementSaga extends BaseSaga {
   }
 
   private async endCampaign(): Promise<void> {
-    console.log(`[${this.sagaId}] Ending campaign ${this.state.campaignId}`);
+    console.log(`[${this.sagaId}] Ending campaign ${this.state.campaignId} `);
 
     this.results.status = 'expired';
     this.results.endedAt = this.dateTimeService.now();
@@ -671,7 +670,7 @@ export class CampaignManagementSaga extends BaseSaga {
           await this.applyCampaignPrice(productId, originalPrice);
         }
       } catch (error) {
-        console.error(`[${this.sagaId}] Failed to revert pricing for product ${productId}:`, error instanceof Error ? error.message : String(error));
+        console.error(`[${this.sagaId}] Failed to revert pricing for product ${productId}: `, error instanceof Error ? error.message : String(error));
       }
     }
   }

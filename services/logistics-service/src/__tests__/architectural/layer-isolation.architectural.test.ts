@@ -395,8 +395,8 @@ describe('Layer Isolation Architectural Tests', () => {
       repoFiles.forEach(file => {
         const content = fs.readFileSync(file, 'utf8');
 
-        // Repositories should implement repository ports
-        expect(content).toMatch(/implements.*RepositoryPort/);
+        // Repositories should implement domain repository interfaces
+        expect(content).toMatch(/implements.*I.*Repository/);
 
         // Repositories should handle data persistence
         expect(content).toMatch(/find|create|update|delete|save/);

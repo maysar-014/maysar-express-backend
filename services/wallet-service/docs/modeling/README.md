@@ -14,6 +14,7 @@ This directory contains the software modeling documentation for the Wallet Servi
 - [credit-wallet-flow.mmd](./sequence/credit-wallet-flow.mmd): Detailed flow for adding funds to a wallet.
 - [debit-wallet-flow.mmd](./sequence/debit-wallet-flow.mmd): Detailed flow for spending funds from a wallet.
 - [freeze-funds-flow.mmd](./sequence/freeze-funds-flow.mmd): Detailed flow for locking funds in a wallet.
+- [wallet-topup-flow.mmd](./sequence/wallet-topup-flow.mmd): Multi-provider top-up integration with Payment Service.
 
 ---
-*Last Updated: 2026-02-02*
+*Last Updated: 2026-02-07*

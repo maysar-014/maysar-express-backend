@@ -1,8 +1,12 @@
 import { Request, Response } from 'express';
 import { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case';
+import { AuthenticateUserUseCase } from '../../application/use-cases/authenticate-user.use-case';
 
 export class AuthController {
-  constructor(private readonly registerUserUseCase: RegisterUserUseCase) { }
+  constructor(
+    private readonly registerUserUseCase: RegisterUserUseCase,
+    private readonly authenticateUserUseCase: AuthenticateUserUseCase
+  ) { }
 
   async register(req: Request, res: Response): Promise<void> {
     try {
@@ -12,5 +16,65 @@ export class AuthController {
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });
     }
+  }
+
+  async login(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, password, totpCode } = req.body;
+      const result = await this.authenticateUserUseCase.execute({
+        email,
+        password,
+        totpCode,
+        ipAddress: req.ip || 'unknown',
+        userAgent: req.get('user-agent') || 'unknown'
+      });
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(401).json(result);
+      }
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  async logout(req: Request, res: Response): Promise<void> {
+    res.status(200).json({ success: true, message: 'Logged out' }); // Stub
+  }
+
+  async refreshToken(req: Request, res: Response): Promise<void> {
+    res.status(501).json({ message: 'Not implemented' });
+  }
+
+  async verifySession(req: Request, res: Response): Promise<void> {
+    res.status(200).json({ valid: true }); // Stub
+  }
+
+  async forgotPassword(req: Request, res: Response): Promise<void> {
+    res.status(501).json({ message: 'Not implemented' });
+  }
+
+  async resetPassword(req: Request, res: Response): Promise<void> {
+    res.status(501).json({ message: 'Not implemented' });
+  }
+
+  async enableTwoFactor(req: Request, res: Response): Promise<void> {
+    res.status(501).json({ message: 'Not implemented' });
+  }
+
+  async disableTwoFactor(req: Request, res: Response): Promise<void> {
+    res.status(501).json({ message: 'Not implemented' });
+  }
+
+  async verifyTwoFactorSetup(req: Request, res: Response): Promise<void> {
+    res.status(501).json({ message: 'Not implemented' });
+  }
+
+  async reportSuspiciousActivity(req: Request, res: Response): Promise<void> {
+    res.status(200).json({ success: true }); // Stub
+  }
+
+  async getAuthStats(req: Request, res: Response): Promise<void> {
+    res.status(200).json({ activeUsers: 0 }); // Stub
   }
 }

@@ -1,0 +1,77 @@
+sequenceDiagram
+    participant API
+    participant UC as ValidateExpertiseUseCase
+    participant Profile as BusinessProfileRepo
+    participant Policy as ExpertiseValidationPolicy
+    participant Training as TrainingServiceClient
+    participant Business as BusinessRegistryClient
+    participant Engine as ReputationEngine
+    participant Events as EventPublisher
+
+    API->>UC: execute(ValidateExpertiseRequest)
+    
+    Note over UC: Get user profile
+    UC->>Profile: findByUserId(userId)
+    Profile-->>UC: BusinessProfile
+    
+    Note over UC: Check policy requirements
+    UC->>Policy: getRequirements(expertiseArea, targetLevel)
+    Policy-->>UC: Requirements {minModules, minContributions, needsPeerEndorsement}
+    
+    Note over UC: Check training completion
+    UC->>Training: getCompletedModules(userId)
+    Training-->>UC: Completed modules []
+    
+    UC->>UC: filterByExpertiseArea(modules, expertiseArea)
+    Note over UC: Count: completedModules
+    
+    alt completedModules < minModules
+        UC-->>API: {verified: false, missingRequirements: [...]}
+    end
+    
+    Note over UC: Verify business credentials (optional)
+    alt Target level >= EXPERT
+        UC->>Business: verifyBusinessCredentials(userId, businessId)
+        Business-->>UC: {verified: true/false}
+        
+        alt Not verified
+            UC-->>API: {verified: false, missingRequirements: [...]}
+        end
+    end
+    
+    Note over UC: Check contribution quality
+    UC->>UC: getContributionMetrics(profile, expertiseArea)
+    Note over UC: Calculate quality score
+    
+    alt qualityScore < threshold
+        UC-->>API: {verified: false, missingRequirements: [...]}
+    end
+    
+    Note over UC: Check peer endorsements
+    alt needsPeerEndorsement
+        UC->>UC: countEndorsements(profile, expertiseArea)
+        
+        alt insufficient endorsements
+            UC-->>API: {verified: false, missingRequirements: [...]}
+        end
+    end
+    
+    Note over UC: All requirements met - create badge
+    UC->>UC: ExpertiseBadge.create(expertiseArea, level)
+    
+    Note over UC: Update profile
+    UC->>Profile: addExpertiseBadge(badge)
+    Profile-->>UC: Updated profile
+    
+    Note over UC: Calculate new reputation tier
+    UC->>Engine: calculateTier(profile)
+    Engine-->>UC: New tier
+    
+    alt Tier changed
+        UC->>Events: publish(ReputationTierUpgraded)
+    end
+    
+    Note over UC: Publish validation event
+    UC->>Events: publish(ExpertiseValidated)
+    
+    UC-->>API: {verified: true, badge, newTier}

@@ -1,8 +1,10 @@
 import { BaseSaga, SagaContext } from './base.saga';
 import { SagaRegistry } from './saga-registry';
-import { CourierRepositoryPort } from '../../domain/engines/ports/courier.port';
+import {
+  ICourierRepository,
+  IRouteRepository
+} from '../../domain/repositories';
 import { RealTimeTrackingPort } from '../../domain/engines/ports/tracking.port';
-import { RouteRepositoryPort } from '../../domain/engines/ports/route.port';
 import { CourierDomainService } from '../../domain/services/courier.domain-service';
 import { RouteCreationService } from '../../domain/services/route-creation.service';
 import { CourierEntity } from '../../domain/entities/courier.entity';
@@ -47,9 +49,9 @@ interface DeliverySagaData {
  */
 export class DeliverySaga extends BaseSaga<DeliverySagaData> {
   constructor(
-    private courierPort: CourierRepositoryPort,
+    private courierRepository: ICourierRepository,
     private trackingPort: RealTimeTrackingPort,
-    private routeRepository?: RouteRepositoryPort,
+    private routeRepository?: IRouteRepository,
     private routeCreationService?: RouteCreationService,
     private courierDomainService?: CourierDomainService
   ) {
@@ -97,7 +99,7 @@ export class DeliverySaga extends BaseSaga<DeliverySagaData> {
 
   private async assignCourier(data: DeliverySagaData): Promise<void> {
     // Find available couriers near pickup location
-    const availableCouriers = await this.courierPort.findAvailableCouriers(
+    const availableCouriers = await this.courierRepository.findAvailableCouriers(
       {
         lat: data.pickupLocation.lat,
         lng: data.pickupLocation.lng,
@@ -114,7 +116,7 @@ export class DeliverySaga extends BaseSaga<DeliverySagaData> {
     const selectedCourier = availableCouriers[0];
 
     // Assign courier to delivery
-    await this.courierPort.assignCourier(data.deliveryId, selectedCourier.id);
+    await this.courierRepository.assignCourier(data.deliveryId, selectedCourier.id);
 
     // Update saga data
     data.courierId = selectedCourier.id;
@@ -294,7 +296,7 @@ export class DeliverySaga extends BaseSaga<DeliverySagaData> {
     if (!data.courierId) return;
 
     // Unassign courier from delivery
-    await this.courierPort.updateCourierAvailability(data.courierId, true);
+    await this.courierRepository.updateCourierAvailability(data.courierId, true);
 
     // Publish unassignment event
     const event: DeliveryCancelledEvent = {
@@ -350,8 +352,8 @@ export class DeliverySaga extends BaseSaga<DeliverySagaData> {
 
 // Factory function to create delivery sagas
 export function createDeliverySaga(
-  courierPort: CourierRepositoryPort,
+  courierRepository: ICourierRepository,
   trackingPort: RealTimeTrackingPort
 ): DeliverySaga {
-  return new DeliverySaga(courierPort, trackingPort);
+  return new DeliverySaga(courierRepository, trackingPort);
 }

@@ -1,0 +1,35 @@
+stateDiagram-v2
+    [*] --> OPEN
+    
+    OPEN --> IN_PROGRESS : solutionSubmitted()
+    OPEN --> CLOSED : closedByProposer()
+    
+    IN_PROGRESS --> SOLVED : solutionAccepted()
+    IN_PROGRESS --> OPEN : allSolutionsRejected()
+    IN_PROGRESS --> CLOSED : closedByProposer()
+    
+    SOLVED --> CLOSED : closedByProposer()
+    
+    CLOSED --> [*]
+    
+    note right of OPEN
+        Challenge proposed.
+        Awaiting solutions.
+        Experts matched and notified.
+    end note
+    
+    note right of IN_PROGRESS
+        At least one solution submitted.
+        Community collaboration active.
+    end note
+    
+    note right of SOLVED
+        Proposer accepted a solution.
+        Solution author earns +75 points.
+        Challenge still visible as reference.
+    end note
+    
+    note right of CLOSED
+        Challenge archived.
+        No new solutions accepted.
+    end note

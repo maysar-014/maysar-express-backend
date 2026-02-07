@@ -82,24 +82,24 @@ graph TB
 
 ### Architecture Overview
 
-```
-Courier Console (Port 3500)
-        ↓
 Logistics Service (Port 3007)
 ├── Domain Layer (Business Logic)
 │   ├── Engines: Logistics, Route Optimization, Real-Time Tracking
 │   ├── Entities: Courier, Delivery, Route
+│   ├── Repositories: ICourierRepository, IDeliveryRepository, IRouteRepository, etc.
 │   ├── Services: Delivery Domain Service, Route Creation Service
 │   └── Sagas: Delivery orchestration with compensation
 ├── Application Layer (Use Cases & Coordination)
+│   ├── Use Cases: Create Delivery, Get Delivery, Update Status, etc.
 │   ├── Controllers: REST API endpoints (32 total)
 │   ├── Validators: Input validation and sanitization
 │   └── Mappers: Data transformation between layers
 └── Infrastructure Layer (External Dependencies)
+    ├── Primary Repositories: CourierRepository, DeliveryRepository (Supabase/Prisma)
     ├── Providers: Google Maps, HERE Maps, Weather APIs
-    ├── Repositories: PostgreSQL with Prisma ORM
+    ├── Services: Logger, Monitoring
     ├── Cache: Redis for performance optimization
-    └── Monitoring: Health checks and metrics
+    └── Database: Prisma migrations and client management
 ```
 
 ### Performance Metrics

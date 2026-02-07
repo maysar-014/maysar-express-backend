@@ -1,0 +1,66 @@
+sequenceDiagram
+    participant API
+    participant UC as SubmitKnowledgeArticleUseCase
+    participant Profile as BusinessProfileRepo
+    participant Policy as EngagementPolicy
+    participant Quota as EngagementQuotaRepo
+    participant Article as KnowledgeArticleRepo
+    participant Events as EventPublisher
+
+    API->>UC: execute(SubmitArticleRequest)
+    
+    Note over UC: Check reputation tier
+    UC->>Profile: findByUserId(authorId)
+    Profile-->>UC: BusinessProfile
+    
+    alt Reputation < EXPERT (500 points)
+        UC-->>API: Error: Insufficient reputation
+    end
+    
+    Note over UC: Check engagement quota
+    UC->>Quota: findByUserAndType(userId, ARTICLE)
+    Quota-->>UC: EngagementQuota
+    
+    UC->>Policy: canCreateContent(quota, tier)
+    Policy-->>UC: {allowed: true/false}
+    
+    alt Quota exceeded
+        UC-->>API: Error: Daily article limit reached
+    end
+    
+    Note over UC: Validate content structure
+    UC->>UC: validateArticleStructure(sections)
+    
+    alt Invalid structure
+        UC-->>API: Error: Validation failed
+    end
+    
+    Note over UC: Check for duplicates
+    UC->>Article: findByTitleAndAuthor(title, authorId)
+    Article-->>UC: Existing article or null
+    
+    alt Duplicate title
+        UC-->>API: Error: Article with title exists
+    end
+    
+    Note over UC: Create article
+    Note right of UC: Status: DRAFT or PENDING_REVIEW<br/>based on reputation tier
+    
+    UC->>Article: save(knowledgeArticle)
+    Article-->>UC: Saved article
+    
+    Note over UC: Determine peer review requirement
+    UC->>UC: requiresPeerReview = tier < MENTOR
+    
+    Note over UC: Consume quota
+    UC->>Quota: save(quota.consume())
+    Quota-->>UC: Updated quota
+    
+    Note over UC: Publish events
+    alt Requires peer review
+        UC->>Events: publish(ArticleSubmittedForReview)
+    else Auto-publish
+        UC->>Events: publish(ArticlePublished)
+    end
+    
+    UC-->>API: {article, requiresPeerReview, quotaRemaining}

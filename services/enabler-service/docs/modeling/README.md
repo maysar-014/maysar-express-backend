@@ -1,19 +1,29 @@
-# Enabler Service Modeling Documentation
+# Enabler Service Modeling
 
-Follows [Software Modeling Constitution](../../../software-modeling-constitution.md).
+This directory contains the architectural models for the Enabler Service, complying with the **Maysar Modeling Constitution**.
 
 ## Contents
-- [Use Cases](./use-cases/) - Business-level actor interactions
-- [State Machines](./state-machines/) - Entity lifecycle diagrams
-- [Sequence Diagrams](./sequence/) - Saga and use case execution flows
 
-## Diagrams Index
+-   **Use Cases**: `use-cases/` - Detailed descriptions of system interactions.
+-   **State Machines**: `state-machines/` - Lifecycle models for Enablers, Orders, and Listings.
+-   **Sequence Diagrams**: `sequence/` - Flow of control for critical operations.
+-   **Domain Model**: `domain-model.md` - Conceptual model of entities and relationships.
+-   **Diagrams**: `diagrams.md` - Visual representations of the domain model (Class Diagrams).
 
-### Use Cases
-- [Use Case Name](./use-cases/diagram-name.mmd) - Description
+## Diagrams
 
-### State Machines
-- [Entity Name Status](./state-machines/entity-status.mmd) - Description
+Please refer to [diagrams.md](./diagrams.md) for visual representations of the Enabler Service domain model.
 
-### Sequence Diagrams
-- [Saga/Flow Name](./sequence/saga-name.mmd) - Description
+## Domain Model
+
+### Core Entities
+
+-   **Enabler**: The central actor. Has `Tier`, `Status`, and `PerformanceMetrics`.
+-   **ProductListing**: A projection of a Catalog Product specific to an Enabler.
+-   **EnablerOrder**: An order facilitated by an Enabler. Links `Buyer`, `Seller`, and `Enabler`.
+-   **EnablerCommission**: Financial record of earnings.
+
+### Key Value Objects
+
+-   **CommissionTier**: Defines rates and benefits for each tier.
+-   **VerificationStatus**: Tracks the onboarding process.

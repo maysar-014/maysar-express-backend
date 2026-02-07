@@ -7,13 +7,13 @@
  */
 
 import { DeliverySaga, createDeliverySaga } from '../../../application/sagas/delivery.saga';
-import { CourierRepositoryPort } from '../../../domain/engines/ports/courier.port';
+import { ICourierRepository } from '../../../domain/repositories';
 import { RealTimeTrackingPort } from '../../../domain/engines/ports/tracking.port';
 import { CourierEntity } from '../../../domain/entities/courier.entity';
 import { GeoPoint } from '../../../domain/value-objects/geopoint.value-object';
 
 // Mock implementations using Jest mocks
-const mockCourierPort: jest.Mocked<CourierRepositoryPort> = {
+const mockCourierRepository: jest.Mocked<ICourierRepository> = {
   findAvailableCouriers: jest.fn(),
   findAvailable: jest.fn(),
   assignCourier: jest.fn(),
@@ -70,7 +70,6 @@ describe('DeliverySaga Integration Tests', () => {
     completionRate: 0.97,
     currentLocation: GeoPoint.create(-6.8, 39.25, 'Courier Location'),
     isAvailable: true,
-    estimatedArrivalTime: 10,
     trafficExperience: 0.8
   });
 
@@ -79,11 +78,11 @@ describe('DeliverySaga Integration Tests', () => {
     jest.clearAllMocks();
 
     // Set up default mock behaviors
-    mockCourierPort.findAvailableCouriers.mockResolvedValue([availableCourier]);
-    mockCourierPort.assignCourier.mockResolvedValue(undefined);
-    mockCourierPort.findAvailable.mockResolvedValue([availableCourier]);
+    mockCourierRepository.findAvailableCouriers.mockResolvedValue([availableCourier]);
+    mockCourierRepository.assignCourier.mockResolvedValue(undefined);
+    mockCourierRepository.findAvailable.mockResolvedValue([availableCourier]);
 
-    deliverySaga = createDeliverySaga(mockCourierPort, mockTrackingPort);
+    deliverySaga = createDeliverySaga(mockCourierRepository, mockTrackingPort);
   });
 
   describe('successful delivery orchestration', () => {
@@ -99,7 +98,7 @@ describe('DeliverySaga Integration Tests', () => {
       expect(context!.data.courierId).toBe('courier_789');
 
       // Verify courier assignment was called
-      expect(mockCourierPort.assignCourier).toHaveBeenCalledWith('delivery_123', 'courier_789');
+      expect(mockCourierRepository.assignCourier).toHaveBeenCalledWith('delivery_123', 'courier_789');
 
       // Verify all steps completed
       expect(context!.completedSteps).toEqual(['assignCourier', 'waitForPickup', 'trackDelivery', 'confirmDelivery']);
@@ -153,7 +152,7 @@ describe('DeliverySaga Integration Tests', () => {
     });
 
     it('should fail when no couriers are available', async () => {
-      mockCourierPort.findAvailableCouriers.mockResolvedValueOnce([]); // No available couriers
+      mockCourierRepository.findAvailableCouriers.mockResolvedValueOnce([]); // No available couriers
 
       await expect(deliverySaga.start(deliveryData)).rejects.toThrow('No couriers available for delivery');
 
@@ -168,7 +167,7 @@ describe('DeliverySaga Integration Tests', () => {
         currentLocation: GeoPoint.create(-7.5, 39.0, 'Far Location'), // 80km away
         id: 'far_courier'
       });
-      mockCourierPort.findAvailableCouriers.mockResolvedValueOnce([farCourier]);
+      mockCourierRepository.findAvailableCouriers.mockResolvedValueOnce([farCourier]);
 
       await expect(deliverySaga.start(deliveryData)).rejects.toThrow('No couriers available for delivery');
 
@@ -183,7 +182,7 @@ describe('DeliverySaga Integration Tests', () => {
         name: 'Jane Courier'
       });
 
-      mockCourierPort.findAvailableCouriers.mockResolvedValueOnce([availableCourier, courier2]);
+      mockCourierRepository.findAvailableCouriers.mockResolvedValueOnce([availableCourier, courier2]);
 
       await deliverySaga.start(deliveryData);
 
@@ -313,7 +312,7 @@ describe('DeliverySaga Integration Tests', () => {
       expect(assignedCourierId).toBe('courier_789');
 
       // Verify courier assignment was called
-      expect(mockCourierPort.assignCourier).toHaveBeenCalledWith('delivery_123', 'courier_789');
+      expect(mockCourierRepository.assignCourier).toHaveBeenCalledWith('delivery_123', 'courier_789');
     });
 
     it('should handle different courier configurations', async () => {
@@ -331,7 +330,7 @@ describe('DeliverySaga Integration Tests', () => {
         }
       });
 
-      mockCourierPort.findAvailableCouriers.mockResolvedValueOnce([premiumCourier]);
+      mockCourierRepository.findAvailableCouriers.mockResolvedValueOnce([premiumCourier]);
 
       await deliverySaga.start(deliveryData);
 
@@ -383,8 +382,8 @@ describe('DeliverySaga Integration Tests', () => {
     });
 
     it('should handle multiple saga instances independently', async () => {
-      const saga1 = createDeliverySaga(mockCourierPort, mockTrackingPort);
-      const saga2 = createDeliverySaga(mockCourierPort, mockTrackingPort);
+      const saga1 = createDeliverySaga(mockCourierRepository, mockTrackingPort);
+      const saga2 = createDeliverySaga(mockCourierRepository, mockTrackingPort);
 
       const deliveryData2 = {
         ...deliveryData,
@@ -408,7 +407,7 @@ describe('DeliverySaga Integration Tests', () => {
 
   describe('error handling and edge cases', () => {
     it('should handle courier assignment failures gracefully', async () => {
-      mockCourierPort.findAvailableCouriers.mockRejectedValueOnce(new Error('Database connection failed'));
+      mockCourierRepository.findAvailableCouriers.mockRejectedValueOnce(new Error('Database connection failed'));
 
       await expect(deliverySaga.start(deliveryData)).rejects.toThrow('Database connection failed');
 

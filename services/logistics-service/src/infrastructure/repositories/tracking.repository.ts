@@ -1,23 +1,10 @@
-import { TrackingRepositoryPort } from '../../domain/engines/ports/tracking.port';
+import { ITrackingRepository, Tracking } from '../../domain/repositories';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 
-export interface TrackingEntity {
-  id: string;
-  deliveryId: string;
-  courierId: string;
-  location: GeoPoint;
-  speed: number;
-  heading: number;
-  timestamp: Date;
-  status: string;
-  batteryLevel?: number;
-  accuracy: number;
-}
+export class TrackingRepository implements ITrackingRepository {
+  constructor(private supabaseClient: any) { }
 
-export class TrackingRepository implements TrackingRepositoryPort {
-  constructor(private supabaseClient: any) {}
-
-  async save(tracking: TrackingEntity): Promise<void> {
+  async save(tracking: Tracking): Promise<void> {
     try {
       const trackingData = {
         id: tracking.id,
@@ -49,7 +36,7 @@ export class TrackingRepository implements TrackingRepositoryPort {
     }
   }
 
-  async findByDeliveryId(deliveryId: string): Promise<TrackingEntity[]> {
+  async findByDeliveryId(deliveryId: string): Promise<Tracking[]> {
     try {
       const { data: tracking, error } = await this.supabaseClient
         .from('tracking')
@@ -99,7 +86,7 @@ export class TrackingRepository implements TrackingRepositoryPort {
     }
   }
 
-  async findByCourierId(courierId: string, timeRange?: { start: Date; end: Date }): Promise<TrackingEntity[]> {
+  async findByCourierId(courierId: string, timeRange?: { start: Date; end: Date }): Promise<Tracking[]> {
     try {
       let query = this.supabaseClient
         .from('tracking')
@@ -157,7 +144,7 @@ export class TrackingRepository implements TrackingRepositoryPort {
     }
   }
 
-  async getLatestTracking(deliveryId: string): Promise<TrackingEntity | null> {
+  async getLatestTracking(deliveryId: string): Promise<Tracking | null> {
     try {
       const { data: track, error } = await this.supabaseClient
         .from('tracking')

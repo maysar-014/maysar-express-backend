@@ -1,31 +1,10 @@
-import { DeliveryRepositoryPort } from '../../domain/engines/ports/delivery.port';
+import { IDeliveryRepository, Delivery } from '../../domain/repositories';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 
-export interface DeliveryEntity {
-  id: string;
-  orderId: string;
-  courierId: string;
-  status: 'assigned' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled' | 'failed';
-  pickupLocation: GeoPoint;
-  deliveryLocation: GeoPoint;
-  estimatedPickupTime: Date;
-  actualPickupTime?: Date;
-  estimatedDeliveryTime: Date;
-  actualDeliveryTime?: Date;
-  weight: number;
-  priority: 'standard' | 'express' | 'urgent';
-  specialRequirements?: string[];
-  routeDistance: number;
-  routeDuration: number;
-  totalCost: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export class DeliveryRepository implements IDeliveryRepository {
+  constructor(private supabaseClient: any) { }
 
-export class DeliveryRepository implements DeliveryRepositoryPort {
-  constructor(private supabaseClient: any) {}
-
-  async save(delivery: DeliveryEntity): Promise<void> {
+  async save(delivery: Delivery): Promise<void> {
     try {
       console.log('🔍 DEBUG - Saving delivery to database:', delivery.id);
       console.log('🔍 DEBUG - Supabase client available:', !!this.supabaseClient);
@@ -77,7 +56,7 @@ export class DeliveryRepository implements DeliveryRepositoryPort {
     }
   }
 
-  async findById(id: string): Promise<DeliveryEntity | null> {
+  async findById(id: string): Promise<Delivery | null> {
     try {
       const { data: delivery, error } = await this.supabaseClient
         .from('deliveries')
@@ -153,7 +132,7 @@ export class DeliveryRepository implements DeliveryRepositoryPort {
     }
   }
 
-  async findByCourierId(courierId: string): Promise<DeliveryEntity[]> {
+  async findByCourierId(courierId: string): Promise<Delivery[]> {
     try {
       const { data: deliveries, error } = await this.supabaseClient
         .from('deliveries')
@@ -229,7 +208,7 @@ export class DeliveryRepository implements DeliveryRepositoryPort {
     }
   }
 
-  async findByStatus(status: string): Promise<DeliveryEntity[]> {
+  async findByStatus(status: string): Promise<Delivery[]> {
     try {
       const { data: deliveries, error } = await this.supabaseClient
         .from('deliveries')
@@ -305,7 +284,7 @@ export class DeliveryRepository implements DeliveryRepositoryPort {
     }
   }
 
-  async findAll(timeRange?: { start: Date; end: Date }): Promise<DeliveryEntity[]> {
+  async findAll(timeRange?: { start: Date; end: Date }): Promise<Delivery[]> {
     try {
       let query = this.supabaseClient
         .from('deliveries')
@@ -419,7 +398,7 @@ export class DeliveryRepository implements DeliveryRepositoryPort {
     }
   }
 
-  async findActiveDeliveries(): Promise<DeliveryEntity[]> {
+  async findActiveDeliveries(): Promise<Delivery[]> {
     try {
       const activeStatuses = ['assigned', 'picked_up', 'in_transit'];
 

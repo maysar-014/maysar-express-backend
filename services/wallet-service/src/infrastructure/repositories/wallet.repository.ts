@@ -13,7 +13,7 @@ export class WalletRepository implements IWalletRepository {
     async save(wallet: Wallet): Promise<void> {
         const props = wallet.toObject();
 
-        await this.prisma.wallet.create({
+        await this.prisma.wallet_Wallet.create({
             data: {
                 id: props.id,
                 userId: props.userId,
@@ -28,7 +28,7 @@ export class WalletRepository implements IWalletRepository {
     }
 
     async findById(id: string): Promise<Wallet | null> {
-        const wallet = await this.prisma.wallet.findUnique({
+        const wallet = await this.prisma.wallet_Wallet.findUnique({
             where: { id },
         });
 
@@ -36,7 +36,7 @@ export class WalletRepository implements IWalletRepository {
     }
 
     async findByUserId(userId: string): Promise<Wallet | null> {
-        const wallet = await this.prisma.wallet.findFirst({
+        const wallet = await this.prisma.wallet_Wallet.findFirst({
             where: { userId },
         });
 
@@ -46,7 +46,7 @@ export class WalletRepository implements IWalletRepository {
     async update(wallet: Wallet): Promise<void> {
         const props = wallet.toObject();
 
-        await this.prisma.wallet.update({
+        await this.prisma.wallet_Wallet.update({
             where: { id: props.id },
             data: {
                 balance: props.balance,
@@ -62,7 +62,7 @@ export class WalletRepository implements IWalletRepository {
         balanceChange: number,
         frozenAmountChange: number
     ): Promise<void> {
-        await this.prisma.wallet.update({
+        await this.prisma.wallet_Wallet.update({
             where: { id: walletId },
             data: {
                 balance: {
@@ -78,8 +78,9 @@ export class WalletRepository implements IWalletRepository {
 
     async lockForTransaction(walletId: string): Promise<Wallet> {
         // Use Prisma transaction with row-level locking
+        // Note: Table name in raw query must match DB table name exactly, which is mapped to "wallets"
         const wallet = await this.prisma.$queryRaw<any[]>`
-      SELECT * FROM "Wallet" WHERE id = ${walletId} FOR UPDATE
+      SELECT * FROM "wallets" WHERE id = ${walletId} FOR UPDATE
     `;
 
         if (!wallet || wallet.length === 0) {
@@ -90,7 +91,7 @@ export class WalletRepository implements IWalletRepository {
     }
 
     async getBalance(walletId: string): Promise<{ balance: number; frozenAmount: number }> {
-        const wallet = await this.prisma.wallet.findUnique({
+        const wallet = await this.prisma.wallet_Wallet.findUnique({
             where: { id: walletId },
             select: {
                 balance: true,

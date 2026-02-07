@@ -1,0 +1,60 @@
+sequenceDiagram
+    participant API as API Controller
+    participant UC as CreateDiscussionThreadUseCase
+    participant Policy as EngagementPolicy
+    participant Quota as EngagementQuotaRepo
+    participant Profile as BusinessProfileRepo
+    participant Thread as DiscussionThreadRepo
+    participant Engine as DiscussionMatchingEngine
+    participant Mod as ContentModerationPolicy
+    participant Events as EventPublisher
+
+    API->>UC: execute(CreateThreadRequest)
+    
+    Note over UC: Validate engagement quota
+    UC->>Profile: findByUserId(authorId)
+    Profile-->>UC: BusinessProfile
+    
+    UC->>Quota: findByUserAndType(userId, THREAD)
+    Quota-->>UC: EngagementQuota
+    
+    UC->>Policy: canCreateContent(quota, tier)
+    Policy-->>UC: {allowed: true/false}
+    
+    alt Quota exceeded
+        UC-->>API: Error: Quota exceeded
+    end
+    
+    Note over UC: Quality assessment
+    UC->>Mod: performFullAssessment(content, tier, expertise)
+    Mod-->>UC: {meetsThreshold: true, qualityScore, issues}
+    
+    alt Quality too low
+        UC-->>API: Error: Quality threshold not met
+    end
+    
+    Note over UC: Check for duplicates
+    UC->>Thread: findDuplicates(topic, authorId, 24h)
+    Thread-->>UC: Similar threads []
+    
+    alt Duplicate found
+        UC-->>API: Warning: Similar thread exists
+    end
+    
+    Note over UC: Create thread
+    UC->>Thread: save(discussionThread)
+    Thread-->>UC: Saved thread
+    
+    Note over UC: Match experts
+    UC->>Engine: findMatchingExperts(thread)
+    Engine-->>UC: Expert profiles []
+    
+    Note over UC: Consume quota
+    UC->>Quota: save(quota.consume())
+    Quota-->>UC: Updated quota
+    
+    Note over UC: Publish events
+    UC->>Events: publish(DiscussionThreadCreated)
+    UC->>Events: publish(ExpertsMatched)
+    
+    UC-->>API: {thread, matchedExperts, quotaRemaining}

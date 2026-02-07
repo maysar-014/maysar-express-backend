@@ -4,6 +4,11 @@
  * Enforces balance constraints and frozen amount handling
  */
 
+import { randomUUID } from 'crypto';
+import { Money } from '../value-objects/money.value-object';
+import { Hold, HoldStatus } from './hold.entity';
+
+
 export enum WalletStatus {
     ACTIVE = 'ACTIVE',
     FROZEN = 'FROZEN',
@@ -166,6 +171,67 @@ export class Wallet {
         if (this.props.frozenAmount < 0) {
             this.props.frozenAmount = 0;
         }
+    }
+
+
+
+    /**
+     * Place a hold on funds
+     */
+    placeHold(amount: Money, expiresAt: Date, reason: string): Hold {
+        this.freeze(amount.amount);
+
+        return new Hold({
+            id: randomUUID(), // Or passed in, typically entity generation happens in factory. Using randomUUID for now or we should pass it.
+            // Better to let caller/factory handle ID if we want pure deterministic. 
+            // But for convenience here:
+            walletId: this.id,
+            userId: this.userId,
+            amount: amount,
+            reason: reason,
+            status: HoldStatus.ACTIVE,
+            expiresAt: expiresAt,
+            isCaptured: false,
+            isReleased: false,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
+    }
+
+    /**
+     * Release a hold
+     */
+    releaseHold(hold: Hold): void {
+        if (hold.walletId !== this.id) {
+            throw new Error('Hold does not belong to this wallet');
+        }
+
+        hold.release();
+        this.unfreeze(hold.amount.amount);
+    }
+
+    /**
+     * Expire a hold
+     */
+    expireHold(hold: Hold): void {
+        if (hold.walletId !== this.id) {
+            throw new Error('Hold does not belong to this wallet');
+        }
+
+        hold.expire();
+        this.unfreeze(hold.amount.amount);
+    }
+
+    /**
+     * Capture a hold (convert to debit)
+     */
+    captureHold(hold: Hold): void {
+        if (hold.walletId !== this.id) {
+            throw new Error('Hold does not belong to this wallet');
+        }
+
+        hold.capture();
+        this.debitFrozen(hold.amount.amount);
     }
 
     /**

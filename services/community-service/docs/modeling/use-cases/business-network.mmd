@@ -1,0 +1,75 @@
+graph TB
+    subgraph "Business Network Actors"
+        User["Business User<br/>(Seller/Buyer/Supplier)"]
+        Expert["Domain Expert<br/>(Mentor/Thought Leader)"]
+        Newcomer["Newcomer<br/>(0-100 points)"]
+    end
+    
+    subgraph "Knowledge Sharing"
+        UC1["Ask Business Question"]
+        UC2["Answer Question"]
+        UC3["Accept Answer"]
+        UC4["Submit Knowledge Article"]
+        UC5["Peer Review Article"]
+        UC6["Publish Article"]
+    end
+    
+    subgraph "Problem Solving"
+        UC7["Propose Business Challenge"]
+        UC8["Submit Solution"]
+        UC9["Accept Solution"]
+        UC10["Collaborate on Challenge"]
+    end
+    
+    subgraph "Expertise Building"
+        UC11["Validate Expertise"]
+        UC12["Endorse Peer"]
+        UC13["Complete Training Module"]
+        UC14["Build Business Profile"]
+    end
+    
+    subgraph "Content Discovery"
+        UC15["Discover Personalized Content"]
+        UC16["View Recommendations"]
+        UC17["Track Learning Progress"]
+    end
+    
+    %% Knowledge Sharing flows
+    User --> UC1
+    User --> UC2
+    User --> UC3
+    User --> UC4
+    Expert --> UC2
+    Expert --> UC5
+    Expert --> UC6
+    
+    %% Problem Solving flows
+    User --> UC7
+    User --> UC8
+    User --> UC9
+    Expert --> UC8
+    Expert --> UC10
+    
+    %% Expertise Building flows
+    User --> UC11
+    User --> UC12
+    Expert --> UC12
+    User --> UC13
+    User --> UC14
+    
+    %% Discovery flows
+    Newcomer --> UC15
+    User --> UC15
+    User --> UC16
+    User --> UC17
+    
+    %% Relationships
+    UC1 -.->|requires| UC14
+    UC4 -.->|requires| UC11
+    UC5 -.->|requires| UC11
+    UC11 -.->|includes| UC13
+    UC11 -.->|includes| UC12
+    
+    style User fill:#e1f5e1
+    style Expert fill:#fff4e1
+    style Newcomer fill:#e1e5f5

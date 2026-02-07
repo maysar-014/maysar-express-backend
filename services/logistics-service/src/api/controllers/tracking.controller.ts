@@ -1,14 +1,13 @@
 import { Request, Response } from 'express';
 import { DependencyContainer } from '../../infrastructure/container';
-import { TrackingRepositoryPort } from '../../domain/engines/ports/tracking.port';
-import { DeliveryRepositoryPort } from '../../domain/engines/ports/delivery.port';
+import { ITrackingRepository, IDeliveryRepository } from '../../domain/repositories';
 
 export class TrackingController {
-  private get trackingRepository(): TrackingRepositoryPort {
+  private get trackingRepository(): ITrackingRepository {
     return DependencyContainer.getInstance().getTrackingRepository();
   }
 
-  private get deliveryRepository(): DeliveryRepositoryPort {
+  private get deliveryRepository(): IDeliveryRepository {
     return DependencyContainer.getInstance().getDeliveryRepository();
   }
 

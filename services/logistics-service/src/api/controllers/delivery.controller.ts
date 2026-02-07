@@ -3,16 +3,16 @@ import { validationResult } from 'express-validator';
 import { CreateDeliveryUseCase } from '../../application/use-cases/create-delivery.use-case';
 import { DependencyContainer } from '../../infrastructure/container';
 import { DeliveryDomainService } from '../../domain/services/delivery.domain-service';
-import { DeliveryRepositoryPort } from '../../domain/engines/ports/delivery.port';
+import { IDeliveryRepository, ICourierRepository } from '../../domain/repositories';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 import { Weight } from '../../domain/value-objects/weight.value-object';
-import { CourierEntity } from '../../domain/entities/courier.entity';
 import { RouteStatus } from '../../domain/enums/route-status.enum';
+import { CourierEntity } from '../../domain/entities/courier.entity';
 
 export class DeliveryController {
   private createDeliveryUseCase: CreateDeliveryUseCase | undefined;
   private deliveryDomainService: DeliveryDomainService | undefined;
-  private deliveryRepository: DeliveryRepositoryPort | undefined;
+  private deliveryRepository: IDeliveryRepository | undefined;
   private container: DependencyContainer;
 
   constructor() {

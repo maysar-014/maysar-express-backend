@@ -2,10 +2,15 @@ import { IWalletRepository } from '../../domain/repositories/wallet.repository';
 import { ITransactionRepository } from '../../domain/repositories/transaction.repository';
 import { Transaction, TransactionType } from '../../domain/entities/transaction.entity';
 
+import { AuditInfo, ActorType } from '../../domain/value-objects/audit-info.value-object';
+
 export interface FreezeFundsDTO {
     userId: string;
     amount: number;
     description: string;
+    reason?: string;
+    correlationId: string;
+    auditInfo: AuditInfo;
     metadata?: Record<string, any>;
 }
 
@@ -55,6 +60,11 @@ export class FreezeFundsUseCase {
                 description: dto.description,
                 metadata: dto.metadata,
                 createdAt: new Date(),
+                correlationId: dto.correlationId,
+                initiatedBy: dto.auditInfo.actor,
+                initiatedByType: dto.auditInfo.actorType,
+                reason: dto.reason || 'FUNDS_FREEZE',
+                isReversed: false
             });
 
             await this.transactionRepository.save(transaction);

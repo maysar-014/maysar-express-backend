@@ -1,6 +1,5 @@
-import { EventEnvelope } from '../../events';
+import { EventEnvelope, eventBus } from './eventBus';
 import { EventIdempotency } from '../middleware/idempotency';
-import { enhancedEventBus } from '../../src/events/eventBus';
 
 export interface IdempotentEventConsumer {
   name: string;
@@ -18,19 +17,23 @@ export class IdempotentEventBus {
     const wrappedConsumer = {
       name: consumer.name,
       handler: async (envelope: EventEnvelope) => {
-        await this.eventIdempotency.withIdempotency(
-          envelope.eventId,
-          consumer.name,
-          () => consumer.handler(envelope)
-        );
+        if (envelope.eventId) {
+          await this.eventIdempotency.withIdempotency(
+            envelope.eventId,
+            consumer.name,
+            () => consumer.handler(envelope)
+          );
+        } else {
+          await consumer.handler(envelope);
+        }
       }
     };
 
-    enhancedEventBus.subscribe(eventPattern, wrappedConsumer);
+    eventBus.subscribe(eventPattern, wrappedConsumer.handler);
   }
 
   async publish(envelope: EventEnvelope): Promise<void> {
-    return enhancedEventBus.publish(envelope);
+    return eventBus.publish(envelope.eventType, envelope.data, envelope.metadata);
   }
 }
 

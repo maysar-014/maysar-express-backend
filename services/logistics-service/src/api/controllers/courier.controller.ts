@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import { DependencyContainer } from '../../infrastructure/container';
-import { CourierRepositoryPort } from '../../domain/engines/ports/courier.port';
+import { ICourierRepository } from '../../domain/repositories';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 
 export class CourierController {
-  private get courierRepository(): CourierRepositoryPort {
+  private get courierRepository(): ICourierRepository {
     return DependencyContainer.getInstance().getCourierRepository();
   }
 

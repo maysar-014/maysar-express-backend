@@ -1,0 +1,38 @@
+# Enabler Service Business Guide
+
+## Overview
+
+The Enabler Service helps Maysar scale by incentivizing third parties to sell products.
+
+## Workflows
+
+### 1. Registration & Onboarding
+1.  User applies to be an Enabler.
+2.  System checks eligibility (EligibilityEngine).
+    *   Minimum experience
+    *   Business license (if applicable)
+3.  System assigns initial Tier (TierCalculationAlgorithm).
+4.  Admin approves or Reject (EnablerApprovalPolicy).
+
+### 2. Product Listing
+1.  Enabler browses "Hub" for eligible products.
+2.  Enabler "Lists" a product.
+3.  System creates `ProductListing`.
+4.  Enabler can set custom price (within Policy limits).
+
+### 3. Order Facilitation
+1.  Buyer purchases via Enabler's link.
+2.  System checks Inventory.
+3.  System creates `EnablerOrder`.
+4.  System calculates Commission (CommissionCalculationEngine).
+
+### 4. Settlement
+1.  Order is delivered and completed.
+2.  Protection period passes (CommissionProtectionPolicy).
+3.  System releases funds to Enabler and Seller (SettlementEngine).
+
+## Policies
+
+-   **Anti-Fraud**: High velocity orders or self-dealing are flagged.
+-   **Tier Upgrades**: Automatic upgrades based on quarterly performance.
+-   **Exclusivity**: Sellers can block specific Enablers or require approval.

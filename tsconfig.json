@@ -19,11 +19,14 @@
             "@shared/*": [
                 "shared/*"
             ],
-            "@events/*": [
+            "@shared-events/*": [
                 "shared/events/*"
             ],
+            "@events/*": [
+                "events/*"
+            ],
             "@config/*": [
-                "config/*"
+                "src/config/*"
             ],
             "@modules/*": [
                 "services/*"
@@ -51,6 +54,9 @@
             ],
             "@commission/*": [
                 "services/commission-service/src/*"
+            ],
+            "@compliance/*": [
+                "services/compliance-service/src/*"
             ],
             "@community/*": [
                 "services/community-service/src/*"

@@ -7,7 +7,7 @@ async function bootstrap() {
     const app = createServer(container);
 
     app.listen(PORT, () => {
-        console.log(`✅ Training Service started on port ${PORT}`);
+        console.log(`✅ Campaign Service started on port ${PORT}`);
     });
 }
 

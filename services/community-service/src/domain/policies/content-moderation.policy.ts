@@ -228,4 +228,121 @@ export class ContentModerationPolicy {
       PostType.PROMOTION
     ].includes(postType);
   }
+
+  /**
+   * Performs comprehensive content assessment for business-focused community
+   */
+  static performFullAssessment(params: {
+    contentType: string;
+    content: any;
+    userTier: string;
+    userExpertise: Array<{ area: string; level: any }>;
+  }): {
+    meetsQualityThreshold: boolean;
+    qualityScore: number;
+    issues: string[];
+  } {
+    const issues: string[] = [];
+    let baseScore = 70;
+
+    // Business value assessment
+    const businessValue = this.assessBusinessValue(params.content);
+    if (businessValue < 50) {
+      issues.push('Content lacks sufficient business value');
+      baseScore -= 20;
+    }
+
+    // Context validation
+    if (params.content.businessContext) {
+      const contextValidation = this.validateBusinessContext(params.content.businessContext);
+      if (!contextValidation.valid) {
+        issues.push(...contextValidation.errors);
+        baseScore -= 15;
+      }
+    }
+
+    // Structure validation
+    const structureValidation = this.validateStructuredFormat(params.contentType, params.content);
+    if (!structureValidation.valid) {
+      issues.push(...structureValidation.errors);
+      baseScore -= 15;
+    }
+
+    // Minimum threshold based on user tier
+    const threshold = params.userTier === 'NEWCOMER' ? 60 : 50;
+
+    return {
+      meetsQualityThreshold: baseScore >= threshold && issues.length < 3,
+      qualityScore: Math.max(0, baseScore),
+      issues,
+    };
+  }
+
+  /**
+   * Assesses business value of content
+   */
+  private static assessBusinessValue(content: any): number {
+    let score = 50; // Base score
+
+    const contentString = JSON.stringify(content).toLowerCase();
+    const businessTerms = ['revenue', 'customer', 'market', 'strategy', 'supply chain', 'logistics', 'business', 'operations'];
+    const matchCount = businessTerms.filter(term => contentString.includes(term)).length;
+
+    score += matchCount * 10;
+
+    return Math.min(100, score);
+  }
+
+  /**
+   * Validates business context
+   */
+  static validateBusinessContext(context: any): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    if (!context.industry || (Array.isArray(context.industry) && context.industry.length === 0)) {
+      errors.push('Industry context is required');
+    }
+
+    if (!context.tags || (Array.isArray(context.tags) && context.tags.length === 0)) {
+      errors.push('Tags are required for discoverability');
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+    };
+  }
+
+  /**
+   * Validates structured format
+   */
+  static validateStructuredFormat(contentType: string, content: any): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    if (contentType === 'THREAD' || contentType === 'CHALLENGE') {
+      if (!content.topic && !content.title) {
+        errors.push('Title or topic is required');
+      }
+      if (!content.content && !content.description) {
+        errors.push('Content or description is required');
+      }
+      if (!content.category) {
+        errors.push('Category is required for organization');
+      }
+    }
+
+    if (contentType === 'ARTICLE') {
+      if (!content.content || content.content.length < 200) {
+        errors.push('Article content must be at least 200 characters');
+      }
+      if (!content.category) {
+        errors.push('Category is required');
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+    };
+  }
 }

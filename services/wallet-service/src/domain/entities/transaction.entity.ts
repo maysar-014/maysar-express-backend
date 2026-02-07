@@ -1,3 +1,7 @@
+import { Money } from '../value-objects/money.value-object';
+import { IdempotencyKey } from '../value-objects/idempotency-key.value-object';
+import { AuditInfo, ActorType } from '../value-objects/audit-info.value-object';
+
 /**
  * Transaction Entity
  * Immutable append-only ledger entry for wallet transactions
@@ -35,6 +39,15 @@ export interface TransactionProps {
     description: string;
     metadata?: Record<string, any>;
     createdAt: Date;
+    // New fields
+    correlationId: string;
+    idempotencyKey?: string;
+    initiatedBy: string;
+    initiatedByType: ActorType;
+    reason: string;
+    reversalTransactionId?: string;
+    isReversed: boolean;
+    expiresAt?: Date;
 }
 
 export class Transaction {
@@ -112,6 +125,38 @@ export class Transaction {
         return this.props.currency;
     }
 
+    get correlationId(): string {
+        return this.props.correlationId;
+    }
+
+    get idempotencyKey(): string | undefined {
+        return this.props.idempotencyKey;
+    }
+
+    get initiatedBy(): string {
+        return this.props.initiatedBy;
+    }
+
+    get initiatedByType(): ActorType {
+        return this.props.initiatedByType;
+    }
+
+    get reason(): string {
+        return this.props.reason;
+    }
+
+    get reversalTransactionId(): string | undefined {
+        return this.props.reversalTransactionId;
+    }
+
+    get isReversed(): boolean {
+        return this.props.isReversed;
+    }
+
+    get expiresAt(): Date | undefined {
+        return this.props.expiresAt;
+    }
+
     get referenceType(): string | undefined {
         return this.props.referenceType;
     }
@@ -136,6 +181,33 @@ export class Transaction {
         ];
 
         return reversibleTypes.includes(this.props.type);
+    }
+
+    /**
+     * Check if hold has expired
+     */
+    isExpired(): boolean {
+        if (!this.props.expiresAt) return false;
+        return new Date() > this.props.expiresAt;
+    }
+
+    /**
+     * Get audit trail info
+     */
+    getAuditTrail(): AuditInfo {
+        // Reconstruct audit info from props
+        // Ideally this would be stored as a value object, but we are flattening for database
+        // Here we reconstruct it for domain logic if needed
+        return Object.assign(Object.create(AuditInfo.prototype), {
+            props: {
+                actor: this.props.initiatedBy,
+                actorType: this.props.initiatedByType,
+                action: this.props.type,
+                reason: this.props.reason,
+                timestamp: this.props.createdAt,
+                metadata: this.props.metadata
+            }
+        });
     }
 
     /**
@@ -166,6 +238,12 @@ export class Transaction {
                 reversalReason: reason,
             },
             createdAt: new Date(),
+            correlationId: this.props.correlationId, // Propagate correlation ID
+            initiatedBy: this.props.initiatedBy, // Or current user? Typically same actor, or admin
+            initiatedByType: this.props.initiatedByType,
+            reason: `REVERSAL_OF_${this.props.id}`,
+            isReversed: false, // Usage of this flag on a reversal transaction itself? Usually false.
+            reversalTransactionId: undefined, // This is the reversal, not reversed by another
         };
 
         return new Transaction(reversalProps);
@@ -321,6 +399,23 @@ export class Transaction {
 
         if (!props.description || props.description.trim() === '') {
             throw new Error('Transaction description is required');
+        }
+
+        // New field validation
+        if (!props.correlationId || props.correlationId.trim() === '') {
+            throw new Error('Correlation ID is required');
+        }
+
+        if (!props.initiatedBy || props.initiatedBy.trim() === '') {
+            throw new Error('Initiated By is required');
+        }
+
+        if (!props.initiatedByType) {
+            throw new Error('Initiated By Type is required');
+        }
+
+        if (!props.reason || props.reason.trim() === '') {
+            throw new Error('Reason is required');
         }
     }
 

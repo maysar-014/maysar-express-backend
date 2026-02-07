@@ -5,7 +5,7 @@
  * Constitution Section 8: Infrastructure Isolation Rule - Infrastructure adapts to Domain
  */
 
-import { CourierRepositoryPort } from '../../../domain/engines/ports/courier.port';
+import { ICourierRepository } from '../../../domain/repositories';
 import { CourierEntity } from '../../../domain/entities/courier.entity';
 import { GeoPoint } from '../../../domain/value-objects/geopoint.value-object';
 
@@ -47,7 +47,7 @@ import { CourierRepository } from '../../../infrastructure/repositories/courier.
 
 describe('CourierRepository Integration Tests', () => {
   let courierRepository: CourierRepository;
-  let mockRepo: jest.Mocked<CourierRepositoryPort>;
+  let mockRepo: jest.Mocked<ICourierRepository>;
 
   // Test data
   const testCourier = CourierEntity.create({
@@ -66,7 +66,6 @@ describe('CourierRepository Integration Tests', () => {
     completionRate: 0.97,
     currentLocation: GeoPoint.create(-6.8, 39.25, 'Test Location'),
     isAvailable: true,
-    estimatedArrivalTime: 10,
     trafficExperience: 0.8
   });
 

@@ -1,1 +1,19 @@
-export const TYPES = { PrismaClient: Symbol.for('PrismaClient'), EventBus: Symbol.for('EventBus') };
+export const TYPES = {
+    PrismaClient: Symbol.for('PrismaClient'),
+    EventBus: Symbol.for('EventBus'),
+    CampaignRepository: Symbol.for('CampaignRepository'),
+    CreateCampaignUseCase: Symbol.for('CreateCampaignUseCase'),
+    ScheduleCampaignUseCase: Symbol.for('ScheduleCampaignUseCase'),
+    LaunchCampaignUseCase: Symbol.for('LaunchCampaignUseCase'),
+    PauseCampaignUseCase: Symbol.for('PauseCampaignUseCase'),
+    ResumeCampaignUseCase: Symbol.for('ResumeCampaignUseCase'),
+    CancelCampaignUseCase: Symbol.for('CancelCampaignUseCase'),
+    CompleteCampaignUseCase: Symbol.for('CompleteCampaignUseCase'),
+    GetCampaignUseCase: Symbol.for('GetCampaignUseCase'),
+    ListCampaignsUseCase: Symbol.for('ListCampaignsUseCase'),
+    UpdateCampaignUseCase: Symbol.for('UpdateCampaignUseCase'),
+    CampaignController: Symbol.for('CampaignController'),
+    EventPublisher: Symbol.for('EventPublisher'),
+    ProductDeletedHandler: Symbol.for('ProductDeletedHandler'),
+    CategoryDeletedHandler: Symbol.for('CategoryDeletedHandler'),
+};

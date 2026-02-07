@@ -7,10 +7,31 @@ import { DebitWalletUseCase } from './application/use-cases/debit-wallet.use-cas
 import { FreezeFundsUseCase } from './application/use-cases/freeze-funds.use-case';
 import { UnfreezeFundsUseCase } from './application/use-cases/unfreeze-funds.use-case';
 import { WalletEngine } from './domain/engines/wallet.engine';
+import { LimitPolicy } from './domain/policies/wallet-limit.policy';
+import { VelocityCheckPolicy } from './domain/policies/velocity-check.policy';
 import { OutboxRepository } from './infrastructure/messaging/outbox.repository';
 import { RabbitMQEventBus } from './infrastructure/messaging/rabbitmq.event-bus';
+import { KafkaEventBus } from './infrastructure/messaging/kafka.event-bus';
 import { OutboxProcessor } from './infrastructure/messaging/outbox-processor';
 import { IEventBus } from './infrastructure/messaging/event-bus.interface';
+import { IdempotencyRepository } from './infrastructure/repositories/idempotency.repository';
+import { HoldRepository } from './infrastructure/repositories/hold.repository';
+import { AuditLogRepository } from './infrastructure/repositories/audit-log.repository';
+import { IdempotencyService } from './application/services/idempotency.service';
+import { VelocityCheckService } from './application/services/velocity-check.service';
+import { PlaceHoldUseCase } from './application/use-cases/place-hold.use-case';
+import { ReleaseHoldUseCase } from './application/use-cases/release-hold.use-case';
+import { CaptureHoldUseCase } from './application/use-cases/capture-hold.use-case';
+import { ReverseTransactionUseCase } from './application/use-cases/reverse-transaction.use-case';
+import { GetWalletStatementUseCase } from './application/use-cases/get-wallet-statement.use-case';
+import { ExpireHoldUseCase } from './application/use-cases/expire-hold.use-case';
+import { HoldExpiryJob } from './application/jobs/hold-expiry.job';
+import { WalletEventPublisher } from './infrastructure/messaging/wallet-event-publisher';
+import { walletConfig } from './config/wallet.config';
+import { NotificationAdapter } from './infrastructure/adapters/notification.adapter';
+import { PaymentServiceClient } from './infrastructure/clients/payment-service.client';
+import { TopUpWalletUseCase } from './application/use-cases/top-up-wallet.use-case';
+import { PaymentCompletedHandler } from './infrastructure/messaging/payment-completed.handler';
 
 export class Container {
     private static instance: Container;
@@ -18,20 +39,95 @@ export class Container {
     public readonly walletController: WalletController;
     public readonly eventBus: IEventBus;
     public readonly outboxProcessor: OutboxProcessor;
+    public readonly holdExpiryJob: HoldExpiryJob;
 
     private constructor() {
         this.prisma = new PrismaClient();
         const walletRepository = new WalletRepository(this.prisma);
         const transactionRepository = new TransactionRepository(this.prisma);
+        const idempotencyRepository = new IdempotencyRepository(this.prisma);
+        const holdRepository = new HoldRepository(this.prisma);
+        const auditLogRepository = new AuditLogRepository(this.prisma);
+
         const walletEngine = new WalletEngine();
 
-        const creditUseCase = new CreditWalletUseCase(walletRepository, transactionRepository);
-        const debitUseCase = new DebitWalletUseCase(walletRepository, transactionRepository, walletEngine);
+        // Services
+        const idempotencyService = new IdempotencyService(idempotencyRepository);
+        const velocityCheckPolicy = new VelocityCheckPolicy(walletConfig.velocity);
+        const velocityCheckService = new VelocityCheckService(velocityCheckPolicy, transactionRepository);
+        this.eventBus = new KafkaEventBus(); // Unified with payment-service
+        const eventPublisher = new WalletEventPublisher(this.eventBus);
+        const notificationAdapter = new NotificationAdapter();
+
+        const paymentServiceClient = new PaymentServiceClient(process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3003');
+
+        // Use Cases
+        const creditUseCase = new CreditWalletUseCase(
+            walletRepository,
+            transactionRepository,
+            idempotencyService,
+            eventPublisher,
+            auditLogRepository
+        );
+
+        const limitPolicy = new LimitPolicy(walletConfig.limits);
+
+        const debitUseCase = new DebitWalletUseCase(
+            walletRepository,
+            transactionRepository,
+            walletEngine,
+            limitPolicy,
+            velocityCheckService,
+            idempotencyService,
+            eventPublisher,
+            auditLogRepository
+        );
+
         const freezeUseCase = new FreezeFundsUseCase(walletRepository, transactionRepository);
         const unfreezeUseCase = new UnfreezeFundsUseCase(walletRepository, transactionRepository);
 
+        const placeHoldUseCase = new PlaceHoldUseCase(
+            walletRepository,
+            holdRepository,
+            idempotencyService,
+            eventPublisher
+        );
+
+        const releaseHoldUseCase = new ReleaseHoldUseCase(
+            walletRepository,
+            holdRepository,
+            idempotencyService,
+            eventPublisher
+        );
+
+        const captureHoldUseCase = new CaptureHoldUseCase(
+            walletRepository,
+            holdRepository,
+            transactionRepository,
+            idempotencyService,
+            eventPublisher
+        );
+
+        const reverseTransactionUseCase = new ReverseTransactionUseCase(
+            walletRepository,
+            transactionRepository,
+            idempotencyService,
+            eventPublisher,
+            auditLogRepository
+        );
+
+        const getStatementUseCase = new GetWalletStatementUseCase(transactionRepository);
+        const expireHoldUseCase = new ExpireHoldUseCase(walletRepository, holdRepository, eventPublisher);
+        const topUpUseCase = new TopUpWalletUseCase(paymentServiceClient);
+
+        // Event Handlers
+        const paymentCompletedHandler = new PaymentCompletedHandler(creditUseCase);
+        this.eventBus.subscribe('PaymentCompleted', paymentCompletedHandler.handle.bind(paymentCompletedHandler));
+
+        // Jobs
+        this.holdExpiryJob = new HoldExpiryJob(holdRepository, expireHoldUseCase);
+
         const outboxRepository = new OutboxRepository(this.prisma);
-        this.eventBus = new RabbitMQEventBus(); // Defaulting to RabbitMQ based on availability
         this.outboxProcessor = new OutboxProcessor(outboxRepository, this.eventBus);
 
         this.walletController = new WalletController(
@@ -39,6 +135,12 @@ export class Container {
             debitUseCase,
             freezeUseCase,
             unfreezeUseCase,
+            placeHoldUseCase,
+            releaseHoldUseCase,
+            captureHoldUseCase,
+            reverseTransactionUseCase,
+            getStatementUseCase,
+            topUpUseCase,
             walletRepository
         );
     }

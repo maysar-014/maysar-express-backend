@@ -1,11 +1,11 @@
-import { RouteRepositoryPort } from '../../domain/engines/ports/route.port';
+import { IRouteRepository } from '../../domain/repositories';
 import { Route } from '../../domain/entities/route.entity';
 import { RouteStatus } from '../../domain/enums/route-status.enum';
 import { RouteProgress } from '../../domain/value-objects/route-progress.value-object';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 
-export class RouteRepository implements RouteRepositoryPort {
-  constructor(private supabaseClient: any) {}
+export class RouteRepository implements IRouteRepository {
+  constructor(private supabaseClient: any) { }
 
   async save(route: Route): Promise<void> {
     try {

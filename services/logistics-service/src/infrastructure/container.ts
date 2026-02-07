@@ -3,10 +3,10 @@ import { DeliveryRepository } from './repositories/delivery.repository';
 import { EarningsRepository } from './repositories/earnings.repository';
 import { RouteRepository } from './repositories/route.repository';
 import { TrackingRepository } from './repositories/tracking.repository';
-import { WeatherProviderAdapter } from './providers/weather-provider.adapter';
-import { TrafficProviderAdapter } from './providers/traffic-provider.adapter';
-import { HereRouteAdapter } from './providers/here-route.adapter';
-import { RealTimeTrackingAdapter } from './providers/real-time-tracking.adapter';
+import { MapsWeatherBridge } from './providers/maps-weather.bridge';
+import { MapsTrafficBridge } from './providers/maps-traffic.bridge';
+import { MapsRoutingBridge } from './providers/maps-routing.bridge';
+import { MapsTrackingBridge } from './providers/maps-tracking.bridge';
 import { EventPublisher } from './messaging/event-publisher';
 import { SupabaseClientManager } from './database/supabase.client';
 
@@ -27,12 +27,13 @@ import { UpdateDeliveryStatusUseCase } from '../application/use-cases/update-del
 import { DeliverySaga } from '../application/sagas/delivery.saga';
 import { SagaRegistry } from '../application/sagas/saga-registry';
 
-// Ports
-import { CourierRepositoryPort } from '../domain/engines/ports/courier.port';
-import { DeliveryRepositoryPort } from '../domain/engines/ports/delivery.port';
-import { EarningsRepositoryPort } from '../domain/engines/ports/earnings.port';
-import { RouteRepositoryPort } from '../domain/engines/ports/route.port';
-import { TrackingRepositoryPort } from '../domain/engines/ports/tracking.port';
+import {
+  ICourierRepository,
+  IDeliveryRepository,
+  IEarningsRepository,
+  IRouteRepository,
+  ITrackingRepository
+} from '../domain/repositories';
 import { WeatherServicePort } from '../domain/engines/ports/weather.port';
 import { TrafficServicePort } from '../domain/engines/ports/traffic.port';
 import { RouteOptimizationPort } from '../domain/engines/ports/route-optimization.port';
@@ -43,11 +44,11 @@ export class DependencyContainer {
   private static instance: DependencyContainer;
 
   // Infrastructure adapters (singletons)
-  private courierRepository!: CourierRepositoryPort;
-  private deliveryRepository!: DeliveryRepositoryPort;
-  private earningsRepository!: EarningsRepositoryPort;
-  private routeRepository!: RouteRepositoryPort;
-  private trackingRepository!: TrackingRepositoryPort;
+  private courierRepository!: ICourierRepository;
+  private deliveryRepository!: IDeliveryRepository;
+  private earningsRepository!: IEarningsRepository;
+  private routeRepository!: IRouteRepository;
+  private trackingRepository!: ITrackingRepository;
   private weatherProvider!: WeatherServicePort;
   private trafficProvider!: TrafficServicePort;
   private routeOptimizationProvider!: RouteOptimizationPort;
@@ -94,10 +95,10 @@ export class DependencyContainer {
     this.earningsRepository = new EarningsRepository(supabaseClient);
     this.routeRepository = new RouteRepository(supabaseClient);
     this.trackingRepository = new TrackingRepository(supabaseClient);
-    this.weatherProvider = new WeatherProviderAdapter(process.env.OPENWEATHER_API_KEY || '');
-    this.trafficProvider = new TrafficProviderAdapter(process.env.GOOGLE_MAPS_API_KEY || '');
-    this.routeOptimizationProvider = new HereRouteAdapter(process.env.HERE_API_KEY || '', 10000);
-    this.trackingProvider = new RealTimeTrackingAdapter(process.env.FIREBASE_API_KEY || '');
+    this.weatherProvider = new MapsWeatherBridge();
+    this.trafficProvider = new MapsTrafficBridge();
+    this.routeOptimizationProvider = new MapsRoutingBridge();
+    this.trackingProvider = new MapsTrackingBridge();
     this.eventPublisher = new EventPublisher(true); // Enable event store
   }
 
@@ -128,11 +129,11 @@ export class DependencyContainer {
     this.routeRepository = new RouteRepository(supabaseClient);
     this.trackingRepository = new TrackingRepository(supabaseClient);
 
-    // Initialize other infrastructure components
-    this.weatherProvider = new WeatherProviderAdapter(process.env.OPENWEATHER_API_KEY || '');
-    this.trafficProvider = new TrafficProviderAdapter(process.env.GOOGLE_MAPS_API_KEY || '');
-    this.routeOptimizationProvider = new HereRouteAdapter(process.env.HERE_API_KEY || '', 10000);
-    this.trackingProvider = new RealTimeTrackingAdapter(process.env.FIREBASE_API_KEY || '');
+    // Initialize other infrastructure components (now using Maps Service bridges)
+    this.weatherProvider = new MapsWeatherBridge();
+    this.trafficProvider = new MapsTrafficBridge();
+    this.routeOptimizationProvider = new MapsRoutingBridge();
+    this.trackingProvider = new MapsTrackingBridge();
     this.eventPublisher = new EventPublisher(true); // Enable event store
 
     // Initialize domain services that depend on infrastructure
@@ -198,23 +199,23 @@ export class DependencyContainer {
   }
 
   // Getters for infrastructure adapters
-  public getCourierRepository(): CourierRepositoryPort {
+  public getCourierRepository(): ICourierRepository {
     return this.courierRepository;
   }
 
-  public getDeliveryRepository(): DeliveryRepositoryPort {
+  public getDeliveryRepository(): IDeliveryRepository {
     return this.deliveryRepository;
   }
 
-  public getEarningsRepository(): EarningsRepositoryPort {
+  public getEarningsRepository(): IEarningsRepository {
     return this.earningsRepository;
   }
 
-  public getRouteRepository(): RouteRepositoryPort {
+  public getRouteRepository(): IRouteRepository {
     return this.routeRepository;
   }
 
-  public getTrackingRepository(): TrackingRepositoryPort {
+  public getTrackingRepository(): ITrackingRepository {
     return this.trackingRepository;
   }
 
@@ -343,7 +344,7 @@ export class DependencyContainer {
   }
 
   // Configuration methods for testing
-  public setCourierRepository(repository: CourierRepositoryPort): void {
+  public setCourierRepository(repository: ICourierRepository): void {
     this.courierRepository = repository;
     // Re-initialize dependent services
     this.initializeDomain();

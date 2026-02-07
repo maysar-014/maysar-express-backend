@@ -1,0 +1,38 @@
+stateDiagram-v2
+    [*] --> DRAFT
+    
+    DRAFT --> PENDING_REVIEW : submit() [requiresPeerReview]
+    DRAFT --> PUBLISHED : submit() [autoPublish]
+    DRAFT --> [*] : delete()
+    
+    PENDING_REVIEW --> PUBLISHED : approved() [peerReviewPassed]
+    PENDING_REVIEW --> REJECTED : rejected() [qualityIssues]
+    PENDING_REVIEW --> DRAFT : returnForRevision()
+    
+    REJECTED --> DRAFT : revise()
+    REJECTED --> [*] : delete()
+    
+    PUBLISHED --> PUBLISHED : updateVersion()
+    PUBLISHED --> [*] : delete()
+    
+    note right of DRAFT
+        Author editing content.
+        Not visible to community.
+    end note
+    
+    note right of PENDING_REVIEW
+        Awaiting peer review.
+        Requires 2-3 Expert/Mentor reviews.
+        Based on reputation tier.
+    end note
+    
+    note right of PUBLISHED
+        Publicly visible.
+        Can be linked to training modules.
+        Versioned for updates.
+    end note
+    
+    note right of REJECTED
+        Failed peer review.
+        Author can revise and resubmit.
+    end note

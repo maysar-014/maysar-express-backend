@@ -1,10 +1,10 @@
-import { CourierRepositoryPort, CourierEntity } from '../../domain/engines/ports/courier.port';
+import { ICourierRepository, Courier } from '../../domain/repositories';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 
-export class CourierRepository implements CourierRepositoryPort {
-  constructor(private supabaseClient: any) {}
+export class CourierRepository implements ICourierRepository {
+  constructor(private supabaseClient: any) { }
 
-  async findAvailableCouriers(location: GeoPoint, radius: number): Promise<CourierEntity[]> {
+  async findAvailableCouriers(location: GeoPoint, radius: number): Promise<Courier[]> {
     try {
       const coords = location.getCoordinates();
 
@@ -99,7 +99,7 @@ export class CourierRepository implements CourierRepositoryPort {
     }
   }
 
-  async findAvailable(): Promise<CourierEntity[]> {
+  async findAvailable(): Promise<Courier[]> {
     try {
       const { data: couriers, error } = await this.supabaseClient
         .from('couriers')
@@ -162,7 +162,7 @@ export class CourierRepository implements CourierRepositoryPort {
     }
   }
 
-  async findById(courierId: string): Promise<CourierEntity | null> {
+  async findById(courierId: string): Promise<Courier | null> {
     try {
       const { data: courier, error } = await this.supabaseClient
         .from('couriers')
@@ -274,7 +274,7 @@ export class CourierRepository implements CourierRepositoryPort {
     }
   }
 
-  async getCourierById(courierId: string): Promise<CourierEntity> {
+  async getCourierById(courierId: string): Promise<Courier> {
     try {
       const { data: courier, error } = await this.supabaseClient
         .from('couriers')

@@ -1,4 +1,4 @@
-import { DeliveryRepositoryPort } from '../../domain/engines/ports/delivery.port';
+import { IDeliveryRepository } from '../../domain/repositories';
 
 export type DeliveryStatus = 'assigned' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled' | 'failed';
 
@@ -35,8 +35,8 @@ export interface UpdateDeliveryStatusOutput {
 
 export class UpdateDeliveryStatusUseCase {
   constructor(
-    private deliveryRepository: DeliveryRepositoryPort
-  ) {}
+    private deliveryRepository: IDeliveryRepository
+  ) { }
 
   async execute(input: UpdateDeliveryStatusInput): Promise<UpdateDeliveryStatusOutput> {
     // Get current delivery

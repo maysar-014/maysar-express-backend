@@ -1,96 +1,152 @@
-import { IWalletRepository } from '../../domain/repositories/wallet.repository';
-import { ITransactionRepository } from '../../domain/repositories/transaction.repository';
-import { Wallet, WalletStatus } from '../../domain/entities/wallet.entity';
-import { Transaction, TransactionType } from '../../domain/entities/transaction.entity';
+import { CreditWalletUseCase, CreditWalletDTO } from '../use-cases/credit-wallet.use-case';
+import { DebitWalletUseCase, DebitWalletDTO } from '../use-cases/debit-wallet.use-case';
+import { PlaceHoldUseCase, PlaceHoldDTO } from '../use-cases/place-hold.use-case';
+import { ReleaseHoldUseCase, ReleaseHoldDTO } from '../use-cases/release-hold.use-case';
+import { ReverseTransactionUseCase, ReverseTransactionDTO } from '../use-cases/reverse-transaction.use-case';
+import { AuditInfo } from '../../domain/value-objects/audit-info.value-object';
 
 export interface WalletSagaState {
     transactionId: string;
     userId: string;
     amount: number;
-    type: 'CREDIT' | 'DEBIT' | 'FREEZE' | 'UNFREEZE';
-    status: 'INITIATED' | 'VALIDATED' | 'EXECUTED' | 'RECORDED' | 'COMPLETED' | 'FAILED';
+    currency: string;
+    type: 'CREDIT' | 'DEBIT' | 'HOLD' | 'RELEASE_HOLD';
+    status: 'INITIATED' | 'COMPLETED' | 'FAILED' | 'COMPENSATED';
     error?: string;
-    compensationSteps: string[];
+    compensationSteps: Array<{
+        type: 'REVERSE_TRANSACTION' | 'RELEASE_HOLD';
+        payload: any;
+    }>;
+    idempotencyKey: string;
+    correlationId: string;
+    auditInfo: AuditInfo;
+    // Context properties
+    holdId?: string;
+    reason?: string;
+    metadata?: Record<string, any>;
 }
 
 export class WalletTransactionSaga {
     constructor(
-        private readonly walletRepository: IWalletRepository,
-        private readonly transactionRepository: ITransactionRepository,
-        private readonly eventBus: any
+        private readonly creditWalletUseCase: CreditWalletUseCase,
+        private readonly debitWalletUseCase: DebitWalletUseCase,
+        private readonly placeHoldUseCase: PlaceHoldUseCase,
+        private readonly releaseHoldUseCase: ReleaseHoldUseCase,
+        private readonly reverseTransactionUseCase: ReverseTransactionUseCase
     ) { }
 
     async execute(state: WalletSagaState): Promise<void> {
         try {
             state.status = 'INITIATED';
 
-            // 1. Validate wallet status and balance
-            const wallet = await this.walletRepository.findByUserId(state.userId);
-            if (!wallet) {
-                throw new Error(`Wallet not found for user: ${state.userId}`);
-            }
-
-            const balanceBefore = wallet.balance;
-            const frozenBefore = wallet.frozenAmount;
-
-            // 2. Perform operation and append compensation steps
             switch (state.type) {
                 case 'CREDIT':
-                    wallet.credit(state.amount);
-                    state.compensationSteps.push('DEBIT');
+                    const creditDto: CreditWalletDTO = {
+                        userId: state.userId,
+                        amount: state.amount,
+                        currency: state.currency,
+                        description: state.reason || 'Saga Credit',
+                        metadata: state.metadata,
+                        idempotencyKey: state.idempotencyKey,
+                        correlationId: state.correlationId,
+                        auditInfo: state.auditInfo
+                    };
+                    const creditResult = await this.creditWalletUseCase.execute(creditDto);
+
+                    state.compensationSteps.push({
+                        type: 'REVERSE_TRANSACTION',
+                        payload: {
+                            transactionId: creditResult.transactionId,
+                            reason: 'Compensation for Credit',
+                            idempotencyKey: `${state.idempotencyKey}_comp`,
+                            correlationId: state.correlationId,
+                            auditInfo: state.auditInfo
+                        } as ReverseTransactionDTO
+                    });
                     break;
+
                 case 'DEBIT':
-                    if (!wallet.canDebit(state.amount)) {
-                        throw new Error('Insufficient available balance');
+                    const debitDto: DebitWalletDTO = {
+                        userId: state.userId,
+                        amount: state.amount,
+                        currency: state.currency,
+                        description: state.reason || 'Saga Debit',
+                        metadata: state.metadata,
+                        idempotencyKey: state.idempotencyKey,
+                        correlationId: state.correlationId,
+                        auditInfo: state.auditInfo
+                    };
+                    const debitResult = await this.debitWalletUseCase.execute(debitDto);
+                    if (!debitResult.success) {
+                        throw new Error(debitResult.message);
                     }
-                    wallet.debit(state.amount);
-                    state.compensationSteps.push('CREDIT');
+
+                    state.compensationSteps.push({
+                        type: 'REVERSE_TRANSACTION',
+                        payload: {
+                            transactionId: debitResult.transactionId,
+                            reason: 'Compensation for Debit',
+                            idempotencyKey: `${state.idempotencyKey}_comp`,
+                            correlationId: state.correlationId,
+                            auditInfo: state.auditInfo
+                        } as ReverseTransactionDTO
+                    });
                     break;
-                case 'FREEZE':
-                    wallet.freeze(state.amount);
-                    state.compensationSteps.push('UNFREEZE');
+
+                case 'HOLD':
+                    const holdDto: PlaceHoldDTO = {
+                        userId: state.userId,
+                        amount: state.amount,
+                        currency: state.currency,
+                        reason: state.reason || 'Saga Hold',
+                        expiresInSeconds: 3600, // Default 1 hour? Should be in state
+                        idempotencyKey: state.idempotencyKey,
+                        auditInfo: state.auditInfo
+                    };
+                    const holdResult = await this.placeHoldUseCase.execute(holdDto);
+                    state.holdId = holdResult.holdId;
+
+                    state.compensationSteps.push({
+                        type: 'RELEASE_HOLD',
+                        payload: {
+                            holdId: holdResult.holdId,
+                            userId: state.userId,
+                            reason: 'Compensation for Hold',
+                            idempotencyKey: `${state.idempotencyKey}_comp`,
+                            auditInfo: state.auditInfo
+                        } as ReleaseHoldDTO
+                    });
                     break;
-                case 'UNFREEZE':
-                    wallet.unfreeze(state.amount);
-                    state.compensationSteps.push('FREEZE');
+
+                case 'RELEASE_HOLD':
+                    if (!state.holdId) {
+                        throw new Error('Hold ID required for RELEASE_HOLD');
+                    }
+                    const releaseDto: ReleaseHoldDTO = {
+                        holdId: state.holdId,
+                        userId: state.userId,
+                        reason: state.reason || 'Saga Release',
+                        idempotencyKey: state.idempotencyKey,
+                        auditInfo: state.auditInfo
+                    };
+                    await this.releaseHoldUseCase.execute(releaseDto);
+                    // Compensation for Release is... internal logic? Re-hold? 
+                    // Usually Release is final or compensation of Hold. 
+                    // If we are executing Release as a primary action, compensation might be PlaceHold again?
+                    // Let's assume Release is not compensated for now or defined elsewhere.
                     break;
+
                 default:
                     throw new Error(`Unsupported transaction type: ${state.type}`);
             }
 
-            state.status = 'EXECUTED';
-
-            // 3. Persist a transaction record
-            const transaction = new Transaction({
-                id: state.transactionId,
-                walletId: wallet.id,
-                userId: wallet.userId,
-                type: this.mapToTransactionType(state.type),
-                amount: state.amount,
-                currency: wallet.currency,
-                balanceBefore,
-                balanceAfter: wallet.balance,
-                frozenAmountBefore: frozenBefore,
-                frozenAmountAfter: wallet.frozenAmount,
-                description: `Orchestrated ${state.type} transaction`,
-                createdAt: new Date()
-            });
-
-            // 4. Persist state
-            await this.walletRepository.update(wallet);
-            await this.transactionRepository.save(transaction);
-
-            state.status = 'RECORDED';
-
-            // 5. Publish a domain event on success
-            await this.publishSuccessEvent(wallet, transaction);
-
             state.status = 'COMPLETED';
+
         } catch (error: any) {
             state.error = error.message;
             state.status = 'FAILED';
 
-            // 6. Execute compensations plus status updates on failure
+            // Execute compensations
             await this.compensate(state);
             throw error;
         }
@@ -99,48 +155,21 @@ export class WalletTransactionSaga {
     private async compensate(state: WalletSagaState): Promise<void> {
         while (state.compensationSteps.length > 0) {
             const step = state.compensationSteps.pop();
+            if (!step) continue;
+
             try {
-                const wallet = await this.walletRepository.findByUserId(state.userId);
-                if (!wallet) continue;
-
-                if (step === 'DEBIT') {
-                    wallet.debit(state.amount);
-                } else if (step === 'CREDIT') {
-                    wallet.credit(state.amount);
-                } else if (step === 'FREEZE') {
-                    wallet.freeze(state.amount);
-                } else if (step === 'UNFREEZE') {
-                    wallet.unfreeze(state.amount);
+                if (step.type === 'REVERSE_TRANSACTION') {
+                    await this.reverseTransactionUseCase.execute(step.payload);
+                } else if (step.type === 'RELEASE_HOLD') {
+                    await this.releaseHoldUseCase.execute(step.payload);
                 }
-
-                await this.walletRepository.update(wallet);
             } catch (error) {
-                // Log compensation error
-                console.error(`Failed to compensate step ${step}:`, error);
+                console.error(`Failed to compensate step ${step.type}:`, error);
+                // In production: Retry mechanism, dead letter queue, manual intervention alert
+                // For now, we log.
             }
         }
-    }
-
-    private mapToTransactionType(type: string): TransactionType {
-        switch (type) {
-            case 'CREDIT': return TransactionType.CREDIT;
-            case 'DEBIT': return TransactionType.DEBIT;
-            case 'FREEZE': return TransactionType.FREEZE;
-            case 'UNFREEZE': return TransactionType.UNFREEZE;
-            default: return TransactionType.DEBIT;
-        }
-    }
-
-    private async publishSuccessEvent(wallet: Wallet, transaction: Transaction): Promise<void> {
-        const eventName = `Wallet.${transaction.type}.Success`;
-        await this.eventBus.publish(eventName, {
-            walletId: wallet.id,
-            userId: wallet.userId,
-            transactionId: transaction.id,
-            amount: transaction.amount,
-            type: transaction.type,
-            timestamp: new Date()
-        });
+        state.status = 'COMPENSATED';
     }
 }
 

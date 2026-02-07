@@ -1,0 +1,77 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "api-gateway.fullname" . }}
+  labels:
+    {{- include "api-gateway.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "api-gateway.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  
+  # Ingress Rules
+  ingress:
+    # Allow traffic from Ingress Controller (usually in ingress-nginx namespace)
+    # Adjust namespaceSelector and podSelector based on actual cluster setup
+    # For now, we allow from all (world) because this is an API Gateway
+    # In a stricter setup, we would limit to the ingress-controller pod
+    - from:
+        - namespaceSelector: {} 
+      ports:
+        - protocol: TCP
+          port: 3000
+    # Allow Prometheus scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 3000
+
+  # Egress Rules
+  egress:
+    # Allow DNS resolution (CoreDNS)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+    # Allow Postgres
+    - to:
+        - ipBlock: # If external DB
+            cidr: 0.0.0.0/0 
+            except:
+              - 10.0.0.0/8 # Example private ranges
+      ports:
+        - protocol: TCP
+          port: 5432
+    
+    # Allow Redis
+    - to:
+        - ipBlock: # If external Redis
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 6379
+
+    # Allow HTTPS (External APIs: Auth0, Payment Gateways, AWS S3)
+    - ports:
+        - protocol: TCP
+          port: 443
+    
+    # Allow HTTP (if needed for non-secure APIs)
+    - ports:
+        - protocol: TCP
+          port: 80

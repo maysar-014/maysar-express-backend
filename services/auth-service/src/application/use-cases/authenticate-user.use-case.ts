@@ -1,4 +1,4 @@
-import { AuthUser } from '../../domain/entities/user.types';
+import { AuthUser, UserStatus } from '../../domain/entities/user.types';
 import { IUserRepository } from '../../domain/repositories';
 import { AuthenticationEngine } from '../../domain/engines/authentication.engine';
 import { AuthenticationPolicy } from '../../domain/policies/authentication.policy';
@@ -68,7 +68,7 @@ export class AuthenticateUserUseCase {
       }
 
       // Check if authentication is allowed
-      if (!AuthenticationPolicy.canAuthenticate(user)) {
+      if (user.status !== UserStatus.ACTIVE) {
         logger.warn('Authentication denied by policy', { userId: user.id, status: user.status });
         return {
           success: false,
@@ -161,8 +161,11 @@ export class AuthenticateUserUseCase {
         message: 'Authentication successful'
       };
 
-    } catch (error) {
-      logger.error('Authentication error', { email: input.email, error });
+    } catch (error: any) {
+      logger.error('Authentication error', {
+        email: input.email,
+        message: error.message
+      });
       return {
         success: false,
         message: 'Authentication failed due to system error'
@@ -182,12 +185,21 @@ export class AuthenticateUserUseCase {
   }
 
   /**
-   * Simplified TOTP verification (placeholder)
+   * Verifies the TOTP code using Speakeasy
    */
   private verifyTotpCode(secret: string, code: string): boolean {
-    // In real implementation, use speakeasy or similar library
-    // For demo purposes, accept any 6-digit code
-    return /^\d{6}$/.test(code);
+    try {
+      const speakeasy = require('speakeasy');
+      return speakeasy.totp.verify({
+        secret: secret,
+        encoding: 'base32',
+        token: code,
+        window: 1 // ±1 window for clock skew
+      });
+    } catch (error) {
+      logger.error('TOTP verification error', { error });
+      return false;
+    }
   }
 
   /**

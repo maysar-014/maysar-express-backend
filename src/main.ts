@@ -3,11 +3,13 @@ import 'reflect-metadata';
 import '../shared/tracing/openTelemetry'; // Enable OpenTelemetry Tracing
 import { createApp } from './app';
 import { moduleRegistry } from './core/module-registry';
+import { validateEnv } from './config/env-validation';
 // @ts-ignore - Importing from virtual module alias or relative path
 import * as services from '../services';
 
 async function bootstrap() {
     try {
+        validateEnv();
         console.log('Starting Maysar Express Backend Monolith...');
 
         // Auto-register all services imported from services/index

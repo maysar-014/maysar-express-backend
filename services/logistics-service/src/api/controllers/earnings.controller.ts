@@ -1,14 +1,13 @@
 import { Request, Response } from 'express';
 import { DependencyContainer } from '../../infrastructure/container';
-import { EarningsRepositoryPort } from '../../domain/engines/ports/earnings.port';
-import { DeliveryRepositoryPort } from '../../domain/engines/ports/delivery.port';
+import { IEarningsRepository, IDeliveryRepository } from '../../domain/repositories';
 
 export class EarningsController {
-  private get earningsRepository(): EarningsRepositoryPort {
+  private get earningsRepository(): IEarningsRepository {
     return DependencyContainer.getInstance().getEarningsRepository();
   }
 
-  private get deliveryRepository(): DeliveryRepositoryPort {
+  private get deliveryRepository(): IDeliveryRepository {
     return DependencyContainer.getInstance().getDeliveryRepository();
   }
 
