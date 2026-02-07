@@ -20,6 +20,13 @@ export enum UserRole {
 }
 
 /**
+ * Check if user role is eligible for payouts
+ */
+export function isPayoutEligibleRole(role: UserRole): boolean {
+  return role !== UserRole.BUYER;
+}
+
+/**
  * User account status
  */
 export enum UserStatus {

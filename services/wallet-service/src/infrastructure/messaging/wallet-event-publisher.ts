@@ -44,4 +44,11 @@ export class WalletEventPublisher {
             ...event
         });
     }
+
+    async publishWalletPayoutInitiated(event: any): Promise<void> {
+        await this.eventBus.publish({
+            type: 'WalletPayoutInitiated',
+            ...event
+        });
+    }
 }

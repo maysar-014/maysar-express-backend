@@ -35,7 +35,8 @@ export interface MobileMoneyDetails {
 
 export interface PayoutProps {
     id: string;
-    sellerId: string;
+    userId: string;
+    userRole: string;
     amount: number;
     currency: string;
     method: PayoutMethod;
@@ -67,8 +68,12 @@ export class Payout {
         return this.props.id;
     }
 
-    get sellerId(): string {
-        return this.props.sellerId;
+    get userId(): string {
+        return this.props.userId;
+    }
+
+    get userRole(): string {
+        return this.props.userRole;
     }
 
     get amount(): number {
@@ -361,8 +366,16 @@ export class Payout {
             throw new Error('Payout ID is required');
         }
 
-        if (!props.sellerId || props.sellerId.trim() === '') {
-            throw new Error('Seller ID is required');
+        if (!props.userId || props.userId.trim() === '') {
+            throw new Error('User ID is required');
+        }
+
+        if (!props.userRole || props.userRole.trim() === '') {
+            throw new Error('User role is required');
+        }
+
+        if (props.userRole.toLowerCase() === 'buyer') {
+            throw new Error('Buyers are not eligible for payouts');
         }
 
         if (props.amount <= 0) {

@@ -11,7 +11,8 @@ export class PayoutRepository implements IPayoutRepository {
         await this.prisma.payout.create({
             data: {
                 id: data.id,
-                sellerId: data.sellerId,
+                userId: data.userId,
+                userRole: data.userRole,
                 amount: data.amount,
                 currency: data.currency,
                 method: data.method as any,
@@ -42,9 +43,19 @@ export class PayoutRepository implements IPayoutRepository {
         return this.mapToEntity(data);
     }
 
-    async findBySellerId(sellerId: string, limit: number = 20): Promise<Payout[]> {
+    async findByUserId(userId: string, limit: number = 20): Promise<Payout[]> {
         const data = await this.prisma.payout.findMany({
-            where: { sellerId },
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+            take: limit
+        });
+
+        return data.map((item: any) => this.mapToEntity(item));
+    }
+
+    async findByUserIdAndRole(userId: string, userRole: string, limit: number = 20): Promise<Payout[]> {
+        const data = await this.prisma.payout.findMany({
+            where: { userId, userRole },
             orderBy: { createdAt: 'desc' },
             take: limit
         });
@@ -73,7 +84,8 @@ export class PayoutRepository implements IPayoutRepository {
     private mapToEntity(data: any): Payout {
         return new Payout({
             id: data.id,
-            sellerId: data.sellerId,
+            userId: data.userId,
+            userRole: data.userRole,
             amount: Number(data.amount),
             currency: data.currency,
             method: data.method as PayoutMethod,

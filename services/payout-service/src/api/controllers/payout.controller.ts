@@ -13,7 +13,13 @@ export class PayoutController {
 
     async initiate(req: Request, res: Response): Promise<void> {
         try {
-            const result = await this.initiatePayoutUseCase.execute(req.body);
+            const { userId, role: userRole } = (req as any).user;
+
+            const result = await this.initiatePayoutUseCase.execute({
+                ...req.body,
+                userId,
+                userRole
+            });
             res.status(result.success ? 201 : 400).json(result);
         } catch (error) {
             res.status(500).json({ success: false, error: 'Internal server error' });

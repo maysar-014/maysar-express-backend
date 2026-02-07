@@ -20,6 +20,7 @@ export interface PayoutSchedule {
 export class PayoutPolicy {
     private readonly MINIMUM_PAYOUT_AMOUNT = 10000; // TZS 10,000
     private readonly MINIMUM_BALANCE_AFTER_PAYOUT = 1000; // TZS 1,000
+    private readonly INELIGIBLE_ROLES = ['buyer', 'BUYER'];
     private readonly DEFAULT_PAYOUT_SCHEDULE: PayoutSchedule = {
         frequency: 'weekly',
         dayOfWeek: 5, // Friday
@@ -32,16 +33,23 @@ export class PayoutPolicy {
     }
 
     /**
-     * Check if seller can request payout
+     * Check if user can request payout
      */
     canPayout(
         availableBalance: number,
         requestedAmount: number,
+        userRole: string,
         lastPayoutDate?: Date,
-        sellerStatus?: string
+        userStatus?: string
     ): PayoutEligibility {
         const reasons: string[] = [];
         let canPayout = true;
+
+        // Check role eligibility
+        if (!this.isEligibleRole(userRole)) {
+            reasons.push(`Role ${userRole} is not eligible for payouts`);
+            canPayout = false;
+        }
 
         // Check minimum payout amount
         if (requestedAmount < this.MINIMUM_PAYOUT_AMOUNT) {
@@ -68,9 +76,9 @@ export class PayoutPolicy {
             canPayout = false;
         }
 
-        // Check seller status
-        if (sellerStatus && !this.isEligibleSellerStatus(sellerStatus)) {
-            reasons.push(`Seller status ${sellerStatus} is not eligible for payouts`);
+        // Check user status
+        if (userStatus && !this.isEligibleStatus(userStatus)) {
+            reasons.push(`User status ${userStatus} is not eligible for payouts`);
             canPayout = false;
         }
 
@@ -233,9 +241,16 @@ export class PayoutPolicy {
     }
 
     /**
-     * Check if seller status is eligible for payouts
+     * Check if role is eligible for payouts
      */
-    private isEligibleSellerStatus(status: string): boolean {
+    isEligibleRole(role: string): boolean {
+        return !this.INELIGIBLE_ROLES.includes(role) && !this.INELIGIBLE_ROLES.includes(role.toLowerCase());
+    }
+
+    /**
+     * Check if user status is eligible for payouts
+     */
+    private isEligibleStatus(status: string): boolean {
         const eligibleStatuses = ['ACTIVE', 'VERIFIED'];
         return eligibleStatuses.includes(status.toUpperCase());
     }

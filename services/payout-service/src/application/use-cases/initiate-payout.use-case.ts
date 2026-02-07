@@ -3,7 +3,8 @@ import { IPayoutRepository } from '../../domain/ports/payout.repository.port';
 import { PayoutPolicy } from '../../domain/policies/payout.policy';
 
 export interface InitiatePayoutDTO {
-    sellerId: string;
+    userId: string;
+    userRole: string;
     amount: number;
     currency: string;
     method: PayoutMethod;
@@ -46,7 +47,8 @@ export class InitiatePayoutUseCase {
         const payoutId = this.generateId();
         const payout = new Payout({
             id: payoutId,
-            sellerId: dto.sellerId,
+            userId: dto.userId,
+            userRole: dto.userRole,
             amount: dto.amount,
             currency: dto.currency,
             method: dto.method,
