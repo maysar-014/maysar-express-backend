@@ -84,5 +84,11 @@ export function createWalletRoutes(controller: WalletController): Router {
         controller.topUp.bind(controller)
     );
 
+    router.post('/:userId/payout',
+        AuthorizationMiddleware.authorizeWalletAccess(),
+        validateRequest(WalletValidator.initiatePayout),
+        controller.initiatePayout.bind(controller)
+    );
+
     return router;
 }

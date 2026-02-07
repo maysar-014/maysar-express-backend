@@ -32,6 +32,8 @@ import { NotificationAdapter } from './infrastructure/adapters/notification.adap
 import { PaymentServiceClient } from './infrastructure/clients/payment-service.client';
 import { TopUpWalletUseCase } from './application/use-cases/top-up-wallet.use-case';
 import { PaymentCompletedHandler } from './infrastructure/messaging/payment-completed.handler';
+import { PayoutServiceClient } from './infrastructure/clients/payout-service.client';
+import { InitiatePayoutFromWalletUseCase } from './application/use-cases/initiate-payout-from-wallet.use-case';
 
 export class Container {
     private static instance: Container;
@@ -120,6 +122,14 @@ export class Container {
         const expireHoldUseCase = new ExpireHoldUseCase(walletRepository, holdRepository, eventPublisher);
         const topUpUseCase = new TopUpWalletUseCase(paymentServiceClient);
 
+        const payoutServiceClient = new PayoutServiceClient(process.env.PAYOUT_SERVICE_URL || 'http://payout-service:3005');
+        const initiatePayoutFromWalletUseCase = new InitiatePayoutFromWalletUseCase(
+            debitUseCase,
+            creditUseCase,
+            payoutServiceClient,
+            eventPublisher
+        );
+
         // Event Handlers
         const paymentCompletedHandler = new PaymentCompletedHandler(creditUseCase);
         this.eventBus.subscribe('PaymentCompleted', paymentCompletedHandler.handle.bind(paymentCompletedHandler));
@@ -141,7 +151,8 @@ export class Container {
             reverseTransactionUseCase,
             getStatementUseCase,
             topUpUseCase,
-            walletRepository
+            walletRepository,
+            initiatePayoutFromWalletUseCase
         );
     }
 

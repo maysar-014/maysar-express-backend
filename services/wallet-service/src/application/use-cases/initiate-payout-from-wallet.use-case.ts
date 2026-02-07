@@ -73,12 +73,14 @@ export class InitiatePayoutFromWalletUseCase {
                     description: `Reversal: Payout initiation failed. Reason: ${payoutResponse.message}`,
                     idempotencyKey: `${dto.idempotencyKey}_payout_failed_reversal`,
                     correlationId: dto.correlationId,
-                    auditInfo: {
+                    auditInfo: AuditInfo.create({
                         actor: 'SYSTEM',
                         actorType: ActorType.SYSTEM,
+                        action: 'PAYOUT_REVERSAL',
+                        reason: `Payout failed: ${payoutResponse.message}`,
                         ipAddress: '127.0.0.1',
                         userAgent: 'Internal'
-                    }
+                    })
                 });
 
                 return {
@@ -116,12 +118,14 @@ export class InitiatePayoutFromWalletUseCase {
                 description: `Reversal: Payout initiation error. ${error.message}`,
                 idempotencyKey: `${dto.idempotencyKey}_payout_error_reversal`,
                 correlationId: dto.correlationId,
-                auditInfo: {
+                auditInfo: AuditInfo.create({
                     actor: 'SYSTEM',
-                    actorType: 'SYSTEM',
+                    actorType: ActorType.SYSTEM,
+                    action: 'PAYOUT_ERROR_REVERSAL',
+                    reason: `Payout unexpected error: ${error.message}`,
                     ipAddress: '127.0.0.1',
                     userAgent: 'Internal'
-                }
+                })
             });
 
             return {

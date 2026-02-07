@@ -82,4 +82,25 @@ export class WalletValidator {
         correlationId: Joi.string().uuid().required(),
         metadata: Joi.object().optional()
     });
+
+    static initiatePayout = Joi.object({
+        amount: Joi.number().positive().required(),
+        currency: Joi.string().length(3).uppercase().required(),
+        method: Joi.string().valid('BANK_TRANSFER', 'MOBILE_MONEY', 'WALLET').required(),
+        bankDetails: Joi.object({
+            bankName: Joi.string().required(),
+            bankCode: Joi.string().required(),
+            accountNumber: Joi.string().required(),
+            accountName: Joi.string().required(),
+            branchCode: Joi.string().optional()
+        }).when('method', { is: 'BANK_TRANSFER', then: Joi.required() }),
+        mobileMoneyDetails: Joi.object({
+            provider: Joi.string().required(),
+            phoneNumber: Joi.string().required(),
+            accountName: Joi.string().required()
+        }).when('method', { is: 'MOBILE_MONEY', then: Joi.required() }),
+        idempotencyKey: Joi.string().required(),
+        correlationId: Joi.string().uuid().required(),
+        metadata: Joi.object().optional()
+    });
 }

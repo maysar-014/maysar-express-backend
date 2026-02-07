@@ -9,6 +9,7 @@ import { CaptureHoldUseCase } from '../../application/use-cases/capture-hold.use
 import { ReverseTransactionUseCase } from '../../application/use-cases/reverse-transaction.use-case';
 import { GetWalletStatementUseCase } from '../../application/use-cases/get-wallet-statement.use-case';
 import { TopUpWalletUseCase } from '../../application/use-cases/top-up-wallet.use-case';
+import { InitiatePayoutFromWalletUseCase } from '../../application/use-cases/initiate-payout-from-wallet.use-case';
 import { IWalletRepository } from '../../domain/repositories/wallet.repository';
 import { AuditInfo } from '../../domain/value-objects/audit-info.value-object';
 
@@ -24,7 +25,8 @@ export class WalletController {
         private readonly reverseTransactionUseCase: ReverseTransactionUseCase,
         private readonly getStatementUseCase: GetWalletStatementUseCase,
         private readonly topUpUseCase: TopUpWalletUseCase,
-        private readonly walletRepository: IWalletRepository
+        private readonly walletRepository: IWalletRepository,
+        private readonly initiatePayoutUseCase: InitiatePayoutFromWalletUseCase
     ) { }
 
     private getAuditInfo(req: Request): AuditInfo {
@@ -218,6 +220,20 @@ export class WalletController {
             res.status(result.success ? 200 : 400).json(result);
         } catch (error) {
             res.status(500).json({ success: false, error: 'Internal server error' });
+        }
+    }
+
+    async initiatePayout(req: Request, res: Response): Promise<void> {
+        try {
+            const result = await this.initiatePayoutUseCase.execute({
+                userId: req.params.userId,
+                userRole: (req as any).user?.role || 'seller', // Extract from auth token
+                ...req.body,
+                auditInfo: this.getAuditInfo(req)
+            });
+            res.status(result.success ? 201 : 400).json(result);
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: error.message || 'Internal server error' });
         }
     }
 }
