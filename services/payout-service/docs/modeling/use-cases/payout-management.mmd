@@ -1,5 +1,5 @@
 useCaseDiagram
-    actor "Seller" as S
+    actor "Platform User" as U
     actor "Payment Provider" as PP
     actor "Admin" as A
     actor "System" as Sys
@@ -14,8 +14,8 @@ useCaseDiagram
         usecase "Calculate Fees" as UC7
     }
 
-    S --> UC1
-    S --> UC6
+    U --> UC1
+    U --> UC6
     
     A --> UC4
     A --> UC5

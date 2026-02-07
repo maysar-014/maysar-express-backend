@@ -86,6 +86,7 @@ export function createWalletRoutes(controller: WalletController): Router {
 
     router.post('/:userId/payout',
         AuthorizationMiddleware.authorizeWalletAccess(),
+        AuthorizationMiddleware.authorizeRole(['seller', 'supplier', 'courier', 'enabler', 'system']),
         validateRequest(WalletValidator.initiatePayout),
         controller.initiatePayout.bind(controller)
     );

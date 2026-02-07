@@ -225,9 +225,21 @@ export class WalletController {
 
     async initiatePayout(req: Request, res: Response): Promise<void> {
         try {
+            const user = (req as any).user;
+            // Resolve role from roles array (taking the first one for now as primary role)
+            const resolvedRole = user?.roles?.[0];
+
+            if (!resolvedRole || resolvedRole.toLowerCase() === 'buyer') {
+                res.status(403).json({
+                    success: false,
+                    error: resolvedRole ? `Role ${resolvedRole} is not eligible for payouts` : 'User role not found'
+                });
+                return;
+            }
+
             const result = await this.initiatePayoutUseCase.execute({
                 userId: req.params.userId,
-                userRole: (req as any).user?.role || 'seller', // Extract from auth token
+                userRole: resolvedRole,
                 ...req.body,
                 auditInfo: this.getAuditInfo(req)
             });

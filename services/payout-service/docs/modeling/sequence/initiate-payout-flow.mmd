@@ -1,19 +1,25 @@
 sequenceDiagram
     participant API
     participant UC as InitiatePayoutUseCase
+    participant PP as PayoutPolicy
     participant PE as Payout Entity
     participant PR as PayoutRepository
     participant EB as EventBus
 
     API->>UC: execute(command)
-    UC->>UC: validateDetails(command)
-    UC->>UC: calculateFees(command.amount)
+    UC->>PP: canPayout(balance, amount, role, ...)
+    PP-->>UC: eligibility (canPayout, reasons)
     
-    UC->>PE: create(command, fees)
-    PE-->>UC: payout
-    
-    UC->>PR: save(payout)
-    PR-->>UC: success
-    
-    UC->>EB: publish(PayoutInitiatedEvent)
-    UC-->>API: success
+    alt is eligible
+        UC->>UC: calculateFees(command.amount)
+        UC->>PE: create(command, fees)
+        PE-->>UC: payout
+        
+        UC->>PR: save(payout)
+        PR-->>UC: success
+        
+        UC->>EB: publish(PayoutInitiatedEvent)
+        UC-->>API: success (PENDING)
+    else is not eligible
+        UC-->>API: failure (reasons)
+    end

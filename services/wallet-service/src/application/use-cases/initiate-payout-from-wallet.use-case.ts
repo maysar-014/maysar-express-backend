@@ -3,6 +3,7 @@ import { CreditWalletUseCase } from './credit-wallet.use-case';
 import { IPayoutServiceClient, PayoutMethod } from '../../../../../shared-contracts/payout-service-contracts';
 import { AuditInfo, ActorType } from '../../domain/value-objects/audit-info.value-object';
 import { WalletEventPublisher } from '../../infrastructure/messaging/wallet-event-publisher';
+import { isPayoutEligibleRole, UserRole } from '../../../../../shared-contracts/user-service-contracts';
 
 export interface InitiatePayoutFromWalletDTO {
     userId: string;
@@ -34,6 +35,14 @@ export class InitiatePayoutFromWalletUseCase {
     ) { }
 
     async execute(dto: InitiatePayoutFromWalletDTO): Promise<InitiatePayoutFromWalletResult> {
+        // 0. Validate Role Eligibility (Comment 2)
+        if (!isPayoutEligibleRole(dto.userRole as UserRole)) {
+            return {
+                success: false,
+                message: `Role ${dto.userRole} is not eligible for payouts`
+            };
+        }
+
         // 1. Debit Wallet
         const debitResult = await this.debitWalletUseCase.execute({
             userId: dto.userId,
@@ -61,7 +70,8 @@ export class InitiatePayoutFromWalletUseCase {
                 currency: dto.currency,
                 method: dto.method,
                 bankDetails: dto.bankDetails,
-                mobileMoneyDetails: dto.mobileMoneyDetails
+                mobileMoneyDetails: dto.mobileMoneyDetails,
+                availableBalance: debitResult.balanceBefore
             });
 
             if (!payoutResponse.success) {

@@ -20,6 +20,9 @@ export interface InitiatePayoutDTO {
         phoneNumber: string;
         accountName: string;
     };
+    availableBalance?: number;
+    userStatus?: string;
+    lastPayoutDate?: Date;
 }
 
 export interface InitiatePayoutResultDTO {
@@ -30,6 +33,7 @@ export interface InitiatePayoutResultDTO {
     fee?: number;
     netAmount?: number;
     message?: string;
+    reasons?: string[];
 }
 
 export class InitiatePayoutUseCase {
@@ -39,7 +43,38 @@ export class InitiatePayoutUseCase {
     ) { }
 
     async execute(dto: InitiatePayoutDTO): Promise<InitiatePayoutResultDTO> {
-        // Calculate payout fee
+        // 1. Policy Eligibility Check (Comment 3)
+        // If availableBalance is provided, run full eligibility check
+        if (dto.availableBalance !== undefined) {
+            const eligibility = this.payoutPolicy.canPayout(
+                dto.availableBalance,
+                dto.amount,
+                dto.userRole,
+                dto.lastPayoutDate,
+                dto.userStatus
+            );
+
+            if (!eligibility.canPayout) {
+                return {
+                    success: false,
+                    status: PayoutStatus.FAILED,
+                    message: `Payout eligibility check failed: ${eligibility.reasons.join(', ')}`,
+                    reasons: eligibility.reasons
+                };
+            }
+        } else {
+            // Minimal role check if balance not provided (fallback)
+            if (!this.payoutPolicy.isEligibleRole(dto.userRole)) {
+                return {
+                    success: false,
+                    status: PayoutStatus.FAILED,
+                    message: `Role ${dto.userRole} is not eligible for payouts`,
+                    reasons: [`Role ${dto.userRole} is not eligible for payouts`]
+                };
+            }
+        }
+
+        // 2. Calculate payout fee
         const fee = this.payoutPolicy.calculatePayoutFee(dto.amount, dto.method);
         const netAmount = dto.amount - fee;
 

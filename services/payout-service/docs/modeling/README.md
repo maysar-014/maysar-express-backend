@@ -14,4 +14,4 @@ This directory contains the software modeling documentation for the Payout Servi
 - [complete-payout-flow.mmd](./sequence/complete-payout-flow.mmd): Finalizing a successful payout.
 
 ---
-*Last Updated: 2026-02-02*
+*Last Updated: 2026-02-07*

@@ -15,6 +15,7 @@ useCaseDiagram
         usecase "Top-up Wallet" as UC11
         usecase "Record Transaction" as UC9
         usecase "Trigger Fraud Detection" as UC10
+        usecase "Initiate Payout" as UC12
     }
 
     C --> UC1
@@ -22,6 +23,7 @@ useCaseDiagram
     C --> UC5
     C --> UC6
     C --> UC11
+    C --> UC12
     
     A --> UC3
     A --> UC4
@@ -38,4 +40,5 @@ useCaseDiagram
     UC1 ..> UC9 : <<include>>
     UC2 ..> UC9 : <<include>>
     UC11 ..> UC9 : <<include>>
+    UC12 ..> UC9 : <<include>>
     UC10 ..> UC3 : <<extend>>

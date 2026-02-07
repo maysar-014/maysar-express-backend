@@ -34,6 +34,9 @@ export interface InitiatePayoutDTO {
         phoneNumber: string;
         accountName: string;
     };
+    availableBalance?: number;
+    userStatus?: string;
+    lastPayoutDate?: Date;
 }
 
 export interface PayoutResponse {

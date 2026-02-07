@@ -18,7 +18,10 @@ export class PayoutController {
             const result = await this.initiatePayoutUseCase.execute({
                 ...req.body,
                 userId,
-                userRole
+                userRole,
+                availableBalance: req.body.availableBalance,
+                userStatus: req.body.userStatus,
+                lastPayoutDate: req.body.lastPayoutDate ? new Date(req.body.lastPayoutDate) : undefined
             });
             res.status(result.success ? 201 : 400).json(result);
         } catch (error) {
