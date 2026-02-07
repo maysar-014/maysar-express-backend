@@ -13,8 +13,9 @@ import {
   IdGenerator,
   DateTimeService
 } from '../../domain/interfaces';
+import { DistributedSagaOrchestrator, SagaStep } from '../../../../../shared/saga/saga.orchestrator';
+import { ISagaLogRepository } from '../../../../../shared/saga/saga.log';
 import { ProductId, SellerId } from '../../domain/value-objects/ids.value-object';
-import { BaseSaga } from './index';
 
 export interface ProductPublishingContext {
   productId: string;
@@ -24,376 +25,205 @@ export interface ProductPublishingContext {
   updateSearchIndex: boolean;
   requestId: string;
   timestamp: Date;
+  // State fields that were in this.state before
+  currentStep?: string;
+  productValidated?: boolean;
+  mediaProcessed?: boolean;
+  inventoryVerified?: boolean; // This state is implicitly managed by the orchestrator waiting for events
+  inventoryVerificationRequested?: boolean; // This state is implicitly managed by the orchestrator waiting for events
+  searchIndexed?: boolean;
+  notificationsSent?: boolean;
+  published?: boolean;
+  originalProductStatus?: any;
+  searchIndexUpdated?: boolean;
+  notificationsSentTo?: string[];
+  // Error handling
+  errors?: { step: string; error: string; timestamp: Date }[];
+  retryCount?: number;
+  maxRetries?: number;
 }
 
-export class ProductPublishingSaga extends BaseSaga {
-  readonly sagaId: string;
-  readonly sagaType = 'ProductPublishing';
+export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPublishingContext> {
+  protected sagaType = 'ProductPublishing';
 
   constructor(
+    sagaLogRepository: ISagaLogRepository,
+    serviceName: string,
     private readonly productRepository: ProductRepository,
     private readonly categoryRepository: CategoryRepository,
     private readonly mediaRepository: MediaRepository,
     private readonly searchService: SearchService,
-    private readonly eventPublisher: DomainEventPublisher,
-    private readonly idGenerator: IdGenerator,
+    private readonly eventPublisher: DomainEventPublisher, // Retained for helper methods if needed, but orchestrator uses publishCommand
+    private readonly idGenerator: IdGenerator, // Retained for helper methods if needed
     private readonly dateTimeService: DateTimeService,
-    context: ProductPublishingContext
+    outbox?: any
   ) {
-    super();
-    this.sagaId = `product-publishing-${context.productId}-${this.idGenerator.generate()}`;
-
-    this.initializeState(context);
-    this.setupSagaSteps();
+    super(sagaLogRepository, serviceName, outbox);
   }
 
-  protected initializeState(context: ProductPublishingContext): void {
-    this.state = {
-      productId: context.productId,
-      sellerId: context.sellerId,
-      autoPublish: context.autoPublish,
-      notifyFollowers: context.notifyFollowers,
-      updateSearchIndex: context.updateSearchIndex,
-      requestId: context.requestId,
-      timestamp: context.timestamp,
+  protected defineSteps(): SagaStep<ProductPublishingContext>[] {
+    return [
+      {
+        name: 'validate_product',
+        execute: async (context: ProductPublishingContext, sagaId: string) => {
+          console.log(`[${sagaId}] Validating product ${context.productId}`);
 
-      // Saga state
-      currentStep: 'initialized',
-      productValidated: false,
-      mediaProcessed: false,
-      inventoryVerified: false,
-      searchIndexed: false,
-      notificationsSent: false,
-      published: false,
+          const product = await this.productRepository.findById(context.productId);
+          if (!product) throw new Error(`Product ${context.productId} not found`);
 
-      // Compensation tracking
-      originalProductStatus: null,
-      searchIndexUpdated: false,
-      notificationsSentTo: [],
-
-      // Error handling
-      errors: [],
-      retryCount: 0,
-      maxRetries: 3
-    };
-  }
-
-  private setupSagaSteps(): void {
-    // Step 1: Validate product data
-    this.addStep(
-      'validate_product',
-      async () => {
-        console.log(`[${this.sagaId}] Validating product ${this.state.productId}`);
-
-        const product = await this.productRepository.findById(this.state.productId);
-        if (!product) {
-          throw new Error(`Product ${this.state.productId} not found`);
+          context.originalProductStatus = product.status;
+          await this.validateProductData(product);
+          await this.validateCategory(product.categoryId);
+          context.productValidated = true;
+        },
+        compensate: async (context: ProductPublishingContext, sagaId: string) => {
+          console.log(`[${sagaId}] Compensating product validation`);
         }
-
-        // Store original status for compensation
-        this.state.originalProductStatus = product.status;
-
-        // Validate product completeness
-        await this.validateProductData(product);
-
-        // Validate category exists and is active
-        await this.validateCategory(product.categoryId);
-
-        this.state.productValidated = true;
-        this.markStepCompleted('validate_product');
       },
-      async () => {
-        console.log(`[${this.sagaId}] Compensating product validation`);
-        // No compensation needed for validation
-      }
-    );
+      {
+        name: 'process_media',
+        execute: async (context: ProductPublishingContext, sagaId: string) => {
+          console.log(`[${sagaId}] Processing media for product ${context.productId}`);
 
-    // Step 2: Process and validate media
-    this.addStep(
-      'process_media',
-      async () => {
-        console.log(`[${this.sagaId}] Processing media for product ${this.state.productId}`);
-
-        const media = await this.mediaRepository.findByProduct(this.state.productId);
-
-        // Validate media requirements
-        await this.validateMediaRequirements(media);
-
-        // Process media (resize, optimize, etc. - would call external service)
-        await this.processMediaFiles(media);
-
-        this.state.mediaProcessed = true;
-        this.markStepCompleted('process_media');
+          const media = await this.mediaRepository.findByProduct(context.productId);
+          await this.validateMediaRequirements(media);
+          await this.processMediaFiles(media);
+          context.mediaProcessed = true;
+        },
+        compensate: async (context: ProductPublishingContext, sagaId: string) => {
+          console.log(`[${sagaId}] Compensating media processing`);
+          context.mediaProcessed = false;
+        }
       },
-      async () => {
-        console.log(`[${this.sagaId}] Compensating media processing`);
-        // Reset any processing flags, cleanup temp files if needed
-        this.state.mediaProcessed = false;
-      }
-    );
+      {
+        name: 'request_inventory_verification',
+        execute: async (context: ProductPublishingContext, sagaId: string) => {
+          console.log(`[${sagaId}] Requesting inventory verification for product ${context.productId}`);
 
-    // Step 3: Request inventory verification
-    this.addStep(
-      'request_inventory_verification',
-      async () => {
-        console.log(`[${this.sagaId}] Requesting inventory verification for product ${this.state.productId}`);
-
-        // Publish event to request inventory verification from inventory service
-        await this.eventPublisher.publish({
-          eventId: this.idGenerator.generate(),
-          eventType: 'ProductInventoryVerificationRequested',
-          aggregateId: this.state.productId,
-          version: 1,
-          timestamp: this.dateTimeService.now(),
-          payload: {
-            productId: this.state.productId,
-            sagaId: this.sagaId,
-            requestId: this.state.requestId,
+          // Publish event to request inventory verification from inventory service
+          await (this as any).publishCommand('ProductInventoryVerificationRequested', {
+            productId: context.productId,
+            sagaId: sagaId,
+            requestId: context.requestId,
             expectedBy: new Date(Date.now() + 30000) // Expect response within 30 seconds
-          }
-        });
+          }, context.requestId, sagaId);
 
-        this.state.inventoryVerificationRequested = true;
-        this.markStepCompleted('request_inventory_verification');
-      },
-      async () => {
-        console.log(`[${this.sagaId}] Compensating inventory verification request`);
-        // Publish cancellation event
-        await this.eventPublisher.publish({
-          eventId: this.idGenerator.generate(),
-          eventType: 'ProductInventoryVerificationCancelled',
-          aggregateId: this.state.productId,
-          version: 1,
-          timestamp: this.dateTimeService.now(),
-          payload: {
-            productId: this.state.productId,
-            sagaId: this.sagaId,
+          context.inventoryVerificationRequested = true;
+        },
+        compensate: async (context: ProductPublishingContext, sagaId: string) => {
+          console.log(`[${sagaId}] Compensating inventory verification request`);
+          // Publish cancellation event
+          await (this as any).publishCommand('ProductInventoryVerificationCancelled', {
+            productId: context.productId,
+            sagaId: sagaId,
             reason: 'Saga compensation'
+          }, context.requestId, sagaId);
+        }
+      },
+      {
+        name: 'update_search_index',
+        execute: async (context: ProductPublishingContext, sagaId: string) => {
+          if (!context.updateSearchIndex) {
+            console.log(`[${sagaId}] Skipping search index update`);
+            return;
           }
-        });
-      }
-    );
 
-    // Step 4: Wait for inventory verification (this would be handled by event listeners)
-    this.addStep(
-      'wait_inventory_verification',
-      async () => {
-        console.log(`[${this.sagaId}] Waiting for inventory verification response`);
+          console.log(`[${sagaId}] Updating search index for product ${context.productId}`);
 
-        // In a real implementation, this step would wait for an event response
-        // For now, we'll assume verification is pending and continue
-        // The actual verification would be handled asynchronously via events
+          const product = await this.productRepository.findById(context.productId);
+          if (!product) throw new Error(`Product ${context.productId} not found during search indexing`);
 
-        this.state.inventoryVerified = true; // Assume verified for now
-        this.markStepCompleted('wait_inventory_verification');
-      },
-      async () => {
-        console.log(`[${this.sagaId}] Compensating inventory verification wait`);
-        // No compensation needed
-      }
-    );
+          // Create search document
+          const searchDocument = this.createSearchDocument(product);
 
-    // Step 4: Update search index
-    this.addStep(
-      'update_search_index',
-      async () => {
-        if (!this.state.updateSearchIndex) {
-          console.log(`[${this.sagaId}] Skipping search index update`);
-          this.markStepCompleted('update_search_index');
-          return;
-        }
+          // Index the product
+          await this.searchService.index(searchDocument);
 
-        console.log(`[${this.sagaId}] Updating search index for product ${this.state.productId}`);
+          context.searchIndexed = true;
+          context.searchIndexUpdated = true;
+        },
+        compensate: async (context: ProductPublishingContext, sagaId: string) => {
+          console.log(`[${sagaId}] Compensating search index update`);
 
-        const product = await this.productRepository.findById(this.state.productId);
-        if (!product) {
-          throw new Error(`Product ${this.state.productId} not found during search indexing`);
-        }
-
-        // Create search document
-        const searchDocument = this.createSearchDocument(product);
-
-        // Index the product
-        await this.searchService.index(searchDocument);
-
-        this.state.searchIndexed = true;
-        this.state.searchIndexUpdated = true;
-        this.markStepCompleted('update_search_index');
-      },
-      async () => {
-        console.log(`[${this.sagaId}] Compensating search index update`);
-
-        if (this.state.searchIndexUpdated) {
-          try {
-            await this.searchService.remove(this.state.productId);
-            this.state.searchIndexUpdated = false;
-          } catch (error) {
-            console.error(`[${this.sagaId}] Failed to remove from search index during compensation:`, error instanceof Error ? error.message : String(error));
+          if (context.searchIndexUpdated) {
+            await this.searchService.remove(context.productId);
+            context.searchIndexUpdated = false;
           }
         }
-      }
-    );
-
-    // Step 5: Publish the product
-    this.addStep(
-      'publish_product',
-      async () => {
-        console.log(`[${this.sagaId}] Publishing product ${this.state.productId}`);
-
-        // Update product status to published
-        await this.productRepository.updateStatus(this.state.productId, 'published');
-
-        this.state.published = true;
-        this.markStepCompleted('publish_product');
       },
-      async () => {
-        console.log(`[${this.sagaId}] Compensating product publishing`);
+      {
+        name: 'publish_product',
+        execute: async (context: ProductPublishingContext, sagaId: string) => {
+          console.log(`[${sagaId}] Publishing product ${context.productId}`);
 
-        if (this.state.published && this.state.originalProductStatus) {
-          try {
-            await this.productRepository.updateStatus(this.state.productId, this.state.originalProductStatus);
-            this.state.published = false;
-          } catch (error) {
-            console.error(`[${this.sagaId}] Failed to revert product status during compensation:`, error instanceof Error ? error.message : String(error));
+          // Update product status to published
+          await this.productRepository.updateStatus(context.productId, 'published');
+
+          context.published = true;
+        },
+        compensate: async (context: ProductPublishingContext, sagaId: string) => {
+          console.log(`[${sagaId}] Compensating product publishing`);
+
+          if (context.published && context.originalProductStatus) {
+            await this.productRepository.updateStatus(context.productId, context.originalProductStatus);
+            context.published = false;
           }
         }
-      }
-    );
-
-    // Step 6: Send notifications
-    this.addStep(
-      'send_notifications',
-      async () => {
-        if (!this.state.notifyFollowers) {
-          console.log(`[${this.sagaId}] Skipping notifications`);
-          this.markStepCompleted('send_notifications');
-          return;
-        }
-
-        console.log(`[${this.sagaId}] Sending notifications for product ${this.state.productId}`);
-
-        // Send notifications to followers/watchers
-        const notificationsSent = await this.sendProductPublishedNotifications();
-
-        this.state.notificationsSent = true;
-        this.state.notificationsSentTo = notificationsSent;
-        this.markStepCompleted('send_notifications');
       },
-      async () => {
-        console.log(`[${this.sagaId}] Compensating notifications`);
+      {
+        name: 'send_notifications',
+        execute: async (context: ProductPublishingContext, sagaId: string) => {
+          if (!context.notifyFollowers) {
+            console.log(`[${sagaId}] Skipping notifications`);
+            return;
+          }
 
-        if (this.state.notificationsSent && this.state.notificationsSentTo.length > 0) {
-          // In a real implementation, you might want to send "undo" notifications
-          // or mark notifications as retracted
-          console.log(`[${this.sagaId}] Notifications were sent to ${this.state.notificationsSentTo.length} recipients`);
-          // Note: Notifications are typically not compensated as they're hard to "undo"
+          console.log(`[${sagaId}] Sending notifications for product ${context.productId}`);
+
+          // Send notifications to followers/watchers
+          const notificationsSent = await this.sendProductPublishedNotifications();
+
+          context.notificationsSent = true;
+          context.notificationsSentTo = notificationsSent;
+        },
+        compensate: async (context: ProductPublishingContext, sagaId: string) => {
+          console.log(`[${sagaId}] Compensating notifications`);
+
+          if (context.notificationsSent && context.notificationsSentTo && context.notificationsSentTo.length > 0) {
+            console.log(`[${sagaId}] Notifications were sent to ${context.notificationsSentTo.length} recipients`);
+          }
         }
-      }
-    );
+      },
+      {
+        name: 'publish_success_event',
+        execute: async (context: ProductPublishingContext, sagaId: string) => {
+          console.log(`[${sagaId}] Publishing success event for product ${context.productId}`);
 
-    // Step 7: Publish success event
-    this.addStep(
-      'publish_success_event',
-      async () => {
-        console.log(`[${this.sagaId}] Publishing success event for product ${this.state.productId}`);
-
-        await this.eventPublisher.publish({
-          eventId: this.idGenerator.generate(),
-          eventType: 'ProductPublished',
-          aggregateId: this.state.productId,
-          version: 1,
-          timestamp: this.dateTimeService.now(),
-          payload: {
-            productId: this.state.productId,
-            sellerId: this.state.sellerId,
+          await (this as any).publishCommand('ProductPublished', {
+            productId: context.productId,
+            sellerId: context.sellerId,
             publishedAt: this.dateTimeService.now(),
-            autoPublished: this.state.autoPublish,
-            searchIndexed: this.state.searchIndexed,
-            notificationsSent: this.state.notificationsSentTo.length
-          }
-        });
-
-        this.markStepCompleted('publish_success_event');
-      },
-      async () => {
-        console.log(`[${this.sagaId}] Compensating success event`);
-        // Events are typically not compensated as they're immutable
-      }
-    );
-  }
-
-  protected async executeNextStep(): Promise<void> {
-    const steps = ['validate_product', 'process_media', 'request_inventory_verification', 'wait_inventory_verification', 'update_search_index', 'publish_product', 'send_notifications', 'publish_success_event'];
-
-    for (const stepId of steps) {
-      if (!this.state.completedSteps?.includes(stepId)) {
-        try {
-          this.state.currentStep = stepId;
-          const step = this.steps.find(s => s.id === stepId);
-
-          if (step) {
-            await step.operation();
-          }
-        } catch (error) {
-          console.error(`[${this.sagaId}] Step ${stepId} failed:`, error);
-
-          // Record error
-          this.state.errors.push({
-            step: stepId,
-            error: error instanceof Error ? error.message : String(error),
-            timestamp: this.dateTimeService.now()
-          });
-
-          // Don't retry validation failures - they should fail immediately
-          if (stepId === 'validate_product' || stepId === 'process_media') {
-            await this.compensate();
-            throw error;
-          }
-
-          // Check if we should retry
-          if (this.state.retryCount < this.state.maxRetries) {
-            this.state.retryCount++;
-            console.log(`[${this.sagaId}] Retrying step ${stepId} (attempt ${this.state.retryCount})`);
-
-            // Wait before retry (exponential backoff)
-            await this.delay(Math.pow(2, this.state.retryCount) * 1000);
-            continue; // Retry the same step
-          }
-
-          // Max retries reached, compensate and fail
-          await this.compensate();
-          throw error;
+            autoPublished: context.autoPublish,
+            searchIndexed: context.searchIndexed,
+            notificationsSent: context.notificationsSentTo?.length || 0
+          }, context.requestId, sagaId);
+        },
+        compensate: async (context: ProductPublishingContext, sagaId: string) => {
+          console.log(`[${sagaId}] Compensating success event`);
         }
       }
-    }
+    ];
   }
 
-  protected async processEvent(event: any): Promise<void> {
-    // Handle external events that might affect the saga
-
-    switch (event.eventType) {
-      case 'ProductValidationFailed':
-        if (event.payload.productId === this.state.productId) {
-          console.log(`[${this.sagaId}] Received validation failure event, compensating`);
-          await this.compensate();
-        }
-        break;
-
-      case 'MediaProcessingFailed':
-        if (event.payload.productId === this.state.productId) {
-          console.log(`[${this.sagaId}] Received media processing failure event, compensating`);
-          await this.compensate();
-        }
-        break;
-
-      case 'InventoryUpdateFailed':
-        if (event.payload.productId === this.state.productId) {
-          console.log(`[${this.sagaId}] Received inventory update failure event, compensating`);
-          await this.compensate();
-        }
-        break;
-    }
+  // Response handlers for asynchronous steps
+  async handleInventoryVerified(sagaId: string) {
+    await this.completeStep(sagaId, 'request_inventory_verification');
   }
+
+  async handleInventoryFailed(sagaId: string, reason: string) {
+    await this.failStep(sagaId, 'request_inventory_verification', reason);
+  }
+
 
   // Helper methods
 
@@ -458,7 +288,7 @@ export class ProductPublishingSaga extends BaseSaga {
     // For now, we'll simulate processing
     for (const item of media) {
       // Simulate processing time
-      await this.delay(100);
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Update processing status
       await this.mediaRepository.updateMetadata(item.id, {
@@ -507,9 +337,5 @@ export class ProductPublishingSaga extends BaseSaga {
       'user2@example.com',
       'follower@example.com'
     ];
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }

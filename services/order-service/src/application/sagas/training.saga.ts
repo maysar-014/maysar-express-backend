@@ -1,3 +1,6 @@
+import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
+import { ISagaLogRepository, SagaStatus } from '@shared/saga/saga.log';
+
 export enum TrainingModule {
   SAFETY_BASICS = 'safety_basics',
   CUSTOMER_SERVICE = 'customer_service',
@@ -15,6 +18,7 @@ export enum TrainingStatus {
 }
 
 export interface TrainingRecord {
+  id: string;
   courierId: string;
   module: TrainingModule;
   status: TrainingStatus;
@@ -25,15 +29,31 @@ export interface TrainingRecord {
   expiresAt?: Date;
 }
 
-export interface CertificationRequirement {
+export interface TrainingSagaContext {
+  courierId: string;
   module: TrainingModule;
-  minimumScore: number;
-  validityPeriod: number; // days
-  mandatory: boolean;
+  record?: TrainingRecord;
+  score?: number;
+  eligible?: boolean;
 }
 
-export class TrainingSaga {
-  private readonly certificationRequirements: CertificationRequirement[] = [
+export interface ITrainingRecordRepository {
+  save(record: TrainingRecord): Promise<void>;
+  findByModule(courierId: string, module: TrainingModule): Promise<TrainingRecord | null>;
+  findAll(courierId: string): Promise<TrainingRecord[]>;
+}
+
+export interface ICourierEligibilityPort {
+  updateEligibility(courierId: string, eligible: boolean): Promise<void>;
+}
+
+/**
+ * Training Saga - Standardized Orchestration
+ */
+export class TrainingSaga extends DistributedSagaOrchestrator<TrainingSagaContext> {
+  protected sagaType = 'TrainingSaga';
+
+  private readonly certificationRequirements = [
     { module: TrainingModule.SAFETY_BASICS, minimumScore: 80, validityPeriod: 365, mandatory: true },
     { module: TrainingModule.CUSTOMER_SERVICE, minimumScore: 75, validityPeriod: 180, mandatory: true },
     { module: TrainingModule.DELIVERY_PROCEDURES, minimumScore: 85, validityPeriod: 365, mandatory: true },
@@ -41,150 +61,118 @@ export class TrainingSaga {
     { module: TrainingModule.EMERGENCY_PROTOCOLS, minimumScore: 90, validityPeriod: 365, mandatory: true }
   ];
 
-  async startTraining(courierId: string, module: TrainingModule): Promise<TrainingRecord> {
-    const existingRecord = await this.getTrainingRecord(courierId, module);
-    
-    if (existingRecord && existingRecord.status === TrainingStatus.IN_PROGRESS) {
-      return existingRecord;
-    }
-
-    const trainingRecord: TrainingRecord = {
-      courierId,
-      module,
-      status: TrainingStatus.IN_PROGRESS,
-      startedAt: new Date(),
-      attempts: existingRecord ? existingRecord.attempts + 1 : 1
-    };
-
-    await this.saveTrainingRecord(trainingRecord);
-    return trainingRecord;
+  constructor(
+    sagaLogRepository: ISagaLogRepository,
+    serviceName: string,
+    private readonly trainingRecordRepository: ITrainingRecordRepository,
+    private readonly eligibilityPort: ICourierEligibilityPort
+  ) {
+    super(sagaLogRepository, serviceName);
   }
 
-  async completeTraining(courierId: string, module: TrainingModule, score: number): Promise<TrainingRecord> {
-    const trainingRecord = await this.getTrainingRecord(courierId, module);
-    
-    if (!trainingRecord || trainingRecord.status !== TrainingStatus.IN_PROGRESS) {
-      throw new Error('Training not in progress');
-    }
+  protected defineSteps(): SagaStep<TrainingSagaContext>[] {
+    return [
+      {
+        name: 'start_training',
+        execute: async (context, sagaId) => {
+          const existingRecord = await this.trainingRecordRepository.findByModule(
+            context.courierId,
+            context.module
+          );
 
-    const requirement = this.certificationRequirements.find(req => req.module === module);
-    const passed = score >= (requirement?.minimumScore || 70);
+          if (existingRecord && existingRecord.status === TrainingStatus.IN_PROGRESS) {
+            context.record = existingRecord;
+            return;
+          }
 
-    trainingRecord.status = passed ? TrainingStatus.COMPLETED : TrainingStatus.FAILED;
-    trainingRecord.completedAt = new Date();
-    trainingRecord.score = score;
+          const trainingRecord: TrainingRecord = {
+            id: sagaId, // Using sagaId as recordId for simplicity if not provided
+            courierId: context.courierId,
+            module: context.module,
+            status: TrainingStatus.IN_PROGRESS,
+            startedAt: new Date(),
+            attempts: existingRecord ? existingRecord.attempts + 1 : 1
+          };
 
-    if (passed && requirement) {
-      trainingRecord.expiresAt = new Date(Date.now() + requirement.validityPeriod * 24 * 60 * 60 * 1000);
-    }
+          await this.trainingRecordRepository.save(trainingRecord);
+          context.record = trainingRecord;
+        },
+        compensate: async (context, sagaId) => {
+          if (!context.record) return;
+          context.record.status = TrainingStatus.FAILED;
+          await this.trainingRecordRepository.save(context.record);
+        }
+      },
+      {
+        name: 'record_completion',
+        execute: async (context, sagaId) => {
+          if (!context.record || context.score === undefined) {
+            // If score not provided yet, wait for external completion
+            // This step will be completed via completeStep(sagaId, 'record_completion', { score: ... })
+            throw new Error('Waiting for training score');
+          }
 
-    await this.saveTrainingRecord(trainingRecord);
+          const requirement = this.certificationRequirements.find(req => req.module === context.module);
+          const passed = context.score >= (requirement?.minimumScore || 70);
 
-    // Check if courier is now eligible for deliveries
-    if (passed) {
-      await this.checkDeliveryEligibility(courierId);
-    }
+          context.record.status = passed ? TrainingStatus.COMPLETED : TrainingStatus.FAILED;
+          context.record.completedAt = new Date();
+          context.record.score = context.score;
 
-    return trainingRecord;
-  }
+          if (passed && requirement) {
+            context.record.expiresAt = new Date(Date.now() + requirement.validityPeriod * 24 * 60 * 60 * 1000);
+          }
 
-  async checkDeliveryEligibility(courierId: string): Promise<{ eligible: boolean; missingRequirements: TrainingModule[] }> {
-    const mandatoryRequirements = this.certificationRequirements.filter(req => req.mandatory);
-    const missingRequirements: TrainingModule[] = [];
+          await this.trainingRecordRepository.save(context.record);
+        },
+        compensate: async (context, sagaId) => {
+          if (!context.record) return;
+          context.record.status = TrainingStatus.IN_PROGRESS;
+          context.record.completedAt = undefined;
+          context.record.score = undefined;
+          await this.trainingRecordRepository.save(context.record);
+        }
+      },
+      {
+        name: 'update_eligibility',
+        execute: async (context, sagaId) => {
+          const allRecords = await this.trainingRecordRepository.findAll(context.courierId);
+          const mandatoryRequirements = this.certificationRequirements.filter(req => req.mandatory);
 
-    for (const requirement of mandatoryRequirements) {
-      const record = await this.getTrainingRecord(courierId, requirement.module);
-      
-      if (!record || 
-          record.status !== TrainingStatus.COMPLETED || 
-          this.isTrainingExpired(record)) {
-        missingRequirements.push(requirement.module);
+          let eligible = true;
+          for (const req of mandatoryRequirements) {
+            const record = allRecords.find(r => r.module === req.module);
+            const isExpired = record?.expiresAt ? new Date() > record.expiresAt : false;
+
+            if (!record || record.status !== TrainingStatus.COMPLETED || isExpired) {
+              eligible = false;
+              break;
+            }
+          }
+
+          context.eligible = eligible;
+          await this.eligibilityPort.updateEligibility(context.courierId, eligible);
+
+          await (this as any).publishCommand('CourierEligibilityUpdated', {
+            courierId: context.courierId,
+            eligible
+          }, sagaId, sagaId);
+        },
+        compensate: async (context, sagaId) => {
+          // Revert eligibility if needed, though usually safety-first means we'd keep it restricted
+          await this.eligibilityPort.updateEligibility(context.courierId, false);
+        }
       }
-    }
-
-    const eligible = missingRequirements.length === 0;
-
-    // Update courier eligibility status
-    await this.updateCourierEligibility(courierId, eligible);
-
-    return { eligible, missingRequirements };
+    ];
   }
 
-  async getTrainingProgress(courierId: string): Promise<{
-    completed: TrainingRecord[];
-    inProgress: TrainingRecord[];
-    required: TrainingModule[];
-    eligible: boolean;
-  }> {
-    const allRecords = await this.getAllTrainingRecords(courierId);
-    
-    const completed = allRecords.filter(record => 
-      record.status === TrainingStatus.COMPLETED && !this.isTrainingExpired(record)
-    );
-    
-    const inProgress = allRecords.filter(record => 
-      record.status === TrainingStatus.IN_PROGRESS
-    );
-
-    const completedModules = completed.map(record => record.module);
-    const required = this.certificationRequirements
-      .filter(req => req.mandatory && !completedModules.includes(req.module))
-      .map(req => req.module);
-
-    const eligibilityCheck = await this.checkDeliveryEligibility(courierId);
-
-    return {
-      completed,
-      inProgress,
-      required,
-      eligible: eligibilityCheck.eligible
-    };
-  }
-
-  async scheduleRetraining(courierId: string): Promise<TrainingModule[]> {
-    const allRecords = await this.getAllTrainingRecords(courierId);
-    const modulesToRetrain: TrainingModule[] = [];
-
-    for (const record of allRecords) {
-      if (record.status === TrainingStatus.COMPLETED && this.isTrainingExpired(record)) {
-        modulesToRetrain.push(record.module);
-        
-        // Mark as expired
-        record.status = TrainingStatus.EXPIRED;
-        await this.saveTrainingRecord(record);
-      }
-    }
-
-    // Update courier eligibility if any mandatory training expired
-    if (modulesToRetrain.some(module => 
-      this.certificationRequirements.find(req => req.module === module)?.mandatory
-    )) {
-      await this.updateCourierEligibility(courierId, false);
-    }
-
-    return modulesToRetrain;
-  }
-
-  private isTrainingExpired(record: TrainingRecord): boolean {
-    if (!record.expiresAt) return false;
-    return new Date() > record.expiresAt;
-  }
-
-  private async getTrainingRecord(courierId: string, module: TrainingModule): Promise<TrainingRecord | null> {
-    // Integration with database
-    return null; // Placeholder
-  }
-
-  private async getAllTrainingRecords(courierId: string): Promise<TrainingRecord[]> {
-    // Integration with database
-    return []; // Placeholder
-  }
-
-  private async saveTrainingRecord(record: TrainingRecord): Promise<void> {
-    // Integration with database
-  }
-
-  private async updateCourierEligibility(courierId: string, eligible: boolean): Promise<void> {
-    // Integration with courier service
+  // External completion method
+  async handleTrainingFinished(sagaId: string, score: number): Promise<void> {
+    await this.completeStep(sagaId, 'record_completion', undefined, async (saga) => {
+      const context = saga.payload as TrainingSagaContext;
+      context.score = score;
+      // Optionally update the context in DB here? 
+      // completeStep calls executeNextStep which will pick up the context from memory/passing
+    });
   }
 }

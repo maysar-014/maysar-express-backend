@@ -1,6 +1,9 @@
 import 'reflect-metadata';
 import { Container } from 'inversify';
-import { TYPES } from './types';
+
+import { prisma } from './database/prisma-client';
+import { eventBus } from '@shared/events/eventBus';
+import { PrismaClient } from '@prisma/client';
 
 // Placeholder types
 export const TYPES = {
@@ -11,4 +14,5 @@ export const TYPES = {
 export const container = new Container();
 
 // Initial bindings
-// container.bind<PrismaClient>(TYPES.PrismaClient).toConstantValue(new PrismaClient());
+container.bind<PrismaClient>(TYPES.PrismaClient).toConstantValue(prisma);
+container.bind(TYPES.EventBus).toConstantValue(eventBus);

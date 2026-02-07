@@ -1,0 +1,21 @@
+stateDiagram-v2
+    [*] --> INITIAL_STATE : create()
+    INITIAL_STATE --> STATE_2 : transition1()
+    STATE_2 --> STATE_3 : transition2()
+    STATE_2 --> FAILED : fail()
+    STATE_3 --> COMPLETED : complete()
+    INITIAL_STATE --> CANCELLED : cancel()
+    STATE_2 --> CANCELLED : cancel()
+    COMPLETED --> [*]
+    FAILED --> [*]
+    CANCELLED --> [*]
+
+    note right of STATE_2
+        Description of what happens
+        in this state
+    end note
+
+    note right of COMPLETED
+        Final success state
+        Business logic complete
+    end note

@@ -1,0 +1,26 @@
+stateDiagram-v2
+    [*] --> PENDING : calculate()
+    PENDING --> APPROVED : approve()
+    PENDING --> DISPUTED : dispute()
+    APPROVED --> PAID : payout()
+    APPROVED --> HELD : hold()
+    HELD --> APPROVED : release()
+    DISPUTED --> APPROVED : resolve()
+    DISPUTED --> CANCELLED : cancelDispute()
+    PAID --> [*]
+    CANCELLED --> [*]
+
+    note right of PENDING
+        Commission calculated
+        Awaiting verification
+    end note
+
+    note right of HELD
+        Payment temporarily frozen
+        Pending investigation
+    end note
+
+    note right of PAID
+        Transferred to enabler wallet
+        Commission cycle complete
+    end note

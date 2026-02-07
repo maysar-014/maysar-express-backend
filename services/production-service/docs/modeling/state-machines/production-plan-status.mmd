@@ -1,0 +1,22 @@
+stateDiagram-v2
+    [*] --> DRAFT : create()
+    DRAFT --> SCHEDULED : schedule()
+    SCHEDULED --> IN_PROGRESS : start()
+    IN_PROGRESS --> ON_HOLD : pause()
+    ON_HOLD --> IN_PROGRESS : resume()
+    IN_PROGRESS --> COMPLETED : complete()
+    DRAFT --> CANCELLED : cancel()
+    SCHEDULED --> CANCELLED : cancel()
+    IN_PROGRESS --> CANCELLED : cancel()
+    COMPLETED --> [*]
+    CANCELLED --> [*]
+
+    note right of IN_PROGRESS
+        Updates actualQuantity progress
+        Cannot modify if completed
+    end note
+
+    note right of COMPLETED
+        Status is immutable
+        Plan finalized
+    end note

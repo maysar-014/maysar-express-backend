@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant Saga as [SagaName]Saga
+    participant UseCase1 as [UseCase1]
+    participant UseCase2 as [UseCase2]
+    participant Service as ExternalService
+    participant Bus as EventBus
+
+    Note over Saga: Triggered by [EventName] event
+
+    rect rgb(240, 240, 240)
+        note right of Saga: [Step 1 Name] Step
+        Saga->>UseCase1: execute(data)
+        UseCase1-->>Saga: result
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: [Step 2 Name] Step
+        Saga->>UseCase2: execute(data)
+        UseCase2-->>Saga: result
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: [Step 3 Name] Step
+        Saga->>Service: invokeOperation(data)
+        Service-->>Saga: response
+    end
+
+    Saga->>Bus: publish([CompletionEvent])
+
+    opt Compensation
+        Saga->>UseCase2: compensate(data)
+        Saga->>UseCase1: compensate(data)
+    end

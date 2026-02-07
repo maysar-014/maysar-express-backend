@@ -39,7 +39,8 @@ export interface InitiatePayoutResultDTO {
 export class InitiatePayoutUseCase {
     constructor(
         private readonly payoutRepository: IPayoutRepository,
-        private readonly payoutPolicy: PayoutPolicy
+        private readonly payoutPolicy: PayoutPolicy,
+        private readonly payoutSaga: any
     ) { }
 
     async execute(dto: InitiatePayoutDTO): Promise<InitiatePayoutResultDTO> {
@@ -107,6 +108,15 @@ export class InitiatePayoutUseCase {
 
         // Save payout
         await this.payoutRepository.save(payout);
+
+        // Start Payout Saga
+        await this.payoutSaga.start({
+            payoutId: payout.id,
+            sellerId: payout.userId,
+            amount: payout.amount,
+            currency: payout.currency,
+            method: payout.method
+        });
 
         return {
             success: true,

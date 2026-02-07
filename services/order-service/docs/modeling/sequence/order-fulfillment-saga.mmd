@@ -1,18 +1,25 @@
 sequenceDiagram
     participant Saga
-    participant OR as OrderRepository
     participant IS as InventoryService
+    participant PS as PaymentService
     participant LS as LogisticsService
     participant EB as EventBus
 
-    Saga->>IS: reserveInventory(items)
-    IS-->>Saga: success
+    Note over Saga: StockReservation Step
+    Saga->>IS: StockReservation.Command
+    IS-->>Saga: StockReserved.Event
     
-    Saga->>LS: createDelivery(orderId, destination)
-    LS-->>Saga: deliveryId
+    Note over Saga: Payment Step
+    Saga->>PS: Payment.Command
+    PS-->>Saga: PaymentSuccess.Event
     
-    Saga->>OR: updateOrderStatus(orderId, IN_TRANSIT)
-    OR-->>Saga: success
+    Note over Saga: Delivery Step
+    Saga->>LS: Delivery.Command
+    LS-->>Saga: DeliverySuccess.Event
     
-    Saga->>EB: publish(FulfillmentStartedEvent)
-    Saga->>EB: publish(OrderInTransitEvent)
+    Note over Saga: Completion
+    Saga->>EB: FulfillmentCompleted.Event
+
+    Note over Saga: Compensations
+    Note right of IS: StockRelease.Command
+    Note right of PS: PaymentRefund.Command

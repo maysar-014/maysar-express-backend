@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export enum OutboxStatus {
   PENDING = 'PENDING',
-  PROCESSING = 'PROCESSING', 
+  PROCESSING = 'PROCESSING',
   SENT = 'SENT',
   FAILED = 'FAILED'
 }
@@ -23,14 +23,14 @@ export interface OutboxEntry {
 }
 
 export class TransactionalOutbox {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: PrismaClient) { }
 
   async saveEvent<T>(
     envelope: EventEnvelope<T>,
     transaction?: any
   ): Promise<void> {
     const prismaClient = transaction || this.prisma;
-    
+
     await prismaClient.outboxEvent.create({
       data: {
         id: uuidv4(),
@@ -61,7 +61,7 @@ export class TransactionalOutbox {
   async markAsProcessing(eventId: string): Promise<void> {
     await this.prisma.outboxEvent.update({
       where: { eventId },
-      data: { 
+      data: {
         status: OutboxStatus.PROCESSING,
         processedAt: new Date()
       }
@@ -71,7 +71,7 @@ export class TransactionalOutbox {
   async markAsSent(eventId: string): Promise<void> {
     await this.prisma.outboxEvent.update({
       where: { eventId },
-      data: { 
+      data: {
         status: OutboxStatus.SENT,
         processedAt: new Date()
       }
@@ -82,11 +82,23 @@ export class TransactionalOutbox {
     await this.prisma.outboxEvent.update({
       where: { eventId },
       data: {
-        status: OutboxStatus.FAILED,
         attempts: { increment: 1 },
         lastError: error,
         nextRetryAt,
         processedAt: new Date()
+      }
+    });
+  }
+
+  async markAsDeadLetter(eventId: string, error: string): Promise<void> {
+    await this.prisma.outboxEvent.update({
+      where: { eventId },
+      data: {
+        status: OutboxStatus.FAILED,
+        attempts: { increment: 1 },
+        lastError: error,
+        processedAt: new Date(),
+        nextRetryAt: null
       }
     });
   }

@@ -1,24 +1,25 @@
-import { BaseSaga } from './saga-base';
+import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
+import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
 
-export class CampaignSchedulingSaga extends BaseSaga {
-    readonly sagaId: string;
-    readonly sagaType = 'CampaignScheduling';
+export interface CampaignSchedulingContext {
+    campaignId: string;
+    // Add context properties
+}
 
-    constructor(campaignId: string) {
-        super();
-        this.sagaId = `scheduling-${campaignId}`;
-        this.state = { campaignId };
+export class CampaignSchedulingSaga extends DistributedSagaOrchestrator<CampaignSchedulingContext> {
+    protected sagaType = 'CampaignSchedulingSaga';
+
+    constructor() {
+        super(sagaLogRepository, 'campaign-service');
     }
 
-    protected initializeState(context: any): void {
-        this.state = { ...this.state, ...context };
+    protected async onStart(sagaId: string, payload: CampaignSchedulingContext, correlationId?: string): Promise<void> {
     }
 
-    protected async executeNextStep(): Promise<void> {
-        // Logic for scheduling activation/deactivation
+    protected async onCompensate(sagaId: string, failedStepName: string): Promise<void> {
     }
 
-    protected async processEvent(event: any): Promise<void> {
-        // Handle scheduling events
+    protected defineSteps(): SagaStep<CampaignSchedulingContext>[] {
+        return [];
     }
 }

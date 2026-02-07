@@ -34,3 +34,5 @@ export class LoggerService {
         this.logger.debug(message, meta);
     }
 }
+
+export const logger = new LoggerService();

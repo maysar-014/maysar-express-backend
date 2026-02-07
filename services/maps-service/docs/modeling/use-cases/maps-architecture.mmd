@@ -1,0 +1,9 @@
+graph LR
+    LS[Logistics Service] -->|HTTP| MS[Maps Service]
+    DS[Delivery Service] -->|HTTP| MS
+    OS[Order Service] -->|HTTP| MS
+
+    MS -->|API Calls| GM[Google Maps API]
+    MS -->|API Calls| MB[MapBox API]
+
+    style MS fill:#e1f5ff

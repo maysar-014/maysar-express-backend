@@ -1,24 +1,25 @@
-import { BaseSaga } from './saga-base';
+import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
+import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
 
-export class CampaignPricingSaga extends BaseSaga {
-    readonly sagaId: string;
-    readonly sagaType = 'CampaignPricing';
+export interface CampaignPricingContext {
+    campaignId: string;
+    // Add context properties
+}
 
-    constructor(campaignId: string) {
-        super();
-        this.sagaId = `pricing-${campaignId}`;
-        this.state = { campaignId };
+export class CampaignPricingSaga extends DistributedSagaOrchestrator<CampaignPricingContext> {
+    protected sagaType = 'CampaignPricingSaga';
+
+    constructor() {
+        super(sagaLogRepository, 'campaign-service');
     }
 
-    protected initializeState(context: any): void {
-        this.state = { ...this.state, ...context };
+    protected async onStart(sagaId: string, payload: CampaignPricingContext, correlationId?: string): Promise<void> {
     }
 
-    protected async executeNextStep(): Promise<void> {
-        // Logic for applying/reverting pricing
+    protected async onCompensate(sagaId: string, failedStepName: string): Promise<void> {
     }
 
-    protected async processEvent(event: any): Promise<void> {
-        // Handle pricing related events
+    protected defineSteps(): SagaStep<CampaignPricingContext>[] {
+        return [];
     }
 }

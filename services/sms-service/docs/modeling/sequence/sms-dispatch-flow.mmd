@@ -1,0 +1,47 @@
+sequenceDiagram
+    participant API as SMS API
+    participant Queue as Message Queue
+    participant Dispatcher as SMS Dispatcher
+    participant Provider as SMS Provider
+    participant Tracker as Delivery Tracker
+    participant Bus as EventBus
+
+    Note over API: Inbound SMS request
+
+    rect rgb(240, 240, 240)
+        note right of API: Enqueue Message Step
+        API->>Queue: enqueue(message)
+        Queue-->>API: messageId (QUEUED)
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Queue: Dispatch Step
+        Queue->>Dispatcher: getNextMessage()
+        Dispatcher->>Dispatcher: updateStatus(SENDING)
+        Dispatcher->>Provider: sendSMS(phone, message)
+        Provider-->>Dispatcher: providerResponse
+        alt Provider Success
+            Dispatcher->>Tracker: recordSent(messageId)
+            Dispatcher->>Bus: publish(SMSSent)
+        else Provider Failure
+            Dispatcher->>Dispatcher: updateStatus(FAILED)
+            Dispatcher->>Dispatcher: scheduleRetry()
+        end
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Provider: Delivery Confirmation Step
+        Provider-->>Tracker: deliveryCallback(messageId, status)
+        alt Delivered
+            Tracker->>Tracker: updateStatus(DELIVERED)
+            Tracker->>Bus: publish(SMSDelivered)
+        else Undelivered
+            Tracker->>Tracker: updateStatus(UNDELIVERED)
+            Tracker->>Bus: publish(SMSFailed)
+        end
+    end
+
+    opt Retry on Failure
+        Dispatcher->>Queue: requeue(message)
+        Note over Dispatcher: Max 3 retry attempts
+    end

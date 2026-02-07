@@ -1,6 +1,8 @@
-import { BaseSaga } from './saga-base';
+import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
+import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
 import { notificationClient, auditClient, sessionClient } from './service-clients';
 import { logger } from '../../infrastructure/services/logger.service';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface SecurityPolicyBreachEvent {
   eventId: string;
@@ -10,74 +12,102 @@ export interface SecurityPolicyBreachEvent {
   severity: 'low' | 'medium' | 'high' | 'critical';
   details: Record<string, any>;
   timestamp: Date;
+  metadata?: { correlationId: string };
+}
+
+export class SecurityPolicyBreachSaga extends DistributedSagaOrchestrator<SecurityPolicyBreachEvent> {
+  protected sagaType = 'SecurityPolicyBreachSaga';
+
+  constructor() {
+    super(sagaLogRepository, 'user-service');
+  }
+
+  protected async onStart(sagaId: string, payload: SecurityPolicyBreachEvent, correlationId?: string): Promise<void> {
+    logger.info(`Starting SecurityPolicyBreachSaga for user ${payload.userId}`, { sagaId, correlationId });
+  }
+
+  protected async onCompensate(sagaId: string, failedStepName: string): Promise<void> {
+    logger.info(`Compensating SecurityPolicyBreachSaga failed at ${failedStepName}`, { sagaId });
+  }
+
+  protected defineSteps(): SagaStep<SecurityPolicyBreachEvent>[] {
+    return [
+      {
+        name: 'AlertSecurityTeam',
+        execute: async (payload, sagaId) => {
+          logger.info('Alerting security team', { userId: payload.userId, severity: payload.severity, sagaId });
+          await auditClient.recordEvent('security_team', 'breach_alert', {
+            userId: payload.userId,
+            breachType: payload.breachType,
+            severity: payload.severity,
+            details: payload.details
+          });
+        },
+        compensate: async (payload, sagaId) => {
+          logger.info('Clearing security alert', { userId: payload.userId, sagaId });
+          // Log alert clearance
+        }
+      },
+      {
+        name: 'ReviewActiveSessions',
+        execute: async (payload, sagaId) => {
+          logger.info('Reviewing active sessions', { userId: payload.userId, sagaId });
+          // Fetch and review all active sessions
+          if (payload.severity === 'critical') {
+            await sessionClient.invalidateUserSessions(payload.userId, `Security breach: ${payload.breachType}`);
+          }
+        },
+        compensate: async (payload, sagaId) => {
+          logger.info('Session review compensation', { userId: payload.userId, sagaId });
+          // Cannot restore sessions if terminated
+        }
+      },
+      {
+        name: 'RecordSecurityEvent',
+        execute: async (payload, sagaId) => {
+          await auditClient.recordEvent(payload.userId, 'security_breach_detected', {
+            breachType: payload.breachType,
+            severity: payload.severity,
+            details: payload.details
+          });
+        },
+        compensate: async (payload, sagaId) => {
+          await auditClient.recordEvent(payload.userId, 'security_breach_compensated', {
+            originalEventId: payload.eventId
+          });
+        }
+      },
+      {
+        name: 'NotifyUser',
+        execute: async (payload, sagaId) => {
+          const template = payload.severity === 'critical' ? 'security_alert_critical' : 'security_alert';
+          await notificationClient.sendEmail(payload.userId, template, {
+            breachType: payload.breachType,
+            severity: payload.severity,
+            actionRequired: payload.severity === 'critical',
+            timestamp: new Date().toISOString()
+          });
+        },
+        compensate: async (payload, sagaId) => {
+          // Cannot unsend notification
+        }
+      }
+    ];
+  }
 }
 
 export async function executeSecurityPolicyBreachSaga(event: SecurityPolicyBreachEvent): Promise<void> {
-  const saga = new BaseSaga(event.eventId, event);
+  const saga = new SecurityPolicyBreachSaga();
+  const correlationId = event.metadata?.correlationId || uuidv4();
 
-  saga.addStep({
-    name: 'AlertSecurityTeam',
-    execute: async () => {
-      logger.info('Alerting security team', { userId: event.userId, severity: event.severity });
-      await auditClient.recordEvent('security_team', 'breach_alert', {
-        userId: event.userId,
-        breachType: event.breachType,
-        severity: event.severity,
-        details: event.details
-      });
-    },
-    compensate: async () => {
-      logger.info('Clearing security alert', { userId: event.userId });
-      // Log alert clearance
-    }
-  });
-
-  saga.addStep({
-    name: 'ReviewActiveSessions',
-    execute: async () => {
-      logger.info('Reviewing active sessions', { userId: event.userId });
-      // Fetch and review all active sessions
-      if (event.severity === 'critical') {
-        await sessionClient.invalidateUserSessions(event.userId, `Security breach: ${event.breachType}`);
-      }
-    },
-    compensate: async () => {
-      logger.info('Session review compensation', { userId: event.userId });
-      // Cannot restore sessions if terminated
-    }
-  });
-
-  saga.addStep({
-    name: 'RecordSecurityEvent',
-    execute: async () => {
-      await auditClient.recordEvent(event.userId, 'security_breach_detected', {
-        breachType: event.breachType,
-        severity: event.severity,
-        details: event.details
-      });
-    },
-    compensate: async () => {
-      await auditClient.recordEvent(event.userId, 'security_breach_compensated', {
-        originalEventId: event.eventId
-      });
-    }
-  });
-
-  saga.addStep({
-    name: 'NotifyUser',
-    execute: async () => {
-      const template = event.severity === 'critical' ? 'security_alert_critical' : 'security_alert';
-      await notificationClient.sendEmail(event.userId, template, {
-        breachType: event.breachType,
-        severity: event.severity,
-        actionRequired: event.severity === 'critical',
-        timestamp: new Date().toISOString()
-      });
-    },
-    compensate: async () => {
-      // Cannot unsend notification
-    }
-  });
-
-  await saga.execute();
+  try {
+    await saga.start(event, correlationId);
+  } catch (error) {
+    logger.error('Security policy breach saga failed to start', {
+      error: error instanceof Error ? error.message : String(error),
+      userId: event.userId,
+      correlationId
+    });
+    throw error;
+  }
 }

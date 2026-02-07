@@ -1,15 +1,15 @@
 import { PrismaClient } from '@prisma/client';
-import { EventEnvelope } from '../events/eventBus';
+import { EventEnvelope, EventBus } from '../events/eventBus';
 import { OutboxEntry, OutboxStatus, TransactionalOutbox } from './outboxPattern';
-import { KafkaEventPublisher } from '../events/eventBus';
 
 export class OutboxProcessor {
     private isRunning = false;
     private intervalId?: NodeJS.Timeout;
 
     constructor(
+        private prisma: PrismaClient,
         private outbox: TransactionalOutbox,
-        private kafkaPublisher: KafkaEventPublisher,
+        private eventPublisher: EventBus,
         private config = {
             pollInterval: 5000,
             batchSize: 50,
@@ -48,7 +48,7 @@ export class OutboxProcessor {
                 await this.outbox.markAsProcessing(event.eventId);
 
                 const envelope = event.eventData as EventEnvelope;
-                await this.kafkaPublisher.publish(envelope.eventType, envelope.data, envelope.metadata);
+                await this.eventPublisher.publish(envelope.eventType, envelope.data, envelope.metadata);
 
                 await this.outbox.markAsSent(event.eventId);
                 console.log(`Outbox published event ${event.eventId} to Kafka`);
@@ -56,7 +56,7 @@ export class OutboxProcessor {
                 const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
                 if (event.attempts >= this.config.maxRetries) {
-                    await this.outbox.markAsFailed(event.eventId, errorMessage);
+                    await this.outbox.markAsDeadLetter(event.eventId, errorMessage);
                     console.error(`Outbox event ${event.eventId} failed permanently: ${errorMessage}`);
                 } else {
                     const nextRetryAt = new Date(Date.now() + this.config.retryDelayMs);

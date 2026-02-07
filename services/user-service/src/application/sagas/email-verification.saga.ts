@@ -1,71 +1,77 @@
 import { UserEmailVerifiedEvent } from '../../domain/events';
 import { logger } from '../../infrastructure/services/logger.service';
+import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
+import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
+import { v4 as uuidv4 } from 'uuid';
 
-export interface EmailVerificationSagaStep {
-  name: string;
-  execute: () => Promise<void>;
-  compensate: () => Promise<void>;
+export interface EmailVerificationContext {
+  event: UserEmailVerifiedEvent;
+  metadata: {
+    correlationId: string;
+    userId: string;
+    timestamp: Date;
+  };
 }
 
-export class EmailVerificationSaga {
-  private steps: EmailVerificationSagaStep[] = [];
+export class EmailVerificationSaga extends DistributedSagaOrchestrator<EmailVerificationContext> {
+  protected sagaType = 'EmailVerificationSaga';
 
-  addStep(step: EmailVerificationSagaStep): void {
-    this.steps.push(step);
+  constructor() {
+    super(sagaLogRepository, 'user-service');
   }
 
-  async execute(): Promise<void> {
-    const executedSteps: EmailVerificationSagaStep[] = [];
-
-    try {
-      for (const step of this.steps) {
-        await step.execute();
-        executedSteps.push(step);
-        logger.info(`Email verification saga step completed: ${step.name}`);
-      }
-    } catch (error) {
-      logger.error(`Email verification saga step failed: ${error}`, { error });
-      await this.compensate(executedSteps);
-      throw error;
-    }
+  protected async onStart(sagaId: string, payload: EmailVerificationContext, correlationId?: string): Promise<void> {
+    logger.info(`Starting EmailVerificationSaga for user ${payload.metadata.userId}`, { sagaId, correlationId });
   }
 
-  private async compensate(executedSteps: EmailVerificationSagaStep[]): Promise<void> {
-    for (let i = executedSteps.length - 1; i >= 0; i--) {
-      const step = executedSteps[i];
-      if (!step) continue;
-      try {
-        await step.compensate();
-        logger.info(`Email verification saga compensation completed: ${step.name}`);
-      } catch (compensationError) {
-        logger.error(`Email verification saga compensation failed: ${compensationError}`, { error: compensationError });
+  protected async onCompensate(sagaId: string, failedStepName: string): Promise<void> {
+    logger.info(`Compensating EmailVerificationSaga failed at ${failedStepName}`, { sagaId });
+  }
+
+  protected defineSteps(): SagaStep<EmailVerificationContext>[] {
+    return [
+      {
+        name: 'UpdateUserStatus',
+        execute: async (context, sagaId) => {
+          logger.info('Updating user status to verified', { userId: context.metadata.userId, sagaId });
+        },
+        compensate: async (context, sagaId) => {
+          logger.info('Compensating: Reverting user status', { userId: context.metadata.userId, sagaId });
+        }
+      },
+      {
+        name: 'SendConfirmationEmail',
+        execute: async (context, sagaId) => {
+          logger.info('Sending confirmation email', { userId: context.metadata.userId, sagaId });
+        },
+        compensate: async (context, sagaId) => {
+          logger.info('Compensating: Removing confirmation email', { userId: context.metadata.userId, sagaId });
+        }
       }
-    }
+    ];
   }
 }
 
 export async function executeEmailVerificationSaga(event: UserEmailVerifiedEvent): Promise<void> {
   const saga = new EmailVerificationSaga();
-
-  saga.addStep({
-    name: 'UpdateUserStatus',
-    execute: async () => {
-      logger.info('Updating user status to verified', { userId: event.aggregateId });
-    },
-    compensate: async () => {
-      logger.info('Compensating: Reverting user status', { userId: event.aggregateId });
+  const correlationId = event.metadata?.correlationId || uuidv4();
+  const context: EmailVerificationContext = {
+    event,
+    metadata: {
+      correlationId,
+      userId: event.aggregateId,
+      timestamp: new Date()
     }
-  });
+  };
 
-  saga.addStep({
-    name: 'SendConfirmationEmail',
-    execute: async () => {
-      logger.info('Sending confirmation email', { userId: event.aggregateId });
-    },
-    compensate: async () => {
-      logger.info('Compensating: Removing confirmation email', { userId: event.aggregateId });
-    }
-  });
-
-  await saga.execute();
+  try {
+    await saga.start(context, correlationId);
+  } catch (error) {
+    logger.error('Email verification saga failed to start', {
+      error: error instanceof Error ? error.message : String(error),
+      userId: event.aggregateId,
+      correlationId
+    });
+    throw error;
+  }
 }

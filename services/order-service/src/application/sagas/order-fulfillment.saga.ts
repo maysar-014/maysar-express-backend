@@ -1,5 +1,5 @@
-import { DistributedSagaOrchestrator } from '../../../../shared/saga/saga.orchestrator';
-import { ISagaLogRepository, SagaLogEntry } from '../../../../shared/saga/saga.log';
+import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
+import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
 
 export interface OrderFulfillmentPayload {
     orderId: string;
@@ -12,85 +12,80 @@ export interface OrderFulfillmentPayload {
 export class OrderFulfillmentSaga extends DistributedSagaOrchestrator<OrderFulfillmentPayload> {
     protected sagaType = 'OrderFulfillmentSaga';
 
-    constructor(sagaLogRepository: ISagaLogRepository) {
+    constructor() {
         super(sagaLogRepository, 'order-service');
     }
 
-    protected async onStart(sagaId: string, payload: OrderFulfillmentPayload): Promise<void> {
-        // Step 1: Reserve Stock
-        await this.publishCommand('StockReservation.Command', {
-            sagaId,
-            orderId: payload.orderId,
-            items: payload.items
-        }, sagaId);
+    protected async onStart(sagaId: string, payload: OrderFulfillmentPayload, correlationId?: string): Promise<void> {
+        // Logging or initial setup if needed
     }
 
-    /**
-     * Called when StockReservedSuccess is received
-     */
+    protected defineSteps(): SagaStep<OrderFulfillmentPayload>[] {
+        return [
+            {
+                name: 'StockReservation',
+                execute: async (payload, sagaId) => {
+                    await this.publishCommand('StockReservation.Command', {
+                        sagaId,
+                        orderId: payload.orderId,
+                        items: payload.items
+                    }, sagaId);
+                },
+                compensate: async (payload, sagaId) => {
+                    await this.publishCommand('StockRelease.Command', {
+                        sagaId,
+                        orderId: payload.orderId
+                    }, sagaId);
+                }
+            },
+            {
+                name: 'Payment',
+                execute: async (payload, sagaId) => {
+                    await this.publishCommand('Payment.Command', {
+                        sagaId,
+                        orderId: payload.orderId,
+                        amount: payload.amount,
+                        buyerId: payload.buyerId
+                    }, sagaId);
+                },
+                compensate: async (payload, sagaId) => {
+                    await this.publishCommand('PaymentRefund.Command', {
+                        sagaId,
+                        orderId: payload.orderId
+                    }, sagaId);
+                }
+            },
+            {
+                name: 'Delivery',
+                execute: async (payload, sagaId) => {
+                    await this.publishCommand('Delivery.Command', {
+                        sagaId,
+                        orderId: payload.orderId,
+                        sellerId: payload.sellerId
+                    }, sagaId);
+                },
+                compensate: async () => {
+                    // No specific delivery compensation needed if it's just scheduling
+                }
+            }
+        ];
+    }
+
     async handleStockReserved(sagaId: string): Promise<void> {
-        await this.completeStep(sagaId, 'StockReservation', async (saga) => {
-            const payload = saga.payload as OrderFulfillmentPayload;
-            // Step 2: Process Payment
-            await this.publishCommand('Payment.Command', {
-                sagaId,
-                orderId: payload.orderId,
-                amount: payload.amount,
-                buyerId: payload.buyerId
-            }, sagaId);
-        });
+        await this.completeStep(sagaId, 'StockReservation');
     }
 
-    /**
-     * Called when PaymentSuccess is received
-     */
     async handlePaymentSuccess(sagaId: string): Promise<void> {
-        await this.completeStep(sagaId, 'Payment', async (saga) => {
-            const payload = saga.payload as OrderFulfillmentPayload;
-            // Step 3: Schedule Delivery
-            await this.publishCommand('Delivery.Command', {
-                sagaId,
-                orderId: payload.orderId,
-                sellerId: payload.sellerId
-            }, sagaId);
-        });
+        await this.completeStep(sagaId, 'Payment');
     }
 
-    /**
-     * Called when DeliveryScheduledSuccess is received
-     */
     async handleDeliverySuccess(sagaId: string): Promise<void> {
-        await this.completeSaga(sagaId);
+        await this.completeStep(sagaId, 'Delivery');
     }
 
-    /**
-     * Called when any failure occurs
-     */
     async handleFailure(sagaId: string, stepName: string, error: string): Promise<void> {
         await this.failStep(sagaId, stepName, error);
     }
-
-    protected async onCompensate(sagaId: string, failedStepName: string): Promise<void> {
-        const saga = await this.getSagaOrThrow(sagaId);
-
-        // Reverse logic based on where we failed
-        if (failedStepName === 'Payment' || failedStepName === 'Delivery') {
-            // If payment failed or delivery failed, we must release stock
-            await this.publishCommand('StockRelease.Command', {
-                sagaId,
-                orderId: (saga.payload as OrderFulfillmentPayload).orderId
-            }, sagaId);
-        }
-
-        if (failedStepName === 'Delivery') {
-            // If delivery failed, we might need to refund payment
-            await this.publishCommand('PaymentRefund.Command', {
-                sagaId,
-                orderId: (saga.payload as OrderFulfillmentPayload).orderId
-            }, sagaId);
-        }
-
-        // Mark as compensated once commands are sent (Outbox ensures they go out)
-        await this.markAsCompensated(sagaId);
-    }
 }
+
+

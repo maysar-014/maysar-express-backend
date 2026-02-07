@@ -9,6 +9,9 @@ import { MapsRoutingBridge } from './providers/maps-routing.bridge';
 import { MapsTrackingBridge } from './providers/maps-tracking.bridge';
 import { EventPublisher } from './messaging/event-publisher';
 import { SupabaseClientManager } from './database/supabase.client';
+import { PrismaClientManager } from './database/prisma.client';
+import { PrismaSagaLogRepository } from '../../../../shared/saga/saga-log.repository';
+import { ISagaLogRepository } from '../../../../shared/saga/saga.log';
 
 // Domain layer
 import { LogisticsEngine } from '../domain/engines/logistics.engine';
@@ -54,6 +57,7 @@ export class DependencyContainer {
   private routeOptimizationProvider!: RouteOptimizationPort;
   private trackingProvider!: RealTimeTrackingPort;
   private eventPublisher!: EventPublisherPort;
+  private sagaLogRepository!: ISagaLogRepository;
 
   // Domain services (singletons)
   private logisticsEngine!: LogisticsEngine;
@@ -136,6 +140,11 @@ export class DependencyContainer {
     this.trackingProvider = new MapsTrackingBridge();
     this.eventPublisher = new EventPublisher(true); // Enable event store
 
+    // Initialize Saga Log Repository
+    const prismaManager = PrismaClientManager.getInstance();
+    // Use synchronous getClient idea if possible, otherwise we handle in initializeDatabaseConnections
+    this.sagaLogRepository = new PrismaSagaLogRepository(prismaManager.getClient());
+
     // Initialize domain services that depend on infrastructure
     this.initializeDomainWithInfrastructure();
   }
@@ -187,6 +196,8 @@ export class DependencyContainer {
     );
 
     this.deliverySaga = new DeliverySaga(
+      this.sagaLogRepository,
+      'logistics-service',
       this.courierRepository,
       this.trackingProvider,
       this.routeRepository,
@@ -195,7 +206,8 @@ export class DependencyContainer {
     );
 
     this.sagaRegistry = SagaRegistry.getInstance();
-    // Note: Saga registry registration simplified for now
+    this.sagaRegistry.registerOrchestrator('DeliverySaga', this.deliverySaga);
+    // Note: Saga registry registration updated to new pattern
   }
 
   // Getters for infrastructure adapters

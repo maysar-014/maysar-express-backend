@@ -1,0 +1,44 @@
+sequenceDiagram
+    participant Saga as ProductListingSaga
+    participant ListingRepo as ProductListingRepository
+    participant EnablerRepo as EnablerRepository
+    participant CatalogSvc as CatalogService
+    participant NotifSvc as NotificationService
+
+    Note over Saga: Triggered by product listing submission
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Create Listing Step
+        Saga->>EnablerRepo: getEnabler(enablerId)
+        EnablerRepo-->>Saga: enabler
+        Saga->>Saga: validateEnablerCanList()
+        Saga->>ListingRepo: createListing(productData)
+        ListingRepo-->>Saga: listing (DRAFT)
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Quality Check Step
+        Saga->>Saga: validateProductData()
+        alt Auto-Approve Eligible
+            Saga->>ListingRepo: updateStatus(listingId, ACTIVE)
+        else Manual Review Required
+            Saga->>ListingRepo: updateStatus(listingId, PENDING_APPROVAL)
+            Saga->>NotifSvc: notifyAdmins(listingId)
+        end
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Sync to Catalog Step
+        alt Listing Approved
+            Saga->>CatalogSvc: publishProduct(listing)
+            CatalogSvc-->>Saga: productId
+            Saga->>ListingRepo: linkCatalogProduct(listingId, productId)
+        end
+    end
+
+    Saga->>NotifSvc: notifyEnabler(enablerId, status)
+
+    opt Compensation
+        Saga->>CatalogSvc: unpublishProduct(productId)
+        Saga->>ListingRepo: deleteListing(listingId)
+    end

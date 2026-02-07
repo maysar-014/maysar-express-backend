@@ -1,0 +1,23 @@
+stateDiagram-v2
+    [*] --> PENDING : create()
+    PENDING --> PASSED : recordResult(passed=true)
+    PENDING --> FAILED : recordResult(passed=false)
+    PENDING --> REWORK_REQUIRED : requiresRework()
+    REWORK_REQUIRED --> PENDING : retest()
+    PASSED --> [*]
+    FAILED --> [*]
+
+    note right of PENDING
+        Inspector assigned
+        Awaiting inspection
+    end note
+
+    note right of PASSED
+        Quality approved
+        Production continues
+    end note
+
+    note right of FAILED
+        Defects recorded
+        Production halted
+    end note

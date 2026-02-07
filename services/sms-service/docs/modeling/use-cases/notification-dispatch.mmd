@@ -1,0 +1,21 @@
+graph TD
+    System[System]
+    Provider[SMS Provider]
+    
+    SendSMS[Send SMS]
+    TrackDelivery[Track Delivery]
+    RetryFailed[Retry Failed Messages]
+    ManageQueue[Manage Message Queue]
+    ConfigureProvider[Configure Provider]
+
+    System --> SendSMS
+    System --> TrackDelivery
+    System --> RetryFailed
+    System --> ManageQueue
+    System --> ConfigureProvider
+
+    SendSMS --> Provider
+    TrackDelivery --> Provider
+
+    style System fill:#e1f5ff
+    style Provider fill:#f0f0f0

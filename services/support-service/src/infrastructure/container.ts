@@ -1,7 +1,7 @@
 import { Container } from 'inversify';
 import { PrismaClient } from '@prisma/client';
 import { TYPES } from '../types';
-import { eventBus } from '../../../shared/events/eventBus';
+import { eventBus } from '@shared/events/eventBus';
 
 // Repositories
 import { ITicketRepository, ISupportAgentRepository, ITicketMessageRepository, ITicketStatusHistoryRepository, ITicketAttachmentRepository } from '../domain/repositories/interfaces';
@@ -37,8 +37,10 @@ import { AgentController } from '../api/controllers/agent.controller';
 
 const container = new Container();
 
+import { prisma } from './database/prisma-client';
+
 // Core
-container.bind<PrismaClient>(TYPES.PrismaClient).toConstantValue(new PrismaClient());
+container.bind<PrismaClient>(TYPES.PrismaClient).toConstantValue(prisma);
 container.bind(TYPES.EventBus).toConstantValue(eventBus);
 
 // Repositories

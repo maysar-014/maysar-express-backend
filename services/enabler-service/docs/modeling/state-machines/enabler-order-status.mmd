@@ -1,0 +1,20 @@
+stateDiagram-v2
+    [*] --> CREATED : create()
+    CREATED --> ASSIGNED : assignEnabler()
+    ASSIGNED --> IN_PROGRESS : startProcessing()
+    IN_PROGRESS --> COMPLETED : complete()
+    IN_PROGRESS --> CANCELLED : cancel()
+    CREATED --> CANCELLED : cancel()
+    ASSIGNED --> CANCELLED : cancel()
+    COMPLETED --> [*]
+    CANCELLED --> [*]
+
+    note right of ASSIGNED
+        Enabler notified
+        Order details shared
+    end note
+
+    note right of IN_PROGRESS
+        Enabler facilitating order
+        Tracking progress
+    end note

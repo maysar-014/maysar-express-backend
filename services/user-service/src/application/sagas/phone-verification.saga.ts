@@ -1,6 +1,8 @@
-import { BaseSaga } from './saga-base';
+import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
+import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
 import { notificationClient, auditClient } from './service-clients';
 import { logger } from '../../infrastructure/services/logger.service';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface PhoneVerificationEvent {
   eventId: string;
@@ -9,59 +11,87 @@ export interface PhoneVerificationEvent {
   phoneNumber: string;
   verificationMethod: 'otp' | 'call';
   timestamp: Date;
+  metadata?: { correlationId: string };
+}
+
+export class PhoneVerificationSaga extends DistributedSagaOrchestrator<PhoneVerificationEvent> {
+  protected sagaType = 'PhoneVerificationSaga';
+
+  constructor() {
+    super(sagaLogRepository, 'user-service');
+  }
+
+  protected async onStart(sagaId: string, payload: PhoneVerificationEvent, correlationId?: string): Promise<void> {
+    logger.info(`Starting PhoneVerificationSaga for user ${payload.userId}`, { sagaId, correlationId });
+  }
+
+  protected async onCompensate(sagaId: string, failedStepName: string): Promise<void> {
+    logger.info(`Compensating PhoneVerificationSaga failed at ${failedStepName}`, { sagaId });
+  }
+
+  protected defineSteps(): SagaStep<PhoneVerificationEvent>[] {
+    return [
+      {
+        name: 'ValidateOTP',
+        execute: async (payload, sagaId) => {
+          logger.info('Validating OTP', { userId: payload.userId, method: payload.verificationMethod, sagaId });
+          // OTP validation logic
+        },
+        compensate: async (payload, sagaId) => {
+          logger.info('Invalidating OTP', { userId: payload.userId, sagaId });
+          // Invalidate OTP
+        }
+      },
+      {
+        name: 'UpdatePhoneStatus',
+        execute: async (payload, sagaId) => {
+          logger.info('Updating phone verification status', { userId: payload.userId, sagaId });
+          // Mark phone as verified in database
+        },
+        compensate: async (payload, sagaId) => {
+          logger.info('Reverting phone verification status', { userId: payload.userId, sagaId });
+          // Mark phone as unverified
+        }
+      },
+      {
+        name: 'RecordAuditEvent',
+        execute: async (payload, sagaId) => {
+          await auditClient.recordEvent(payload.userId, 'phone_verified', {
+            phoneNumber: payload.phoneNumber,
+            method: payload.verificationMethod
+          });
+        },
+        compensate: async (payload, sagaId) => {
+          await auditClient.recordEvent(payload.userId, 'phone_verification_compensated', {
+            originalEventId: payload.eventId
+          });
+        }
+      },
+      {
+        name: 'SendConfirmationNotification',
+        execute: async (payload, sagaId) => {
+          await notificationClient.sendSMS(payload.userId, 'Phone number verified successfully');
+        },
+        compensate: async (payload, sagaId) => {
+          // Cannot unsend SMS
+        }
+      }
+    ];
+  }
 }
 
 export async function executePhoneVerificationSaga(event: PhoneVerificationEvent): Promise<void> {
-  const saga = new BaseSaga(event.eventId, event);
+  const saga = new PhoneVerificationSaga();
+  const correlationId = event.metadata?.correlationId || uuidv4();
 
-  saga.addStep({
-    name: 'ValidateOTP',
-    execute: async () => {
-      logger.info('Validating OTP', { userId: event.userId, method: event.verificationMethod });
-      // OTP validation logic
-    },
-    compensate: async () => {
-      logger.info('Invalidating OTP', { userId: event.userId });
-      // Invalidate OTP
-    }
-  });
-
-  saga.addStep({
-    name: 'UpdatePhoneStatus',
-    execute: async () => {
-      logger.info('Updating phone verification status', { userId: event.userId });
-      // Mark phone as verified in database
-    },
-    compensate: async () => {
-      logger.info('Reverting phone verification status', { userId: event.userId });
-      // Mark phone as unverified
-    }
-  });
-
-  saga.addStep({
-    name: 'RecordAuditEvent',
-    execute: async () => {
-      await auditClient.recordEvent(event.userId, 'phone_verified', {
-        phoneNumber: event.phoneNumber,
-        method: event.verificationMethod
-      });
-    },
-    compensate: async () => {
-      await auditClient.recordEvent(event.userId, 'phone_verification_compensated', {
-        originalEventId: event.eventId
-      });
-    }
-  });
-
-  saga.addStep({
-    name: 'SendConfirmationNotification',
-    execute: async () => {
-      await notificationClient.sendSMS(event.userId, 'Phone number verified successfully');
-    },
-    compensate: async () => {
-      // Cannot unsend SMS
-    }
-  });
-
-  await saga.execute();
+  try {
+    await saga.start(event, correlationId);
+  } catch (error) {
+    logger.error('Phone verification saga failed to start', {
+      error: error instanceof Error ? error.message : String(error),
+      userId: event.userId,
+      correlationId
+    });
+    throw error;
+  }
 }

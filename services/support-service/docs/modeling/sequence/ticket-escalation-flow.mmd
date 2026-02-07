@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant Job as TicketEscalationJob
+    participant Policy as EscalationPolicy
+    participant TicketRepo as TicketRepository
+    participant NotifSvc as NotificationService
+
+    Note over Job: Periodic escalation monitor
+
+    rect rgb(240, 240, 240)
+        note right of Job: Fetch Active Tickets Step
+        Job->>TicketRepo: findByStatuses([OPEN, IN_PROGRESS])
+        TicketRepo-->>Job: activeTickets
+    end
+
+    loop For Each Ticket
+        rect rgb(240, 240, 240)
+            note right of Job: Check Escalation Step
+            Job->>Policy: shouldEscalate(ticket)
+            Policy-->>Job: boolean
+            alt Needs Escalation
+                Job->>Policy: getEscalationPriority(ticket)
+                Policy-->>Job: newPriority
+                Job->>TicketRepo: update(ticket)
+                Job->>NotifSvc: notifySupervisors(ticket)
+            end
+        end
+    end

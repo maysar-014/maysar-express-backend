@@ -1,0 +1,30 @@
+graph TD
+    Supplier[Supplier]
+    System[System]
+    OrderSvc[Order Service]
+    InvSvc[Inventory Service]
+    
+    PlanProd[Plan Production]
+    ExecuteProd[Execute Production]
+    QualityCtrl[Quality Control]
+    CapacityMgmt[Manage Capacity]
+    MonitorProd[Monitor Progress]
+    AdjustSchedule[Adjust Schedules]
+
+    Supplier --> PlanProd
+    Supplier --> ExecuteProd
+    Supplier --> MonitorProd
+    Supplier --> CapacityMgmt
+    
+    System --> QualityCtrl
+    System --> AdjustSchedule
+    
+    PlanProd --> OrderSvc
+    ExecuteProd --> InvSvc
+    QualityCtrl --> ExecuteProd
+    CapacityMgmt --> AdjustSchedule
+
+    style Supplier fill:#e1f5ff
+    style System fill:#fff4e1
+    style OrderSvc fill:#f0f0f0
+    style InvSvc fill:#f0f0f0

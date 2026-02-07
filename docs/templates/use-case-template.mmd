@@ -1,0 +1,21 @@
+graph TD
+    Actor1[Primary Actor]
+    Actor2[Secondary Actor]
+    System[External System]
+    
+    UseCase1[Use Case 1]
+    UseCase2[Use Case 2]
+    UseCase3[Use Case 3]
+    UseCase4[Use Case 4]
+
+    Actor1 --> UseCase1
+    Actor1 --> UseCase2
+    Actor2 --> UseCase3
+    
+    UseCase1 --> UseCase4
+    UseCase2 --> System
+    UseCase3 --> System
+
+    style Actor1 fill:#e1f5ff
+    style Actor2 fill:#fff4e1
+    style System fill:#f0f0f0

@@ -1,0 +1,27 @@
+stateDiagram-v2
+    [*] --> DRAFT : create()
+    DRAFT --> PENDING_APPROVAL : submitForReview()
+    PENDING_APPROVAL --> ACTIVE : approve()
+    PENDING_APPROVAL --> REJECTED : reject()
+    ACTIVE --> INACTIVE : deactivate()
+    INACTIVE --> ACTIVE : reactivate()
+    ACTIVE --> SUSPENDED : suspend()
+    SUSPENDED --> ACTIVE : unsuspend()
+    DRAFT --> INACTIVE : archive()
+    REJECTED --> [*]
+    INACTIVE --> [*]
+
+    note right of PENDING_APPROVAL
+        Awaiting admin review
+        Quality checks pending
+    end note
+
+    note right of ACTIVE
+        Visible to buyers
+        Available for purchase
+    end note
+
+    note right of SUSPENDED
+        Temporarily hidden
+        Policy violation or stock issue
+    end note

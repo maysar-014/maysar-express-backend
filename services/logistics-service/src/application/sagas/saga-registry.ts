@@ -1,10 +1,10 @@
-import { BaseSaga } from './base.saga';
+import { DistributedSagaOrchestrator } from '../../../../../shared/saga/saga.orchestrator';
 
 export class SagaRegistry {
   private static instance: SagaRegistry;
-  private sagas: Map<string, new () => BaseSaga> = new Map();
+  private orchestrators: Map<string, DistributedSagaOrchestrator> = new Map();
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): SagaRegistry {
     if (!SagaRegistry.instance) {
@@ -13,41 +13,40 @@ export class SagaRegistry {
     return SagaRegistry.instance;
   }
 
-  registerSaga<T extends BaseSaga>(name: string, sagaClass: new () => T): void {
-    this.sagas.set(name, sagaClass);
+  registerOrchestrator(name: string, orchestrator: DistributedSagaOrchestrator): void {
+    this.orchestrators.set(name, orchestrator);
   }
 
-  async executeSaga<T>(name: string, data: T, metadata: any = {}): Promise<string> {
-    const SagaClass = this.sagas.get(name);
-    if (!SagaClass) {
-      throw new Error(`Saga not found: ${name}`);
+  async startSaga<T>(name: string, payload: T, correlationId?: string): Promise<string> {
+    const orchestrator = this.orchestrators.get(name);
+    if (!orchestrator) {
+      throw new Error(`Saga orchestrator not found: ${name}`);
     }
 
-    const saga = new SagaClass();
-    return await saga.start(data, metadata);
+    return await orchestrator.start(payload, correlationId);
   }
 
-  getSaga<T extends BaseSaga>(name: string): T | null {
-    const SagaClass = this.sagas.get(name);
-    return SagaClass ? new SagaClass() as T : null;
+  getOrchestrator<T extends DistributedSagaOrchestrator>(name: string): T | null {
+    return (this.orchestrators.get(name) as T) || null;
   }
 
   listSagas(): string[] {
-    return Array.from(this.sagas.keys());
+    return Array.from(this.orchestrators.keys());
   }
 
   isSagaRegistered(name: string): boolean {
-    return this.sagas.has(name);
+    return this.orchestrators.has(name);
   }
 
   getSagaCount(): number {
-    return this.sagas.size;
+    return this.orchestrators.size;
   }
 
   clearRegistry(): void {
-    this.sagas.clear();
+    this.orchestrators.clear();
   }
 }
 
 // Global saga registry instance
 export const sagaRegistry = SagaRegistry.getInstance();
+

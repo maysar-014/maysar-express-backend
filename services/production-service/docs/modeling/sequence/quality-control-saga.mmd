@@ -1,0 +1,49 @@
+sequenceDiagram
+    participant Saga as QualityControlSaga
+    participant OrderRepo as ProductionOrderRepository
+    participant QualityRepo as QualityCheckpointRepository
+    participant Inspector as InspectorService
+    participant Bus as EventBus
+
+    Note over Saga: Triggered by QualityCheckRequested event
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Create Checkpoint Step
+        Saga->>OrderRepo: getProductionOrder(orderId)
+        OrderRepo-->>Saga: productionOrder
+        Saga->>QualityRepo: createCheckpoint(orderId, stage)
+        QualityRepo-->>Saga: checkpoint (PENDING)
+    end
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: Assign Inspector Step
+        Saga->>Inspector: getAvailableInspector(stage)
+        Inspector-->>Saga: inspectorId
+        Saga->>QualityRepo: assignInspector(checkpointId, inspectorId)
+        QualityRepo-->>Saga: success
+    end
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: Await Inspection Step
+        Note over Saga: Async wait for inspector
+        Saga->>Bus: publish(InspectionAssigned)
+    end
+
+    Note over Saga: Inspector completes inspection asynchronously
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Record Result Step
+        Saga->>QualityRepo: recordResult(checkpointId, passed, defects)
+        QualityRepo-->>Saga: updatedCheckpoint
+        alt Passed
+            Saga->>OrderRepo: updateOrderPhase(orderId, nextPhase)
+            Saga->>Bus: publish(QualityCheckPassed)
+        else Failed
+            Saga->>OrderRepo: failProduction(orderId)
+            Saga->>Bus: publish(QualityCheckFailed)
+        end
+    end
+
+    opt Compensation
+        Saga->>QualityRepo: deleteCheckpoint(checkpointId)
+    end

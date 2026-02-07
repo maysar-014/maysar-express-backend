@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Saga as CampaignLifecycleSaga
+    participant CampaignRepo as CampaignRepository
+    participant Bus as EventBus
+
+    Note over Saga: Campaign lifecycle management (placeholder)
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Campaign Activation Step
+        Saga->>CampaignRepo: activateCampaign(campaignId)
+        CampaignRepo-->>Saga: campaign
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Notification Step
+        Saga->>Bus: publish(CampaignActivated)
+    end
+
+    opt Compensation
+        Saga->>CampaignRepo: deactivateCampaign(campaignId)
+    end

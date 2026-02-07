@@ -16,6 +16,9 @@ module.exports = {
     '@catalog/(.*)': '<rootDir>/services/catalog-service/src/$1',
     '@payment/(.*)': '<rootDir>/services/payment-service/src/$1',
     '@user/(.*)': '<rootDir>/services/user-service/src/$1',
+    '@logistics/(.*)': '<rootDir>/services/logistics-service/src/$1',
+    '@wallet/(.*)': '<rootDir>/services/wallet-service/src/$1',
+    'uuid': '<rootDir>/node_modules/uuid/dist/index.js'
     // ... maps to all services if needed, but strict mapping above covers imports
   },
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],

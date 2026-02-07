@@ -1,0 +1,40 @@
+graph TD
+    Enabler[Enabler]
+    Buyer[Buyer]
+    Seller[Seller]
+    Admin[Admin]
+
+    OnboardEnabler[Onboard as Enabler]
+    ListProducts[List Products]
+    FacilitateOrders[Facilitate Orders]
+    EarnCommissions[Earn Commissions]
+    ManageListings[Manage Product Listings]
+    TrackPerformance[Track Performance Metrics]
+    UpgradeTier[Upgrade Tier]
+
+    ApproveEnabler[Approve Enabler]
+    ReviewListings[Review Product Listings]
+    ManageCommissions[Manage Commissions]
+
+    Enabler --> OnboardEnabler
+    Enabler --> ListProducts
+    Enabler --> FacilitateOrders
+    Enabler --> EarnCommissions
+    Enabler --> ManageListings
+    Enabler --> TrackPerformance
+    Enabler --> UpgradeTier
+
+    Admin --> ApproveEnabler
+    Admin --> ReviewListings
+    Admin --> ManageCommissions
+
+    Buyer -.interacts with.-> ListProducts
+    Seller -.supplies via.-> FacilitateOrders
+
+    ListProducts --> ManageListings
+    FacilitateOrders --> EarnCommissions
+
+    style Enabler fill:#e1f5ff
+    style Admin fill:#fff4e1
+    style Buyer fill:#f0f0f0
+    style Seller fill:#f0f0f0

@@ -87,7 +87,7 @@ export abstract class BaseSaga implements Saga {
 export * from './product-publishing.saga';
 export * from './bulk-product-update.saga';
 export * from './pricing-update.saga';
-// export * from './campaign-management.saga'; // Deprecated - moved to campaign-service
+export * from './pricing-update.saga';
 
 // Event Handlers for Saga Coordination
 export * from './product-inventory-event-handlers';

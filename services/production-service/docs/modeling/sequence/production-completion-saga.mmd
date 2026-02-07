@@ -1,0 +1,43 @@
+sequenceDiagram
+    participant Saga as ProductionCompletionSaga
+    participant OrderRepo as ProductionOrderRepository
+    participant QualityRepo as QualityCheckpointRepository
+    participant InvSvc as InventoryService
+    participant OrderSvc as OrderService
+    participant Bus as EventBus
+
+    Note over Saga: Triggered by ProductionFinished event
+
+    Saga->>QualityRepo: getCheckpointsByOrderId(orderId)
+    QualityRepo-->>Saga: checkpoints
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: Quality Validation Step
+        Saga->>Saga: validateAllCheckpointsPassed()
+        alt All Passed
+            Saga->>OrderRepo: completeProduction(orderId, qty)
+            OrderRepo-->>Saga: success
+        else Quality Failed
+            Saga->>OrderRepo: failProduction(orderId, reason)
+            OrderRepo-->>Saga: success
+        end
+    end
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: Update Inventory Step
+        Saga->>InvSvc: addStock(productId, quantity)
+        InvSvc-->>Saga: success
+    end
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: Notify Order Service Step
+        Saga->>OrderSvc: notifyProductionComplete(orderId)
+        OrderSvc-->>Saga: success
+    end
+    
+    Saga->>Bus: publish(ProductionCompleted)
+
+    opt Compensation
+        Saga->>InvSvc: removeStock(productId, quantity)
+        Saga->>OrderSvc: notifyProductionFailed(orderId)
+    end

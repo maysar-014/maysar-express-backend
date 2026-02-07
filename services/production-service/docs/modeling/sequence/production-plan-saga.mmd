@@ -1,0 +1,41 @@
+sequenceDiagram
+    participant Saga as ProductionPlanSaga
+    participant OrderSvc as OrderService
+    participant ProdRepo as ProductionRepository
+    participant InvSvc as InventoryService
+    participant PlanEngine as PlanningEngine
+    participant Bus as EventBus
+
+    Note over Saga: Triggered by OrderConfirmed event
+
+    Saga->>ProdRepo: createDraftPlan(orderId, products)
+    ProdRepo-->>Saga: plan (DRAFT status)
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: Resource Allocation Step
+        Saga->>InvSvc: checkMaterialAvailability(products)
+        InvSvc-->>Saga: availability
+        Saga->>PlanEngine: allocateResources(plan)
+        PlanEngine-->>Saga: allocation
+    end
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: Schedule Production Step
+        Saga->>PlanEngine: calculateSchedule(plan, capacity)
+        PlanEngine-->>Saga: schedule
+        Saga->>ProdRepo: updatePlanStatus(planId, SCHEDULED)
+        ProdRepo-->>Saga: success
+    end
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: Update Order Step
+        Saga->>OrderSvc: updateOrderStatus(orderId, IN_PRODUCTION)
+        OrderSvc-->>Saga: success
+    end
+    
+    Saga->>Bus: publish(ProductionScheduled)
+
+    opt Compensation
+        Saga->>ProdRepo: cancelPlan(planId)
+        Saga->>OrderSvc: updateOrderStatus(orderId, PENDING)
+    end

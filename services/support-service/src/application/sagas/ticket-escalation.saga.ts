@@ -1,4 +1,3 @@
-import { BaseSaga } from './saga-base';
 import { logger } from '../../infrastructure/services/logger.service';
 import { TicketEscalationPolicy } from '../../domain/policies/ticket-escalation.policy';
 import { ITicketRepository } from '../../domain/repositories/interfaces';
@@ -6,12 +5,11 @@ import { TYPES } from '../../types';
 import { container } from '../../infrastructure/container';
 import { TicketStatus } from '../../domain/types';
 
-export class TicketEscalationSaga extends BaseSaga {
+export class TicketEscalationJob {
     private escalationPolicy: TicketEscalationPolicy;
     private ticketRepository: ITicketRepository;
 
-    constructor(idempotencyKey: string) {
-        super(idempotencyKey, {});
+    constructor() {
         this.escalationPolicy = container.get<TicketEscalationPolicy>(TYPES.TicketEscalationPolicy);
         this.ticketRepository = container.get<ITicketRepository>(TYPES.ITicketRepository);
     }

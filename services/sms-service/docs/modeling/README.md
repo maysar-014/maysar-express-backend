@@ -1,19 +1,39 @@
-# Sms Service Modeling Documentation
+# SMS Service - Modeling Documentation
 
-Follows [Software Modeling Constitution](../../../software-modeling-constitution.md).
+This directory contains Mermaid diagrams documenting the SMS service's message delivery workflows and state transitions.
 
-## Contents
-- [Use Cases](./use-cases/) - Business-level actor interactions
-- [State Machines](./state-machines/) - Entity lifecycle diagrams
-- [Sequence Diagrams](./sequence/) - Saga and use case execution flows
+## Directory Structure
 
-## Diagrams Index
+- **state-machines/** - Message delivery state machines
+- **sequence/** - Message dispatch sequence diagrams
+- **use-cases/** - Notification dispatch use cases
 
-### Use Cases
-- [Use Case Name](./use-cases/diagram-name.mmd) - Description
+## State Machines
 
-### State Machines
-- [Entity Name Status](./state-machines/entity-status.mmd) - Description
+### [sms-delivery-status.mmd](state-machines/sms-delivery-status.mmd)
+Lifecycle of an SMS message from QUEUED through dispatch (SENDING, SENT) to final delivery states (DELIVERED/UNDELIVERED), including retry logic for failures.
 
-### Sequence Diagrams
-- [Saga/Flow Name](./sequence/saga-name.mmd) - Description
+## Sequence Diagrams
+
+###[sms-dispatch-flow.mmd](sequence/sms-dispatch-flow.mmd)
+Orchestration of SMS dispatch: queuing, provider dispatch, delivery tracking, retry handling, and event publishing.
+
+## Use Cases
+
+### [notification-dispatch.mmd](use-cases/notification-dispatch.mmd)
+High-level operations for SMS notification dispatch including sending, tracking, retry management, and provider configuration.
+
+## Service Classification
+
+**Type:** Infrastructure Service (Stateless with Message Tracking)
+
+The SMS service is primarily a stateless utility for message dispatch, but includes delivery state tracking via a lightweight entity (SMS delivery status). Unlike domain-heavy services, it does not have complex saga orchestrations or rich domain entities.
+
+## Alignment with Code
+
+All diagrams reflect the actual implementation in:
+- `src/domain/` - Message delivery state machine
+- `src/application/` - Dispatch and tracking workflows
+- `src/infrastructure/providers/` - SMS provider integrations
+
+Last Updated: 2026-02-07

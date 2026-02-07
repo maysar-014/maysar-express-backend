@@ -1,27 +1,41 @@
 sequenceDiagram
-    participant API as API Controller
-    participant Saga as WalletTransactionSaga
-    participant WR as WalletRepository
-    participant TR as TransactionRepository
-    participant EB as EventBus
-
-    API->>Saga: startTransaction(data)
-    Saga->>WR: findById(walletId)
-    WR-->>Saga: wallet
+    participant Saga as PaymentProcessingSaga
+    participant Fraud as FraudEngine
+    participant Bus as EventBus
+    participant Provider as PaymentProvider
     
-    alt Wallet Valid
-        Saga->>Saga: calculateNewBalance()
-        Saga->>WR: updateBalance(walletId, newBalance)
-        WR-->>Saga: success
-        
-        Saga->>TR: createTransaction(transactionData)
-        TR-->>Saga: transaction
-        
-        Saga->>EB: publish(TransactionCompletedEvent)
-        Saga-->>API: confirmation
-    else Wallet Invalid/Insufficient Funds
-        Saga->>EB: publish(TransactionFailedEvent)
-        Saga-->>API: error
+    Saga->>Bus: publishCommand(PaymentInitiated)
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: FraudCheck Step
+        Saga->>Fraud: assessTransaction()
+        Fraud-->>Saga: Assessment Result
+    end
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: ProcessPayment Step
+        alt WALLET Method
+            Saga->>Bus: publishCommand(WalletPaymentRequested)
+            Bus-->>Saga: handleWalletPaymentProcessed()
+        else Provider Method
+            Saga->>Provider: processPayment()
+            Provider-->>Saga: success
+        end
+    end
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: UpdateOrder Step
+        Saga->>Bus: publishCommand(Payment.Success.v1)
+    end
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: NotifyUser Step
+        Saga->>Bus: publishCommand(PaymentNotificationRequested)
     end
 
-    note over Saga, EB: Compensating actions if DB fails after balance update
+    opt Compensation
+        Saga->>Bus: publishCommand(PaymentCancelled)
+        Saga->>Bus: publishCommand(PaymentRefund.Command.v1)
+    end
+(releaseData)
+    end

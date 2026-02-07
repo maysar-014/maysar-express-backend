@@ -1,0 +1,20 @@
+stateDiagram-v2
+    [*] --> PENDING : create()
+    PENDING --> SCHEDULED : schedule()
+    SCHEDULED --> IN_PROGRESS : startProduction()
+    IN_PROGRESS --> QUALITY_CHECK : requestQualityCheck()
+    QUALITY_CHECK --> COMPLETED : passQuality()
+    QUALITY_CHECK --> FAILED : failQuality()
+    QUALITY_CHECK --> IN_PROGRESS : requiresRework()
+    IN_PROGRESS --> FAILED : failProduction()
+    PENDING --> CANCELLED : cancel()
+    SCHEDULED --> CANCELLED : cancel()
+    IN_PROGRESS --> CANCELLED : cancel()
+    COMPLETED --> [*]
+    FAILED --> [*]
+    CANCELLED --> [*]
+
+    note right of IN_PROGRESS
+        Phase: PREPARATION → ASSEMBLY → 
+        QUALITY_CONTROL → PACKAGING
+    end note

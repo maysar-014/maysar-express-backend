@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant Saga as CampaignPricingSaga
+    participant PricingEngine as PricingEngine
+    participant CampaignRepo as CampaignRepository
+    participant Bus as EventBus
+
+    Note over Saga: Campaign pricing calculation (placeholder)
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Calculate Pricing Step
+        Saga->>PricingEngine: calculateCampaignCost(campaign)
+        PricingEngine-->>Saga: pricingResult
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Update Campaign Step
+        Saga->>CampaignRepo: updatePricing(campaignId, pricing)
+        CampaignRepo-->>Saga: success
+    end
+
+    Saga->>Bus: publish(CampaignPricingUpdated)
+
+    opt Compensation
+        Saga->>CampaignRepo: revertPricing(campaignId)
+    end

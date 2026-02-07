@@ -1,8 +1,3 @@
-/**
- * Dependency Injection Container
- * Wires up all layers: Repositories -> Use Cases -> Controllers
- */
-
 import { PrismaClient } from '@prisma/client';
 import { PaymentRepository } from './infrastructure/repositories/payment.repository';
 import { IRefundRepository } from './domain/repositories/refund.repository';
@@ -28,6 +23,8 @@ import { PaymentProcessingSaga } from './application/sagas/payment-processing.sa
 import { PaymentProvider } from './domain/entities/payment.entity';
 import { IPaymentProvider } from './domain/repositories/payment-provider.gateway';
 import { PaymentEventHandlers } from './infrastructure/events/payment.event-handlers';
+import { PrismaSagaLogRepository } from '../../../shared/saga/saga-log.repository';
+import { ISagaLogRepository } from '../../../shared/saga/saga.log';
 
 export class Container {
     private static instance: Container;
@@ -39,6 +36,7 @@ export class Container {
     public refundRepository: IRefundRepository;
     public fraudRepository: IFraudRepository;
     public outboxRepository: OutboxRepository;
+    public sagaLogRepository: ISagaLogRepository;
 
     // Clients
     public walletServiceClient: WalletServiceClient;
@@ -79,6 +77,10 @@ export class Container {
         this.refundRepository = new RefundRepository(this.prisma);
         this.fraudRepository = new FraudRepository(this.prisma);
         this.outboxRepository = new OutboxRepository(this.prisma);
+
+        // Helper casting because shared PrismaSagaLogRepository expects generic PrismaClient, 
+        // but ours is specific. Usually works if models match.
+        this.sagaLogRepository = new PrismaSagaLogRepository(this.prisma as any);
 
         // Clients
         this.walletServiceClient = new WalletServiceClient(process.env.WALLET_SERVICE_URL || 'http://wallet-service:3002');
@@ -136,11 +138,13 @@ export class Container {
 
         // Sagas
         this.paymentProcessingSaga = new PaymentProcessingSaga(
+            this.sagaLogRepository,
+            'payment-service',
             this.paymentRepository,
             paymentProviderFactory,
             this.fraudEngine,
             this.paymentProcessingEngine,
-            this.eventBus
+            this.outboxRepository
         );
 
         this.sagaEventHandler = new SagaEventHandler(
@@ -160,3 +164,5 @@ export class Container {
         return Container.instance;
     }
 }
+
+

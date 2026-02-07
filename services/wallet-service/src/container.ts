@@ -34,6 +34,8 @@ import { TopUpWalletUseCase } from './application/use-cases/top-up-wallet.use-ca
 import { PaymentCompletedHandler } from './infrastructure/messaging/payment-completed.handler';
 import { PayoutServiceClient } from './infrastructure/clients/payout-service.client';
 import { InitiatePayoutFromWalletUseCase } from './application/use-cases/initiate-payout-from-wallet.use-case';
+import { provideSagaLogRepository } from './infrastructure/repositories/saga.repository';
+import { WalletTransactionSaga } from './application/sagas/wallet-transaction.saga';
 
 export class Container {
     private static instance: Container;
@@ -139,6 +141,18 @@ export class Container {
 
         const outboxRepository = new OutboxRepository(this.prisma);
         this.outboxProcessor = new OutboxProcessor(outboxRepository, this.eventBus);
+
+        const sagaLogRepository = provideSagaLogRepository(this.prisma);
+
+        const walletTransactionSaga = new WalletTransactionSaga(
+            sagaLogRepository,
+            'wallet-service',
+            creditUseCase,
+            debitUseCase,
+            placeHoldUseCase,
+            releaseHoldUseCase,
+            reverseTransactionUseCase
+        );
 
         this.walletController = new WalletController(
             creditUseCase,

@@ -1,0 +1,27 @@
+stateDiagram-v2
+    [*] --> PENDING : register()
+    PENDING --> VERIFIED : verifyBusiness()
+    VERIFIED --> APPROVED : approve()
+    PENDING --> REJECTED : reject()
+    APPROVED --> ACTIVE : activate()
+    ACTIVE --> SUSPENDED : suspend()
+    SUSPENDED --> ACTIVE : reactivate()
+    ACTIVE --> DEACTIVATED : deactivate()
+    REJECTED --> [*]
+    DEACTIVATED --> [*]
+
+    note right of VERIFIED
+        Business verification complete
+        Awaiting admin approval
+    end note
+
+    note right of ACTIVE
+        Can list products
+        Can facilitate orders
+        Earning commissions
+    end note
+
+    note right of SUSPENDED
+        Operations paused
+        Cannot process orders
+    end note

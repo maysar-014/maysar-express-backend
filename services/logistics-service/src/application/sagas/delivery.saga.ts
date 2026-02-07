@@ -1,5 +1,5 @@
-import { BaseSaga, SagaContext } from './base.saga';
-import { SagaRegistry } from './saga-registry';
+import { DistributedSagaOrchestrator, SagaStep } from '../../../../../shared/saga/saga.orchestrator';
+import { ISagaLogRepository } from '../../../../../shared/saga/saga.log';
 import {
   ICourierRepository,
   IRouteRepository
@@ -11,17 +11,14 @@ import { CourierEntity } from '../../domain/entities/courier.entity';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 import { Weight } from '../../domain/value-objects/weight.value-object';
 import {
-  DeliveryRequestedEvent,
-  DeliveryEvent,
   CourierAssignedEvent,
   DeliveryPickedUpEvent,
   DeliveryInTransitEvent,
   DeliveryDeliveredEvent,
-  DeliveryFailedEvent,
   DeliveryCancelledEvent
 } from '../../domain/events/delivery.events';
 
-interface DeliverySagaData {
+export interface DeliverySagaContext {
   deliveryId: string;
   orderId: string;
   courierId?: string;
@@ -31,329 +28,207 @@ interface DeliverySagaData {
   assignedAt?: Date;
   pickedUpAt?: Date;
   deliveredAt?: Date;
-  compensationActions: string[];
+  compensationActions?: string[];
+  requestId?: string;
 }
 
 /**
  * Delivery Saga - Constitution Section 7: Compensation Completeness Rule
- *
- * Every saga step must satisfy one of the following:
- * 1. Has a compensating action
- * 2. Is explicitly documented as irreversible
- *
- * Compensation Strategy:
- * - assignCourier → unassignCourier (compensation)
- * - waitForPickup → cancelPickup (compensation)
- * - trackDelivery → DOCUMENTED AS IRREVERSIBLE (tracking data cannot be "untracked")
- * - confirmDelivery → DOCUMENTED AS IRREVERSIBLE (delivery completion cannot be "undone")
  */
-export class DeliverySaga extends BaseSaga<DeliverySagaData> {
+export class DeliverySaga extends DistributedSagaOrchestrator<DeliverySagaContext> {
+  protected sagaType = 'DeliverySaga';
+
   constructor(
-    private courierRepository: ICourierRepository,
-    private trackingPort: RealTimeTrackingPort,
-    private routeRepository?: IRouteRepository,
-    private routeCreationService?: RouteCreationService,
-    private courierDomainService?: CourierDomainService
+    sagaLogRepository: ISagaLogRepository,
+    serviceName: string,
+    private readonly courierRepository: ICourierRepository,
+    private readonly trackingPort: RealTimeTrackingPort,
+    private readonly routeRepository?: IRouteRepository,
+    private readonly routeCreationService?: RouteCreationService,
+    private readonly courierDomainService?: CourierDomainService,
+    outbox?: any
   ) {
-    super();
-
-    // Define saga steps with their compensations per Section 7
-    this.defineSteps();
+    super(sagaLogRepository, serviceName, outbox);
   }
 
-  private defineSteps(): void {
-    // Step 1: Assign courier - compensable by unassignment
-    this.step('assignCourier', () => this.assignCourier(this.context!.data));
-    this.addCompensation('assignCourier', () => this.unassignCourier(this.context!.data));
-
-    // Step 2: Wait for pickup - compensable by cancellation
-    this.step('waitForPickup', () => this.waitForPickup(this.context!.data));
-    this.addCompensation('waitForPickup', () => this.cancelPickup(this.context!.data));
-
-    // Step 3: Track delivery - IRREVERSIBLE (Section 7 compliance)
-    // Tracking data cannot be "untracked" - once location data is stored,
-    // it represents historical fact that cannot be erased
-    this.step('trackDelivery', () => this.trackDelivery(this.context!.data));
-    // No compensation - explicitly documented as irreversible
-
-    // Step 4: Confirm delivery - IRREVERSIBLE (Section 7 compliance)
-    // Delivery completion represents business completion that cannot be undone
-    this.step('confirmDelivery', () => this.confirmDelivery(this.context!.data));
-    // No compensation - explicitly documented as irreversible
-  }
-
-  async execute(context: SagaContext<DeliverySagaData>): Promise<void> {
-    const { data } = context;
-
-    try {
-      // Execute steps in order - compensations are automatically handled on failure
-      await this.executeStep(this.steps.find(s => s.name === 'assignCourier')!);
-      await this.executeStep(this.steps.find(s => s.name === 'waitForPickup')!);
-      await this.executeStep(this.steps.find(s => s.name === 'trackDelivery')!);
-      await this.executeStep(this.steps.find(s => s.name === 'confirmDelivery')!);
-
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  private async assignCourier(data: DeliverySagaData): Promise<void> {
-    // Find available couriers near pickup location
-    const availableCouriers = await this.courierRepository.findAvailableCouriers(
+  protected defineSteps(): SagaStep<DeliverySagaContext>[] {
+    return [
       {
-        lat: data.pickupLocation.lat,
-        lng: data.pickupLocation.lng,
-        address: data.pickupLocation.address
-      } as any, // TODO: Fix type
-      50
-    );
+        name: 'assign_courier',
+        execute: async (context: DeliverySagaContext, sagaId: string) => {
+          console.log(`[${sagaId}] Starting courier assignment for delivery ${context.deliveryId}`);
 
-    if (availableCouriers.length === 0) {
-      throw new Error('No couriers available for delivery');
-    }
+          const availableCouriers = await this.courierRepository.findAvailableCouriers(
+            {
+              lat: context.pickupLocation.lat,
+              lng: context.pickupLocation.lng,
+              address: context.pickupLocation.address
+            } as any,
+            50
+          );
 
-    // Select the first available courier (in real implementation, use policy)
-    const selectedCourier = availableCouriers[0];
+          if (availableCouriers.length === 0) {
+            throw new Error('No couriers available for delivery');
+          }
 
-    // Assign courier to delivery
-    await this.courierRepository.assignCourier(data.deliveryId, selectedCourier.id);
+          const selectedCourier = availableCouriers[0];
+          await this.courierRepository.assignCourier(context.deliveryId, selectedCourier.id);
 
-    // Update saga data
-    data.courierId = selectedCourier.id;
-    data.status = 'assigned';
-    data.assignedAt = new Date();
+          context.courierId = selectedCourier.id;
+          context.status = 'assigned';
+          context.assignedAt = new Date();
 
-    // Calculate estimated arrival time dynamically
-    const pickupLocation = GeoPoint.create(
-      data.pickupLocation.lat,
-      data.pickupLocation.lng,
-      data.pickupLocation.address
-    );
+          const pickupLocation = GeoPoint.create(
+            context.pickupLocation.lat,
+            context.pickupLocation.lng,
+            context.pickupLocation.address
+          );
 
-    let estimatedArrival: Date;
-    if (this.courierDomainService) {
-      // Convert interface to entity for domain service
-      const courierEntity = CourierEntity.create({
-        id: selectedCourier.id,
-        name: selectedCourier.name,
-        phone: selectedCourier.phone,
-        vehicle: selectedCourier.vehicle,
-        rating: selectedCourier.rating,
-        completionRate: selectedCourier.completionRate,
-        currentLocation: selectedCourier.currentLocation,
-        isAvailable: selectedCourier.isAvailable,
-        trafficExperience: selectedCourier.trafficExperience
-      });
+          let estimatedArrival: Date;
+          if (this.courierDomainService) {
+            const courierEntity = CourierEntity.create({
+              id: selectedCourier.id,
+              name: selectedCourier.name,
+              phone: selectedCourier.phone,
+              vehicle: selectedCourier.vehicle,
+              rating: selectedCourier.rating,
+              completionRate: selectedCourier.completionRate,
+              currentLocation: selectedCourier.currentLocation,
+              isAvailable: selectedCourier.isAvailable,
+              trafficExperience: selectedCourier.trafficExperience
+            });
 
-      const arrivalResult = await this.courierDomainService.calculateEstimatedArrivalTime(
-        courierEntity,
-        pickupLocation
-      );
-      estimatedArrival = new Date(Date.now() + arrivalResult.estimatedMinutes * 60000);
-    } else {
-      // Fallback to static calculation if service not available
-      const fallbackMinutes = selectedCourier.trafficExperience > 0.8 ? 12 : 15;
-      estimatedArrival = new Date(Date.now() + fallbackMinutes * 60000);
-    }
+            const arrivalResult = await this.courierDomainService.calculateEstimatedArrivalTime(
+              courierEntity,
+              pickupLocation
+            );
+            estimatedArrival = new Date(Date.now() + arrivalResult.estimatedMinutes * 60000);
+          } else {
+            const fallbackMinutes = selectedCourier.trafficExperience > 0.8 ? 12 : 15;
+            estimatedArrival = new Date(Date.now() + fallbackMinutes * 60000);
+          }
 
-    // Create route for the delivery (Business Logic Integration)
-    if (this.routeCreationService && this.routeRepository) {
-      try {
-        const deliveryForRoute = {
-          id: data.deliveryId,
-          pickupLocation,
-          deliveryLocation: GeoPoint.create(
-            data.deliveryLocation.lat,
-            data.deliveryLocation.lng,
-            data.deliveryLocation.address
-          ),
-          weight: Weight.fromKilograms(1.0), // TODO: Get actual weight from delivery data
-          priority: 'standard' as const
-        };
+          if (this.routeCreationService && this.routeRepository) {
+            try {
+              const deliveryForRoute = {
+                id: context.deliveryId,
+                pickupLocation,
+                deliveryLocation: GeoPoint.create(
+                  context.deliveryLocation.lat,
+                  context.deliveryLocation.lng,
+                  context.deliveryLocation.address
+                ),
+                weight: Weight.fromKilograms(1.0),
+                priority: 'standard' as const
+              };
 
-        const routeResult = await this.routeCreationService.createRouteForSingleDelivery(
-          CourierEntity.create({
-            id: selectedCourier.id,
-            name: selectedCourier.name,
-            phone: selectedCourier.phone,
-            vehicle: selectedCourier.vehicle,
-            rating: selectedCourier.rating,
-            completionRate: selectedCourier.completionRate,
-            currentLocation: selectedCourier.currentLocation,
-            isAvailable: selectedCourier.isAvailable,
-            trafficExperience: selectedCourier.trafficExperience
-          }),
-          deliveryForRoute
-        );
+              const routeResult = await this.routeCreationService.createRouteForSingleDelivery(
+                CourierEntity.create({
+                  id: selectedCourier.id,
+                  name: selectedCourier.name,
+                  phone: selectedCourier.phone,
+                  vehicle: selectedCourier.vehicle,
+                  rating: selectedCourier.rating,
+                  completionRate: selectedCourier.completionRate,
+                  currentLocation: selectedCourier.currentLocation,
+                  isAvailable: selectedCourier.isAvailable,
+                  trafficExperience: selectedCourier.trafficExperience
+                }),
+                deliveryForRoute
+              );
 
-        // Save the route to repository
-        await this.routeRepository.save(routeResult.route);
+              await this.routeRepository.save(routeResult.route);
+            } catch (routeError) {
+              console.warn(`[${sagaId}] Failed to create route for delivery ${context.deliveryId}:`, routeError);
+            }
+          }
 
-        console.log(`✅ Route created for delivery ${data.deliveryId}:`, {
-          routeId: routeResult.route.getId(),
-          optimizationScore: routeResult.optimizationScore,
-          savings: routeResult.estimatedSavings
-        });
+          await (this as any).publishCommand('CourierAssigned', {
+            courierId: selectedCourier.id,
+            courierName: selectedCourier.name,
+            vehicleType: selectedCourier.vehicle.type,
+            estimatedArrival
+          }, context.requestId || sagaId, sagaId);
+        },
+        compensate: async (context: DeliverySagaContext, sagaId: string) => {
+          if (!context.courierId) return;
 
-      } catch (routeError) {
-        console.warn(`⚠️ Failed to create route for delivery ${data.deliveryId}:`, routeError);
-        // Continue with delivery assignment even if route creation fails
-      }
-    }
+          await this.courierRepository.updateCourierAvailability(context.courierId, true);
 
-    // Publish courier assigned event
-    const event: CourierAssignedEvent = {
-      eventType: 'CourierAssigned',
-      eventVersion: 'v1',
-      eventId: this.generateEventId(),
-      aggregateId: data.deliveryId,
-      occurredAt: new Date(),
-      data: {
-        courierId: selectedCourier.id,
-        courierName: selectedCourier.name,
-        vehicleType: selectedCourier.vehicle.type,
-        estimatedArrival
-      }
-    };
+          await (this as any).publishCommand('DeliveryCancelled', {
+            cancelledBy: 'system',
+            reason: 'saga_compensation_unassign_courier'
+          }, context.requestId || sagaId, sagaId);
 
-    await this.publishEvent('CourierAssigned', event);
-  }
+          context.courierId = undefined;
+          context.status = 'cancelled';
+        }
+      },
+      {
+        name: 'wait_for_pickup',
+        execute: async (context: DeliverySagaContext, sagaId: string) => {
+          console.log(`[${sagaId}] Waiting for pickup simulation...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
 
-  private async waitForPickup(data: DeliverySagaData): Promise<void> {
-    // In a real implementation, this would wait for a timeout or external event
-    // For now, we'll simulate pickup after a delay
-    await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second delay
+          context.status = 'picked_up';
+          context.pickedUpAt = new Date();
 
-    data.status = 'picked_up';
-    data.pickedUpAt = new Date();
+          await (this as any).publishCommand('DeliveryPickedUp', {
+            courierId: context.courierId!,
+            pickupTime: context.pickedUpAt
+          }, context.requestId || sagaId, sagaId);
+        },
+        compensate: async (context: DeliverySagaContext, sagaId: string) => {
+          context.status = 'cancelled';
+          context.pickedUpAt = undefined;
 
-    const event: DeliveryPickedUpEvent = {
-      eventType: 'DeliveryPickedUp',
-      eventVersion: 'v1',
-      eventId: this.generateEventId(),
-      aggregateId: data.deliveryId,
-      occurredAt: new Date(),
-      data: {
-        courierId: data.courierId!,
-        pickupTime: data.pickedUpAt
-      }
-    };
+          await (this as any).publishCommand('DeliveryCancelled', {
+            cancelledBy: 'system',
+            reason: 'saga_compensation_pickup_cancelled'
+          }, context.requestId || sagaId, sagaId);
+        }
+      },
+      {
+        name: 'track_delivery',
+        execute: async (context: DeliverySagaContext, sagaId: string) => {
+          context.status = 'in_transit';
 
-    await this.publishEvent('DeliveryPickedUp', event);
-  }
+          await (this as any).publishCommand('DeliveryInTransit', {
+            courierId: context.courierId!,
+            route: {
+              waypoints: [
+                { lat: context.pickupLocation.lat, lng: context.pickupLocation.lng, type: 'pickup' },
+                { lat: context.deliveryLocation.lat, lng: context.deliveryLocation.lng, type: 'delivery' }
+              ],
+              estimatedDuration: 45
+            }
+          }, context.requestId || sagaId, sagaId);
+        },
+        compensate: async (context: DeliverySagaContext, sagaId: string) => {
+          // Track Delivery is documented as irreversible historical data
+          console.log(`[${sagaId}] Compensation for track_delivery: historical tracking data remains.`);
+        }
+      },
+      {
+        name: 'confirm_delivery',
+        execute: async (context: DeliverySagaContext, sagaId: string) => {
+          console.log(`[${sagaId}] Confirming delivery...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
 
-  private async trackDelivery(data: DeliverySagaData): Promise<void> {
-    data.status = 'in_transit';
+          context.status = 'delivered';
+          context.deliveredAt = new Date();
 
-    const event: DeliveryInTransitEvent = {
-      eventType: 'DeliveryInTransit',
-      eventVersion: 'v1',
-      eventId: this.generateEventId(),
-      aggregateId: data.deliveryId,
-      occurredAt: new Date(),
-      data: {
-        courierId: data.courierId!,
-        route: {
-          waypoints: [
-            { lat: data.pickupLocation.lat, lng: data.pickupLocation.lng, type: 'pickup' },
-            { lat: data.deliveryLocation.lat, lng: data.deliveryLocation.lng, type: 'delivery' }
-          ],
-          estimatedDuration: 45
+          await (this as any).publishCommand('DeliveryDelivered', {
+            courierId: context.courierId!,
+            deliveryTime: context.deliveredAt
+          }, context.requestId || sagaId, sagaId);
+        },
+        compensate: async (context: DeliverySagaContext, sagaId: string) => {
+          // Confirm Delivery is documented as irreversible business completion
+          console.log(`[${sagaId}] Compensation for confirm_delivery: delivery completion remains.`);
         }
       }
-    };
-
-    await this.publishEvent('DeliveryInTransit', event);
-  }
-
-  private async confirmDelivery(data: DeliverySagaData): Promise<void> {
-    // In a real implementation, this would wait for delivery confirmation
-    await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
-
-    data.status = 'delivered';
-    data.deliveredAt = new Date();
-
-    const event: DeliveryDeliveredEvent = {
-      eventType: 'DeliveryDelivered',
-      eventVersion: 'v1',
-      eventId: this.generateEventId(),
-      aggregateId: data.deliveryId,
-      occurredAt: data.deliveredAt,
-      data: {
-        courierId: data.courierId!,
-        deliveryTime: data.deliveredAt
-      }
-    };
-
-    await this.publishEvent('DeliveryDelivered', event);
-  }
-
-  /**
-   * Compensation for assignCourier step (Section 7 compliance)
-   * Unassigns the courier from the delivery
-   */
-  private async unassignCourier(data: DeliverySagaData): Promise<void> {
-    if (!data.courierId) return;
-
-    // Unassign courier from delivery
-    await this.courierRepository.updateCourierAvailability(data.courierId, true);
-
-    // Publish unassignment event
-    const event: DeliveryCancelledEvent = {
-      eventType: 'DeliveryCancelled',
-      eventVersion: 'v1',
-      eventId: this.generateEventId(),
-      aggregateId: data.deliveryId,
-      occurredAt: new Date(),
-      data: {
-        cancelledBy: 'system',
-        reason: 'saga_compensation_unassign_courier'
-      }
-    };
-
-    await this.publishEvent('DeliveryCancelled', event);
-
-    // Update saga data
-    data.courierId = undefined;
-    data.status = 'cancelled';
-    data.compensationActions.push('unassignCourier');
-  }
-
-  /**
-   * Compensation for waitForPickup step (Section 7 compliance)
-   * Cancels the pickup process
-   */
-  private async cancelPickup(data: DeliverySagaData): Promise<void> {
-    // Cancel pickup notification and reset status
-    data.status = 'cancelled';
-    data.pickedUpAt = undefined;
-
-    // Publish cancellation event
-    const event: DeliveryCancelledEvent = {
-      eventType: 'DeliveryCancelled',
-      eventVersion: 'v1',
-      eventId: this.generateEventId(),
-      aggregateId: data.deliveryId,
-      occurredAt: new Date(),
-      data: {
-        cancelledBy: 'system',
-        reason: 'saga_compensation_pickup_cancelled'
-      }
-    };
-
-    await this.publishEvent('DeliveryCancelled', event);
-    data.compensationActions.push('cancelPickup');
-  }
-
-  private generateEventId(): string {
-    return `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    ];
   }
 }
 
-// Factory function to create delivery sagas
-export function createDeliverySaga(
-  courierRepository: ICourierRepository,
-  trackingPort: RealTimeTrackingPort
-): DeliverySaga {
-  return new DeliverySaga(courierRepository, trackingPort);
-}

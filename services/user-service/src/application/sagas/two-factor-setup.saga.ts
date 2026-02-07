@@ -1,6 +1,8 @@
-import { BaseSaga } from './saga-base';
+import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
+import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
 import { notificationClient, auditClient } from './service-clients';
 import { logger } from '../../infrastructure/services/logger.service';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface TwoFactorSetupEvent {
   eventId: string;
@@ -9,66 +11,94 @@ export interface TwoFactorSetupEvent {
   method: 'totp' | 'sms';
   deviceId?: string;
   timestamp: Date;
+  metadata?: { correlationId: string };
+}
+
+export class TwoFactorSetupSaga extends DistributedSagaOrchestrator<TwoFactorSetupEvent> {
+  protected sagaType = 'TwoFactorSetupSaga';
+  private backupCodesGenerated = false;
+
+  constructor() {
+    super(sagaLogRepository, 'user-service');
+  }
+
+  protected async onStart(sagaId: string, payload: TwoFactorSetupEvent, correlationId?: string): Promise<void> {
+    logger.info(`Starting TwoFactorSetupSaga for user ${payload.userId}`, { sagaId, correlationId });
+  }
+
+  protected async onCompensate(sagaId: string, failedStepName: string): Promise<void> {
+    logger.info(`Compensating TwoFactorSetupSaga failed at ${failedStepName}`, { sagaId });
+  }
+
+  protected defineSteps(): SagaStep<TwoFactorSetupEvent>[] {
+    return [
+      {
+        name: 'RegisterDevice',
+        execute: async (payload, sagaId) => {
+          logger.info('Registering 2FA device', { userId: payload.userId, method: payload.method, sagaId });
+          // Device registration logic
+        },
+        compensate: async (payload, sagaId) => {
+          logger.info('Unregistering 2FA device', { userId: payload.userId, sagaId });
+          // Remove device registration
+        }
+      },
+      {
+        name: 'GenerateBackupCodes',
+        execute: async (payload, sagaId) => {
+          logger.info('Generating backup codes', { userId: payload.userId, sagaId });
+          this.backupCodesGenerated = true;
+          // Generate and store backup codes
+        },
+        compensate: async (payload, sagaId) => {
+          if (this.backupCodesGenerated) {
+            logger.info('Invalidating backup codes', { userId: payload.userId, sagaId });
+            // Invalidate backup codes
+          }
+        }
+      },
+      {
+        name: 'RecordAuditEvent',
+        execute: async (payload, sagaId) => {
+          await auditClient.recordEvent(payload.userId, '2fa_setup', {
+            method: payload.method,
+            deviceId: payload.deviceId
+          });
+        },
+        compensate: async (payload, sagaId) => {
+          await auditClient.recordEvent(payload.userId, '2fa_setup_compensated', {
+            originalEventId: payload.eventId
+          });
+        }
+      },
+      {
+        name: 'SendConfirmationNotification',
+        execute: async (payload, sagaId) => {
+          await notificationClient.sendEmail(payload.userId, '2fa_enabled', {
+            method: payload.method,
+            timestamp: new Date().toISOString()
+          });
+        },
+        compensate: async (payload, sagaId) => {
+          // Cannot unsend notification
+        }
+      }
+    ];
+  }
 }
 
 export async function executeTwoFactorSetupSaga(event: TwoFactorSetupEvent): Promise<void> {
-  const saga = new BaseSaga(event.eventId, event);
-  let backupCodesGenerated = false;
+  const saga = new TwoFactorSetupSaga();
+  const correlationId = event.metadata?.correlationId || uuidv4();
 
-  saga.addStep({
-    name: 'RegisterDevice',
-    execute: async () => {
-      logger.info('Registering 2FA device', { userId: event.userId, method: event.method });
-      // Device registration logic
-    },
-    compensate: async () => {
-      logger.info('Unregistering 2FA device', { userId: event.userId });
-      // Remove device registration
-    }
-  });
-
-  saga.addStep({
-    name: 'GenerateBackupCodes',
-    execute: async () => {
-      logger.info('Generating backup codes', { userId: event.userId });
-      backupCodesGenerated = true;
-      // Generate and store backup codes
-    },
-    compensate: async () => {
-      if (backupCodesGenerated) {
-        logger.info('Invalidating backup codes', { userId: event.userId });
-        // Invalidate backup codes
-      }
-    }
-  });
-
-  saga.addStep({
-    name: 'RecordAuditEvent',
-    execute: async () => {
-      await auditClient.recordEvent(event.userId, '2fa_setup', {
-        method: event.method,
-        deviceId: event.deviceId
-      });
-    },
-    compensate: async () => {
-      await auditClient.recordEvent(event.userId, '2fa_setup_compensated', {
-        originalEventId: event.eventId
-      });
-    }
-  });
-
-  saga.addStep({
-    name: 'SendConfirmationNotification',
-    execute: async () => {
-      await notificationClient.sendEmail(event.userId, '2fa_enabled', {
-        method: event.method,
-        timestamp: new Date().toISOString()
-      });
-    },
-    compensate: async () => {
-      // Cannot unsend notification
-    }
-  });
-
-  await saga.execute();
+  try {
+    await saga.start(event, correlationId);
+  } catch (error) {
+    logger.error('Two factor setup saga failed to start', {
+      error: error instanceof Error ? error.message : String(error),
+      userId: event.userId,
+      correlationId
+    });
+    throw error;
+  }
 }

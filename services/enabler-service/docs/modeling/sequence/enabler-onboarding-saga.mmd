@@ -1,0 +1,50 @@
+sequenceDiagram
+    participant Saga as EnablerOnboardingSaga
+    participant RegisterUC as RegisterEnablerUseCase
+    participant VerSvc as VerificationService
+    participant ApproveUC as ApproveEnablerUseCase
+    participant WalletSvc as WalletService
+    participant NotifSvc as NotificationService
+
+    Note over Saga: Triggered by enabler registration request
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Register Enabler Step
+        Saga->>RegisterUC: execute(registrationData)
+        RegisterUC-->>Saga: enabler (PENDING status)
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Business Verification Step
+        Saga->>VerSvc: verifyBusiness(taxId, license)
+        VerSvc-->>Saga: verificationResult
+        alt Verification Failed
+            Saga->>NotifSvc: sendRejection(userId, reason)
+            Saga->>Saga: Update status to REJECTED
+        end
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Auto-Approval Step
+        alt BRONZE Tier
+            Saga->>ApproveUC: execute(enablerId, SYSTEM_AUTO_APPROVE)
+            ApproveUC-->>Saga: success
+        end
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Setup Wallet Step
+        Saga->>WalletSvc: createWallet(userId, ENABLER)
+        WalletSvc-->>Saga: walletId
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Welcome Notification Step
+        Saga->>NotifSvc: sendWelcomeEmail(userId)
+        NotifSvc-->>Saga: success
+    end
+
+    opt Compensation
+        Saga->>WalletSvc: deleteWallet(userId)
+        Saga->>RegisterUC: deleteEnabler(enablerId)
+    end

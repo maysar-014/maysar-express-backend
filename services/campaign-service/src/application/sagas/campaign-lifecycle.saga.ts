@@ -1,28 +1,33 @@
-import { BaseSaga } from './saga-base';
+import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
+import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
+import { logger } from '../../infrastructure/services/logger.service'; // Assuming logger exists
 import { ICampaignRepository } from '../../domain/repositories/campaign.repository.interface';
 
-export class CampaignLifecycleSaga extends BaseSaga {
-    readonly sagaId: string;
-    readonly sagaType = 'CampaignLifecycle';
+export interface CampaignLifecycleContext {
+    campaignId: string;
+    // Add other context properties as needed
+}
+
+export class CampaignLifecycleSaga extends DistributedSagaOrchestrator<CampaignLifecycleContext> {
+    protected sagaType = 'CampaignLifecycleSaga';
 
     constructor(
-        private readonly campaignRepository: ICampaignRepository,
-        campaignId: string
+        private readonly campaignRepository: ICampaignRepository
     ) {
-        super();
-        this.sagaId = `lifecycle-${campaignId}`;
-        this.state = { campaignId };
+        super(sagaLogRepository, 'campaign-service');
     }
 
-    protected initializeState(context: any): void {
-        this.state = { ...this.state, ...context };
+    protected async onStart(sagaId: string, payload: CampaignLifecycleContext, correlationId?: string): Promise<void> {
+        // logger.info(`Starting CampaignLifecycleSaga`, { sagaId, correlationId });
     }
 
-    protected async executeNextStep(): Promise<void> {
-        // Logic for lifecycle transitions
+    protected async onCompensate(sagaId: string, failedStepName: string): Promise<void> {
+        // logger.info(`Compensating CampaignLifecycleSaga`, { sagaId, failedStepName });
     }
 
-    protected async processEvent(event: any): Promise<void> {
-        // Logic for handling domain events
+    protected defineSteps(): SagaStep<CampaignLifecycleContext>[] {
+        return [
+            // Define steps here
+        ];
     }
 }

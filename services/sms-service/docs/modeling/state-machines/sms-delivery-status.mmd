@@ -1,0 +1,32 @@
+stateDiagram-v2
+    [*] --> QUEUED : create()
+    QUEUED --> SENDING : dispatch()
+    SENDING --> SENT : providerAccepted()
+    SENDING --> FAILED : providerRejected()
+    SENT --> DELIVERED : deliveryConfirmed()
+    SENT --> UNDELIVERED : deliveryFailed()
+    FAILED --> QUEUED : retry()
+    FAILED --> CANCELLED : maxRetriesExceeded()
+    DELIVERED --> [*]
+    UNDELIVERED --> [*]
+    CANCELLED --> [*]
+
+    note right of QUEUED
+        Message in queue
+        Awaiting dispatch
+    end note
+
+    note right of SENDING
+        Sent to SMS provider
+        Awaiting confirmation
+    end note
+
+    note right of DELIVERED
+        Final success state
+        Delivery confirmed by provider
+    end note
+
+    note right of FAILED
+        Retry logic applies
+        Max 3 attempts
+    end note

@@ -29,6 +29,36 @@ export class OutboxRepository {
         }
     }
 
+    /**
+     * Compatibility method for DistributedSagaOrchestrator
+     */
+    async saveEvent<T>(envelope: any, transaction?: any): Promise<void> {
+        const entry: OutboxEntry = {
+            eventId: envelope.metadata?.requestId || envelope.eventId || new Date().toISOString(), // Fallback ID
+            eventType: envelope.eventType,
+            eventData: envelope.data,
+            occurredAt: new Date(),
+            status: 'PENDING'
+        };
+
+        const prisma = transaction || this.prisma;
+
+        try {
+            await prisma.outboxEvent.create({
+                data: {
+                    eventId: entry.eventId,
+                    eventType: entry.eventType,
+                    eventData: entry.eventData,
+                    status: entry.status,
+                    createdAt: entry.occurredAt
+                }
+            });
+        } catch (error) {
+            console.error('Failed to save event via saveEvent adapter:', error);
+            throw error;
+        }
+    }
+
     async findUnprocessed(limit: number = 100): Promise<any[]> {
         try {
             return await this.prisma.outboxEvent.findMany({

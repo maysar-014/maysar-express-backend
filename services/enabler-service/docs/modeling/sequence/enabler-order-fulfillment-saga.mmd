@@ -1,0 +1,46 @@
+sequenceDiagram
+    participant Saga as EnablerOrderFulfillmentSaga
+    participant OrderRepo as EnablerOrderRepository
+    participant EnablerRepo as EnablerRepository
+    participant OrderSvc as OrderService
+    participant NotifSvc as NotificationService
+    participant CommSvc as CommissionService
+
+    Note over Saga: Triggered by order assigned to enabler
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Create Enabler Order Step
+        Saga->>OrderRepo: createEnablerOrder(orderId, enablerId)
+        OrderRepo-->>Saga: enablerOrder (CREATED)
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Notify Enabler Step
+        Saga->>EnablerRepo: getEnabler(enablerId)
+        EnablerRepo-->>Saga: enabler
+        Saga->>NotifSvc: notifyOrderAssigned(enablerId, orderDetails)
+        NotifSvc-->>Saga: success
+        Saga->>OrderRepo: updateStatus(orderid, ASSIGNED)
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Facilitate Order Step
+        Note over Saga: Async wait for enabler actions
+        Saga->>OrderSvc: updateOrderProgress(orderId, progress)
+        OrderSvc-->>Saga: success
+        Saga->>OrderRepo: updateStatus(orderId, IN_PROGRESS)
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Complete Order Step
+        Saga->>OrderRepo: updateStatus(orderId, COMPLETED)
+        Saga->>CommSvc: calculateCommission(orderId, enablerId)
+        CommSvc-->>Saga: commissionAmount
+    end
+
+    Saga->>NotifSvc: notifyOrderCompleted(enablerId)
+
+    opt Compensation
+        Saga->>CommSvc: cancelCommission(commissionId)
+        Saga->>OrderRepo: updateStatus(orderId, CANCELLED)
+    end

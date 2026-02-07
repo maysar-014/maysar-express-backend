@@ -1,0 +1,49 @@
+sequenceDiagram
+    participant Saga as CommissionSettlementSaga
+    participant CommRepo as CommissionRepository
+    participant EnablerRepo as EnablerRepository
+    participant WalletSvc as WalletService
+    participant PayoutSvc as PayoutService
+    participant NotifSvc as NotificationService
+
+    Note over Saga: Triggered by commission cycle end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Calculate Commissions Step
+        Saga->>CommRepo: getPendingCommissions(enablerId, period)
+        CommRepo-->>Saga: commissions
+        Saga->>Saga: aggregateCommissions()
+        Saga->>CommRepo: createSettlement(enablerId, amount)
+        CommRepo-->>Saga: settlement (PENDING)
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Approve Settlement Step
+        Saga->>EnablerRepo: getEnabler(enablerId)
+        EnablerRepo-->>Saga: enabler
+        Saga->>Saga: validateEnablerStatus()
+        Saga->>CommRepo: updateStatus(settlementId, APPROVED)
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Process Payout Step
+        Saga->>WalletSvc: creditWallet(enablerId, amount)
+        WalletSvc-->>Saga: transactionId
+        alt Exceeds Threshold
+            Saga->>PayoutSvc: initiatePayout(enablerId, amount)
+            PayoutSvc-->>Saga: payoutId
+        end
+    end
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Update Records Step
+        Saga->>CommRepo: updateStatus(settlementId, PAID)
+        Saga->>EnablerRepo: updateTotalCommission(enablerId, amount)
+    end
+
+    Saga->>NotifSvc: notifyCommissionPaid(enablerId, amount)
+
+    opt Compensation
+        Saga->>WalletSvc: reverseTransaction(transactionId)
+        Saga->>CommRepo: updateStatus(settlementId, CANCELLED)
+    end

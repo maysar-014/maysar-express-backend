@@ -1,0 +1,38 @@
+sequenceDiagram
+    participant Saga as CapacityAdjustmentSaga
+    participant CapRepo as CapacityRepository
+    participant ProdRepo as ProductionRepository
+    participant PlanEngine as PlanningEngine
+    participant Bus as EventBus
+
+    Note over Saga: Triggered by CapacityChangeRequested event
+
+    rect rgb(240, 240, 240)
+        note right of Saga: Validate Capacity Change Step
+        Saga->>CapRepo: getCurrentCapacity(facilityId)
+        CapRepo-->>Saga: currentCapacity
+        Saga->>Saga: validateNewCapacity(newCapacity)
+    end
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: Update Capacity Step
+        Saga->>CapRepo: updateCapacity(facilityId, newCapacity)
+        CapRepo-->>Saga: success
+    end
+    
+    rect rgb(240, 240, 240)
+        note right of Saga: Reschedule Active Plans Step
+        Saga->>ProdRepo: getActivePlans(facilityId)
+        ProdRepo-->>Saga: activePlans
+        Saga->>PlanEngine: rescheduleWithNewCapacity(plans, capacity)
+        PlanEngine-->>Saga: updatedSchedules
+        Saga->>ProdRepo: updatePlanSchedules(updatedSchedules)
+        ProdRepo-->>Saga: success
+    end
+    
+    Saga->>Bus: publish(CapacityAdjusted)
+
+    opt Compensation
+        Saga->>CapRepo: revertCapacity(facilityId, oldCapacity)
+        Saga->>ProdRepo: revertSchedules(plans)
+    end

@@ -25,23 +25,27 @@ export class Container {
         const payoutRepository = new PayoutRepository(this.prisma);
         const payoutPolicy = new PayoutPolicy();
 
-        const initiateUseCase = new InitiatePayoutUseCase(payoutRepository, payoutPolicy);
-        const completeUseCase = new CompletePayoutUseCase(payoutRepository);
-        const cancelUseCase = new CancelPayoutUseCase(payoutRepository);
-
         const outboxRepository = new OutboxRepository(this.prisma);
         this.eventBus = new RabbitMQEventBus();
         this.outboxProcessor = new OutboxProcessor(outboxRepository, this.eventBus);
+
+        const { provideSagaLogRepository } = await import('./infrastructure/repositories/saga.repository');
+        const sagaLogRepository = provideSagaLogRepository(this.prisma);
 
         const walletServiceClient = new WalletServiceClient(process.env.WALLET_SERVICE_URL || 'http://localhost:3002');
         const payoutProviderFactory = { getProvider: (method: string) => ({ initiateTransfer: async () => ({ success: true }) }) }; // Mock provider factory
 
         this.payoutProcessingSaga = new PayoutProcessingSaga(
+            sagaLogRepository,
+            'payout-service',
             walletServiceClient,
             payoutRepository,
-            payoutProviderFactory,
-            this.eventBus
+            payoutProviderFactory
         );
+
+        const initiateUseCase = new InitiatePayoutUseCase(payoutRepository, payoutPolicy, this.payoutProcessingSaga);
+        const completeUseCase = new CompletePayoutUseCase(payoutRepository);
+        const cancelUseCase = new CancelPayoutUseCase(payoutRepository);
 
         this.payoutController = new PayoutController(
             initiateUseCase,

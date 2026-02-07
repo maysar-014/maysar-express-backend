@@ -1,6 +1,6 @@
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../types';
-import { EventBus, EventEnvelope } from '../../../../shared/events/eventBus';
+import { EventBus, EventEnvelope } from '@shared/events/eventBus';
 import { logger } from '../services/logger.service';
 import { TicketLifecycleSaga, TicketLifecycleContext } from '../../application/sagas/ticket-lifecycle.saga';
 import { TicketCreatedEvent } from '../../domain/events/ticket-events';
@@ -21,13 +21,8 @@ export class SupportEventSubscriber {
         const event = envelope.data as TicketCreatedEvent;
         logger.info(`Handling TicketCreated event for ${event.ticketId}`);
 
-        const context: TicketLifecycleContext = {
-            ticketId: event.ticketId,
-            notifiedAgents: false
-        };
-
-        const saga = new TicketLifecycleSaga(`lifecycle-${event.ticketId}`, context);
-        await saga.handleTicketCreated(event);
+        const saga = new TicketLifecycleSaga();
+        await saga.handleTicketCreated(event, `lifecycle-${event.ticketId}`);
     }
 
     private async handleUserRegistered(envelope: EventEnvelope): Promise<void> {
