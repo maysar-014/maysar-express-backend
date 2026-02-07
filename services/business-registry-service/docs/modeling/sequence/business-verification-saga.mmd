@@ -12,8 +12,14 @@ sequenceDiagram
     
     Saga->>CS: checkCompliance(businessId)
     CS-->>Saga: complianceStatus
-    
-    Saga->>BR: updateStatus(businessId, VERIFIED)
-    BR-->>Saga: success
-    
-    Saga->>EB: publish(BusinessVerifiedEvent)
+
+    alt VERIFIED
+        Saga->>BR: updateStatus(businessId, VERIFIED)
+        Saga->>EB: publish(BusinessVerifiedEvent)
+    else NEEDS_REVIEW
+        Saga->>BR: updateStatus(businessId, NEEDS_REVIEW)
+        Saga->>EB: publish(BusinessReviewRequestedEvent)
+    else REJECTED
+        Saga->>BR: updateStatus(businessId, REJECTED)
+        Saga->>EB: publish(BusinessRejectedEvent)
+    end
