@@ -1,5 +1,5 @@
 import { TransactionalOutbox, OutboxStatus } from './outboxPattern';
-import { eventBus } from '../events/eventBus';
+import { inMemoryEventBus } from '../events/in-memory-event-bus';
 import { PrismaClient } from '@prisma/client';
 
 export class OutboxPublisher {
@@ -8,7 +8,7 @@ export class OutboxPublisher {
 
   constructor(
     private outbox: TransactionalOutbox,
-    private kafkaBus: typeof eventBus,
+    private eventBus: typeof inMemoryEventBus = inMemoryEventBus,
     private config = {
       pollInterval: 5000,
       batchSize: 50,
@@ -46,7 +46,7 @@ export class OutboxPublisher {
       try {
         await this.outbox.markAsProcessing(event.eventId);
         const { eventType, data, metadata } = event.eventData as any;
-        await this.kafkaBus.publish(eventType, data, metadata);
+        await this.eventBus.publish(eventType, data, metadata);
         await this.outbox.markAsSent(event.eventId);
 
         console.log(`Published event ${event.eventId}`);

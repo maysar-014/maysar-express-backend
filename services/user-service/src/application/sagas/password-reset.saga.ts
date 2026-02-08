@@ -3,6 +3,8 @@ import { logger } from '../../infrastructure/services/logger.service';
 import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
 import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
 import { v4 as uuidv4 } from 'uuid';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from './service-clients';
 
 export interface PasswordResetContext {
   event: UserPasswordChangedEvent;
@@ -16,7 +18,10 @@ export interface PasswordResetContext {
 export class PasswordResetSaga extends DistributedSagaOrchestrator<PasswordResetContext> {
   protected sagaType = 'PasswordResetSaga';
 
-  constructor() {
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly notificationClient: NotificationServiceClient
+  ) {
     super(sagaLogRepository, 'user-service');
   }
 
@@ -52,8 +57,12 @@ export class PasswordResetSaga extends DistributedSagaOrchestrator<PasswordReset
   }
 }
 
-export async function executePasswordResetSaga(event: UserPasswordChangedEvent): Promise<void> {
-  const saga = new PasswordResetSaga();
+export async function executePasswordResetSaga(
+  event: UserPasswordChangedEvent,
+  emailService: EmailService,
+  notificationClient: NotificationServiceClient
+): Promise<void> {
+  const saga = new PasswordResetSaga(emailService, notificationClient);
   const correlationId = event.metadata?.correlationId || uuidv4();
   const context: PasswordResetContext = {
     event,

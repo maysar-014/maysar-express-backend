@@ -1,8 +1,10 @@
 import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
 import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
-import { notificationClient, auditClient } from './service-clients';
+import { auditClient } from './service-clients';
 import { logger } from '../../infrastructure/services/logger.service';
 import { v4 as uuidv4 } from 'uuid';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from './service-clients';
 
 export interface PhoneVerificationEvent {
   eventId: string;
@@ -17,7 +19,10 @@ export interface PhoneVerificationEvent {
 export class PhoneVerificationSaga extends DistributedSagaOrchestrator<PhoneVerificationEvent> {
   protected sagaType = 'PhoneVerificationSaga';
 
-  constructor() {
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly notificationClient: NotificationServiceClient
+  ) {
     super(sagaLogRepository, 'user-service');
   }
 
@@ -70,7 +75,10 @@ export class PhoneVerificationSaga extends DistributedSagaOrchestrator<PhoneVeri
       {
         name: 'SendConfirmationNotification',
         execute: async (payload, sagaId) => {
-          await notificationClient.sendSMS(payload.userId, 'Phone number verified successfully');
+          await this.notificationClient.sendSMS(
+            payload.userId,
+            'Phone number verified successfully'
+          );
         },
         compensate: async (payload, sagaId) => {
           // Cannot unsend SMS
@@ -80,8 +88,12 @@ export class PhoneVerificationSaga extends DistributedSagaOrchestrator<PhoneVeri
   }
 }
 
-export async function executePhoneVerificationSaga(event: PhoneVerificationEvent): Promise<void> {
-  const saga = new PhoneVerificationSaga();
+export async function executePhoneVerificationSaga(
+  event: PhoneVerificationEvent,
+  emailService: EmailService,
+  notificationClient: NotificationServiceClient
+): Promise<void> {
+  const saga = new PhoneVerificationSaga(emailService, notificationClient);
   const correlationId = event.metadata?.correlationId || uuidv4();
 
   try {

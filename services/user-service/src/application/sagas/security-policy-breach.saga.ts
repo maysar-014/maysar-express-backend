@@ -1,8 +1,10 @@
 import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
 import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
-import { notificationClient, auditClient, sessionClient } from './service-clients';
+import { auditClient, sessionClient } from './service-clients';
 import { logger } from '../../infrastructure/services/logger.service';
 import { v4 as uuidv4 } from 'uuid';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from './service-clients';
 
 export interface SecurityPolicyBreachEvent {
   eventId: string;
@@ -18,7 +20,10 @@ export interface SecurityPolicyBreachEvent {
 export class SecurityPolicyBreachSaga extends DistributedSagaOrchestrator<SecurityPolicyBreachEvent> {
   protected sagaType = 'SecurityPolicyBreachSaga';
 
-  constructor() {
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly notificationClient: NotificationServiceClient
+  ) {
     super(sagaLogRepository, 'user-service');
   }
 
@@ -81,7 +86,7 @@ export class SecurityPolicyBreachSaga extends DistributedSagaOrchestrator<Securi
         name: 'NotifyUser',
         execute: async (payload, sagaId) => {
           const template = payload.severity === 'critical' ? 'security_alert_critical' : 'security_alert';
-          await notificationClient.sendEmail(payload.userId, template, {
+          await this.notificationClient.sendEmail(payload.userId, template, {
             breachType: payload.breachType,
             severity: payload.severity,
             actionRequired: payload.severity === 'critical',
@@ -96,8 +101,12 @@ export class SecurityPolicyBreachSaga extends DistributedSagaOrchestrator<Securi
   }
 }
 
-export async function executeSecurityPolicyBreachSaga(event: SecurityPolicyBreachEvent): Promise<void> {
-  const saga = new SecurityPolicyBreachSaga();
+export async function executeSecurityPolicyBreachSaga(
+  event: SecurityPolicyBreachEvent,
+  emailService: EmailService,
+  notificationClient: NotificationServiceClient
+): Promise<void> {
+  const saga = new SecurityPolicyBreachSaga(emailService, notificationClient);
   const correlationId = event.metadata?.correlationId || uuidv4();
 
   try {

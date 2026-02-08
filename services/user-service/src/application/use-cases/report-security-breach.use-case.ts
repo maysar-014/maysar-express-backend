@@ -2,6 +2,8 @@ import { IUserRepository } from '../../domain/repositories';
 import { SecurityPolicyBreachEvent } from '../sagas/security-policy-breach.saga';
 import { sagaEventHandler } from '../sagas/saga-event-handler';
 import { logger } from '../../infrastructure/services/logger.service';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from '../sagas/service-clients';
 
 export interface ReportSecurityBreachInput {
   userId: string;
@@ -18,7 +20,11 @@ export interface ReportSecurityBreachOutput {
 }
 
 export class ReportSecurityBreachUseCase {
-  constructor(private userRepository: IUserRepository) {}
+  constructor(
+    private userRepository: IUserRepository,
+    private emailService: EmailService,
+    private notificationClient: NotificationServiceClient
+  ) { }
 
   async execute(input: ReportSecurityBreachInput): Promise<ReportSecurityBreachOutput> {
     try {
@@ -68,7 +74,7 @@ export class ReportSecurityBreachUseCase {
         timestamp: new Date()
       };
 
-      await sagaEventHandler.handleSecurityPolicyBreachEvent(event);
+      await sagaEventHandler.handleSecurityPolicyBreachEvent(event, this.emailService, this.notificationClient);
 
       logger.logBusiness('Security breach reported', input.reportedBy || 'system', {
         userId: input.userId,

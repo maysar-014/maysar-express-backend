@@ -1,8 +1,10 @@
 import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
 import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
-import { notificationClient, auditClient, sessionClient } from './service-clients';
+import { auditClient, sessionClient } from './service-clients';
 import { logger } from '../../infrastructure/services/logger.service';
 import { v4 as uuidv4 } from 'uuid';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from './service-clients';
 
 export interface AccountSuspensionEvent {
   eventId: string;
@@ -18,7 +20,10 @@ export interface AccountSuspensionEvent {
 export class AccountSuspensionSaga extends DistributedSagaOrchestrator<AccountSuspensionEvent> {
   protected sagaType = 'AccountSuspensionSaga';
 
-  constructor() {
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly notificationClient: NotificationServiceClient
+  ) {
     super(sagaLogRepository, 'user-service');
   }
 
@@ -60,11 +65,11 @@ export class AccountSuspensionSaga extends DistributedSagaOrchestrator<AccountSu
       {
         name: 'NotifySuspension',
         execute: async (payload, sagaId) => {
-          await notificationClient.sendEmail(payload.userId, 'account_suspended', {
-            reason: payload.reason,
-            duration: payload.duration ? `${payload.duration / 1000 / 60} minutes` : 'permanent',
-            timestamp: new Date().toISOString()
-          });
+          await this.notificationClient.sendPushNotification(
+            payload.userId,
+            'Account Suspended',
+            `Your account has been suspended. Reason: ${payload.reason}`
+          );
         },
         compensate: async (payload, sagaId) => {
           // Cannot unsend notification
@@ -86,8 +91,12 @@ export class AccountSuspensionSaga extends DistributedSagaOrchestrator<AccountSu
   }
 }
 
-export async function executeAccountSuspensionSaga(event: AccountSuspensionEvent): Promise<void> {
-  const saga = new AccountSuspensionSaga();
+export async function executeAccountSuspensionSaga(
+  event: AccountSuspensionEvent,
+  emailService: EmailService,
+  notificationClient: NotificationServiceClient
+): Promise<void> {
+  const saga = new AccountSuspensionSaga(emailService, notificationClient);
   const correlationId = event.metadata?.correlationId || uuidv4();
 
   try {

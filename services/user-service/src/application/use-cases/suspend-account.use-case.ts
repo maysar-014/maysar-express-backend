@@ -2,6 +2,8 @@ import { IUserRepository } from '../../domain/repositories';
 import { AccountSuspensionEvent } from '../sagas/account-suspension.saga';
 import { sagaEventHandler } from '../sagas/saga-event-handler';
 import { logger } from '../../infrastructure/services/logger.service';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from '../sagas/service-clients';
 
 export interface SuspendAccountInput {
   userId: string;
@@ -17,7 +19,11 @@ export interface SuspendAccountOutput {
 }
 
 export class SuspendAccountUseCase {
-  constructor(private userRepository: IUserRepository) {}
+  constructor(
+    private userRepository: IUserRepository,
+    private emailService: EmailService,
+    private notificationClient: NotificationServiceClient
+  ) { }
 
   async execute(input: SuspendAccountInput): Promise<SuspendAccountOutput> {
     try {
@@ -48,9 +54,9 @@ export class SuspendAccountUseCase {
         timestamp: new Date()
       };
 
-      await sagaEventHandler.handleAccountSuspensionEvent(event);
+      await sagaEventHandler.handleAccountSuspensionEvent(event, this.emailService, this.notificationClient);
 
-      const suspensionEndDate = input.duration 
+      const suspensionEndDate = input.duration
         ? new Date(Date.now() + input.duration)
         : undefined;
 

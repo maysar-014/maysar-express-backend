@@ -6,9 +6,10 @@ import { CompletePayoutUseCase } from './application/use-cases/complete-payout.u
 import { CancelPayoutUseCase } from './application/use-cases/cancel-payout.use-case';
 import { PayoutPolicy } from './domain/policies/payout.policy';
 import { OutboxRepository } from './infrastructure/messaging/outbox.repository';
-import { RabbitMQEventBus } from './infrastructure/messaging/rabbitmq.event-bus';
+import { inMemoryEventBus } from '@shared-events/in-memory-event-bus';
 import { OutboxProcessor } from './infrastructure/messaging/outbox-processor';
 import { IEventBus } from './infrastructure/messaging/event-bus.interface';
+import { provideSagaLogRepository } from './infrastructure/repositories/saga.repository';
 import { PayoutProcessingSaga } from './application/sagas/payout-processing.saga';
 import { WalletServiceClient } from '../../payment-service/src/infrastructure/clients/wallet-service.client';
 
@@ -26,10 +27,9 @@ export class Container {
         const payoutPolicy = new PayoutPolicy();
 
         const outboxRepository = new OutboxRepository(this.prisma);
-        this.eventBus = new RabbitMQEventBus();
+        this.eventBus = inMemoryEventBus;
         this.outboxProcessor = new OutboxProcessor(outboxRepository, this.eventBus);
 
-        const { provideSagaLogRepository } = await import('./infrastructure/repositories/saga.repository');
         const sagaLogRepository = provideSagaLogRepository(this.prisma);
 
         const walletServiceClient = new WalletServiceClient(process.env.WALLET_SERVICE_URL || 'http://localhost:3002');

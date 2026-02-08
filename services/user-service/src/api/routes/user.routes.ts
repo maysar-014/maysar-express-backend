@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { UserController } from '@api/controllers/user.controller';
-import { CreateUserUseCase } from '@application/use-cases/create-user.use-case';
-import { UserValidationService } from '@domain/services/user-validation.service';
-import { UserSecurityPolicy } from '@domain/policies/user-security.policy';
+import { UserController } from '../controllers/user.controller';
+import { CreateUserUseCase } from '../../application/use-cases/create-user.use-case';
+import { UserValidationService } from '../../domain/services/user-validation.service';
+import { UserSecurityPolicy } from '../../domain/policies/user-security.policy';
 
 /**
  * API Route Definition Interface
@@ -37,14 +37,47 @@ export const USER_SERVICE_ROUTES: ApiRouteDefinition[] = [
   { method: 'POST', path: '/api/security/breaches/report', description: 'Report security breach', authorization: ['system', 'security'], requestBodyDTO: 'ReportSecurityBreachDTO.Request', responseBodyDTO: 'ReportSecurityBreachDTO.Response' }
 ];
 
+import { ChangePasswordUseCase } from '../../application/use-cases/change-password.use-case';
+import { DeleteAccountUseCase } from '../../application/use-cases/delete-account.use-case';
+import { SuspendAccountUseCase } from '../../application/use-cases/suspend-account.use-case';
+import { ChangeRoleUseCase } from '../../application/use-cases/change-role.use-case';
+import { VerifyPhoneUseCase } from '../../application/use-cases/verify-phone.use-case';
+import { SetupTwoFactorUseCase } from '../../application/use-cases/setup-two-factor.use-case';
+import { ReportSecurityBreachUseCase } from '../../application/use-cases/report-security-breach.use-case';
+import { emailService, notificationClient } from '../../infrastructure/services/service-instances';
+
 let userController: UserController;
 
 function initializeController(): void {
   if (!userController) {
     const userValidationService = new UserValidationService();
     const userSecurityPolicy = new UserSecurityPolicy();
-    const createUserUseCase = new CreateUserUseCase(userValidationService, userSecurityPolicy);
-    userController = new UserController(createUserUseCase);
+
+    // Instantiate all use cases with dependencies
+    const createUserUseCase = new CreateUserUseCase(
+      userValidationService,
+      userSecurityPolicy,
+      emailService,
+      notificationClient
+    );
+    const changePasswordUseCase = new ChangePasswordUseCase(null as any, emailService, notificationClient); // Repositories will be injected properly when actual persistence is added
+    const deleteAccountUseCase = new DeleteAccountUseCase(null as any, emailService, notificationClient);
+    const suspendAccountUseCase = new SuspendAccountUseCase(null as any, emailService, notificationClient);
+    const changeRoleUseCase = new ChangeRoleUseCase(null as any, emailService, notificationClient);
+    const verifyPhoneUseCase = new VerifyPhoneUseCase(null as any, emailService, notificationClient);
+    const setupTwoFactorUseCase = new SetupTwoFactorUseCase(null as any, emailService, notificationClient);
+    const reportSecurityBreachUseCase = new ReportSecurityBreachUseCase(null as any, emailService, notificationClient);
+
+    userController = new UserController(
+      createUserUseCase,
+      changePasswordUseCase,
+      deleteAccountUseCase,
+      suspendAccountUseCase,
+      changeRoleUseCase,
+      verifyPhoneUseCase,
+      setupTwoFactorUseCase,
+      reportSecurityBreachUseCase
+    );
   }
 }
 

@@ -15,8 +15,10 @@ import { PaymentLimitsPolicy } from './domain/policies/payment-limits.policy';
 import { FraudPreventionPolicy } from './domain/policies/fraud-prevention.policy';
 import { RefundPolicy } from './domain/policies/refund.policy';
 import { PaymentController } from './api/controllers/payment.controller';
-import { KafkaEventBus } from './infrastructure/messaging/kafka.event-bus';
+import { inMemoryEventBus } from '@shared-events/in-memory-event-bus';
+import { IEventBus } from './infrastructure/messaging/event-bus.interface';
 import { OutboxRepository } from './infrastructure/messaging/outbox.repository';
+
 import { WalletServiceClient } from './infrastructure/clients/wallet-service.client';
 import { SagaEventHandler } from './api/sagas/saga.event-handler';
 import { PaymentProcessingSaga } from './application/sagas/payment-processing.saga';
@@ -25,6 +27,7 @@ import { IPaymentProvider } from './domain/repositories/payment-provider.gateway
 import { PaymentEventHandlers } from './infrastructure/events/payment.event-handlers';
 import { PrismaSagaLogRepository } from '../../../shared/saga/saga-log.repository';
 import { ISagaLogRepository } from '../../../shared/saga/saga.log';
+
 
 export class Container {
     private static instance: Container;
@@ -42,7 +45,7 @@ export class Container {
     public walletServiceClient: WalletServiceClient;
 
     // Messaging
-    public eventBus: KafkaEventBus;
+    public eventBus: IEventBus;
 
     // Saga
     public paymentProcessingSaga: PaymentProcessingSaga;
@@ -86,7 +89,7 @@ export class Container {
         this.walletServiceClient = new WalletServiceClient(process.env.WALLET_SERVICE_URL || 'http://wallet-service:3002');
 
         // Messaging
-        this.eventBus = new KafkaEventBus();
+        this.eventBus = inMemoryEventBus;
 
         // Providers
         this.pesapalAdapter = new PesapalAdapter();
@@ -164,5 +167,3 @@ export class Container {
         return Container.instance;
     }
 }
-
-

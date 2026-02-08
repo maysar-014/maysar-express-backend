@@ -2,6 +2,8 @@ import { IUserRepository } from '../../domain/repositories';
 import { UserPasswordChangedEvent } from '../../domain/events';
 import { sagaEventHandler } from '../sagas/saga-event-handler';
 import { logger } from '../../infrastructure/services/logger.service';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from '../sagas/service-clients';
 
 export interface ChangePasswordInput {
   userId: string;
@@ -18,8 +20,10 @@ export interface ChangePasswordOutput {
 
 export class ChangePasswordUseCase {
   constructor(
-    private userRepository: IUserRepository
-  ) {}
+    private userRepository: IUserRepository,
+    private emailService: EmailService,
+    private notificationClient: NotificationServiceClient
+  ) { }
 
   async execute(input: ChangePasswordInput): Promise<ChangePasswordOutput> {
     try {
@@ -33,7 +37,7 @@ export class ChangePasswordUseCase {
       // Authorization: user can change own password or admin can reset
       const isOwner = input.userId === input.changedBy;
       const isAdmin = (await this.userRepository.findById(input.changedBy))?.role === 'system';
-      
+
       if (!isOwner && !isAdmin) {
         return { success: false, message: 'Insufficient permissions' };
       }
@@ -54,7 +58,7 @@ export class ChangePasswordUseCase {
         reason as 'user_initiated' | 'admin_reset' | 'security_policy'
       );
 
-      await sagaEventHandler.handleUserPasswordChangedEvent(event);
+      await sagaEventHandler.handleUserPasswordChangedEvent(event, this.emailService, this.notificationClient);
 
       logger.logBusiness('Password changed successfully', input.changedBy, {
         userId: input.userId,

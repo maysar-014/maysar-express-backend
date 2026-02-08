@@ -135,12 +135,12 @@ The service will start on `http://localhost:3001`.
 Build and run the service in Docker:
 
 ```bash
-# Build Docker image
-docker build -t maysar/user-service:latest .
+# Build Docker image from monorepo root
+docker build -t maysar/user-service:latest -f services/user-service/Dockerfile .
 
 # Run container
 docker run -p 3001:3001 \
-  --env-file .env \
+  --env-file services/user-service/.env.production \
   --name user-service \
   maysar/user-service:latest
 

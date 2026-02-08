@@ -1,6 +1,8 @@
 import { IUserRepository } from '../../domain/repositories';
 import { sagaEventHandler } from '../sagas/saga-event-handler';
 import { logger } from '../../infrastructure/services/logger.service';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from '../sagas/service-clients';
 
 export interface AccountDeletionEvent {
   eventId: string;
@@ -33,8 +35,10 @@ export interface DeleteAccountOutput {
 
 export class DeleteAccountUseCase {
   constructor(
-    private userRepository: IUserRepository
-  ) {}
+    private userRepository: IUserRepository,
+    private emailService: EmailService,
+    private notificationClient: NotificationServiceClient
+  ) { }
 
   async execute(input: DeleteAccountInput): Promise<DeleteAccountOutput> {
     try {
@@ -48,7 +52,7 @@ export class DeleteAccountUseCase {
       // Authorization: user can delete own account or admin can delete any
       const isOwner = input.userId === input.deletedBy;
       const isAdmin = (await this.userRepository.findById(input.deletedBy))?.role === 'system';
-      
+
       if (!isOwner && !isAdmin) {
         return { success: false, message: 'Insufficient permissions' };
       }
@@ -75,7 +79,7 @@ export class DeleteAccountUseCase {
         }
       };
 
-      await sagaEventHandler.handleAccountDeletionEvent(event);
+      await sagaEventHandler.handleAccountDeletionEvent(event, this.emailService, this.notificationClient);
 
       logger.logBusiness('Account deletion initiated', input.deletedBy, {
         userId: input.userId,

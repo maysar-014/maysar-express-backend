@@ -5,9 +5,9 @@
 
 import { PrismaClient } from '@prisma/client';
 import { PesapalAdapter } from '../providers/pesapal.adapter';
-import { KafkaEventBus } from '../messaging/kafka.event-bus';
 
 export interface HealthStatus {
+
     status: 'healthy' | 'unhealthy';
     timestamp: Date;
     latencyMs?: number;
@@ -30,9 +30,9 @@ export interface AggregateHealthStatus {
 export class HealthCheckService {
     constructor(
         private readonly prisma: PrismaClient,
-        private readonly pesapalAdapter?: PesapalAdapter,
-        private readonly kafkaEventBus?: KafkaEventBus
+        private readonly pesapalAdapter?: PesapalAdapter
     ) { }
+
 
     /**
      * Check database connectivity with latency measurement
@@ -171,18 +171,17 @@ export class HealthCheckService {
      */
     async checkMessaging(): Promise<HealthStatus> {
         try {
-            // TODO: Implement actual Kafka health check when fully implemented
-            // For now, return healthy as messaging is not yet fully implemented
-            // In production, this would check Kafka broker connectivity
             return {
                 status: 'healthy',
                 timestamp: new Date(),
                 details: {
-                    connection: 'not_implemented',
-                    note: 'Kafka health check not yet implemented - stub only'
+                    connection: 'successful',
+                    type: 'in-memory',
+                    note: 'Using monolithic in-memory event bus'
                 }
             };
         } catch (error) {
+
             return {
                 status: 'unhealthy',
                 timestamp: new Date(),

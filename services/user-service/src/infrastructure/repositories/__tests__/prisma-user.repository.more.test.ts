@@ -19,7 +19,7 @@ function makePrismaMock() {
   };
 
   const prisma: any = {
-    user: {
+    user_User: {
       findUnique: jest.fn().mockResolvedValue(userData),
       findFirst: jest.fn().mockResolvedValue(userData),
       create: jest.fn().mockResolvedValue(userData),
@@ -32,14 +32,14 @@ function makePrismaMock() {
       count: jest.fn().mockResolvedValue(1),
       groupBy: jest.fn().mockResolvedValue([{ status: 'active', _count: { status: 1 } }])
     },
-    userAddress: {
+    user_UserAddress: {
       findMany: jest.fn().mockResolvedValue([]),
       create: jest.fn().mockResolvedValue({ id: 'a1', userId: 'u1', type: 'home', street: 's', city: 'c', country: 'Tz', isDefault: false, createdAt: now, updatedAt: now }),
       update: jest.fn().mockResolvedValue({ id: 'a1', userId: 'u1', type: 'home', street: 's', city: 'c', country: 'Tz', isDefault: false, createdAt: now, updatedAt: now }),
       updateMany: jest.fn().mockResolvedValue({}),
       delete: jest.fn().mockResolvedValue({})
     },
-    auditLog: {
+    user_AuditLog: {
       findMany: jest.fn().mockResolvedValue([]),
       create: jest.fn().mockResolvedValue({ id: 'e1' })
     },
@@ -88,11 +88,11 @@ describe('PrismaUserRepository more methods', () => {
     await expect(repo.recordSuccessfulLogin('u1')).resolves.toBeUndefined();
 
     // recordFailedLogin: normal path
-    prisma.user.findUnique.mockResolvedValueOnce({ ...userData, failedLoginAttempts: 1, status: 'active' });
+    prisma.user_User.findUnique.mockResolvedValueOnce({ ...userData, failedLoginAttempts: 1, status: 'active' });
     await expect(repo.recordFailedLogin('u1')).resolves.toBeUndefined();
 
     // recordFailedLogin: user not found -> should throw
-    prisma.user.findUnique.mockResolvedValueOnce(null);
+    prisma.user_User.findUnique.mockResolvedValueOnce(null);
     await expect(repo.recordFailedLogin('missing')).rejects.toThrow();
 
     // role update
@@ -109,7 +109,7 @@ describe('PrismaUserRepository more methods', () => {
     await expect(repo.setDefaultAddress('u1', 'a1')).resolves.toBeUndefined();
 
     // preferences
-    prisma.user.findUnique.mockResolvedValueOnce({ language: 'sw', timezone: 'TZS' });
+    prisma.user_User.findUnique.mockResolvedValueOnce({ language: 'sw', timezone: 'TZS' });
     const prefs = await repo.getUserPreferences('u1');
     expect(prefs.language).toBe('sw');
     await expect(repo.updateUserPreferences('u1', { language: 'en' })).resolves.toBeDefined();
@@ -119,7 +119,7 @@ describe('PrismaUserRepository more methods', () => {
     expect(resultsStatus.successCount).toBeGreaterThanOrEqual(1);
 
     // bulk delete: simulate delete throws for 'bad'
-    prisma.user.delete.mockImplementationOnce(async (args: any) => { if (args.where.id === 'bad') throw new Error('delete failed'); return {}; });
+    prisma.user_User.delete.mockImplementationOnce(async (args: any) => { if (args.where.id === 'bad') throw new Error('delete failed'); return {}; });
     const resultsDel = await repo.bulkDelete(['u1', 'bad']);
     expect(resultsDel.successCount).toBeGreaterThanOrEqual(1);
 
@@ -129,17 +129,17 @@ describe('PrismaUserRepository more methods', () => {
     await expect(repo.recordSecurityEvent('u1', { action: 'a', success: true })).resolves.toBeUndefined();
 
     // exportUserData
-    prisma.auditLog.findMany.mockResolvedValueOnce([]);
+    prisma.user_AuditLog.findMany.mockResolvedValueOnce([]);
     const exported = await repo.exportUserData('u1');
     expect(exported.user.id).toBe('u1');
 
     // health status healthy
-    prisma.user.count.mockResolvedValueOnce(1);
+    prisma.user_User.count.mockResolvedValueOnce(1);
     const health = await repo.getHealthStatus();
     expect(health.status).toMatch(/healthy|degraded/);
 
     // health status unhealthy (simulate error)
-    prisma.user.count.mockImplementationOnce(() => { throw new Error('db down'); });
+    prisma.user_User.count.mockImplementationOnce(() => { throw new Error('db down'); });
     const badHealth = await repo.getHealthStatus();
     expect(badHealth.status).toBe('unhealthy');
 

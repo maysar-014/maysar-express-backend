@@ -14,7 +14,7 @@ describe('PrismaUserRepository unit tests (mocked prisma)', () => {
 
   function makeRepo(prismaOverrides: Partial<Record<string, any>> = {}) {
     const prisma: any = {
-      user: {
+      user_User: {
         findUnique: jest.fn(),
         findFirst: jest.fn(),
         create: jest.fn(),
@@ -24,14 +24,14 @@ describe('PrismaUserRepository unit tests (mocked prisma)', () => {
         count: jest.fn(),
         groupBy: jest.fn(),
       },
-      userAddress: {
+      user_UserAddress: {
         findMany: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn(),
         delete: jest.fn()
       },
-      auditLog: { findMany: jest.fn(), create: jest.fn() },
+      user_AuditLog: { findMany: jest.fn(), create: jest.fn() },
       $queryRaw: jest.fn()
     };
 
@@ -51,7 +51,7 @@ describe('PrismaUserRepository unit tests (mocked prisma)', () => {
       timezone: 'UTC'
     };
 
-    repo = makeRepo({ user: { findUnique: jest.fn().mockResolvedValue(userData) } });
+    repo = makeRepo({ user_User: { findUnique: jest.fn().mockResolvedValue(userData) } });
     const found = await repo.findById('u1');
     expect(found).not.toBeNull();
     expect(found!.id).toBe('u1');
@@ -59,20 +59,20 @@ describe('PrismaUserRepository unit tests (mocked prisma)', () => {
   });
 
   it('findById -> returns null when not found', async () => {
-    repo = makeRepo({ user: { findUnique: jest.fn().mockResolvedValue(null) } });
+    repo = makeRepo({ user_User: { findUnique: jest.fn().mockResolvedValue(null) } });
     const res = await repo.findById('missing');
     expect(res).toBeNull();
   });
 
   it('recordFailedLogin -> throws when user missing and locks when threshold reached', async () => {
     // missing user should cause error
-    repo = makeRepo({ user: { findUnique: jest.fn().mockResolvedValue(null) } });
+    repo = makeRepo({ user_User: { findUnique: jest.fn().mockResolvedValue(null) } });
     await expect(repo.recordFailedLogin('missing')).rejects.toThrow('User not found');
 
     // when attempts reach threshold should lock
     const user = { id: 'u2', failedLoginAttempts: 4, status: 'active' };
     const updateSpy = jest.fn().mockResolvedValue(true);
-    repo = makeRepo({ user: { findUnique: jest.fn().mockResolvedValue(user), update: updateSpy } });
+    repo = makeRepo({ user_User: { findUnique: jest.fn().mockResolvedValue(user), update: updateSpy } });
     await expect(repo.recordFailedLogin('u2')).resolves.toBeUndefined();
     expect(updateSpy).toHaveBeenCalled();
   });
@@ -85,7 +85,7 @@ describe('PrismaUserRepository unit tests (mocked prisma)', () => {
       update: jest.fn().mockResolvedValue(created)
     };
 
-    repo = makeRepo({ userAddress: ua });
+    repo = makeRepo({ user_UserAddress: ua });
     const addr = await repo.createUserAddress('u1', { type: 'home' as any, street: 's', city: 'c', country: 'X', isDefault: true });
     expect(addr.id).toBe('a1');
     expect(ua.create).toHaveBeenCalled();
@@ -94,17 +94,17 @@ describe('PrismaUserRepository unit tests (mocked prisma)', () => {
   });
 
   it('getUserPreferences -> throws when user not found', async () => {
-    repo = makeRepo({ user: { findUnique: jest.fn().mockResolvedValue(null) } });
+    repo = makeRepo({ user_User: { findUnique: jest.fn().mockResolvedValue(null) } });
     await expect(repo.getUserPreferences('uX')).rejects.toThrow('User not found');
   });
 
   it('exportUserData -> throws when user missing', async () => {
-    repo = makeRepo({ user: { findUnique: jest.fn().mockResolvedValue(null) } });
+    repo = makeRepo({ user_User: { findUnique: jest.fn().mockResolvedValue(null) } });
     await expect(repo.exportUserData('nope')).rejects.toThrow('User not found');
   });
 
   it('getHealthStatus -> returns unhealthy when db throws', async () => {
-    repo = makeRepo({ user: { count: jest.fn().mockRejectedValue(new Error('db down')) } });
+    repo = makeRepo({ user_User: { count: jest.fn().mockRejectedValue(new Error('db down')) } });
     const res = await repo.getHealthStatus();
     expect(res.status).toBe('unhealthy');
     expect(res.details.database.connected).toBe(false);

@@ -3593,3 +3593,41 @@ model SagaStepLog {
   @@map("saga_step_logs")
 }
 
+// --- sms-service Service Models ---
+
+model Sms_Message {
+  id                String    @id @default(uuid())
+  phoneNumber       String
+  content           String
+  status            Sms_Status @default(QUEUED)
+  providerId        String?
+  providerMessageId String?
+  userId            String?
+  retryCount        Int       @default(0)
+  maxRetries        Int       @default(3)
+  scheduledAt       DateTime?
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  failedAt          DateTime?
+  lastError         String?
+  metadata          Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([status])
+  @@index([phoneNumber])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("sms_messages")
+}
+
+enum Sms_Status {
+  QUEUED
+  SENDING
+  SENT
+  DELIVERED
+  UNDELIVERED
+  FAILED
+  CANCELLED
+}
+

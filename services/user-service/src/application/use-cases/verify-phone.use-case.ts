@@ -2,6 +2,8 @@ import { IUserRepository } from '../../domain/repositories';
 import { PhoneVerificationEvent } from '../sagas/phone-verification.saga';
 import { sagaEventHandler } from '../sagas/saga-event-handler';
 import { logger } from '../../infrastructure/services/logger.service';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from '../sagas/service-clients';
 
 export interface VerifyPhoneInput {
   userId: string;
@@ -17,7 +19,11 @@ export interface VerifyPhoneOutput {
 }
 
 export class VerifyPhoneUseCase {
-  constructor(private userRepository: IUserRepository) {}
+  constructor(
+    private userRepository: IUserRepository,
+    private emailService: EmailService,
+    private notificationClient: NotificationServiceClient
+  ) { }
 
   async execute(input: VerifyPhoneInput): Promise<VerifyPhoneOutput> {
     try {
@@ -57,7 +63,7 @@ export class VerifyPhoneUseCase {
         timestamp: new Date()
       };
 
-      await sagaEventHandler.handlePhoneVerificationEvent(event);
+      await sagaEventHandler.handlePhoneVerificationEvent(event, this.emailService, this.notificationClient);
 
       logger.logBusiness('Phone verified successfully', input.userId, { phoneNumber: input.phoneNumber });
 

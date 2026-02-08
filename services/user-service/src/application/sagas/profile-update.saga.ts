@@ -1,9 +1,11 @@
 import { UserProfileUpdatedEvent } from '../../domain/events';
 import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
 import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
-import { notificationClient, auditClient } from './service-clients';
+import { auditClient } from './service-clients';
 import { logger } from '../../infrastructure/services/logger.service';
 import { v4 as uuidv4 } from 'uuid';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from './service-clients';
 
 export interface ProfileUpdateContext {
   event: UserProfileUpdatedEvent;
@@ -17,7 +19,10 @@ export interface ProfileUpdateContext {
 export class ProfileUpdateSaga extends DistributedSagaOrchestrator<ProfileUpdateContext> {
   protected sagaType = 'ProfileUpdateSaga';
 
-  constructor() {
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly notificationClient: NotificationServiceClient
+  ) {
     super(sagaLogRepository, 'user-service');
   }
 
@@ -62,10 +67,11 @@ export class ProfileUpdateSaga extends DistributedSagaOrchestrator<ProfileUpdate
       {
         name: 'NotifyProfileUpdate',
         execute: async (context, sagaId) => {
-          await notificationClient.sendEmail(context.event.aggregateId, 'profile_updated', {
-            changes: context.event.changes,
-            timestamp: new Date().toISOString()
-          });
+          await this.notificationClient.sendPushNotification(
+            context.event.aggregateId,
+            'Profile Updated',
+            'Your profile has been updated.'
+          );
         },
         compensate: async (context, sagaId) => {
           // Notification cannot be unsent, but log compensation
@@ -75,8 +81,12 @@ export class ProfileUpdateSaga extends DistributedSagaOrchestrator<ProfileUpdate
   }
 }
 
-export async function executeProfileUpdateSaga(event: UserProfileUpdatedEvent): Promise<void> {
-  const saga = new ProfileUpdateSaga();
+export async function executeProfileUpdateSaga(
+  event: UserProfileUpdatedEvent,
+  emailService: EmailService,
+  notificationClient: NotificationServiceClient
+): Promise<void> {
+  const saga = new ProfileUpdateSaga(emailService, notificationClient);
   const correlationId = event.metadata?.correlationId || uuidv4();
   const context: ProfileUpdateContext = {
     event,

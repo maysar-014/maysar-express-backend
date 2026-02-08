@@ -11,7 +11,7 @@ import { LimitPolicy } from './domain/policies/wallet-limit.policy';
 import { VelocityCheckPolicy } from './domain/policies/velocity-check.policy';
 import { OutboxRepository } from './infrastructure/messaging/outbox.repository';
 import { RabbitMQEventBus } from './infrastructure/messaging/rabbitmq.event-bus';
-import { KafkaEventBus } from './infrastructure/messaging/kafka.event-bus';
+import { inMemoryEventBus } from '@shared-events/in-memory-event-bus';
 import { OutboxProcessor } from './infrastructure/messaging/outbox-processor';
 import { IEventBus } from './infrastructure/messaging/event-bus.interface';
 import { IdempotencyRepository } from './infrastructure/repositories/idempotency.repository';
@@ -59,7 +59,7 @@ export class Container {
         const idempotencyService = new IdempotencyService(idempotencyRepository);
         const velocityCheckPolicy = new VelocityCheckPolicy(walletConfig.velocity);
         const velocityCheckService = new VelocityCheckService(velocityCheckPolicy, transactionRepository);
-        this.eventBus = new KafkaEventBus(); // Unified with payment-service
+        this.eventBus = inMemoryEventBus; // Unified with other services
         const eventPublisher = new WalletEventPublisher(this.eventBus);
         const notificationAdapter = new NotificationAdapter();
 

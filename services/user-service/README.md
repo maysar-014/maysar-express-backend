@@ -90,6 +90,9 @@ redis >= 6.0
 
 ### Setup
 ```bash
+# Navigate to the project root
+cd ../..
+
 # Install dependencies
 npm install
 
@@ -100,14 +103,8 @@ cp .env.example .env
 # Generate Prisma client
 npm run prisma:generate
 
-# Run database migrations
-npm run prisma:migrate
-
-# Seed database (optional)
-npm run prisma:seed
-
-# Start development server
-npm run dev
+# Start development server configured for user-service
+PORT=3001 npm run dev
 ```
 
 ### Available Scripts
@@ -190,15 +187,14 @@ npm test -- src/domain/entities/user.entity.test.ts
 ## Deployment
 
 ### Docker
+The User Service is deployed using the shared monolith Docker image.
+
 ```bash
-# Build image
-docker build -t user-service:latest .
+# Build monolith image
+docker build -t maysar-backend:latest .
 
-# Run container with environment
-docker run -p 3001:3001 --env-file .env user-service:latest
-
-# Run with Docker Compose
-docker-compose up -d
+# Run as User Service
+docker run -p 3001:3001 -e PORT=3001 --env-file .env maysar-backend:latest
 ```
 
 ### Kubernetes

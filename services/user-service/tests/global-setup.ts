@@ -9,30 +9,62 @@ module.exports = async (): Promise<void> => {
   // ENVIRONMENT INITIALIZATION
   // =====================================================================================
 
+  // Load environment variables from root .env
+  require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.env') });
+
   // Increase max event listeners to prevent warnings with many test suites
   process.setMaxListeners(20);
 
   process.env.NODE_ENV = 'test';
   process.env.JWT_SECRET =
     process.env.JWT_SECRET || 'test-jwt-secret-for-testing-only-do-not-use-in-production';
-  process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/user-service-test';
+
+  // Use provided DATABASE_URL or fallback to a test-specific one if needed
+  process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://maysar_user:M@ys4r2026!Db@localhost:5432/maysar_db?sslmode=prefer';
   process.env.REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379/1';
 
   console.log('[GLOBAL SETUP] Initializing test environment...');
   console.log(`[GLOBAL SETUP] Test Environment: ${process.env.NODE_ENV}`);
+  console.log(`[GLOBAL SETUP] Database URL: ${process.env.DATABASE_URL.replace(/:([^@]+)@/, ':****@')}`); // Mask password
 
   // =====================================================================================
   // TEST INFRASTRUCTURE SETUP
   // =====================================================================================
 
   // Initialize global test database if configured
-  if (process.env.TEST_DB_GLOBAL_SETUP === 'true') {
-    console.log('[GLOBAL SETUP] Setting up global test database...');
+  if (process.env.TEST_DB_GLOBAL_SETUP === 'true' || true) { // Always check for now to fix connection
+    console.log('[GLOBAL SETUP] Checking database connection...');
     try {
-      // Database setup would be implemented here
-      console.log('[GLOBAL SETUP] Global test database initialized');
+      const { PrismaClient } = require('@prisma/client');
+      const prisma = new PrismaClient({
+        datasources: {
+          db: {
+            url: process.env.DATABASE_URL
+          }
+        }
+      });
+      await prisma.$connect();
+      console.log('[GLOBAL SETUP] Database connection successful');
+      await prisma.$disconnect();
     } catch (error) {
-      console.error('[GLOBAL SETUP] Failed to initialize test database:', error);
+      console.error('[GLOBAL SETUP] CRITICAL: Failed to connect to the database.');
+      console.error(`[GLOBAL SETUP] Error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    console.log('[GLOBAL SETUP] Checking Redis connection...');
+    try {
+      const Redis = require('ioredis');
+      const redis = new Redis(process.env.REDIS_URL);
+      const pingResponse = await redis.ping();
+      if (pingResponse === 'PONG') {
+        console.log('[GLOBAL SETUP] Redis connection successful');
+      } else {
+        console.warn(`[GLOBAL SETUP] Redis returned unexpected ping response: ${pingResponse}`);
+      }
+      await redis.quit();
+    } catch (error) {
+      console.error('[GLOBAL SETUP] CRITICAL: Failed to connect to Redis.');
+      console.error(`[GLOBAL SETUP] Error: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

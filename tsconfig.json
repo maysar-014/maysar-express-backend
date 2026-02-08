@@ -115,6 +115,18 @@
             "@user/*": [
                 "services/user-service/src/*"
             ],
+            "@api/*": [
+                "services/user-service/src/api/*"
+            ],
+            "@application/*": [
+                "services/user-service/src/application/*"
+            ],
+            "@domain/*": [
+                "services/user-service/src/domain/*"
+            ],
+            "@infrastructure/*": [
+                "services/user-service/src/infrastructure/*"
+            ],
             "@wallet/*": [
                 "services/wallet-service/src/*"
             ]

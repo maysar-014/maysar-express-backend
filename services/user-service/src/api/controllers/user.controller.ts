@@ -1,19 +1,26 @@
 import { Request, Response } from 'express';
 import { CreateUserUseCase } from '@application/use-cases/create-user.use-case';
+import { ChangePasswordUseCase } from '@application/use-cases/change-password.use-case';
+import { DeleteAccountUseCase } from '@application/use-cases/delete-account.use-case';
+import { SuspendAccountUseCase } from '@application/use-cases/suspend-account.use-case';
+import { ChangeRoleUseCase } from '@application/use-cases/change-role.use-case';
+import { VerifyPhoneUseCase } from '@application/use-cases/verify-phone.use-case';
+import { SetupTwoFactorUseCase } from '@application/use-cases/setup-two-factor.use-case';
+import { ReportSecurityBreachUseCase } from '@application/use-cases/report-security-breach.use-case';
 import { UserMapper } from '@application/mappers/user-mapper';
 import { UserAlreadyExistsError } from '@domain/errors/user.errors';
 
 export class UserController {
   constructor(
     private createUserUseCase: CreateUserUseCase,
-    private changePasswordUseCase?: any,
-    private deleteAccountUseCase?: any,
-    private suspendAccountUseCase?: any,
-    private changeRoleUseCase?: any,
-    private verifyPhoneUseCase?: any,
-    private setupTwoFactorUseCase?: any,
-    private reportSecurityBreachUseCase?: any
-  ) {}
+    private changePasswordUseCase: ChangePasswordUseCase,
+    private deleteAccountUseCase: DeleteAccountUseCase,
+    private suspendAccountUseCase: SuspendAccountUseCase,
+    private changeRoleUseCase: ChangeRoleUseCase,
+    private verifyPhoneUseCase: VerifyPhoneUseCase,
+    private setupTwoFactorUseCase: SetupTwoFactorUseCase,
+    private reportSecurityBreachUseCase: ReportSecurityBreachUseCase
+  ) { }
 
   async createUser(req: Request, res: Response): Promise<void> {
     try {

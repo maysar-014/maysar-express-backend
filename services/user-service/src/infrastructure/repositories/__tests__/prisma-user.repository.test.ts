@@ -19,7 +19,7 @@ function makePrismaMock() {
   } as any;
 
   const prisma: any = {
-    user: {
+    user_User: {
       findUnique: jest.fn().mockResolvedValue(userData),
       findFirst: jest.fn().mockResolvedValue(userData),
       create: jest.fn().mockResolvedValue(userData),
@@ -29,13 +29,13 @@ function makePrismaMock() {
       count: jest.fn().mockResolvedValue(1),
       groupBy: jest.fn().mockResolvedValue([{ status: 'active', _count: { status: 1 } }])
     },
-    userAddress: {
+    user_UserAddress: {
       findMany: jest.fn().mockResolvedValue([]),
       create: jest.fn().mockResolvedValue({ id: 'a1', userId: 'u1', type: 'home', street: 's', city: 'c', country: 'Tz', isDefault: false, createdAt: now, updatedAt: now }),
       update: jest.fn().mockResolvedValue({ id: 'a1', userId: 'u1', type: 'home', street: 's', city: 'c', country: 'Tz', isDefault: false, createdAt: now, updatedAt: now }),
       updateMany: jest.fn().mockResolvedValue({})
     },
-    auditLog: { findMany: jest.fn().mockResolvedValue([]) },
+    user_AuditLog: { findMany: jest.fn().mockResolvedValue([]) },
     $queryRaw: jest.fn().mockResolvedValue([{ date: '2020-01-01', count: BigInt(2) }]),
     $transaction: jest.fn().mockImplementation(async (cb: any) => cb({}))
   };
@@ -84,16 +84,16 @@ describe('PrismaUserRepository (partial)', () => {
   test('getUserPreferences and exportUserData call underlying prisma and return shapes', async () => {
     const { prisma } = makePrismaMock();
     // ensure findUnique returns a user for preferences
-    prisma.user.findUnique.mockResolvedValueOnce({ language: 'sw', timezone: 'TZS' });
+    prisma.user_User.findUnique.mockResolvedValueOnce({ language: 'sw', timezone: 'TZS' });
     const repo = new PrismaUserRepository(prisma as any);
 
     const prefs = await repo.getUserPreferences('u1');
     expect(prefs.language).toBe('sw');
 
     // for exportUserData, mock findById via prisma.user.findUnique used in findById
-    prisma.user.findUnique.mockResolvedValueOnce({ id: 'u1', email: 'u1@example.com', phoneNumber: '+255712345678', firstName: 'A', lastName: 'B', role: 'buyer', language: 'en', timezone: 'UTC', createdAt: new Date(), updatedAt: new Date() });
-    prisma.userAddress.findMany.mockResolvedValueOnce([]);
-    prisma.auditLog.findMany.mockResolvedValueOnce([]);
+    prisma.user_User.findUnique.mockResolvedValueOnce({ id: 'u1', email: 'u1@example.com', phoneNumber: '+255712345678', firstName: 'A', lastName: 'B', role: 'buyer', language: 'en', timezone: 'UTC', createdAt: new Date(), updatedAt: new Date() });
+    prisma.user_UserAddress.findMany.mockResolvedValueOnce([]);
+    prisma.user_AuditLog.findMany.mockResolvedValueOnce([]);
 
     const exported = await repo.exportUserData('u1');
     expect(exported.user.id).toBe('u1');

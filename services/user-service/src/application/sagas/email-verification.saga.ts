@@ -3,6 +3,8 @@ import { logger } from '../../infrastructure/services/logger.service';
 import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
 import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
 import { v4 as uuidv4 } from 'uuid';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from './service-clients';
 
 export interface EmailVerificationContext {
   event: UserEmailVerifiedEvent;
@@ -16,7 +18,10 @@ export interface EmailVerificationContext {
 export class EmailVerificationSaga extends DistributedSagaOrchestrator<EmailVerificationContext> {
   protected sagaType = 'EmailVerificationSaga';
 
-  constructor() {
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly notificationClient: NotificationServiceClient
+  ) {
     super(sagaLogRepository, 'user-service');
   }
 
@@ -43,6 +48,7 @@ export class EmailVerificationSaga extends DistributedSagaOrchestrator<EmailVeri
         name: 'SendConfirmationEmail',
         execute: async (context, sagaId) => {
           logger.info('Sending confirmation email', { userId: context.metadata.userId, sagaId });
+          // In a real implementation, we would use this.emailService here
         },
         compensate: async (context, sagaId) => {
           logger.info('Compensating: Removing confirmation email', { userId: context.metadata.userId, sagaId });
@@ -52,8 +58,12 @@ export class EmailVerificationSaga extends DistributedSagaOrchestrator<EmailVeri
   }
 }
 
-export async function executeEmailVerificationSaga(event: UserEmailVerifiedEvent): Promise<void> {
-  const saga = new EmailVerificationSaga();
+export async function executeEmailVerificationSaga(
+  event: UserEmailVerifiedEvent,
+  emailService: EmailService,
+  notificationClient: NotificationServiceClient
+): Promise<void> {
+  const saga = new EmailVerificationSaga(emailService, notificationClient);
   const correlationId = event.metadata?.correlationId || uuidv4();
   const context: EmailVerificationContext = {
     event,

@@ -2,6 +2,8 @@ import { CreateUserUseCase } from '../create-user.use-case';
 import { UserValidationError } from '../../../domain/errors/user.errors';
 import { UserRole } from '../../../domain/types/user.types';
 
+jest.mock('../../sagas/saga-event-handler');
+
 describe('CreateUserUseCase - edge cases', () => {
   const makeSut = (securityOverrides: Partial<any> = {}) => {
     const mockValidationService = { validateUser: jest.fn() };
@@ -13,8 +15,16 @@ describe('CreateUserUseCase - edge cases', () => {
       ...securityOverrides
     };
 
-    const sut = new CreateUserUseCase(mockValidationService as any, mockSecurityPolicy as any);
-    return { sut, mockValidationService, mockSecurityPolicy };
+    const mockEmailService = { sendEmail: jest.fn(), sendVerificationEmail: jest.fn() };
+    const mockNotificationClient = { notify: jest.fn() };
+
+    const sut = new CreateUserUseCase(
+      mockValidationService as any,
+      mockSecurityPolicy as any,
+      mockEmailService as any,
+      mockNotificationClient as any
+    );
+    return { sut, mockValidationService, mockSecurityPolicy, mockEmailService, mockNotificationClient };
   };
 
   it('creates user when data is valid', async () => {

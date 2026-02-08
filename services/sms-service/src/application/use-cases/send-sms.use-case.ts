@@ -1,5 +1,5 @@
 import { SmsMessage } from '../../domain/entities/sms-message.entity';
-import { ISmsRepository } from '../../domain/repositories/sms.repository.ts';
+import { ISmsRepository } from '../../domain/repositories/sms.repository';
 import { RateLimitPolicy } from '../../domain/policies/rate-limit.policy';
 import { ProviderResponse } from '../../domain/value-objects/provider-response.value-object';
 import { SendSmsDto, SendSmsResponseDto } from '../dto/sms.dto';

@@ -1,5 +1,6 @@
 
 export interface IEventBus {
-    publish(event: any): Promise<void>;
-    subscribe(eventType: string, handler: (event: any) => Promise<void>): Promise<void>;
+    publish(eventType: string, data: any, metadata?: any): Promise<void>;
+    subscribe(eventType: string, handler: (envelope: any) => Promise<void>): Promise<void>;
 }
+

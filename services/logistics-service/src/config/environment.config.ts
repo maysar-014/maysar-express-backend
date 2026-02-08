@@ -10,10 +10,6 @@ export interface EnvironmentConfig {
     port: number;
     password?: string;
   };
-  kafka: {
-    brokers: string[];
-    clientId: string;
-  };
   jwt: {
     secret: string;
     expiresIn: string;
@@ -26,7 +22,7 @@ export class EnvironmentConfiguration {
 
   private constructor() {
     this.validateEnvironment();
-    
+
     this.config = {
       nodeEnv: (process.env.NODE_ENV as any) || 'development',
       port: parseInt(process.env.PORT || '3007'),
@@ -39,16 +35,13 @@ export class EnvironmentConfiguration {
         port: parseInt(process.env.REDIS_PORT || '6379'),
         password: process.env.REDIS_PASSWORD
       },
-      kafka: {
-        brokers: process.env.KAFKA_BROKERS?.split(',') || ['localhost:9092'],
-        clientId: process.env.KAFKA_CLIENT_ID || 'logistics-service'
-      },
       jwt: {
         secret: process.env.JWT_SECRET || 'logistics-service-secret',
         expiresIn: process.env.JWT_EXPIRES_IN || '24h'
       }
     };
   }
+
 
   static getInstance(): EnvironmentConfiguration {
     if (!EnvironmentConfiguration.instance) {
@@ -64,7 +57,7 @@ export class EnvironmentConfiguration {
   private validateEnvironment(): void {
     const required = ['DATABASE_URL'];
     const missing = required.filter(key => !process.env[key]);
-    
+
     if (missing.length > 0) {
       console.warn(`Missing environment variables: ${missing.join(', ')}`);
     }

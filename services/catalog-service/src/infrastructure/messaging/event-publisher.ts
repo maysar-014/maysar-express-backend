@@ -24,11 +24,10 @@ export enum PublishingStrategy {
  */
 export enum EventTransport {
   IN_MEMORY = 'in_memory',     // In-memory for testing/single instance
-  REDIS = 'redis',            // Redis pub/sub
   HTTP = 'http',              // HTTP webhook delivery
-  KAFKA = 'kafka',            // Kafka message broker
   OUTBOX = 'outbox'           // Transactional Outbox pattern
 }
+
 
 
 /**
@@ -283,212 +282,7 @@ export class InMemoryEventPublisher extends BaseEventPublisher {
   }
 }
 
-/**
- * Redis Event Publisher
- * Redis-based event publishing for distributed systems
- * Uses Redis pub/sub for real-time event distribution
- */
-export class RedisEventPublisher extends BaseEventPublisher {
-  private redisPublisher?: any;
-  private redisSubscriber?: any;
-  private batchQueue: DomainEvent[] = [];
-  private batchTimer?: NodeJS.Timeout;
-  private connected: boolean = false;
 
-  constructor(
-    config: Partial<EventPublisherConfig> & { redisUrl?: string } = {},
-    idGenerator: IdGenerator,
-    dateTimeService: DateTimeService
-  ) {
-    const defaultConfig: EventPublisherConfig = {
-      strategy: PublishingStrategy.ASYNC,
-      transport: EventTransport.REDIS,
-      batchSize: 50,
-      batchTimeout: 2000,
-      retryAttempts: 3,
-      retryDelay: 1000,
-      enablePersistence: true,
-      enableMetrics: true,
-      enableTracing: true,
-      ...config
-    };
-
-    super(defaultConfig, idGenerator, dateTimeService);
-
-    // Initialize Redis connection
-    this.initializeRedis(config.redisUrl);
-  }
-
-  async publish(event: DomainEvent): Promise<void> {
-    if (!this.connected) {
-      throw new Error('Redis connection not available');
-    }
-
-    if (this.config.strategy === PublishingStrategy.BATCHED) {
-      this.addToBatch(event);
-      return;
-    }
-
-    await this.publishToRedis(event);
-  }
-
-  async publishAll(events: DomainEvent[]): Promise<void> {
-    if (!this.connected) {
-      throw new Error('Redis connection not available');
-    }
-
-    if (this.config.strategy === PublishingStrategy.BATCHED) {
-      this.batchQueue.push(...events);
-      this.scheduleBatchPublish();
-      return;
-    }
-
-    await Promise.all(events.map(event => this.publishToRedis(event)));
-  }
-
-  async close(): Promise<void> {
-    if (this.batchTimer) {
-      clearTimeout(this.batchTimer);
-      this.batchTimer = undefined;
-    }
-
-    // Publish any remaining batched events
-    if (this.batchQueue.length > 0) {
-      await this.publishBatchToRedis();
-    }
-
-    // Close Redis connections
-    if (this.redisPublisher) {
-      await this.redisPublisher.quit();
-    }
-    if (this.redisSubscriber) {
-      await this.redisSubscriber.quit();
-    }
-  }
-
-  private async initializeRedis(redisUrl?: string): Promise<void> {
-    try {
-      // In a real implementation, you would initialize Redis clients here
-      // For now, we'll simulate the connection
-      console.log('Initializing Redis connection...');
-
-      // Simulate async connection
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      this.connected = true;
-      console.log('Redis connection established');
-    } catch (error) {
-      console.error('Failed to connect to Redis:', error);
-      this.connected = false;
-    }
-  }
-
-  private async publishToRedis(event: DomainEvent): Promise<void> {
-    if (!this.redisPublisher) return;
-
-    const channel = `events:${event.eventType}`;
-    const message = JSON.stringify(event);
-
-    try {
-      await this.redisPublisher.publish(channel, message);
-    } catch (error) {
-      console.error(`Failed to publish event ${event.eventId} to Redis:`, error);
-      throw error;
-    }
-  }
-
-  private addToBatch(event: DomainEvent): void {
-    this.batchQueue.push(event);
-
-    if (this.batchQueue.length >= this.config.batchSize) {
-      this.publishBatchToRedis();
-    } else {
-      this.scheduleBatchPublish();
-    }
-  }
-
-  private scheduleBatchPublish(): void {
-    if (this.batchTimer) {
-      clearTimeout(this.batchTimer);
-    }
-
-    this.batchTimer = setTimeout(() => {
-      this.publishBatchToRedis();
-    }, this.config.batchTimeout);
-  }
-
-  private async publishBatchToRedis(): Promise<void> {
-    if (this.batchQueue.length === 0 || !this.redisPublisher) return;
-
-    const batch = [...this.batchQueue];
-    this.batchQueue = [];
-
-    if (this.batchTimer) {
-      clearTimeout(this.batchTimer);
-      this.batchTimer = undefined;
-    }
-
-    // Publish events in parallel
-    await Promise.all(batch.map(event => this.publishToRedis(event)));
-  }
-}
-
-/**
- * Kafka Event Publisher
- * Kafka-based event publishing for high-scale distributed systems
- */
-export class KafkaEventPublisher extends BaseEventPublisher {
-  private kafkaPublisher: any; // We'll use the shared Kafka publisher or kafkajs
-  private connected: boolean = false;
-
-  constructor(
-    config: Partial<EventPublisherConfig> = {},
-    idGenerator: IdGenerator,
-    dateTimeService: DateTimeService
-  ) {
-    const defaultConfig: EventPublisherConfig = {
-      strategy: PublishingStrategy.ASYNC,
-      transport: EventTransport.KAFKA,
-      batchSize: 100,
-      batchTimeout: 1000,
-      retryAttempts: 5,
-      retryDelay: 500,
-      enablePersistence: true,
-      enableMetrics: true,
-      enableTracing: true,
-      ...config
-    };
-
-    super(defaultConfig, idGenerator, dateTimeService);
-    this.initializeKafka();
-  }
-
-  private async initializeKafka(): Promise<void> {
-    try {
-      // In a real implementation, you would initialize Kafka producer here
-      // For now, we'll simulate the connection as per the plan
-      console.log('Initializing Kafka connection...');
-      this.connected = true;
-    } catch (error) {
-      console.error('Failed to connect to Kafka:', error);
-      this.connected = false;
-    }
-  }
-
-  async publish(event: DomainEvent): Promise<void> {
-    if (!this.connected) throw new Error('Kafka connection not available');
-    console.log(`Publishing event ${event.eventId} to Kafka topic: ${event.eventType}`);
-    // implementation using kafkajs...
-  }
-
-  async publishAll(events: DomainEvent[]): Promise<void> {
-    await Promise.all(events.map(event => this.publish(event)));
-  }
-
-  async close(): Promise<void> {
-    this.connected = false;
-  }
-}
 
 /**
  * Event Publisher Factory
@@ -503,22 +297,6 @@ export class EventPublisherFactory {
     dateTimeService: DateTimeService
   ): InMemoryEventPublisher {
     return new InMemoryEventPublisher(config, idGenerator, dateTimeService);
-  }
-
-  static createRedis(
-    config: Partial<EventPublisherConfig> & { redisUrl?: string } = {},
-    idGenerator: IdGenerator,
-    dateTimeService: DateTimeService
-  ): RedisEventPublisher {
-    return new RedisEventPublisher(config, idGenerator, dateTimeService);
-  }
-
-  static createKafka(
-    config: Partial<EventPublisherConfig> = {},
-    idGenerator: IdGenerator,
-    dateTimeService: DateTimeService
-  ): KafkaEventPublisher {
-    return new KafkaEventPublisher(config, idGenerator, dateTimeService);
   }
 
   static createOutbox(
@@ -543,10 +321,6 @@ export class EventPublisherFactory {
       case EventTransport.OUTBOX:
         if (!repository) throw new Error('Repository required for OUTBOX transport');
         return this.createOutbox(repository, config, idGenerator, dateTimeService);
-      case EventTransport.KAFKA:
-        return this.createKafka(config, idGenerator, dateTimeService);
-      case EventTransport.REDIS:
-        return this.createRedis(config, idGenerator, dateTimeService);
       case EventTransport.IN_MEMORY:
       default:
         return this.createInMemory(config, idGenerator, dateTimeService);
@@ -564,6 +338,7 @@ export class EventPublisherFactory {
     this.instance = publisher;
   }
 }
+
 
 /**
  * Event Serialization Utilities

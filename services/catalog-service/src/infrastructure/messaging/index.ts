@@ -51,7 +51,7 @@ export interface MessagingConfig {
   // Event Publisher settings
   publisher: {
     strategy: 'immediate' | 'batched' | 'async' | 'transactional';
-    transport: 'in_memory' | 'redis' | 'kafka' | 'sqs' | 'eventstore' | 'http';
+    transport: 'in_memory' | 'http' | 'outbox';
     batchSize: number;
     batchTimeout: number;
     retryAttempts: number;
@@ -59,6 +59,7 @@ export interface MessagingConfig {
     enableMetrics: boolean;
     enableTracing: boolean;
   };
+
 
   // Event Store settings
   eventStore: {
@@ -169,7 +170,7 @@ export class MessagingManager {
   private static instance: MessagingManager | null = null;
   private config: MessagingConfig = DEFAULT_MESSAGING_CONFIG;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): MessagingManager {
     if (!MessagingManager.instance) {

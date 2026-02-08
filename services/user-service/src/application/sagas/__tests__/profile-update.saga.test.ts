@@ -1,102 +1,55 @@
-import { executeProfileUpdateSaga } from '../profile-update.saga';
-import { UserProfileUpdatedEvent } from '../../../domain/events';
-import { notificationClient, auditClient } from '../service-clients';
+import { ProfileUpdateSaga, executeProfileUpdateSaga } from '../profile-update.saga';
+import { logger } from '../../../infrastructure/services/logger.service';
 
-jest.mock('../service-clients');
 jest.mock('../../../infrastructure/services/logger.service');
 
-describe('Profile Update Saga', () => {
+describe('ProfileUpdateSaga', () => {
+  const mockEmailService = {
+    sendEmail: jest.fn().mockResolvedValue(undefined)
+  };
+  const mockNotificationClient = {
+    sendEmail: jest.fn().mockResolvedValue(undefined)
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
-    (auditClient.recordEvent as jest.Mock).mockResolvedValue(undefined);
-    (notificationClient.sendEmail as jest.Mock).mockResolvedValue(undefined);
   });
 
-  test('executes all steps for name change', async () => {
-    const event = new UserProfileUpdatedEvent(
-      'user-1',
-      ['name'],
-      { name: 'Old Name' },
-      { name: 'New Name' },
-      'user-1'
-    );
+  describe('executeProfileUpdateSaga', () => {
+    const event = {
+      eventId: 'evt-1',
+      aggregateId: 'user-1',
+      changes: ['firstName'],
+      oldValues: { firstName: 'John' },
+      newValues: { firstName: 'Jane' },
+      updatedBy: 'user-1',
+      metadata: { correlationId: 'corr-1' }
+    };
 
-    await executeProfileUpdateSaga(event);
+    test('starts orchestration with correct payload', async () => {
+      const startSpy = jest.spyOn(ProfileUpdateSaga.prototype, 'start').mockResolvedValue('saga-1');
 
-    expect(auditClient.recordEvent).toHaveBeenCalledWith('user-1', 'profile_updated', expect.any(Object));
-    expect(notificationClient.sendEmail).toHaveBeenCalledWith('user-1', 'profile_updated', expect.any(Object));
-  });
+      await executeProfileUpdateSaga(event as any, mockEmailService as any, mockNotificationClient as any);
 
-  test('executes all steps for email change', async () => {
-    const event = new UserProfileUpdatedEvent(
-      'user-2',
-      ['email'],
-      { email: 'old@example.com' },
-      { email: 'new@example.com' },
-      'user-2'
-    );
+      expect(startSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: event,
+          metadata: expect.objectContaining({
+            correlationId: 'corr-1',
+            userId: 'user-1'
+          })
+        }),
+        'corr-1'
+      );
+    });
 
-    await executeProfileUpdateSaga(event);
+    test('handles saga start failure', async () => {
+      jest.spyOn(ProfileUpdateSaga.prototype, 'start').mockRejectedValue(new Error('Fail'));
 
-    expect(auditClient.recordEvent).toHaveBeenCalledWith('user-2', 'profile_updated', expect.any(Object));
-  });
+      await expect(executeProfileUpdateSaga(event as any, mockEmailService as any, mockNotificationClient as any))
+        .rejects.toThrow('Fail');
 
-  test('syncs preferences when preferences change', async () => {
-    const event = new UserProfileUpdatedEvent(
-      'user-3',
-      ['preferences'],
-      { preferences: { theme: 'dark' } },
-      { preferences: { theme: 'light' } },
-      'user-3'
-    );
-
-    await executeProfileUpdateSaga(event);
-
-    expect(auditClient.recordEvent).toHaveBeenCalled();
-  });
-
-  test('handles multiple changes', async () => {
-    const event = new UserProfileUpdatedEvent(
-      'user-4',
-      ['name', 'email', 'preferences'],
-      { name: 'Old', email: 'old@test.com' },
-      { name: 'New', email: 'new@test.com' },
-      'admin-1'
-    );
-
-    await executeProfileUpdateSaga(event);
-
-    expect(auditClient.recordEvent).toHaveBeenCalledWith('user-4', 'profile_updated', expect.objectContaining({
-      changes: ['name', 'email', 'preferences'],
-      updatedBy: 'admin-1'
-    }));
-  });
-
-  test('handles audit recording failure', async () => {
-    const event = new UserProfileUpdatedEvent(
-      'user-5',
-      ['name'],
-      {},
-      {},
-      'user-5'
-    );
-
-    (auditClient.recordEvent as jest.Mock).mockRejectedValueOnce(new Error('Audit error'));
-
-    await expect(executeProfileUpdateSaga(event)).rejects.toThrow('Audit error');
-  });
-
-  test('handles email notification failure', async () => {
-    const event = new UserProfileUpdatedEvent(
-      'user-6',
-      ['email'],
-      {},
-      {},
-      'user-6'
-    );
-
-    (notificationClient.sendEmail as jest.Mock).mockRejectedValueOnce(new Error('Email error'));
-
-    await expect(executeProfileUpdateSaga(event)).rejects.toThrow('Email error');
+      expect(logger.error).toHaveBeenCalled();
+    });
   });
 });

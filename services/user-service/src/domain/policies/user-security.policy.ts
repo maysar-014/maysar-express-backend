@@ -1,6 +1,5 @@
 import { DomainPolicy } from '@domain/interfaces';
 import { User, UserRole } from '@domain/entities/user.entity';
-// import { UserMetadata } from '@domain/types/user.types'; // Currently unused
 
 /**
  * User Security Policy
@@ -68,7 +67,7 @@ export class UserSecurityPolicy implements DomainPolicy {
       '10minutemail.com', 'tempmail.org', 'guerrillamail.com',
       'throwaway.email', 'mailinator.com'
     ];
-    
+
     const domain = email.split('@')[1]?.toLowerCase();
     if (domain && disposableDomains.includes(domain)) {
       return true;
@@ -196,7 +195,7 @@ export class UserSecurityPolicy implements DomainPolicy {
     if (args.length === 1 && args[0] instanceof User) {
       return this.canPerformSensitiveOperation(args[0]);
     }
-    
+
     if (args.length === 2 && args[0] instanceof User && typeof args[1] === 'number') {
       return this.canPerformHighValueTransaction(args[0], args[1]);
     }

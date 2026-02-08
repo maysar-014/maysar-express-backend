@@ -6,6 +6,8 @@ import { UserMapper } from '../mappers/user-mapper';
 import { UserAlreadyExistsError, UserValidationError } from '../../domain/errors/user.errors';
 import { sagaEventHandler } from '../sagas/saga-event-handler';
 import { UserRegisteredEvent } from '../../domain/events';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from '../sagas/service-clients';
 
 /**
  * Create User Use Case
@@ -14,8 +16,10 @@ import { UserRegisteredEvent } from '../../domain/events';
 export class CreateUserUseCase {
   constructor(
     private userValidationService: UserValidationService,
-    private userSecurityPolicy: UserSecurityPolicy
-  ) {}
+    private userSecurityPolicy: UserSecurityPolicy,
+    private emailService: EmailService,
+    private notificationClient: NotificationServiceClient
+  ) { }
 
   /**
    * Execute user creation
@@ -42,7 +46,7 @@ export class CreateUserUseCase {
 
       // 7. Trigger registration saga
       const event = new UserRegisteredEvent(user.id, user.email.getValue(), user.role, 'email');
-      await sagaEventHandler.handleUserRegisteredEvent(event);
+      await sagaEventHandler.handleUserRegisteredEvent(event, this.emailService, this.notificationClient);
 
       return user;
     } catch (error) {
@@ -91,7 +95,7 @@ export class CreateUserUseCase {
     // This would typically call a repository to check for existing users
     // For now, we'll simulate this check
     const existingUser = await this.findUserByEmailOrPhone(email, phoneNumber);
-    
+
     if (existingUser) {
       throw new UserAlreadyExistsError('User with this email or phone number already exists');
     }
@@ -182,7 +186,7 @@ export class CreateUserUseCase {
 export class UserRegistrationService {
   constructor(
     private createUserUseCase: CreateUserUseCase
-  ) {}
+  ) { }
 
   /**
    * Register a new user

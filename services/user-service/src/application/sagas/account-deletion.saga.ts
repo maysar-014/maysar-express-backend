@@ -1,8 +1,10 @@
 import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
 import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
-import { notificationClient, auditClient, sessionClient } from './service-clients';
+import { auditClient, sessionClient } from './service-clients';
 import { logger } from '../../infrastructure/services/logger.service';
 import { v4 as uuidv4 } from 'uuid';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from './service-clients';
 
 export interface AccountDeletionEvent {
   eventId: string;
@@ -18,7 +20,10 @@ export class AccountDeletionSaga extends DistributedSagaOrchestrator<AccountDele
   protected sagaType = 'AccountDeletionSaga';
   private dataAnonymized = false;
 
-  constructor() {
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly notificationClient: NotificationServiceClient
+  ) {
     super(sagaLogRepository, 'user-service');
   }
 
@@ -84,11 +89,11 @@ export class AccountDeletionSaga extends DistributedSagaOrchestrator<AccountDele
       {
         name: 'SendDeletionConfirmation',
         execute: async (payload, sagaId) => {
-          await notificationClient.sendEmail(payload.userId, 'account_deleted', {
-            reason: payload.reason,
-            retentionPeriod: '90 days',
-            timestamp: new Date().toISOString()
-          });
+          await this.notificationClient.sendPushNotification(
+            payload.userId,
+            'Account Deleted',
+            'Your account has been successfully deleted.'
+          );
         },
         compensate: async () => {
           // Cannot unsend notification
@@ -98,8 +103,12 @@ export class AccountDeletionSaga extends DistributedSagaOrchestrator<AccountDele
   }
 }
 
-export async function executeAccountDeletionSaga(event: AccountDeletionEvent): Promise<void> {
-  const saga = new AccountDeletionSaga();
+export async function executeAccountDeletionSaga(
+  event: AccountDeletionEvent,
+  emailService: EmailService,
+  notificationClient: NotificationServiceClient
+): Promise<void> {
+  const saga = new AccountDeletionSaga(emailService, notificationClient);
   const correlationId = event.metadata?.correlationId || uuidv4();
 
   try {

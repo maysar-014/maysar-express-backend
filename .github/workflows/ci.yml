@@ -339,69 +339,6 @@ jobs:
           cache-to: type=gha,mode=max,scope=backend-monolith
           platforms: linux/amd64
 
-  # Docker Build for Individual Service Images (Future Microservices)
-  docker-build-service-images:
-    name: 🐳 Build ${{ matrix.service }} Image (Future)
-    runs-on: ubuntu-latest
-    needs: [security-scan, service-module-test]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && contains(github.event.head_commit.message, '[microservices]')
-    
-    strategy:
-      fail-fast: false
-      matrix:
-        service:
-          - analytics-service
-          - business-registry-service
-          - catalog-service
-          - checkout-service
-          - commission-service
-          - inventory-service
-          - logistics-service
-          - maps-service
-          - notification-service
-          - order-service
-          - payment-service
-          - permission-service
-          - pricing-service
-          - session-service
-          - sms-service
-          - training-service
-          - two-factor-service
-          - user-service
-          - wallet-service
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🔑 Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: 🏷️ Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKER_USERNAME }}/maysar-${{ matrix.service }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: 🐳 Build and push ${{ matrix.service }}
-        uses: docker/build-push-action@v5
-        with:
-          context: ./services/${{ matrix.service }}
-          file: ./services/${{ matrix.service }}/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.service }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
-          platforms: linux/amd64
 
   # Docker Build for Admin Console
   docker-build-admin:
@@ -443,7 +380,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=admin-console
           platforms: linux/amd64
 
-  # Deployment (Optional - can be triggered separately)
+  # Deployment
   deploy-staging:
     name: 🚀 Deploy to Staging
     runs-on: ubuntu-latest
@@ -451,11 +388,30 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: staging
     steps:
-      - name: 🚀 Trigger staging deployment
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔐 Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: ☸️ Setup kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: ⛵ Setup Helm
+        uses: azure/setup-helm@v3
+
+      - name: 🚀 Deploy Monolith to EKS
         run: |
-          echo "🚀 Staging deployment would be triggered here"
-          echo "Integration with deployment platform (e.g., ArgoCD, Flux) would go here"
-          # curl -X POST ${{ secrets.STAGING_DEPLOY_WEBHOOK }}
+          aws eks update-kubeconfig --name maysar-staging-eks --region ${{ vars.AWS_REGION }}
+          helm upgrade --install maysar-backend ./infra/k8s/helm-charts/maysar-backend \
+            --namespace maysar-backend \
+            --set image.tag=${{ github.sha }} \
+            --values ./infra/k8s/helm-charts/maysar-backend/values.yaml \
+            --wait --timeout 10m
 
   # Performance and Load Testing
   performance-test:

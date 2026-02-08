@@ -157,3 +157,11 @@ dist/
 # Specific large files that shouldn't be tracked
 **/node_modules/**/*.node
 customer-portal/node_modules/@next/swc-win32-x64-msvc/next-swc.win32-x64-msvc.node
+
+# Unified Monolith Configuration
+services/**/package.json
+services/**/tsconfig.json
+services/**/.env*
+services/**/jest.config.*
+services/**/Dockerfile
+

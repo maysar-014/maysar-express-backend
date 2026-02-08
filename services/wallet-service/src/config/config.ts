@@ -8,8 +8,6 @@ const envSchema = z.object({
     PORT: z.string().transform(Number).default('3002'),
     DATABASE_URL: z.string().url(),
     REDIS_URL: z.string().url().default('redis://localhost:6379'),
-    KAFKA_BROKERS: z.string().default('localhost:9092'),
-    KAFKA_CLIENT_ID: z.string().default('wallet-service'),
     BASE_URL: z.string().url().default('http://localhost:3002'),
     JWT_SECRET: z.string().min(32),
 });
@@ -30,12 +28,9 @@ export const config = {
     redis: {
         url: parsedEnv.data.REDIS_URL,
     },
-    kafka: {
-        brokers: parsedEnv.data.KAFKA_BROKERS.split(','),
-        clientId: parsedEnv.data.KAFKA_CLIENT_ID,
-    },
     app: {
         baseUrl: parsedEnv.data.BASE_URL,
         jwtSecret: parsedEnv.data.JWT_SECRET,
     },
 };
+

@@ -1,8 +1,10 @@
 import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
 import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
-import { notificationClient, auditClient } from './service-clients';
+import { auditClient } from './service-clients';
 import { logger } from '../../infrastructure/services/logger.service';
 import { v4 as uuidv4 } from 'uuid';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from './service-clients';
 
 export interface RoleChangeEvent {
   eventId: string;
@@ -18,7 +20,10 @@ export interface RoleChangeEvent {
 export class RoleChangeSaga extends DistributedSagaOrchestrator<RoleChangeEvent> {
   protected sagaType = 'RoleChangeSaga';
 
-  constructor() {
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly notificationClient: NotificationServiceClient
+  ) {
     super(sagaLogRepository, 'user-service');
   }
 
@@ -72,11 +77,11 @@ export class RoleChangeSaga extends DistributedSagaOrchestrator<RoleChangeEvent>
       {
         name: 'NotifyRoleChange',
         execute: async (payload, sagaId) => {
-          await notificationClient.sendEmail(payload.userId, 'role_changed', {
-            oldRole: payload.oldRole,
-            newRole: payload.newRole,
-            timestamp: new Date().toISOString()
-          });
+          await this.notificationClient.sendPushNotification(
+            payload.userId,
+            'Role Changed',
+            `Your role has been changed from ${payload.oldRole} to ${payload.newRole}.`
+          );
         },
         compensate: async (payload, sagaId) => {
           // Cannot unsend notification
@@ -86,8 +91,12 @@ export class RoleChangeSaga extends DistributedSagaOrchestrator<RoleChangeEvent>
   }
 }
 
-export async function executeRoleChangeSaga(event: RoleChangeEvent): Promise<void> {
-  const saga = new RoleChangeSaga();
+export async function executeRoleChangeSaga(
+  event: RoleChangeEvent,
+  emailService: EmailService,
+  notificationClient: NotificationServiceClient
+): Promise<void> {
+  const saga = new RoleChangeSaga(emailService, notificationClient);
   const correlationId = event.metadata?.correlationId || uuidv4();
 
   try {

@@ -23,6 +23,16 @@ jest.mock('../security-policy-breach.saga');
 
 describe('SagaEventHandler', () => {
   let handler: SagaEventHandler;
+  const mockEmailService = {
+    sendWelcomeEmail: jest.fn().mockResolvedValue(undefined),
+    sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+    sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
+    sendSecurityAlert: jest.fn().mockResolvedValue(undefined)
+  };
+  const mockNotificationClient = {
+    sendPushNotification: jest.fn().mockResolvedValue(undefined),
+    sendSmsNotification: jest.fn().mockResolvedValue(undefined)
+  };
 
   beforeEach(() => {
     handler = new SagaEventHandler();
@@ -34,9 +44,9 @@ describe('SagaEventHandler', () => {
       const event = { eventId: 'evt-1', aggregateId: 'user-1' } as any;
       (executeUserRegistrationSaga as jest.Mock).mockResolvedValue(undefined);
 
-      await handler.handleUserRegisteredEvent(event);
+      await handler.handleUserRegisteredEvent(event, mockEmailService as any, mockNotificationClient as any);
 
-      expect(executeUserRegistrationSaga).toHaveBeenCalledWith(event);
+      expect(executeUserRegistrationSaga).toHaveBeenCalledWith(event, mockEmailService, mockNotificationClient);
     });
 
     test('throws error when saga fails', async () => {
@@ -44,7 +54,7 @@ describe('SagaEventHandler', () => {
       const error = new Error('Saga failed');
       (executeUserRegistrationSaga as jest.Mock).mockRejectedValue(error);
 
-      await expect(handler.handleUserRegisteredEvent(event)).rejects.toThrow('Saga failed');
+      await expect(handler.handleUserRegisteredEvent(event, mockEmailService as any, mockNotificationClient as any)).rejects.toThrow('Saga failed');
     });
   });
 
@@ -53,9 +63,9 @@ describe('SagaEventHandler', () => {
       const event = { eventId: 'evt-2', aggregateId: 'user-1' } as any;
       (executeEmailVerificationSaga as jest.Mock).mockResolvedValue(undefined);
 
-      await handler.handleUserEmailVerifiedEvent(event);
+      await handler.handleUserEmailVerifiedEvent(event, mockEmailService as any, mockNotificationClient as any);
 
-      expect(executeEmailVerificationSaga).toHaveBeenCalledWith(event);
+      expect(executeEmailVerificationSaga).toHaveBeenCalledWith(event, mockEmailService, mockNotificationClient);
     });
 
     test('throws error when saga fails', async () => {
@@ -63,7 +73,7 @@ describe('SagaEventHandler', () => {
       const error = new Error('Saga failed');
       (executeEmailVerificationSaga as jest.Mock).mockRejectedValue(error);
 
-      await expect(handler.handleUserEmailVerifiedEvent(event)).rejects.toThrow('Saga failed');
+      await expect(handler.handleUserEmailVerifiedEvent(event, mockEmailService as any, mockNotificationClient as any)).rejects.toThrow('Saga failed');
     });
   });
 
@@ -72,9 +82,9 @@ describe('SagaEventHandler', () => {
       const event = { eventId: 'evt-3', aggregateId: 'user-1' } as any;
       (executePasswordResetSaga as jest.Mock).mockResolvedValue(undefined);
 
-      await handler.handleUserPasswordChangedEvent(event);
+      await handler.handleUserPasswordChangedEvent(event, mockEmailService as any, mockNotificationClient as any);
 
-      expect(executePasswordResetSaga).toHaveBeenCalledWith(event);
+      expect(executePasswordResetSaga).toHaveBeenCalledWith(event, mockEmailService, mockNotificationClient);
     });
 
     test('throws error when saga fails', async () => {
@@ -82,7 +92,7 @@ describe('SagaEventHandler', () => {
       const error = new Error('Saga failed');
       (executePasswordResetSaga as jest.Mock).mockRejectedValue(error);
 
-      await expect(handler.handleUserPasswordChangedEvent(event)).rejects.toThrow('Saga failed');
+      await expect(handler.handleUserPasswordChangedEvent(event, mockEmailService as any, mockNotificationClient as any)).rejects.toThrow('Saga failed');
     });
   });
 
@@ -91,9 +101,9 @@ describe('SagaEventHandler', () => {
       const event = { eventId: 'evt-4', aggregateId: 'user-1' } as any;
       (executeProfileUpdateSaga as jest.Mock).mockResolvedValue(undefined);
 
-      await handler.handleUserProfileUpdatedEvent(event);
+      await handler.handleUserProfileUpdatedEvent(event, mockEmailService as any, mockNotificationClient as any);
 
-      expect(executeProfileUpdateSaga).toHaveBeenCalledWith(event);
+      expect(executeProfileUpdateSaga).toHaveBeenCalledWith(event, mockEmailService, mockNotificationClient);
     });
 
     test('throws error when saga fails', async () => {
@@ -101,7 +111,7 @@ describe('SagaEventHandler', () => {
       const error = new Error('Saga failed');
       (executeProfileUpdateSaga as jest.Mock).mockRejectedValue(error);
 
-      await expect(handler.handleUserProfileUpdatedEvent(event)).rejects.toThrow('Saga failed');
+      await expect(handler.handleUserProfileUpdatedEvent(event, mockEmailService as any, mockNotificationClient as any)).rejects.toThrow('Saga failed');
     });
   });
 
@@ -110,9 +120,9 @@ describe('SagaEventHandler', () => {
       const event = { eventId: 'evt-5', aggregateId: 'user-1' } as any;
       (executeTwoFactorSetupSaga as jest.Mock).mockResolvedValue(undefined);
 
-      await handler.handleTwoFactorSetupEvent(event);
+      await handler.handleTwoFactorSetupEvent(event, mockEmailService as any, mockNotificationClient as any);
 
-      expect(executeTwoFactorSetupSaga).toHaveBeenCalledWith(event);
+      expect(executeTwoFactorSetupSaga).toHaveBeenCalledWith(event, mockEmailService, mockNotificationClient);
     });
 
     test('throws error when saga fails', async () => {
@@ -120,7 +130,7 @@ describe('SagaEventHandler', () => {
       const error = new Error('Saga failed');
       (executeTwoFactorSetupSaga as jest.Mock).mockRejectedValue(error);
 
-      await expect(handler.handleTwoFactorSetupEvent(event)).rejects.toThrow('Saga failed');
+      await expect(handler.handleTwoFactorSetupEvent(event, mockEmailService as any, mockNotificationClient as any)).rejects.toThrow('Saga failed');
     });
   });
 
@@ -129,9 +139,9 @@ describe('SagaEventHandler', () => {
       const event = { eventId: 'evt-6', aggregateId: 'user-1' } as any;
       (executeAccountSuspensionSaga as jest.Mock).mockResolvedValue(undefined);
 
-      await handler.handleAccountSuspensionEvent(event);
+      await handler.handleAccountSuspensionEvent(event, mockEmailService as any, mockNotificationClient as any);
 
-      expect(executeAccountSuspensionSaga).toHaveBeenCalledWith(event);
+      expect(executeAccountSuspensionSaga).toHaveBeenCalledWith(event, mockEmailService, mockNotificationClient);
     });
 
     test('throws error when saga fails', async () => {
@@ -139,7 +149,7 @@ describe('SagaEventHandler', () => {
       const error = new Error('Saga failed');
       (executeAccountSuspensionSaga as jest.Mock).mockRejectedValue(error);
 
-      await expect(handler.handleAccountSuspensionEvent(event)).rejects.toThrow('Saga failed');
+      await expect(handler.handleAccountSuspensionEvent(event, mockEmailService as any, mockNotificationClient as any)).rejects.toThrow('Saga failed');
     });
   });
 
@@ -148,9 +158,9 @@ describe('SagaEventHandler', () => {
       const event = { eventId: 'evt-7', aggregateId: 'user-1' } as any;
       (executeAccountDeletionSaga as jest.Mock).mockResolvedValue(undefined);
 
-      await handler.handleAccountDeletionEvent(event);
+      await handler.handleAccountDeletionEvent(event, mockEmailService as any, mockNotificationClient as any);
 
-      expect(executeAccountDeletionSaga).toHaveBeenCalledWith(event);
+      expect(executeAccountDeletionSaga).toHaveBeenCalledWith(event, mockEmailService, mockNotificationClient);
     });
 
     test('throws error when saga fails', async () => {
@@ -158,7 +168,7 @@ describe('SagaEventHandler', () => {
       const error = new Error('Saga failed');
       (executeAccountDeletionSaga as jest.Mock).mockRejectedValue(error);
 
-      await expect(handler.handleAccountDeletionEvent(event)).rejects.toThrow('Saga failed');
+      await expect(handler.handleAccountDeletionEvent(event, mockEmailService as any, mockNotificationClient as any)).rejects.toThrow('Saga failed');
     });
   });
 
@@ -167,9 +177,9 @@ describe('SagaEventHandler', () => {
       const event = { eventId: 'evt-8', aggregateId: 'user-1' } as any;
       (executeRoleChangeSaga as jest.Mock).mockResolvedValue(undefined);
 
-      await handler.handleRoleChangeEvent(event);
+      await handler.handleRoleChangeEvent(event, mockEmailService as any, mockNotificationClient as any);
 
-      expect(executeRoleChangeSaga).toHaveBeenCalledWith(event);
+      expect(executeRoleChangeSaga).toHaveBeenCalledWith(event, mockEmailService, mockNotificationClient);
     });
 
     test('throws error when saga fails', async () => {
@@ -177,7 +187,7 @@ describe('SagaEventHandler', () => {
       const error = new Error('Saga failed');
       (executeRoleChangeSaga as jest.Mock).mockRejectedValue(error);
 
-      await expect(handler.handleRoleChangeEvent(event)).rejects.toThrow('Saga failed');
+      await expect(handler.handleRoleChangeEvent(event, mockEmailService as any, mockNotificationClient as any)).rejects.toThrow('Saga failed');
     });
   });
 
@@ -186,9 +196,9 @@ describe('SagaEventHandler', () => {
       const event = { eventId: 'evt-9', aggregateId: 'user-1' } as any;
       (executePhoneVerificationSaga as jest.Mock).mockResolvedValue(undefined);
 
-      await handler.handlePhoneVerificationEvent(event);
+      await handler.handlePhoneVerificationEvent(event, mockEmailService as any, mockNotificationClient as any);
 
-      expect(executePhoneVerificationSaga).toHaveBeenCalledWith(event);
+      expect(executePhoneVerificationSaga).toHaveBeenCalledWith(event, mockEmailService, mockNotificationClient);
     });
 
     test('throws error when saga fails', async () => {
@@ -196,7 +206,7 @@ describe('SagaEventHandler', () => {
       const error = new Error('Saga failed');
       (executePhoneVerificationSaga as jest.Mock).mockRejectedValue(error);
 
-      await expect(handler.handlePhoneVerificationEvent(event)).rejects.toThrow('Saga failed');
+      await expect(handler.handlePhoneVerificationEvent(event, mockEmailService as any, mockNotificationClient as any)).rejects.toThrow('Saga failed');
     });
   });
 
@@ -205,9 +215,9 @@ describe('SagaEventHandler', () => {
       const event = { eventId: 'evt-10', aggregateId: 'user-1' } as any;
       (executeSecurityPolicyBreachSaga as jest.Mock).mockResolvedValue(undefined);
 
-      await handler.handleSecurityPolicyBreachEvent(event);
+      await handler.handleSecurityPolicyBreachEvent(event, mockEmailService as any, mockNotificationClient as any);
 
-      expect(executeSecurityPolicyBreachSaga).toHaveBeenCalledWith(event);
+      expect(executeSecurityPolicyBreachSaga).toHaveBeenCalledWith(event, mockEmailService, mockNotificationClient);
     });
 
     test('throws error when saga fails', async () => {
@@ -215,7 +225,7 @@ describe('SagaEventHandler', () => {
       const error = new Error('Saga failed');
       (executeSecurityPolicyBreachSaga as jest.Mock).mockRejectedValue(error);
 
-      await expect(handler.handleSecurityPolicyBreachEvent(event)).rejects.toThrow('Saga failed');
+      await expect(handler.handleSecurityPolicyBreachEvent(event, mockEmailService as any, mockNotificationClient as any)).rejects.toThrow('Saga failed');
     });
   });
 
@@ -227,11 +237,11 @@ describe('SagaEventHandler', () => {
       (executeUserRegistrationSaga as jest.Mock).mockResolvedValue(undefined);
       (executeEmailVerificationSaga as jest.Mock).mockResolvedValue(undefined);
 
-      await handler.handleUserRegisteredEvent(event1);
-      await handler.handleUserEmailVerifiedEvent(event2);
+      await handler.handleUserRegisteredEvent(event1, mockEmailService as any, mockNotificationClient as any);
+      await handler.handleUserEmailVerifiedEvent(event2, mockEmailService as any, mockNotificationClient as any);
 
-      expect(executeUserRegistrationSaga).toHaveBeenCalledWith(event1);
-      expect(executeEmailVerificationSaga).toHaveBeenCalledWith(event2);
+      expect(executeUserRegistrationSaga).toHaveBeenCalledWith(event1, mockEmailService, mockNotificationClient);
+      expect(executeEmailVerificationSaga).toHaveBeenCalledWith(event2, mockEmailService, mockNotificationClient);
     });
 
     test('handles concurrent events', async () => {
@@ -242,12 +252,12 @@ describe('SagaEventHandler', () => {
       (executeEmailVerificationSaga as jest.Mock).mockResolvedValue(undefined);
 
       await Promise.all([
-        handler.handleUserRegisteredEvent(event1),
-        handler.handleUserEmailVerifiedEvent(event2)
+        handler.handleUserRegisteredEvent(event1, mockEmailService as any, mockNotificationClient as any),
+        handler.handleUserEmailVerifiedEvent(event2, mockEmailService as any, mockNotificationClient as any)
       ]);
 
-      expect(executeUserRegistrationSaga).toHaveBeenCalledWith(event1);
-      expect(executeEmailVerificationSaga).toHaveBeenCalledWith(event2);
+      expect(executeUserRegistrationSaga).toHaveBeenCalledWith(event1, mockEmailService, mockNotificationClient);
+      expect(executeEmailVerificationSaga).toHaveBeenCalledWith(event2, mockEmailService, mockNotificationClient);
     });
   });
 
@@ -257,14 +267,14 @@ describe('SagaEventHandler', () => {
       const error = new Error('Saga execution failed');
       (executeUserRegistrationSaga as jest.Mock).mockRejectedValue(error);
 
-      await expect(handler.handleUserRegisteredEvent(event)).rejects.toThrow('Saga execution failed');
+      await expect(handler.handleUserRegisteredEvent(event, mockEmailService as any, mockNotificationClient as any)).rejects.toThrow('Saga execution failed');
     });
 
     test('handles non-Error exceptions', async () => {
       const event = { eventId: 'evt-1', aggregateId: 'user-1' } as any;
       (executeUserRegistrationSaga as jest.Mock).mockRejectedValue('String error');
 
-      await expect(handler.handleUserRegisteredEvent(event)).rejects.toBe('String error');
+      await expect(handler.handleUserRegisteredEvent(event, mockEmailService as any, mockNotificationClient as any)).rejects.toBe('String error');
     });
   });
 });

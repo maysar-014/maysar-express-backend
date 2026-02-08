@@ -1,6 +1,6 @@
 import { IDomainEventPublisher, DomainEvent, UserRegisteredEvent, UserProfileUpdatedEvent, UserEmailVerifiedEvent } from '../../domain/events';
 import { logger } from '../services/logger.service';
-import { IOutboxRepository, OutboxStatus } from '../../../../shared/outbox/outbox.repository';
+import { IOutboxRepository, OutboxStatus } from '@shared/outbox/outbox.repository';
 
 /**
  * User Event Publisher

@@ -9,7 +9,7 @@ import winston from 'winston';
 // Infrastructure components
 import { PrismaPostRepository } from './infrastructure/repositories/prisma-post.repository';
 import { PrismaUserRepository } from './infrastructure/repositories/prisma-user.repository';
-import { KafkaEventPublisher } from './infrastructure/messaging/kafka-event-publisher';
+import { inMemoryEventBus } from '@shared-events/in-memory-event-bus';
 import { RedisCache } from './infrastructure/cache/redis-cache';
 import { UuidGeneratorService } from './infrastructure/services/uuid-generator.service';
 
@@ -29,10 +29,11 @@ import { FeedEngine } from './domain/engines/feed-engine';
  */
 class CommunityService {
   private app: express.Application;
-  private prisma: PrismaClient;
-  private eventPublisher: KafkaEventPublisher;
-  private cache: RedisCache;
+  private prisma!: PrismaClient;
+  private eventPublisher!: typeof inMemoryEventBus;
+  private cache!: RedisCache;
   private logger: winston.Logger;
+
 
   constructor() {
     this.app = express();
@@ -60,11 +61,11 @@ class CommunityService {
       this.logger.info('Cache connected successfully');
 
       // Initialize event publisher
-      this.eventPublisher = new KafkaEventPublisher();
-      await this.eventPublisher.connect();
-      this.logger.info('Event publisher connected successfully');
+      this.eventPublisher = inMemoryEventBus;
+      this.logger.info('In-memory event bus initialized');
 
     } catch (error) {
+
       this.logger.error('Failed to initialize infrastructure:', error);
       process.exit(1);
     }
@@ -228,12 +229,9 @@ class CommunityService {
       await this.cache.disconnect();
       this.logger.info('Cache disconnected');
 
-      // Close event publisher
-      await this.eventPublisher.disconnect();
-      this.logger.info('Event publisher disconnected');
-
       this.logger.info('Community Service shut down gracefully');
       process.exit(0);
+
     } catch (error) {
       this.logger.error('Error during shutdown:', error);
       process.exit(1);

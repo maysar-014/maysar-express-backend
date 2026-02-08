@@ -1,62 +1,59 @@
 import 'reflect-metadata';
-import express from 'express';
-import cors from 'cors';
+import express, { Express } from 'express';
 import helmet from 'helmet';
+import cors from 'cors';
 import compression from 'compression';
-import { Container } from 'inversify';
-import { InversifyExpressServer } from 'inversify-express-utils';
-import { healthRoutes } from './api/routes/health.routes';
-import { errorHandler, validationErrorHandler } from './api/middleware/error.middleware';
-import { requestLogger } from './api/middleware/request-logger.middleware';
-import { logger } from './infrastructure/services/logger.service';
+import { createSmsRouter } from './api/routes';
 
 export class SmsServiceApplication {
-    private server: InversifyExpressServer;
-    private app: express.Application;
+    private app: Express;
 
-    constructor(container: Container) {
-        this.server = new InversifyExpressServer(container);
-
-        this.server.setConfig((app) => {
-            app.use(helmet());
-            app.use(cors({ origin: '*', credentials: true }));
-            app.use(compression());
-            app.use(express.json({ limit: '10mb' }));
-            app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-            app.use(requestLogger);
-            app.use('/health', healthRoutes);
-        });
-
-        this.server.setErrorConfig((app) => {
-            app.use(validationErrorHandler);
-            app.use(errorHandler);
-        });
-
-        this.app = this.server.build();
+    constructor() {
+        this.app = express();
+        this.setupMiddleware();
+        this.setupRoutes();
     }
 
-    getApp(): express.Application {
+    private setupMiddleware(): void {
+        this.app.use(helmet());
+        this.app.use(cors());
+        this.app.use(compression());
+        this.app.use(express.json());
+        this.app.use(express.urlencoded({ extended: true }));
+    }
+
+    private setupRoutes(): void {
+        // Health check
+        this.app.get('/health', (req, res) => {
+            res.json({ status: 'OK', service: 'sms-service', timestamp: new Date() });
+        });
+
+        // API Routes
+        this.app.use('/api/v1/sms', createSmsRouter());
+
+        // Global error handler
+        this.app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+            console.error('Unhandled error:', err);
+            res.status(500).json({
+                success: false,
+                error: {
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: err.message || 'An unexpected error occurred'
+                }
+            });
+        });
+    }
+
+    public getApp(): Express {
         return this.app;
     }
 
-    async start(port: number): Promise<void> {
-        this.app.listen(port, () => {
-            logger.info(`SMS Service started on port ${port}`);
+    public async start(port: number): Promise<void> {
+        return new Promise((resolve) => {
+            this.app.listen(port, () => {
+                console.log(`SMS Service running on port ${port}`);
+                resolve();
+            });
         });
-        this.setupGracefulShutdown();
     }
-
-    private setupGracefulShutdown(): void {
-        const shutdown = async (signal: string) => {
-            logger.info(`Received ${signal}, initiating graceful shutdown...`);
-            process.exit(0);
-        };
-        process.on('SIGTERM', () => shutdown('SIGTERM'));
-        process.on('SIGINT', () => shutdown('SIGINT'));
-    }
-}
-
-export function createServer(container: Container) {
-    const appInstance = new SmsServiceApplication(container);
-    return appInstance.getApp();
 }

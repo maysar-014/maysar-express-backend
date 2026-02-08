@@ -40,7 +40,7 @@ export class UserMapper {
   }
 
   /**
-   * Map User entity to UserResponseDto
+   * Map User entity to UserResponseDto (alias for toDTO)
    */
   static toResponseDto(user: User): UserResponseDto {
     return {
@@ -69,6 +69,77 @@ export class UserMapper {
       lastLoginAt: user.lastLoginAt || new Date(0),
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
+    };
+  }
+
+  /**
+   * Map User entity to UserResponseDto (verbatim from plan)
+   */
+  static toDTO(user: User): UserResponseDto {
+    return this.toResponseDto(user);
+  }
+
+  /**
+   * Map database records to User entities
+   */
+  static toDomain(userData: any): User {
+    const addresses = userData.addresses ? userData.addresses.map((addr: any) => Address.create({
+      id: addr.id,
+      userId: addr.userId,
+      type: addr.type,
+      isPrimary: addr.isPrimary || addr.isDefault || false,
+      street: addr.street,
+      city: addr.city,
+      state: addr.state,
+      postalCode: addr.postalCode,
+      country: addr.country,
+      coordinates: addr.coordinates,
+      createdAt: addr.createdAt,
+      updatedAt: addr.updatedAt
+    })) : [];
+
+    return User.create({
+      id: userData.id,
+      email: Email.create(userData.email),
+      phoneNumber: PhoneNumber.create(userData.phoneNumber || ''),
+      firstName: userData.firstName || '',
+      lastName: userData.lastName || '',
+      dateOfBirth: userData.dateOfBirth,
+      role: userData.role,
+      preferredLanguage: userData.language || 'en',
+      preferredCurrency: userData.timezone || 'UTC',
+      addresses,
+      businessId: userData.businessId,
+      metadata: {
+        loginAttempts: userData.failedLoginAttempts || 0,
+        accountLockedUntil: userData.lockoutUntil || undefined
+      }
+    });
+  }
+
+  /**
+   * Map User entities to database format
+   */
+  static toPersistence(user: User): any {
+    return {
+      id: user.id,
+      email: user.email.value,
+      phoneNumber: user.phoneNumber.value,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      dateOfBirth: user.dateOfBirth,
+      role: user.role,
+      status: user.status,
+      language: user.preferredLanguage,
+      timezone: user.preferredCurrency,
+      isEmailVerified: user.emailVerified,
+      isPhoneVerified: user.phoneVerified,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      businessId: user.businessId,
+      failedLoginAttempts: user.metadata.loginAttempts,
+      lockoutUntil: user.metadata.accountLockedUntil,
+      lastLoginAt: user.lastLoginAt
     };
   }
 
@@ -226,11 +297,11 @@ export class UserMapper {
       createdAt: new Date(),
       updatedAt: new Date()
     };
-    
+
     if (addAddressDto.state !== undefined) {
       addressData.state = addAddressDto.state;
     }
-    
+
     const address = Address.create(addressData);
 
     return user.addAddress(address);
@@ -253,11 +324,11 @@ export class UserMapper {
       createdAt: new Date(), // This would typically be preserved
       updatedAt: new Date()
     };
-    
+
     if (updateAddressDto.state !== undefined) {
       addressData.state = updateAddressDto.state;
     }
-    
+
     const address = Address.create(addressData);
 
     return user.updateAddress(updateAddressDto.id, address);

@@ -13,7 +13,7 @@ import { logger } from '../services/logger.service';
  * Handles all persistence operations for User aggregates
  */
 export class PrismaUserRepository implements IUserRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaClient) { }
 
   // ============================================================================
   // CORE USER OPERATIONS
@@ -24,7 +24,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async findById(id: string): Promise<User | null> {
     try {
-      const userData = await this.prisma.user.findUnique({
+      const userData = await this.prisma.user_User.findUnique({
         where: { id },
         include: { addresses: true }
       });
@@ -45,7 +45,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async findByEmail(email: string): Promise<User | null> {
     try {
-      const userData = await this.prisma.user.findUnique({
+      const userData = await this.prisma.user_User.findUnique({
         where: { email },
         include: { addresses: true }
       });
@@ -66,7 +66,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async findByPhoneNumber(phoneNumber: string): Promise<User | null> {
     try {
-      const userData = await this.prisma.user.findFirst({
+      const userData = await this.prisma.user_User.findFirst({
         where: { phoneNumber },
         include: { addresses: true }
       });
@@ -89,7 +89,7 @@ export class PrismaUserRepository implements IUserRepository {
     try {
       const userData = this.mapToPrismaCreateData(user);
 
-      const createdUser = await this.prisma.user.create({
+      const createdUser = await this.prisma.user_User.create({
         data: userData,
         include: { addresses: true }
       });
@@ -109,7 +109,7 @@ export class PrismaUserRepository implements IUserRepository {
     try {
       const userData = this.mapToPrismaUpdateData(user);
 
-      const updatedUser = await this.prisma.user.update({
+      const updatedUser = await this.prisma.user_User.update({
         where: { id: user.id },
         data: userData,
         include: { addresses: true }
@@ -128,7 +128,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async delete(id: string): Promise<void> {
     try {
-      await this.prisma.user.delete({
+      await this.prisma.user_User.delete({
         where: { id }
       });
 
@@ -148,7 +148,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async search(query: string, limit: number = 50, offset: number = 0): Promise<User[]> {
     try {
-      const users = await this.prisma.user.findMany({
+      const users = await this.prisma.user_User.findMany({
         where: {
           OR: [
             { email: { contains: query, mode: 'insensitive' } },
@@ -178,7 +178,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async emailExists(email: string): Promise<boolean> {
     try {
-      const count = await this.prisma.user.count({
+      const count = await this.prisma.user_User.count({
         where: { email }
       });
 
@@ -194,7 +194,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async phoneExists(phoneNumber: string): Promise<boolean> {
     try {
-      const count = await this.prisma.user.count({
+      const count = await this.prisma.user_User.count({
         where: { phoneNumber }
       });
 
@@ -210,7 +210,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async findByStatus(status: UserStatus): Promise<User[]> {
     try {
-      const users = await this.prisma.user.findMany({
+      const users = await this.prisma.user_User.findMany({
         where: { status: status as any },
         include: { addresses: true },
         orderBy: { createdAt: 'desc' }
@@ -228,7 +228,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async findByRole(role: UserRole): Promise<User[]> {
     try {
-      const users = await this.prisma.user.findMany({
+      const users = await this.prisma.user_User.findMany({
         where: { role: role as any },
         include: { addresses: true },
         orderBy: { createdAt: 'desc' }
@@ -246,7 +246,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async findAll(skip: number = 0, take: number = 100): Promise<User[]> {
     try {
-      const users = await this.prisma.user.findMany({
+      const users = await this.prisma.user_User.findMany({
         skip,
         take,
         include: { addresses: true },
@@ -265,7 +265,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async count(): Promise<number> {
     try {
-      return await this.prisma.user.count();
+      return await this.prisma.user_User.count();
     } catch (error) {
       logger.error('Error counting users', { error: this.formatError(error) });
       throw error;
@@ -281,7 +281,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async getUserCountByStatus(): Promise<Record<UserStatus, number>> {
     try {
-      const results = await this.prisma.user.groupBy({
+      const results = await this.prisma.user_User.groupBy({
         by: ['status'],
         _count: { status: true }
       });
@@ -318,7 +318,7 @@ export class PrismaUserRepository implements IUserRepository {
     registrationsByDay: Array<{ date: string; count: number }>;
   }> {
     try {
-      const totalRegistrations = await this.prisma.user.count({
+      const totalRegistrations = await this.prisma.user_User.count({
         where: {
           createdAt: {
             gte: startDate,
@@ -327,7 +327,7 @@ export class PrismaUserRepository implements IUserRepository {
         }
       });
 
-      const roleResults = await this.prisma.user.groupBy({
+      const roleResults = await this.prisma.user_User.groupBy({
         by: ['role'],
         where: {
           createdAt: {
@@ -373,7 +373,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async updatePassword(userId: string, passwordHash: string): Promise<void> {
     try {
-      await this.prisma.user.update({
+      await this.prisma.user_User.update({
         where: { id: userId },
         data: {
           passwordHash,
@@ -393,7 +393,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async updateStatus(userId: string, status: UserStatus): Promise<void> {
     try {
-      await this.prisma.user.update({
+      await this.prisma.user_User.update({
         where: { id: userId },
         data: { status: status as any }
       });
@@ -410,7 +410,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async updateEmailVerification(userId: string, verified: boolean): Promise<void> {
     try {
-      await this.prisma.user.update({
+      await this.prisma.user_User.update({
         where: { id: userId },
         data: {
           isEmailVerified: verified,
@@ -430,7 +430,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async updatePhoneVerification(userId: string, verified: boolean): Promise<void> {
     try {
-      await this.prisma.user.update({
+      await this.prisma.user_User.update({
         where: { id: userId },
         data: {
           isPhoneVerified: verified,
@@ -450,7 +450,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async recordSuccessfulLogin(userId: string): Promise<void> {
     try {
-      await this.prisma.user.update({
+      await this.prisma.user_User.update({
         where: { id: userId },
         data: {
           lastLoginAt: new Date(),
@@ -471,7 +471,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async recordFailedLogin(userId: string): Promise<void> {
     try {
-      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      const user = await this.prisma.user_User.findUnique({ where: { id: userId } });
       if (!user) {
         throw new Error('User not found');
       }
@@ -479,7 +479,7 @@ export class PrismaUserRepository implements IUserRepository {
       const newAttempts = user.failedLoginAttempts + 1;
       const shouldLock = newAttempts >= 5;
 
-      await this.prisma.user.update({
+      await this.prisma.user_User.update({
         where: { id: userId },
         data: {
           failedLoginAttempts: newAttempts,
@@ -500,7 +500,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async updateRole(userId: string, role: UserRole): Promise<void> {
     try {
-      await this.prisma.user.update({
+      await this.prisma.user_User.update({
         where: { id: userId },
         data: { role: role as any }
       });
@@ -521,7 +521,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async getUserAddresses(userId: string): Promise<UserAddress[]> {
     try {
-      const addresses = await this.prisma.userAddress.findMany({
+      const addresses = await this.prisma.user_UserAddress.findMany({
         where: { userId },
         orderBy: [
           { isDefault: 'desc' },
@@ -541,7 +541,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async createUserAddress(userId: string, address: Omit<UserAddress, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<UserAddress> {
     try {
-      const createdAddress = await this.prisma.userAddress.create({
+      const createdAddress = await this.prisma.user_UserAddress.create({
         data: {
           userId,
           type: address.type as any,
@@ -572,7 +572,7 @@ export class PrismaUserRepository implements IUserRepository {
   async updateUserAddress(userId: string, addressId: string, updates: Partial<Omit<UserAddress, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<UserAddress> {
     try {
       const updateData: any = {};
-      
+
       if (updates.type !== undefined) updateData.type = updates.type;
       if (updates.street !== undefined) updateData.street = updates.street;
       if (updates.city !== undefined) updateData.city = updates.city;
@@ -581,7 +581,7 @@ export class PrismaUserRepository implements IUserRepository {
       if (updates.country !== undefined) updateData.country = updates.country;
       if (updates.isDefault !== undefined) updateData.isDefault = updates.isDefault;
 
-      const updatedAddress = await this.prisma.userAddress.update({
+      const updatedAddress = await this.prisma.user_UserAddress.update({
         where: {
           id: addressId,
           userId
@@ -606,7 +606,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async deleteUserAddress(userId: string, addressId: string): Promise<void> {
     try {
-      await this.prisma.userAddress.delete({
+      await this.prisma.user_UserAddress.delete({
         where: {
           id: addressId,
           userId
@@ -625,12 +625,12 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async setDefaultAddress(userId: string, addressId: string): Promise<void> {
     try {
-      await this.prisma.userAddress.updateMany({
+      await this.prisma.user_UserAddress.updateMany({
         where: { userId },
         data: { isDefault: false }
       });
 
-      await this.prisma.userAddress.update({
+      await this.prisma.user_UserAddress.update({
         where: {
           id: addressId,
           userId
@@ -654,7 +654,7 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async getUserPreferences(userId: string): Promise<UserPreferences> {
     try {
-      const user = await this.prisma.user.findUnique({
+      const user = await this.prisma.user_User.findUnique({
         where: { id: userId },
         select: {
           language: true,
@@ -702,7 +702,7 @@ export class PrismaUserRepository implements IUserRepository {
       if (preferences.timezone !== undefined) updateData.timezone = preferences.timezone;
       if (preferences.currency !== undefined) updateData.currency = preferences.currency;
 
-      await this.prisma.user.update({
+      await this.prisma.user_User.update({
         where: { id: userId },
         data: updateData
       });
@@ -777,7 +777,7 @@ export class PrismaUserRepository implements IUserRepository {
     metadata?: Record<string, any>;
   }>> {
     try {
-      const events = await this.prisma.auditLog.findMany({
+      const events = await this.prisma.user_AuditLog.findMany({
         where: { userId },
         orderBy: { timestamp: 'desc' },
         take: limit
@@ -809,7 +809,7 @@ export class PrismaUserRepository implements IUserRepository {
     metadata?: Record<string, any>;
   }): Promise<void> {
     try {
-      await this.prisma.auditLog.create({
+      await this.prisma.user_AuditLog.create({
         data: {
           userId,
           email: null,
@@ -880,7 +880,7 @@ export class PrismaUserRepository implements IUserRepository {
   }> {
     try {
       const startTime = Date.now();
-      await this.prisma.user.count();
+      await this.prisma.user_User.count();
       const responseTime = Date.now() - startTime;
 
       const details = {

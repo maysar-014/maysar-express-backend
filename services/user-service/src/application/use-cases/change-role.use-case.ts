@@ -2,6 +2,8 @@ import { IUserRepository } from '../../domain/repositories';
 import { RoleChangeEvent } from '../sagas/role-change.saga';
 import { sagaEventHandler } from '../sagas/saga-event-handler';
 import { logger } from '../../infrastructure/services/logger.service';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from '../sagas/service-clients';
 
 export interface ChangeRoleInput {
   userId: string;
@@ -18,7 +20,11 @@ export interface ChangeRoleOutput {
 }
 
 export class ChangeRoleUseCase {
-  constructor(private userRepository: IUserRepository) {}
+  constructor(
+    private userRepository: IUserRepository,
+    private emailService: EmailService,
+    private notificationClient: NotificationServiceClient
+  ) { }
 
   async execute(input: ChangeRoleInput): Promise<ChangeRoleOutput> {
     try {
@@ -60,7 +66,7 @@ export class ChangeRoleUseCase {
         timestamp: new Date()
       };
 
-      await sagaEventHandler.handleRoleChangeEvent(event);
+      await sagaEventHandler.handleRoleChangeEvent(event, this.emailService, this.notificationClient);
 
       logger.logBusiness('Role changed successfully', input.changedBy, {
         userId: input.userId,

@@ -2,6 +2,8 @@ import { IUserRepository } from '../../domain/repositories';
 import { TwoFactorSetupEvent } from '../sagas/two-factor-setup.saga';
 import { sagaEventHandler } from '../sagas/saga-event-handler';
 import { logger } from '../../infrastructure/services/logger.service';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from '../sagas/service-clients';
 
 export interface SetupTwoFactorInput {
   userId: string;
@@ -17,7 +19,11 @@ export interface SetupTwoFactorOutput {
 }
 
 export class SetupTwoFactorUseCase {
-  constructor(private userRepository: IUserRepository) {}
+  constructor(
+    private userRepository: IUserRepository,
+    private emailService: EmailService,
+    private notificationClient: NotificationServiceClient
+  ) { }
 
   async execute(input: SetupTwoFactorInput): Promise<SetupTwoFactorOutput> {
     try {
@@ -58,7 +64,7 @@ export class SetupTwoFactorUseCase {
         timestamp: new Date()
       };
 
-      await sagaEventHandler.handleTwoFactorSetupEvent(event);
+      await sagaEventHandler.handleTwoFactorSetupEvent(event, this.emailService, this.notificationClient);
 
       logger.logBusiness('2FA setup initiated', input.userId, { method: input.method });
 

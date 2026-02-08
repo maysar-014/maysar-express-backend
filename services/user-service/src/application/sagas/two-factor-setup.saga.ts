@@ -1,8 +1,10 @@
 import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
 import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
-import { notificationClient, auditClient } from './service-clients';
+import { auditClient } from './service-clients';
 import { logger } from '../../infrastructure/services/logger.service';
 import { v4 as uuidv4 } from 'uuid';
+import { EmailService } from '../../infrastructure/services/email.service';
+import { NotificationServiceClient } from './service-clients';
 
 export interface TwoFactorSetupEvent {
   eventId: string;
@@ -18,7 +20,10 @@ export class TwoFactorSetupSaga extends DistributedSagaOrchestrator<TwoFactorSet
   protected sagaType = 'TwoFactorSetupSaga';
   private backupCodesGenerated = false;
 
-  constructor() {
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly notificationClient: NotificationServiceClient
+  ) {
     super(sagaLogRepository, 'user-service');
   }
 
@@ -74,10 +79,11 @@ export class TwoFactorSetupSaga extends DistributedSagaOrchestrator<TwoFactorSet
       {
         name: 'SendConfirmationNotification',
         execute: async (payload, sagaId) => {
-          await notificationClient.sendEmail(payload.userId, '2fa_enabled', {
-            method: payload.method,
-            timestamp: new Date().toISOString()
-          });
+          await this.notificationClient.sendPushNotification(
+            payload.userId,
+            '2FA Enabled',
+            `Two-factor authentication using ${payload.method} has been enabled.`
+          );
         },
         compensate: async (payload, sagaId) => {
           // Cannot unsend notification
@@ -87,8 +93,12 @@ export class TwoFactorSetupSaga extends DistributedSagaOrchestrator<TwoFactorSet
   }
 }
 
-export async function executeTwoFactorSetupSaga(event: TwoFactorSetupEvent): Promise<void> {
-  const saga = new TwoFactorSetupSaga();
+export async function executeTwoFactorSetupSaga(
+  event: TwoFactorSetupEvent,
+  emailService: EmailService,
+  notificationClient: NotificationServiceClient
+): Promise<void> {
+  const saga = new TwoFactorSetupSaga(emailService, notificationClient);
   const correlationId = event.metadata?.correlationId || uuidv4();
 
   try {
