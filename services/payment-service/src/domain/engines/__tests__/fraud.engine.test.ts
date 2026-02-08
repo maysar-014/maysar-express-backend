@@ -1,5 +1,5 @@
 import { FraudEngine, TransactionData, FraudAssessment } from '../fraud.engine';
-import { IFraudRepository } from '../../ports/fraud.repository.port';
+import { IFraudRepository } from '../../repositories/fraud.repository';
 
 describe('Fraud Engine', () => {
     let fraudEngine: FraudEngine;
@@ -27,6 +27,8 @@ describe('Fraud Engine', () => {
             getDeviceHistory: jest.fn(),
             getDeviceReputation: jest.fn(),
             getUserBehavior: jest.fn(),
+            saveResult: jest.fn(),
+            findResultByPaymentId: jest.fn(),
         };
 
         fraudEngine = new FraudEngine(mockRepository);
@@ -56,6 +58,7 @@ describe('Fraud Engine', () => {
         mockRepository.getUserLocationHistory.mockResolvedValue([{
             timestamp: new Date(Date.now() - 1000 * 60 * 60), // 1 hour ago
             country: 'UK',
+            city: 'London',
             lat: 51.5074,
             lng: 0.1278
         }]); // Current location is mocked as US/NY in engine which is far from UK
@@ -81,7 +84,7 @@ describe('Fraud Engine', () => {
         mockRepository.getUserLocationHistory.mockResolvedValue([]);
         mockRepository.getDeviceHistory.mockResolvedValue(['device_123']);
         mockRepository.getDeviceReputation.mockResolvedValue({ riskScore: 0 });
-        mockRepository.getUserBehavior.mockResolvedValue({});
+        mockRepository.getUserBehavior.mockResolvedValue({ activeHours: [], paymentMethods: [] });
 
         const assessment = await fraudEngine.assessTransaction(mockTransaction);
 
@@ -95,7 +98,7 @@ describe('Fraud Engine', () => {
         mockRepository.getUserLocationHistory.mockResolvedValue([]);
         mockRepository.getDeviceHistory.mockResolvedValue(['device_123']);
         mockRepository.getDeviceReputation.mockResolvedValue({ riskScore: 0 });
-        mockRepository.getUserBehavior.mockResolvedValue({});
+        mockRepository.getUserBehavior.mockResolvedValue({ activeHours: [], paymentMethods: [] });
 
         const assessment = await fraudEngine.assessTransaction(mockTransaction);
 

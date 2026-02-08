@@ -6,10 +6,13 @@
 
 import { PrismaClient } from '@prisma/client';
 import { ProductRepository } from '../../domain/interfaces';
+import { IProductRepository } from '../../domain/repositories/repository.interfaces';
 import { Product, ProductVariant } from '../../domain/entities/product.entity';
 import { ProductId, SellerId, CategoryId } from '../../domain/value-objects/ids.value-object';
 import { Price } from '../../domain/value-objects/monetary.value-object';
 import { ProductType, ProductVisibility, ProductCondition } from '../../domain/value-objects/product-types.value-object';
+import { ProductIdentifiers } from '../../domain/value-objects/product-identifiers.value-object';
+import { ProductFingerprint } from '../../domain/value-objects/product-fingerprint.value-object';
 
 // Prisma Enums (defined locally since Prisma client may not be generated)
 enum ProductStatus {
@@ -42,8 +45,8 @@ enum VariantStatus {
  * Implements the ProductRepository interface using Prisma ORM
  * Provides type-safe database operations with proper error handling
  */
-export class PrismaProductRepository implements ProductRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+export class PrismaProductRepository implements ProductRepository, IProductRepository {
+  constructor(private readonly prisma: PrismaClient) { }
 
   /**
    * Save a product entity to the database
@@ -278,6 +281,81 @@ export class PrismaProductRepository implements ProductRepository {
       console.error('Error deleting product:', error);
       return false;
     }
+  }
+
+  /**
+   * Find products by identifiers (GTIN, MPN, ISBN)
+   * Used for exact matching in catalog matching engine
+   */
+  async findByIdentifiers(identifiers: ProductIdentifiers): Promise<Product[]> {
+    const where: any = {
+      OR: []
+    };
+
+    if (identifiers.gtin) {
+      where.OR.push({ gtin: identifiers.gtin });
+    }
+    if (identifiers.mpn) {
+      where.OR.push({ mpn: identifiers.mpn });
+    }
+    if (identifiers.isbn) {
+      where.OR.push({ isbn: identifiers.isbn });
+    }
+
+    if (where.OR.length === 0) {
+      return [];
+    }
+
+    const productsData = await this.prisma.catalog_Product.findMany({
+      where,
+      include: {
+        category: true,
+        variants: true
+      }
+    });
+
+    return productsData.map(product => this.mapPrismaProductToDomain(product));
+  }
+
+  /**
+   * Find products by fingerprint and category
+   * Used for strong matching in catalog matching engine
+   */
+  async findByFingerprint(fingerprint: string, categoryId: string): Promise<Product[]> {
+    const productsData = await this.prisma.catalog_Product.findMany({
+      where: {
+        fingerprint,
+        categoryId
+      },
+      include: {
+        category: true,
+        variants: true
+      }
+    });
+
+    return productsData.map(product => this.mapPrismaProductToDomain(product));
+  }
+
+  /**
+   * Find products by category and brand
+   * Used for similarity matching in catalog matching engine
+   */
+  async findByCategoryAndBrand(categoryId: string, brand: string): Promise<Product[]> {
+    const productsData = await this.prisma.catalog_Product.findMany({
+      where: {
+        categoryId,
+        brand: {
+          contains: brand,
+          mode: 'insensitive'
+        }
+      },
+      include: {
+        category: true,
+        variants: true
+      }
+    });
+
+    return productsData.map(product => this.mapPrismaProductToDomain(product));
   }
 
   // Private helper methods

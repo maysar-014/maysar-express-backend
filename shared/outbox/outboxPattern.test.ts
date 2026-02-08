@@ -2,23 +2,59 @@ import { PrismaClient } from '@prisma/client';
 import { TransactionalOutbox, OutboxStatus } from '../outboxPattern';
 import { EventEnvelope } from '../../../events';
 import { randomUUID } from 'crypto';
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 describe('Outbox Pattern Reliability Tests', () => {
+  let postgresContainer: StartedPostgreSqlContainer;
   let prisma: PrismaClient;
   let outbox: TransactionalOutbox;
 
   beforeAll(async () => {
-    prisma = new PrismaClient();
+    // Start PostgreSQL container for isolated testing
+    postgresContainer = await new PostgreSqlContainer('postgres:15-alpine')
+      .withDatabase('test_db')
+      .withUsername('test_user')
+      .withPassword('test_pass')
+      .start();
+
+    const connectionString = postgresContainer.getConnectionUri();
+
+    // Set DATABASE_URL for Prisma
+    process.env.DATABASE_URL = connectionString;
+
+    // Run migrations
+    await execAsync('npx prisma migrate deploy');
+
+    // Initialize Prisma client
+    prisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: connectionString
+        }
+      }
+    });
+
     outbox = new TransactionalOutbox(prisma);
-  });
+  }, 120000); // Increased timeout for container + migrations
 
   afterAll(async () => {
     await prisma.$disconnect();
+    await postgresContainer.stop();
   });
 
   beforeEach(async () => {
-    // Clean up outbox events
+    // Clean up outbox events before each test
     await prisma.outboxEvent.deleteMany();
+    // Clean up any test orders if they exist
+    try {
+      await prisma.order.deleteMany();
+    } catch (error) {
+      // Order table might not exist in all schemas, ignore error
+    }
   });
 
   test('should save event in same transaction as business operation', async () => {
@@ -72,7 +108,7 @@ describe('Outbox Pattern Reliability Tests', () => {
       await prisma.$transaction(async (tx) => {
         // Save event
         await outbox.saveEvent(eventEnvelope, tx);
-        
+
         // Force transaction rollback
         throw new Error('Simulated failure');
       });

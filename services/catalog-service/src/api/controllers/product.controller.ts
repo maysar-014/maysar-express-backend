@@ -11,6 +11,7 @@ import {
   GetProductsBySellerUseCase,
   SearchProductsUseCase
 } from '../../application/use-cases';
+import { CreateProductWithMatchingUseCase } from '../../application/use-cases/create-product-with-matching.use-case';
 import {
   CreateProductDto,
   UpdateProductDto,
@@ -91,6 +92,7 @@ export class ProductController {
     private readonly getProductsBySellerUseCase: GetProductsBySellerUseCase,
     private readonly searchProductsUseCase: SearchProductsUseCase,
     private readonly productMapper: ProductMapper,
+    private readonly createProductWithMatchingUseCase?: CreateProductWithMatchingUseCase,
     config: Partial<ProductControllerConfig> = {}
   ) {
     this.config = { ...DEFAULT_PRODUCT_CONTROLLER_CONFIG, ...config };
@@ -112,7 +114,65 @@ export class ProductController {
       // Map to DTO
       const createDto = this.mapToCreateProductDto(req.body);
 
-      // Execute use case
+      // Check if matching is enabled and use case is available
+      const enableMatching = req.query.enableMatching !== 'false' && this.createProductWithMatchingUseCase;
+
+      if (enableMatching && this.createProductWithMatchingUseCase) {
+        // Use matching-enabled creation
+        const matchingRequest = {
+          sellerId: createDto.sellerId,
+          name: createDto.name,
+          description: createDto.description,
+          brand: req.body.brand,
+          model: req.body.model,
+          categoryId: createDto.categoryId,
+          identifiers: req.body.identifiers,
+          attributes: createDto.attributes,
+          price: createDto.price,
+          currency: createDto.currency,
+          type: createDto.type,
+          tags: createDto.tags,
+          mediaUrls: createDto.mediaUrls,
+          inventoryCount: createDto.inventoryCount
+        };
+
+        const matchingResult = await this.createProductWithMatchingUseCase.execute(matchingRequest);
+
+        if (matchingResult.requiresConfirmation) {
+          // Return confirmation required response
+          const response: ApiResponse = {
+            success: true,
+            data: {
+              matchingRequired: true,
+              confirmationId: matchingResult.confirmationId,
+              candidates: matchingResult.candidates
+            },
+            meta: {
+              timestamp: new Date(),
+              requestId: this.getRequestId(req)
+            }
+          };
+          res.status(200).json(response);
+          return;
+        } else if (matchingResult.productId) {
+          // Product created or merged
+          const response: ApiResponse<{ productId: string; matched: boolean }> = {
+            success: true,
+            data: {
+              productId: matchingResult.productId,
+              matched: matchingResult.matchedToExisting || false
+            },
+            meta: {
+              timestamp: new Date(),
+              requestId: this.getRequestId(req)
+            }
+          };
+          res.status(201).json(response);
+          return;
+        }
+      }
+
+      // Fall back to standard creation (no matching)
       const result = await this.createProductUseCase.execute({
         sellerId: createDto.sellerId,
         name: createDto.name,

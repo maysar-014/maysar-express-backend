@@ -463,6 +463,11 @@ model Catalog_Product {
   visibility  Catalog_Visibility    @default(public)
   seoMetadata Json?
   tags        String[]
+  gtin               String?               @db.VarChar(14)
+  mpn                String?               @db.VarChar(100)
+  isbn               String?               @db.VarChar(13)
+  fingerprint        String?               @db.VarChar(64)
+  fingerprintVersion Int                   @default(1)
   createdAt   DateTime              @default(now()) @db.Timestamp(6)
   updatedAt   DateTime              @updatedAt @db.Timestamp(6)
 
@@ -470,6 +475,11 @@ model Catalog_Product {
   category Catalog_Category         @relation(fields: [categoryId], references: [id])
   variants Catalog_ProductVariant[]
 
+  @@index([gtin])
+  @@index([mpn])
+  @@index([isbn])
+  @@unique([categoryId, fingerprint])
+  @@index([brand, model, categoryId])
   @@map("catalog_products")
 }
 
@@ -511,6 +521,68 @@ model Catalog_MediaRef {
   createdAt    DateTime @default(now()) @db.Timestamp(6)
 
   @@map("catalog_media_refs")
+}
+
+model Catalog_ProductMatchAudit {
+  id               String                 @id @default(uuid()) @db.Uuid
+  candidateProductId String               @db.Uuid
+  matchedProductId   String?              @db.Uuid
+  matchLevel         Catalog_MatchLevel
+  matchScore         Decimal              @db.Decimal(5, 2)
+  matchingCriteria   Json
+  decision           Catalog_MatchDecision
+  decidedBy          Catalog_MatchDecidedBy
+  sellerId           String               @db.Uuid
+  metadata           Json?
+  createdAt          DateTime             @default(now()) @db.Timestamp(6)
+
+  @@index([sellerId, createdAt])
+  @@index([matchLevel])
+  @@index([decision])
+  @@map("catalog_product_match_audits")
+}
+
+model Catalog_MatchConfirmation {
+  id                String                     @id @default(uuid()) @db.Uuid
+  auditId           String                     @db.Uuid
+  sellerId          String                     @db.Uuid
+  candidateProducts Json
+  status            Catalog_ConfirmationStatus @default(PENDING)
+  sellerChoice      String?                   
+  expiresAt         DateTime                   @db.Timestamp(6)
+  respondedAt       DateTime?                  @db.Timestamp(6)
+  createdAt         DateTime                   @default(now()) @db.Timestamp(6)
+
+  @@index([sellerId, status])
+  @@index([expiresAt])
+  @@map("catalog_match_confirmations")
+}
+
+enum Catalog_MatchLevel {
+  EXACT
+  STRONG
+  POSSIBLE
+  NO_MATCH
+}
+
+enum Catalog_MatchDecision {
+  AUTO_MERGED
+  SELLER_CONFIRMED
+  SELLER_REJECTED
+  NEW_PRODUCT
+}
+
+enum Catalog_MatchDecidedBy {
+  SYSTEM
+  SELLER
+  ADMIN
+}
+
+enum Catalog_ConfirmationStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  EXPIRED
 }
 
 // Enums

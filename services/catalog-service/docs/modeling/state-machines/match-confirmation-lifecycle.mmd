@@ -1,0 +1,30 @@
+stateDiagram-v2
+    [*] --> PENDING: Confirmation Created
+    
+    PENDING --> CONFIRMED: Seller Confirms Match
+    PENDING --> REJECTED: Seller Rejects Match
+    PENDING --> EXPIRED: Timeout (24h)
+    
+    CONFIRMED --> [*]: Product Merged
+    REJECTED --> [*]: New Product Created
+    EXPIRED --> [*]: Auto Create New Product
+    
+    note right of PENDING
+        Seller has 24 hours
+        to respond
+    end note
+    
+    note right of CONFIRMED
+        Seller offer linked
+        to existing product
+    end note
+    
+    note right of REJECTED
+        New catalog entry
+        created
+    end note
+    
+    note right of EXPIRED
+        Default action:
+        create new product
+    end note

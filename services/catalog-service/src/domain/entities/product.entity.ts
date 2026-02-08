@@ -16,6 +16,8 @@ import {
   ShippingInfo,
   ProductCondition
 } from '../value-objects/product-types.value-object';
+import { ProductIdentifiers } from '../value-objects/product-identifiers.value-object';
+import { ProductFingerprint } from '../value-objects/product-fingerprint.value-object';
 
 export class ProductVariant {
   constructor(
@@ -27,7 +29,7 @@ export class ProductVariant {
     private readonly costPrice?: CostPrice,
     private readonly inventoryQuantity: number = 0,
     private readonly attributes: Record<string, string> = {}
-  ) {}
+  ) { }
 
   getId(): string {
     return this.id;
@@ -85,12 +87,16 @@ export class Product {
     private readonly type: ProductType,
     private readonly visibility: ProductVisibility = ProductVisibility.PUBLIC,
     private readonly categoryId?: CategoryId,
+    private readonly brand?: string,
+    private readonly model?: string,
     private readonly variants: ProductVariant[] = [],
     private readonly images: string[] = [],
     private readonly tags: string[] = [],
     private readonly seoData?: SEOData,
     private readonly shippingInfo?: ShippingInfo,
     private readonly condition: ProductCondition = ProductCondition.NEW,
+    private readonly identifiers?: ProductIdentifiers,
+    private readonly fingerprint?: ProductFingerprint,
     private readonly createdAt: Date = new Date(),
     private readonly updatedAt: Date = new Date()
   ) {
@@ -137,6 +143,14 @@ export class Product {
     return this.categoryId;
   }
 
+  getBrand(): string | undefined {
+    return this.brand;
+  }
+
+  getModel(): string | undefined {
+    return this.model;
+  }
+
   getVariants(): ProductVariant[] {
     return [...this.variants];
   }
@@ -171,6 +185,14 @@ export class Product {
 
   getUpdatedAt(): Date {
     return this.updatedAt;
+  }
+
+  getIdentifiers(): ProductIdentifiers | undefined {
+    return this.identifiers;
+  }
+
+  getFingerprint(): ProductFingerprint | undefined {
+    return this.fingerprint;
   }
 
   // Business logic methods
@@ -218,12 +240,16 @@ export class Product {
     variants: ProductVariant[],
     options?: {
       categoryId?: CategoryId;
+      brand?: string;
+      model?: string;
       visibility?: ProductVisibility;
       images?: string[];
       tags?: string[];
       seoData?: SEOData;
       shippingInfo?: ShippingInfo;
       condition?: ProductCondition;
+      identifiers?: ProductIdentifiers;
+      fingerprint?: ProductFingerprint;
     }
   ): Product {
     const id = ProductId.create();
@@ -238,12 +264,16 @@ export class Product {
       type,
       options?.visibility,
       options?.categoryId,
+      options?.brand,
+      options?.model,
       variants,
       options?.images,
       options?.tags,
       options?.seoData,
       options?.shippingInfo,
-      options?.condition
+      options?.condition,
+      options?.identifiers,
+      options?.fingerprint
     );
   }
 }

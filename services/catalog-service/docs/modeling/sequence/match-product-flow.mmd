@@ -1,0 +1,45 @@
+sequenceDiagram
+    participant API as API Controller
+    participant UC as MatchProductUseCase
+    participant Norm as NormalizationAlgorithm
+    participant FP as FingerprintAlgorithm
+    participant Engine as CatalogMatchingEngine
+    participant Repo as ProductRepository
+    participant Audit as AuditRepository
+    participant Bus as EventBus
+    
+    API->>UC: execute(request)
+    
+    Note over UC: 1. Prepare Candidate
+    UC->>Norm: normalizeBrand(brand)
+    Norm-->>UC: normalized brand
+    UC->>FP: generateFingerprint(data)
+    FP-->>UC: fingerprint
+    
+    Note over UC: 2. Query Existing Products
+    UC->>Repo: findByCategoryAndBrand(categoryId, brand)
+    Repo-->>UC: existingProducts[]
+    
+    Note over UC: 3. Run Matching Engine
+    UC->>Engine: matchProduct(candidate, existingProducts)
+    
+    alt Exact Match (GTIN/MPN/ISBN)
+        Engine-->>UC: MatchResult(EXACT, 100)
+        UC->>Audit: save(audit)
+        UC->>Bus: publish(ProductMatchFoundEvent)
+        UC-->>API: { matchFound: true, autoMerge: true }
+    else Strong Match (Fingerprint)
+        Engine-->>UC: MatchResult(STRONG, 95)
+        UC->>Audit: save(audit)
+        UC->>Bus: publish(ProductMatchFoundEvent)
+        UC-->>API: { matchFound: true, autoMerge: true }
+    else Possible Match (Similarity)
+        Engine-->>UC: MatchResult(POSSIBLE, 87)
+        UC->>Audit: save(audit)
+        UC->>Bus: publish(ProductMatchConfirmationRequiredEvent)
+        UC-->>API: { confirmationRequired: true, confirmationId }
+    else No Match
+        Engine-->>UC: MatchResult(NO_MATCH, 0)
+        UC->>Audit: save(audit)
+        UC-->>API: { matchFound: false }
+    end

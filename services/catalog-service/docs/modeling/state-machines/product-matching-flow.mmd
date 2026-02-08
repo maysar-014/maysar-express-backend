@@ -1,0 +1,44 @@
+stateDiagram-v2
+    [*] --> CANDIDATE: Product Submitted
+    
+    CANDIDATE --> EXACT_MATCH: Identifier Match Found
+    CANDIDATE --> STRONG_MATCH: Fingerprint Match Found
+    CANDIDATE --> POSSIBLE_MATCH: Similarity > 85%
+    CANDIDATE --> NO_MATCH: No Candidates Found
+    
+    EXACT_MATCH --> AUTO_MERGED: Score = 100
+    STRONG_MATCH --> AUTO_MERGED: Score = 95
+    
+    POSSIBLE_MATCH --> PENDING_CONFIRMATION: Requires Seller Input
+    
+    PENDING_CONFIRMATION --> SELLER_CONFIRMED: Seller Accepts
+    PENDING_CONFIRMATION --> SELLER_REJECTED: Seller Declines
+    
+    SELLER_CONFIRMED --> MERGED: Link to Existing
+    SELLER_REJECTED --> NEW_PRODUCT: Create New Entry
+    
+    AUTO_MERGED --> [*]: Audit Created
+    NO_MATCH --> NEW_PRODUCT: Create New Entry
+    
+    MERGED --> [*]: Audit Created
+    NEW_PRODUCT --> [*]: Audit Created
+    
+    note right of EXACT_MATCH
+        GTIN/MPN/ISBN match
+        100% confidence
+    end note
+    
+    note right of STRONG_MATCH
+        Fingerprint match
+        95% confidence
+    end note
+    
+    note right of POSSIBLE_MATCH
+        Fuzzy match
+        85-95% confidence
+    end note
+    
+    note right of AUTO_MERGED
+        No seller action
+        required
+    end note

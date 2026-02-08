@@ -1,20 +1,33 @@
 import { IdempotencyMiddleware, EventIdempotency } from './idempotency';
 import { Request, Response } from 'express';
+import { GenericContainer, StartedTestContainer } from 'testcontainers';
 import Redis from 'ioredis';
 
 describe('Idempotency Infrastructure', () => {
+  let redisContainer: StartedTestContainer;
   let redis: Redis;
   let idempotencyMiddleware: IdempotencyMiddleware;
   let eventIdempotency: EventIdempotency;
+  let redisUrl: string;
 
-  beforeAll(() => {
-    redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-    idempotencyMiddleware = new IdempotencyMiddleware('redis://localhost:6379');
-    eventIdempotency = new EventIdempotency('redis://localhost:6379');
-  });
+  beforeAll(async () => {
+    // Start Redis container for isolated testing
+    redisContainer = await new GenericContainer('redis:7-alpine')
+      .withExposedPorts(6379)
+      .start();
+
+    const host = redisContainer.getHost();
+    const port = redisContainer.getMappedPort(6379);
+    redisUrl = `redis://${host}:${port}`;
+
+    redis = new Redis(redisUrl);
+    idempotencyMiddleware = new IdempotencyMiddleware(redisUrl);
+    eventIdempotency = new EventIdempotency(redisUrl);
+  }, 60000); // Increased timeout for container startup
 
   afterAll(async () => {
     await redis.quit();
+    await redisContainer.stop();
   });
 
   beforeEach(async () => {
@@ -24,7 +37,7 @@ describe('Idempotency Infrastructure', () => {
   describe('API Idempotency', () => {
     test('should return cached response for duplicate requests', async () => {
       const idempotencyKey = 'test-key-123';
-      
+
       const req = {
         method: 'POST',
         headers: { 'idempotency-key': idempotencyKey },
@@ -59,7 +72,7 @@ describe('Idempotency Infrastructure', () => {
       const next2 = jest.fn();
 
       await middleware(req2, res2, next2);
-      
+
       // Should return cached response, not call next
       expect(next2).not.toHaveBeenCalled();
       expect(res2.status).toHaveBeenCalledWith(200);
@@ -175,8 +188,9 @@ describe('Idempotency Infrastructure', () => {
 
   describe('Error Handling', () => {
     test('should handle Redis connection failures gracefully', async () => {
-      const badMiddleware = new IdempotencyMiddleware('redis://invalid:6379');
-      
+      // Use invalid port to simulate connection failure
+      const badMiddleware = new IdempotencyMiddleware('redis://localhost:9999');
+
       const req = {
         method: 'POST',
         headers: { 'idempotency-key': 'test-key' },

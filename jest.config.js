@@ -330,19 +330,82 @@ module.exports = {
       testEnvironment: 'node',
       testMatch: ['<rootDir>/shared/**/*.test.ts'],
       moduleNameMapper: {
-        '@shared/(.*)': '<rootDir>/shared/$1',
       }
-    }
   ],
 
+  // Coverage configuration
   collectCoverageFrom: [
-    'src/**/*.{ts,js}',
-    'services/**/*.{ts,js}',
-    'shared/**/*.{ts,js}',
+    'services/*/src/**/*.ts',
+    'shared/**/*.ts',
+    '!**/*.test.ts',
+    '!**/*.spec.ts',
     '!**/node_modules/**',
     '!**/dist/**',
     '!**/__tests__/**'
   ],
+
+  coverageThreshold: {
+    global: {
+      statements: 85,
+      branches: 80,
+      functions: 85,
+      lines: 85
+    },
+    // Domain layer - strictest requirements (business logic)
+    './services/*/src/domain/entities/**/*.ts': {
+      statements: 95,
+      branches: 90,
+      functions: 95,
+      lines: 95
+    },
+    './services/*/src/domain/value-objects/**/*.ts': {
+      statements: 98,
+      branches: 95,
+      functions: 98,
+      lines: 98
+    },
+    './services/*/src/domain/engines/**/*.ts': {
+      statements: 95,
+      branches: 90,
+      functions: 95,
+      lines: 95
+    },
+    './services/*/src/domain/policies/**/*.ts': {
+      statements: 95,
+      branches: 90,
+      functions: 95,
+      lines: 95
+    },
+    // Application layer (use cases, sagas)
+    './services/*/src/application/use-cases/**/*.ts': {
+      statements: 90,
+      branches: 85,
+      functions: 90,
+      lines: 90
+    },
+    './services/*/src/application/sagas/**/*.ts': {
+      statements: 95,
+      branches: 90,
+      functions: 95,
+      lines: 95
+    },
+    // Infrastructure layer - more lenient (external dependencies)
+    './services/*/src/infrastructure/**/*.ts': {
+      statements: 80,
+      branches: 75,
+      functions: 80,
+      lines: 80
+    },
+    // API layer (controllers, routes)
+    './services/*/src/api/controllers/**/*.ts': {
+      statements: 85,
+      branches: 80,
+      functions: 85,
+      lines: 85
+    }
+  },
+
+  coverageReporters: ['text', 'text-summary', 'html', 'lcov', 'json-summary'],
 
   maxWorkers: '50%',
   detectOpenHandles: true,

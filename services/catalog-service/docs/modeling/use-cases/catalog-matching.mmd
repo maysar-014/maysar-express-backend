@@ -1,0 +1,38 @@
+graph TB
+    subgraph "Actors"
+        Seller["👤 Seller"]
+        System["🤖 System"]
+    end
+    
+    subgraph "Catalog Matching System"
+        UC1["Match Product<br/>Against Catalog"]
+        UC2["Confirm Product<br/>Match"]
+        UC3["Create New<br/>Product"]
+        UC4["View Pending<br/>Confirmations"]
+        UC5["View Match<br/>Audit Trail"]
+    end
+    
+    subgraph "Supporting Use Cases"
+        UC6["Generate Product<br/>Fingerprint"]
+        UC7["Calculate<br/>Similarity"]
+        UC8["Normalize Product<br/>Data"]
+    end
+    
+    Seller -->|initiates| UC1
+    Seller -->|responds to| UC2
+    Seller -->|views| UC4
+    Seller -->|reviews| UC5
+    
+    UC1 -.->|includes| UC8
+    UC1 -.->|includes| UC6
+    UC1 -.->|includes| UC7
+    
+    UC1 -->|auto-merge| UC3
+    UC1 -->|requires confirmation| UC2
+    UC1 -->|no match| UC3
+    
+    UC2 -->|confirmed| UC3
+    UC2 -->|rejected| UC3
+    
+    System -->|expires confirmations| UC2
+    System -->|creates audit| UC5

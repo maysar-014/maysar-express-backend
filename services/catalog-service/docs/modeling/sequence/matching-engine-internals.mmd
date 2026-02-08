@@ -1,0 +1,59 @@
+sequenceDiagram
+    participant Engine as CatalogMatchingEngine
+    participant Builder as MatchCriteriaBuilder
+    participant Norm as NormalizationAlgorithm
+    participant Sim as SimilarityAlgorithm
+    
+    Note over Engine: matchProduct(candidate, existingProducts)
+    
+    loop For each existing product
+        Note over Engine: 1. Check Identifier Match
+        alt Candidate has identifiers
+            Engine->>Engine: identifiers.equals(existing.identifiers)
+            alt Identifiers match
+                Engine->>Builder: buildCriteria(candidate, existing)
+                Builder-->>Engine: criteria
+                Engine-->>Engine: Return MatchResult(EXACT, 100)
+            end
+        end
+        
+        Note over Engine: 2. Check Fingerprint Match
+        alt Candidate has fingerprint
+            Engine->>Engine: fingerprint.matches(existing.fingerprint)
+            alt Fingerprint matches
+                Engine->>Builder: buildCriteria(candidate, existing)
+                Builder-->>Engine: criteria
+                Engine-->>Engine: Return MatchResult(STRONG, 95)
+            end
+        end
+        
+        Note over Engine: 3. Check Similarity Match
+        alt Same category
+            Engine->>Norm: normalizeBrand(candidate.brand)
+            Norm-->>Engine: normCandidateBrand
+            Engine->>Norm: normalizeBrand(existing.brand)
+            Norm-->>Engine: normExistingBrand
+            
+            alt Brands match
+                Engine->>Norm: normalizeModel(candidate.model)
+                Norm-->>Engine: normCandidateModel
+                Engine->>Norm: normalizeModel(existing.model)
+                Norm-->>Engine: normExistingModel
+                
+                Engine->>Sim: calculateStringSimilarity(models)
+                Sim-->>Engine: similarity score
+                
+                alt Similarity >= 0.85
+                    Engine->>Builder: buildCriteria(candidate, existing)
+                    Builder-->>Engine: criteria
+                    Engine-->>Engine: Track as best match
+                end
+            end
+        end
+    end
+    
+    alt Best match found
+        Engine-->>Engine: Return MatchResult(POSSIBLE, score)
+    else No match found
+        Engine-->>Engine: Return MatchResult(NO_MATCH, 0)
+    end

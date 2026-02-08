@@ -28,7 +28,7 @@ export interface TransactionData {
   timestamp: Date;
 }
 
-import { IFraudRepository } from '../ports/fraud.repository.port';
+import { IFraudRepository } from '../repositories/fraud.repository';
 
 export class FraudEngine {
   private readonly FRAUD_THRESHOLD_LOW = 30;

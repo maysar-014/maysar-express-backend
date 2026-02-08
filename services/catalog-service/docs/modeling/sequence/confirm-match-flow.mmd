@@ -1,0 +1,36 @@
+sequenceDiagram
+    participant API as API Controller
+    participant UC as ConfirmProductMatchUseCase
+    participant ConfRepo as MatchConfirmationRepository
+    participant AuditRepo as AuditRepository
+    participant Bus as EventBus
+    
+    API->>UC: execute(confirmationId, request)
+    
+    Note over UC: 1. Validate Confirmation
+    UC->>ConfRepo: findById(confirmationId)
+    ConfRepo-->>UC: confirmation
+    
+    alt Confirmation Not Found
+        UC-->>API: Error: Confirmation not found
+    else Confirmation Not Pending
+        UC-->>API: Error: Already processed
+    else Valid Confirmation
+        Note over UC: 2. Update Confirmation
+        
+        alt Seller Confirms Match
+            UC->>ConfRepo: updateStatus(confirmationId, CONFIRMED)
+            UC->>AuditRepo: findById(auditId)
+            AuditRepo-->>UC: audit
+            UC->>AuditRepo: save(audit with SELLER_CONFIRMED)
+            UC->>Bus: publish(ProductMatchConfirmedEvent)
+            UC-->>API: { success: true, actionTaken: 'merged' }
+        else Seller Rejects Match
+            UC->>ConfRepo: updateStatus(confirmationId, REJECTED)
+            UC->>AuditRepo: findById(auditId)
+            AuditRepo-->>UC: audit
+            UC->>AuditRepo: save(audit with SELLER_REJECTED)
+            UC->>Bus: publish(ProductMatchRejectedEvent)
+            UC-->>API: { success: true, actionTaken: 'created_new' }
+        end
+    end
