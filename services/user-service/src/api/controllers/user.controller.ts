@@ -7,8 +7,16 @@ import { ChangeRoleUseCase } from '@application/use-cases/change-role.use-case';
 import { VerifyPhoneUseCase } from '@application/use-cases/verify-phone.use-case';
 import { SetupTwoFactorUseCase } from '@application/use-cases/setup-two-factor.use-case';
 import { ReportSecurityBreachUseCase } from '@application/use-cases/report-security-breach.use-case';
+import { GetUserUseCase } from '@application/use-cases/get-user.use-case';
+import { UpdateUserUseCase } from '@application/use-cases/update-user.use-case';
+import { VerifyEmailUseCase } from '@application/use-cases/verify-email.use-case';
 import { UserMapper } from '@application/mappers/user-mapper';
 import { UserAlreadyExistsError } from '@domain/errors/user.errors';
+import { UserPasswordChangedEvent } from '@domain/events';
+import { executePasswordResetSaga } from '@application/sagas/password-reset.saga';
+import { EmailService } from '@infrastructure/services/email.service';
+import { NotificationServiceClient } from '@application/sagas/service-clients';
+import { v4 as uuidv4 } from 'uuid';
 
 export class UserController {
   constructor(
@@ -19,7 +27,12 @@ export class UserController {
     private changeRoleUseCase: ChangeRoleUseCase,
     private verifyPhoneUseCase: VerifyPhoneUseCase,
     private setupTwoFactorUseCase: SetupTwoFactorUseCase,
-    private reportSecurityBreachUseCase: ReportSecurityBreachUseCase
+    private reportSecurityBreachUseCase: ReportSecurityBreachUseCase,
+    private getUserUseCase: GetUserUseCase,
+    private updateUserUseCase: UpdateUserUseCase,
+    private verifyEmailUseCase: VerifyEmailUseCase,
+    private emailService: EmailService,
+    private notificationClient: NotificationServiceClient
   ) { }
 
   async createUser(req: Request, res: Response): Promise<void> {
@@ -52,14 +65,24 @@ export class UserController {
     }
   }
 
-  async getUserById(_req: Request, res: Response): Promise<void> {
+  async getUserById(req: Request, res: Response): Promise<void> {
     try {
-      res.status(501).json({
-        success: false,
-        error: {
-          code: 'NOT_IMPLEMENTED',
-          message: 'Get user by ID is not yet implemented'
-        }
+      const id = req.params.id;
+      const requestingUserId = req.headers['x-user-id'] as string;
+      const result = await this.getUserUseCase.execute({ userId: id, requestingUserId });
+      if (!result.success) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code: 'USER_NOT_FOUND',
+            message: result.message
+          }
+        });
+        return;
+      }
+      res.status(200).json({
+        success: true,
+        data: UserMapper.toResponseDto(result.user!)
       });
     } catch (error) {
       res.status(500).json({
@@ -72,14 +95,25 @@ export class UserController {
     }
   }
 
-  async updateUser(_req: Request, res: Response): Promise<void> {
+  async updateUser(req: Request, res: Response): Promise<void> {
     try {
-      res.status(501).json({
-        success: false,
-        error: {
-          code: 'NOT_IMPLEMENTED',
-          message: 'Update user is not yet implemented'
-        }
+      const id = req.params.id;
+      const updatedBy = req.headers['x-user-id'] as string;
+      const result = await this.updateUserUseCase.execute({ userId: id, updates: req.body, updatedBy });
+      if (!result.success) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'UPDATE_FAILED',
+            message: result.message
+          }
+        });
+        return;
+      }
+      res.status(200).json({
+        success: true,
+        data: UserMapper.toResponseDto(result.user),
+        changes: result.changes
       });
     } catch (error) {
       res.status(500).json({
@@ -92,15 +126,16 @@ export class UserController {
     }
   }
 
-  async deleteUser(_req: Request, res: Response): Promise<void> {
+  async deleteUser(req: Request, res: Response): Promise<void> {
     try {
-      res.status(501).json({
-        success: false,
-        error: {
-          code: 'NOT_IMPLEMENTED',
-          message: 'Delete user is not yet implemented'
-        }
+      const id = req.params.id;
+      const deletedBy = req.headers['x-user-id'] as string;
+      const result = await this.deleteAccountUseCase.execute({
+        userId: id,
+        deletedBy,
+        reason: req.body.reason ?? 'User requested deletion'
       });
+      res.status(result.success ? 200 : 400).json(result);
     } catch (error) {
       res.status(500).json({
         success: false,
@@ -112,15 +147,22 @@ export class UserController {
     }
   }
 
-  async verifyEmail(_req: Request, res: Response): Promise<void> {
+  async verifyEmail(req: Request, res: Response): Promise<void> {
     try {
-      res.status(501).json({
-        success: false,
-        error: {
-          code: 'NOT_IMPLEMENTED',
-          message: 'Email verification is not yet implemented'
-        }
-      });
+      const verificationToken = req.params.token;
+      const userId = req.body.userId ?? req.headers['x-user-id'] as string;
+      if (!userId) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'MISSING_USER_ID',
+            message: 'User ID is required'
+          }
+        });
+        return;
+      }
+      const result = await this.verifyEmailUseCase.execute({ userId, verificationToken });
+      res.status(result.success ? 200 : 400).json(result);
     } catch (error) {
       res.status(500).json({
         success: false,
@@ -132,14 +174,24 @@ export class UserController {
     }
   }
 
-  async requestPasswordReset(_req: Request, res: Response): Promise<void> {
+  async requestPasswordReset(req: Request, res: Response): Promise<void> {
     try {
-      res.status(501).json({
-        success: false,
-        error: {
-          code: 'NOT_IMPLEMENTED',
-          message: 'Password reset request is not yet implemented'
-        }
+      const email = req.body.email;
+      if (!email) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'MISSING_EMAIL',
+            message: 'Email is required'
+          }
+        });
+        return;
+      }
+      const resetToken = uuidv4();
+      await this.emailService.sendPasswordResetEmail(email, resetToken);
+      res.status(200).json({
+        success: true,
+        message: 'If an account with that email exists, a reset link has been sent.'
       });
     } catch (error) {
       res.status(500).json({
@@ -152,15 +204,31 @@ export class UserController {
     }
   }
 
-  async resetPassword(_req: Request, res: Response): Promise<void> {
+  async resetPassword(req: Request, res: Response): Promise<void> {
     try {
-      res.status(501).json({
-        success: false,
-        error: {
-          code: 'NOT_IMPLEMENTED',
-          message: 'Password reset is not yet implemented'
-        }
+      const userId = req.body.userId;
+      const newPassword = req.body.newPassword;
+      if (!userId || !newPassword) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'MISSING_FIELDS',
+            message: 'User ID and new password are required'
+          }
+        });
+        return;
+      }
+      const result = await this.changePasswordUseCase.execute({
+        userId,
+        newPassword,
+        changedBy: userId,
+        currentPassword: ''
       });
+      if (result.success) {
+        const event = new UserPasswordChangedEvent(userId, userId, 'user_initiated');
+        await executePasswordResetSaga(event, this.emailService, this.notificationClient);
+      }
+      res.status(result.success ? 200 : 400).json(result);
     } catch (error) {
       res.status(500).json({
         success: false,
@@ -185,12 +253,20 @@ export class UserController {
         });
         return;
       }
-      res.status(501).json({
-        success: false,
-        error: {
-          code: 'NOT_IMPLEMENTED',
-          message: 'Get profile is not yet implemented'
-        }
+      const result = await this.getUserUseCase.execute({ userId, requestingUserId: userId });
+      if (!result.success) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code: 'USER_NOT_FOUND',
+            message: result.message
+          }
+        });
+        return;
+      }
+      res.status(200).json({
+        success: true,
+        data: UserMapper.toResponseDto(result.user!)
       });
     } catch (error) {
       res.status(500).json({
@@ -216,12 +292,20 @@ export class UserController {
         });
         return;
       }
-      res.status(501).json({
-        success: false,
-        error: {
-          code: 'NOT_IMPLEMENTED',
-          message: 'Update profile is not yet implemented'
-        }
+      const result = await this.updateUserUseCase.execute({ userId, updates: req.body, updatedBy: userId });
+      if (!result.success) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'UPDATE_FAILED',
+            message: result.message
+          }
+        });
+        return;
+      }
+      res.status(200).json({
+        success: true,
+        data: UserMapper.toResponseDto(result.user)
       });
     } catch (error) {
       res.status(500).json({

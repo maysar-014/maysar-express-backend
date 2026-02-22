@@ -17,6 +17,10 @@ export interface UserRepository extends Repository<User> {
   unlockAccount(userId: string): Promise<void>;
   updateLastLogin(userId: string, loginTime: Date): Promise<void>;
   updateMetadata(userId: string, metadata: any): Promise<void>;
+
+  // COD Reputation Methods
+  updateCODStanding(userId: string, updates: any): Promise<void>;
+  saveCODHistory(history: any): Promise<void>;
 }
 
 /**
@@ -102,8 +106,8 @@ export class InMemoryUserRepository implements UserRepository {
   async incrementLoginAttempts(userId: string): Promise<void> {
     const user = this.users.get(userId);
     if (user) {
-      const updatedUser = user.updateMetadata({ 
-        loginAttempts: user.metadata.loginAttempts + 1 
+      const updatedUser = user.updateMetadata({
+        loginAttempts: user.metadata.loginAttempts + 1
       });
       this.users.set(userId, updatedUser);
     }
@@ -112,8 +116,8 @@ export class InMemoryUserRepository implements UserRepository {
   async resetLoginAttempts(userId: string): Promise<void> {
     const user = this.users.get(userId);
     if (user) {
-      const updatedUser = user.updateMetadata({ 
-        loginAttempts: 0 
+      const updatedUser = user.updateMetadata({
+        loginAttempts: 0
       });
       this.users.set(userId, updatedUser);
     }
@@ -122,8 +126,8 @@ export class InMemoryUserRepository implements UserRepository {
   async lockAccount(userId: string, until: Date): Promise<void> {
     const user = this.users.get(userId);
     if (user) {
-      const updatedUser = user.updateMetadata({ 
-        accountLockedUntil: until 
+      const updatedUser = user.updateMetadata({
+        accountLockedUntil: until
       });
       this.users.set(userId, updatedUser);
     }
@@ -153,6 +157,19 @@ export class InMemoryUserRepository implements UserRepository {
       const updatedUser = user.updateMetadata(metadata);
       this.users.set(userId, updatedUser);
     }
+  }
+
+  async updateCODStanding(userId: string, updates: any): Promise<void> {
+    const user = this.users.get(userId);
+    if (user) {
+      // In-memory update of "private" fields for simulation
+      Object.assign(user, updates);
+      this.users.set(userId, user);
+    }
+  }
+
+  async saveCODHistory(history: any): Promise<void> {
+    console.log(`[InMemory] Saved COD History for user ${history.userId}: ${history.action}`);
   }
 }
 
@@ -259,5 +276,15 @@ export class DatabaseUserRepository implements UserRepository {
   async updateMetadata(userId: string, metadata: any): Promise<void> {
     // TODO: Implement database update with Prisma
     return this.fallbackRepository.updateMetadata(userId, metadata);
+  }
+
+  async updateCODStanding(userId: string, updates: any): Promise<void> {
+    // TODO: Implement database update with Prisma
+    return this.fallbackRepository.updateCODStanding(userId, updates);
+  }
+
+  async saveCODHistory(history: any): Promise<void> {
+    // TODO: Implement database write with Prisma
+    return this.fallbackRepository.saveCODHistory(history);
   }
 }

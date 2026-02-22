@@ -239,7 +239,7 @@ export class EarningsController {
       // Get platform earnings summary
       const platformSummary = await this.earningsRepository.getPlatformEarningsSummary(timeRange);
 
-      let topPerformers: { courierId: string; name: string; earnings: number }[] = [];
+      const topPerformers: { courierId: string; name: string; earnings: number }[] = [];
       // TODO: Implement proper top performers query from database
       // For now, return empty array until implementation is complete
 

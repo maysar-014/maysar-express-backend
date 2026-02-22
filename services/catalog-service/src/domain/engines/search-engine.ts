@@ -103,7 +103,6 @@ export class TextSearchStrategy {
   }
 
   private tokenizeQuery(query: string): string[] {
-    // Simple tokenization - split by spaces and remove common words
     const stopWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'];
     return query
       .split(/\s+/)
@@ -123,19 +122,15 @@ export class TextSearchStrategy {
     ].join(' ').toLowerCase();
 
     for (const term of searchTerms) {
-      // Exact matches in name get highest score
       if (product.name.toLowerCase().includes(term)) {
         totalScore += 10;
       }
-      // Matches in description
       else if (product.description.toLowerCase().includes(term)) {
         totalScore += 5;
       }
-      // Matches in category/tags
       else if (searchableText.includes(term)) {
         totalScore += 2;
       }
-      // Fuzzy matches (partial words)
       else {
         const fuzzyMatches = searchableText.split(/\s+/).filter(word =>
           word.includes(term) || term.includes(word) || this.levenshteinDistance(word, term) <= 2
@@ -144,7 +139,6 @@ export class TextSearchStrategy {
       }
     }
 
-    // Boost for exact phrase matches
     const queryPhrase = searchTerms.join(' ');
     if (product.name.toLowerCase().includes(queryPhrase)) {
       totalScore *= 1.5;
@@ -154,23 +148,28 @@ export class TextSearchStrategy {
   }
 
   private levenshteinDistance(a: string, b: string): number {
-    const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
+    if (a === b) return 0;
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
 
-    for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
-    for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
+    let [short, long] = a.length < b.length ? [a, b] : [b, a];
+    let prevRow = Array.from({ length: short.length + 1 }, (_, i) => i);
+    let currRow = new Array(short.length + 1);
 
-    for (let j = 1; j <= b.length; j++) {
-      for (let i = 1; i <= a.length; i++) {
-        const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
-        matrix[j][i] = Math.min(
-          matrix[j][i - 1] + 1,
-          matrix[j - 1][i] + 1,
-          matrix[j - 1][i - 1] + indicator
+    for (let i = 1; i <= long.length; i++) {
+      currRow[0] = i;
+      for (let j = 1; j <= short.length; j++) {
+        const cost = long[i - 1] === short[j - 1] ? 0 : 1;
+        currRow[j] = Math.min(
+          prevRow[j] + 1,
+          currRow[j - 1] + 1,
+          prevRow[j - 1] + cost
         );
       }
+      [prevRow, currRow] = [currRow, prevRow];
     }
 
-    return matrix[b.length][a.length];
+    return prevRow[short.length];
   }
 
   private getMatchReasons(product: SearchableProduct, searchTerms: string[]): string[] {
@@ -582,22 +581,27 @@ export class ProductSearchEngine {
   }
 
   private levenshteinDistance(a: string, b: string): number {
-    const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
+    if (a === b) return 0;
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
 
-    for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
-    for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
+    let [short, long] = a.length < b.length ? [a, b] : [b, a];
+    let prevRow = Array.from({ length: short.length + 1 }, (_, i) => i);
+    let currRow = new Array(short.length + 1);
 
-    for (let j = 1; j <= b.length; j++) {
-      for (let i = 1; i <= a.length; i++) {
-        const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
-        matrix[j][i] = Math.min(
-          matrix[j][i - 1] + 1,
-          matrix[j - 1][i] + 1,
-          matrix[j - 1][i - 1] + indicator
+    for (let i = 1; i <= long.length; i++) {
+      currRow[0] = i;
+      for (let j = 1; j <= short.length; j++) {
+        const cost = long[i - 1] === short[j - 1] ? 0 : 1;
+        currRow[j] = Math.min(
+          prevRow[j] + 1,
+          currRow[j - 1] + 1,
+          prevRow[j - 1] + cost
         );
       }
+      [prevRow, currRow] = [currRow, prevRow];
     }
 
-    return matrix[b.length][a.length];
+    return prevRow[short.length];
   }
 }

@@ -26,6 +26,7 @@ class UserServiceApplication {
     this.initializeMiddleware();
     this.initializeRoutes();
     this.initializeErrorHandling();
+    this.initializeEventHandlers();
   }
 
   /**
@@ -164,6 +165,30 @@ class UserServiceApplication {
 
     // Global error handler
     this.app.use(errorHandler);
+  }
+
+  /**
+   * Initialize event handlers for asynchronous background processing
+   */
+  private async initializeEventHandlers(): Promise<void> {
+    try {
+      const { CODReputationEngine } = await import('./domain/engines/cod-reputation.engine');
+      const { UpdateCODReputationUseCase } = await import('./application/use-cases/update-cod-reputation.use-case');
+      const { CODEventHandler } = await import('./infrastructure/messaging/cod-event-handlers');
+      // Using the concrete repository
+      const { DatabaseUserRepository } = await import('./infrastructure/repositories/user.repository');
+
+      const userRepository = new DatabaseUserRepository();
+      const reputationEngine = new CODReputationEngine();
+      const updateCODReputationUseCase = new UpdateCODReputationUseCase(userRepository, reputationEngine);
+
+      const codEventHandler = new CODEventHandler(updateCODReputationUseCase);
+      codEventHandler.setupSubscriptions();
+
+      logger.info('✅ COD Event Handlers initialized');
+    } catch (error) {
+      logger.warn('⚠️ Failed to initialize COD Event Handlers', { error });
+    }
   }
 
   /**

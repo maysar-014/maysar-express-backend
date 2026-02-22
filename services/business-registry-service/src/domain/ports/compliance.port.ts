@@ -1,5 +1,5 @@
 /**
- * Compliance Port - Domain interface for compliance service integration
+ * Compliance Port - Domain interface for KYC compliance service integration
  * Implemented by infrastructure adapters (compliance-service HTTP, etc.)
  */
 export interface IComplianceAdapter {
@@ -11,12 +11,11 @@ export interface IComplianceAdapter {
     correlationId: string;
   }): Promise<void>;
 
-  createComplianceRecord(params: {
+  createKYCRecord(params: {
     businessId: string;
-    complianceType: string;
     status: string;
     correlationId: string;
   }): Promise<string>;
 
-  revokeComplianceRecord(recordId: string, correlationId: string): Promise<void>;
+  revokeKYCRecord(recordId: string, correlationId: string): Promise<void>;
 }

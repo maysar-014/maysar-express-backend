@@ -112,7 +112,7 @@ describe('BaseSaga Framework', () => {
     });
 
     it('should execute steps in order', async () => {
-      let executionOrder: string[] = [];
+      const executionOrder: string[] = [];
 
       // Create a custom saga to track execution order
       class OrderTrackingSaga extends BaseSaga<TestSagaData> {

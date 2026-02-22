@@ -382,15 +382,28 @@ export class RedisCacheProvider implements CacheService {
 
   private async initializeRedis(): Promise<void> {
     try {
-      // In a real implementation, you would initialize Redis client here
-      // For now, we'll simulate the connection
-      console.log('Initializing Redis cache connection...');
+      const Redis = require('ioredis');
+      this.redisClient = new Redis(this.config.redisUrl, {
+        lazyConnect: true,
+        retryStrategy: (times: number) => {
+          const delay = Math.min(times * 50, 2000);
+          return delay;
+        },
+        maxRetriesPerRequest: 3
+      });
 
-      // Simulate async connection
-      await new Promise(resolve => setTimeout(resolve, 100));
-
+      await this.redisClient.connect();
       this.connected = true;
       console.log('Redis cache connection established');
+
+      this.redisClient.on('error', (err: Error) => {
+        console.error('Redis connection error:', err);
+        this.connected = false;
+      });
+
+      this.redisClient.on('reconnecting', () => {
+        console.log('Redis reconnecting...');
+      });
     } catch (error) {
       console.error('Failed to connect to Redis cache:', error);
       this.connected = false;

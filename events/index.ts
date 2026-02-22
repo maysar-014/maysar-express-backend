@@ -1,3 +1,5 @@
+import { EventEnvelope } from './types';
+
 // Maysar Event Catalog - Main Export
 export { eventSchemaRegistry, EventSchemaRegistry } from './schemaRegistry';
 export * from './types';

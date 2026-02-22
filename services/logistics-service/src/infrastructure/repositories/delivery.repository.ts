@@ -30,6 +30,9 @@ export class DeliveryRepository implements IDeliveryRepository {
         route_distance: delivery.routeDistance,
         route_duration: Math.round(delivery.routeDuration),
         total_cost: delivery.totalCost,
+        buyer_id: delivery.buyerId,
+        seller_id: delivery.sellerId,
+        cod_commitment_hold_id: delivery.codCommitmentHoldId,
         created_at: delivery.createdAt.toISOString(),
         updated_at: delivery.updatedAt.toISOString()
       };
@@ -82,7 +85,21 @@ export class DeliveryRepository implements IDeliveryRepository {
           route_duration,
           total_cost,
           created_at,
-          updated_at
+          updated_at,
+          is_cod,
+          cod_amount,
+          cod_currency,
+          cod_collected,
+          cod_collected_at,
+          cod_otp_verified,
+          otp,
+          otp_expires_at,
+          cod_proof_gps_lat,
+          cod_proof_gps_lng,
+          cod_proof_timestamp,
+          buyer_id,
+          seller_id,
+          cod_commitment_hold_id
         `)
         .eq('id', id)
         .single();
@@ -123,7 +140,21 @@ export class DeliveryRepository implements IDeliveryRepository {
         routeDuration: delivery.route_duration,
         totalCost: delivery.total_cost,
         createdAt: new Date(delivery.created_at),
-        updatedAt: new Date(delivery.updated_at)
+        updatedAt: new Date(delivery.updated_at),
+        isCOD: !!delivery.is_cod,
+        codAmount: delivery.cod_amount ? Number(delivery.cod_amount) : undefined,
+        codCurrency: delivery.cod_currency,
+        codCollected: !!delivery.cod_collected,
+        codCollectedAt: delivery.cod_collected_at ? new Date(delivery.cod_collected_at) : undefined,
+        codOtpVerified: !!delivery.cod_otp_verified,
+        otp: delivery.otp,
+        otpExpiresAt: delivery.otp_expires_at ? new Date(delivery.otp_expires_at) : undefined,
+        codProofGpsLat: delivery.cod_proof_gps_lat,
+        codProofGpsLng: delivery.cod_proof_gps_lng,
+        codProofTimestamp: delivery.cod_proof_timestamp ? new Date(delivery.cod_proof_timestamp) : undefined,
+        buyerId: delivery.buyer_id,
+        sellerId: delivery.seller_id,
+        codCommitmentHoldId: delivery.cod_commitment_hold_id
       };
 
     } catch (error) {
@@ -158,7 +189,21 @@ export class DeliveryRepository implements IDeliveryRepository {
           route_duration,
           total_cost,
           created_at,
-          updated_at
+          updated_at,
+          is_cod,
+          cod_amount,
+          cod_currency,
+          cod_collected,
+          cod_collected_at,
+          cod_otp_verified,
+          otp,
+          otp_expires_at,
+          cod_proof_gps_lat,
+          cod_proof_gps_lng,
+          cod_proof_timestamp,
+          buyer_id,
+          seller_id,
+          cod_commitment_hold_id
         `)
         .eq('courier_id', courierId)
         .order('created_at', { ascending: false });
@@ -199,7 +244,21 @@ export class DeliveryRepository implements IDeliveryRepository {
         routeDuration: delivery.route_duration,
         totalCost: delivery.total_cost,
         createdAt: new Date(delivery.created_at),
-        updatedAt: new Date(delivery.updated_at)
+        updatedAt: new Date(delivery.updated_at),
+        isCOD: !!delivery.is_cod,
+        codAmount: delivery.cod_amount ? Number(delivery.cod_amount) : undefined,
+        codCurrency: delivery.cod_currency,
+        codCollected: !!delivery.cod_collected,
+        codCollectedAt: delivery.cod_collected_at ? new Date(delivery.cod_collected_at) : undefined,
+        codOtpVerified: !!delivery.cod_otp_verified,
+        otp: delivery.otp,
+        otpExpiresAt: delivery.otp_expires_at ? new Date(delivery.otp_expires_at) : undefined,
+        codProofGpsLat: delivery.cod_proof_gps_lat,
+        codProofGpsLng: delivery.cod_proof_gps_lng,
+        codProofTimestamp: delivery.cod_proof_timestamp ? new Date(delivery.cod_proof_timestamp) : undefined,
+        buyerId: delivery.buyer_id,
+        sellerId: delivery.seller_id,
+        codCommitmentHoldId: delivery.cod_commitment_hold_id
       }));
 
     } catch (error) {
@@ -234,7 +293,21 @@ export class DeliveryRepository implements IDeliveryRepository {
           route_duration,
           total_cost,
           created_at,
-          updated_at
+          updated_at,
+          is_cod,
+          cod_amount,
+          cod_currency,
+          cod_collected,
+          cod_collected_at,
+          cod_otp_verified,
+          otp,
+          otp_expires_at,
+          cod_proof_gps_lat,
+          cod_proof_gps_lng,
+          cod_proof_timestamp,
+          buyer_id,
+          seller_id,
+          cod_commitment_hold_id
         `)
         .eq('status', status)
         .order('created_at', { ascending: false });
@@ -275,7 +348,21 @@ export class DeliveryRepository implements IDeliveryRepository {
         routeDuration: delivery.route_duration,
         totalCost: delivery.total_cost,
         createdAt: new Date(delivery.created_at),
-        updatedAt: new Date(delivery.updated_at)
+        updatedAt: new Date(delivery.updated_at),
+        isCOD: !!delivery.is_cod,
+        codAmount: delivery.cod_amount ? Number(delivery.cod_amount) : undefined,
+        codCurrency: delivery.cod_currency,
+        codCollected: !!delivery.cod_collected,
+        codCollectedAt: delivery.cod_collected_at ? new Date(delivery.cod_collected_at) : undefined,
+        codOtpVerified: !!delivery.cod_otp_verified,
+        otp: delivery.otp,
+        otpExpiresAt: delivery.otp_expires_at ? new Date(delivery.otp_expires_at) : undefined,
+        codProofGpsLat: delivery.cod_proof_gps_lat,
+        codProofGpsLng: delivery.cod_proof_gps_lng,
+        codProofTimestamp: delivery.cod_proof_timestamp ? new Date(delivery.cod_proof_timestamp) : undefined,
+        buyerId: delivery.buyer_id,
+        sellerId: delivery.seller_id,
+        codCommitmentHoldId: delivery.cod_commitment_hold_id
       }));
 
     } catch (error) {
@@ -310,7 +397,21 @@ export class DeliveryRepository implements IDeliveryRepository {
           route_duration,
           total_cost,
           created_at,
-          updated_at
+          updated_at,
+          is_cod,
+          cod_amount,
+          cod_currency,
+          cod_collected,
+          cod_collected_at,
+          cod_otp_verified,
+          otp,
+          otp_expires_at,
+          cod_proof_gps_lat,
+          cod_proof_gps_lng,
+          cod_proof_timestamp,
+          buyer_id,
+          seller_id,
+          cod_commitment_hold_id
         `)
         .order('created_at', { ascending: false });
 
@@ -359,7 +460,21 @@ export class DeliveryRepository implements IDeliveryRepository {
         routeDuration: delivery.route_duration,
         totalCost: delivery.total_cost,
         createdAt: new Date(delivery.created_at),
-        updatedAt: new Date(delivery.updated_at)
+        updatedAt: new Date(delivery.updated_at),
+        isCOD: !!delivery.is_cod,
+        codAmount: delivery.cod_amount ? Number(delivery.cod_amount) : undefined,
+        codCurrency: delivery.cod_currency,
+        codCollected: !!delivery.cod_collected,
+        codCollectedAt: delivery.cod_collected_at ? new Date(delivery.cod_collected_at) : undefined,
+        codOtpVerified: !!delivery.cod_otp_verified,
+        otp: delivery.otp,
+        otpExpiresAt: delivery.otp_expires_at ? new Date(delivery.otp_expires_at) : undefined,
+        codProofGpsLat: delivery.cod_proof_gps_lat,
+        codProofGpsLng: delivery.cod_proof_gps_lng,
+        codProofTimestamp: delivery.cod_proof_timestamp ? new Date(delivery.cod_proof_timestamp) : undefined,
+        buyerId: delivery.buyer_id,
+        sellerId: delivery.seller_id,
+        codCommitmentHoldId: delivery.cod_commitment_hold_id
       }));
 
     } catch (error) {
@@ -380,6 +495,22 @@ export class DeliveryRepository implements IDeliveryRepository {
         updateData.actual_pickup_time = new Date().toISOString();
       } else if (status === 'delivered') {
         updateData.actual_delivery_time = new Date().toISOString();
+      }
+
+      // Map metadata if present
+      if (metadata) {
+        if (metadata.otp) updateData.otp = metadata.otp;
+        if (metadata.otpExpiresAt) updateData.otp_expires_at = metadata.otpExpiresAt.toISOString();
+        if (metadata.codCollected !== undefined) updateData.cod_collected = metadata.codCollected;
+        if (metadata.codCollectedAt) updateData.cod_collected_at = metadata.codCollectedAt.toISOString();
+        if (metadata.codOtpVerified !== undefined) updateData.cod_otp_verified = metadata.codOtpVerified;
+        if (metadata.codProofGpsLat) updateData.cod_proof_gps_lat = metadata.codProofGpsLat;
+        if (metadata.codProofGpsLng) updateData.cod_proof_gps_lng = metadata.codProofGpsLng;
+        if (metadata.codProofTimestamp) updateData.cod_proof_timestamp = metadata.codProofTimestamp.toISOString();
+        if (metadata.isCOD !== undefined) updateData.is_cod = metadata.isCOD;
+        if (metadata.buyerId) updateData.buyer_id = metadata.buyerId;
+        if (metadata.sellerId) updateData.seller_id = metadata.sellerId;
+        if (metadata.codCommitmentHoldId) updateData.cod_commitment_hold_id = metadata.codCommitmentHoldId;
       }
 
       const { error } = await this.supabaseClient
@@ -426,7 +557,21 @@ export class DeliveryRepository implements IDeliveryRepository {
           route_duration,
           total_cost,
           created_at,
-          updated_at
+          updated_at,
+          is_cod,
+          cod_amount,
+          cod_currency,
+          cod_collected,
+          cod_collected_at,
+          cod_otp_verified,
+          otp,
+          otp_expires_at,
+          cod_proof_gps_lat,
+          cod_proof_gps_lng,
+          cod_proof_timestamp,
+          buyer_id,
+          seller_id,
+          cod_commitment_hold_id
         `)
         .in('status', activeStatuses)
         .order('created_at', { ascending: false });
@@ -467,7 +612,21 @@ export class DeliveryRepository implements IDeliveryRepository {
         routeDuration: delivery.route_duration,
         totalCost: delivery.total_cost,
         createdAt: new Date(delivery.created_at),
-        updatedAt: new Date(delivery.updated_at)
+        updatedAt: new Date(delivery.updated_at),
+        isCOD: !!delivery.is_cod,
+        codAmount: delivery.cod_amount ? Number(delivery.cod_amount) : undefined,
+        codCurrency: delivery.cod_currency,
+        codCollected: !!delivery.cod_collected,
+        codCollectedAt: delivery.cod_collected_at ? new Date(delivery.cod_collected_at) : undefined,
+        codOtpVerified: !!delivery.cod_otp_verified,
+        otp: delivery.otp,
+        otpExpiresAt: delivery.otp_expires_at ? new Date(delivery.otp_expires_at) : undefined,
+        codProofGpsLat: delivery.cod_proof_gps_lat,
+        codProofGpsLng: delivery.cod_proof_gps_lng,
+        codProofTimestamp: delivery.cod_proof_timestamp ? new Date(delivery.cod_proof_timestamp) : undefined,
+        buyerId: delivery.buyer_id,
+        sellerId: delivery.seller_id,
+        codCommitmentHoldId: delivery.cod_commitment_hold_id
       }));
 
     } catch (error) {

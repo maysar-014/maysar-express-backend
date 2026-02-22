@@ -2,7 +2,7 @@ import { UUID } from './types';
 
 export namespace ComplianceService {
     export namespace Events {
-        export interface ComplianceCheckCompleted {
+        export interface KYCCheckCompleted {
             checkId: UUID;
             entityId: UUID;
             entityType: string;
@@ -13,7 +13,7 @@ export namespace ComplianceService {
     }
 
     export namespace Commands {
-        export interface CheckCompliance {
+        export interface CheckKYCCompliance {
             entityId: UUID;
             entityType: string;
             context?: any;

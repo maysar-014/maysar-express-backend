@@ -40,6 +40,23 @@ export interface Delivery {
     routeDistance: number;
     routeDuration: number;
     totalCost: number;
+
+    // COD Specific Fields
+    isCOD: boolean;
+    codAmount?: number;
+    codCurrency?: string;
+    codCollected: boolean;
+    codCollectedAt?: Date;
+    codOtpVerified: boolean;
+    otp?: string;
+    otpExpiresAt?: Date;
+    codProofGpsLat?: number;
+    codProofGpsLng?: number;
+    codProofTimestamp?: Date;
+    buyerId?: string;
+    sellerId?: string;
+    codCommitmentHoldId?: string;
+
     createdAt: Date;
     updatedAt: Date;
 }

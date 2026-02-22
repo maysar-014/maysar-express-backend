@@ -74,7 +74,7 @@ export class CollaborativeFilteringStrategy {
 
     for (const product of availableProducts) {
       let score = 0;
-      let reasons: string[] = [];
+      const reasons: string[] = [];
 
       // Purchase history similarity
       if (userProfile.behaviorHistory.purchasedProducts.length > 0) {
@@ -166,7 +166,7 @@ export class ContentBasedStrategy {
       if (product.productId.toString() === context.currentProduct!.toString()) continue;
 
       let score = 0;
-      let reasons: string[] = [];
+      const reasons: string[] = [];
 
       // Category similarity
       if (product.category === currentProductData.category) {

@@ -1,0 +1,115 @@
+// Enhanced Analytics_SellerMetrics Model
+// Add these fields to existing Analytics_SellerMetrics model
+
+model Analytics_SellerMetrics {
+  sellerId              String   @id
+  
+  // Existing fields
+  averageOrderValue     Float?
+  conversionRate        Float?
+  customerLifetimeValue Float?
+  returnRate            Float?
+  profitMargin          Float?
+  activeVisitors        Int?
+  cartAbandonment       Int?
+  liveOrders            Int?
+  inventoryAlerts       Int?
+  customerInquiries     Int?
+  
+  // New fields for dashboard
+  todaySales            Decimal? @db.Decimal(12, 2)
+  todayOrderCount       Int?
+  thisMonthRevenue      Decimal? @db.Decimal(12, 2)
+  lastMonthRevenue      Decimal? @db.Decimal(12, 2)
+  monthOverMonthGrowth  Float?
+  repeatCustomerRate    Float?
+  bestPerformingProductId String?
+  bestPerformingProductRevenue Decimal? @db.Decimal(12, 2)
+  bestPerformingProductUnitsSold Int?
+  pendingCustomerQuestions Int?
+  lowConversionProductCount Int?
+  profitabilityScore    Int? // 0-100
+  averageRating         Float?
+  responseRate          Float?
+  averageDeliveryTime   Float? // in hours
+  lastUpdated           DateTime @default(now())
+  
+  createdAt             DateTime @default(now())
+  
+  // Relations
+  dailySales            Analytics_SellerDailySales[]
+  productPerformance    Analytics_SellerProductPerformance[]
+  inventoryHealth       Analytics_SellerInventoryHealth[]
+  actionItems           Analytics_SellerActionItem[]
+}
+
+// New model for daily sales tracking
+model Analytics_SellerDailySales {
+  id        String   @id @default(uuid())
+  sellerId  String
+  date      DateTime
+  revenue   Decimal  @db.Decimal(12, 2)
+  orderCount Int
+  createdAt DateTime @default(now())
+  
+  sellerMetrics Analytics_SellerMetrics @relation(fields: [sellerId], references: [sellerId], onDelete: Cascade)
+  
+  @@unique([sellerId, date])
+  @@index([sellerId, date])
+  @@map("analytics_seller_daily_sales")
+}
+
+// New model for product performance
+model Analytics_SellerProductPerformance {
+  id            String   @id @default(uuid())
+  sellerId      String
+  productId     String
+  views         Int      @default(0)
+  orders        Int      @default(0)
+  revenue       Decimal  @db.Decimal(12, 2)
+  conversionRate Float?
+  lastUpdated   DateTime @default(now())
+  
+  sellerMetrics Analytics_SellerMetrics @relation(fields: [sellerId], references: [sellerId], onDelete: Cascade)
+  
+  @@unique([sellerId, productId])
+  @@index([sellerId, revenue])
+  @@map("analytics_seller_product_performance")
+}
+
+// New model for inventory health
+model Analytics_SellerInventoryHealth {
+  id              String   @id @default(uuid())
+  sellerId        String
+  productId       String
+  currentStock    Int
+  stockStatus     String   // IN_STOCK, LOW_STOCK, OUT_OF_STOCK
+  salesVelocity   Float?   // units per day
+  daysUntilStockout Int?
+  lastUpdated     DateTime @default(now())
+  
+  sellerMetrics Analytics_SellerMetrics @relation(fields: [sellerId], references: [sellerId], onDelete: Cascade)
+  
+  @@unique([sellerId, productId])
+  @@index([sellerId, stockStatus])
+  @@map("analytics_seller_inventory_health")
+}
+
+// New model for action items
+model Analytics_SellerActionItem {
+  id          String   @id @default(uuid())
+  sellerId    String
+  type        String   // RESTOCK, RESPOND_INQUIRY, PRICE_ADJUSTMENT, TRENDING_PRODUCT
+  priority    String   // HIGH, MEDIUM, LOW
+  title       String
+  description String
+  productId   String?
+  metadata    Json?
+  isResolved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  sellerMetrics Analytics_SellerMetrics @relation(fields: [sellerId], references: [sellerId], onDelete: Cascade)
+  
+  @@index([sellerId, isResolved, priority])
+  @@map("analytics_seller_action_items")
+}

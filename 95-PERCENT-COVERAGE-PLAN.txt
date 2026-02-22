@@ -1,0 +1,324 @@
+================================================================================
+95% TEST COVERAGE ACHIEVEMENT PLAN
+================================================================================
+Target: Achieve 95% code coverage across all 28 services
+Current: 21% services with good coverage, 61% with poor/no coverage
+Timeline: 4 weeks (aggressive) | 6 weeks (realistic)
+
+================================================================================
+PHASE 1: CRITICAL FIXES (Week 1)
+================================================================================
+
+Priority: Fix services with 0% coverage despite having tests
+
+1.1 USER-SERVICE (0% coverage, 79 tests exist)
+    - Run: npm test -- --coverage
+    - Fix jest.config.js collectCoverageFrom paths
+    - Verify tests execute properly
+    - Target: 90%+ (tests exist, just need to run)
+
+1.2 CATALOG-SERVICE (3.13% coverage, 31 tests exist)
+    - Tests not covering actual source files
+    - Update jest.config.js testMatch patterns
+    - Run coverage and identify gaps
+    - Target: 85%+
+
+1.3 CHECKOUT-SERVICE (75% coverage)
+    - Add 15 tests for uncovered branches
+    - Focus: repositories, event-bus, middleware
+    - Target: 95%+
+
+================================================================================
+PHASE 2: ZERO-TEST SERVICES (Week 2)
+================================================================================
+
+Priority: Services with 0 tests (highest business impact first)
+
+2.1 INVENTORY-SERVICE
+    - 15 tests: entities, value-objects, policies, use-cases, repositories
+    - Focus: stock management, reservation logic
+    - Target: 95%
+
+2.2 COMPLIANCE-SERVICE
+    - 12 tests: validation rules, audit trails, policy enforcement
+    - Target: 95%
+
+2.3 SESSION-SERVICE
+    - 8 tests: session management, expiry, security
+    - Target: 95%
+
+2.4 MAPS-SERVICE
+    - 10 tests: adapters, geocoding, routing
+    - Target: 90%
+
+================================================================================
+PHASE 3: MINIMAL COVERAGE SERVICES (Week 3)
+================================================================================
+
+Priority: Services with 1-2 tests/file (business-critical first)
+
+3.1 ORDER-SERVICE (2.0 avg, 6 tests)
+    - Add 20 tests: order lifecycle, state transitions, sagas
+    - Target: 95%
+
+3.2 LOGISTICS-SERVICE (2.0 avg, 4 tests)
+    - Add 25 tests: routing, courier assignment, tracking
+    - Target: 95%
+
+3.3 CAMPAIGN-SERVICE (2.0 avg, 4 tests)
+    - Add 30 tests: campaign rules, scheduling, targeting
+    - Target: 95%
+
+3.4 TWO-FACTOR-SERVICE (2.0 avg, 4 tests)
+    - Add 20 tests: OTP generation, verification, security
+    - Target: 95%
+
+3.5 SUPPORT-SERVICE (1.0 avg, 3 tests)
+    - Add 35 tests: ticket management, escalation, SLA
+    - Target: 95%
+
+3.6 BUSINESS-REGISTRY-SERVICE (2.0 avg, 4 tests)
+    - Add 15 tests: registration, verification, compliance
+    - Target: 95%
+
+3.7 COMMUNITY-SERVICE (1.0 avg, 4 tests)
+    - Add 30 tests: posts, comments, moderation
+    - Target: 90%
+
+3.8 ENABLER-SERVICE (1.0 avg, 2 tests)
+    - Add 25 tests: enabler onboarding, management
+    - Target: 90%
+
+3.9 PRICING-SERVICE (1.0 avg, 1 test)
+    - Add 20 tests: pricing rules, calculations, tiers
+    - Target: 95%
+
+3.10 PRODUCTION-SERVICE (1.0 avg, 5 tests)
+    - Add 30 tests: production workflows, quality control
+    - Target: 90%
+
+3.11 ANALYTICS-SERVICE (2.8 avg, 17 tests)
+    - Add 15 tests: aggregations, reports, metrics
+    - Target: 95%
+
+================================================================================
+PHASE 4: MEDIUM COVERAGE SERVICES (Week 4)
+================================================================================
+
+Priority: Services with 3-5 tests/file (close to target)
+
+4.1 COMMISSION-SERVICE (3.0 avg, 6 tests)
+    - Add 8 tests: commission calculations, payouts
+    - Target: 95%
+
+4.2 WALLET-SERVICE (3.0 avg, 12 tests)
+    - Add 15 tests: transactions, balance, reconciliation
+    - Target: 95%
+
+4.3 NOTIFICATION-SERVICE (3.2 avg, 16 tests)
+    - Add 12 tests: delivery, retries, templates
+    - Target: 95%
+
+4.4 TRAINING-SERVICE (4.7 avg, 14 tests)
+    - Add 8 tests: courses, progress, certification
+    - Target: 95%
+
+4.5 USER-SERVICE (4.9 avg, 79 tests - after Phase 1 fix)
+    - Add 10 tests: edge cases, error scenarios
+    - Target: 95%
+
+================================================================================
+PHASE 5: EXCELLENT COVERAGE SERVICES (Week 5)
+================================================================================
+
+Priority: Services already at 5+ tests/file (polish to 95%)
+
+5.1 PAYOUT-SERVICE (6.3 avg, 19 tests)
+    - Add 5 tests: edge cases, concurrent operations
+    - Target: 95%
+
+5.2 PAYMENT-SERVICE (7.0 avg, 35 tests)
+    - Add 5 tests: payment gateway failures, retries
+    - Target: 95%
+
+5.3 SMS-SERVICE (7.3 avg, 29 tests)
+    - Add 3 tests: rate limiting, provider failover
+    - Target: 95%
+
+5.4 AUTH-SERVICE (8.5 avg, 17 tests)
+    - Add 3 tests: token refresh, security edge cases
+    - Target: 95%
+
+5.5 CATALOG-SERVICE (10.3 avg, 31 tests - after Phase 1 fix)
+    - Add 5 tests: search algorithms, pricing engine
+    - Target: 95%
+
+5.6 CHECKOUT-SERVICE (10.0 avg - after Phase 1 fix)
+    - Maintain 95%+
+
+================================================================================
+EXECUTION STRATEGY
+================================================================================
+
+DAILY WORKFLOW:
+1. Morning: Run coverage report for target service
+2. Identify uncovered lines/branches
+3. Write tests in priority order:
+   - Domain entities & value objects (business logic)
+   - Use cases (application logic)
+   - Repositories (data access)
+   - Controllers (API layer)
+   - Sagas (orchestration)
+4. Run coverage after each test file
+5. Commit when service reaches 95%
+
+TEST WRITING PRIORITIES:
+1. Happy path (basic functionality)
+2. Validation failures (input errors)
+3. Business rule violations
+4. Error handling (external failures)
+5. Edge cases (boundary conditions)
+6. Concurrent operations (race conditions)
+
+COVERAGE TARGETS BY LAYER:
+- Domain Layer: 95-99%
+- Application Layer: 90-95%
+- Infrastructure Layer: 80-85%
+- API Layer: 85-90%
+
+AUTOMATION:
+- Run: npm test -- --coverage --watchAll=false
+- Generate HTML report: npm test -- --coverage --coverageReporters=html
+- CI/CD: Fail build if coverage < 95%
+
+QUALITY GATES:
+✓ All tests pass
+✓ No skipped tests
+✓ No console.log in tests
+✓ Proper mocking (no real DB/API calls)
+✓ Fast execution (< 5s per service)
+✓ Meaningful assertions (not just expect(true).toBe(true))
+
+================================================================================
+RESOURCE ALLOCATION
+================================================================================
+
+TEAM SIZE: 2-3 developers
+
+EFFORT ESTIMATE:
+- Phase 1: 40 hours (1 week, 1 dev)
+- Phase 2: 80 hours (1 week, 2 devs)
+- Phase 3: 160 hours (1 week, 3 devs)
+- Phase 4: 80 hours (1 week, 2 devs)
+- Phase 5: 40 hours (1 week, 1 dev)
+
+Total: 400 hours = 10 dev-weeks
+
+PARALLEL EXECUTION:
+- Week 1: Dev1 (Phase 1)
+- Week 2: Dev1 + Dev2 (Phase 2)
+- Week 3: Dev1 + Dev2 + Dev3 (Phase 3)
+- Week 4: Dev1 + Dev2 (Phase 4)
+- Week 5: Dev1 (Phase 5)
+
+================================================================================
+TRACKING & REPORTING
+================================================================================
+
+DAILY METRICS:
+- Services at 95%+: X/28
+- Total coverage: X%
+- Tests added today: X
+- Tests passing: X/Y
+
+WEEKLY REPORT:
+- Phase completion: X%
+- Blockers: [list]
+- Next week targets: [list]
+
+DASHBOARD:
+- Create: coverage-dashboard.html
+- Update: After each service completion
+- Share: Daily standup
+
+================================================================================
+RISK MITIGATION
+================================================================================
+
+RISKS:
+1. Tests break existing functionality
+   → Run full test suite before commit
+   
+2. Coverage without quality (meaningless tests)
+   → Code review all tests
+   → Enforce assertion quality
+   
+3. Slow test execution
+   → Mock external dependencies
+   → Parallelize test runs
+   
+4. Developer burnout
+   → Rotate services between devs
+   → Celebrate milestones
+   
+5. Scope creep (fixing bugs found during testing)
+   → Log bugs separately
+   → Fix after coverage achieved
+
+================================================================================
+SUCCESS CRITERIA
+================================================================================
+
+DEFINITION OF DONE:
+✓ All 28 services at 95%+ coverage
+✓ All tests passing
+✓ Coverage reports generated
+✓ CI/CD enforcing 95% minimum
+✓ Documentation updated
+✓ Team trained on test patterns
+
+FINAL DELIVERABLES:
+1. 95%+ coverage across all services
+2. Coverage report dashboard
+3. Test pattern documentation
+4. CI/CD pipeline with coverage gates
+5. Maintenance guide for future tests
+
+================================================================================
+POST-COMPLETION
+================================================================================
+
+MAINTENANCE:
+- New code requires tests before merge
+- Coverage cannot drop below 95%
+- Monthly coverage audits
+- Quarterly test refactoring
+
+CONTINUOUS IMPROVEMENT:
+- Mutation testing (Stryker)
+- Performance testing
+- Integration test coverage
+- E2E test coverage
+
+================================================================================
+QUICK START COMMANDS
+================================================================================
+
+# Check current coverage
+npm test -- --coverage --watchAll=false
+
+# Generate HTML report
+npm test -- --coverage --coverageReporters=html lcov text
+
+# Run specific service tests
+npm test -- services/user-service --coverage
+
+# Watch mode for development
+npm test -- --watch --coverage
+
+# CI mode (fail on threshold)
+npm test -- --coverage --coverageThreshold='{"global":{"lines":95}}'
+
+================================================================================
+END OF PLAN
+================================================================================

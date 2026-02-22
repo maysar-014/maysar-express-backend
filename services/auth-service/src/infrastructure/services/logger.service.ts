@@ -68,6 +68,11 @@ export interface BaseLogEntry {
   sessionId?: string;
   ipAddress?: string;
   userAgent?: string;
+  error?: {
+    name: string;
+    message: string;
+    stack?: string;
+  };
 }
 
 /**
@@ -157,7 +162,7 @@ export class LoggerService {
 
       logTransports.push(
         new transports.File({
-          filename: this.config.filename.replace('.log', '.combined.log'),
+          filename: this.config.filename?.replace('.log', '.combined.log') || 'logs/auth-service.combined.log',
           format: logFormat,
           maxsize: this.config.maxsize,
           maxFiles: this.config.maxFiles,
@@ -216,7 +221,7 @@ export class LoggerService {
    * Log Error
    */
   error(message: string, error?: Error, metadata?: any): void {
-    const logEntry = this.createBaseLogEntry('error', message, metadata);
+    const logEntry = this.createBaseLogEntry('error', message, metadata) as BaseLogEntry & { error?: any };
     if (error) {
       logEntry.error = {
         name: error.name,

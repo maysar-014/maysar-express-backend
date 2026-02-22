@@ -1,13 +1,13 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { eventBus } from '../../../shared/events/eventBus';
+import { eventBus, EventBus } from '../../../shared/events/eventBus';
 
+export const createApp = (prisma: PrismaClient, eventBus: EventBus) => {
 const app = express();
-const prisma = new PrismaClient();
 
 app.use(express.json());
 
-// Document Verification - DocumentVerificationWorkflowSaga Integration
+// KYC Document Verification
 app.post('/api/compliance/verify-document', async (req, res) => {
   const { userId, documentType, documentUrl, sagaId } = req.body;
 
@@ -20,9 +20,8 @@ app.post('/api/compliance/verify-document', async (req, res) => {
       userId, documentType, documentUrl, sagaId
     });
 
-    // Automated validation
     const validationResult = { confidence: 0.85, extractedData: { name: 'John Doe' } };
-    
+
     await eventBus.publish('AutomatedValidationCompleted.v1', {
       userId, documentType, validationResult, sagaId
     });
@@ -33,7 +32,7 @@ app.post('/api/compliance/verify-document', async (req, res) => {
   }
 });
 
-// Manual Review Completion
+// KYC Manual Review
 app.post('/api/compliance/manual-review', async (req, res) => {
   const { userId, decision, reviewerId, sagaId } = req.body;
 
@@ -50,7 +49,7 @@ app.post('/api/compliance/manual-review', async (req, res) => {
   }
 });
 
-// Risk Assessment - RiskAssessmentSaga Integration
+// KYC Risk Assessment
 app.post('/api/compliance/risk-assessment', async (req, res) => {
   const { userId, assessmentType, sagaId } = req.body;
 
@@ -83,24 +82,19 @@ app.post('/api/compliance/risk-assessment', async (req, res) => {
   }
 });
 
-// Compliance Monitoring - ComplianceMonitoringSaga Integration
+// KYC Compliance Monitoring
 app.post('/api/compliance/monitor', async (req, res) => {
   const { complianceType, entityId, operation, sagaId } = req.body;
 
   try {
-    let complianceResult = {};
-    
-    switch (complianceType) {
-      case 'gdpr':
-        complianceResult = { status: 'compliant', score: 95.5 };
-        break;
-      case 'local_regulatory':
-        complianceResult = { status: 'compliant', score: 97.2 };
-        break;
-      case 'financial':
-        complianceResult = { status: 'compliant', score: 92.8 };
-        break;
+    if (complianceType !== 'kyc') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Only KYC compliance is supported' 
+      });
     }
+
+    const complianceResult = { status: 'compliant', score: 95.5 };
 
     await eventBus.publish('ComplianceCheckCompleted.v1', {
       complianceType, entityId, complianceResult, sagaId
@@ -116,16 +110,24 @@ app.post('/api/compliance/monitor', async (req, res) => {
   }
 });
 
-// Compliance Report Generation - ComplianceReportGenerationSaga Integration
+// KYC Report Generation
 app.post('/api/compliance/generate-report', async (req, res) => {
   const { reportType, period, requestedBy, sagaId } = req.body;
 
   try {
+    if (reportType !== 'kyc') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Only KYC reports are supported' 
+      });
+    }
+
     const reportData = {
-      gdpr: { dataSubjectRequests: 45, dataBreaches: 0 },
-      local_regulatory: { tcraCompliance: 98.2, traCompliance: 96.8 },
-      financial: { amlChecks: 2340, kycVerifications: 890 }
-    }[reportType] || {};
+      kycVerifications: 890,
+      approvedCount: 850,
+      rejectedCount: 40,
+      pendingCount: 15
+    };
 
     await eventBus.publish('ComplianceReportDataCollected.v1', {
       reportType, reportData, sagaId
@@ -151,13 +153,13 @@ app.post('/api/compliance/generate-report', async (req, res) => {
   }
 });
 
-// Audit Log Management - AuditLogManagementSaga Integration
+// KYC Audit Log
 app.post('/api/compliance/audit-log', async (req, res) => {
   const { userId, action, resource, resourceId, details, sagaId } = req.body;
 
   try {
     const auditLogId = `audit_${Date.now()}`;
-    
+
     await prisma.auditLog.create({
       data: {
         id: auditLogId,
@@ -184,7 +186,14 @@ app.post('/api/compliance/audit-log', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3013;
-app.listen(PORT, () => console.log(`Compliance Service running on port ${PORT}`));
+return app;
+};
 
-export default app;
+const PORT = process.env.PORT || 3013;
+if (require.main === module) {
+  const prisma = new PrismaClient();
+  const app = createApp(prisma, eventBus);
+  app.listen(PORT, () => console.log(`Compliance Service (KYC only) running on port ${PORT}`));
+}
+
+export default createApp(new PrismaClient(), eventBus);

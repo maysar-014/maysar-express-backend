@@ -24,12 +24,13 @@ import { DomainEvent } from '../../../domain/interfaces';
 import { 
   EventPublisherFactory, 
   InMemoryEventPublisher, 
-  RedisEventPublisher,
+  TransactionalOutboxPublisher,
   EventSerializer,
   EventPublishingMetrics,
   PublishingStrategy,
   EventTransport
 } from '../event-publisher';
+import { IdGenerator } from '../../../domain/interfaces';
 
 describe('Event Publisher', () => {
   describe('Event Publisher Factory', () => {
@@ -43,27 +44,27 @@ describe('Event Publisher', () => {
     it('should create in-memory event publisher', () => {
       const publisher = EventPublisherFactory.createInMemory(
         {},
-        { generateId: () => 'test-id' },
+        { generate: () => 'test-id' } as IdGenerator,
         { getCurrentTime: () => new Date() }
       );
 
       expect(publisher).toBeInstanceOf(InMemoryEventPublisher);
     });
 
-    it('should create Redis event publisher', () => {
-      const publisher = EventPublisherFactory.createRedis(
-        { redisUrl: 'redis://localhost:6379' },
-        { generateId: () => 'test-id' },
+    it('should create outbox event publisher', () => {
+      const publisher = EventPublisherFactory.createOutbox(
+        { connectionString: 'postgresql://localhost:5432/test' },
+        { generate: () => 'test-id' } as IdGenerator,
         { getCurrentTime: () => new Date() }
       );
 
-      expect(publisher).toBeInstanceOf(RedisEventPublisher);
+      expect(publisher).toBeInstanceOf(TransactionalOutboxPublisher);
     });
 
     it('should create default publisher based on environment', () => {
       const publisher = EventPublisherFactory.createDefault(
         {},
-        { generateId: () => 'test-id' },
+        { generate: () => 'test-id' } as IdGenerator,
         { getCurrentTime: () => new Date() }
       );
 
@@ -176,13 +177,13 @@ describe('Event Publisher', () => {
     });
 
     it('should record failed publishing', () => {
-      metrics.recordFailure('ProductCreated', EventTransport.REDIS);
+      metrics.recordFailure('ProductCreated', EventTransport.OUTBOX);
 
       const result = metrics.getMetrics();
       
       expect(result.totalPublished).toBe(0);
       expect(result.totalFailed).toBe(1);
-      expect(result.transportUsage[EventTransport.REDIS]).toBe(1);
+      expect(result.transportUsage[EventTransport.OUTBOX]).toBe(1);
     });
 
     it('should calculate average publish time correctly', () => {
@@ -360,8 +361,8 @@ describe('Event Publisher', () => {
     });
   });
 
-  describe('Redis Event Publisher', () => {
-    let publisher: RedisEventPublisher;
+  describe('Outbox Event Publisher', () => {
+    let publisher: TransactionalOutboxPublisher;
     let mockIdGenerator: any;
     let mockDateTimeService: any;
 
@@ -369,10 +370,10 @@ describe('Event Publisher', () => {
       mockIdGenerator = { generate: () => 'test-id' };
       mockDateTimeService = { now: () => new Date() };
 
-      publisher = new RedisEventPublisher(
+      publisher = new TransactionalOutboxPublisher(
         { 
           strategy: PublishingStrategy.ASYNC,
-          redisUrl: 'redis://localhost:6379'
+          connectionString: 'postgresql://localhost:5432/test'
         },
         mockIdGenerator,
         mockDateTimeService
@@ -383,41 +384,17 @@ describe('Event Publisher', () => {
       await publisher.close();
     });
 
-    it('should initialize with Redis connection', async () => {
-      // Redis connection is simulated, so we just check that publisher was created
-      expect(publisher).toBeInstanceOf(RedisEventPublisher);
+    it('should initialize with database connection', async () => {
+      expect(publisher).toBeInstanceOf(TransactionalOutboxPublisher);
     });
 
-    it('should throw error when Redis is not connected', async () => {
-      const disconnectedPublisher = new RedisEventPublisher(
-        { 
-          strategy: PublishingStrategy.IMMEDIATE,
-          redisUrl: 'redis://invalid:6379'
-        },
-        mockIdGenerator,
-        mockDateTimeService
-      );
-
-      const event: DomainEvent = {
-        eventId: 'event-123',
-        eventType: 'ProductCreated',
-        aggregateId: 'product-456',
-        version: 1,
-        timestamp: new Date(),
-        payload: { name: 'Test Product' },
-        metadata: {}
-      };
-
-      await expect(disconnectedPublisher.publish(event)).rejects.toThrow('Redis connection not available');
-    });
-
-    it('should handle batched publishing with Redis', async () => {
-      const batchPublisher = new RedisEventPublisher(
+    it('should handle batched publishing with outbox', async () => {
+      const batchPublisher = new TransactionalOutboxPublisher(
         { 
           strategy: PublishingStrategy.BATCHED,
           batchSize: 2,
           batchTimeout: 100,
-          redisUrl: 'redis://localhost:6379'
+          connectionString: 'postgresql://localhost:5432/test'
         },
         mockIdGenerator,
         mockDateTimeService
@@ -443,7 +420,6 @@ describe('Event Publisher', () => {
         metadata: {}
       };
 
-      // Should not throw even if Redis is simulated
       await expect(batchPublisher.publish(event1)).resolves.toBeUndefined();
       await expect(batchPublisher.publish(event2)).resolves.toBeUndefined();
 

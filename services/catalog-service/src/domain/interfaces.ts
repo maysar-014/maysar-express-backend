@@ -621,6 +621,25 @@ export interface LowStockAlertEvent extends DomainEvent {
 }
 
 // ============================================================================
+// VALIDATION INTERFACES
+// ============================================================================
+
+/**
+ * Validation Error Class
+ * Represents validation errors in the domain
+ */
+export class ValidationError extends Error {
+  constructor(
+    message: string,
+    public readonly field?: string,
+    public readonly code?: string
+  ) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+// ============================================================================
 // FACTORY INTERFACES
 // ============================================================================
 

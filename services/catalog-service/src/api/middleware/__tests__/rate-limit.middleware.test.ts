@@ -9,7 +9,7 @@ import { createRateLimit, ipRateLimit, RateLimitMiddlewareFactory } from '../rat
 describe('Rate Limit Middleware', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
-  let mockNext: NextFunction;
+  let mockNext: jest.MockedFunction<NextFunction>;
 
   beforeEach(() => {
     mockRequest = {
@@ -26,7 +26,7 @@ describe('Rate Limit Middleware', () => {
       setHeader: jest.fn().mockReturnThis()
     };
     
-    mockNext = jest.fn() as any;
+    mockNext = jest.fn() as jest.MockedFunction<NextFunction>;
   });
 
   describe('createRateLimit', () => {

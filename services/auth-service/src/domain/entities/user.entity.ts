@@ -28,3 +28,6 @@ export class User {
     return this.props.status === 'ACTIVE';
   }
 }
+
+// Export UserEntity alias for compatibility
+export { User as UserEntity };

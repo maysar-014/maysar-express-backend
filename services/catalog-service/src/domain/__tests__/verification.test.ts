@@ -17,7 +17,7 @@ import {
 } from '../verification';
 
 // Mock domain modules for testing
-const mockDomainModules = [
+const mockDomainModules: any[] = [
   {
     name: 'Product',
     create: jest.fn(),
@@ -154,7 +154,7 @@ describe('Domain Verification System', () => {
 
   describe('DomainIsolationTester', () => {
     it('should detect infrastructure dependencies', () => {
-      const modules = [
+      const modules: any[] = [
         {
           name: 'DatabaseService',
           connectionString: 'mongodb://localhost:27017'
@@ -170,7 +170,7 @@ describe('Domain Verification System', () => {
     });
 
     it('should detect environment variable requirements', () => {
-      const modules = [
+      const modules: any[] = [
         {
           name: 'ConfigService',
           config: { env: 'process.env.NODE_ENV' }
@@ -185,11 +185,11 @@ describe('Domain Verification System', () => {
     });
 
     it('should pass isolation test for pure domain modules', () => {
-      const modules = [
+      const modules: any[] = [
         {
           name: 'Product',
           create: () => ({ name: 'Test Product' }),
-          validate: (product) => product.name && product.name.length > 0
+          validate: (product: any) => product.name && product.name.length > 0
         }
       ];
 
@@ -205,12 +205,12 @@ describe('Domain Verification System', () => {
 
   describe('DomainInterfaceDocumenter', () => {
     it('should document repository interfaces', () => {
-      const modules = [
+      const modules: any[] = [
         {
           ProductRepository: class {
-            save(product) { return product; }
-            findById(id) { return null; }
-            findBySeller(sellerId) { return []; }
+            save(product: any) { return product; }
+            findById(id: string) { return null; }
+            findBySeller(sellerId: string) { return []; }
           }
         }
       ];
@@ -224,7 +224,7 @@ describe('Domain Verification System', () => {
     });
 
     it('should identify missing required interfaces', () => {
-      const modules = [
+      const modules: any[] = [
         {
           SimpleService: class {
             execute() { return true; }
@@ -241,7 +241,7 @@ describe('Domain Verification System', () => {
     });
 
     it('should infer interface types correctly', () => {
-      const modules = [
+      const modules: any[] = [
         {
           ProductService: class {},
           ProductRepository: class {},
@@ -487,10 +487,10 @@ describe('Domain Verification System', () => {
         'src/domain/repositories/product.repository.ts'
       ];
 
-      const modules = [
+      const modules: any[] = [
         {
           Product: class {
-            constructor(name, price) {
+            constructor(name: string, price: number) {
               // Simple mock without property access to avoid TypeScript errors
               Object.assign(this, { name, price });
             }
@@ -498,7 +498,7 @@ describe('Domain Verification System', () => {
         },
         {
           Price: class {
-            constructor(amount, currency) {
+            constructor(amount: number, currency: string) {
               // Simple mock without property access to avoid TypeScript errors
               Object.assign(this, { amount, currency });
             }
@@ -517,7 +517,7 @@ describe('Domain Verification System', () => {
 
     it('should handle verification errors gracefully', async () => {
       const files = ['nonexistent-file.ts'];
-      const modules = [];
+      const modules: any[] = [];
 
       const result = await DomainVerificationRunner.runVerification(files, modules);
 

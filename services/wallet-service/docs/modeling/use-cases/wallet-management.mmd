@@ -1,30 +1,53 @@
 useCaseDiagram
-    actor "Customer" as C
+    %% Role-Based Actors
+    actor "Buyer" as B
+    actor "Seller" as SE
+    actor "Enabler" as E
     actor "System" as S
     actor "Admin" as A
 
     package "Wallet Service" {
-        usecase "Credit Wallet" as UC1
-        usecase "Debit Wallet" as UC2
-        usecase "Freeze Funds" as UC3
-        usecase "Unfreeze Funds" as UC4
+        %% Read Operations (All authenticated users for their own wallets)
         usecase "View Balance" as UC5
         usecase "View Transaction History" as UC6
+
+        %% Top-up Operations (Buyer & Seller only)
+        usecase "Top-up Wallet" as UC11
+
+        %% Payout Operations (Enabler only)
+        usecase "Initiate Payout" as UC12
+
+        %% General Wallet Operations
+        usecase "Credit Wallet" as UC1
+        usecase "Debit Wallet" as UC2
+        usecase "Record Transaction" as UC9
+
+        %% Admin Operations
+        usecase "Freeze Funds" as UC3
+        usecase "Unfreeze Funds" as UC4
         usecase "Suspend Wallet" as UC7
         usecase "Close Wallet" as UC8
-        usecase "Top-up Wallet" as UC11
-        usecase "Record Transaction" as UC9
+
+        %% System Operations
         usecase "Trigger Fraud Detection" as UC10
-        usecase "Initiate Payout" as UC12
     }
 
-    C --> UC1
-    C --> UC2
-    C --> UC5
-    C --> UC6
-    C --> UC11
-    C --> UC12
-    
+    %% Buyer: Can view balance, history, and top-up (no payout)
+    B --> UC5
+    B --> UC6
+    B --> UC11
+
+    %% Seller: Can view balance, history, and top-up (no payout)
+    SE --> UC5
+    SE --> UC6
+    SE --> UC11
+
+    %% Enabler: Can view balance, history, and payout (no top-up)
+    E --> UC5
+    E --> UC6
+    E --> UC12
+
+    %% Admin Operations
     A --> UC3
     A --> UC4
     A --> UC7
@@ -32,13 +55,26 @@ useCaseDiagram
     A --> UC5
     A --> UC6
 
+    %% System Operations
     S --> UC1
     S --> UC2
     S --> UC3
     S --> UC10
 
+    %% Include Relationships
     UC1 ..> UC9 : <<include>>
     UC2 ..> UC9 : <<include>>
     UC11 ..> UC9 : <<include>>
     UC12 ..> UC9 : <<include>>
     UC10 ..> UC3 : <<extend>>
+
+    %% Notes for Role-Based Access Control
+    note right of UC11
+        RBAC: Only BUYER and SELLER
+        roles can top-up wallets
+    end note
+
+    note right of UC12
+        RBAC: Only ENABLER role
+        can initiate payouts
+    end note

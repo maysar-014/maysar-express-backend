@@ -108,15 +108,7 @@ export class CourierAssignmentPolicy {
     // Sort by total score descending
     scoredCouriers.sort((a, b) => b.totalScore - a.totalScore);
 
-    // Randomly select from the top 3 couriers to distribute load more evenly
-    // This prevents the same courier from always being selected due to location advantages
-    const topCouriers = scoredCouriers.slice(0, Math.min(3, scoredCouriers.length));
-
-    if (topCouriers.length > 1) {
-      const randomIndex = Math.floor(Math.random() * topCouriers.length);
-      return topCouriers[randomIndex].courier;
-    }
-
+    // Return the highest scoring courier
     return scoredCouriers[0].courier;
   }
 
@@ -148,10 +140,10 @@ export class CourierAssignmentPolicy {
     const weightKg = weight.toKilograms();
     const capacityRatio = weightKg / courier.vehicle.capacity.maxWeight;
 
-    if (capacityRatio <= 0.5) return 1.0; // Excellent match
+    if (capacityRatio <= 0.5) return 1.0; // Perfect match
     if (capacityRatio <= 0.8) return 0.8; // Good match
     if (capacityRatio <= 1.0) return 0.6; // Acceptable match
-    return 0.3; // Poor match
+    return 0.3; // Over capacity
   }
 
   private calculateWeatherSuitabilityScore(courier: CourierEntity, priority: string): number {
@@ -160,7 +152,7 @@ export class CourierAssignmentPolicy {
       return courier.trafficExperience > 0.9 ? 1.0 : 0.8;
     }
     if (priority === 'express') {
-      return courier.trafficExperience > 0.8 ? 0.9 : 0.7;
+      return courier.trafficExperience >= 0.8 ? 0.9 : 0.85;
     }
     return 0.85; // Standard priority
   }

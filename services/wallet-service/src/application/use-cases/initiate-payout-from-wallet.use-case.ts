@@ -36,10 +36,14 @@ export class InitiatePayoutFromWalletUseCase {
 
     async execute(dto: InitiatePayoutFromWalletDTO): Promise<InitiatePayoutFromWalletResult> {
         // 0. Validate Role Eligibility (Comment 2)
-        if (!isPayoutEligibleRole(dto.userRole as UserRole)) {
+        // Normalize role string to UserRole enum (handles 'enabler', 'ENABLER', 'Enabler' etc.)
+        const normalizedRole = dto.userRole.toUpperCase() as keyof typeof UserRole;
+        const roleEnum = UserRole[normalizedRole];
+
+        if (!roleEnum || !isPayoutEligibleRole(roleEnum)) {
             return {
                 success: false,
-                message: `Role ${dto.userRole} is not eligible for payouts`
+                message: `Role ${dto.userRole} is not eligible for payouts. Only ENABLER role can perform payouts.`
             };
         }
 

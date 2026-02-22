@@ -29,6 +29,7 @@ import { TrackingController } from '../controllers/tracking.controller';
 import { EarningsController } from '../controllers/earnings.controller';
 import { AnalyticsController } from '../controllers/analytics.controller';
 import { TestController } from '../controllers/test.controller';
+import { CODController } from '../controllers/cod.controller';
 import { DeliveryValidator } from '../validators/delivery.validator';
 import { RouteValidator } from '../validators/route.validator';
 import { EarningsValidator } from '../validators/earnings.validator';
@@ -49,6 +50,7 @@ let trackingController: TrackingController;
 let earningsController: EarningsController;
 let analyticsController: AnalyticsController;
 let testController: TestController;
+let codController: CODController;
 
 // Function to get or initialize controllers lazily
 function getDeliveryController(): DeliveryController {
@@ -100,6 +102,13 @@ function getTestController(): TestController {
   return testController;
 }
 
+function getCODController(): CODController {
+  if (!codController) {
+    codController = new CODController();
+  }
+  return codController;
+}
+
 // ==================== DELIVERY ENDPOINTS ====================
 // Delivery API: http://localhost:3007/api/v1/deliveries/*
 
@@ -127,6 +136,19 @@ router.post('/deliveries/:deliveryId/status',
   DeliveryValidator.updateDeliveryStatus(),
   ValidationMiddleware.handleValidationErrors,
   (req: express.Request, res: express.Response) => getDeliveryController().updateDeliveryStatus(req, res)
+);
+
+// ==================== COD ENDPOINTS ====================
+// COD API: http://localhost:3007/api/v1/cod/*
+
+router.post('/cod/:deliveryId/otp',
+  ValidationMiddleware.createApiValidationChain(),
+  (req: express.Request, res: express.Response) => getCODController().generateOTP(req, res)
+);
+
+router.post('/cod/:deliveryId/verify',
+  ValidationMiddleware.createApiValidationChain(),
+  (req: express.Request, res: express.Response) => getCODController().verifyDelivery(req, res)
 );
 
 // ==================== ROUTE ENDPOINTS ====================

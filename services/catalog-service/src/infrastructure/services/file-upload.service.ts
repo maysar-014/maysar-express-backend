@@ -285,7 +285,7 @@ export class FileUploadService {
     options: FileProcessingOptions
   ): Promise<{ buffer: Buffer; size: number; metadata?: Record<string, any> }> {
     let processedBuffer = file.buffer || Buffer.alloc(0);
-    let metadata = file.metadata || {};
+    const metadata = file.metadata || {};
 
     // Handle image processing
     if (file.mimeType.startsWith('image/') && this.imageProcessor) {

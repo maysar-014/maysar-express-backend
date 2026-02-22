@@ -183,13 +183,42 @@ export class WalletController {
 
     async topUp(req: Request, res: Response): Promise<void> {
         try {
+            const user = (req as any).user;
+            const userRoles = user?.roles || [];
+
+            // Find the first eligible role (buyer or seller) from the user's roles array
+            const eligibleTopUpRoles = ['buyer', 'seller'];
+            const resolvedRole = userRoles.find((role: string) =>
+                eligibleTopUpRoles.includes(role.toLowerCase())
+            );
+
+            if (!resolvedRole) {
+                res.status(403).json({
+                    success: false,
+                    error: userRoles.length > 0
+                        ? `None of the user roles [${userRoles.join(', ')}] are eligible for top-up. Only BUYER and SELLER roles can top up.`
+                        : 'User role not found'
+                });
+                return;
+            }
+
             const result = await this.topUpUseCase.execute({
                 userId: req.params.userId,
+                userRole: resolvedRole,
                 ...req.body,
                 correlationId: req.body.correlationId,
                 auditInfo: this.getAuditInfo(req)
             });
-            res.status(result.success ? 200 : 400).json(result);
+
+            if (!result.success) {
+                // Role ineligibility is an authorization failure (403), not a bad request (400)
+                const isRoleError = result.message?.includes('not eligible') || result.message?.includes('Only BUYER and SELLER');
+                const statusCode = isRoleError ? 403 : 400;
+                res.status(statusCode).json(result);
+                return;
+            }
+
+            res.status(200).json(result);
         } catch (error) {
             res.status(500).json({ success: false, error: 'Internal server error' });
         }
@@ -226,20 +255,26 @@ export class WalletController {
     async initiatePayout(req: Request, res: Response): Promise<void> {
         try {
             const user = (req as any).user;
-            // Resolve role from roles array (taking the first one for now as primary role)
-            const resolvedRole = user?.roles?.[0];
+            const userRoles = user?.roles || [];
 
-            if (!resolvedRole || resolvedRole.toLowerCase() === 'buyer') {
+            // Find if user has enabler role (case-insensitive)
+            const hasEnablerRole = userRoles.some((role: string) =>
+                role.toLowerCase() === 'enabler'
+            );
+
+            if (!hasEnablerRole) {
                 res.status(403).json({
                     success: false,
-                    error: resolvedRole ? `Role ${resolvedRole} is not eligible for payouts` : 'User role not found'
+                    error: userRoles.length > 0
+                        ? `None of the user roles [${userRoles.join(', ')}] are eligible for payouts. Only ENABLER role can perform payouts.`
+                        : 'User role not found'
                 });
                 return;
             }
 
             const result = await this.initiatePayoutUseCase.execute({
                 userId: req.params.userId,
-                userRole: resolvedRole,
+                userRole: 'enabler', // Pass normalized role to use case
                 ...req.body,
                 auditInfo: this.getAuditInfo(req)
             });

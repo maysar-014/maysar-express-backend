@@ -25,6 +25,9 @@ export interface WalletProps {
     frozenAmount: number;
     createdAt: Date;
     updatedAt: Date;
+    codCommitmentLimit: number;
+    codCommitmentUsed: number;
+    codCommitmentCount: number;
 }
 
 export class Wallet {
@@ -66,6 +69,18 @@ export class Wallet {
 
     get updatedAt(): Date {
         return this.props.updatedAt;
+    }
+
+    get codCommitmentLimit(): number {
+        return this.props.codCommitmentLimit;
+    }
+
+    get codCommitmentUsed(): number {
+        return this.props.codCommitmentUsed;
+    }
+
+    get codCommitmentCount(): number {
+        return this.props.codCommitmentCount;
     }
 
     // Business Methods
@@ -314,6 +329,28 @@ export class Wallet {
     }
 
     /**
+     * Update COD commitment after a successful secure placement
+     */
+    useCODCommitment(amount: number): void {
+        const available = this.codCommitmentLimit - this.codCommitmentUsed;
+        if (amount > available) {
+            throw new Error(`Insufficient COD commitment limit. Available: ${available}`);
+        }
+        this.props.codCommitmentUsed += amount;
+        this.props.codCommitmentCount += 1;
+        this.props.updatedAt = new Date();
+    }
+
+    /**
+     * Release or settle COD commitment
+     */
+    releaseCODCommitment(amount: number): void {
+        this.props.codCommitmentUsed -= amount;
+        if (this.props.codCommitmentUsed < 0) this.props.codCommitmentUsed = 0;
+        this.props.updatedAt = new Date();
+    }
+
+    /**
      * Validate wallet invariants
      */
     private validateInvariants(): void {
@@ -360,6 +397,10 @@ export class Wallet {
 
         if (props.frozenAmount > props.balance) {
             throw new Error('Frozen amount cannot exceed balance');
+        }
+
+        if (props.codCommitmentUsed < 0) {
+            throw new Error('COD commitment used cannot be negative');
         }
     }
 

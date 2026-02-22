@@ -28,7 +28,12 @@ export class TransactionRepository implements ITransactionRepository {
             reason: transaction.reason,
             isReversed: transaction.isReversed,
             reversalTransactionId: transaction.reversalTransactionId,
-            expiresAt: transaction.expiresAt
+            expiresAt: transaction.expiresAt,
+            // COD Specific
+            isCODRelated: (transaction as any).isCODRelated,
+            codOrderId: (transaction as any).codOrderId,
+            codConfirmationRequired: (transaction as any).codConfirmationRequired,
+            codConfirmedAt: (transaction as any).codConfirmedAt
         };
 
         await this.prisma.wallet_Transaction.create({

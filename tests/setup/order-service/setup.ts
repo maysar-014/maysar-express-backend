@@ -236,6 +236,11 @@ afterEach(() => {
   jest.clearAllTimers();
 });
 
+// Cleanup after all tests
+afterAll(() => {
+  jest.restoreAllMocks();
+});
+
 // Global test timeout for async operations
 jest.setTimeout(30000);
 

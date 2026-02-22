@@ -138,7 +138,7 @@ export class ProductController {
 
         const matchingResult = await this.createProductWithMatchingUseCase.execute(matchingRequest);
 
-        if (matchingResult.requiresConfirmation) {
+        if (matchingResult.confirmationRequired) {
           // Return confirmation required response
           const response: ApiResponse = {
             success: true,
@@ -154,13 +154,13 @@ export class ProductController {
           };
           res.status(200).json(response);
           return;
-        } else if (matchingResult.productId) {
+        } else if (matchingResult.matchedProductId) {
           // Product created or merged
           const response: ApiResponse<{ productId: string; matched: boolean }> = {
             success: true,
             data: {
-              productId: matchingResult.productId,
-              matched: matchingResult.matchedToExisting || false
+              productId: matchingResult.matchedProductId,
+              matched: matchingResult.matchFound || false
             },
             meta: {
               timestamp: new Date(),
@@ -819,6 +819,7 @@ export class ProductControllerFactory {
     getProductsBySellerUseCase: GetProductsBySellerUseCase,
     searchProductsUseCase: SearchProductsUseCase,
     productMapper: ProductMapper,
+    createProductWithMatchingUseCase?: CreateProductWithMatchingUseCase,
     config: Partial<ProductControllerConfig> = {}
   ): ProductController {
     return new ProductController(
@@ -827,6 +828,7 @@ export class ProductControllerFactory {
       getProductsBySellerUseCase,
       searchProductsUseCase,
       productMapper,
+      createProductWithMatchingUseCase,
       config
     );
   }

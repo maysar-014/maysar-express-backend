@@ -6,32 +6,28 @@ export class SimilarityAlgorithm {
      * required to change one word into the other.
      */
     static calculateLevenshteinDistance(a: string, b: string): number {
-        const matrix: number[][] = [];
+        if (a === b) return 0;
+        if (a.length === 0) return b.length;
+        if (b.length === 0) return a.length;
 
-        // Initialize the matrix
-        for (let i = 0; i <= b.length; i++) {
-            matrix[i] = [i];
-        }
-        for (let j = 0; j <= a.length; j++) {
-            matrix[0][j] = j;
-        }
+        let [short, long] = a.length < b.length ? [a, b] : [b, a];
+        let prevRow = Array.from({ length: short.length + 1 }, (_, i) => i);
+        let currRow = new Array(short.length + 1);
 
-        // Fill the matrix
-        for (let i = 1; i <= b.length; i++) {
-            for (let j = 1; j <= a.length; j++) {
-                if (b.charAt(i - 1) === a.charAt(j - 1)) {
-                    matrix[i][j] = matrix[i - 1][j - 1];
-                } else {
-                    matrix[i][j] = Math.min(
-                        matrix[i - 1][j - 1] + 1, // substitution
-                        matrix[i][j - 1] + 1,     // insertion
-                        matrix[i - 1][j] + 1      // deletion
-                    );
-                }
+        for (let i = 1; i <= long.length; i++) {
+            currRow[0] = i;
+            for (let j = 1; j <= short.length; j++) {
+                const cost = long[i - 1] === short[j - 1] ? 0 : 1;
+                currRow[j] = Math.min(
+                    prevRow[j] + 1,
+                    currRow[j - 1] + 1,
+                    prevRow[j - 1] + cost
+                );
             }
+            [prevRow, currRow] = [currRow, prevRow];
         }
 
-        return matrix[b.length][a.length];
+        return prevRow[short.length];
     }
 
     /**

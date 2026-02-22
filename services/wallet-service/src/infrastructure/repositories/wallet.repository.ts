@@ -23,7 +23,10 @@ export class WalletRepository implements IWalletRepository {
                 frozenAmount: props.frozenAmount,
                 createdAt: props.createdAt,
                 updatedAt: props.updatedAt,
-            },
+                codCommitmentLimit: props.codCommitmentLimit,
+                codCommitmentUsed: props.codCommitmentUsed,
+                codCommitmentCount: props.codCommitmentCount,
+            } as any,
         });
     }
 
@@ -53,6 +56,8 @@ export class WalletRepository implements IWalletRepository {
                 status: props.status,
                 frozenAmount: props.frozenAmount,
                 updatedAt: props.updatedAt,
+                codCommitmentUsed: (props as any).codCommitmentUsed,
+                codCommitmentCount: (props as any).codCommitmentCount,
             },
         });
     }
@@ -104,8 +109,8 @@ export class WalletRepository implements IWalletRepository {
         }
 
         return {
-            balance: wallet.balance,
-            frozenAmount: wallet.frozenAmount,
+            balance: Number(wallet.balance),
+            frozenAmount: Number(wallet.frozenAmount),
         };
     }
 
@@ -113,12 +118,15 @@ export class WalletRepository implements IWalletRepository {
         const props: WalletProps = {
             id: data.id,
             userId: data.userId,
-            balance: data.balance,
+            balance: Number(data.balance),
             currency: data.currency,
             status: data.status as WalletStatus,
-            frozenAmount: data.frozenAmount,
+            frozenAmount: Number(data.frozenAmount),
             createdAt: data.createdAt,
             updatedAt: data.updatedAt,
+            codCommitmentLimit: Number(data.codCommitmentLimit),
+            codCommitmentUsed: Number(data.codCommitmentUsed),
+            codCommitmentCount: data.codCommitmentCount,
         };
 
         return new Wallet(props);

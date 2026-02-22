@@ -4,7 +4,7 @@ import { logger } from '../services/logger.service';
 const COMPLIANCE_SERVICE_URL = process.env.COMPLIANCE_SERVICE_URL || 'http://localhost:3013';
 
 /**
- * Compliance Adapter - Calls compliance service HTTP API
+ * Compliance Adapter - Calls KYC compliance service HTTP API
  */
 export class ComplianceAdapter implements IComplianceAdapter {
   constructor(private readonly baseUrl: string = COMPLIANCE_SERVICE_URL) {}
@@ -18,7 +18,7 @@ export class ComplianceAdapter implements IComplianceAdapter {
   }): Promise<void> {
     const url = `${this.baseUrl}/api/compliance/monitor`;
     const body = {
-      complianceType: 'local_regulatory',
+      complianceType: 'kyc',
       entityId: params.businessId,
       operation: 'business_registered',
       sagaId: params.correlationId,
@@ -38,10 +38,10 @@ export class ComplianceAdapter implements IComplianceAdapter {
 
       if (!res.ok) {
         const errText = await res.text();
-        throw new Error(`Compliance service error ${res.status}: ${errText}`);
+        throw new Error(`KYC compliance service error ${res.status}: ${errText}`);
       }
 
-      logger.debug('Compliance notified for new business', { businessId: params.businessId });
+      logger.debug('KYC compliance notified for new business', { businessId: params.businessId });
     } catch (error) {
       logger.warn('ComplianceAdapter: notifyNewBusiness failed', {
         businessId: params.businessId,
@@ -51,15 +51,14 @@ export class ComplianceAdapter implements IComplianceAdapter {
     }
   }
 
-  async createComplianceRecord(params: {
+  async createKYCRecord(params: {
     businessId: string;
-    complianceType: string;
     status: string;
     correlationId: string;
   }): Promise<string> {
     const url = `${this.baseUrl}/api/compliance/monitor`;
     const body = {
-      complianceType: params.complianceType,
+      complianceType: 'kyc',
       entityId: params.businessId,
       operation: 'create_record',
       sagaId: params.correlationId,
@@ -75,15 +74,15 @@ export class ComplianceAdapter implements IComplianceAdapter {
 
       if (!res.ok) {
         const errText = await res.text();
-        throw new Error(`Compliance service error ${res.status}: ${errText}`);
+        throw new Error(`KYC compliance service error ${res.status}: ${errText}`);
       }
 
       const data = (await res.json()) as { recordId?: string };
-      const recordId = data.recordId ?? `compliance_${params.businessId}_${Date.now()}`;
-      logger.debug('Compliance record created', { businessId: params.businessId, recordId });
+      const recordId = data.recordId ?? `kyc_${params.businessId}_${Date.now()}`;
+      logger.debug('KYC record created', { businessId: params.businessId, recordId });
       return recordId;
     } catch (error) {
-      logger.warn('ComplianceAdapter: createComplianceRecord failed', {
+      logger.warn('ComplianceAdapter: createKYCRecord failed', {
         businessId: params.businessId,
         error: error instanceof Error ? error.message : String(error)
       });
@@ -91,10 +90,10 @@ export class ComplianceAdapter implements IComplianceAdapter {
     }
   }
 
-  async revokeComplianceRecord(recordId: string, correlationId: string): Promise<void> {
+  async revokeKYCRecord(recordId: string, correlationId: string): Promise<void> {
     const url = `${this.baseUrl}/api/compliance/monitor`;
     const body = {
-      complianceType: 'local_regulatory',
+      complianceType: 'kyc',
       entityId: recordId,
       operation: 'revoke_record',
       sagaId: correlationId
@@ -109,12 +108,12 @@ export class ComplianceAdapter implements IComplianceAdapter {
 
       if (!res.ok) {
         const errText = await res.text();
-        throw new Error(`Compliance service error ${res.status}: ${errText}`);
+        throw new Error(`KYC compliance service error ${res.status}: ${errText}`);
       }
 
-      logger.debug('Compliance record revoked', { recordId });
+      logger.debug('KYC record revoked', { recordId });
     } catch (error) {
-      logger.warn('ComplianceAdapter: revokeComplianceRecord failed', {
+      logger.warn('ComplianceAdapter: revokeKYCRecord failed', {
         recordId,
         error: error instanceof Error ? error.message : String(error)
       });

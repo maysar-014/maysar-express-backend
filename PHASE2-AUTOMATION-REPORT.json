@@ -1,0 +1,31 @@
+{
+  "phase": 2,
+  "timestamp": "2026-02-21T13:02:09.344Z",
+  "duration": "418.79s",
+  "summary": {
+    "total": 4,
+    "tested": 0,
+    "passed": 0,
+    "failed": 4,
+    "successRate": "0.0%"
+  },
+  "passed": [],
+  "failed": [
+    {
+      "service": "inventory-service",
+      "error": "Command failed: npm test -- --coverage --watchAll=false --silent --coverageReporters=json-summary\nFA"
+    },
+    {
+      "service": "compliance-service",
+      "error": "Command failed: npm test -- --coverage --watchAll=false --silent --coverageReporters=json-summary\nFA"
+    },
+    {
+      "service": "session-service",
+      "error": "Command failed: npm test -- --coverage --watchAll=false --silent --coverageReporters=json-summary\nFA"
+    },
+    {
+      "service": "maps-service",
+      "error": "Command failed: npm test -- --coverage --watchAll=false --silent --coverageReporters=json-summary\nFA"
+    }
+  ]
+}

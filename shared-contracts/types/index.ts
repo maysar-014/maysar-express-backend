@@ -9,7 +9,12 @@ export interface EventEnvelope<T = any> {
   payload: T;
 }
 
-export type UserRole = 'buyer' | 'seller' | 'admin';
+/**
+ * User roles available in the system.
+ * Note: The authoritative role definition is in user-service-contracts.ts (UserRole enum).
+ * This type alias provides a string union for type safety in contexts where the enum isn't imported.
+ */
+export type UserRole = 'buyer' | 'seller' | 'supplier' | 'courier' | 'enabler' | 'system';
 
 export type OrderStatus = 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled';
 

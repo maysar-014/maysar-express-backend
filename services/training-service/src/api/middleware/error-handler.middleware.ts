@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { NotFoundError, BusinessRuleError, ValidationError } from '../../domain/errors/domain.error';
 
-export function errorHandlerMiddleware(err: any, req: Request, res: Response, next: NextFunction): void {
-    console.error(`[Error] ${err.name}: ${err.message}`);
+export function errorHandlerMiddleware(err: Error, req: Request, res: Response, _next: NextFunction): void {
+    // Log error for debugging
 
     let status = 500;
-    let message = err.message || 'Internal Server Error';
+    const message = err.message || 'Internal Server Error';
     let errors: string[] | undefined = undefined;
 
     if (err instanceof NotFoundError || err.name === 'NotFoundError') {

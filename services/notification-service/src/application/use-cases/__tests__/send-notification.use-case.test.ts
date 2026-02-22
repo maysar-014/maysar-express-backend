@@ -1,132 +1,165 @@
 import { SendNotificationUseCase } from '../send-notification.use-case';
 import { Notification } from '../../../domain/entities/notification.entity';
-import { NotificationContent } from '../../../domain/value-objects/notification-content.value-object';
-import { NotificationMetadata } from '../../../domain/value-objects/notification-metadata.value-object';
-import { NotificationPreference } from '../../../domain/entities/notification-preference.entity';
 import { NotificationValidationError, RateLimitExceededError } from '../../../domain/errors/notification.errors';
 
 describe('SendNotificationUseCase', () => {
-  const content = NotificationContent.create('Test body');
-  const metadata = NotificationMetadata.create({});
-
-  const mockNotificationRepository = {
-    findById: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-    findByUserId: jest.fn(),
-    findByStatus: jest.fn(),
-    findPending: jest.fn(),
-    search: jest.fn(),
-    markAsSent: jest.fn(),
-    markAsDelivered: jest.fn(),
-    markAsRead: jest.fn(),
-    recordFailure: jest.fn(),
-    getSentCountLastHour: jest.fn().mockResolvedValue(0)
-  };
-
-  const mockPreferenceRepository = {
-    findById: jest.fn(),
-    findByUserId: jest.fn(),
-    findByUserAndChannel: jest.fn().mockResolvedValue(
-      NotificationPreference.create({
-        id: 'pref_1',
-        userId: 'user_1',
-        channel: 'email',
-        enabled: true
-      })
-    ),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn()
-  };
-
-  const mockValidationService = {
-    validateNotification: jest.fn().mockReturnValue({ isValid: true, errors: [] }),
-    validateTemplate: jest.fn(),
-    validateDeliveryAddress: jest.fn()
-  };
-
-  const mockDeliveryPolicy = {
-    canSendNotification: jest.fn().mockReturnValue({ allowed: true }),
-    shouldRetry: jest.fn(),
-    getRetryDelay: jest.fn(),
-    isWithinRateLimit: jest.fn(),
-    requiresUserConsent: jest.fn(),
-    evaluate: jest.fn()
-  };
-
-  const mockTriggerSaga = jest.fn().mockResolvedValue(undefined);
-
   let useCase: SendNotificationUseCase;
+  let mockNotificationRepository: any;
+  let mockPreferenceRepository: any;
+  let mockValidationService: any;
+  let mockDeliveryPolicy: any;
+  let mockTriggerDeliverySaga: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    mockNotificationRepository = {
+      create: jest.fn(),
+      getSentCountLastHour: jest.fn().mockResolvedValue(0)
+    };
+
+    mockPreferenceRepository = {
+      findByUserAndChannel: jest.fn().mockResolvedValue(null)
+    };
+
+    mockValidationService = {
+      validateNotification: jest.fn()
+    };
+
+    mockDeliveryPolicy = {
+      canSendNotification: jest.fn().mockReturnValue({ allowed: true })
+    };
+
+    mockTriggerDeliverySaga = jest.fn().mockResolvedValue(undefined);
+
     useCase = new SendNotificationUseCase(
-      mockNotificationRepository as any,
-      mockPreferenceRepository as any,
-      mockValidationService as any,
-      mockDeliveryPolicy as any,
-      mockTriggerSaga
+      mockNotificationRepository,
+      mockPreferenceRepository,
+      mockValidationService,
+      mockDeliveryPolicy,
+      mockTriggerDeliverySaga
     );
   });
 
-  it('should throw ValidationError when userId is missing', async () => {
-    await expect(
-      useCase.execute({
-        userId: '',
-        type: 'email',
-        channel: 'email',
-        subject: 'Test',
-        content: 'Body'
-      })
-    ).rejects.toThrow(NotificationValidationError);
-  });
+  const validDto = {
+    userId: 'user-1',
+    type: 'email' as const,
+    channel: 'email' as const,
+    subject: 'Test Subject',
+    content: 'Test content',
+    priority: 'medium' as const
+  };
 
-  it('should throw ValidationError when content is missing', async () => {
-    await expect(
-      useCase.execute({
-        userId: 'user_1',
-        type: 'email',
-        channel: 'email',
-        subject: 'Test',
-        content: ''
-      })
-    ).rejects.toThrow(NotificationValidationError);
-  });
+  describe('execute', () => {
+    it('should send notification successfully', async () => {
+      const mockNotification = { id: 'notif-1', ...validDto } as any;
+      mockNotificationRepository.create.mockResolvedValue(mockNotification);
 
-  it('should throw when policy denies send', async () => {
-    mockDeliveryPolicy.canSendNotification.mockReturnValueOnce({ allowed: false, reason: 'Rate limit exceeded' });
-    mockPreferenceRepository.findByUserAndChannel.mockResolvedValue(
-      NotificationPreference.create({ id: 'p1', userId: 'user_1', channel: 'email', enabled: true })
-    );
-    mockNotificationRepository.create.mockImplementation((n: Notification) => Promise.resolve(n));
+      const result = await useCase.execute(validDto);
 
-    await expect(
-      useCase.execute({
-        userId: 'user_1',
-        type: 'email',
-        channel: 'email',
-        subject: 'Test',
-        content: 'Body'
-      })
-    ).rejects.toThrow();
-  });
-
-  it('should create notification and trigger saga when allowed', async () => {
-    mockNotificationRepository.create.mockImplementation((n: Notification) => Promise.resolve(n));
-
-    const result = await useCase.execute({
-      userId: 'user_1',
-      type: 'email',
-      channel: 'email',
-      subject: 'Test',
-      content: 'Body'
+      expect(result.notification).toEqual(mockNotification);
+      expect(result.sagaTriggered).toBe(true);
+      expect(mockNotificationRepository.create).toHaveBeenCalled();
+      expect(mockTriggerDeliverySaga).toHaveBeenCalledWith(mockNotification);
     });
 
-    expect(result.notification).toBeDefined();
-    expect(result.sagaTriggered).toBe(true);
-    expect(mockNotificationRepository.create).toHaveBeenCalled();
-    expect(mockTriggerSaga).toHaveBeenCalled();
+    it('should throw error when userId is missing', async () => {
+      const invalidDto = { ...validDto, userId: '' };
+
+      await expect(useCase.execute(invalidDto)).rejects.toThrow(NotificationValidationError);
+      await expect(useCase.execute(invalidDto)).rejects.toThrow('UserId is required');
+    });
+
+    it('should throw error when type is missing', async () => {
+      const invalidDto = { ...validDto, type: undefined as any };
+
+      await expect(useCase.execute(invalidDto)).rejects.toThrow(NotificationValidationError);
+    });
+
+    it('should throw error when channel is missing', async () => {
+      const invalidDto = { ...validDto, channel: undefined as any };
+
+      await expect(useCase.execute(invalidDto)).rejects.toThrow(NotificationValidationError);
+    });
+
+    it('should throw error when subject is missing', async () => {
+      const invalidDto = { ...validDto, subject: '' };
+
+      await expect(useCase.execute(invalidDto)).rejects.toThrow(NotificationValidationError);
+      await expect(useCase.execute(invalidDto)).rejects.toThrow('Subject is required');
+    });
+
+    it('should throw error when content is missing', async () => {
+      const invalidDto = { ...validDto, content: '' };
+
+      await expect(useCase.execute(invalidDto)).rejects.toThrow(NotificationValidationError);
+      await expect(useCase.execute(invalidDto)).rejects.toThrow('Content is required');
+    });
+
+    it('should throw RateLimitExceededError when rate limit exceeded', async () => {
+      mockDeliveryPolicy.canSendNotification.mockReturnValue({
+        allowed: false,
+        reason: 'Rate limit exceeded'
+      });
+
+      await expect(useCase.execute(validDto)).rejects.toThrow(RateLimitExceededError);
+    });
+
+    it('should throw NotificationValidationError when delivery not allowed', async () => {
+      mockDeliveryPolicy.canSendNotification.mockReturnValue({
+        allowed: false,
+        reason: 'User opted out'
+      });
+
+      await expect(useCase.execute(validDto)).rejects.toThrow(NotificationValidationError);
+      await expect(useCase.execute(validDto)).rejects.toThrow('User opted out');
+    });
+
+    it('should check user preferences', async () => {
+      const mockPreference = { channel: 'email', enabled: true };
+      mockPreferenceRepository.findByUserAndChannel.mockResolvedValue(mockPreference);
+      mockNotificationRepository.create.mockResolvedValue({ id: 'notif-1' } as any);
+
+      await useCase.execute(validDto);
+
+      expect(mockPreferenceRepository.findByUserAndChannel).toHaveBeenCalledWith('user-1', 'email');
+      expect(mockDeliveryPolicy.canSendNotification).toHaveBeenCalledWith(
+        { id: 'user-1' },
+        expect.any(Object),
+        mockPreference,
+        0
+      );
+    });
+
+    it('should check sent count for rate limiting', async () => {
+      mockNotificationRepository.getSentCountLastHour.mockResolvedValue(5);
+      mockNotificationRepository.create.mockResolvedValue({ id: 'notif-1' } as any);
+
+      await useCase.execute(validDto);
+
+      expect(mockNotificationRepository.getSentCountLastHour).toHaveBeenCalledWith('user-1', 'email');
+      expect(mockDeliveryPolicy.canSendNotification).toHaveBeenCalledWith(
+        { id: 'user-1' },
+        expect.any(Object),
+        undefined,
+        5
+      );
+    });
+
+    it('should validate notification before saving', async () => {
+      mockNotificationRepository.create.mockResolvedValue({ id: 'notif-1' } as any);
+
+      await useCase.execute(validDto);
+
+      expect(mockValidationService.validateNotification).toHaveBeenCalled();
+    });
+
+    it('should handle validation service errors', async () => {
+      mockValidationService.validateNotification.mockImplementation(() => {
+        throw new NotificationValidationError('Invalid notification format');
+      });
+
+      await expect(useCase.execute(validDto)).rejects.toThrow('Invalid notification format');
+    });
   });
 });

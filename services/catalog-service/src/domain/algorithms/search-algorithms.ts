@@ -45,24 +45,51 @@ export interface SearchResult {
  * Calculates term importance within documents and across corpus
  */
 export class TFIDFAlgorithm {
+  private precomputedIDF: Map<string, number> = new Map();
+  private storedTF: Map<string, Map<string, number>> = new Map();
+
+  buildOffline(documents: SearchableDocument[]): void {
+    const termDocFreq = new Map<string, number>();
+    const totalDocs = documents.length;
+
+    for (const doc of documents) {
+      const words = [...doc.title.split(/\s+/), ...doc.content.split(/\s+/)];
+      const termFreq = new Map<string, number>();
+      const uniqueTerms = new Set<string>();
+
+      for (const word of words) {
+        const term = word.toLowerCase();
+        if (term.length > 2) {
+          termFreq.set(term, (termFreq.get(term) || 0) + 1);
+          uniqueTerms.add(term);
+        }
+      }
+
+      this.storedTF.set(doc.id, termFreq);
+
+      for (const term of uniqueTerms) {
+        termDocFreq.set(term, (termDocFreq.get(term) || 0) + 1);
+      }
+    }
+
+    for (const [term, df] of termDocFreq) {
+      this.precomputedIDF.set(term, Math.log((totalDocs + 1) / (df + 1)));
+    }
+  }
+
   calculateTFIDF(
     term: string,
     document: string[],
     corpus: string[][]
   ): number {
-    // Term Frequency
     const tf = document.filter(word => word.toLowerCase() === term.toLowerCase()).length / document.length;
-
-    // Inverse Document Frequency
     let documentsWithTerm = 0;
     for (const doc of corpus) {
       if (doc.some(word => word.toLowerCase() === term.toLowerCase())) {
         documentsWithTerm++;
       }
     }
-
     const idf = Math.log(corpus.length / (1 + documentsWithTerm));
-
     return tf * idf;
   }
 
@@ -72,14 +99,12 @@ export class TFIDFAlgorithm {
     vocabulary: Set<string>
   ): Map<string, number> {
     const vector = new Map<string, number>();
-
     for (const term of vocabulary) {
       const score = this.calculateTFIDF(term, document, corpus);
       if (score > 0) {
         vector.set(term, score);
       }
     }
-
     return vector;
   }
 
@@ -88,31 +113,24 @@ export class TFIDFAlgorithm {
     documents: SearchableDocument[],
     corpus: string[][]
   ): SearchResult[] {
-    const vocabulary = new Set<string>();
-
-    // Build vocabulary from query and documents
-    query.forEach(term => vocabulary.add(term.toLowerCase()));
-    documents.forEach(doc => {
-      const words = [...doc.title.split(/\s+/), ...doc.content.split(/\s+/)];
-      words.forEach(word => vocabulary.add(word.toLowerCase()));
-    });
-
     const results: SearchResult[] = [];
+    const queryTerms = query.map(t => t.toLowerCase());
 
     for (const document of documents) {
-      const docWords = [...document.title.split(/\s+/), ...document.content.split(/\s+/)];
-      const docVector = this.buildTFIDFVector(docWords, corpus, vocabulary);
+      const docTF = this.storedTF.get(document.id);
+      if (!docTF) continue;
 
-      // Calculate query vector
-      const queryVector = this.buildTFIDFVector(query, corpus, vocabulary);
+      let score = 0;
+      for (const term of queryTerms) {
+        const tf = docTF.get(term) || 0;
+        const idf = this.precomputedIDF.get(term) || 0;
+        score += tf * idf;
+      }
 
-      // Cosine similarity between query and document
-      const relevanceScore = this.cosineSimilarity(queryVector, docVector);
-
-      if (relevanceScore > 0) {
+      if (score > 0) {
         results.push({
           documentId: document.id,
-          relevanceScore,
+          relevanceScore: score,
           matchDetails: {
             titleMatches: [],
             contentMatches: [],
@@ -120,7 +138,7 @@ export class TFIDFAlgorithm {
             fuzzyMatches: []
           },
           rankingFactors: {
-            textRelevance: relevanceScore,
+            textRelevance: score,
             recency: 0,
             popularity: 0,
             userPreference: 0,

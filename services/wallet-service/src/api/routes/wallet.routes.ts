@@ -78,15 +78,18 @@ export function createWalletRoutes(controller: WalletController): Router {
         controller.unfreezeFunds.bind(controller)
     );
 
+    // Top-up: Only BUYER and SELLER roles can top up their wallets
     router.post('/:userId/topup',
         AuthorizationMiddleware.authorizeWalletAccess(),
+        AuthorizationMiddleware.authorizeRole(['buyer', 'seller']),
         validateRequest(WalletValidator.topUp),
         controller.topUp.bind(controller)
     );
 
+    // Payout: Only ENABLER role can perform payouts (withdraw funds)
     router.post('/:userId/payout',
         AuthorizationMiddleware.authorizeWalletAccess(),
-        AuthorizationMiddleware.authorizeRole(['seller', 'supplier', 'courier', 'enabler', 'system']),
+        AuthorizationMiddleware.authorizeRole(['enabler']),
         validateRequest(WalletValidator.initiatePayout),
         controller.initiatePayout.bind(controller)
     );

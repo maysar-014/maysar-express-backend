@@ -33,4 +33,28 @@ describe('GetSalesAnalytics', () => {
 
         await expect(useCase.execute(sellerId)).rejects.toThrow('Fetch failed');
     });
+
+    it('should handle empty sales data', async () => {
+        repository.getSalesData.mockResolvedValue([]);
+        const result = await useCase.execute('seller-123');
+        expect(result).toEqual([]);
+    });
+
+    it('should validate seller ID', async () => {
+        await expect(useCase.execute('')).rejects.toThrow('Invalid seller ID');
+    });
+
+    it('should return aggregated metrics', async () => {
+        const mockData = [{ date: new Date(), revenue: 200, orders: 10 }];
+        repository.getSalesData.mockResolvedValue(mockData as any);
+        const result = await useCase.execute('seller-123');
+        expect(result[0].revenue).toBe(200);
+    });
+
+    it('should handle date range queries', async () => {
+        const mockData = [{ date: new Date(), revenue: 150, orders: 7 }];
+        repository.getSalesData.mockResolvedValue(mockData as any);
+        const result = await useCase.execute('seller-123', { startDate: '2024-01-01', endDate: '2024-12-31' });
+        expect(result).toBe(mockData);
+    });
 });

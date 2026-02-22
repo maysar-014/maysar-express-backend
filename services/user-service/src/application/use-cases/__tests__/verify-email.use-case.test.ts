@@ -51,4 +51,14 @@ describe('VerifyEmailUseCase', () => {
     const out = await sut.execute({ userId: 'u1', verificationToken: 'token' });
     expect(out.success).toBe(false);
   });
+
+  it('rejects invalid verification token', async () => {
+    const user = User.create({ id: 'u1', email: Email.create('a@gmail.com'), phoneNumber: PhoneNumber.create('+255712345678'), firstName: 'A', lastName: 'B', role: UserRole.BUYER });
+    const repo: any = { findById: jest.fn().mockResolvedValue(user), recordSecurityEvent: jest.fn() };
+    const publisher: any = { publish: jest.fn() };
+    const sut = new VerifyEmailUseCase(repo, publisher);
+    const out = await sut.execute({ userId: 'u1', verificationToken: 'invalid-token' });
+    expect(out.success).toBe(false);
+    expect(out.message).toContain('Invalid');
+  });
 });

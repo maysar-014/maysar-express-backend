@@ -1,0 +1,36 @@
+sequenceDiagram
+    autonumber
+    actor C as Courier
+    participant LS as Logistics Service
+    participant ENG as CODConfirmationEngine
+    participant REP as DeliveryRepository
+    actor B as Buyer
+
+    C->>LS: POST /cod/:id/otp
+    LS->>REP: findById(deliveryId)
+    REP-->>LS: delivery(isCOD: true)
+    LS->>ENG: generateOTP()
+    ENG-->>LS: { otp, hashedOtp, expiresAt }
+    LS->>REP: Save delivery (otp, expiresAt)
+    LS->>B: Send SMS/Push (OTP)
+    LS-->>C: 200 OK (Initiated)
+
+    Note over C, B: Courier arrives at location
+
+    C->>LS: POST /cod/:id/verify { otp, location }
+    LS->>REP: findById(deliveryId)
+    
+    LS->>ENG: isWithinProximity(current, target)
+    ENG-->>LS: boolean
+    
+    LS->>ENG: validateOTP(provided, stored)
+    ENG-->>LS: boolean
+
+    alt Valid OTP & Proximity
+        LS->>REP: Update delivery (codVerified: true, collected: true)
+        LS->>LS: complete_cod_delivery step
+        LS->>LS: Emit COD_DELIVERY_CONFIRMED
+        LS-->>C: 200 OK (Success)
+    else Invalid
+        LS-->>C: 400 Bad Request (Error Details)
+    end

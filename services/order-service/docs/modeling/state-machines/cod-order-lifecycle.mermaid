@@ -1,0 +1,25 @@
+stateDiagram-v2
+    [*] --> Pending: PlaceOrder (COD)
+    
+    Pending --> Confirmed: Admin/System Confirm
+    Pending --> Cancelled: Buyer/System Cancel (Hold Released)
+    
+    Confirmed --> Processing: Start Fulfillment
+    Processing --> Shipped: Handover to Logistics
+    
+    Shipped --> Delivered: OTP Verified & GPS Validated
+    Shipped --> Refused: Buyer Refuses (Commitment Captured)
+    Shipped --> Failed: Delivery Retries Exhausted
+    
+    Delivered --> WaitingForDispute: 24h Window Starts
+    
+    WaitingForDispute --> Settled: Window Expired (Payouts Triggered)
+    WaitingForDispute --> Disputed: Buyer Raises Dispute (Funds Frozen)
+    
+    Disputed --> Settled: Dispute Resolved (Manual Payout)
+    Disputed --> Refunded: Dispute Resolved (Refund to Buyer)
+    
+    Settled --> [*]
+    Cancelled --> [*]
+    Refused --> [*]
+    Refunded --> [*]

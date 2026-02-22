@@ -20,10 +20,19 @@ export enum UserRole {
 }
 
 /**
- * Check if user role is eligible for payouts
+ * Check if user role is eligible for payouts.
+ * Only ENABLER role can perform payouts (withdraw funds from wallet).
  */
 export function isPayoutEligibleRole(role: UserRole): boolean {
-  return role !== UserRole.BUYER;
+  return role === UserRole.ENABLER;
+}
+
+/**
+ * Check if user role is eligible for top-ups.
+ * Only BUYER and SELLER roles can top up their wallets.
+ */
+export function isTopUpEligibleRole(role: UserRole): boolean {
+  return role === UserRole.BUYER || role === UserRole.SELLER;
 }
 
 /**

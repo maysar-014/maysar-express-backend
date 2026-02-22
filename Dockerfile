@@ -18,7 +18,7 @@ RUN npm run build
 RUN npm prune --production
 
 # Runtime Stage
-FROM node:18-alpine
+FROM node:18-alpine AS runner
 
 # Install dumb-init
 RUN apk add --no-cache dumb-init

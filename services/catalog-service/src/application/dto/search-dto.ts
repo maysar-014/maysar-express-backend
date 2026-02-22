@@ -458,7 +458,8 @@ export interface SearchValidationResponseDto {
  */
 export function isProductSearchRequestDto(obj: any): obj is ProductSearchRequestDto {
   return (
-    obj &&
+    obj !== null &&
+    obj !== undefined &&
     typeof obj === 'object' &&
     (!obj.query || typeof obj.query === 'string') &&
     obj.filters &&
@@ -470,7 +471,9 @@ export function isProductSearchRequestDto(obj: any): obj is ProductSearchRequest
     obj.pagination &&
     typeof obj.pagination === 'object' &&
     typeof obj.pagination.page === 'number' &&
+    obj.pagination.page >= 1 &&
     typeof obj.pagination.limit === 'number' &&
+    obj.pagination.limit >= 1 &&
     obj.searchOptions &&
     typeof obj.searchOptions === 'object'
   );
@@ -478,7 +481,8 @@ export function isProductSearchRequestDto(obj: any): obj is ProductSearchRequest
 
 export function isProductSearchResponseDto(obj: any): obj is ProductSearchResponseDto {
   return (
-    obj &&
+    obj !== null &&
+    obj !== undefined &&
     typeof obj === 'object' &&
     Array.isArray(obj.results) &&
     typeof obj.total === 'number' &&
@@ -491,7 +495,8 @@ export function isProductSearchResponseDto(obj: any): obj is ProductSearchRespon
 
 export function isSearchTemplateDto(obj: any): obj is SearchTemplateDto {
   return (
-    obj &&
+    obj !== null &&
+    obj !== undefined &&
     typeof obj === 'object' &&
     typeof obj.templateId === 'string' &&
     typeof obj.name === 'string' &&

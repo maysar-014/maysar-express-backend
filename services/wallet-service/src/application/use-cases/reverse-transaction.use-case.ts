@@ -52,7 +52,7 @@ export class ReverseTransactionUseCase {
 
         // Apply Reversal Logic
         // Determine reversal type (CREDIT -> DEBIT, DEBIT -> CREDIT)
-        let reversalAmount = originalTransaction.amount;
+        const reversalAmount = originalTransaction.amount;
         let reversalType: TransactionType;
 
         if (originalTransaction.type === TransactionType.CREDIT) {

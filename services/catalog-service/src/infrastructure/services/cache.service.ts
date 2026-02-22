@@ -745,14 +745,54 @@ export class CacheWarmingStrategies {
       name: 'Search Index Warming',
       priority: 3,
       execute: async () => {
-        // In a real implementation, this would warm search cache
-        return [
-          {
-            key: 'search:popular:electronics',
-            data: ['laptop', 'phone', 'tablet'],
-            ttl: 1800 // 30 minutes
-          }
+        const popularQueries = [
+          'laptop', 'phone', 'tablet', 'headphones', 'camera',
+          'watch', 'keyboard', 'mouse', 'monitor', 'speaker'
         ];
+
+        const results: Array<{ key: string; data: any; ttl?: number }> = [];
+
+        for (const query of popularQueries) {
+          try {
+            const searchResults = await searchService.search({ text: query, filters: {} });
+            results.push({
+              key: CacheKeyGenerator.search.results(query, {}, { page: 1, limit: 20 }),
+              data: searchResults,
+              ttl: 300
+            });
+          } catch (error) {
+            console.error(`Failed to warm cache for query: ${query}`, error);
+          }
+        }
+
+        return results;
+      }
+    };
+  }
+
+  /**
+   * Facet warming strategy
+   */
+  static createFacetWarmingTask(searchService: any): CacheWarmingTask {
+    return {
+      id: 'facets',
+      name: 'Facet Warming',
+      priority: 4,
+      execute: async () => {
+        const results: Array<{ key: string; data: any; ttl?: number }> = [];
+
+        try {
+          const globalFacets = await searchService.getFacets({});
+          results.push({
+            key: CacheKeyGenerator.search.facets('', {}),
+            data: globalFacets,
+            ttl: 1800
+          });
+        } catch (error) {
+          console.error('Failed to warm facet cache', error);
+        }
+
+        return results;
       }
     };
   }

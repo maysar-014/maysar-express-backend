@@ -181,13 +181,13 @@ export class SearchProductsUseCase {
 
   private async performSearch(request: SearchProductsRequest): Promise<any[]> {
     try {
-      // Use search service if query is provided
       if (request.query && request.query.trim()) {
         const searchResults = await this.searchService.search(
           request.query,
           this.buildSearchFilters(request.filters),
           {
-            limit: 1000, // Get more results for filtering/sorting
+            limit: request.pagination.limit,
+            offset: (request.pagination.page - 1) * request.pagination.limit,
             sortBy: 'relevance'
           }
         );
@@ -195,18 +195,22 @@ export class SearchProductsUseCase {
         return searchResults;
       }
 
-      // Fallback to repository search for filter-only queries
       return await this.productRepository.search(
         this.buildRepositoryFilters(request.filters),
-        { limit: 1000 }
+        { 
+          limit: request.pagination.limit,
+          offset: (request.pagination.page - 1) * request.pagination.limit
+        }
       );
 
     } catch (error) {
       console.warn('Search service error, falling back to repository:', error);
-      // Fallback to repository search
       return await this.productRepository.search(
         this.buildRepositoryFilters(request.filters),
-        { limit: 1000 }
+        { 
+          limit: request.pagination.limit,
+          offset: (request.pagination.page - 1) * request.pagination.limit
+        }
       );
     }
   }

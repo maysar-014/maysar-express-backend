@@ -43,7 +43,7 @@ export class VelocityCheckPolicy {
         const txsInLastHour = recentTransactions.filter(t => t.createdAt >= oneHourAgo);
 
         let riskScore = 0;
-        let reasons: string[] = [];
+        const reasons: string[] = [];
 
         // 1. Frequency Checks
         if (txsInLastMinute.length >= this.config.maxTransactionsPerMinute) {

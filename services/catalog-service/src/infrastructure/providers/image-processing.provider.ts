@@ -288,7 +288,7 @@ export class SharpImageProvider {
     const metadata = await this.getImageMetadata(buffer);
 
     // Choose optimal format and settings
-    let options: ImageProcessingOptions = {
+    const options: ImageProcessingOptions = {
       quality: this.config.quality
     };
 

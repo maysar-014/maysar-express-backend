@@ -53,7 +53,7 @@ export class MatchProductUseCase {
         // 4. Determine decision based on match level
         let decision: 'AUTO_MERGED' | 'NEW_PRODUCT' | 'SELLER_CONFIRMED' | 'SELLER_REJECTED';
         let confirmationId: string | undefined;
-        let auditMetadata: any = {};
+        const auditMetadata: any = {};
 
         if (matchResult.isExactMatch() || matchResult.isStrongMatch()) {
             decision = 'AUTO_MERGED';

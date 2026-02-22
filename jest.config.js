@@ -10,6 +10,11 @@ module.exports = {
       testEnvironment: 'node',
       testMatch: ['<rootDir>/services/user-service/**/*.test.ts'],
       setupFilesAfterEnv: ['<rootDir>/tests/setup/user-service/setup.ts'],
+      collectCoverageFrom: [
+        '<rootDir>/services/user-service/src/**/*.ts',
+        '!<rootDir>/services/user-service/src/**/*.test.ts',
+        '!<rootDir>/services/user-service/src/**/__tests__/**'
+      ],
       moduleNameMapper: {
         '@user/(.*)': '<rootDir>/services/user-service/src/$1',
         '@api/(.*)': '<rootDir>/services/user-service/src/api/$1',
@@ -121,6 +126,11 @@ module.exports = {
       testEnvironment: 'node',
       testMatch: ['<rootDir>/services/catalog-service/**/*.test.ts'],
       setupFilesAfterEnv: ['<rootDir>/tests/setup/catalog-service/setup.ts'],
+      collectCoverageFrom: [
+        '<rootDir>/services/catalog-service/src/**/*.ts',
+        '!<rootDir>/services/catalog-service/src/**/*.test.ts',
+        '!<rootDir>/services/catalog-service/src/**/__tests__/**'
+      ],
       moduleNameMapper: {
         '@catalog/(.*)': '<rootDir>/services/catalog-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
@@ -132,6 +142,11 @@ module.exports = {
       testEnvironment: 'node',
       testMatch: ['<rootDir>/services/checkout-service/**/*.test.ts'],
       setupFilesAfterEnv: ['<rootDir>/tests/setup/checkout-service/setup.ts'],
+      collectCoverageFrom: [
+        '<rootDir>/services/checkout-service/src/**/*.ts',
+        '!<rootDir>/services/checkout-service/src/**/*.test.ts',
+        '!<rootDir>/services/checkout-service/src/**/__tests__/**'
+      ],
       moduleNameMapper: {
         '@checkout/(.*)': '<rootDir>/services/checkout-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
@@ -157,6 +172,7 @@ module.exports = {
       moduleNameMapper: {
         '@community/(.*)': '<rootDir>/services/community-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': '<rootDir>/node_modules/uuid/dist/index.js',
       }
     },
     {
@@ -331,6 +347,7 @@ module.exports = {
       testMatch: ['<rootDir>/shared/**/*.test.ts'],
       moduleNameMapper: {
       }
+    }
   ],
 
   // Coverage configuration
@@ -408,6 +425,28 @@ module.exports = {
   coverageReporters: ['text', 'text-summary', 'html', 'lcov', 'json-summary'],
 
   maxWorkers: '50%',
+  moduleNameMapper: {
+    '^uuid$': require.resolve('uuid'),
+  },
+  transformIgnorePatterns: [
+    '/node_modules/(?!(uuid)/)',
+  ],
   detectOpenHandles: true,
-  forceExit: true
+  forceExit: true,
+  
+  // Global setup and teardown
+  globalSetup: '<rootDir>/tests/global-setup.js',
+  globalTeardown: '<rootDir>/tests/global-teardown.js',
+  
+  // Prevent memory leaks - aggressive settings
+  maxConcurrency: 3,
+  workerIdleMemoryLimit: '256MB',
+  
+  // Run tests in band to reduce memory usage
+  bail: false,
+  
+  // Clear cache between test runs
+  clearMocks: true,
+  resetMocks: true,
+  restoreMocks: true
 };

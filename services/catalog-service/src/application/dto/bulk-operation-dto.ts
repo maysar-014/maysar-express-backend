@@ -552,7 +552,8 @@ export interface BulkOperationTemplateDto {
  */
 export function isBulkOperationCommandDto(obj: any): obj is BulkOperationCommandDto {
   return (
-    obj &&
+    obj !== null &&
+    obj !== undefined &&
     typeof obj === 'object' &&
     typeof obj.operationId === 'string' &&
     [
@@ -574,7 +575,8 @@ export function isBulkOperationCommandDto(obj: any): obj is BulkOperationCommand
 
 export function isBulkOperationResultDto(obj: any): obj is BulkOperationResultDto {
   return (
-    obj &&
+    obj !== null &&
+    obj !== undefined &&
     typeof obj === 'object' &&
     typeof obj.operationId === 'string' &&
     ['pending', 'processing', 'completed', 'failed', 'cancelled', 'partial_success'].includes(obj.status) &&
@@ -589,7 +591,8 @@ export function isBulkOperationResultDto(obj: any): obj is BulkOperationResultDt
 
 export function isBulkOperationTemplateDto(obj: any): obj is BulkOperationTemplateDto {
   return (
-    obj &&
+    obj !== null &&
+    obj !== undefined &&
     typeof obj === 'object' &&
     typeof obj.templateId === 'string' &&
     typeof obj.name === 'string' &&

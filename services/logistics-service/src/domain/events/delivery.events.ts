@@ -117,3 +117,55 @@ export type DeliveryEvent =
   | DeliveryDeliveredEvent
   | DeliveryFailedEvent
   | DeliveryCancelledEvent;
+
+/**
+ * Factory function to create immutable delivery events
+ */
+export function createDeliveryRequestedEvent(data: Omit<DeliveryRequestedEvent, 'eventType'>): Readonly<DeliveryRequestedEvent> {
+  return Object.freeze({
+    eventType: 'DeliveryRequested' as const,
+    ...data
+  });
+}
+
+export function createCourierAssignedEvent(data: Omit<CourierAssignedEvent, 'eventType'>): Readonly<CourierAssignedEvent> {
+  return Object.freeze({
+    eventType: 'CourierAssigned' as const,
+    ...data
+  });
+}
+
+export function createDeliveryPickedUpEvent(data: Omit<DeliveryPickedUpEvent, 'eventType'>): Readonly<DeliveryPickedUpEvent> {
+  return Object.freeze({
+    eventType: 'DeliveryPickedUp' as const,
+    ...data
+  });
+}
+
+export function createDeliveryInTransitEvent(data: Omit<DeliveryInTransitEvent, 'eventType'>): Readonly<DeliveryInTransitEvent> {
+  return Object.freeze({
+    eventType: 'DeliveryInTransit' as const,
+    ...data
+  });
+}
+
+export function createDeliveryDeliveredEvent(data: Omit<DeliveryDeliveredEvent, 'eventType'>): Readonly<DeliveryDeliveredEvent> {
+  return Object.freeze({
+    eventType: 'DeliveryDelivered' as const,
+    ...data
+  });
+}
+
+export function createDeliveryFailedEvent(data: Omit<DeliveryFailedEvent, 'eventType'>): Readonly<DeliveryFailedEvent> {
+  return Object.freeze({
+    eventType: 'DeliveryFailed' as const,
+    ...data
+  });
+}
+
+export function createDeliveryCancelledEvent(data: Omit<DeliveryCancelledEvent, 'eventType'>): Readonly<DeliveryCancelledEvent> {
+  return Object.freeze({
+    eventType: 'DeliveryCancelled' as const,
+    ...data
+  });
+}

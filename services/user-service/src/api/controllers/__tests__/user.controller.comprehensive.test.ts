@@ -11,6 +11,11 @@ describe('UserController', () => {
   let mockVerifyPhoneUseCase: any;
   let mockSetupTwoFactorUseCase: any;
   let mockReportSecurityBreachUseCase: any;
+  let mockGetUserUseCase: any;
+  let mockUpdateUserUseCase: any;
+  let mockVerifyEmailUseCase: any;
+  let mockEmailService: any;
+  let mockNotificationClient: any;
   let mockReq: Partial<Request>;
   let mockRes: Partial<Response>;
 
@@ -23,6 +28,11 @@ describe('UserController', () => {
     mockVerifyPhoneUseCase = { execute: jest.fn() };
     mockSetupTwoFactorUseCase = { execute: jest.fn() };
     mockReportSecurityBreachUseCase = { execute: jest.fn() };
+    mockGetUserUseCase = { execute: jest.fn() };
+    mockUpdateUserUseCase = { execute: jest.fn() };
+    mockVerifyEmailUseCase = { execute: jest.fn() };
+    mockEmailService = { sendPasswordResetEmail: jest.fn(), sendEmail: jest.fn() };
+    mockNotificationClient = { notify: jest.fn() };
 
     controller = new UserController(
       mockCreateUserUseCase,
@@ -32,7 +42,12 @@ describe('UserController', () => {
       mockChangeRoleUseCase,
       mockVerifyPhoneUseCase,
       mockSetupTwoFactorUseCase,
-      mockReportSecurityBreachUseCase
+      mockReportSecurityBreachUseCase,
+      mockGetUserUseCase,
+      mockUpdateUserUseCase,
+      mockVerifyEmailUseCase,
+      mockEmailService,
+      mockNotificationClient
     );
 
     mockReq = { params: {}, body: {}, headers: {} };
@@ -111,13 +126,18 @@ describe('UserController', () => {
     test('returns 501 when use case not provided', async () => {
       const controllerNoUseCase = new UserController(
         mockCreateUserUseCase,
-        null as any, // changePasswordUseCase
-        null as any, // deleteAccountUseCase
-        null as any, // suspendAccountUseCase
-        null as any, // changeRoleUseCase
-        null as any, // verifyPhoneUseCase
-        null as any, // setupTwoFactorUseCase
-        null as any  // reportSecurityBreachUseCase
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any
       );
       await controllerNoUseCase.changePassword(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(501);
@@ -157,13 +177,18 @@ describe('UserController', () => {
     test('returns 501 when use case not provided', async () => {
       const controllerNoUseCase = new UserController(
         mockCreateUserUseCase,
-        null as any, // changePasswordUseCase
-        null as any, // deleteAccountUseCase
-        null as any, // suspendAccountUseCase
-        null as any, // changeRoleUseCase
-        null as any, // verifyPhoneUseCase
-        null as any, // setupTwoFactorUseCase
-        null as any  // reportSecurityBreachUseCase
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any
       );
       await controllerNoUseCase.deleteAccount(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(501);
@@ -184,13 +209,18 @@ describe('UserController', () => {
     test('returns 501 when use case not provided', async () => {
       const controllerNoUseCase = new UserController(
         mockCreateUserUseCase,
-        null as any, // changePasswordUseCase
-        null as any, // deleteAccountUseCase
-        null as any, // suspendAccountUseCase
-        null as any, // changeRoleUseCase
-        null as any, // verifyPhoneUseCase
-        null as any, // setupTwoFactorUseCase
-        null as any  // reportSecurityBreachUseCase
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any
       );
       await controllerNoUseCase.suspendAccount(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(501);
@@ -211,13 +241,18 @@ describe('UserController', () => {
     test('returns 501 when use case not provided', async () => {
       const controllerNoUseCase = new UserController(
         mockCreateUserUseCase,
-        null as any, // changePasswordUseCase
-        null as any, // deleteAccountUseCase
-        null as any, // suspendAccountUseCase
-        null as any, // changeRoleUseCase
-        null as any, // verifyPhoneUseCase
-        null as any, // setupTwoFactorUseCase
-        null as any  // reportSecurityBreachUseCase
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any
       );
       await controllerNoUseCase.changeRole(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(501);
@@ -238,13 +273,18 @@ describe('UserController', () => {
     test('returns 501 when use case not provided', async () => {
       const controllerNoUseCase = new UserController(
         mockCreateUserUseCase,
-        null as any, // changePasswordUseCase
-        null as any, // deleteAccountUseCase
-        null as any, // suspendAccountUseCase
-        null as any, // changeRoleUseCase
-        null as any, // verifyPhoneUseCase
-        null as any, // setupTwoFactorUseCase
-        null as any  // reportSecurityBreachUseCase
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any
       );
       await controllerNoUseCase.verifyPhone(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(501);
@@ -264,13 +304,18 @@ describe('UserController', () => {
     test('returns 501 when use case not provided', async () => {
       const controllerNoUseCase = new UserController(
         mockCreateUserUseCase,
-        null as any, // changePasswordUseCase
-        null as any, // deleteAccountUseCase
-        null as any, // suspendAccountUseCase
-        null as any, // changeRoleUseCase
-        null as any, // verifyPhoneUseCase
-        null as any, // setupTwoFactorUseCase
-        null as any  // reportSecurityBreachUseCase
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any
       );
       await controllerNoUseCase.setupTwoFactor(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(501);
@@ -290,13 +335,18 @@ describe('UserController', () => {
     test('returns 501 when use case not provided', async () => {
       const controllerNoUseCase = new UserController(
         mockCreateUserUseCase,
-        null as any, // changePasswordUseCase
-        null as any, // deleteAccountUseCase
-        null as any, // suspendAccountUseCase
-        null as any, // changeRoleUseCase
-        null as any, // verifyPhoneUseCase
-        null as any, // setupTwoFactorUseCase
-        null as any  // reportSecurityBreachUseCase
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any
       );
       await controllerNoUseCase.reportSecurityBreach(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(501);

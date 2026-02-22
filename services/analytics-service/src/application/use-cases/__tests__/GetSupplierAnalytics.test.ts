@@ -38,4 +38,33 @@ describe('GetSupplierAnalytics', () => {
         expect(repository.getMetrics).toHaveBeenCalledWith(supplierId);
         expect(result).toBe(mockResult);
     });
+
+    it('should handle missing supplier', async () => {
+        repository.getMetrics = jest.fn().mockResolvedValue(null);
+        const result = await useCase.execute('sup-999');
+        expect(result).toBeNull();
+    });
+
+    it('should return quality metrics', async () => {
+        const mockResult = { supplierId: 's1', qualityScore: 98, defectRate: 0.02 };
+        repository.getMetrics = jest.fn().mockResolvedValue(mockResult);
+        const result = await useCase.execute('s1');
+        expect(result.qualityScore).toBe(98);
+    });
+
+    it('should handle repository errors', async () => {
+        repository.getMetrics = jest.fn().mockRejectedValue(new Error('Connection failed'));
+        await expect(useCase.execute('sup-001')).rejects.toThrow('Connection failed');
+    });
+
+    it('should validate supplier ID', async () => {
+        await expect(useCase.execute('')).rejects.toThrow('Invalid supplier ID');
+    });
+
+    it('should return performance trends', async () => {
+        const mockResult = { supplierId: 's1', trend: 'improving', score: 92 };
+        repository.getMetrics = jest.fn().mockResolvedValue(mockResult);
+        const result = await useCase.execute('s1');
+        expect(result.trend).toBe('improving');
+    });
 });

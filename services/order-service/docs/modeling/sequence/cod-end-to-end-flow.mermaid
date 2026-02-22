@@ -1,0 +1,43 @@
+sequenceDiagram
+    autonumber
+    actor B as Buyer
+    participant OS as Order Service
+    participant LS as Logistics Service
+    participant WS as Wallet Service
+    actor C as Courier
+
+    B->>OS: POST /orders (paymentMethod: COD)
+    OS->>OS: CODEligibilityEngine.checkEligibility()
+    OS->>WS: CODCommitmentService.secureCommitment(5%)
+    WS-->>OS: holdId (Reserved Funds)
+    OS->>OS: Save Order (status: Pending, holdId)
+    OS-->>B: 201 Created (Pending Confirmation)
+
+    Note over OS, LS: Order Processed & Handed to Logistics
+
+    C->>LS: POST /cod/:deliveryId/otp
+    LS->>LS: CODDeliverySaga.start()
+    LS->>OS: Get Delivery Context (Buyer/Seller IDs)
+    LS->>LS: Generate & Send OTP
+    LS-->>C: 200 OK (OTP Sent)
+
+    C->>B: At Delivery Point (Request OTP)
+    B-->>C: Provides OTP
+
+    C->>LS: POST /cod/:deliveryId/verify (OTP + GPS)
+    LS->>LS: verify_cod_delivery step
+    LS->>LS: Proximity & OTP Check
+    LS->>LS: complete_cod_delivery step
+    LS-->>C: 200 OK (Verification Success)
+
+    LS->>WS: Trigger CODSettlementSaga (holdId, amount)
+    
+    rect rgb(240, 240, 240)
+        Note right of WS: CODSettlementSaga Flow
+        WS->>WS: WaitForDisputeWindow (24h)
+        WS->>WS: ProcessCODCommitment (Release Hold)
+        WS->>WS: PayoutSellerAndCourier
+        WS->>OS: Event: Settlement.Completed
+    end
+
+    OS->>OS: Update Order status: Settled

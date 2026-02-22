@@ -6,6 +6,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-in-productio
 export interface UserContext {
     userId: string;
     roles: string[];
+    email?: string;
+    permissions?: string[];
 }
 
 declare global {

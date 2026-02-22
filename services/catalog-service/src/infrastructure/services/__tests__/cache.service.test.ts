@@ -10,6 +10,9 @@ import { CacheKeyGenerator } from '../../providers/cache-provider';
 describe('DistributedCacheService', () => {
   let cacheService: DistributedCacheService;
   let mockConfig: Partial<CacheServiceConfig>;
+  
+  // Cast to any once at the top to avoid repeated casting
+  const getCacheServiceAny = () => cacheService as any;
 
   beforeEach(() => {
     mockConfig = {
@@ -418,8 +421,8 @@ describe('DistributedCacheService', () => {
 
   describe('Cache Provider Integration', () => {
     it('should use memory provider by default', () => {
-      expect(cacheService['provider']).toBeDefined();
-      expect(cacheService['provider'].constructor.name).toBe('MemoryCacheProvider');
+      expect(getCacheServiceAny()['cache']).toBeDefined();
+      expect(getCacheServiceAny()['cache'].constructor.name).toBe('MemoryCacheProvider');
     });
 
     it('should use Redis provider when configured', () => {
@@ -430,7 +433,7 @@ describe('DistributedCacheService', () => {
       };
 
       const redisCacheService = new DistributedCacheService(redisConfig);
-      expect(redisCacheService['provider']).toBeDefined();
+      expect((redisCacheService as any)['cache']).toBeDefined();
       // Note: Actual Redis provider class name would depend on implementation
     });
 
@@ -441,7 +444,7 @@ describe('DistributedCacheService', () => {
       };
 
       const hybridCacheService = new DistributedCacheService(hybridConfig);
-      expect(hybridCacheService['provider']).toBeDefined();
+      expect((hybridCacheService as any)['cache']).toBeDefined();
       // Note: Actual hybrid provider class name would depend on implementation
     });
   });
@@ -474,7 +477,7 @@ describe('DistributedCacheService', () => {
         })
       };
 
-      cacheService['provider'] = mockProvider;
+      getCacheServiceAny()['cache'] = mockProvider;
 
       // Operations should not throw, but may return null/undefined
       const result = await cacheService.get('test-key');
@@ -486,11 +489,11 @@ describe('DistributedCacheService', () => {
 
     it('should handle invalidation errors gracefully', async () => {
       const mockProvider = {
-        ...cacheService['provider'],
+        ...getCacheServiceAny()['cache'],
         invalidateByPattern: jest.fn().mockRejectedValue(new Error('Invalidation error'))
       };
 
-      cacheService['provider'] = mockProvider;
+      getCacheServiceAny()['cache'] = mockProvider;
 
       const deletedCount = await cacheService.invalidateByPattern('test:*');
       expect(deletedCount).toBe(0);
@@ -565,8 +568,8 @@ describe('DistributedCacheService', () => {
 
   describe('Cache Key Generation', () => {
     it('should generate consistent cache keys', () => {
-      const key1 = cacheService['generateKey']('test-key');
-      const key2 = cacheService['generateKey']('test-key');
+      const key1 = getCacheServiceAny()['getFullKey']('test-key');
+      const key2 = getCacheServiceAny()['getFullKey']('test-key');
 
       expect(key1).toBe(key2);
       expect(key1).toContain('test:test-key');
@@ -579,14 +582,14 @@ describe('DistributedCacheService', () => {
         variant: 'red-m'
       };
 
-      const generatedKey = cacheService['generateKey'](complexKey);
+      const generatedKey = getCacheServiceAny()['getFullKey'](complexKey);
       expect(generatedKey).toContain('test');
       expect(generatedKey).toContain('product');
     });
 
     it('should handle array keys', () => {
       const arrayKey = ['product', '123', 'variant'];
-      const generatedKey = cacheService['generateKey'](arrayKey);
+      const generatedKey = getCacheServiceAny()['getFullKey'](arrayKey);
 
       expect(generatedKey).toContain('test');
       expect(generatedKey).toContain('product');

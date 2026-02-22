@@ -1,18 +1,22 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import { moduleRegistry } from './core/module-registry';
+import { prisma } from './config/prisma';
 
 export const createApp = () => {
     const app = express();
 
     // Global Middleware
-    app.use(cors());
+    const corsOrigin = process.env.CORS_ORIGIN
+        ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+        : false;
+    app.use(cors({ origin: corsOrigin }));
     app.use(helmet());
     app.use(compression());
-    app.use(morgan('dev'));
+    app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
 
@@ -47,13 +51,7 @@ export const createApp = () => {
 
         // Check Database
         try {
-            // We lazily instantiate a client for health checks if not available via DI
-            // In a real monolith, we should reuse the existing connection pool
-            // For this implementation, we'll verify if we can connect to the default DB
-            const { PrismaClient } = await import('@prisma/client');
-            const prisma = new PrismaClient(); // ideally verify if we can reuse an existing instance
             await prisma.$queryRaw`SELECT 1`;
-            await prisma.$disconnect();
             checks.database = 'connected';
         } catch (error) {
             checks.database = 'disconnected';
@@ -85,6 +83,20 @@ export const createApp = () => {
         } else {
             res.status(503).json({ status: 'not ready', checks });
         }
+    });
+
+    // Global Error Handler
+    app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+        console.error(err);
+        const status = err.status ?? err.statusCode ?? 500;
+        const response: any = {
+            error: 'Internal Server Error',
+            message: err.message || 'An unexpected error occurred'
+        };
+        if (process.env.NODE_ENV !== 'production') {
+            response.stack = err.stack;
+        }
+        res.status(status).json(response);
     });
 
     // 404 Handler

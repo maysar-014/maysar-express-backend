@@ -42,4 +42,28 @@ describe('GetSellerDashboard', () => {
 
         await expect(useCase.execute(sellerId)).rejects.toThrow('Database error');
     });
+
+    it('should handle missing seller', async () => {
+        repositoryFn.getMetrics.mockResolvedValue(null);
+        const result = await useCase.execute('seller-999');
+        expect(result).toBeNull();
+    });
+
+    it('should validate seller ID', async () => {
+        await expect(useCase.execute('')).rejects.toThrow('Invalid seller ID');
+    });
+
+    it('should return complete dashboard metrics', async () => {
+        const mockMetrics = { sellerId: 's1', revenue: 5000, orders: 50, rating: 4.5 };
+        repositoryFn.getMetrics.mockResolvedValue(mockMetrics as any);
+        const result = await useCase.execute('s1');
+        expect(result.revenue).toBe(5000);
+    });
+
+    it('should handle zero metrics', async () => {
+        const mockMetrics = { sellerId: 's1', revenue: 0, orders: 0 };
+        repositoryFn.getMetrics.mockResolvedValue(mockMetrics as any);
+        const result = await useCase.execute('s1');
+        expect(result.orders).toBe(0);
+    });
 });

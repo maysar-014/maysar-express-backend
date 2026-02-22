@@ -15,8 +15,8 @@ import {
 } from '../../policies/visibility-policies';
 
 describe('VisibilityRuleEngine', () => {
-  let engine;
-  let mockContext;
+  let engine: VisibilityRuleEngine;
+  let mockContext: VisibilityContext;
 
   beforeEach(() => {
     engine = new VisibilityRuleEngine();

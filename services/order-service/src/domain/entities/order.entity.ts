@@ -25,6 +25,20 @@ export class Order {
   public createdAt: Date;
   public updatedAt: Date;
 
+  // COD Specific Fields
+  public codCommitmentFee?: number;
+  public codCommitmentPaid: boolean = false;
+  public codReputationScore?: number;
+  public codEligibilityChecked: boolean = false;
+  public codDeliveryOtp?: string;
+  public codOtpExpiresAt?: Date;
+  public codDeliveryConfirmedAt?: Date;
+  public codDeliveryConfirmedBy?: string;
+  public codProofGpsLat?: number;
+  public codProofGpsLng?: number;
+  public codProofTimestamp?: Date;
+  public codCommitmentHoldId?: string;
+
   constructor(data: any) {
     // ID must be provided - no infrastructure dependencies in domain
     if (!data.id) {
@@ -49,6 +63,20 @@ export class Order {
     );
     this.createdAt = new Date();
     this.updatedAt = new Date();
+
+    // Assign COD fields if provided
+    this.codCommitmentFee = data.codCommitmentFee;
+    this.codCommitmentPaid = data.codCommitmentPaid || false;
+    this.codReputationScore = data.codReputationScore;
+    this.codEligibilityChecked = data.codEligibilityChecked || false;
+    this.codDeliveryOtp = data.codDeliveryOtp;
+    if (data.codOtpExpiresAt) this.codOtpExpiresAt = new Date(data.codOtpExpiresAt);
+    if (data.codDeliveryConfirmedAt) this.codDeliveryConfirmedAt = new Date(data.codDeliveryConfirmedAt);
+    this.codDeliveryConfirmedBy = data.codDeliveryConfirmedBy;
+    this.codProofGpsLat = data.codProofGpsLat;
+    this.codProofGpsLng = data.codProofGpsLng;
+    if (data.codProofTimestamp) this.codProofTimestamp = new Date(data.codProofTimestamp);
+    this.codCommitmentHoldId = data.codCommitmentHoldId;
   }
 
   updateStatus(newStatus: OrderStatus): void {

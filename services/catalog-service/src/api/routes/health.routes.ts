@@ -33,24 +33,30 @@ export function createHealthRoutes(
 ): Router {
   const router = Router();
   const routesConfig = { ...DEFAULT_HEALTH_ROUTES_CONFIG, ...config };
-  const apiPrefix = `/api/${routesConfig.apiVersion}`;
 
   // =====================================================================================
-  // BASIC HEALTH CHECKS
+  // BASIC HEALTH CHECKS (without prefix - prefix applied when mounting)
   // =====================================================================================
 
   /**
    * Basic Health Check
-   * GET /api/v1/health
+   * GET /health
    */
-  router.get(`${apiPrefix}/health`,
+  router.get('/health',
     async (req, res) => {
       const healthStatus = {
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        version: '1.0.0',
-        service: 'catalog-service'
+        success: true,
+        data: {
+          status: 'healthy',
+          timestamp: new Date().toISOString(),
+          uptime: process.uptime(),
+          version: '1.0.0',
+          service: 'catalog-service'
+        },
+        meta: {
+          timestamp: new Date().toISOString(),
+          request: { method: req.method, path: req.path }
+        }
       };
 
       res.status(200).json(healthStatus);
@@ -59,20 +65,26 @@ export function createHealthRoutes(
 
   /**
    * Readiness Probe
-   * GET /api/v1/health/ready
+   * GET /health/ready
    */
-  router.get(`${apiPrefix}/health/ready`,
+  router.get('/health/ready',
     async (req, res) => {
-      // Check if service is ready to accept traffic
       const isReady = await checkServiceReadiness();
 
       const readinessStatus = {
-        status: isReady ? 'ready' : 'not_ready',
-        timestamp: new Date().toISOString(),
-        checks: {
-          database: isReady,
-          cache: isReady,
-          messageBus: isReady
+        success: isReady,
+        data: {
+          status: isReady ? 'ready' : 'not_ready',
+          timestamp: new Date().toISOString(),
+          checks: {
+            database: isReady,
+            cache: isReady,
+            messageBus: isReady
+          }
+        },
+        meta: {
+          timestamp: new Date().toISOString(),
+          request: { method: req.method, path: req.path }
         }
       };
 
@@ -82,18 +94,24 @@ export function createHealthRoutes(
 
   /**
    * Liveness Probe
-   * GET /api/v1/health/live
+   * GET /health/live
    */
-  router.get(`${apiPrefix}/health/live`,
+  router.get('/health/live',
     async (req, res) => {
-      // Basic liveness check - if we can respond, we're alive
       const livenessStatus = {
-        status: 'alive',
-        timestamp: new Date().toISOString(),
-        memory: {
-          used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-          total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-          unit: 'MB'
+        success: true,
+        data: {
+          status: 'alive',
+          timestamp: new Date().toISOString(),
+          memory: {
+            used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+            total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+            unit: 'MB'
+          }
+        },
+        meta: {
+          timestamp: new Date().toISOString(),
+          request: { method: req.method, path: req.path }
         }
       };
 
@@ -101,82 +119,20 @@ export function createHealthRoutes(
     }
   );
 
-  // =====================================================================================
-  // DETAILED HEALTH CHECKS
-  // =====================================================================================
-
-  /**
-   * Detailed Health Check
-   * GET /api/v1/health/detailed
-   */
-  router.get(`${apiPrefix}/health/detailed`,
-    async (req, res) => {
-      if (!routesConfig.enableDetailedHealth) {
-        return res.status(403).json({
-          status: 'forbidden',
-          message: 'Detailed health checks are disabled'
-        });
+  // 404 handler for unknown routes
+  router.use((req, res) => {
+    res.status(404).json({
+      success: false,
+      error: {
+        code: 'NOT_FOUND',
+        message: `Route ${req.method} ${req.path} not found`
+      },
+      meta: {
+        timestamp: new Date().toISOString(),
+        request: { method: req.method, path: req.path }
       }
-
-      const detailedHealth = await getDetailedHealthStatus();
-
-      const statusCode = detailedHealth.overall === 'healthy' ? 200 :
-                        detailedHealth.overall === 'degraded' ? 200 : 503;
-
-      res.status(statusCode).json(detailedHealth);
-    }
-  );
-
-  /**
-   * Health Check for Load Balancer
-   * GET /health
-   */
-  router.get('/health',
-    async (req, res) => {
-      // Simple health check for load balancers
-      res.status(200).send('OK');
-    }
-  );
-
-  /**
-   * Ping Endpoint
-   * GET /api/v1/ping
-   */
-  router.get(`${apiPrefix}/ping`,
-    async (req, res) => {
-      res.status(200).json({
-        pong: true,
-        timestamp: new Date().toISOString(),
-        service: 'catalog-service'
-      });
-    }
-  );
-
-  /**
-   * Service Info
-   * GET /api/v1/info
-   */
-  router.get(`${apiPrefix}/info`,
-    async (req, res) => {
-      const serviceInfo = {
-        service: 'catalog-service',
-        version: '1.0.0',
-        environment: process.env.NODE_ENV || 'development',
-        uptime: Math.floor(process.uptime()),
-        timestamp: new Date().toISOString(),
-        endpoints: [
-          'GET /api/v1/health',
-          'GET /api/v1/health/ready',
-          'GET /api/v1/health/live',
-          'GET /api/v1/health/detailed',
-          'GET /api/v1/ping',
-          'GET /api/v1/info'
-        ]
-      };
-
-      res.status(200).json(serviceInfo);
-    }
-  );
+    });
+  });
 
   return router;
 }

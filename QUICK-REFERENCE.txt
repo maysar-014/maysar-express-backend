@@ -1,0 +1,162 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                    🚀 TURBO TEST AUTOMATION                               ║
+║                         QUICK REFERENCE                                   ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 🎯 QUICK START                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+  Windows (One-Click):
+    run-automation.bat
+
+  Manual (Any OS):
+    node scripts/master-automation.js <phase>
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 📋 COMMANDS                                                             │
+└─────────────────────────────────────────────────────────────────────────┘
+
+  Complete Automation (Generate + Test + Verify):
+    node scripts/master-automation.js 1        # Phase 1
+    node scripts/master-automation.js 2        # Phase 2
+    node scripts/master-automation.js 3        # Phase 3
+    node scripts/master-automation.js 4        # Phase 4
+    node scripts/master-automation.js 5        # Phase 5
+
+  Generate Tests Only:
+    node scripts/turbo-test-generator.js <service>
+    node scripts/batch-test-generator.js <phase>
+
+  Legacy Scripts (Still Work):
+    node scripts/generate-tests.js <service>
+    node scripts/phase-automation.js <phase>
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 📊 PHASES                                                               │
+└─────────────────────────────────────────────────────────────────────────┘
+
+  Phase 1: Critical Fixes (3 services, 90% target, 4 hours)
+    • user-service
+    • catalog-service
+    • checkout-service
+
+  Phase 2: Zero-Test Services (4 services, 90% target, 6 hours)
+    • inventory-service
+    • compliance-service
+    • session-service
+    • maps-service
+
+  Phase 3: Minimal Coverage (11 services, 90% target, 16 hours)
+    • order-service, logistics-service, campaign-service
+    • two-factor-service, support-service, business-registry-service
+    • community-service, enabler-service, pricing-service
+    • production-service, analytics-service
+
+  Phase 4: Medium Coverage (4 services, 95% target, 6 hours)
+    • commission-service
+    • wallet-service
+    • notification-service
+    • training-service
+
+  Phase 5: Excellent Coverage (4 services, 95% target, 4 hours)
+    • payout-service
+    • payment-service
+    • sms-service
+    • auth-service
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 📈 MONITORING                                                           │
+└─────────────────────────────────────────────────────────────────────────┘
+
+  Run Tests with Coverage:
+    npm run test:coverage
+
+  View HTML Report:
+    start coverage/index.html
+
+  Check Phase Reports:
+    PHASE1-COMPLETE-REPORT.md
+    PHASE1-COMPLETE-REPORT.json
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 📚 DOCUMENTATION                                                        │
+└─────────────────────────────────────────────────────────────────────────┘
+
+  AUTOMATION-SUMMARY.md          Executive summary & next steps
+  TURBO-AUTOMATION-GUIDE.md      Complete usage guide
+  MANUAL-VS-AUTOMATED.md         Comparison analysis
+  95-PERCENT-COVERAGE-PLAN.txt   Original manual plan
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ ⚡ EXPECTED RESULTS                                                     │
+└─────────────────────────────────────────────────────────────────────────┘
+
+  Time:     4.5 days (vs 6 weeks manual)
+  Cost:     $1,800 (vs $20,000 manual)
+  Coverage: 90-95% (vs 60-70% manual)
+  Quality:  Consistent, comprehensive tests
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 🛠️ TROUBLESHOOTING                                                     │
+└─────────────────────────────────────────────────────────────────────────┘
+
+  Tests Not Generating:
+    • Check service structure: services/<service>/src/
+    • Verify TypeScript files exist
+    • Review console output
+
+  Coverage Below Target:
+    • Review generated tests
+    • Add edge cases manually
+    • Check coverage report for gaps
+
+  Tests Failing:
+    • Review test output
+    • Fix import paths
+    • Add missing mocks
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 🎯 SUCCESS CRITERIA                                                     │
+└─────────────────────────────────────────────────────────────────────────┘
+
+  ✅ All 28 services have test files
+  ✅ All tests execute without errors
+  ✅ Coverage ≥ 90% for all services
+  ✅ Coverage ≥ 95% for critical services
+  ✅ Reports generated successfully
+  ✅ CI/CD pipeline passes
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 🚀 RECOMMENDED WORKFLOW                                                 │
+└─────────────────────────────────────────────────────────────────────────┘
+
+  Day 1:
+    node scripts/master-automation.js 1        # Phase 1 (4 hours)
+
+  Day 2:
+    node scripts/master-automation.js 2        # Phase 2 (6 hours)
+
+  Day 3-4:
+    node scripts/master-automation.js 3        # Phase 3 (16 hours)
+
+  Day 5:
+    node scripts/master-automation.js 4        # Phase 4 (6 hours)
+    node scripts/master-automation.js 5        # Phase 5 (4 hours)
+
+  Total: 36 hours (4.5 days)
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 💡 PRO TIPS                                                             │
+└─────────────────────────────────────────────────────────────────────────┘
+
+  • Run phases sequentially for better tracking
+  • Review generated tests before committing
+  • Use coverage reports to identify gaps
+  • Commit after each successful phase
+  • Add custom assertions for business logic
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  Ready? Start now: run-automation.bat                                     ║
+║  Or: node scripts/master-automation.js 1                                  ║
+╚═══════════════════════════════════════════════════════════════════════════╝

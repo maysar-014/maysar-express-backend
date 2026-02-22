@@ -114,7 +114,7 @@ describe('UserSecurityPolicy', () => {
 
   describe('canEnableTwoFactor', () => {
     test('returns true when user is verified and active', () => {
-      let u = makeUser().verifyEmail().verifyPhone();
+      const u = makeUser().verifyEmail().verifyPhone();
       expect(policy.canEnableTwoFactor(u)).toBe(true);
     });
 
@@ -124,7 +124,7 @@ describe('UserSecurityPolicy', () => {
     });
 
     test('returns false when user is inactive', () => {
-      let u = makeUser().verifyEmail().verifyPhone().deactivate();
+      const u = makeUser().verifyEmail().verifyPhone().deactivate();
       expect(policy.canEnableTwoFactor(u)).toBe(false);
     });
   });

@@ -39,7 +39,95 @@ model Analytics_SellerMetrics {
   liveOrders            Int?
   inventoryAlerts       Int?
   customerInquiries     Int?
+  todaySales            Decimal? @db.Decimal(12, 2)
+  todayOrderCount       Int?
+  thisMonthRevenue      Decimal? @db.Decimal(12, 2)
+  lastMonthRevenue      Decimal? @db.Decimal(12, 2)
+  monthOverMonthGrowth  Float?
+  repeatCustomerRate    Float?
+  bestPerformingProductId String?
+  bestPerformingProductRevenue Decimal? @db.Decimal(12, 2)
+  bestPerformingProductUnitsSold Int?
+  pendingCustomerQuestions Int?
+  lowConversionProductCount Int?
+  profitabilityScore    Int?
+  averageRating         Float?
+  responseRate          Float?
+  averageDeliveryTime   Float?
+  lastUpdated           DateTime @default(now())
   createdAt             DateTime @default(now())
+  
+  dailySales            Analytics_SellerDailySales[]
+  productPerformance    Analytics_SellerProductPerformance[]
+  inventoryHealth       Analytics_SellerInventoryHealth[]
+  actionItems           Analytics_SellerActionItem[]
+}
+
+model Analytics_SellerDailySales {
+  id        String   @id @default(uuid())
+  sellerId  String
+  date      DateTime
+  revenue   Decimal  @db.Decimal(12, 2)
+  orderCount Int
+  createdAt DateTime @default(now())
+  
+  sellerMetrics Analytics_SellerMetrics @relation(fields: [sellerId], references: [sellerId], onDelete: Cascade)
+  
+  @@unique([sellerId, date])
+  @@index([sellerId, date])
+  @@map("analytics_seller_daily_sales")
+}
+
+model Analytics_SellerProductPerformance {
+  id            String   @id @default(uuid())
+  sellerId      String
+  productId     String
+  views         Int      @default(0)
+  orders        Int      @default(0)
+  revenue       Decimal  @db.Decimal(12, 2)
+  conversionRate Float?
+  lastUpdated   DateTime @default(now())
+  
+  sellerMetrics Analytics_SellerMetrics @relation(fields: [sellerId], references: [sellerId], onDelete: Cascade)
+  
+  @@unique([sellerId, productId])
+  @@index([sellerId, revenue])
+  @@map("analytics_seller_product_performance")
+}
+
+model Analytics_SellerInventoryHealth {
+  id              String   @id @default(uuid())
+  sellerId        String
+  productId       String
+  currentStock    Int
+  stockStatus     String
+  salesVelocity   Float?
+  daysUntilStockout Int?
+  lastUpdated     DateTime @default(now())
+  
+  sellerMetrics Analytics_SellerMetrics @relation(fields: [sellerId], references: [sellerId], onDelete: Cascade)
+  
+  @@unique([sellerId, productId])
+  @@index([sellerId, stockStatus])
+  @@map("analytics_seller_inventory_health")
+}
+
+model Analytics_SellerActionItem {
+  id          String   @id @default(uuid())
+  sellerId    String
+  type        String
+  priority    String
+  title       String
+  description String
+  productId   String?
+  metadata    Json?
+  isResolved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  sellerMetrics Analytics_SellerMetrics @relation(fields: [sellerId], references: [sellerId], onDelete: Cascade)
+  
+  @@index([sellerId, isResolved, priority])
+  @@map("analytics_seller_action_items")
 }
 
 model Analytics_SalesAnalytics {
@@ -1180,24 +1268,6 @@ enum Community_ReportStatus {
 // Compliance Service Database Schema
 // Handles GDPR, PCI DSS, SOX compliance automation
 
-// Compensating Controls for PCI DSS
-model Compliance_CompensatingControl {
-  id             String    @id @default(cuid())
-  requirement    String
-  description    String
-  implementation String
-  evidence       Json?
-  status         String    @default("pending") // approved, rejected, expired
-  approvedBy     String?
-  approvedAt     DateTime?
-  expiryDate     DateTime
-  reviewDate     DateTime
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  @@map("compliance_compensating_controls")
-}
-
 // GDPR Subject Rights Requests
 model Compliance_SubjectRightsRequest {
   id          String                                @id @default(cuid())
@@ -1212,51 +1282,64 @@ model Compliance_SubjectRightsRequest {
   @@map("compliance_subject_rights_requests")
 }
 
-// PCI DSS Compliance Tracking
-model Compliance_PCIComplianceRecord {
-  id              String                        @id @default(cuid())
-  assessmentDate  DateTime                      @default(now())
-  assessor        String
-  complianceLevel Compliance_PCIComplianceLevel
-  expiryDate      DateTime
-  vulnerabilities Json?
-  remediationPlan Json?
-  status          Compliance_ComplianceStatus   @default(active)
+// TCRA Compliance Records
+model Compliance_TCRARecord {
+  id              String   @id @default(cuid())
+  userId          String
+  licenseNumber   String?
+  status          String   @default("pending") // pending, active, expired, revoked
+  registrationAt  DateTime?
+  expiryDate      DateTime?
+  lastAuditAt     DateTime?
+  auditFindings   Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  @@map("compliance_pci_compliance_records")
+  @@map("compliance_tcra_records")
 }
 
-// SOX Audit Trail
-model Compliance_SOXAComplianceRecord {
-  id             String                         @id @default(cuid())
-  controlId      String
-  controlArea    String
-  assessmentDate DateTime                       @default(now())
-  assessor       String
-  status         Compliance_SOXComplianceStatus
-  findings       Json?
-  remediation    Json?
-  nextReviewDate DateTime
+// TRA Compliance Records
+model Compliance_TRARecord {
+  id               String   @id @default(cuid())
+  userId           String
+  tin              String   @unique
+  vrn              String?
+  taxComplianceStatus String @default("pending") // pending, compliant, non_compliant
+  lastFiscalCheck  DateTime?
+  efdStatus        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  @@map("compliance_sox_compliance_records")
+  @@map("compliance_tra_records")
 }
 
-// SOX Controls (for storing control definitions)
-model Compliance_SOXControl {
-  id             String                      @id @default(cuid())
-  controlId      String                      @unique
-  controlArea    Compliance_SOXControlArea
-  description    String
-  frequency      Compliance_SOXFrequency
-  owner          String
-  status         Compliance_SOXControlStatus @default(effective)
-  lastTested     DateTime?
-  nextReviewDate DateTime
-  evidence       Json?
-  createdAt      DateTime                    @default(now())
-  updatedAt      DateTime                    @updatedAt
+// AML Compliance Records
+model Compliance_AMLRecord {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  sanctionsStatus  String   @default("clear") // clear, flagged, blocked
+  pepStatus        Boolean  @default(false)
+  riskScore        Float    @default(0.0)
+  lastCheckAt      DateTime @default(now())
+  flags            Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  @@map("compliance_sox_controls")
+  @@map("compliance_aml_records")
+}
+
+// Market Compliance Records
+model Compliance_MarketRecord {
+  id               String   @id @default(cuid())
+  sellerId         String
+  ethicalScore     Float?
+  qualityStatus    String   @default("pending") // pending, approved, suspended
+  certifications   Json?
+  lastAuditAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("compliance_market_records")
 }
 
 // Data Retention Policies
@@ -1358,20 +1441,6 @@ enum Compliance_SubjectRightsRequestStatus {
   rejected
 }
 
-enum Compliance_PCIComplianceLevel {
-  level1 // >6M transactions/year
-  level2 // 1-6M transactions/year
-  level3 // <1M transactions/year
-  level4 // <1M transactions/year (small merchants)
-}
-
-enum Compliance_SOXComplianceStatus {
-  compliant
-  non_compliant
-  remediation_required
-  under_review
-}
-
 enum Compliance_ComplianceStatus {
   active
   expired
@@ -1407,27 +1476,6 @@ enum Compliance_AssessmentStatus {
   requires_action
 }
 
-enum Compliance_SOXControlArea {
-  access_control
-  change_management
-  financial_reporting
-  data_integrity
-  segregation_duties
-}
-
-enum Compliance_SOXFrequency {
-  daily
-  weekly
-  monthly
-  quarterly
-  annually
-}
-
-enum Compliance_SOXControlStatus {
-  effective
-  ineffective
-  compensating_control
-}
 
 // --- inventory-service Service Models ---
 
@@ -1705,6 +1753,20 @@ model Logistics_Delivery {
   estimatedDeliveryTime DateTime?
   actualDeliveryTime    DateTime?
 
+  // COD Specific Fields
+  isCOD             Boolean @default(false)
+  codAmount         Decimal?
+  codCurrency       String?
+  codCollected      Boolean @default(false)
+  codCollectedAt    DateTime?
+  codOtpVerified    Boolean @default(false)
+  codProofGpsLat    Float?
+  codProofGpsLng    Float?
+  codProofTimestamp DateTime?
+  buyerId           String?
+  sellerId          String?
+  codCommitmentHoldId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1892,6 +1954,21 @@ model Order_Order {
   currency        String              @default("TZS")
   totalWeight     Float
   deliveryAddress Json // Address value object
+  
+  // COD Specific Fields
+  codCommitmentFee       Decimal?
+  codCommitmentPaid      Boolean @default(false)
+  codReputationScore     Int?
+  codEligibilityChecked  Boolean @default(false)
+  codDeliveryOtp         String?
+  codOtpExpiresAt        DateTime?
+  codDeliveryConfirmedAt DateTime?
+  codDeliveryConfirmedBy String?
+  codProofGpsLat         Float?
+  codProofGpsLng         Float?
+  codProofTimestamp      DateTime?
+  codCommitmentHoldId    String?
+
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
@@ -1899,8 +1976,25 @@ model Order_Order {
   items       Order_OrderItem[]
   payments    Order_Payment[]
   settlements Order_Settlement[]
+  codDisputes Order_CODDispute[]
 
   @@map("orders")
+}
+
+model Order_CODDispute {
+  id          String   @id @default(cuid())
+  orderId     String
+  disputeType String // REFUSED_DELIVERY, WRONG_ITEM, DAMAGED, OTHER
+  raisedBy    String // BUYER, SELLER, COURIER
+  description String
+  status      String   @default("PENDING") // PENDING, INVESTIGATING, RESOLVED, REJECTED
+  resolution  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  order Order_Order @relation(fields: [orderId], references: [id])
+  @@map("order_cod_disputes")
 }
 
 model Order_OrderItem {
@@ -2376,6 +2470,16 @@ model User_User {
   timezone             String  @default("UTC")
   notificationsEnabled Boolean @default(true)
 
+  // COD Reputation Tracking
+  codEnabled             Boolean @default(false)
+  codReputationScore     Int @default(0)
+  codSuccessfulOrders    Int @default(0)
+  codFailedOrders        Int @default(0)
+  codTotalOrders         Int @default(0)
+  codLastOrderAt         DateTime?
+  codSuspendedUntil      DateTime?
+  codPermanentlyDisabled Boolean @default(false)
+
   // Metadata
   attributes Json?
 
@@ -2389,8 +2493,24 @@ model User_User {
   passwordResetTokens     User_PasswordResetToken[]
   emailVerificationTokens User_EmailVerificationToken[]
   auditLogs               User_AuditLog[]
+  codHistory              User_CODHistory[]
 
   @@map("users")
+}
+
+model User_CODHistory {
+  id               String   @id @default(cuid())
+  userId           String
+  orderId          String
+  action           String // ORDER_PLACED, DELIVERY_CONFIRMED, DELIVERY_REFUSED, PENALTY_APPLIED
+  reputationChange Int // +5, -10, etc.
+  reputationAfter  Int
+  reason           String?
+  createdAt        DateTime @default(now())
+  
+  user User_User @relation(fields: [userId], references: [id])
+  @@map("user_cod_history")
+  @@index([userId, createdAt])
 }
 
 // ============================================================================
@@ -2574,6 +2694,11 @@ model Wallet_Wallet {
   createdAt    DateTime            @default(now()) @db.Timestamp(6)
   updatedAt    DateTime            @updatedAt @db.Timestamp(6)
 
+  // COD Commitment Tracking
+  codCommitmentLimit Decimal             @default(500000) @db.Decimal(10, 2)
+  codCommitmentUsed  Decimal             @default(0) @db.Decimal(10, 2)
+  codCommitmentCount Int                 @default(0)
+
   // Relations
   transactions Wallet_Transaction[]
   holds        Wallet_Hold[]
@@ -2608,6 +2733,12 @@ model Wallet_Transaction {
   isReversed            Boolean   @default(false)
   reversalTransactionId String?   @db.Uuid
   expiresAt             DateTime? @db.Timestamp(6)
+
+  // COD Transaction Tracking
+  isCODRelated             Boolean @default(false)
+  codOrderId               String?
+  codConfirmationRequired  Boolean @default(false)
+  codConfirmedAt           DateTime?
 
   // Relations
   wallet Wallet_Wallet @relation(fields: [walletId], references: [id])

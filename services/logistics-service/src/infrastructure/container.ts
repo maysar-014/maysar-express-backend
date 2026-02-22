@@ -21,6 +21,7 @@ import { CourierDomainService } from '../domain/services/courier.domain-service'
 import { DeliveryDomainService } from '../domain/services/delivery.domain-service';
 import { RouteDomainService } from '../domain/services/route.domain-service';
 import { RouteCreationService } from '../domain/services/route-creation.service';
+import { CODConfirmationEngine } from '../domain/engines/cod-confirmation.engine';
 
 // Application layer
 import { CreateDeliveryUseCase } from '../application/use-cases/create-delivery.use-case';
@@ -28,7 +29,10 @@ import { GetDeliveryUseCase } from '../application/use-cases/get-delivery.use-ca
 import { GetDeliveriesUseCase } from '../application/use-cases/get-deliveries.use-case';
 import { UpdateDeliveryStatusUseCase } from '../application/use-cases/update-delivery-status.use-case';
 import { DeliverySaga } from '../application/sagas/delivery.saga';
+import { CODDeliveryConfirmationSaga } from '../application/sagas/cod-delivery-confirmation.saga';
 import { SagaRegistry } from '../application/sagas/saga-registry';
+import { VerifyCODDeliveryUseCase } from '../application/use-cases/verify-cod-delivery.use-case';
+import { InitiateCODDeliveryUseCase } from '../application/use-cases/initiate-cod-delivery.use-case';
 
 import {
   ICourierRepository,
@@ -74,7 +78,11 @@ export class DependencyContainer {
   private getDeliveriesUseCase!: GetDeliveriesUseCase;
   private updateDeliveryStatusUseCase!: UpdateDeliveryStatusUseCase;
   private deliverySaga!: DeliverySaga;
+  private codDeliveryConfirmationSaga!: CODDeliveryConfirmationSaga;
   private sagaRegistry!: SagaRegistry;
+  private codConfirmationEngine!: CODConfirmationEngine;
+  private verifyCODDeliveryUseCase!: VerifyCODDeliveryUseCase;
+  private initiateCODDeliveryUseCase!: InitiateCODDeliveryUseCase;
 
   private constructor() {
     // Defer initialization until database connections are established
@@ -158,6 +166,7 @@ export class DependencyContainer {
     this.routeDomainService = new RouteDomainService();
 
     this.logisticsEngine = new LogisticsEngine();
+    this.codConfirmationEngine = new CODConfirmationEngine();
   }
 
   private initializeDomainWithInfrastructure(): void {
@@ -207,7 +216,25 @@ export class DependencyContainer {
 
     this.sagaRegistry = SagaRegistry.getInstance();
     this.sagaRegistry.registerOrchestrator('DeliverySaga', this.deliverySaga);
-    // Note: Saga registry registration updated to new pattern
+
+    this.codDeliveryConfirmationSaga = new CODDeliveryConfirmationSaga(
+      this.sagaLogRepository,
+      'logistics-service',
+      this.deliveryRepository,
+      this.codConfirmationEngine
+    );
+    this.sagaRegistry.registerOrchestrator('CODDeliveryConfirmationSaga', this.codDeliveryConfirmationSaga);
+
+    this.verifyCODDeliveryUseCase = new VerifyCODDeliveryUseCase(
+      this.deliveryRepository,
+      this.codConfirmationEngine,
+      this.codDeliveryConfirmationSaga
+    );
+
+    this.initiateCODDeliveryUseCase = new InitiateCODDeliveryUseCase(
+      this.deliveryRepository,
+      this.codDeliveryConfirmationSaga
+    );
   }
 
   // Getters for infrastructure adapters
@@ -390,6 +417,14 @@ export class DependencyContainer {
   public setEventPublisher(publisher: EventPublisherPort): void {
     this.eventPublisher = publisher;
     this.initializeApplication();
+  }
+
+  public getVerifyCODDeliveryUseCase(): VerifyCODDeliveryUseCase {
+    return this.verifyCODDeliveryUseCase;
+  }
+
+  public getInitiateCODDeliveryUseCase(): InitiateCODDeliveryUseCase {
+    return this.initiateCODDeliveryUseCase;
   }
 
   // Cleanup method for testing

@@ -5,6 +5,14 @@ export class CourierRepository implements ICourierRepository {
   constructor(private supabaseClient: any) { }
 
   async findAvailableCouriers(location: GeoPoint, radius: number): Promise<Courier[]> {
+    // Validate inputs
+    if (!location) {
+      return Promise.reject(new Error('Location is required'));
+    }
+    if (typeof radius !== 'number' || radius <= 0) {
+      return Promise.reject(new Error('Radius must be a positive number'));
+    }
+
     try {
       const coords = location.getCoordinates();
 
@@ -340,14 +348,23 @@ export class CourierRepository implements ICourierRepository {
 
   async updateCourierLocation(courierId: string, location: GeoPoint): Promise<void> {
     try {
-      const coords = location.getCoordinates();
+      // Convert raw location data to GeoPoint if needed
+      const geoPoint = location instanceof GeoPoint 
+        ? location 
+        : GeoPoint.create(
+            (location as any).lat || (location as any).latitude,
+            (location as any).lng || (location as any).longitude,
+            (location as any).address || 'Unknown'
+          );
+
+      const coords = geoPoint.getCoordinates();
 
       const { error } = await this.supabaseClient
         .from('couriers')
         .update({
           current_lat: coords.lat,
           current_lng: coords.lng,
-          current_address: location.getAddress(),
+          current_address: geoPoint.getAddress(),
           updated_at: new Date().toISOString()
         })
         .eq('id', courierId);

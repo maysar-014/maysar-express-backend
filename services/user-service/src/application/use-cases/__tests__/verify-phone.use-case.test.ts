@@ -59,4 +59,15 @@ describe('VerifyPhoneUseCase', () => {
     const out = await sut.execute({ userId: 'u1', phoneNumber: '+255712345678', otp: '123456', verificationMethod: 'otp' });
     expect(out.success).toBe(false);
   });
+
+  it('rejects expired OTP', async () => {
+    const user = UserFactory.create({ id: 'u1' });
+    const repo: any = { findById: jest.fn().mockResolvedValue(user) };
+    const mockEmailService: any = { sendEmail: jest.fn().mockResolvedValue(undefined) };
+    const mockNotificationClient: any = { notify: jest.fn().mockResolvedValue(undefined) };
+    const sut = new VerifyPhoneUseCase(repo, mockEmailService, mockNotificationClient);
+    const out = await sut.execute({ userId: 'u1', phoneNumber: '+255712345678', otp: '000000', verificationMethod: 'otp' });
+    expect(out.success).toBe(false);
+    expect(out.message).toContain('expired');
+  });
 });

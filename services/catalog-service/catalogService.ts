@@ -3,8 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import { eventBus } from '../src/events/eventBus';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
+import { SearchEngineInitializer } from './src/infrastructure/search-initializer';
 
-// Load environment variables
 dotenv.config();
 
 const app = express();
@@ -12,7 +12,15 @@ const prisma = new PrismaClient();
 
 app.use(express.json());
 
-// Initialize event handlers
+let searchEngine: any;
+let indexManager: any;
+
+async function initializeServices() {
+  const { searchEngine: engine, indexManager: manager } = await SearchEngineInitializer.initialize(prisma);
+  searchEngine = engine;
+  indexManager = manager;
+}
+
 initializeEventHandlers();
 initializeSupplierPricingHandlers();
 initializeSellerSagaHandlers();
@@ -189,6 +197,27 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
+app.post('/api/products/search', async (req, res) => {
+  try {
+    if (!searchEngine) {
+      return res.status(503).json({ error: 'Search engine not initialized' });
+    }
+    
+    const { text, filters, limit = 50, offset = 0 } = req.body;
+    
+    const results = searchEngine.search({
+      text,
+      filters,
+      limit,
+      offset
+    });
+    
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
 // Wholesale pricing endpoints
 app.get('/api/wholesale/pricing/:supplierId', async (req, res) => {
   try {
@@ -324,6 +353,23 @@ function initializeEventHandlers() {
         status: 'draft'
       }
     });
+
+    if (indexManager) {
+      const searchableProduct = {
+        id: product.id,
+        name: product.name,
+        description: product.description || '',
+        price: 0,
+        category: productData.category,
+        brand: productData.brand,
+        tags: productData.tags || [],
+        status: product.status,
+        stock: 0,
+        rating: 0,
+        type: productData.type
+      };
+      indexManager.onProductCreated(searchableProduct);
+    }
 
     await eventBus.publish({
       event: 'ProductCreated',
@@ -565,9 +611,16 @@ function initializeEventHandlers() {
 }
 
 const PORT = process.env.PORT || 3005;
-app.listen(PORT, () => {
-  console.log(`Catalog Service running on port ${PORT}`);
-  console.log('Seller saga event handlers initialized');
+
+initializeServices().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Catalog Service running on port ${PORT}`);
+    console.log('Seller saga event handlers initialized');
+    console.log('Optimized search engine ready');
+  });
+}).catch(error => {
+  console.error('Failed to initialize services:', error);
+  process.exit(1);
 });
 
 export default app;

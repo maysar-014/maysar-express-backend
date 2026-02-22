@@ -9,9 +9,8 @@ declare global {
     }
   }
 
-  var testUtils: any;
-  var TestDataFactory: any;
-  var TestUtils: any;
+  let TestDataFactory: Record<string, unknown>;
+  let TestUtils: Record<string, unknown>;
 }
 
 export {};

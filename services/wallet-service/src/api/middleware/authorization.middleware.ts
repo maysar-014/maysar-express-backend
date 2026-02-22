@@ -21,9 +21,17 @@ export class AuthorizationMiddleware {
 
             const requestedUserId = req.params.userId;
 
-            // Admin can access everything
-            if (user.roles.includes('ADMIN') || user.roles.includes('SUPPORT')) {
+            // Admin/Support can access everything
+            const normalizedUserRoles = user.roles.map(role => role.toLowerCase());
+            if (normalizedUserRoles.includes('admin') || normalizedUserRoles.includes('support')) {
                 return next();
+            }
+
+            // Exclude supplier and system roles from wallet access (business rule)
+            const excludedRoles = ['supplier', 'system'];
+            const hasExcludedRole = excludedRoles.some(role => normalizedUserRoles.includes(role));
+            if (hasExcludedRole) {
+                return next(createError.forbidden('Supplier and System roles do not have wallet access'));
             }
 
             // Users can only access their own wallet
@@ -46,7 +54,11 @@ export class AuthorizationMiddleware {
                 return next(createError.unauthorized('Authentication required'));
             }
 
-            const hasRole = roles.some(role => user.roles.includes(role));
+            // Normalize role casing for comparison (handles BUYER, buyer, Buyer etc.)
+            const normalizedAllowedRoles = roles.map(role => role.toLowerCase());
+            const normalizedUserRoles = user.roles.map(role => role.toLowerCase());
+
+            const hasRole = normalizedAllowedRoles.some(role => normalizedUserRoles.includes(role));
             if (!hasRole) {
                 return next(createError.forbidden('Insufficient permissions'));
             }

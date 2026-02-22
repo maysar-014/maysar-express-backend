@@ -6,6 +6,7 @@ import { SupabaseClientManager } from './infrastructure/database/supabase.client
 import { EventPublisherImpl } from './infrastructure/messaging/event-publisher';
 import { PlaceOrderUseCase } from './application/use-cases/place-order.use-case';
 import { OrderController } from './api/controllers/order.controller';
+import { CODDisputeController } from './api/controllers/cod-dispute.controller';
 import { setupOrderRoutes } from './api/routes/order.routes';
 import { securityStack } from './middleware/security.middleware';
 import { loggingMiddlewareStack } from './middleware/logging.middleware';
@@ -99,11 +100,43 @@ async function initializeService() {
     eventBus.subscribe('Delivery.Success', async (e: any) => sagaReplyHandler.handleDeliverySuccess(e));
     eventBus.subscribe('Delivery.Failure', async (e: any) => sagaReplyHandler.handleDeliveryFailed(e));
 
-    const placeOrderUseCase = new PlaceOrderUseCase(orderRepository, eventPublisher, orderFulfillmentSaga);
-    const orderController = new OrderController(placeOrderUseCase);
+    const { CODEligibilityEngine } = await import('./domain/engines/cod-eligibility.engine');
+    const { CheckCODEligibilityUseCase } = await import('./application/use-cases/check-cod-eligibility.use-case');
+    const { CODCommitmentService } = await import('./domain/services/cod-commitment.service');
+
+    const { AuthServiceClient } = await import('./infrastructure/integrations/auth-service.client');
+    const { UserServiceClient } = await import('./infrastructure/integrations/user-service.client');
+    const { LogisticsServiceClient } = await import('./infrastructure/integrations/logistics-service.client');
+    const { WalletServiceClient } = await import('./infrastructure/integrations/wallet-service.client');
+
+    const authServiceClient = new AuthServiceClient();
+    const userServiceClient = new UserServiceClient();
+    const logisticsServiceClient = new LogisticsServiceClient();
+    const walletServiceClient = new WalletServiceClient();
+
+    // Instantiate COD components
+    const codEligibilityEngine = new CODEligibilityEngine(authServiceClient, userServiceClient, logisticsServiceClient);
+    const codCommitmentService = new CODCommitmentService(walletServiceClient);
+    const checkCODEligibilityUseCase = new CheckCODEligibilityUseCase(codEligibilityEngine);
+
+    const placeOrderUseCase = new PlaceOrderUseCase(
+      orderRepository,
+      eventPublisher,
+      orderFulfillmentSaga,
+      codEligibilityEngine,
+      codCommitmentService
+    );
+    const orderController = new OrderController(placeOrderUseCase, checkCODEligibilityUseCase);
+
+    const { SupabaseCODDisputeRepository } = await import('./infrastructure/database/supabase-cod-dispute.repository');
+    const { ResolveCODDisputeUseCase } = await import('./application/use-cases/resolve-cod-dispute.use-case');
+
+    const codDisputeRepository = new SupabaseCODDisputeRepository();
+    const resolveCODDisputeUseCase = new ResolveCODDisputeUseCase(codDisputeRepository, eventPublisher);
+    const codDisputeController = new CODDisputeController(resolveCODDisputeUseCase);
 
     // Setup routes
-    const orderRoutes = setupOrderRoutes(orderController);
+    const orderRoutes = setupOrderRoutes(orderController, codDisputeController);
     app.use('/api/v1', orderRoutes);
 
     // Health check routes

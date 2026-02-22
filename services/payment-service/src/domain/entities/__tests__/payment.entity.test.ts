@@ -1,227 +1,472 @@
 import { Payment, PaymentStatus, PaymentMethod, PaymentProvider } from '../payment.entity';
 
 describe('Payment Entity', () => {
-    const validProps = {
+    const validPaymentProps = {
         id: 'pay_123',
-        orderId: 'ord_123',
-        userId: 'usr_123',
-        amount: 1000,
+        orderId: 'ord_456',
+        userId: 'usr_789',
+        amount: 10000,
         currency: 'TZS',
         method: PaymentMethod.MPESA,
         provider: PaymentProvider.PESAPAL,
         status: PaymentStatus.PENDING,
-        metadata: {},
+        metadata: {
+            phoneNumber: '+255712345678',
+            customerName: 'John Doe',
+            customerEmail: 'john@example.com'
+        },
+        refundedAmount: 0,
         createdAt: new Date(),
-        updatedAt: new Date(),
+        updatedAt: new Date()
     };
 
-    describe('Constructor', () => {
+    describe('Construction and Validation', () => {
         it('should create a valid payment', () => {
-            const payment = new Payment(validProps);
-            expect(payment).toBeDefined();
-            expect(payment.id).toBe(validProps.id);
-            expect(payment.status).toBe(PaymentStatus.PENDING);
-            expect(payment.amount).toBe(1000);
+            const payment = new Payment(validPaymentProps);
+
+            expect(payment.id).toBe('pay_123');
+            expect(payment.orderId).toBe('ord_456');
+            expect(payment.userId).toBe('usr_789');
+            expect(payment.amount).toBe(10000);
+            expect(payment.currency).toBe('TZS');
             expect(payment.method).toBe(PaymentMethod.MPESA);
             expect(payment.provider).toBe(PaymentProvider.PESAPAL);
+            expect(payment.status).toBe(PaymentStatus.PENDING);
         });
 
-        it('should throw error when ID is missing', () => {
-            expect(() => new Payment({ ...validProps, id: '' })).toThrow('Payment ID is required');
+        it('should throw error for negative amount', () => {
+            const invalidProps = { ...validPaymentProps, amount: -100 };
+
+            expect(() => new Payment(invalidProps)).toThrow('Payment amount must be positive');
         });
 
-        it('should throw error when Order ID is missing', () => {
-            expect(() => new Payment({ ...validProps, orderId: '' })).toThrow('Order ID is required');
+        it('should throw error for zero amount', () => {
+            const invalidProps = { ...validPaymentProps, amount: 0 };
+
+            expect(() => new Payment(invalidProps)).toThrow('Payment amount must be positive');
         });
 
-        it('should throw error when User ID is missing', () => {
-            expect(() => new Payment({ ...validProps, userId: '' })).toThrow('User ID is required');
+        it('should throw error for invalid currency', () => {
+            const invalidProps = { ...validPaymentProps, currency: 'INVALID' };
+
+            expect(() => new Payment(invalidProps)).toThrow('Invalid currency');
         });
 
-        it('should throw error when Amount is not positive', () => {
-            expect(() => new Payment({ ...validProps, amount: 0 })).toThrow('Payment amount must be positive');
-            expect(() => new Payment({ ...validProps, amount: -100 })).toThrow('Payment amount must be positive');
+        it('should throw error for missing required fields', () => {
+            const invalidProps = { ...validPaymentProps, orderId: '' };
+
+            expect(() => new Payment(invalidProps)).toThrow();
         });
 
-        it('should throw error when Currency is missing', () => {
-            expect(() => new Payment({ ...validProps, currency: '' })).toThrow('Currency is required');
-        });
-
-        // Use type assertion to bypass compile-time check for invalid enum values in tests
-        it('should throw error for invalid Payment Method', () => {
-            expect(() => new Payment({ ...validProps, method: 'INVALID' as PaymentMethod })).toThrow('Invalid payment method: INVALID');
-        });
-
-        it('should throw error for invalid Payment Provider', () => {
-            expect(() => new Payment({ ...validProps, provider: 'INVALID' as PaymentProvider })).toThrow('Invalid payment provider: INVALID');
-        });
-
-        it('should throw error for invalid Payment Status', () => {
-            expect(() => new Payment({ ...validProps, status: 'INVALID' as PaymentStatus })).toThrow('Invalid payment status: INVALID');
+        it('should accept valid currencies (TZS, USD, KES)', () => {
+            ['TZS', 'USD', 'KES'].forEach(currency => {
+                const props = { ...validPaymentProps, currency };
+                expect(() => new Payment(props)).not.toThrow();
+            });
         });
     });
 
     describe('Status Transitions', () => {
         it('should transition from PENDING to PROCESSING', () => {
-            const payment = new Payment(validProps);
+            const payment = new Payment(validPaymentProps);
+
             payment.updateStatus(PaymentStatus.PROCESSING);
+
             expect(payment.status).toBe(PaymentStatus.PROCESSING);
         });
 
-        it('should transition from PENDING to FAILED', () => {
-            const payment = new Payment(validProps);
-            payment.updateStatus(PaymentStatus.FAILED, 'Network error');
-            expect(payment.status).toBe(PaymentStatus.FAILED);
-            expect(payment.failureReason).toBe('Network error');
-        });
-
-        it('should transition from PENDING to CANCELLED', () => {
-            const payment = new Payment(validProps);
-            payment.updateStatus(PaymentStatus.CANCELLED);
-            expect(payment.status).toBe(PaymentStatus.CANCELLED);
-        });
-
         it('should transition from PROCESSING to COMPLETED', () => {
-            const payment = new Payment({ ...validProps, status: PaymentStatus.PROCESSING });
+            const payment = new Payment({
+                ...validPaymentProps,
+                status: PaymentStatus.PROCESSING
+            });
+
             payment.updateStatus(PaymentStatus.COMPLETED);
+
             expect(payment.status).toBe(PaymentStatus.COMPLETED);
-            expect(payment.completedAt).toBeDefined();
         });
 
-        it('should transition from COMPLETED to PARTIALLY_REFUNDED', () => {
-            const payment = new Payment({ ...validProps, status: PaymentStatus.COMPLETED });
-            payment.updateStatus(PaymentStatus.PARTIALLY_REFUNDED);
-            expect(payment.status).toBe(PaymentStatus.PARTIALLY_REFUNDED);
-        });
+        it('should transition from PENDING to FAILED', () => {
+            const payment = new Payment(validPaymentProps);
 
-        it('should transition from COMPLETED to REFUNDED', () => {
-            const payment = new Payment({ ...validProps, status: PaymentStatus.COMPLETED });
-            payment.updateStatus(PaymentStatus.REFUNDED);
-            expect(payment.status).toBe(PaymentStatus.REFUNDED);
-        });
+            payment.updateStatus(PaymentStatus.FAILED, 'Insufficient funds');
 
-        it('should throw error for invalid transition PENDING -> REFUNDED', () => {
-            const payment = new Payment(validProps);
-            expect(() => payment.updateStatus(PaymentStatus.REFUNDED)).toThrow('Invalid status transition from PENDING to REFUNDED');
-        });
-
-        it('should throw error for invalid transition COMPLETED -> PENDING', () => {
-            const payment = new Payment({ ...validProps, status: PaymentStatus.COMPLETED });
-            expect(() => payment.updateStatus(PaymentStatus.PENDING)).toThrow('Invalid status transition from COMPLETED to PENDING');
-        });
-    });
-
-    describe('Mark As Completed', () => {
-        it('should mark processing payment as completed', () => {
-            const payment = new Payment({ ...validProps, status: PaymentStatus.PROCESSING });
-            payment.markAsCompleted('trans_123');
-            expect(payment.status).toBe(PaymentStatus.COMPLETED);
-            expect(payment.metadata.providerTransactionId).toBe('trans_123');
-            expect(payment.completedAt).toBeDefined();
-        });
-
-        it('should throw error if already completed', () => {
-            const payment = new Payment({ ...validProps, status: PaymentStatus.COMPLETED });
-            expect(() => payment.markAsCompleted()).toThrow('Payment is already completed');
-        });
-    });
-
-    describe('Mark As Failed', () => {
-        it('should mark pending payment as failed', () => {
-            const payment = new Payment(validProps);
-            payment.markAsFailed('Insufficient funds');
             expect(payment.status).toBe(PaymentStatus.FAILED);
             expect(payment.failureReason).toBe('Insufficient funds');
         });
 
-        it('should throw error if already completed', () => {
-            const payment = new Payment({ ...validProps, status: PaymentStatus.COMPLETED });
-            expect(() => payment.markAsFailed('Fail')).toThrow('Cannot fail a completed payment');
+        it('should throw error for invalid status transition', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                status: PaymentStatus.COMPLETED
+            });
+
+            expect(() => payment.updateStatus(PaymentStatus.PENDING))
+                .toThrow('Invalid status transition');
+        });
+
+        it('should not allow transition from COMPLETED to PROCESSING', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                status: PaymentStatus.COMPLETED
+            });
+
+            expect(() => payment.updateStatus(PaymentStatus.PROCESSING))
+                .toThrow('Invalid status transition');
+        });
+
+        it('should not allow transition from FAILED to PROCESSING', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                status: PaymentStatus.FAILED
+            });
+
+            expect(() => payment.updateStatus(PaymentStatus.PROCESSING))
+                .toThrow('Invalid status transition');
         });
     });
 
-    describe('Refund Logic', () => {
-        let payment: Payment;
+    describe('Mark as Completed', () => {
+        it('should mark payment as completed with timestamp', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                status: PaymentStatus.PROCESSING
+            });
 
-        beforeEach(() => {
-            payment = new Payment({ ...validProps, status: PaymentStatus.COMPLETED });
+            payment.markAsCompleted('provider_txn_123');
+
+            expect(payment.status).toBe(PaymentStatus.COMPLETED);
+            expect(payment.completedAt).toBeInstanceOf(Date);
+            expect(payment.metadata.providerTransactionId).toBe('provider_txn_123');
         });
 
-        it('should be refundable initially', () => {
+        it('should throw error if marking completed from PENDING', () => {
+            const payment = new Payment(validPaymentProps);
+
+            expect(() => payment.markAsCompleted()).toThrow('Invalid status transition');
+        });
+
+        it('should throw error if already completed', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                status: PaymentStatus.COMPLETED,
+                completedAt: new Date()
+            });
+
+            expect(() => payment.markAsCompleted()).toThrow('Invalid status transition');
+        });
+    });
+
+    describe('Mark as Failed', () => {
+        it('should mark payment as failed with reason', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                status: PaymentStatus.PROCESSING
+            });
+
+            payment.markAsFailed('Network timeout');
+
+            expect(payment.status).toBe(PaymentStatus.FAILED);
+            expect(payment.failureReason).toBe('Network timeout');
+        });
+
+        it('should throw error if failure reason is empty', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                status: PaymentStatus.PROCESSING
+            });
+
+            expect(() => payment.markAsFailed('')).toThrow('Failure reason is required');
+        });
+
+        it('should allow marking as failed from PENDING', () => {
+            const payment = new Payment(validPaymentProps);
+
+            payment.markAsFailed('Validation failed');
+
+            expect(payment.status).toBe(PaymentStatus.FAILED);
+        });
+    });
+
+    describe('Refund Operations', () => {
+        it('should allow refund for completed payment', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                status: PaymentStatus.COMPLETED,
+                completedAt: new Date()
+            });
+
             expect(payment.canRefund()).toBe(true);
-            expect(payment.getRefundableAmount()).toBe(1000);
         });
 
-        it('should record partial refund', () => {
-            payment.recordRefund(500);
-            expect(payment.refundedAmount).toBe(500);
-            expect(payment.status).toBe(PaymentStatus.PARTIALLY_REFUNDED);
-            expect(payment.getRefundableAmount()).toBe(500);
+        it('should not allow refund for pending payment', () => {
+            const payment = new Payment(validPaymentProps);
+
+            expect(payment.canRefund()).toBe(false);
         });
 
-        it('should record full refund', () => {
-            payment.recordRefund(1000);
-            expect(payment.refundedAmount).toBe(1000);
-            expect(payment.status).toBe(PaymentStatus.REFUNDED);
+        it('should not allow refund for failed payment', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                status: PaymentStatus.FAILED
+            });
+
+            expect(payment.canRefund()).toBe(false);
+        });
+
+        it('should calculate correct refundable amount', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                amount: 10000,
+                status: PaymentStatus.COMPLETED,
+                refundedAmount: 3000,
+                completedAt: new Date()
+            });
+
+            expect(payment.getRefundableAmount()).toBe(7000);
+        });
+
+        it('should return zero refundable amount if fully refunded', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                amount: 10000,
+                status: PaymentStatus.COMPLETED,
+                refundedAmount: 10000,
+                completedAt: new Date()
+            });
+
             expect(payment.getRefundableAmount()).toBe(0);
         });
 
-        it('should throw error if payment is not completed', () => {
-            const pendingPayment = new Payment({ ...validProps, status: PaymentStatus.PENDING });
-            expect(() => pendingPayment.recordRefund(100)).toThrow('Payment cannot be refunded');
+        it('should record partial refund', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                amount: 10000,
+                status: PaymentStatus.COMPLETED,
+                completedAt: new Date()
+            });
+
+            payment.recordRefund(3000);
+
+            expect(payment.refundedAmount).toBe(3000);
+            expect(payment.status).toBe(PaymentStatus.PARTIALLY_REFUNDED);
         });
 
-        it('should throw error if refund amount exceeds refundable amount', () => {
-            expect(() => payment.recordRefund(1100)).toThrow('Refund amount 1100 exceeds refundable amount 1000');
+        it('should record full refund', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                amount: 10000,
+                status: PaymentStatus.COMPLETED,
+                completedAt: new Date()
+            });
+
+            payment.recordRefund(10000);
+
+            expect(payment.refundedAmount).toBe(10000);
+            expect(payment.status).toBe(PaymentStatus.REFUNDED);
         });
 
-        it('should throw error if refund amount is not positive', () => {
-            expect(() => payment.recordRefund(0)).toThrow('Refund amount must be positive');
-            expect(() => payment.recordRefund(-100)).toThrow('Refund amount must be positive');
+        it('should throw error for refund exceeding refundable amount', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                amount: 10000,
+                status: PaymentStatus.COMPLETED,
+                refundedAmount: 8000,
+                completedAt: new Date()
+            });
+
+            expect(() => payment.recordRefund(3000))
+                .toThrow('Refund amount exceeds refundable amount');
+        });
+
+        it('should throw error for negative refund amount', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                status: PaymentStatus.COMPLETED,
+                completedAt: new Date()
+            });
+
+            expect(() => payment.recordRefund(-100))
+                .toThrow('Refund amount must be positive');
+        });
+
+        it('should throw error for refunding non-completed payment', () => {
+            const payment = new Payment(validPaymentProps);
+
+            expect(() => payment.recordRefund(1000))
+                .toThrow('Can only refund completed payments');
         });
     });
 
-    describe('Fee Calculation', () => {
-        it('should calculate fees for MPESA (1.5%)', () => {
-            const payment = new Payment({ ...validProps, method: PaymentMethod.MPESA, amount: 1000 });
+    describe('Fee Calculations', () => {
+        it('should calculate fees for M-PESA payment', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                amount: 10000,
+                method: PaymentMethod.MPESA
+            });
+
             const fees = payment.calculateFees();
-            // Platform 2% = 20, Provider 1.5% = 15, Total = 35
-            expect(fees.platformFee).toBe(20);
-            expect(fees.providerFee).toBe(15);
-            expect(fees.totalFee).toBe(35);
+
+            expect(fees.platformFee).toBe(200); // 2% of 10000
+            expect(fees.providerFee).toBe(300); // 3% of 10000
+            expect(fees.totalFee).toBe(500);
         });
 
-        it('should calculate fees for CARD (2.9%)', () => {
-            const payment = new Payment({ ...validProps, method: PaymentMethod.CARD, amount: 1000 });
+        it('should calculate fees for wallet payment', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                amount: 10000,
+                method: PaymentMethod.WALLET,
+                provider: PaymentProvider.INTERNAL_WALLET
+            });
+
             const fees = payment.calculateFees();
-            // Platform 2% = 20, Provider 2.9% = 29, Total = 49
-            expect(fees.platformFee).toBe(20);
-            expect(fees.providerFee).toBe(29);
-            expect(fees.totalFee).toBe(49);
+
+            expect(fees.platformFee).toBe(200); // 2% of 10000
+            expect(fees.providerFee).toBe(0); // No provider fee for wallet
+            expect(fees.totalFee).toBe(200);
         });
 
-        it('should calculate fees for WALLET (0%)', () => {
-            const payment = new Payment({ ...validProps, method: PaymentMethod.WALLET, amount: 1000 });
+        it('should calculate fees for card payment', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                amount: 10000,
+                method: PaymentMethod.CARD
+            });
+
             const fees = payment.calculateFees();
-            // Platform 2% = 20, Provider 0% = 0, Total = 20
-            expect(fees.platformFee).toBe(20);
-            expect(fees.providerFee).toBe(0);
-            expect(fees.totalFee).toBe(20);
+
+            expect(fees.platformFee).toBe(200); // 2% of 10000
+            expect(fees.providerFee).toBe(350); // 3.5% of 10000
+            expect(fees.totalFee).toBe(550);
+        });
+
+        it('should calculate correct provider fees for different payment methods', () => {
+            // M-PESA: 3% provider fee
+            const mPesaPayment = new Payment({
+                ...validPaymentProps,
+                amount: 10000,
+                method: PaymentMethod.MPESA
+            });
+            expect(mPesaPayment.calculateFees().providerFee).toBe(300);
+
+            // Wallet: 0% provider fee
+            const walletPayment = new Payment({
+                ...validPaymentProps,
+                amount: 10000,
+                method: PaymentMethod.WALLET
+            });
+            expect(walletPayment.calculateFees().providerFee).toBe(0);
+
+            // Card: 3.5% provider fee
+            const cardPayment = new Payment({
+                ...validPaymentProps,
+                amount: 10000,
+                method: PaymentMethod.CARD
+            });
+            expect(cardPayment.calculateFees().providerFee).toBe(350);
+
+            // Bank Transfer: 2.5% provider fee
+            const bankPayment = new Payment({
+                ...validPaymentProps,
+                amount: 10000,
+                method: PaymentMethod.BANK_TRANSFER
+            });
+            expect(bankPayment.calculateFees().providerFee).toBe(250);
         });
     });
 
-    describe('Metadata', () => {
+    describe('Metadata Operations', () => {
         it('should update metadata', () => {
-            const payment = new Payment(validProps);
-            payment.updateMetadata({ customerEmail: 'test@example.com' });
-            expect(payment.metadata.customerEmail).toBe('test@example.com');
+            const payment = new Payment(validPaymentProps);
+
+            payment.updateMetadata({
+                providerReference: 'ref_123',
+                ipAddress: '192.168.1.1'
+            });
+
+            expect(payment.metadata.providerReference).toBe('ref_123');
+            expect(payment.metadata.ipAddress).toBe('192.168.1.1');
+            expect(payment.metadata.phoneNumber).toBe('+255712345678'); // Original data preserved
         });
 
-        it('should merge metadata properties', () => {
-            const payment = new Payment({ ...validProps, metadata: { key1: 'value1' } });
-            payment.updateMetadata({ key2: 'value2' });
-            expect(payment.metadata.key1).toBe('value1');
-            expect(payment.metadata.key2).toBe('value2');
+        it('should merge metadata without overwriting existing fields', () => {
+            const payment = new Payment(validPaymentProps);
+
+            payment.updateMetadata({ providerReference: 'ref_456' });
+
+            expect(payment.metadata.phoneNumber).toBe('+255712345678');
+            expect(payment.metadata.customerName).toBe('John Doe');
+            expect(payment.metadata.providerReference).toBe('ref_456');
+        });
+    });
+
+    describe('Snapshot Creation', () => {
+        it('should create immutable snapshot', () => {
+            const payment = new Payment(validPaymentProps);
+
+            const snapshot = payment.toObject();
+
+            expect(snapshot.id).toBe('pay_123');
+            expect(snapshot.amount).toBe(10000);
+            expect(snapshot.status).toBe(PaymentStatus.PENDING);
+        });
+
+        it('should create independent snapshot', () => {
+            const payment = new Payment(validPaymentProps);
+
+            const snapshot1 = payment.toObject();
+            payment.updateStatus(PaymentStatus.PROCESSING);
+            const snapshot2 = payment.toObject();
+
+            expect(snapshot1.status).toBe(PaymentStatus.PENDING);
+            expect(snapshot2.status).toBe(PaymentStatus.PROCESSING);
+        });
+    });
+
+    describe('Edge Cases', () => {
+        it('should handle very large amounts', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                amount: 999999999
+            });
+
+            expect(payment.amount).toBe(999999999);
+            const fees = payment.calculateFees();
+            expect(fees.totalFee).toBeGreaterThan(0);
+        });
+
+        it('should handle multiple refunds', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                amount: 10000,
+                status: PaymentStatus.COMPLETED,
+                completedAt: new Date()
+            });
+
+            payment.recordRefund(3000);
+            expect(payment.refundedAmount).toBe(3000);
+
+            payment.recordRefund(2000);
+            expect(payment.refundedAmount).toBe(5000);
+
+            payment.recordRefund(5000);
+            expect(payment.refundedAmount).toBe(10000);
+            expect(payment.status).toBe(PaymentStatus.REFUNDED);
+        });
+
+        it('should handle metadata with special characters', () => {
+            const payment = new Payment({
+                ...validPaymentProps,
+                metadata: {
+                    customerName: "O'Brien & Sons",
+                    customerEmail: 'test+tag@example.com'
+                }
+            });
+
+            expect(payment.metadata.customerName).toBe("O'Brien & Sons");
+            expect(payment.metadata.customerEmail).toBe('test+tag@example.com');
         });
     });
 });

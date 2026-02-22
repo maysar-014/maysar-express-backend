@@ -22,12 +22,24 @@ export class SupabaseOrderRepository implements OrderRepository {
         total_amount: order.totalAmount.amount,
         currency: order.totalAmount.currency,
         total_weight: order.totalWeight,
+        cod_commitment_fee: (order as any).codCommitmentFee,
+        cod_commitment_paid: (order as any).codCommitmentPaid,
         delivery_address: {
           street: order.deliveryAddress.street,
           city: order.deliveryAddress.city,
           postalCode: order.deliveryAddress.postalCode,
           country: order.deliveryAddress.country
         } as any,
+        cod_reputation_score: order.codReputationScore,
+        cod_eligibility_checked: order.codEligibilityChecked,
+        cod_delivery_otp: order.codDeliveryOtp,
+        cod_otp_expires_at: order.codOtpExpiresAt?.toISOString(),
+        cod_delivery_confirmed_at: order.codDeliveryConfirmedAt?.toISOString(),
+        cod_delivery_confirmed_by: order.codDeliveryConfirmedBy,
+        cod_proof_gps_lat: order.codProofGpsLat,
+        cod_proof_gps_lng: order.codProofGpsLng,
+        cod_proof_timestamp: order.codProofTimestamp?.toISOString(),
+        cod_commitment_hold_id: order.codCommitmentHoldId,
         created_at: order.createdAt.toISOString(),
         updated_at: order.updatedAt.toISOString()
       };
@@ -134,6 +146,18 @@ export class SupabaseOrderRepository implements OrderRepository {
           postalCode: order.deliveryAddress.postalCode,
           country: order.deliveryAddress.country
         } as any,
+        cod_commitment_fee: order.codCommitmentFee,
+        cod_commitment_paid: order.codCommitmentPaid,
+        cod_reputation_score: order.codReputationScore,
+        cod_eligibility_checked: order.codEligibilityChecked,
+        cod_delivery_otp: order.codDeliveryOtp,
+        cod_otp_expires_at: order.codOtpExpiresAt?.toISOString(),
+        cod_delivery_confirmed_at: order.codDeliveryConfirmedAt?.toISOString(),
+        cod_delivery_confirmed_by: order.codDeliveryConfirmedBy,
+        cod_proof_gps_lat: order.codProofGpsLat,
+        cod_proof_gps_lng: order.codProofGpsLng,
+        cod_proof_timestamp: order.codProofTimestamp?.toISOString(),
+        cod_commitment_hold_id: order.codCommitmentHoldId,
         updated_at: new Date().toISOString()
       };
 
@@ -199,6 +223,20 @@ export class SupabaseOrderRepository implements OrderRepository {
     (order as any).status = orderData.status;
     (order as any).createdAt = new Date(orderData.created_at);
     (order as any).updatedAt = new Date(orderData.updated_at);
+
+    // COD fields override
+    order.codCommitmentFee = orderData.cod_commitment_fee ? Number(orderData.cod_commitment_fee) : undefined;
+    order.codCommitmentPaid = !!orderData.cod_commitment_paid;
+    order.codReputationScore = orderData.cod_reputation_score;
+    order.codEligibilityChecked = !!orderData.cod_eligibility_checked;
+    order.codDeliveryOtp = orderData.cod_delivery_otp;
+    if (orderData.cod_otp_expires_at) order.codOtpExpiresAt = new Date(orderData.cod_otp_expires_at);
+    if (orderData.cod_delivery_confirmed_at) order.codDeliveryConfirmedAt = new Date(orderData.cod_delivery_confirmed_at);
+    order.codDeliveryConfirmedBy = orderData.cod_delivery_confirmed_by;
+    order.codProofGpsLat = orderData.cod_proof_gps_lat;
+    order.codProofGpsLng = orderData.cod_proof_gps_lng;
+    if (orderData.cod_proof_timestamp) order.codProofTimestamp = new Date(orderData.cod_proof_timestamp);
+    order.codCommitmentHoldId = orderData.cod_commitment_hold_id;
 
     return order;
   }

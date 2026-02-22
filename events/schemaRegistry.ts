@@ -249,7 +249,7 @@ export class EventSchemaRegistry {
     if (!valid && validate.errors) {
       return {
         valid: false,
-        errors: validate.errors.map(err => 
+        errors: validate.errors.map((err): { instancePath: any; message: any; } => 
           `${err.instancePath} ${err.message}`
         )
       };

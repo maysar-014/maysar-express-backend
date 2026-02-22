@@ -44,14 +44,24 @@ import { ChangeRoleUseCase } from '../../application/use-cases/change-role.use-c
 import { VerifyPhoneUseCase } from '../../application/use-cases/verify-phone.use-case';
 import { SetupTwoFactorUseCase } from '../../application/use-cases/setup-two-factor.use-case';
 import { ReportSecurityBreachUseCase } from '../../application/use-cases/report-security-breach.use-case';
+import { GetUserUseCase } from '../../application/use-cases/get-user.use-case';
+import { UpdateUserUseCase } from '../../application/use-cases/update-user.use-case';
+import { VerifyEmailUseCase } from '../../application/use-cases/verify-email.use-case';
+import { GetCODReputationUseCase } from '../../application/use-cases/get-cod-reputation.use-case';
+import { CODReputationController } from '../controllers/cod-reputation.controller';
+import { DatabaseUserRepository } from '../../infrastructure/repositories/user.repository';
+import { UserEventPublisher } from '../../infrastructure/adapters/user-event-publisher';
 import { emailService, notificationClient } from '../../infrastructure/services/service-instances';
 
 let userController: UserController;
+let codReputationController: CODReputationController;
 
 function initializeController(): void {
   if (!userController) {
     const userValidationService = new UserValidationService();
     const userSecurityPolicy = new UserSecurityPolicy();
+    const userRepository = new DatabaseUserRepository();
+    const eventPublisher = new UserEventPublisher();
 
     // Instantiate all use cases with dependencies
     const createUserUseCase = new CreateUserUseCase(
@@ -60,13 +70,16 @@ function initializeController(): void {
       emailService,
       notificationClient
     );
-    const changePasswordUseCase = new ChangePasswordUseCase(null as any, emailService, notificationClient); // Repositories will be injected properly when actual persistence is added
+    const changePasswordUseCase = new ChangePasswordUseCase(null as any, emailService, notificationClient);
     const deleteAccountUseCase = new DeleteAccountUseCase(null as any, emailService, notificationClient);
     const suspendAccountUseCase = new SuspendAccountUseCase(null as any, emailService, notificationClient);
     const changeRoleUseCase = new ChangeRoleUseCase(null as any, emailService, notificationClient);
     const verifyPhoneUseCase = new VerifyPhoneUseCase(null as any, emailService, notificationClient);
     const setupTwoFactorUseCase = new SetupTwoFactorUseCase(null as any, emailService, notificationClient);
     const reportSecurityBreachUseCase = new ReportSecurityBreachUseCase(null as any, emailService, notificationClient);
+    const getUserUseCase = new GetUserUseCase(userRepository);
+    const updateUserUseCase = new UpdateUserUseCase(userRepository, eventPublisher);
+    const verifyEmailUseCase = new VerifyEmailUseCase(userRepository, eventPublisher);
 
     userController = new UserController(
       createUserUseCase,
@@ -76,8 +89,16 @@ function initializeController(): void {
       changeRoleUseCase,
       verifyPhoneUseCase,
       setupTwoFactorUseCase,
-      reportSecurityBreachUseCase
+      reportSecurityBreachUseCase,
+      getUserUseCase,
+      updateUserUseCase,
+      verifyEmailUseCase,
+      emailService,
+      notificationClient
     );
+
+    const getCODReputationUseCase = new GetCODReputationUseCase(userRepository);
+    codReputationController = new CODReputationController(getCODReputationUseCase);
   }
 }
 
@@ -141,6 +162,10 @@ export async function handleReportSecurityBreach(req: Request, res: Response): P
   await userController.reportSecurityBreach(req, res);
 }
 
+export async function handleGetCODReputation(req: Request, res: Response): Promise<void> {
+  await codReputationController.getReputation(req, res);
+}
+
 export function createUserRoutes(): Router {
   const router = Router();
   initializeController();
@@ -161,6 +186,9 @@ export function createUserRoutes(): Router {
   router.post('/:id/phone/verify', handleVerifyPhone);
   router.post('/:id/2fa/setup', handleSetupTwoFactor);
   router.post('/security/breaches/report', handleReportSecurityBreach);
+
+  // COD Reputation routes
+  router.get('/:userId/cod-reputation', handleGetCODReputation);
 
   return router;
 }

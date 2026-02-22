@@ -14,6 +14,11 @@ describe('UserController', () => {
   let mockVerifyPhoneUseCase: any;
   let mockSetupTwoFactorUseCase: any;
   let mockReportSecurityBreachUseCase: any;
+  let mockGetUserUseCase: any;
+  let mockUpdateUserUseCase: any;
+  let mockVerifyEmailUseCase: any;
+  let mockEmailService: any;
+  let mockNotificationClient: any;
 
   beforeEach(() => {
     mockCreateUserUseCase = { execute: jest.fn() };
@@ -24,6 +29,11 @@ describe('UserController', () => {
     mockVerifyPhoneUseCase = { execute: jest.fn() };
     mockSetupTwoFactorUseCase = { execute: jest.fn() };
     mockReportSecurityBreachUseCase = { execute: jest.fn() };
+    mockGetUserUseCase = { execute: jest.fn() };
+    mockUpdateUserUseCase = { execute: jest.fn() };
+    mockVerifyEmailUseCase = { execute: jest.fn() };
+    mockEmailService = { sendPasswordResetEmail: jest.fn(), sendEmail: jest.fn() };
+    mockNotificationClient = { notify: jest.fn() };
 
     controller = new UserController(
       mockCreateUserUseCase,
@@ -33,7 +43,12 @@ describe('UserController', () => {
       mockChangeRoleUseCase,
       mockVerifyPhoneUseCase,
       mockSetupTwoFactorUseCase,
-      mockReportSecurityBreachUseCase
+      mockReportSecurityBreachUseCase,
+      mockGetUserUseCase,
+      mockUpdateUserUseCase,
+      mockVerifyEmailUseCase,
+      mockEmailService,
+      mockNotificationClient
     );
 
     mockRequest = { body: {}, params: {}, headers: {} };
@@ -224,13 +239,18 @@ describe('UserController', () => {
     test('returns 501 when useCase is not provided', async () => {
       const controllerWithoutUseCase = new UserController(
         mockCreateUserUseCase,
-        null as any, // changePasswordUseCase
-        null as any, // deleteAccountUseCase
-        null as any, // suspendAccountUseCase
-        null as any, // changeRoleUseCase
-        null as any, // verifyPhoneUseCase
-        null as any, // setupTwoFactorUseCase
-        null as any  // reportSecurityBreachUseCase
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any
       );
       mockRequest.params = { id: 'user-1' };
       mockRequest.headers = { 'x-user-id': 'user-1' };
@@ -280,13 +300,18 @@ describe('UserController', () => {
     test('returns 501 when useCase is not provided', async () => {
       const controllerWithoutUseCase = new UserController(
         mockCreateUserUseCase,
-        null as any, // changePasswordUseCase
-        null as any, // deleteAccountUseCase
-        null as any, // suspendAccountUseCase
-        null as any, // changeRoleUseCase
-        null as any, // verifyPhoneUseCase
-        null as any, // setupTwoFactorUseCase
-        null as any  // reportSecurityBreachUseCase
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any
       );
       mockRequest.params = { id: 'user-1' };
       mockRequest.headers = { 'x-user-id': 'user-1' };
@@ -325,13 +350,18 @@ describe('UserController', () => {
     test('returns 501 when useCase is not provided', async () => {
       const controllerWithoutUseCase = new UserController(
         mockCreateUserUseCase,
-        null as any, // changePasswordUseCase
-        null as any, // deleteAccountUseCase
-        null as any, // suspendAccountUseCase
-        null as any, // changeRoleUseCase
-        null as any, // verifyPhoneUseCase
-        null as any, // setupTwoFactorUseCase
-        null as any  // reportSecurityBreachUseCase
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any
       );
       mockRequest.params = { id: 'user-1' };
       mockRequest.headers = { 'x-user-id': 'user-1' };
@@ -370,13 +400,18 @@ describe('UserController', () => {
     test('returns 501 when useCase is not provided', async () => {
       const controllerWithoutUseCase = new UserController(
         mockCreateUserUseCase,
-        null as any, // changePasswordUseCase
-        null as any, // deleteAccountUseCase
-        null as any, // suspendAccountUseCase
-        null as any, // changeRoleUseCase
-        null as any, // verifyPhoneUseCase
-        null as any, // setupTwoFactorUseCase
-        null as any  // reportSecurityBreachUseCase
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any
       );
       mockRequest.params = { id: 'user-1' };
       mockRequest.headers = { 'x-user-id': 'user-1' };
@@ -415,13 +450,18 @@ describe('UserController', () => {
     test('returns 501 when useCase is not provided', async () => {
       const controllerWithoutUseCase = new UserController(
         mockCreateUserUseCase,
-        null as any, // changePasswordUseCase
-        null as any, // deleteAccountUseCase
-        null as any, // suspendAccountUseCase
-        null as any, // changeRoleUseCase
-        null as any, // verifyPhoneUseCase
-        null as any, // setupTwoFactorUseCase
-        null as any  // reportSecurityBreachUseCase
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any
       );
       mockRequest.params = { id: 'user-1' };
       mockRequest.headers = { 'x-user-id': 'user-1' };
@@ -460,13 +500,18 @@ describe('UserController', () => {
     test('returns 501 when useCase is not provided', async () => {
       const controllerWithoutUseCase = new UserController(
         mockCreateUserUseCase,
-        null as any, // changePasswordUseCase
-        null as any, // deleteAccountUseCase
-        null as any, // suspendAccountUseCase
-        null as any, // changeRoleUseCase
-        null as any, // verifyPhoneUseCase
-        null as any, // setupTwoFactorUseCase
-        null as any  // reportSecurityBreachUseCase
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any
       );
       mockRequest.params = { id: 'user-1' };
       mockRequest.headers = { 'x-user-id': 'user-1' };
@@ -505,13 +550,18 @@ describe('UserController', () => {
     test('returns 501 when useCase is not provided', async () => {
       const controllerWithoutUseCase = new UserController(
         mockCreateUserUseCase,
-        null as any, // changePasswordUseCase
-        null as any, // deleteAccountUseCase
-        null as any, // suspendAccountUseCase
-        null as any, // changeRoleUseCase
-        null as any, // verifyPhoneUseCase
-        null as any, // setupTwoFactorUseCase
-        null as any  // reportSecurityBreachUseCase
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any,
+        null as any
       );
       mockRequest.headers = { 'x-user-id': 'user-1' };
       mockRequest.body = { userId: 'user-1', breachType: 'suspicious_login', severity: 'high' };

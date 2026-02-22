@@ -1,8 +1,10 @@
 import { PaymentServiceClient, CreatePaymentDTO } from '../../infrastructure/clients/payment-service.client';
 import { AuditInfo } from '../../domain/value-objects/audit-info.value-object';
+import { isTopUpEligibleRole, UserRole } from '../../../../../shared-contracts/user-service-contracts';
 
 export interface TopUpWalletDTO {
     userId: string;
+    userRole: string;
     amount: number;
     currency: string;
     method: string;
@@ -28,6 +30,17 @@ export class TopUpWalletUseCase {
     ) { }
 
     async execute(dto: TopUpWalletDTO): Promise<TopUpWalletResultDTO> {
+        // Step 0: Validate role eligibility for top-up
+        const normalizedRole = dto.userRole.toUpperCase() as keyof typeof UserRole;
+        const roleEnum = UserRole[normalizedRole];
+
+        if (!roleEnum || !isTopUpEligibleRole(roleEnum)) {
+            return {
+                success: false,
+                message: `Role ${dto.userRole} is not eligible for wallet top-up. Only BUYER and SELLER roles can top up.`
+            };
+        }
+
         // Step 1: Prepare payment request
         // Using a special orderId prefix to identify top-up payments
         const orderId = `TOPUP_${dto.userId}_${Date.now()}`;

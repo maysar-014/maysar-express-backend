@@ -21,7 +21,12 @@ describe('User Controller Security', () => {
             changeRole: { execute: jest.fn() },
             verifyPhone: { execute: jest.fn() },
             setupTwoFactor: { execute: jest.fn() },
-            reportSecurityBreach: { execute: jest.fn() }
+            reportSecurityBreach: { execute: jest.fn() },
+            getUser: { execute: jest.fn() },
+            updateUser: { execute: jest.fn() },
+            verifyEmail: { execute: jest.fn() },
+            emailService: { sendPasswordResetEmail: jest.fn(), sendEmail: jest.fn() },
+            notificationClient: { notify: jest.fn() }
         };
 
         controller = new UserController(
@@ -32,7 +37,12 @@ describe('User Controller Security', () => {
             mockUseCases.changeRole,
             mockUseCases.verifyPhone,
             mockUseCases.setupTwoFactor,
-            mockUseCases.reportSecurityBreach
+            mockUseCases.reportSecurityBreach,
+            mockUseCases.getUser,
+            mockUseCases.updateUser,
+            mockUseCases.verifyEmail,
+            mockUseCases.emailService,
+            mockUseCases.notificationClient
         );
 
         mockRequest = { body: {}, params: {}, headers: {} };

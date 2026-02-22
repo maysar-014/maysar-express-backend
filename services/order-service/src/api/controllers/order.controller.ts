@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PlaceOrderUseCase, PlaceOrderRequest } from '../../application/use-cases/place-order.use-case';
+import { CheckCODEligibilityUseCase, CheckCODEligibilityInput } from '../../application/use-cases/check-cod-eligibility.use-case';
 import { OrderRepository } from '../../domain/repositories/order.repository';
 import { SupabaseOrderRepository } from '../../infrastructure/database/supabase-order.repository';
 import { OrderStatus } from '../../domain/entities/order.entity';
@@ -8,7 +9,8 @@ export class OrderController {
   private orderRepository: OrderRepository;
 
   constructor(
-    private readonly placeOrderUseCase: PlaceOrderUseCase
+    private readonly placeOrderUseCase: PlaceOrderUseCase,
+    private readonly checkCODEligibilityUseCase: CheckCODEligibilityUseCase
   ) {
     this.orderRepository = new SupabaseOrderRepository();
   }
@@ -203,7 +205,7 @@ export class OrderController {
 
       const previousStatus = existingOrder.status;
       let newStatus: OrderStatus;
-      let additionalData: any = {};
+      const additionalData: any = {};
 
       // Validate state transitions
       switch (action) {
@@ -341,8 +343,7 @@ export class OrderController {
       const deliveredOrders = await this.orderRepository.findByStatus('delivered' as OrderStatus);
 
       // Calculate total revenue (simplified)
-      let totalRevenue = 0;
-      const allOrders = await this.orderRepository.findByBuyerId(''); // This won't work, simplified
+      const totalRevenue = 0;
       // In real implementation, you'd query with aggregation
 
       const analytics = {
@@ -364,6 +365,21 @@ export class OrderController {
         error: 'INTERNAL_ERROR',
         message: 'Failed to get analytics',
         requestId: req.headers['x-request-id'] as string
+      });
+    }
+  }
+
+  async validateCODELigibility(req: Request, res: Response): Promise<void> {
+    try {
+      const input: CheckCODEligibilityInput = req.body;
+      const result = await this.checkCODEligibilityUseCase.execute(input);
+
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(400).json({
+        eligible: false,
+        error: 'ELIGIBILITY_CHECK_FAILED',
+        message: error.message
       });
     }
   }

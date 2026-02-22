@@ -48,6 +48,11 @@ export interface TransactionProps {
     reversalTransactionId?: string;
     isReversed: boolean;
     expiresAt?: Date;
+    // COD Tracking
+    isCODRelated: boolean;
+    codOrderId?: string;
+    codConfirmationRequired: boolean;
+    codConfirmedAt?: Date;
 }
 
 export class Transaction {
@@ -165,6 +170,22 @@ export class Transaction {
         return this.props.referenceId;
     }
 
+    get isCODRelated(): boolean {
+        return this.props.isCODRelated;
+    }
+
+    get codOrderId(): string | undefined {
+        return this.props.codOrderId;
+    }
+
+    get codConfirmationRequired(): boolean {
+        return this.props.codConfirmationRequired;
+    }
+
+    get codConfirmedAt(): Date | undefined {
+        return this.props.codConfirmedAt;
+    }
+
     // Business Methods
 
     /**
@@ -244,6 +265,11 @@ export class Transaction {
             reason: `REVERSAL_OF_${this.props.id}`,
             isReversed: false, // Usage of this flag on a reversal transaction itself? Usually false.
             reversalTransactionId: undefined, // This is the reversal, not reversed by another
+            // COD Tracking
+            isCODRelated: this.props.isCODRelated,
+            codOrderId: this.props.codOrderId,
+            codConfirmationRequired: false, // Reversals don't usually require COD confirm themselves
+            codConfirmedAt: undefined,
         };
 
         return new Transaction(reversalProps);

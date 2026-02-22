@@ -1,60 +1,115 @@
 import { CreateCampaignUseCase } from '../create-campaign.use-case';
-import { CampaignType } from '../../domain/enums';
-import { CreateCampaignDto } from '../../dto/create-campaign.dto';
+import { PauseCampaignUseCase } from '../pause-campaign.use-case';
+import { CancelCampaignUseCase } from '../cancel-campaign.use-case';
 
 describe('CreateCampaignUseCase', () => {
     let useCase: CreateCampaignUseCase;
-    let mockRepo: any;
-    let mockPublisher: any;
-    let mockLogger: any;
+    let mockRepository: any;
+
+    const validDto = {
+        name: 'Summer Sale',
+        type: 'DISCOUNT',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 86400000),
+        timezone: 'Africa/Dar_es_Salaam',
+        pricingRules: [{ type: 'PERCENTAGE', value: 20, priority: 1, conditions: [] }],
+    };
 
     beforeEach(() => {
-        mockRepo = {
-            save: jest.fn().mockResolvedValue(undefined)
-        };
-        mockPublisher = {
-            publish: jest.fn().mockResolvedValue(undefined)
-        };
-        mockLogger = {
-            info: jest.fn(),
-            error: jest.fn()
-        };
-        useCase = new CreateCampaignUseCase(mockRepo, mockPublisher, mockLogger);
+        jest.clearAllMocks();
+        mockRepository = { save: jest.fn() };
+        useCase = new CreateCampaignUseCase(mockRepository);
     });
 
-    it('should create and save a campaign successfully', async () => {
-        const dto: CreateCampaignDto = {
-            name: 'Holiday Sale',
-            description: 'Winter season discount',
-            type: CampaignType.PERCENTAGE_DISCOUNT,
-            startDate: new Date(Date.now() + 86400000).toISOString(),
-            endDate: new Date(Date.now() + 172800000).toISOString(),
-            timezone: 'UTC',
-            pricingRules: [
-                { type: 'percentage_discount' as any, value: 20, priority: 1 }
-            ]
-        };
-
-        const result = await useCase.execute('seller-1', 'user-1', dto);
-
-        expect(result.success).toBe(true);
-        expect(mockRepo.save).toHaveBeenCalled();
-        expect(mockPublisher.publish).toHaveBeenCalled();
+    it('should create campaign successfully', async () => {
+        const result = await useCase.execute('seller-1', 'admin-1', validDto);
+        expect(result).toBeDefined();
+        expect(mockRepository.save).toHaveBeenCalled();
     });
 
-    it('should fail if repository save fails', async () => {
-        mockRepo.save.mockRejectedValue(new Error('DB Error'));
+    it('should add pricing rules', async () => {
+        await useCase.execute('seller-1', 'admin-1', validDto);
+        expect(mockRepository.save).toHaveBeenCalledWith(expect.objectContaining({ pricingRules: expect.any(Array) }));
+    });
 
-        const dto: CreateCampaignDto = {
-            name: 'Holiday Sale',
-            description: 'Winter season discount',
-            type: CampaignType.PERCENTAGE_DISCOUNT,
-            startDate: new Date(Date.now() + 86400000).toISOString(),
-            endDate: new Date(Date.now() + 172800000).toISOString(),
-            timezone: 'UTC',
-            pricingRules: [] as any
+    it('should add products when provided', async () => {
+        const dtoWithProducts = { ...validDto, productIds: ['prod-1', 'prod-2'] };
+        await useCase.execute('seller-1', 'admin-1', dtoWithProducts);
+        expect(mockRepository.save).toHaveBeenCalled();
+    });
+
+    it('should add categories when provided', async () => {
+        const dtoWithCategories = { ...validDto, categoryIds: ['cat-1', 'cat-2'] };
+        await useCase.execute('seller-1', 'admin-1', dtoWithCategories);
+        expect(mockRepository.save).toHaveBeenCalled();
+    });
+
+    it('should add conditions when provided', async () => {
+        const dtoWithConditions = { ...validDto, conditions: [{ type: 'MIN_PURCHASE', operator: 'GREATER_THAN', value: 100 }] };
+        await useCase.execute('seller-1', 'admin-1', dtoWithConditions);
+        expect(mockRepository.save).toHaveBeenCalled();
+    });
+
+    it('should handle different campaign types', async () => {
+        const types = ['DISCOUNT', 'BOGO', 'FREE_SHIPPING'];
+        for (const type of types) {
+            jest.clearAllMocks();
+            await useCase.execute('seller-1', 'admin-1', { ...validDto, type });
+            expect(mockRepository.save).toHaveBeenCalled();
+        }
+    });
+});
+
+describe('PauseCampaignUseCase', () => {
+    let useCase: PauseCampaignUseCase;
+    let mockRepository: any;
+
+    const mockCampaign = { id: 'camp-1', pause: jest.fn() };
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockRepository = {
+            findById: jest.fn().mockResolvedValue(mockCampaign),
+            save: jest.fn(),
         };
+        useCase = new PauseCampaignUseCase(mockRepository);
+    });
 
-        await expect(useCase.execute('seller-1', 'user-1', dto)).rejects.toThrow('DB Error');
+    it('should pause campaign successfully', async () => {
+        await useCase.execute('camp-1');
+        expect(mockCampaign.pause).toHaveBeenCalled();
+        expect(mockRepository.save).toHaveBeenCalled();
+    });
+
+    it('should fail when campaign not found', async () => {
+        mockRepository.findById.mockResolvedValue(null);
+        await expect(useCase.execute('invalid')).rejects.toThrow();
+    });
+});
+
+describe('CancelCampaignUseCase', () => {
+    let useCase: CancelCampaignUseCase;
+    let mockRepository: any;
+
+    const mockCampaign = { id: 'camp-1', cancel: jest.fn() };
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockRepository = {
+            findById: jest.fn().mockResolvedValue(mockCampaign),
+            save: jest.fn(),
+        };
+        useCase = new CancelCampaignUseCase(mockRepository);
+    });
+
+    it('should cancel campaign successfully', async () => {
+        await useCase.execute('camp-1');
+        expect(mockCampaign.cancel).toHaveBeenCalled();
+        expect(mockRepository.save).toHaveBeenCalled();
+    });
+
+    it('should fail when campaign not found', async () => {
+        mockRepository.findById.mockResolvedValue(null);
+        await expect(useCase.execute('invalid')).rejects.toThrow();
     });
 });

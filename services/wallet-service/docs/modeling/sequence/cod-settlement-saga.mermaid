@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    participant LS as Logistics Service
+    participant SAGA as CODSettlementSaga
+    participant REL as ReleaseHoldUseCase
+    participant CAP as CaptureHoldUseCase
+    participant FRZ as FreezeFundsUseCase
+    participant CRD as CreditWalletUseCase
+    participant EVT as EventBus
+
+    LS->>SAGA: Trigger Settlement (payload)
+    
+    alt Status: SUCCESS
+        rect rgb(230, 255, 230)
+            SAGA->>SAGA: WaitForDisputeWindow (24h)
+            SAGA->>REL: execute(holdId)
+            REL-->>SAGA: success
+            SAGA->>CRD: Credit Seller (Amount)
+            SAGA->>CRD: Credit Courier (Delivery Fee)
+            SAGA->>EVT: Emit Settlement.Completed (SETTLED)
+        end
+    else Status: REFUSED
+        rect rgb(255, 230, 230)
+            SAGA->>CAP: execute(holdId)
+            CAP-->>SAGA: success
+            SAGA->>EVT: Emit Settlement.Completed (FORFEITED)
+        end
+    else Status: DISPUTED
+        rect rgb(230, 230, 255)
+            SAGA->>FRZ: execute(buyerId, amount)
+            FRZ-->>SAGA: success
+            SAGA->>EVT: Emit Settlement.Completed (FROZEN)
+        end
+    end
