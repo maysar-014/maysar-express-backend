@@ -34,19 +34,17 @@ export const createRealtimeSubscription = (
   filter?: string,
   callback?: (payload: any) => void
 ) => {
-  return supabase
-    .channel(`${table}_changes`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table,
-        filter
-      },
-      callback || ((payload) => console.log('Change received!', payload))
-    )
-    .subscribe();
+  const channel = supabase.channel(`${table}_changes`);
+  return (channel as any).on(
+    'postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table,
+      filter
+    },
+    callback || ((payload: any) => console.log('Change received!', payload))
+  ).subscribe();
 };
 
 // Database event listener
@@ -55,14 +53,12 @@ export const listenToTableChanges = (
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*' = '*',
   callback: (payload: any) => void
 ) => {
-  return supabase
-    .channel(`${table}_${event}`)
-    .on(
-      'postgres_changes',
-      { event, schema: 'public', table },
-      callback
-    )
-    .subscribe();
+  const channel = supabase.channel(`${table}_${event}`);
+  return (channel as any).on(
+    'postgres_changes',
+    { event, schema: 'public', table },
+    callback
+  ).subscribe();
 };
 
 // Helper functions for common operations

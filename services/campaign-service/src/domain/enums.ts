@@ -1,0 +1,22 @@
+export enum CampaignType {
+  FLASH_SALE = 'FLASH_SALE',
+  DISCOUNT = 'DISCOUNT',
+  BUNDLE = 'BUNDLE',
+  SEASONAL = 'SEASONAL',
+  PROMOTIONAL = 'PROMOTIONAL'
+}
+
+export enum CampaignStatus {
+  DRAFT = 'DRAFT',
+  SCHEDULED = 'SCHEDULED',
+  ACTIVE = 'ACTIVE',
+  PAUSED = 'PAUSED',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
+}
+
+export enum DiscountType {
+  PERCENTAGE = 'PERCENTAGE',
+  FIXED_AMOUNT = 'FIXED_AMOUNT',
+  BUY_X_GET_Y = 'BUY_X_GET_Y'
+}

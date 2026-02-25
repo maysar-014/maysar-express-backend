@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import { TransactionalOutbox, OutboxStatus } from '../outboxPattern';
-import { EventEnvelope } from '../../../events';
+import { TransactionalOutbox, OutboxStatus } from './outboxPattern';
+import { EventEnvelope } from '../../events';
 import { randomUUID } from 'crypto';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { exec } from 'child_process';
@@ -51,7 +51,7 @@ describe('Outbox Pattern Reliability Tests', () => {
     await prisma.outboxEvent.deleteMany();
     // Clean up any test orders if they exist
     try {
-      await prisma.order.deleteMany();
+      await prisma.order_Order.deleteMany();
     } catch (error) {
       // Order table might not exist in all schemas, ignore error
     }

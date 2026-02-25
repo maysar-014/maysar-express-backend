@@ -1,10 +1,19 @@
 import { logger } from '../services/logger.service';
 
+type WalletNotificationType = 'wallet_credited' | 'wallet_debited' | 'wallet_frozen' | 'wallet_unfrozen' | 'hold_created' | 'hold_released' | 'topup_initiated' | 'payout_initiated';
+
+interface WalletNotificationData {
+    amount?: number;
+    currency?: string;
+    description?: string;
+    correlationId?: string;
+}
+
 /**
  * Notification Adapter Interface
  */
 export interface INotificationAdapter {
-    sendWalletNotification(userId: string, type: string, data: any): Promise<void>;
+    sendWalletNotification(userId: string, type: WalletNotificationType, data: WalletNotificationData): Promise<void>;
 }
 
 /**
@@ -12,7 +21,7 @@ export interface INotificationAdapter {
  * Usually this would interact with a Notification Service or external provider (SMS/Email)
  */
 export class NotificationAdapter implements INotificationAdapter {
-    async sendWalletNotification(userId: string, type: string, data: any): Promise<void> {
+    async sendWalletNotification(userId: string, type: WalletNotificationType, data: WalletNotificationData): Promise<void> {
         logger.info(`Sending wallet notification to user ${userId}`, {
             notificationType: type,
             data

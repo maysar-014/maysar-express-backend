@@ -156,7 +156,7 @@ export class ProductListingEntity {
         this.props.updatedAt = new Date();
     }
 
-  approveByS seller(sellerId: string): void {
+  approveBySeller(sellerId: string): void {
         if (this.props.sellerId !== sellerId) {
             throw new Error('Only the product seller can approve this listing');
         }

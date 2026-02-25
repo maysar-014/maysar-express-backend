@@ -16,10 +16,10 @@ export interface OutboxEntry {
   eventData: any;
   status: OutboxStatus;
   createdAt: Date;
-  processedAt?: Date;
+  processedAt?: Date | null;
   attempts: number;
-  lastError?: string;
-  nextRetryAt?: Date;
+  lastError?: string | null;
+  nextRetryAt?: Date | null;
 }
 
 export class TransactionalOutbox {
@@ -45,7 +45,7 @@ export class TransactionalOutbox {
   }
 
   async getPendingEvents(limit = 100): Promise<OutboxEntry[]> {
-    return this.prisma.outboxEvent.findMany({
+    const results = await this.prisma.outboxEvent.findMany({
       where: {
         status: OutboxStatus.PENDING,
         OR: [
@@ -56,6 +56,14 @@ export class TransactionalOutbox {
       orderBy: { createdAt: 'asc' },
       take: limit
     });
+
+    return results.map(record => ({
+      ...record,
+      status: record.status as OutboxStatus,
+      processedAt: record.processedAt ?? undefined,
+      lastError: record.lastError ?? undefined,
+      nextRetryAt: record.nextRetryAt ?? undefined
+    }));
   }
 
   async markAsProcessing(eventId: string): Promise<void> {
@@ -84,7 +92,7 @@ export class TransactionalOutbox {
       data: {
         attempts: { increment: 1 },
         lastError: error,
-        nextRetryAt,
+        nextRetryAt: nextRetryAt || null,
         processedAt: new Date()
       }
     });

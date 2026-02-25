@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 export interface OutboxEntry {
     eventId: string;
     eventType: string;
-    eventData: any;
+    eventData: Record<string, unknown>;
     status?: 'PENDING' | 'PROCESSING' | 'SENT' | 'FAILED';
     occurredAt?: Date;
 }
@@ -50,6 +50,8 @@ export class OutboxRepository {
                     processedAt: new Date()
                 }
             });
-        } catch (error) { }
+        } catch (error) {
+            // Silently fail
+        }
     }
 }

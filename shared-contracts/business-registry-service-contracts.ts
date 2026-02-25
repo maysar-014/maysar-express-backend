@@ -1,4 +1,4 @@
-import { UUID, UserRole } from './types';
+import { UUID } from './types';
 
 export namespace BusinessRegistryService {
     export namespace Events {
@@ -25,7 +25,7 @@ export namespace BusinessRegistryService {
         export interface RegisterBusiness {
             ownerId: UUID;
             name: string;
-            details: any;
+            details: Record<string, unknown>;
         }
 
         export interface VerifyBusiness {

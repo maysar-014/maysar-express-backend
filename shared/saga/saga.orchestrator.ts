@@ -133,7 +133,17 @@ export abstract class DistributedSagaOrchestrator<T = any> {
         await this.compensate(sagaId, payload, failedStepIndex - 1);
     }
 
-    private async compensate(sagaId: string, payload: T, stepIndex: number): Promise<void> {
+    protected async rollback(sagaId: string): Promise<void> {
+        const saga = await this.sagaLogRepository.getById(sagaId);
+        if (!saga) throw new Error(`Saga ${sagaId} not found`);
+        const stepIndex = this.steps.findIndex(s => s.name === saga.currentStep);
+        await this.compensate(sagaId, saga.payload as T, stepIndex - 1);
+    }
+
+    protected context: T | undefined;
+    protected sagaId: string = '';
+
+    protected async compensate(sagaId: string, payload: T, stepIndex: number): Promise<void> {
         if (stepIndex < 0) {
             await this.markAsCompensated(sagaId);
             return;

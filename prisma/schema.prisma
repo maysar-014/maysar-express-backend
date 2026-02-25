@@ -192,7 +192,7 @@ model Analytics_Metric {
 // USER MANAGEMENT
 // ============================================================================
 
-model Auth_User {
+model User {
   id           String          @id @default(cuid())
   email        String          @unique
   passwordHash String
@@ -220,12 +220,26 @@ model Auth_User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  sessions                Auth_Session[]
+  sessions                Session[]
   passwordResetTokens     Auth_PasswordResetToken[]
   emailVerificationTokens Auth_EmailVerificationToken[]
-  auditLogs               Auth_AuditLog[]
+  auditLogs               AuditLog[]
 
   @@map("auth_users")
+}
+
+model Auth_User {
+  id                  String          @id @default(cuid())
+  email               String          @unique
+  passwordHash        String
+  role                Auth_UserRole   @default(BUYER)
+  status              Auth_UserStatus @default(PENDING_VERIFICATION)
+  twoFactorEnabled    Boolean         @default(false)
+  twoFactorSecret     String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@map("auth_user_sync")
 }
 
 model User_TwoFactorAuth {
@@ -241,7 +255,7 @@ model User_TwoFactorAuth {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  user Auth_User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_two_factor_auth")
 }
@@ -250,7 +264,7 @@ model User_TwoFactorAuth {
 // SESSION MANAGEMENT
 // ============================================================================
 
-model Auth_Session {
+model Session {
   id        String   @id @default(cuid())
   userId    String
   token     String   @unique
@@ -260,7 +274,7 @@ model Auth_Session {
   createdAt DateTime @default(now())
 
   // Relations
-  user Auth_User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("auth_sessions")
 }
@@ -278,7 +292,7 @@ model Auth_PasswordResetToken {
   createdAt DateTime @default(now())
 
   // Relations
-  user Auth_User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("auth_password_reset_tokens")
 }
@@ -296,7 +310,7 @@ model Auth_EmailVerificationToken {
   createdAt DateTime @default(now())
 
   // Relations
-  user Auth_User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("auth_email_verification_tokens")
 }
@@ -305,7 +319,7 @@ model Auth_EmailVerificationToken {
 // AUDIT LOGGING
 // ============================================================================
 
-model Auth_AuditLog {
+model AuditLog {
   id        String   @id @default(cuid())
   userId    String?
   email     String?
@@ -318,7 +332,7 @@ model Auth_AuditLog {
   timestamp DateTime @default(now())
 
   // Relations
-  user Auth_User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("auth_audit_logs")
 }
@@ -361,7 +375,7 @@ model Auth_UserIndex {
 
 // --- business-registry-service Service Models ---
 
-model BusinessRegistry_Business {
+model Business {
   id                 String                              @id @default(cuid())
   name               String
   businessType       BusinessRegistry_BusinessType
@@ -385,14 +399,14 @@ model BusinessRegistry_Business {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  addresses         BusinessRegistry_BusinessAddress[]
-  documents         BusinessRegistry_BusinessDocument[]
+  addresses         BusinessAddress[]
+  documents         BusinessDocument[]
   complianceRecords BusinessRegistry_ComplianceRecord[]
 
   @@map("businessregistry_businesses")
 }
 
-model BusinessRegistry_BusinessAddress {
+model BusinessAddress {
   id         String                       @id @default(cuid())
   businessId String
   type       BusinessRegistry_AddressType @default(MAIN)
@@ -405,12 +419,12 @@ model BusinessRegistry_BusinessAddress {
   createdAt  DateTime                     @default(now())
   updatedAt  DateTime                     @updatedAt
 
-  business BusinessRegistry_Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@map("businessregistry_business_addresses")
 }
 
-model BusinessRegistry_BusinessDocument {
+model BusinessDocument {
   id         String                          @id @default(cuid())
   businessId String
   type       BusinessRegistry_DocumentType
@@ -420,7 +434,7 @@ model BusinessRegistry_BusinessDocument {
   uploadedAt DateTime                        @default(now())
   verifiedAt DateTime?
 
-  business BusinessRegistry_Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@map("businessregistry_business_documents")
 }
@@ -434,7 +448,7 @@ model BusinessRegistry_ComplianceRecord {
   expiresAt  DateTime?
   notes      String?
 
-  business BusinessRegistry_Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@map("businessregistry_compliance_records")
 }
@@ -495,7 +509,7 @@ enum BusinessRegistry_ComplianceType {
   ENVIRONMENTAL_CLEARANCE
 }
 
-model BusinessRegistry_OutboxEvent {
+model OutboxEvent {
   id          String    @id @default(uuid())
   eventId     String    @unique
   eventType   String
@@ -517,8 +531,25 @@ model BusinessRegistry_OutboxEvent {
 // Catalog Service Database Schema
 // Complete product catalog management with categories and variants
 
+model EventStore {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  eventType   String
+  aggregateId String
+  version     Int
+  timestamp   DateTime @default(now())
+  payload     Json
+  metadata    Json?
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+
+  @@index([aggregateId])
+  @@index([eventType])
+  @@map("event_store")
+}
+
 // Hierarchical category system
-model Catalog_Category {
+model Category {
   id           String   @id @default(uuid()) @db.Uuid
   parentId     String?  @db.Uuid
   name         String   @db.VarChar(255)
@@ -531,15 +562,15 @@ model Catalog_Category {
   createdAt    DateTime @default(now()) @db.Timestamp(6)
 
   // Relations
-  parent   Catalog_Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children Catalog_Category[] @relation("CategoryHierarchy")
-  products Catalog_Product[]
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryHierarchy")
+  products Product[]
 
   @@map("catalog_categories")
 }
 
 // Catalog_Product management with SEO
-model Catalog_Product {
+model Product {
   id          String                @id @default(uuid()) @db.Uuid
   sellerId    String                @db.Uuid
   title       String                @db.VarChar(255)
@@ -560,8 +591,8 @@ model Catalog_Product {
   updatedAt   DateTime              @updatedAt @db.Timestamp(6)
 
   // Relations
-  category Catalog_Category         @relation(fields: [categoryId], references: [id])
-  variants Catalog_ProductVariant[]
+  category Category         @relation(fields: [categoryId], references: [id])
+  variants ProductVariant[]
 
   @@index([gtin])
   @@index([mpn])
@@ -571,8 +602,36 @@ model Catalog_Product {
   @@map("catalog_products")
 }
 
+// Buy Box winner and alternatives
+model BuyBox {
+  id               String   @id @default(uuid()) @db.Uuid
+  productId        String   @unique @db.Uuid
+  primarySellerId  String   @db.Uuid
+  primaryScore     Decimal  @db.Decimal(6, 2)
+  lastComputedAt   DateTime @db.Timestamp(6)
+  updatedAt        DateTime @updatedAt @db.Timestamp(6)
+
+  alternatives Catalog_BuyBoxAlternative[]
+
+  @@index([productId])
+  @@map("catalog_buy_boxes")
+}
+
+model Catalog_BuyBoxAlternative {
+  id        String  @id @default(uuid()) @db.Uuid
+  buyBoxId  String  @db.Uuid
+  sellerId  String  @db.Uuid
+  score     Decimal @db.Decimal(6, 2)
+  rank      Int
+
+  buyBox BuyBox @relation(fields: [buyBoxId], references: [id], onDelete: Cascade)
+
+  @@index([buyBoxId])
+  @@map("catalog_buy_box_alternatives")
+}
+
 // Catalog_Product variants with inventory policy
-model Catalog_ProductVariant {
+model ProductVariant {
   id              String                  @id @default(uuid()) @db.Uuid
   productId       String                  @db.Uuid
   sku             String                  @unique @db.VarChar(100)
@@ -589,13 +648,13 @@ model Catalog_ProductVariant {
   createdAt       DateTime                @default(now()) @db.Timestamp(6)
 
   // Relations
-  product Catalog_Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("catalog_product_variants")
 }
 
 // Media management for products and categories
-model Catalog_MediaRef {
+model MediaRef {
   id           String   @id @default(uuid()) @db.Uuid
   entityType   String   @db.VarChar(50) // product, category, seller
   entityId     String   @db.Uuid
@@ -702,7 +761,7 @@ enum Catalog_VariantStatus {
 // TRANSACTIONAL OUTBOX
 // ============================================================================
 
-model Catalog_OutboxEvent {
+model CatalogOutboxEvent {
   id          String    @id @default(uuid()) @db.Uuid
   eventId     String    @unique
   eventType   String
@@ -880,7 +939,7 @@ model Checkout_AppliedDiscount {
 // Revenue sharing, referrals, and loyalty rewards management
 
 // Commission_Commission calculations and payouts
-model Commission_Commission {
+model Commission {
   id        String                      @id @default(uuid()) @db.Uuid
   orderId   String                      @db.Uuid
   sellerId  String                      @db.Uuid
@@ -893,7 +952,7 @@ model Commission_Commission {
   metadata  Json?
   createdAt DateTime                    @default(now()) @db.Timestamp(6)
 
-  @@map("commissions")
+  @@map("commission_commissions")
 }
 
 // Commission_Referral program management
@@ -930,7 +989,7 @@ model Commission_Reward {
 }
 
 // Commission_Payout management
-model Commission_Payout {
+model CommissionPayout {
   id            String                  @id @default(uuid()) @db.Uuid
   recipientId   String                  @db.Uuid
   recipientType String
@@ -1013,7 +1072,7 @@ enum Commission_PayoutStatus {
 // Social features, posts, comments, and user engagement
 
 // Social posts and content
-model Community_Post {
+model Post {
   id               String               @id @default(uuid()) @db.Uuid
   authorId         String               @db.Uuid
   title            String?              @db.VarChar(255)
@@ -1037,9 +1096,9 @@ model Community_Post {
   updatedAt        DateTime             @updatedAt @db.Timestamp(6)
 
   // Relations
-  author    Community_User       @relation("PostAuthor", fields: [authorId], references: [id])
+  author    CommunityUser       @relation("PostAuthor", fields: [authorId], references: [id])
   likes     Community_Like[]
-  comments  Community_Comment[]
+  comments  Comment[]
   shares    Community_Share[]
   bookmarks Community_Bookmark[]
 
@@ -1047,7 +1106,7 @@ model Community_Post {
 }
 
 // Community_User entity for community features
-model Community_User {
+model CommunityUser {
   id             String               @id @default(uuid()) @db.Uuid
   username       String               @unique @db.VarChar(50)
   displayName    String               @db.VarChar(100)
@@ -1065,8 +1124,8 @@ model Community_User {
   updatedAt      DateTime             @updatedAt @db.Timestamp(6)
 
   // Relations
-  posts     Community_Post[]     @relation("PostAuthor")
-  comments  Community_Comment[]
+  posts     Post[]     @relation("PostAuthor")
+  comments  Comment[]
   likes     Community_Like[]
   shares    Community_Share[]
   followers Community_Follow[]   @relation("UserFollowers")
@@ -1077,7 +1136,7 @@ model Community_User {
 }
 
 // Nested comments system
-model Community_Comment {
+model Comment {
   id               String                  @id @default(uuid()) @db.Uuid
   postId           String                  @db.Uuid
   authorId         String                  @db.Uuid
@@ -1093,10 +1152,10 @@ model Community_Comment {
   updatedAt        DateTime                @updatedAt @db.Timestamp(6)
 
   // Relations
-  post    Community_Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  author  Community_User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parent  Community_Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
-  replies Community_Comment[] @relation("CommentReplies")
+  post    Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  CommunityUser      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies Comment[] @relation("CommentReplies")
   likes   Community_Like[]
 
   @@map("community_comments")
@@ -1112,9 +1171,9 @@ model Community_Like {
   createdAt DateTime           @default(now()) @db.Timestamp(6)
 
   // Relations
-  user    Community_User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post    Community_Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  comment Community_Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    CommunityUser     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post    Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
   @@unique([userId, commentId])
@@ -1130,8 +1189,8 @@ model Community_Share {
   createdAt DateTime @default(now()) @db.Timestamp(6)
 
   // Relations
-  user Community_User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post Community_Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user CommunityUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
   @@map("community_shares")
@@ -1146,8 +1205,8 @@ model Community_Follow {
   createdAt   DateTime               @default(now()) @db.Timestamp(6)
 
   // Relations
-  follower  Community_User @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
-  following Community_User @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+  follower  CommunityUser @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following CommunityUser @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId])
   @@map("community_follows")
@@ -1190,8 +1249,8 @@ model Community_Bookmark {
   createdAt DateTime @default(now()) @db.Timestamp(6)
 
   // Relations
-  user Community_User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post Community_Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user CommunityUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
   @@map("community_bookmarks")
@@ -1829,7 +1888,7 @@ model Logistics_OutboxEvent {
 // Multi-channel communication templates and delivery tracking
 
 // Notification_Notification templates with localization
-model Notification_Template {
+model NotificationTemplate {
   id        String                        @id @default(uuid()) @db.Uuid
   name      String                        @unique @db.VarChar(100)
   type      Notification_NotificationType
@@ -1843,13 +1902,13 @@ model Notification_Template {
   updatedAt DateTime                      @updatedAt @db.Timestamp(6)
 
   // Relations
-  notifications Notification_Notification[]
+  notifications Notification[]
 
   @@map("notification_templates")
 }
 
 // Individual notifications with delivery tracking
-model Notification_Notification {
+model Notification {
   id            String                            @id @default(uuid()) @db.Uuid
   userId        String                            @db.Uuid
   templateId    String?                           @db.Uuid
@@ -1870,10 +1929,10 @@ model Notification_Notification {
   createdAt     DateTime                          @default(now()) @db.Timestamp(6)
 
   // Relations
-  template     Notification_Template?     @relation(fields: [templateId], references: [id])
+  template     NotificationTemplate?     @relation(fields: [templateId], references: [id])
   deliveryLogs Notification_DeliveryLog[]
 
-  @@map("notifications")
+  @@map("notification_notifications")
 }
 
 // Detailed delivery tracking and analytics
@@ -1892,7 +1951,7 @@ model Notification_DeliveryLog {
   createdAt         DateTime                    @default(now()) @db.Timestamp(6)
 
   // Relations
-  notification Notification_Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
 
   @@map("notification_delivery_logs")
 }
@@ -2282,7 +2341,7 @@ model Payment_FraudAssessment {
 // Platform to seller disbursements
 
 // Payout_Payout processing for sellers
-model Payout_Payout {
+model Payout {
   id                 String              @id @default(uuid()) @db.Uuid
   userId             String              @db.Uuid
   userRole           String              @db.VarChar(50)
@@ -2304,7 +2363,7 @@ model Payout_Payout {
   updatedAt          DateTime            @updatedAt @db.Timestamp(6)
 
   @@index([userId])
-  @@map("payouts")
+  @@map("payout_payouts")
 }
 
 enum Payout_PayoutMethod {
@@ -2321,7 +2380,7 @@ enum Payout_PayoutStatus {
   CANCELLED
 }
 
-model Payout_OutboxEvent {
+model PayoutOutboxEvent {
   id          String    @id @default(uuid()) @db.Uuid
   eventId     String    @unique
   eventType   String
@@ -2963,6 +3022,24 @@ enum Support_SenderType {
 }
 
 // Global event outbox for cross-service communication
+// Global event outbox for cross-service communication
+model SharedOutboxEvent {
+  id          String    @id @default(uuid())
+  eventId     String    @unique
+  eventType   String
+  eventData   Json
+  status      String    @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+  attempts    Int       @default(0)
+  lastError   String?
+  nextRetryAt DateTime?
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@map("shared_outbox_events")
+}
+
 model Global_OutboxEvent {
   id          String    @id @default(uuid())
   eventId     String    @unique

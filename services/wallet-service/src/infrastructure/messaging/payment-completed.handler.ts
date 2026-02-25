@@ -1,12 +1,21 @@
 import { CreditWalletUseCase } from '../../application/use-cases/credit-wallet.use-case';
 import { AuditInfo, ActorType } from '../../domain/value-objects/audit-info.value-object';
+import { EventEnvelope } from '../../../../shared-contracts/types';
+
+interface PaymentCompletedEvent {
+    orderId: string;
+    userId: string;
+    amount: number;
+    currency: string;
+    paymentId: string;
+}
 
 export class PaymentCompletedHandler {
     constructor(
         private readonly creditWalletUseCase: CreditWalletUseCase
     ) { }
 
-    async handle(event: any): Promise<void> {
+    async handle(event: EventEnvelope<PaymentCompletedEvent>): Promise<void> {
         const { payload } = event;
 
         // Check if this payment is for a wallet top-up

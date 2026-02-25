@@ -1,0 +1,21 @@
+﻿services/payment-service/src/application/mappers/wallet.mapper.ts(2,24): error TS2307: Cannot find module '@wallet/domain/entities/wallet.entity' or its corresponding type declarations.
+services/payment-service/src/application/mappers/wallet.mapper.ts(3,29): error TS2307: Cannot find module '@wallet/domain/entities/transaction.entity' or its corresponding type declarations.
+services/payment-service/src/application/sagas/__tests__/payment-processing.saga.test.ts(31,20): error TS2339: Property 'start' does not exist on type 'PaymentProcessingSaga'.
+services/payment-service/src/application/sagas/__tests__/payment-processing.saga.test.ts(45,27): error TS2339: Property 'start' does not exist on type 'PaymentProcessingSaga'.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(1,55): error TS2307: Cannot find module '@shared/saga/saga.orchestrator' or its corresponding type declarations.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(2,50): error TS2307: Cannot find module '@shared/saga/saga.log' or its corresponding type declarations.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(50,45): error TS2339: Property 'getSagaOrThrow' does not exist on type 'PaymentProcessingSaga'.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(52,32): error TS2339: Property 'publishCommand' does not exist on type 'PaymentProcessingSaga'.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(61,45): error TS2339: Property 'getSagaOrThrow' does not exist on type 'PaymentProcessingSaga'.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(63,32): error TS2339: Property 'publishCommand' does not exist on type 'PaymentProcessingSaga'.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(72,45): error TS2339: Property 'getSagaOrThrow' does not exist on type 'PaymentProcessingSaga'.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(89,45): error TS2339: Property 'getSagaOrThrow' does not exist on type 'PaymentProcessingSaga'.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(93,36): error TS2339: Property 'publishCommand' does not exist on type 'PaymentProcessingSaga'.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(113,45): error TS2339: Property 'getSagaOrThrow' does not exist on type 'PaymentProcessingSaga'.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(115,32): error TS2339: Property 'publishCommand' does not exist on type 'PaymentProcessingSaga'.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(124,45): error TS2339: Property 'getSagaOrThrow' does not exist on type 'PaymentProcessingSaga'.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(126,32): error TS2339: Property 'publishCommand' does not exist on type 'PaymentProcessingSaga'.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(137,45): error TS2339: Property 'getSagaOrThrow' does not exist on type 'PaymentProcessingSaga'.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(139,32): error TS2339: Property 'publishCommand' does not exist on type 'PaymentProcessingSaga'.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(151,20): error TS2339: Property 'completeStep' does not exist on type 'PaymentProcessingSaga'.
+services/payment-service/src/application/sagas/payment-processing.saga.ts(155,20): error TS2339: Property 'failStep' does not exist on type 'PaymentProcessingSaga'.

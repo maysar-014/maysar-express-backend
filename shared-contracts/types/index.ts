@@ -1,3 +1,11 @@
+export interface ShippingAddress {
+    street: string;
+    city: string;
+    region: string;
+    country: string;
+    postalCode: string;
+}
+
 export type UUID = string;
 
 export interface EventEnvelope<T = any> {

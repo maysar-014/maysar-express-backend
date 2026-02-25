@@ -14,7 +14,7 @@
  */
 
 import { InventoryPolicies } from '../inventory-policies';
-import { InventoryLevel, ReorderPoint, SafetyStock, InventoryTurnover } from '../../value-objects/inventory.value-object';
+import { InventoryLevel, SafetyStock} from '../../value-objects/inventory.value-object';
 
 describe('InventoryPolicies', () => {
   describe('Stock Level Validation', () => {
@@ -313,3 +313,7 @@ describe('InventoryPolicies', () => {
 
   describe('Inventory Optimization', () => {
     it('should calculate economic order quantity', () => {
+      // Implementation pending
+    });
+  });
+});

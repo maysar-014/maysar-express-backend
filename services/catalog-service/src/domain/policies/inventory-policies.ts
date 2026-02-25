@@ -4,6 +4,8 @@
  * Pure domain logic - no external dependencies
  */
 
+import { InventoryLevel, SafetyStock } from '../value-objects/inventory.value-object';
+
 export interface InventoryRule {
   id: string;
   name: string;
@@ -403,3 +405,84 @@ export const DEFAULT_INVENTORY_RULES: InventoryRule[] = [
     description: 'Increase safety stock for products with long lead times'
   })
 ];
+
+export class InventoryPolicies {
+  static validateMinimumStockLevel(inventoryLevel: InventoryLevel): boolean {
+    if (inventoryLevel.current < 0) {
+      throw new Error('Stock level cannot be negative');
+    }
+    return inventoryLevel.current >= inventoryLevel.minimum;
+  }
+
+  static validateMaximumStockLevel(inventoryLevel: InventoryLevel): boolean {
+    if (inventoryLevel.maximum && inventoryLevel.current > inventoryLevel.maximum) {
+      throw new Error('Stock level exceeds maximum allowed threshold');
+    }
+    return inventoryLevel.maximum ? inventoryLevel.current <= inventoryLevel.maximum : true;
+  }
+
+  static validateZeroStockLevel(inventoryLevel: InventoryLevel): boolean {
+    return inventoryLevel.current > 0;
+  }
+
+  static calculateReorderPoint(averageDailyDemand: number, leadTimeDays: number, safetyStock: number): number {
+    return (averageDailyDemand * leadTimeDays) + safetyStock;
+  }
+
+  static checkReorderThreshold(currentInventory: number, reorderPoint: number): boolean {
+    return currentInventory <= reorderPoint;
+  }
+
+  static validateReorderQuantity(reorderPoint: number, orderQuantity: number): boolean {
+    if (orderQuantity > reorderPoint * 20) {
+      throw new Error('Reorder quantity exceeds maximum allowed threshold');
+    }
+    return true;
+  }
+
+  static calculateSafetyStock(maxDailyDemand: number, averageDailyDemand: number, maxLeadTimeDays: number, averageLeadTimeDays: number): number {
+    return (maxDailyDemand * maxLeadTimeDays) - (averageDailyDemand * averageLeadTimeDays);
+  }
+
+  static validateSafetyStockLevel(safetyStock: SafetyStock): boolean {
+    if (safetyStock.current < safetyStock.minimum) {
+      throw new Error('Safety stock below minimum threshold');
+    }
+    return safetyStock.current >= safetyStock.minimum;
+  }
+
+  static calculateInventoryTurnoverRatio(costOfGoodsSold: number, averageInventory: number): number {
+    return costOfGoodsSold / averageInventory;
+  }
+
+  static validateInventoryTurnoverRate(turnoverRate: number, targetTurnoverRate: number): boolean {
+    if (turnoverRate < targetTurnoverRate) {
+      throw new Error('Inventory turnover rate below minimum threshold');
+    }
+    return true;
+  }
+
+  static calculateDaysInventoryOutstanding(turnoverRatio: number): number {
+    return 365 / turnoverRatio;
+  }
+
+  static validateDaysInventoryOutstanding(daysOutstanding: number, maxDaysOutstanding: number): boolean {
+    if (daysOutstanding > maxDaysOutstanding) {
+      throw new Error('Days inventory outstanding exceeds maximum threshold');
+    }
+    return true;
+  }
+
+  static predictStockoutRisk(currentInventory: number, dailyDemand: number, leadTimeDays: number): 'low' | 'medium' | 'high' | 'critical' {
+    const daysOfStock = currentInventory / dailyDemand;
+    
+    if (daysOfStock < leadTimeDays * 0.5) return 'high';
+    if (daysOfStock < leadTimeDays) return 'medium';
+    return 'low';
+  }
+
+  static checkEmergencyReorder(currentInventory: number, dailyDemand: number, leadTimeDays: number): boolean {
+    const daysOfStock = currentInventory / dailyDemand;
+    return daysOfStock < leadTimeDays * 0.5;
+  }
+}

@@ -3,7 +3,7 @@
  * Prisma-based repository for wallet persistence with atomic operations
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Wallet_Wallet } from '@prisma/client';
 import { Wallet, WalletProps, WalletStatus } from '../../domain/entities/wallet.entity';
 import { IWalletRepository } from '../../domain/repositories/wallet.repository';
 
@@ -26,7 +26,7 @@ export class WalletRepository implements IWalletRepository {
                 codCommitmentLimit: props.codCommitmentLimit,
                 codCommitmentUsed: props.codCommitmentUsed,
                 codCommitmentCount: props.codCommitmentCount,
-            } as any,
+            },
         });
     }
 
@@ -56,8 +56,8 @@ export class WalletRepository implements IWalletRepository {
                 status: props.status,
                 frozenAmount: props.frozenAmount,
                 updatedAt: props.updatedAt,
-                codCommitmentUsed: (props as any).codCommitmentUsed,
-                codCommitmentCount: (props as any).codCommitmentCount,
+                codCommitmentUsed: props.codCommitmentUsed,
+                codCommitmentCount: props.codCommitmentCount,
             },
         });
     }
@@ -84,7 +84,7 @@ export class WalletRepository implements IWalletRepository {
     async lockForTransaction(walletId: string): Promise<Wallet> {
         // Use Prisma transaction with row-level locking
         // Note: Table name in raw query must match DB table name exactly, which is mapped to "wallets"
-        const wallet = await this.prisma.$queryRaw<any[]>`
+        const wallet = await this.prisma.$queryRaw<Wallet_Wallet[]>`
       SELECT * FROM "wallets" WHERE id = ${walletId} FOR UPDATE
     `;
 
@@ -114,7 +114,7 @@ export class WalletRepository implements IWalletRepository {
         };
     }
 
-    private toDomain(data: any): Wallet {
+    private toDomain(data: Wallet_Wallet): Wallet {
         const props: WalletProps = {
             id: data.id,
             userId: data.userId,

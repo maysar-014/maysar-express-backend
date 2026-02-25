@@ -1,0 +1,92 @@
+import { SellerListingInput } from '../value-objects/seller-listing-input.value-object';
+import { BuyBoxWeights } from '../value-objects/buy-box-weights.value-object';
+import { BuyBoxResult, BuyBoxAlternative } from '../value-objects/buy-box-result.value-object';
+
+export class BuyBoxEngine {
+  static compute(
+    productId: string,
+    listings: SellerListingInput[],
+    weights: BuyBoxWeights
+  ): BuyBoxResult | null {
+    const eligible = this.filterEligible(listings, BuyBoxWeights.MATCH_CONFIDENCE_THRESHOLD);
+    if (eligible.length === 0) return null;
+
+    const median = this.calculateMedian(eligible.map(l => l.price));
+    const scored = eligible.map(listing => ({
+      listing,
+      score: this.computeFinalScore(listing, median, weights)
+    }));
+
+    scored.sort((a, b) => {
+      const diff = b.score - a.score;
+      return diff !== 0 ? diff : this.applyTieBreaker(a.listing, b.listing);
+    });
+
+    const winner = scored[0];
+    const alternatives: BuyBoxAlternative[] = scored
+      .slice(1, BuyBoxWeights.MAX_ALTERNATIVES + 1)
+      .map((s, idx) => ({
+        sellerId: s.listing.sellerId,
+        score: s.score,
+        rank: idx + 2
+      }));
+
+    return new BuyBoxResult(
+      productId,
+      winner.listing.sellerId,
+      winner.score,
+      alternatives,
+      new Date()
+    );
+  }
+
+  private static filterEligible(listings: SellerListingInput[], threshold: number): SellerListingInput[] {
+    return listings.filter(
+      l => !l.isSuspended && l.stock > 0 && l.matchConfidence >= threshold
+    );
+  }
+
+  private static calculateMedian(prices: number[]): number {
+    const sorted = [...prices].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+  }
+
+  private static computePriceScore(price: number, median: number): number {
+    const deviation = Math.abs(price - median) / median;
+    if (deviation <= 0.05) return 100;
+    if (price > median) return Math.max(60, 95 - (deviation - 0.05) * 700);
+    if (price < median * 0.90) return Math.max(50, 70 - (0.90 - price / median) * 200);
+    return 80 + (1 - deviation / 0.05) * 15;
+  }
+
+  private static computeRatingScore(rating: number): number {
+    return (rating / 5) * 100;
+  }
+
+  private static computeAvailabilityScore(stock: number): number {
+    return Math.min(100, stock * 10);
+  }
+
+  private static computeFinalScore(
+    listing: SellerListingInput,
+    median: number,
+    weights: BuyBoxWeights
+  ): number {
+    let score =
+      this.computePriceScore(listing.price, median) * weights.price +
+      this.computeRatingScore(listing.rating) * weights.rating +
+      this.computeAvailabilityScore(listing.stock) * weights.availability;
+
+    if (listing.isNewSeller) score += BuyBoxWeights.NEW_SELLER_BOOST;
+    if (listing.recencyBoost) score += BuyBoxWeights.RECENCY_BOOST;
+
+    return Math.round(score * 100) / 100;
+  }
+
+  private static applyTieBreaker(a: SellerListingInput, b: SellerListingInput): number {
+    if (a.rating !== b.rating) return b.rating - a.rating;
+    if (a.stock !== b.stock) return b.stock - a.stock;
+    return b.lastUpdated.getTime() - a.lastUpdated.getTime();
+  }
+}

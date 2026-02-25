@@ -1,16 +1,16 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Wallet_Transaction } from '@prisma/client';
 import { ITransactionRepository } from '../../domain/repositories/transaction.repository';
-import { Transaction, TransactionProps, TransactionType } from '../../domain/entities/transaction.entity';
+import { Transaction, TransactionType } from '../../domain/entities/transaction.entity';
 
 export class TransactionRepository implements ITransactionRepository {
     constructor(private readonly prisma: PrismaClient) { }
 
     async save(transaction: Transaction): Promise<void> {
-        const data: any = {
+        const data = {
             id: transaction.id,
             walletId: transaction.walletId,
             userId: transaction.userId,
-            type: transaction.type, // Map enum if needed
+            type: transaction.type,
             amount: transaction.amount,
             currency: transaction.currency,
             balanceBefore: transaction.balanceBefore,
@@ -20,7 +20,6 @@ export class TransactionRepository implements ITransactionRepository {
             description: transaction.description,
             metadata: transaction.metadata || {},
             createdAt: transaction.createdAt,
-            // Enhanced fields
             correlationId: transaction.correlationId,
             idempotencyKey: transaction.idempotencyKey,
             initiatedBy: transaction.initiatedBy,
@@ -29,11 +28,10 @@ export class TransactionRepository implements ITransactionRepository {
             isReversed: transaction.isReversed,
             reversalTransactionId: transaction.reversalTransactionId,
             expiresAt: transaction.expiresAt,
-            // COD Specific
-            isCODRelated: (transaction as any).isCODRelated,
-            codOrderId: (transaction as any).codOrderId,
-            codConfirmationRequired: (transaction as any).codConfirmationRequired,
-            codConfirmedAt: (transaction as any).codConfirmedAt
+            isCODRelated: transaction.isCODRelated,
+            codOrderId: transaction.codOrderId,
+            codConfirmationRequired: transaction.codConfirmationRequired,
+            codConfirmedAt: transaction.codConfirmedAt
         };
 
         await this.prisma.wallet_Transaction.create({
@@ -96,7 +94,7 @@ export class TransactionRepository implements ITransactionRepository {
         return this.findByReference('PAYMENT', paymentId);
     }
 
-    private toDomain(record: any): Transaction {
+    private toDomain(record: Wallet_Transaction): Transaction {
         return new Transaction({
             id: record.id,
             walletId: record.walletId,
@@ -118,7 +116,13 @@ export class TransactionRepository implements ITransactionRepository {
             reason: record.reason,
             isReversed: record.isReversed,
             reversalTransactionId: record.reversalTransactionId,
-            expiresAt: record.expiresAt
+            expiresAt: record.expiresAt,
+            referenceType: record.referenceType,
+            referenceId: record.referenceId,
+            isCODRelated: record.isCODRelated,
+            codOrderId: record.codOrderId,
+            codConfirmationRequired: record.codConfirmationRequired ?? false,
+            codConfirmedAt: record.codConfirmedAt
         });
     }
 }

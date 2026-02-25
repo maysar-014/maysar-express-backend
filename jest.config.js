@@ -22,6 +22,7 @@ module.exports = {
         '@domain/(.*)': '<rootDir>/services/user-service/src/domain/$1',
         '@infrastructure/(.*)': '<rootDir>/services/user-service/src/infrastructure/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -36,6 +37,7 @@ module.exports = {
       moduleNameMapper: {
         '@order/(.*)': '<rootDir>/services/order-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -54,6 +56,7 @@ module.exports = {
       moduleNameMapper: {
         '@order/(.*)': '<rootDir>/services/order-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       },
       testTimeout: 60000,
       reporters: [
@@ -74,6 +77,7 @@ module.exports = {
       moduleNameMapper: {
         '@maps/(.*)': '<rootDir>/services/maps-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -85,6 +89,7 @@ module.exports = {
       moduleNameMapper: {
         '@analytics/(.*)': '<rootDir>/services/analytics-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -96,6 +101,7 @@ module.exports = {
       moduleNameMapper: {
         '@auth/(.*)': '<rootDir>/services/auth-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -107,6 +113,7 @@ module.exports = {
       moduleNameMapper: {
         '@business-registry/(.*)': '<rootDir>/services/business-registry-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -118,6 +125,7 @@ module.exports = {
       moduleNameMapper: {
         '@campaign/(.*)': '<rootDir>/services/campaign-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -134,6 +142,7 @@ module.exports = {
       moduleNameMapper: {
         '@catalog/(.*)': '<rootDir>/services/catalog-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -150,6 +159,7 @@ module.exports = {
       moduleNameMapper: {
         '@checkout/(.*)': '<rootDir>/services/checkout-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -161,6 +171,7 @@ module.exports = {
       moduleNameMapper: {
         '@commission/(.*)': '<rootDir>/services/commission-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -184,6 +195,7 @@ module.exports = {
       moduleNameMapper: {
         '@compliance/(.*)': '<rootDir>/services/compliance-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -195,6 +207,7 @@ module.exports = {
       moduleNameMapper: {
         '@enabler/(.*)': '<rootDir>/services/enabler-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -206,6 +219,7 @@ module.exports = {
       moduleNameMapper: {
         '@inventory/(.*)': '<rootDir>/services/inventory-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -217,6 +231,7 @@ module.exports = {
       moduleNameMapper: {
         '@logistics/(.*)': '<rootDir>/services/logistics-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -228,6 +243,7 @@ module.exports = {
       moduleNameMapper: {
         '@notification/(.*)': '<rootDir>/services/notification-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -239,6 +255,7 @@ module.exports = {
       moduleNameMapper: {
         '@payment/(.*)': '<rootDir>/services/payment-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -250,6 +267,7 @@ module.exports = {
       moduleNameMapper: {
         '@payout/(.*)': '<rootDir>/services/payout-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -261,6 +279,7 @@ module.exports = {
       moduleNameMapper: {
         '@pricing/(.*)': '<rootDir>/services/pricing-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -272,6 +291,7 @@ module.exports = {
       moduleNameMapper: {
         '@production/(.*)': '<rootDir>/services/production-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -283,6 +303,7 @@ module.exports = {
       moduleNameMapper: {
         '@session/(.*)': '<rootDir>/services/session-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -294,6 +315,7 @@ module.exports = {
       moduleNameMapper: {
         '@sms/(.*)': '<rootDir>/services/sms-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -305,6 +327,7 @@ module.exports = {
       moduleNameMapper: {
         '@support/(.*)': '<rootDir>/services/support-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -316,6 +339,7 @@ module.exports = {
       moduleNameMapper: {
         '@training/(.*)': '<rootDir>/services/training-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -327,6 +351,7 @@ module.exports = {
       moduleNameMapper: {
         '@two-factor/(.*)': '<rootDir>/services/two-factor-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -338,6 +363,7 @@ module.exports = {
       moduleNameMapper: {
         '@wallet/(.*)': '<rootDir>/services/wallet-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
       }
     },
     {
@@ -346,6 +372,7 @@ module.exports = {
       testEnvironment: 'node',
       testMatch: ['<rootDir>/shared/**/*.test.ts'],
       moduleNameMapper: {
+        '^uuid$': require.resolve('uuid'),
       }
     }
   ],

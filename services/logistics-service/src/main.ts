@@ -79,14 +79,16 @@ class LogisticsService {
     }));
   }
 
+  private setupHealthChecks(): void {
     // Use the comprehensive health routes
     this.app.use('/health', healthRoutes);
+  }
 
   private setupErrorHandling(): void {
-  this.app.use(errorHandler);
-}
+    this.app.use(errorHandler);
+  }
 
-  async start(): Promise < void> {
+  async start(): Promise<void> {
   try {
     // CRITICAL: Establish database connections BEFORE starting the server
     // This prevents the race condition where API requests arrive before DB is ready
@@ -142,7 +144,7 @@ class LogisticsService {
   }
 }
 
-  async shutdown(): Promise < void> {
+  async shutdown(): Promise<void> {
   this.logger.info('Shutting down Logistics Service...');
 
   // Clean up all resources to prevent memory leaks

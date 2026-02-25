@@ -1,4 +1,4 @@
-import { UUID, Money } from './types';
+import { UUID, ShippingAddress } from './types';
 
 export namespace LogisticsService {
     export namespace Events {
@@ -28,7 +28,7 @@ export namespace LogisticsService {
     export namespace Commands {
         export interface ScheduleDelivery {
             orderId: UUID;
-            shippingAddress: any; // Ideally more specific address type
+            shippingAddress: ShippingAddress;
             items: Array<{ productId: UUID; quantity: number }>;
         }
 

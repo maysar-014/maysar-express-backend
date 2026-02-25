@@ -21,6 +21,14 @@ export namespace CatalogService {
             newPrice: Money;
             updatedAt: Date;
         }
+
+        export interface BuyBoxComputed {
+            productId: UUID;
+            primarySellerId: UUID | null;
+            primaryScore: number | null;
+            alternativeCount: number;
+            computedAt: Date;
+        }
     }
 
     export namespace Commands {

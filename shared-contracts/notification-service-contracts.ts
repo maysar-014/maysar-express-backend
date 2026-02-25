@@ -22,7 +22,7 @@ export namespace NotificationService {
             recipient: string;
             channel: 'email' | 'sms' | 'push';
             templateId: string;
-            data: any;
+            data: Record<string, unknown>;
         }
     }
 }

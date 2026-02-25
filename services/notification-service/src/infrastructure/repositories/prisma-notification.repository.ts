@@ -1,40 +1,36 @@
-import { Notification } from '../../domain/entities/notification.entity';
+import { Notification, NotificationType, NotificationStatus, NotificationPriority } from '../../domain/entities/notification.entity';
 import { NotificationContent } from '../../domain/value-objects/notification-content.value-object';
-import { DeliveryAddress } from '../../domain/value-objects/delivery-address.value-object';
 import { NotificationMetadata } from '../../domain/value-objects/notification-metadata.value-object';
 import { INotificationRepository, NotificationSearchCriteria } from '../../domain/repositories';
 import { prisma } from '../database/prisma-client';
-import { logger } from '../services/logger.service';
+import { Prisma, Notification as PrismaNotification } from '@prisma/client';
+import { NotificationTypeMapper, NotificationStatusMapper, NotificationPriorityMapper } from '../mappers/notification-type.mapper';
 
-function toDomain(row: any): Notification {
+function toDomain(row: PrismaNotification): Notification {
   const content = NotificationContent.create(
-    row.content,
-    row.contentHtml ?? undefined
+    row.content ?? '',
+    undefined
   );
   const metadata = NotificationMetadata.create((row.metadata as Record<string, string | number | boolean>) ?? {});
-  const deliveryAddress =
-    row.deliveryAddress && row.deliveryAddressType
-      ? DeliveryAddress.create(row.deliveryAddress, row.deliveryAddressType)
-      : undefined;
+  const deliveryAddress = undefined;
   return new Notification({
     id: row.id,
     userId: row.userId,
-    type: row.type,
-    channel: row.channel,
-    status: row.status,
-    priority: row.priority,
-    subject: row.subject,
+    type: row.type as NotificationType,
+    channel: row.type as NotificationType,
+    status: row.status as NotificationStatus,
+    priority: row.priority as NotificationPriority,
+    subject: row.subject ?? '',
     content,
     metadata,
     scheduledAt: row.scheduledAt ? new Date(row.scheduledAt) : undefined,
     sentAt: row.sentAt ? new Date(row.sentAt) : undefined,
     deliveredAt: row.deliveredAt ? new Date(row.deliveredAt) : undefined,
-    readAt: row.readAt ? new Date(row.readAt) : undefined,
+    readAt: undefined,
     retryCount: row.retryCount ?? 0,
     maxRetries: row.maxRetries ?? 3,
-    lastError: row.lastError ?? undefined,
     createdAt: new Date(row.createdAt),
-    updatedAt: new Date(row.updatedAt),
+    updatedAt: new Date(row.createdAt),
     deliveryAddress
   });
 }
@@ -49,23 +45,17 @@ export class PrismaNotificationRepository implements INotificationRepository {
     const payload = {
       id: notification.id,
       userId: notification.userId,
-      type: notification.type,
-      channel: notification.channel,
-      status: notification.status,
-      priority: notification.priority,
+      type: NotificationTypeMapper.toPrisma(notification.type),
+      status: NotificationStatusMapper.toPrisma(notification.status),
+      priority: NotificationPriorityMapper.toPrisma(notification.priority),
       subject: notification.subject,
       content: notification.content.getValue(),
-      contentHtml: notification.content.getHtml(),
       metadata: notification.metadata.toObject(),
       scheduledAt: notification.scheduledAt,
       sentAt: notification.sentAt,
       deliveredAt: notification.deliveredAt,
-      readAt: notification.readAt,
       retryCount: notification.retryCount,
-      maxRetries: notification.maxRetries,
-      lastError: notification.lastError,
-      deliveryAddress: notification.deliveryAddress?.getValue(),
-      deliveryAddressType: notification.deliveryAddress?.getType()
+      maxRetries: notification.maxRetries
     };
     const row = await prisma.notification.create({ data: payload });
     return toDomain(row);
@@ -73,19 +63,15 @@ export class PrismaNotificationRepository implements INotificationRepository {
 
   async update(notification: Notification): Promise<Notification> {
     const payload = {
-      status: notification.status,
+      status: NotificationStatusMapper.toPrisma(notification.status),
       subject: notification.subject,
       content: notification.content.getValue(),
-      contentHtml: notification.content.getHtml(),
       metadata: notification.metadata.toObject(),
       scheduledAt: notification.scheduledAt,
       sentAt: notification.sentAt,
       deliveredAt: notification.deliveredAt,
-      readAt: notification.readAt,
       retryCount: notification.retryCount,
-      maxRetries: notification.maxRetries,
-      lastError: notification.lastError,
-      updatedAt: new Date()
+      maxRetries: notification.maxRetries
     };
     const row = await prisma.notification.update({
       where: { id: notification.id },
@@ -108,9 +94,9 @@ export class PrismaNotificationRepository implements INotificationRepository {
     return rows.map(toDomain);
   }
 
-  async findByStatus(status: string, limit = 100, offset = 0): Promise<Notification[]> {
+  async findByStatus(status: NotificationStatus, limit = 100, offset = 0): Promise<Notification[]> {
     const rows = await prisma.notification.findMany({
-      where: { status },
+      where: { status: NotificationStatusMapper.toPrisma(status) },
       orderBy: { createdAt: 'desc' },
       take: limit,
       skip: offset
@@ -123,10 +109,9 @@ export class PrismaNotificationRepository implements INotificationRepository {
   }
 
   async search(criteria: NotificationSearchCriteria): Promise<Notification[]> {
-    const where: any = {};
+    const where: Prisma.NotificationWhereInput = {};
     if (criteria.userId) where.userId = criteria.userId;
-    if (criteria.status) where.status = criteria.status;
-    if (criteria.channel) where.channel = criteria.channel;
+    if (criteria.status) where.status = NotificationStatusMapper.toPrisma(criteria.status as NotificationStatus);
     if (criteria.from || criteria.to) {
       where.createdAt = {};
       if (criteria.from) where.createdAt.gte = criteria.from;
@@ -144,21 +129,21 @@ export class PrismaNotificationRepository implements INotificationRepository {
   async markAsSent(id: string, sentAt: Date): Promise<void> {
     await prisma.notification.update({
       where: { id },
-      data: { status: 'sent', sentAt, updatedAt: new Date() }
+      data: { status: 'sent', sentAt }
     });
   }
 
   async markAsDelivered(id: string, deliveredAt: Date): Promise<void> {
     await prisma.notification.update({
       where: { id },
-      data: { status: 'delivered', deliveredAt, updatedAt: new Date() }
+      data: { status: 'delivered', deliveredAt }
     });
   }
 
-  async markAsRead(id: string, readAt: Date): Promise<void> {
+  async markAsRead(id: string, _readAt: Date): Promise<void> {
     await prisma.notification.update({
       where: { id },
-      data: { status: 'read', readAt, updatedAt: new Date() }
+      data: { status: NotificationStatusMapper.toPrisma('read') }
     });
   }
 
@@ -169,12 +154,11 @@ export class PrismaNotificationRepository implements INotificationRepository {
     await this.update(failed);
   }
 
-  async getSentCountLastHour(userId: string, channel: string): Promise<number> {
+  async getSentCountLastHour(userId: string, _channel: string): Promise<number> {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const count = await prisma.notification.count({
       where: {
         userId,
-        channel,
         status: 'sent',
         sentAt: { gte: oneHourAgo }
       }

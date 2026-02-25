@@ -143,11 +143,11 @@ export class EventIdempotency {
 
 // Generate idempotency key helper
 export function generateIdempotencyKey(req: Request): string {
-  const data = {
+  const data: Record<string, unknown> = {
     method: req.method,
     path: req.path,
     body: req.body,
-    userId: req.user?.id || 'anonymous'
+    userId: (req.user as any)?.id || 'anonymous'
   };
   
   return createHash('sha256')

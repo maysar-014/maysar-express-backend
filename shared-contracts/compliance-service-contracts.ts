@@ -16,7 +16,7 @@ export namespace ComplianceService {
         export interface CheckKYCCompliance {
             entityId: UUID;
             entityType: string;
-            context?: any;
+            context?: Record<string, unknown>;
         }
     }
 }

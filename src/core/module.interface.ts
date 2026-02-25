@@ -1,8 +1,4 @@
-import { Router } from 'express';
-
-export interface Module {
+export interface ServiceModule {
     name: string;
-    initialize: () => Promise<void>;
-    routes: Router;
-    shutdown: () => Promise<void>;
+    initialize?: () => void | Promise<void>;
 }

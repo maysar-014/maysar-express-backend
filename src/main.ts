@@ -1,10 +1,11 @@
+/* eslint-disable no-console */
 import 'dotenv/config';
 import 'reflect-metadata';
 import '../shared/tracing/openTelemetry'; // Enable OpenTelemetry Tracing
 import { createApp } from './app';
 import { moduleRegistry } from './core/module-registry';
 import { validateEnv } from './config/env-validation';
-// @ts-ignore - Importing from virtual module alias or relative path
+import { ServiceModule } from './core/module.interface';
 import * as services from '../services';
 
 async function bootstrap() {
@@ -13,8 +14,8 @@ async function bootstrap() {
         console.log('Starting Maysar Express Backend Monolith...');
 
         // Auto-register all services imported from services/index
-        Object.values(services).forEach((serviceModule: any) => {
-            if (serviceModule && serviceModule.name && serviceModule.initialize) {
+        Object.values(services).forEach((serviceModule: ServiceModule) => {
+            if (serviceModule && serviceModule.name && typeof serviceModule.initialize === 'function') {
                 moduleRegistry.register(serviceModule);
             }
         });

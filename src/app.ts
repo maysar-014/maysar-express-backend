@@ -62,7 +62,7 @@ export const createApp = () => {
         // Check Redis
         try {
             const Redis = await import('ioredis');
-            // @ts-ignore
+            // @ts-expect-error - Redis default export type issue
             const redis = new Redis.default(process.env.REDIS_URL || 'redis://redis:6379', {
                 lazyConnect: true,
                 connectTimeout: 2000,
@@ -86,10 +86,10 @@ export const createApp = () => {
     });
 
     // Global Error Handler
-    app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
         console.error(err);
-        const status = err.status ?? err.statusCode ?? 500;
-        const response: any = {
+        const status = (err as { status?: number; statusCode?: number }).status ?? (err as { status?: number; statusCode?: number }).statusCode ?? 500;
+        const response: { error: string; message: string; stack?: string } = {
             error: 'Internal Server Error',
             message: err.message || 'An unexpected error occurred'
         };

@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Wallet_Hold, Wallet_HoldStatus } from '@prisma/client';
 import { IHoldRepository } from '../../domain/repositories/hold.repository';
-import { Hold, HoldProps, HoldStatus } from '../../domain/entities/hold.entity';
+import { Hold, HoldStatus } from '../../domain/entities/hold.entity';
 import { Money } from '../../domain/value-objects/money.value-object';
 
 export class HoldRepository implements IHoldRepository {
@@ -26,8 +26,8 @@ export class HoldRepository implements IHoldRepository {
         // Upsert to handle both create and update
         await this.prisma.wallet_Hold.upsert({
             where: { id: hold.id },
-            create: data as any,
-            update: data as any
+            create: data,
+            update: data
         });
     }
 
@@ -64,7 +64,7 @@ export class HoldRepository implements IHoldRepository {
         await this.save(hold); // upsert handles update
     }
 
-    private toDomain(record: any): Hold {
+    private toDomain(record: Wallet_Hold): Hold {
         return new Hold({
             id: record.id,
             walletId: record.walletId,
@@ -77,16 +77,15 @@ export class HoldRepository implements IHoldRepository {
             isReleased: record.isReleased,
             createdAt: record.createdAt,
             updatedAt: record.updatedAt,
-            metadata: record.metadata as any
+            metadata: (record.metadata as Record<string, unknown> | null) || undefined
         });
     }
 
-    private mapToPrismaStatus(status: HoldStatus): any {
-        // Assuming Enum matches or mapping needed
-        return status;
+    private mapToPrismaStatus(status: HoldStatus): Wallet_HoldStatus {
+        return status as unknown as Wallet_HoldStatus;
     }
 
-    private mapToDomainStatus(status: any): HoldStatus {
-        return status as HoldStatus;
+    private mapToDomainStatus(status: Wallet_HoldStatus): HoldStatus {
+        return status as unknown as HoldStatus;
     }
 }

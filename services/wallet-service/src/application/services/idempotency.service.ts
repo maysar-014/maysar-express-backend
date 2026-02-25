@@ -4,7 +4,7 @@ import { IIdempotencyRepository } from '../../domain/repositories/idempotency.re
 export class IdempotencyService {
     constructor(private readonly repository: IIdempotencyRepository) { }
 
-    async checkIdempotency(key: IdempotencyKey): Promise<any | null> {
+    async checkIdempotency<T>(key: IdempotencyKey): Promise<T | null> {
         const cached = await this.repository.get(key.toString());
         if (cached) {
             return JSON.parse(cached);
@@ -12,7 +12,7 @@ export class IdempotencyService {
         return null;
     }
 
-    async storeResult(key: IdempotencyKey, result: any): Promise<void> {
+    async storeResult(key: IdempotencyKey, result: unknown): Promise<void> {
         await this.repository.save(key.toString(), JSON.stringify(result));
     }
 }

@@ -42,7 +42,7 @@ describe('Idempotency Infrastructure', () => {
         method: 'POST',
         headers: { 'idempotency-key': idempotencyKey },
         body: { test: 'data' }
-      } as Request;
+      } as unknown as Request;
 
       const res = {
         statusCode: 200,
@@ -63,7 +63,7 @@ describe('Idempotency Infrastructure', () => {
       res.json(responseBody);
 
       // Second request with same idempotency key
-      const req2 = { ...req };
+      const req2 = { ...req } as Request;
       const res2 = {
         statusCode: 200,
         json: jest.fn().mockReturnThis(),
@@ -71,7 +71,7 @@ describe('Idempotency Infrastructure', () => {
       } as unknown as Response;
       const next2 = jest.fn();
 
-      await middleware(req2, res2, next2);
+      await middleware(req2 as Request, res2, next2);
 
       // Should return cached response, not call next
       expect(next2).not.toHaveBeenCalled();
@@ -84,7 +84,7 @@ describe('Idempotency Infrastructure', () => {
         method: 'POST',
         headers: {},
         body: { test: 'data' }
-      } as Request;
+      } as unknown as Request;
 
       const res = {
         status: jest.fn().mockReturnThis(),
@@ -195,7 +195,7 @@ describe('Idempotency Infrastructure', () => {
         method: 'POST',
         headers: { 'idempotency-key': 'test-key' },
         body: { test: 'data' }
-      } as Request;
+      } as unknown as Request;
 
       const res = {} as Response;
       const next = jest.fn();
