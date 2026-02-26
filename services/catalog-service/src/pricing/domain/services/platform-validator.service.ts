@@ -8,13 +8,8 @@ export class PlatformValidatorService {
         let adjustedPrice = grossPrice;
         const minMarginRate = economics.minimumPlatformMarginPercentage / 100;
 
-<<<<<<< Updated upstream
-        const platformRevenue = adjustedPrice * (economics.commissionPercentage / 100);
-        const platformMarginRate = platformRevenue / adjustedPrice;
-=======
         let platformRevenue = adjustedPrice * (economics.commissionPercentage / 100);
         let platformMarginRate = platformRevenue / adjustedPrice;
->>>>>>> Stashed changes
 
         if (platformMarginRate < minMarginRate) {
             adjustedPrice = platformRevenue / minMarginRate;

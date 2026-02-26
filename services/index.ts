@@ -1,10 +1,10 @@
 // Module Registry Export
 export { AnalyticsModule } from './analytics-service';
 export { ApiGatewayModule } from './api-gateway';
-export { AuthModule } from './auth-service';
+export { AuthModule } from './auth-service'; // Now includes session-service & two-factor-service
 export { BusinessRegistryModule } from './business-registry-service';
-export { CampaignModule } from './campaign-service';
-export { CatalogModule } from './catalog-service';
+// CampaignModule merged into CatalogModule
+export { CatalogModule } from './catalog-service'; // Now includes campaign-service & pricing-service
 export { CheckoutModule } from './checkout-service';
 export { CommissionModule } from './commission-service';
 export { CommunityModule } from './community-service';
@@ -14,17 +14,17 @@ export { InventoryModule } from './inventory-service';
 export { LogisticsModule } from './logistics-service';
 export { MapsModule } from './maps-service';
 export { ModerationModule } from './moderation-service';
-export { NotificationModule } from './notification-service';
+export { NotificationModule } from './notification-service'; // Now includes sms-service
 export { OrderModule } from './order-service';
 export { PaymentModule } from './payment-service';
 export { PayoutModule } from './payout-service';
 export { PermissionModule } from './permission-service';
-export { PricingModule } from './pricing-service';
+// PricingModule merged into CatalogModule
 export { ProductionModule } from './production-service';
-export { SessionModule } from './session-service';
-export { SmsModule } from './sms-service';
+// SessionModule merged into AuthModule
+// SmsModule merged into NotificationModule
 export { SupportModule } from './support-service';
 export { TrainingModule } from './training-service';
-export { TwoFactorModule } from './two-factor-service';
+// TwoFactorModule merged into AuthModule
 export { UserModule } from './user-service';
 export { WalletModule } from './wallet-service';

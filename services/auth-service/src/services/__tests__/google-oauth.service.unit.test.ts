@@ -61,10 +61,10 @@ describe('GoogleOAuthService - Unit Tests', () => {
   beforeEach(() => {
     // Clear all mocks
     jest.clearAllMocks();
-    
+
     // Create service instance
     googleOAuthService = new GoogleOAuthService();
-    
+
     // Get the mocked user service client
     const { createUserServiceClient } = require('../../infrastructure/clients/user-service.client');
     mockUserServiceClient = createUserServiceClient();
@@ -73,7 +73,7 @@ describe('GoogleOAuthService - Unit Tests', () => {
   describe('getAuthUrl', () => {
     it('should return a valid Google OAuth URL with required parameters', () => {
       const authUrl = googleOAuthService.getAuthUrl();
-      
+
       expect(authUrl).toContain('https://accounts.google.com/o/oauth2/auth');
       expect(authUrl).toContain('client_id=test_client_id');
       expect(authUrl).toContain('redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fauth%2Fgoogle%2Fcallback');
@@ -283,10 +283,5 @@ describe('GoogleOAuthService - Unit Tests', () => {
         avatar: 'https://example.com/avatar.jpg'
       });
     });
-
-
-}
-
-);
   });
 });
