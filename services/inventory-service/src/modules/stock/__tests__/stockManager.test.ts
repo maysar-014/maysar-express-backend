@@ -1,9 +1,9 @@
 import { StockManager, StockUpdate } from '../stockManager';
 import { PrismaClient } from '@prisma/client';
-import { EventBus } from '../../../../shared/events/eventBus';
+import { EventBus } from '../../../../../shared/events/eventBus';
 
 jest.mock('@prisma/client');
-jest.mock('../../../../shared/events/eventBus');
+jest.mock('../../../../../shared/events/eventBus');
 
 describe('StockManager', () => {
   let stockManager: StockManager;

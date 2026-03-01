@@ -1,3 +1,4 @@
+// DEPRECATED: 2FA is now served by auth-service main.ts
 import 'reflect-metadata';
 import { Container } from 'inversify';
 import { TwoFactorServiceApplication } from './app';

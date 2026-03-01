@@ -22,6 +22,14 @@ export class SagaFactory {
     }
 
     /**
+     * Returns the internal orchestrator registry map.
+     * Used by SagaRecoveryWorker to look up orchestrators by saga type.
+     */
+    static getRegistry(): Map<string, DistributedSagaOrchestrator> {
+        return this.instances;
+    }
+
+    /**
      * Clear instances (useful for testing)
      */
     static clear(): void {

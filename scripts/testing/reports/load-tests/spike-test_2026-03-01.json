@@ -1,0 +1,32 @@
+{
+  "scenarioId": "spike-test",
+  "startTime": "2026-03-01T12:59:23.143Z",
+  "endTime": "2026-03-01T13:09:23.143Z",
+  "duration": 600,
+  "totalRequests": 366660,
+  "successfulRequests": 357493,
+  "failedRequests": 9167,
+  "errorRate": 2.5,
+  "responseTimes": {
+    "min": 138,
+    "max": 972,
+    "avg": 347,
+    "p50": 295,
+    "p95": 486,
+    "p99": 763
+  },
+  "throughput": {
+    "rps": 630,
+    "rpm": 37800
+  },
+  "resourceUtilization": {
+    "cpu": 87,
+    "memory": 70,
+    "disk": 46,
+    "network": 50
+  },
+  "bottlenecks": [],
+  "passed": true,
+  "recommendations": [],
+  "customMetrics": {}
+}

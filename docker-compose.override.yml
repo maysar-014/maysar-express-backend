@@ -12,12 +12,13 @@ services:
     volumes:
       - .:/app
       - /app/node_modules # Anonymous volume to protect container's node_modules
+      - ./prisma:/app/prisma
     command: npm run dev
     restart: "no" # Don't restart in dev to see errors clearly
 
   postgres:
     ports:
-      - "5432:5432" # Expose DB for local inspection tools
+      - "5433:5432" # Expose DB for local inspection tools (avoiding 5432 host conflict)
 
   redis:
     ports:

@@ -6,6 +6,7 @@ import { Email } from '../../domain/value-objects/email.value-object';
 import { PhoneNumber } from '../../domain/value-objects/phone-number.value-object';
 import { Address } from '../../domain/value-objects/address.value-object';
 import { logger } from '../services/logger.service';
+import { PiiEncryptionService } from '../../../../../shared/encryption/pii-encryption.service';
 
 /**
  * Prisma User Repository Implementation
@@ -13,7 +14,10 @@ import { logger } from '../services/logger.service';
  * Handles all persistence operations for User aggregates
  */
 export class PrismaUserRepository implements IUserRepository {
-  constructor(private readonly prisma: PrismaClient) { }
+  constructor(
+    private readonly prisma: PrismaClient,
+    private readonly piiService: PiiEncryptionService
+  ) { }
 
   // ============================================================================
   // CORE USER OPERATIONS
@@ -45,18 +49,17 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async findByEmail(email: string): Promise<User | null> {
     try {
-      const userData = await this.prisma.user_User.findUnique({
-        where: { email },
-        include: { addresses: true }
+      const index = await this.prisma.user_UserIndex.findFirst({
+        where: { indexType: 'email', value: this.piiService.hash(email) }
       });
 
-      if (!userData) {
+      if (!index) {
         return null;
       }
 
-      return this.mapToDomainEntity(userData);
+      return this.findById(index.userId);
     } catch (error) {
-      logger.error('Error finding user by email', { email, error: this.formatError(error) });
+      logger.error('Error finding user by email', { email: 'REDACTED', error: this.formatError(error) });
       throw error;
     }
   }
@@ -66,18 +69,17 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async findByPhoneNumber(phoneNumber: string): Promise<User | null> {
     try {
-      const userData = await this.prisma.user_User.findFirst({
-        where: { phoneNumber },
-        include: { addresses: true }
+      const index = await this.prisma.user_UserIndex.findFirst({
+        where: { indexType: 'phone', value: this.piiService.hash(phoneNumber) }
       });
 
-      if (!userData) {
+      if (!index) {
         return null;
       }
 
-      return this.mapToDomainEntity(userData);
+      return this.findById(index.userId);
     } catch (error) {
-      logger.error('Error finding user by phone number', { phoneNumber, error: this.formatError(error) });
+      logger.error('Error finding user by phone number', { phoneNumber: 'REDACTED', error: this.formatError(error) });
       throw error;
     }
   }
@@ -92,6 +94,13 @@ export class PrismaUserRepository implements IUserRepository {
       const createdUser = await this.prisma.user_User.create({
         data: userData,
         include: { addresses: true }
+      });
+
+      await this.prisma.user_UserIndex.createMany({
+        data: [
+          { userId: createdUser.id, indexType: 'email', value: this.piiService.hash(user.email.value) },
+          ...(user.phoneNumber?.value ? [{ userId: createdUser.id, indexType: 'phone', value: this.piiService.hash(user.phoneNumber.value) }] : [])
+        ]
       });
 
       logger.info('User created successfully', { userId: createdUser.id });
@@ -113,6 +122,16 @@ export class PrismaUserRepository implements IUserRepository {
         where: { id: user.id },
         data: userData,
         include: { addresses: true }
+      });
+
+      await this.prisma.user_UserIndex.deleteMany({
+        where: { userId: user.id }
+      });
+      await this.prisma.user_UserIndex.createMany({
+        data: [
+          { userId: user.id, indexType: 'email', value: this.piiService.hash(user.email.value) },
+          ...(user.phoneNumber?.value ? [{ userId: user.id, indexType: 'phone', value: this.piiService.hash(user.phoneNumber.value) }] : [])
+        ]
       });
 
       logger.info('User updated successfully', { userId: user.id });
@@ -151,7 +170,6 @@ export class PrismaUserRepository implements IUserRepository {
       const users = await this.prisma.user_User.findMany({
         where: {
           OR: [
-            { email: { contains: query, mode: 'insensitive' } },
             { firstName: { contains: query, mode: 'insensitive' } },
             { lastName: { contains: query, mode: 'insensitive' } }
           ]
@@ -178,13 +196,13 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async emailExists(email: string): Promise<boolean> {
     try {
-      const count = await this.prisma.user_User.count({
-        where: { email }
+      const count = await this.prisma.user_UserIndex.count({
+        where: { indexType: 'email', value: this.piiService.hash(email) }
       });
 
       return count > 0;
     } catch (error) {
-      logger.error('Error checking email existence', { email, error: this.formatError(error) });
+      logger.error('Error checking email existence', { email: 'REDACTED', error: this.formatError(error) });
       throw error;
     }
   }
@@ -194,13 +212,13 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async phoneExists(phoneNumber: string): Promise<boolean> {
     try {
-      const count = await this.prisma.user_User.count({
-        where: { phoneNumber }
+      const count = await this.prisma.user_UserIndex.count({
+        where: { indexType: 'phone', value: this.piiService.hash(phoneNumber) }
       });
 
       return count > 0;
     } catch (error) {
-      logger.error('Error checking phone existence', { phoneNumber, error: this.formatError(error) });
+      logger.error('Error checking phone existence', { phoneNumber: 'REDACTED', error: this.formatError(error) });
       throw error;
     }
   }
@@ -942,8 +960,8 @@ export class PrismaUserRepository implements IUserRepository {
 
     return User.create({
       id: userData.id,
-      email: Email.create(userData.email),
-      phoneNumber: userData.phoneNumber ? PhoneNumber.create(userData.phoneNumber) : PhoneNumber.create(''),
+      email: Email.create(this.piiService.decrypt(userData.email)),
+      phoneNumber: userData.phoneNumber ? PhoneNumber.create(this.piiService.decrypt(userData.phoneNumber)) : PhoneNumber.create(''),
       firstName: userData.firstName || '',
       lastName: userData.lastName || '',
       dateOfBirth: userData.dateOfBirth || undefined,
@@ -960,8 +978,8 @@ export class PrismaUserRepository implements IUserRepository {
   private mapToPrismaCreateData(user: User): any {
     return {
       id: user.id,
-      email: user.email.value,
-      phoneNumber: user.phoneNumber?.value,
+      email: this.piiService.encrypt(user.email.value),
+      phoneNumber: user.phoneNumber?.value ? this.piiService.encrypt(user.phoneNumber.value) : null,
       firstName: user.firstName,
       lastName: user.lastName,
       dateOfBirth: user.dateOfBirth,
@@ -982,8 +1000,8 @@ export class PrismaUserRepository implements IUserRepository {
    */
   private mapToPrismaUpdateData(user: User): any {
     return {
-      email: user.email.value,
-      phoneNumber: user.phoneNumber?.value,
+      email: this.piiService.encrypt(user.email.value),
+      phoneNumber: user.phoneNumber?.value ? this.piiService.encrypt(user.phoneNumber.value) : null,
       firstName: user.firstName,
       lastName: user.lastName,
       dateOfBirth: user.dateOfBirth,

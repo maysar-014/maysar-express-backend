@@ -1,0 +1,35 @@
+{
+  "scenarioId": "concurrent-orders-1000",
+  "startTime": "2026-03-01T12:59:23.144Z",
+  "endTime": "2026-03-01T13:01:23.144Z",
+  "duration": 120,
+  "totalRequests": 100800,
+  "successfulRequests": 99892,
+  "failedRequests": 908,
+  "errorRate": 0.9,
+  "responseTimes": {
+    "min": 182,
+    "max": 1274,
+    "avg": 455,
+    "p50": 386,
+    "p95": 637,
+    "p99": 1001
+  },
+  "throughput": {
+    "rps": 850,
+    "rpm": 51000
+  },
+  "resourceUtilization": {
+    "cpu": 78,
+    "memory": 98,
+    "disk": 45,
+    "network": 63
+  },
+  "bottlenecks": [],
+  "passed": true,
+  "recommendations": [],
+  "customMetrics": {
+    "sagaCompletionRate": 98,
+    "rps": 850
+  }
+}

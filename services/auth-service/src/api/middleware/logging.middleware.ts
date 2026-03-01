@@ -8,13 +8,14 @@ import { logger } from '../../infrastructure/services/logger.service';
 export const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
   const startTime = Date.now();
   const requestId = req.headers['x-request-id'] || generateRequestId();
-  
+
   // Add request ID to headers for downstream services
   res.setHeader('X-Request-ID', requestId as string);
-  
+
   // Log request start
   logger.info('Request started', {
-    requestId,
+    requestId: String(requestId),
+    correlationId: (req as any).correlationId,
     method: req.method,
     url: req.url,
     userAgent: req.get('User-Agent'),
@@ -24,17 +25,18 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
 
   // Capture original end function
   const originalEnd = res.end;
-  
+
   // Override res.end to log response
-  res.end = function(chunk?: any, encoding?: any) {
+  res.end = function (chunk?: any, encoding?: any) {
     const duration = Date.now() - startTime;
-    
+
     logger.info('Request completed', {
-      requestId,
+      requestId: String(requestId),
+      correlationId: (req as any).correlationId,
       method: req.method,
       url: req.url,
       statusCode: res.statusCode,
-      duration: `${duration}ms`,
+      executionTime: duration,
       contentLength: res.get('Content-Length'),
       timestamp: new Date().toISOString()
     });
@@ -77,10 +79,11 @@ export const securityLogger = (req: Request, res: Response, next: NextFunction):
 
   // Log after response
   const originalEnd = res.end;
-  res.end = function(chunk?: any, encoding?: any) {
+  res.end = function (chunk?: any, encoding?: any) {
     if (securityEvents.length > 0) {
       logger.warn('Security events detected', {
         requestId: req.headers['x-request-id'],
+        correlationId: (req as any).correlationId,
         method: req.method,
         url: req.url,
         statusCode: res.statusCode,
@@ -106,10 +109,10 @@ export const performanceLogger = (req: Request, res: Response, next: NextFunctio
   const startMemory = process.memoryUsage();
 
   const originalEnd = res.end;
-  res.end = function(chunk?: any, encoding?: any) {
+  res.end = function (chunk?: any, encoding?: any) {
     const endTime = process.hrtime.bigint();
     const endMemory = process.memoryUsage();
-    
+
     const duration = Number(endTime - startTime) / 1000000; // Convert to milliseconds
     const memoryDelta = {
       rss: endMemory.rss - startMemory.rss,
@@ -122,9 +125,10 @@ export const performanceLogger = (req: Request, res: Response, next: NextFunctio
     if (duration > 1000) {
       logger.warn('Slow request detected', {
         requestId: req.headers['x-request-id'],
+        correlationId: (req as any).correlationId,
         method: req.method,
         url: req.url,
-        duration: `${duration.toFixed(2)}ms`,
+        executionTime: duration,
         memoryDelta,
         timestamp: new Date().toISOString()
       });

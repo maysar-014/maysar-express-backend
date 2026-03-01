@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { TransactionalOutbox, OutboxStatus } from './outboxPattern';
-import { EventEnvelope } from '../../events';
+import { EventEnvelope } from '../events/eventBus';
 import { randomUUID } from 'crypto';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { exec } from 'child_process';
@@ -59,13 +59,17 @@ describe('Outbox Pattern Reliability Tests', () => {
 
   test('should save event in same transaction as business operation', async () => {
     const eventEnvelope: EventEnvelope = {
-      eventId: randomUUID(),
       eventType: 'test.event.v1',
-      timestamp: new Date().toISOString(),
-      correlationId: randomUUID(),
-      producer: 'test-service',
-      version: 'v1',
-      payload: { test: 'data' }
+      data: { test: 'data' },
+      metadata: {
+        eventId: randomUUID(),
+        timestamp: new Date().toISOString(),
+        correlationId: randomUUID(),
+        producer: 'test-service',
+        version: 'v1'
+      },
+      eventId: randomUUID(),
+      correlationId: randomUUID()
     };
 
     await prisma.$transaction(async (tx) => {
@@ -91,17 +95,26 @@ describe('Outbox Pattern Reliability Tests', () => {
     expect(events).toHaveLength(1);
     expect(events[0].eventId).toBe(eventEnvelope.eventId);
     expect(events[0].status).toBe(OutboxStatus.PENDING);
+    
+    // Verify stored envelope shape
+    const storedEvent = JSON.parse(events[0].eventData);
+    expect(storedEvent.data).toEqual({ test: 'data' });
+    expect(storedEvent.metadata.producer).toBe('test-service');
   });
 
   test('should handle transaction rollback correctly', async () => {
     const eventEnvelope: EventEnvelope = {
-      eventId: randomUUID(),
       eventType: 'test.event.v1',
-      timestamp: new Date().toISOString(),
-      correlationId: randomUUID(),
-      producer: 'test-service',
-      version: 'v1',
-      payload: { test: 'data' }
+      data: { test: 'data' },
+      metadata: {
+        eventId: randomUUID(),
+        timestamp: new Date().toISOString(),
+        correlationId: randomUUID(),
+        producer: 'test-service',
+        version: 'v1'
+      },
+      eventId: randomUUID(),
+      correlationId: randomUUID()
     };
 
     try {
@@ -123,20 +136,24 @@ describe('Outbox Pattern Reliability Tests', () => {
 
   test('should retry failed events with exponential backoff', async () => {
     const eventEnvelope: EventEnvelope = {
-      eventId: randomUUID(),
       eventType: 'test.event.v1',
-      timestamp: new Date().toISOString(),
-      correlationId: randomUUID(),
-      producer: 'test-service',
-      version: 'v1',
-      payload: { test: 'data' }
+      data: { test: 'data' },
+      metadata: {
+        eventId: randomUUID(),
+        timestamp: new Date().toISOString(),
+        correlationId: randomUUID(),
+        producer: 'test-service',
+        version: 'v1'
+      },
+      eventId: randomUUID(),
+      correlationId: randomUUID()
     };
 
     await outbox.saveEvent(eventEnvelope);
 
     // Mark as failed with retry
     const nextRetryAt = new Date(Date.now() + 30000); // 30 seconds
-    await outbox.markAsFailed(eventEnvelope.eventId, 'Test failure', nextRetryAt);
+    await outbox.markAsFailed(eventEnvelope.eventId!, 'Test failure', nextRetryAt);
 
     // Verify retry scheduling
     const events = await prisma.outboxEvent.findMany({
@@ -147,24 +164,33 @@ describe('Outbox Pattern Reliability Tests', () => {
     expect(events[0].attempts).toBe(1);
     expect(events[0].nextRetryAt).toEqual(nextRetryAt);
     expect(events[0].lastError).toBe('Test failure');
+    
+    // Verify stored envelope shape preserved
+    const storedEvent = JSON.parse(events[0].eventData);
+    expect(storedEvent.data).toEqual({ test: 'data' });
+    expect(storedEvent.metadata.version).toBe('v1');
   });
 
   test('should not return events scheduled for future retry', async () => {
     const eventEnvelope: EventEnvelope = {
-      eventId: randomUUID(),
       eventType: 'test.event.v1',
-      timestamp: new Date().toISOString(),
-      correlationId: randomUUID(),
-      producer: 'test-service',
-      version: 'v1',
-      payload: { test: 'data' }
+      data: { test: 'data' },
+      metadata: {
+        eventId: randomUUID(),
+        timestamp: new Date().toISOString(),
+        correlationId: randomUUID(),
+        producer: 'test-service',
+        version: 'v1'
+      },
+      eventId: randomUUID(),
+      correlationId: randomUUID()
     };
 
     await outbox.saveEvent(eventEnvelope);
 
     // Mark as failed with future retry
     const futureRetry = new Date(Date.now() + 60000); // 1 minute in future
-    await outbox.markAsFailed(eventEnvelope.eventId, 'Test failure', futureRetry);
+    await outbox.markAsFailed(eventEnvelope.eventId!, 'Test failure', futureRetry);
 
     // Should not return events scheduled for future
     const pendingEvents = await outbox.getPendingEvents();
@@ -174,13 +200,17 @@ describe('Outbox Pattern Reliability Tests', () => {
   test('should handle duplicate event IDs gracefully', async () => {
     const eventId = randomUUID();
     const eventEnvelope: EventEnvelope = {
-      eventId,
       eventType: 'test.event.v1',
-      timestamp: new Date().toISOString(),
-      correlationId: randomUUID(),
-      producer: 'test-service',
-      version: 'v1',
-      payload: { test: 'data' }
+      data: { test: 'data' },
+      metadata: {
+        eventId,
+        timestamp: new Date().toISOString(),
+        correlationId: randomUUID(),
+        producer: 'test-service',
+        version: 'v1'
+      },
+      eventId,
+      correlationId: randomUUID()
     };
 
     // Save first event

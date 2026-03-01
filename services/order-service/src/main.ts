@@ -15,11 +15,16 @@ import { appConfig, validateConfiguration, logConfigurationSummary } from './con
 import { logSecurityConfigSummary } from './config/security.config';
 import { logMonitoringConfigSummary } from './config/monitoring.config';
 import { databaseManager, loadDatabaseConfig } from './config/database.config';
-import { logStartup, logShutdown, flushLogs } from './infrastructure/monitoring/logger';
+import { logger, logStartup, logShutdown, flushLogs } from './infrastructure/monitoring/logger';
 import { RateLimitingMiddleware } from './middleware/rate-limiting.middleware';
 import { OrderFulfillmentSaga } from './application/sagas/order-fulfillment.saga';
 import { SagaReplyHandler } from './infrastructure/messaging/saga-reply-handler';
 import { eventBus } from '@shared/events/eventBus';
+import { OutboxProcessor } from '../../../shared/outbox/outbox.processor';
+import { TransactionalOutbox } from '../../../shared/outbox/outboxPattern';
+import { EventIdempotency } from '@shared/middleware/idempotency';
+import { SagaRecoveryWorker } from '@shared/saga/saga-recovery.worker';
+import { DistributedSagaOrchestrator } from '@shared/saga/saga.orchestrator';
 
 // Load environment variables
 dotenv.config();
@@ -41,12 +46,12 @@ app.use(express.urlencoded({ extended: true }));
 // Initialize database connection
 async function initializeService() {
   try {
-    console.log('🚀 Initializing Order Service...');
+    logger.info('🚀 Initializing Order Service...');
 
     // Validate configuration
     const configValidation = validateConfiguration();
     if (!configValidation.valid) {
-      console.error('❌ Configuration validation failed:', configValidation.errors);
+      logger.error('❌ Configuration validation failed:', configValidation.errors);
       process.exit(1);
     }
 
@@ -57,23 +62,23 @@ async function initializeService() {
 
     // Initialize rate limiters (must be done before applying middleware)
     RateLimitingMiddleware.initializeRateLimiters();
-    console.log('✅ Rate limiters initialized');
+    logger.info('✅ Rate limiters initialized');
 
     // Initialize Supabase connection
     try {
       await SupabaseClientManager.getInstance().connect();
-      console.log('✅ Database connection established');
+      logger.info('✅ Database connection established');
     } catch (dbError) {
       const error = dbError as Error;
-      console.error('❌ Database initialization failed:', error.message);
+      logger.error('❌ Database initialization failed:', error.message);
 
       // For development, provide helpful guidance instead of crashing
       if (process.env.NODE_ENV === 'development') {
-        console.log('\n💡 Development Setup Options:');
-        console.log('   • Check SUPABASE_URL and SUPABASE_KEY in .env.local');
-        console.log('   • Verify Supabase project is accessible');
-        console.log('   • Run unit tests only: npm run test:unit');
-        console.log('\n📖 See README.md for detailed setup instructions');
+        logger.info('\n💡 Development Setup Options:');
+        logger.info('   • Check SUPABASE_URL and SUPABASE_KEY in .env.local');
+        logger.info('   • Verify Supabase project is accessible');
+        logger.info('   • Run unit tests only: npm run test:unit');
+        logger.info('\n📖 See README.md for detailed setup instructions');
       }
 
       throw error; // Re-throw to maintain existing behavior
@@ -87,9 +92,29 @@ async function initializeService() {
     const outboxRepository = new PrismaOutboxRepository(databaseManager.getPrisma());
     const eventPublisher = new EventPublisherImpl(outboxRepository);
 
+    // Start outbox processor after DB connection
+    const outbox = new TransactionalOutbox(databaseManager.getPrisma());
+    const outboxProcessor = new OutboxProcessor(databaseManager.getPrisma(), outbox, eventBus);
+    outboxProcessorRef = outboxProcessor;
+    outboxProcessor.start();
+    logger.info('✅ Outbox processor started');
+
     // SAGA INFRASTRUCTURE
-    const orderFulfillmentSaga = new OrderFulfillmentSaga();
+    const eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, databaseManager.getPrisma());
+    const orderFulfillmentSaga = new OrderFulfillmentSaga(eventIdempotency);
     const sagaReplyHandler = new SagaReplyHandler(orderFulfillmentSaga);
+
+    // Saga Recovery Worker
+    const { sagaLogRepository } = await import('./infrastructure/repositories/saga.repository');
+    const orchestratorRegistry = new Map<string, DistributedSagaOrchestrator>();
+    orchestratorRegistry.set('OrderFulfillmentSaga', orderFulfillmentSaga);
+    const sagaRecoveryWorker = new SagaRecoveryWorker(sagaLogRepository, orchestratorRegistry, {
+      stuckThresholdMs: 5 * 60 * 1000,
+      pollIntervalMs: 60 * 1000
+    });
+    sagaRecoveryWorkerRef = sagaRecoveryWorker;
+    sagaRecoveryWorker.start();
+    logger.info('✅ Saga recovery worker started');
 
     // Initializing Saga Subscriptions
     // Note: eventBus is already connected or doesn't need explicit connect()
@@ -189,24 +214,35 @@ async function initializeService() {
     const PORT = process.env.PORT || 3002;
 
     app.listen(PORT, () => {
-      console.log(`🎉 Order Service running on port ${PORT}`);
-      console.log(`📊 Health check available at http://localhost:${PORT}/health`);
+      logger.info(`🎉 Order Service running on port ${PORT}`);
+      logger.info(`📊 Health check available at http://localhost:${PORT}/health`);
     });
 
   } catch (error) {
-    console.error('❌ Failed to initialize Order Service:', error);
+    logger.error('❌ Failed to initialize Order Service:', error);
     process.exit(1);
   }
 }
 
 // Graceful shutdown handling
+let outboxProcessorRef: OutboxProcessor | null = null;
+let sagaRecoveryWorkerRef: SagaRecoveryWorker | null = null;
+
+export function setOutboxProcessor(processor: OutboxProcessor) {
+  outboxProcessorRef = processor;
+}
+
 process.on('SIGTERM', async () => {
-  console.log('🛑 SIGTERM received, shutting down gracefully...');
+  logger.info('🛑 SIGTERM received, shutting down gracefully...');
+  sagaRecoveryWorkerRef?.stop();
+  outboxProcessorRef?.stop();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-  console.log('🛑 SIGINT received, shutting down gracefully...');
+  logger.info('🛑 SIGINT received, shutting down gracefully...');
+  sagaRecoveryWorkerRef?.stop();
+  outboxProcessorRef?.stop();
   process.exit(0);
 });
 

@@ -9,7 +9,7 @@ import winston from 'winston';
 // Infrastructure components
 import { PrismaPostRepository } from './infrastructure/repositories/prisma-post.repository';
 import { PrismaUserRepository } from './infrastructure/repositories/prisma-user.repository';
-import { inMemoryEventBus } from '@shared-events/in-memory-event-bus';
+import { inMemoryEventBus } from '@shared-events/eventBus';
 import { RedisCache } from './infrastructure/cache/redis-cache';
 import { UuidGeneratorService } from './infrastructure/services/uuid-generator.service';
 
@@ -22,6 +22,9 @@ import { postsRoutes } from './api/routes/posts.routes';
 
 // Domain components
 import { FeedEngine } from './domain/engines/feed-engine';
+
+import { tracingService, correlationMiddleware } from '../../../shared/tracing/openTelemetry';
+import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
 
 /**
  * Community Service Main Application
@@ -107,6 +110,7 @@ class CommunityService {
   private setupMiddleware(): void {
     // Security middleware
     this.app.use(helmet());
+    this.app.use(correlationMiddleware());
 
     // CORS configuration
     this.app.use(cors({
@@ -143,6 +147,12 @@ class CommunityService {
         version: '1.0.0',
         timestamp: new Date().toISOString()
       });
+    });
+
+    // Prometheus metrics
+    this.app.get('/metrics', async (req, res) => {
+      res.set('Content-Type', metricsRegistry.contentType);
+      res.end(await metricsRegistry.metrics());
     });
 
     // API routes
@@ -238,6 +248,9 @@ class CommunityService {
     }
   }
 }
+
+// Initialize Tracing
+tracingService.start();
 
 // Start the application
 const service = new CommunityService();

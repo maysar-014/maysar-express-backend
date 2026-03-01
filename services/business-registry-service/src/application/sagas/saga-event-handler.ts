@@ -9,6 +9,7 @@ import { executeBusinessRegistrationSaga, BusinessRegistrationSagaDeps } from '.
 import { executeBusinessVerificationSaga, BusinessVerificationSagaDeps } from './business-verification.saga';
 import { IMailerAdapter, IComplianceAdapter, ICapabilityAdapter } from '../../domain/ports';
 import { IBusinessRepository } from '../../domain/repositories';
+import { EventEnvelope, IEventBus } from '@shared/events/eventBus';
 
 export interface SagaEventHandlerDeps {
   mailer: IMailerAdapter;
@@ -19,7 +20,6 @@ export interface SagaEventHandlerDeps {
 
 export class SagaEventHandler {
   constructor(private readonly deps: SagaEventHandlerDeps) {
-    // Validate required dependencies
     if (!deps.mailer) {
       throw new Error('SagaEventHandler requires mailer adapter');
     }
@@ -32,6 +32,28 @@ export class SagaEventHandler {
     if (!deps.businessRepository) {
       throw new Error('SagaEventHandler requires business repository');
     }
+  }
+
+  setupSubscriptions(eventBus: IEventBus): void {
+    eventBus.subscribe('BusinessRegistered', async (envelope: EventEnvelope) => {
+      await this.handleBusinessRegisteredEvent(envelope.data);
+    });
+
+    eventBus.subscribe('BusinessVerified', async (envelope: EventEnvelope) => {
+      await this.handleBusinessVerifiedEvent(envelope.data);
+    });
+
+    eventBus.subscribe('BusinessSuspended', async (envelope: EventEnvelope) => {
+      await this.handleBusinessSuspendedEvent(envelope.data);
+    });
+
+    eventBus.subscribe('BusinessUpdated', async (envelope: EventEnvelope) => {
+      await this.handleBusinessUpdatedEvent(envelope.data);
+    });
+
+    eventBus.subscribe('BusinessReactivated', async (envelope: EventEnvelope) => {
+      await this.handleBusinessReactivatedEvent(envelope.data);
+    });
   }
 
   async handleBusinessRegisteredEvent(event: BusinessRegisteredEvent): Promise<void> {

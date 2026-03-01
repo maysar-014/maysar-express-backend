@@ -9,6 +9,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
 
     logger.info('Request Started', {
         requestId,
+        correlationId: (req as any).correlationId,
         method: req.method,
         url: req.url,
         userAgent: req.get('User-Agent'),
@@ -18,11 +19,13 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
     res.on('finish', () => {
         const duration = Date.now() - startTime;
         const logData = {
-            requestId,
+            requestId: (req as any).requestId || req.get('X-Request-ID'),
+            correlationId: (req as any).correlationId || req.get('X-Correlation-ID'),
             method: req.method,
             url: req.url,
             statusCode: res.statusCode,
-            duration: `${duration}ms`
+            executionTime: duration,
+            userId: (req as any).user?.id
         };
 
         if (res.statusCode >= 500) {
@@ -30,7 +33,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
         } else if (res.statusCode >= 400) {
             logger.warn('Request Completed with Client Error', logData);
         } else {
-            logger.info('Request Completed Successfully', logData);
+            logger.info('Request Completed', logData);
         }
 
         if (duration > 1000) {

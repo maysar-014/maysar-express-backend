@@ -1,9 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { IPayoutRepository } from '../../domain/ports/payout.repository.port';
 import { Payout, PayoutStatus, PayoutMethod } from '../../domain/entities/payout.entity';
+import { PiiEncryptionService } from '../../../../../shared/encryption/pii-encryption.service';
 
 export class PayoutRepository implements IPayoutRepository {
-    constructor(private readonly prisma: PrismaClient) { }
+    constructor(
+        private readonly prisma: PrismaClient,
+        private readonly piiService: PiiEncryptionService
+    ) { }
 
     async save(payout: Payout): Promise<void> {
         const data = payout.toObject();
@@ -17,7 +21,7 @@ export class PayoutRepository implements IPayoutRepository {
                 currency: data.currency,
                 method: data.method as any,
                 status: data.status as any,
-                bankDetails: data.bankDetails as any,
+                bankDetails: data.bankDetails ? this.piiService.encrypt(JSON.stringify(data.bankDetails)) as any : undefined,
                 mobileMoneyDetails: data.mobileMoneyDetails as any,
                 reference: data.reference,
                 processedAt: data.processedAt,
@@ -75,6 +79,7 @@ export class PayoutRepository implements IPayoutRepository {
                 completedAt: data.completedAt,
                 failedAt: data.failedAt,
                 failureReason: data.failureReason,
+                bankDetails: data.bankDetails ? this.piiService.encrypt(JSON.stringify(data.bankDetails)) as any : undefined,
                 metadata: data.metadata as any,
                 updatedAt: new Date(),
             }
@@ -90,7 +95,7 @@ export class PayoutRepository implements IPayoutRepository {
             currency: data.currency,
             method: data.method as PayoutMethod,
             status: data.status as PayoutStatus,
-            bankDetails: data.bankDetails as any,
+            bankDetails: data.bankDetails ? JSON.parse(this.piiService.decrypt(data.bankDetails)) : undefined,
             mobileMoneyDetails: data.mobileMoneyDetails as any,
             reference: data.reference,
             processedAt: data.processedAt,

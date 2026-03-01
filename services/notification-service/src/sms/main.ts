@@ -1,3 +1,4 @@
+// DEPRECATED: SMS is now served by notification-service main.ts
 import 'reflect-metadata';
 import { Container } from 'inversify';
 import { SmsServiceApplication } from './app';

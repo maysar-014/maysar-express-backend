@@ -17,6 +17,11 @@ import commissionRoutes from './api/routes/commission.routes';
 import { healthRoutes } from './api/routes/health.routes';
 import { logger } from './infrastructure/services/logger.service';
 import { requestLogger } from './api/middleware/request-logger.middleware';
+import { tracingService, correlationMiddleware } from '../../../shared/tracing/openTelemetry';
+import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
+
+// Initialize Tracing
+tracingService.start();
 
 // Initialize Express app
 const app = express();
@@ -29,6 +34,13 @@ app.use(cors({
 }));
 app.use(compression());
 app.use(requestLogger);
+app.use(correlationMiddleware());
+
+// Prometheus metrics
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', metricsRegistry.contentType);
+  res.end(await metricsRegistry.metrics());
+});
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));

@@ -1,6 +1,6 @@
 import { createApp } from '../complianceService';
 import { PrismaClient } from '@prisma/client';
-import { EventBus } from '../shared/events/eventBus';
+import { EventBus } from '../../../../shared/events/eventBus';
 import request from 'supertest';
 
 const mockPrisma = {

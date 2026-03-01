@@ -1,5 +1,9 @@
 import rateLimit from 'express-rate-limit';
 import { Request, Response, NextFunction } from 'express';
+import { RedisRateLimitStore } from '../../../../shared/middleware/redis-rate-limit.store';
+import Redis from 'ioredis';
+
+const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 
 /**
  * Rate Limiting Middleware
@@ -25,6 +29,7 @@ export class RateLimitingMiddleware {
     this.generalLimiter = rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
       max: 100, // limit each IP to 100 requests per windowMs
+      store: new RedisRateLimitStore(redisClient, 'rl:order:general:'),
       message: {
         error: 'Too many requests from this IP, please try again later.',
         retryAfter: '15 minutes'
@@ -48,6 +53,7 @@ export class RateLimitingMiddleware {
     this.strictLimiter = rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
       max: 10, // limit each IP to 10 requests per windowMs
+      store: new RedisRateLimitStore(redisClient, 'rl:order:strict:'),
       message: {
         error: 'Too many sensitive requests from this IP',
         retryAfter: '15 minutes'
@@ -67,6 +73,7 @@ export class RateLimitingMiddleware {
     this.authLimiter = rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
       max: 5, // limit each IP to 5 login attempts per windowMs
+      store: new RedisRateLimitStore(redisClient, 'rl:order:auth:'),
       message: {
         error: 'Too many login attempts',
         retryAfter: '15 minutes'
@@ -88,6 +95,7 @@ export class RateLimitingMiddleware {
     this.createLimiter = rateLimit({
       windowMs: 60 * 60 * 1000, // 1 hour
       max: 50, // limit each IP to 50 creations per hour
+      store: new RedisRateLimitStore(redisClient, 'rl:order:create:'),
       message: {
         error: 'Too many resources created',
         retryAfter: '1 hour'
@@ -107,6 +115,7 @@ export class RateLimitingMiddleware {
     this.paymentLimiter = rateLimit({
       windowMs: 10 * 60 * 1000, // 10 minutes
       max: 20, // limit each IP to 20 payment attempts per windowMs
+      store: new RedisRateLimitStore(redisClient, 'rl:order:payment:'),
       message: {
         error: 'Too many payment attempts',
         retryAfter: '10 minutes'
@@ -126,6 +135,7 @@ export class RateLimitingMiddleware {
     this.adminLimiter = rateLimit({
       windowMs: 60 * 60 * 1000, // 1 hour
       max: 100, // limit each IP to 100 admin requests per hour
+      store: new RedisRateLimitStore(redisClient, 'rl:order:admin:'),
       message: {
         error: 'Too many admin requests',
         retryAfter: '1 hour'

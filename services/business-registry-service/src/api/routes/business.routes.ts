@@ -16,6 +16,8 @@ import {
 } from '../middleware/validation.middleware';
 import { SagaEventHandler } from '../../application/sagas/saga-event-handler';
 import { MailerAdapter, ComplianceAdapter, CapabilityAdapter } from '../../infrastructure/adapters';
+import { eventBus } from '@shared/events/eventBus';
+import { logger } from '../../infrastructure/services/logger.service';
 
 let businessController: BusinessController;
 let businessRepository: PrismaBusinessRepository;
@@ -27,18 +29,19 @@ function initializeController(): BusinessController {
     businessRepository = new PrismaBusinessRepository(prisma);
     const businessValidationService = new BusinessValidationService();
     
-    // Initialize adapters for saga event handling
     const mailerAdapter = new MailerAdapter();
     const complianceAdapter = new ComplianceAdapter();
     const capabilityAdapter = new CapabilityAdapter();
     
-    // Initialize saga event handler with dependencies
     sagaEventHandler = new SagaEventHandler({
       mailer: mailerAdapter,
       compliance: complianceAdapter,
       capability: capabilityAdapter,
       businessRepository
     });
+    
+    sagaEventHandler.setupSubscriptions(eventBus);
+    logger.info('✅ Business Registry Saga Event Handlers initialized');
 
     const registerBusinessUseCase = new RegisterBusinessUseCase(businessRepository, businessValidationService, sagaEventHandler);
     const verifyBusinessUseCase = new VerifyBusinessUseCase(businessRepository, sagaEventHandler);

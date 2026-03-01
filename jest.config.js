@@ -47,7 +47,8 @@ module.exports = {
       testMatch: [
         '<rootDir>/services/order-service/**/__tests__/integration/**/*.test.ts',
         '<rootDir>/services/order-service/**/__tests__/integration/**/*.spec.ts',
-        '<rootDir>/services/order-service/**/?(*.)+(integration|spec).ts'
+        '<rootDir>/services/order-service/**/?(*.)+(integration|spec).ts',
+        '<rootDir>/services/order-service/**/tests/integration/**/*.test.ts'
       ],
       setupFilesAfterEnv: [
         '<rootDir>/tests/setup/order-service/setup.ts',
@@ -460,18 +461,18 @@ module.exports = {
   ],
   detectOpenHandles: true,
   forceExit: true,
-  
+
   // Global setup and teardown
   globalSetup: '<rootDir>/tests/global-setup.js',
   globalTeardown: '<rootDir>/tests/global-teardown.js',
-  
+
   // Prevent memory leaks - aggressive settings
   maxConcurrency: 3,
   workerIdleMemoryLimit: '256MB',
-  
+
   // Run tests in band to reduce memory usage
   bail: false,
-  
+
   // Clear cache between test runs
   clearMocks: true,
   resetMocks: true,

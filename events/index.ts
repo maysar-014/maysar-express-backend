@@ -1,4 +1,5 @@
 import { EventEnvelope } from './types';
+import { EventEnvelope as BusEventEnvelope } from '../shared/events/eventBus';
 
 // Maysar Event Catalog - Main Export
 export { eventSchemaRegistry, EventSchemaRegistry } from './schemaRegistry';
@@ -19,17 +20,22 @@ export type {
 export const EVENT_CATALOG_VERSION = '1.0.0';
 export const SUPPORTED_EVENT_VERSIONS = ['v1'];
 
-// Validation utilities
+// Validation utilities for catalog envelope (payload-based)
 export function validateEventEnvelope<T>(envelope: any): envelope is EventEnvelope<T> {
   return (
     typeof envelope === 'object' &&
     typeof envelope.eventId === 'string' &&
     typeof envelope.eventType === 'string' &&
-    typeof envelope.timestamp === 'string' &&
-    typeof envelope.correlationId === 'string' &&
-    typeof envelope.producer === 'string' &&
-    typeof envelope.version === 'string' &&
     envelope.payload !== undefined
+  );
+}
+
+// Validation utility for bus envelope (data-based)
+export function validateBusEventEnvelope(envelope: any): envelope is BusEventEnvelope {
+  return (
+    typeof envelope === 'object' &&
+    typeof envelope.eventType === 'string' &&
+    envelope.data !== undefined
   );
 }
 

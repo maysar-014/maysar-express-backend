@@ -28,6 +28,7 @@ export interface WalletProps {
     codCommitmentLimit: number;
     codCommitmentUsed: number;
     codCommitmentCount: number;
+    version: number;
 }
 
 export class Wallet {
@@ -81,6 +82,10 @@ export class Wallet {
 
     get codCommitmentCount(): number {
         return this.props.codCommitmentCount;
+    }
+
+    get version(): number {
+        return this.props.version;
     }
 
     // Business Methods

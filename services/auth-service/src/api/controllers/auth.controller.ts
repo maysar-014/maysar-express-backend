@@ -29,7 +29,20 @@ export class AuthController {
         userAgent: req.get('user-agent') || 'unknown'
       });
       if (result.success) {
-        res.json(result);
+        const cookieOptions = {
+          httpOnly: true,
+          sameSite: 'strict' as const,
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 7 * 24 * 60 * 60 * 1000
+        };
+
+        if (result.refreshToken) {
+          res.cookie('refreshToken', result.refreshToken, cookieOptions);
+        }
+
+        // Remove refreshToken from response body if present
+        const { refreshToken, ...responseBody } = result;
+        res.json(responseBody);
       } else {
         res.status(401).json(result);
       }
@@ -39,10 +52,18 @@ export class AuthController {
   }
 
   async logout(req: Request, res: Response): Promise<void> {
+    const cookieOptions = {
+      httpOnly: true,
+      sameSite: 'strict' as const,
+      secure: process.env.NODE_ENV === 'production'
+    };
+    res.clearCookie('refreshToken', cookieOptions);
+    res.clearCookie('csrf-token');
     res.status(200).json({ success: true, message: 'Logged out' }); // Stub
   }
 
   async refreshToken(req: Request, res: Response): Promise<void> {
+    const token = req.cookies?.refreshToken || req.body.refreshToken;
     res.status(501).json({ message: 'Not implemented' });
   }
 

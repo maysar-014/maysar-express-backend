@@ -9,6 +9,9 @@ import { healthRoutes } from './api/routes/health.routes';
 import { errorHandler } from './api/middleware/error.middleware';
 import { requestLogger } from './api/middleware/request-logger.middleware';
 import { validationErrorHandler } from './api/middleware/validation.middleware';
+import { correlationMiddleware, tracingService } from '../../../shared/tracing/openTelemetry';
+import { prisma } from './infrastructure/database/prisma.client';
+import { metricsRegistry } from './infrastructure/monitoring/metrics';
 
 /**
  * User Service - Enterprise-grade user management microservice
@@ -33,6 +36,9 @@ class UserServiceApplication {
    * Initialize Express middleware
    */
   private initializeMiddleware(): void {
+    // Correlation ID tracking
+    this.app.use(correlationMiddleware());
+
     // Security middleware
     this.app.use(helmet({
       contentSecurityPolicy: {
@@ -131,6 +137,12 @@ class UserServiceApplication {
     // API versioning
     this.app.use('/api/v1', userRoutes);
 
+    // Prometheus metrics
+    this.app.get('/metrics', async (req, res) => {
+      res.set('Content-Type', metricsRegistry.contentType);
+      res.end(await metricsRegistry.metrics());
+    });
+
     // Root endpoint
     this.app.get('/', (_req: express.Request, res: express.Response) => {
       res.json({
@@ -175,7 +187,6 @@ class UserServiceApplication {
       const { CODReputationEngine } = await import('./domain/engines/cod-reputation.engine');
       const { UpdateCODReputationUseCase } = await import('./application/use-cases/update-cod-reputation.use-case');
       const { CODEventHandler } = await import('./infrastructure/messaging/cod-event-handlers');
-      // Using the concrete repository
       const { DatabaseUserRepository } = await import('./infrastructure/repositories/user.repository');
 
       const userRepository = new DatabaseUserRepository();
@@ -189,6 +200,21 @@ class UserServiceApplication {
     } catch (error) {
       logger.warn('⚠️ Failed to initialize COD Event Handlers', { error });
     }
+
+    try {
+      const { EmailService } = await import('./infrastructure/services/email.service');
+      const { notificationClient } = await import('./application/sagas/service-clients');
+      const { SagaEventHandler } = await import('./application/sagas/saga-event-handler');
+      const { eventBus } = await import('@shared/events/eventBus');
+
+      const emailService = new EmailService();
+      const sagaEventHandler = new SagaEventHandler(emailService, notificationClient);
+      sagaEventHandler.setupSubscriptions(eventBus);
+
+      logger.info('✅ Saga Event Handlers initialized');
+    } catch (error) {
+      logger.warn('⚠️ Failed to initialize Saga Event Handlers', { error });
+    }
   }
 
   /**
@@ -196,6 +222,9 @@ class UserServiceApplication {
    */
   async start(): Promise<void> {
     try {
+      // Initialize tracing
+      tracingService.start();
+
       // Initialize database connection
       await DatabaseConnection.initialize();
 

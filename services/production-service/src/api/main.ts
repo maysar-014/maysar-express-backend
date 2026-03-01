@@ -1,5 +1,9 @@
 import { container } from '../infrastructure/container';
 import { createServer } from '../app';
+import { tracingService } from '../../../../shared/tracing/openTelemetry';
+
+// Initialize Tracing
+tracingService.start();
 
 const PORT = process.env.PORT || 3000;
 
@@ -7,7 +11,7 @@ async function bootstrap() {
     const app = createServer(container);
 
     app.listen(PORT, () => {
-        console.log(`✅ Training Service started on port ${PORT}`);
+        console.log(`✅ Production Service started on port ${PORT}`);
     });
 }
 

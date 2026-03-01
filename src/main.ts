@@ -1,17 +1,27 @@
 /* eslint-disable no-console */
 import 'dotenv/config';
 import 'reflect-metadata';
-import '../shared/tracing/openTelemetry'; // Enable OpenTelemetry Tracing
+import { tracingService } from '../shared/tracing/openTelemetry'; // Enable OpenTelemetry Tracing
 import { createApp } from './app';
 import { moduleRegistry } from './core/module-registry';
 import { validateEnv } from './config/env-validation';
 import { ServiceModule } from './core/module.interface';
 import * as services from '../services';
+import { createLogger } from '../shared/logger/logger';
+import { initializeEventRegistry } from '../shared/events/registry';
+
+const bootstrapLogger = createLogger('Bootstrap', 'core');
 
 async function bootstrap() {
     try {
+        // Initialize tracing
+        tracingService.start();
+
         validateEnv();
-        console.log('Starting Maysar Express Backend Monolith...');
+        bootstrapLogger.info('Starting Maysar Express Backend Monolith...');
+
+        // Initialize event registry before modules
+        initializeEventRegistry();
 
         // Auto-register all services imported from services/index
         Object.values(services).forEach((serviceModule: ServiceModule) => {
@@ -28,15 +38,15 @@ async function bootstrap() {
         const port = process.env.PORT || 3000;
 
         const server = app.listen(port, () => {
-            console.log(`Server running at http://localhost:${port}`);
-            console.log(`Health check available at http://localhost:${port}/health`);
+            bootstrapLogger.info(`Server running at http://localhost:${port}`);
+            bootstrapLogger.info(`Health check available at http://localhost:${port}/health`);
         });
 
         // Graceful shutdown
         const shutdown = async () => {
-            console.log('Received shutdown signal');
+            bootstrapLogger.info('Received shutdown signal');
             server.close(() => {
-                console.log('HTTP server closed');
+                bootstrapLogger.info('HTTP server closed');
             });
             await moduleRegistry.shutdownAll();
             process.exit(0);
@@ -46,7 +56,7 @@ async function bootstrap() {
         process.on('SIGINT', shutdown);
 
     } catch (error) {
-        console.error('Failed to bootstrap application:', error);
+        bootstrapLogger.error('Failed to bootstrap application:', error);
         process.exit(1);
     }
 }

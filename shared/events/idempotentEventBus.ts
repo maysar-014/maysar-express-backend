@@ -1,4 +1,4 @@
-import { EventEnvelope, eventBus } from './eventBus';
+import { EventEnvelope, eventBus, IEventBus } from './eventBus';
 import { EventIdempotency } from '../middleware/idempotency';
 
 export interface IdempotentEventConsumer {
@@ -6,7 +6,7 @@ export interface IdempotentEventConsumer {
   handler: (envelope: EventEnvelope) => Promise<void>;
 }
 
-export class IdempotentEventBus {
+export class IdempotentEventBus implements IEventBus {
   private eventIdempotency: EventIdempotency;
 
   constructor(redisUrl: string) {
@@ -32,8 +32,12 @@ export class IdempotentEventBus {
     eventBus.subscribe(eventPattern, wrappedConsumer.handler);
   }
 
-  async publish(envelope: EventEnvelope): Promise<void> {
-    return eventBus.publish(envelope.eventType, envelope.data, envelope.metadata);
+  async publish(eventTypeOrObject: string | { type?: string; event?: string; data?: any; payload?: any }, data?: any, metadata?: any): Promise<void> {
+    if (typeof eventTypeOrObject === 'string') {
+      return eventBus.publish(eventTypeOrObject, data, metadata);
+    } else {
+      return eventBus.publish(eventTypeOrObject);
+    }
   }
 }
 

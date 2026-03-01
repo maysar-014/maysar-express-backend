@@ -5,10 +5,12 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { Container } from 'inversify';
 import { InversifyExpressServer } from 'inversify-express-utils';
-import { healthRoutes } from './api/routes/health.routes';
+import { healthRouter as healthRoutes } from './api/routes/health.routes';
 import { errorHandler, validationErrorHandler } from './api/middleware/error.middleware';
 import { requestLogger } from './api/middleware/request-logger.middleware';
 import { logger } from './infrastructure/services/logger.service';
+import { correlationMiddleware } from '../../../shared/tracing/openTelemetry';
+import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
 
 export class MapsServiceApplication {
     private server: InversifyExpressServer;
@@ -18,6 +20,7 @@ export class MapsServiceApplication {
         this.server = new InversifyExpressServer(container);
 
         this.server.setConfig((app) => {
+            app.use(correlationMiddleware());
             app.use(helmet());
             app.use(cors({ origin: '*', credentials: true }));
             app.use(compression());
@@ -25,6 +28,12 @@ export class MapsServiceApplication {
             app.use(express.urlencoded({ extended: true, limit: '10mb' }));
             app.use(requestLogger);
             app.use('/health', healthRoutes);
+
+            // Prometheus metrics
+            app.get('/metrics', async (req, res) => {
+                res.set('Content-Type', metricsRegistry.contentType);
+                res.end(await metricsRegistry.metrics());
+            });
         });
 
         this.server.setErrorConfig((app) => {

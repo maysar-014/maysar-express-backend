@@ -12,8 +12,55 @@ import { executeSecurityPolicyBreachSaga, SecurityPolicyBreachEvent } from './se
 import { logger } from '../../infrastructure/services/logger.service';
 import { EmailService } from '../../infrastructure/services/email.service';
 import { NotificationServiceClient } from './service-clients';
+import { EventEnvelope, IEventBus } from '@shared/events/eventBus';
 
 export class SagaEventHandler {
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly notificationClient: NotificationServiceClient
+  ) {}
+
+  setupSubscriptions(eventBus: IEventBus): void {
+    eventBus.subscribe('UserRegistered', async (envelope: EventEnvelope) => {
+      await this.handleUserRegisteredEvent(envelope.data, this.emailService, this.notificationClient);
+    });
+
+    eventBus.subscribe('UserEmailVerified', async (envelope: EventEnvelope) => {
+      await this.handleUserEmailVerifiedEvent(envelope.data, this.emailService, this.notificationClient);
+    });
+
+    eventBus.subscribe('UserPasswordChanged', async (envelope: EventEnvelope) => {
+      await this.handleUserPasswordChangedEvent(envelope.data, this.emailService, this.notificationClient);
+    });
+
+    eventBus.subscribe('UserProfileUpdated', async (envelope: EventEnvelope) => {
+      await this.handleUserProfileUpdatedEvent(envelope.data, this.emailService, this.notificationClient);
+    });
+
+    eventBus.subscribe('TwoFactorSetup', async (envelope: EventEnvelope) => {
+      await this.handleTwoFactorSetupEvent(envelope.data, this.emailService, this.notificationClient);
+    });
+
+    eventBus.subscribe('AccountSuspension', async (envelope: EventEnvelope) => {
+      await this.handleAccountSuspensionEvent(envelope.data, this.emailService, this.notificationClient);
+    });
+
+    eventBus.subscribe('AccountDeletion', async (envelope: EventEnvelope) => {
+      await this.handleAccountDeletionEvent(envelope.data, this.emailService, this.notificationClient);
+    });
+
+    eventBus.subscribe('RoleChange', async (envelope: EventEnvelope) => {
+      await this.handleRoleChangeEvent(envelope.data, this.emailService, this.notificationClient);
+    });
+
+    eventBus.subscribe('PhoneVerification', async (envelope: EventEnvelope) => {
+      await this.handlePhoneVerificationEvent(envelope.data, this.emailService, this.notificationClient);
+    });
+
+    eventBus.subscribe('SecurityPolicyBreach', async (envelope: EventEnvelope) => {
+      await this.handleSecurityPolicyBreachEvent(envelope.data, this.emailService, this.notificationClient);
+    });
+  }
   async handleUserRegisteredEvent(event: UserRegisteredEvent, emailService: EmailService, notificationClient: NotificationServiceClient): Promise<void> {
     try {
       logger.info('Handling UserRegisteredEvent', { eventId: event.eventId });
@@ -115,4 +162,4 @@ export class SagaEventHandler {
   }
 }
 
-export const sagaEventHandler = new SagaEventHandler();
+

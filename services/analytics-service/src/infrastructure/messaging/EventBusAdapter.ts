@@ -1,23 +1,18 @@
-import { IEventBus } from '../../domain/interfaces/IEventBus';
-import { eventBus } from '../../../../shared/events/eventBus';
+import { IEventBus, EventEnvelope } from '../../../../shared/events/eventBus';
 
 export class EventBusAdapter implements IEventBus {
-    async publish(event: { type: string; data: any }): Promise<void> {
-        await eventBus.publish(event.type, event.data);
+    async publish(eventTypeOrObject: string | { type?: string; event?: string; data?: any; payload?: any }, data?: any, metadata?: any): Promise<void> {
+        if (typeof eventTypeOrObject === 'string') {
+            const { eventBus } = await import('../../../../shared/events/eventBus');
+            await eventBus.publish(eventTypeOrObject, data, metadata);
+        } else {
+            const { eventBus } = await import('../../../../shared/events/eventBus');
+            await eventBus.publish(eventTypeOrObject);
+        }
     }
 
-    subscribe(eventType: string, handler: (event: any) => Promise<void>): void {
-        eventBus.subscribe(eventType, {
-            name: 'analytics-service',
-            handler: async (envelope) => {
-                await handler({
-                    type: envelope.eventType,
-                    data: envelope.data,
-                    // If sagaId is part of data, it will be passed. If it's separate in envelope, we need to map it.
-                    // The domain expects generic event object.
-                    ...envelope
-                });
-            }
-        });
+    async subscribe(eventType: string, handlerOrOptions: ((envelope: EventEnvelope) => Promise<void>) | { name: string; handler: (envelope: EventEnvelope) => Promise<void> }): Promise<void> {
+        const { eventBus } = await import('../../../../shared/events/eventBus');
+        await eventBus.subscribe(eventType, handlerOrOptions);
     }
 }

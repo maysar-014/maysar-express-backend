@@ -39,14 +39,13 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
 
     // Log the response
     const logData = {
-      requestId,
+      requestId: (req as any).requestId || req.get('X-Request-ID'),
+      correlationId: (req as any).correlationId || req.get('X-Correlation-ID'),
       method: req.method,
       url: req.url,
       statusCode: res.statusCode,
-      duration: `${duration}ms`,
-      contentLength: res.get('Content-Length'),
-      contentType: res.get('Content-Type'),
-      userId: (req as any).userId,
+      executionTime: duration,
+      userAgent: req.get('user-agent'),
       ip: req.ip
     };
 
@@ -56,18 +55,14 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
     } else if (res.statusCode >= 400) {
       logger.warn('Request Completed with Client Error', logData);
     } else {
-      logger.info('Request Completed Successfully', logData);
+      logger.info('Request Completed', logData);
     }
 
-    // Log performance metrics for slow requests
-    if (duration > 1000) { // More than 1 second
-      logger.logPerformance('Slow Request', duration, {
-        requestId,
-        method: req.method,
-        url: req.url,
-        statusCode: res.statusCode
-      });
-    }
+    // Always log performance
+    logger.logPerformance(`${req.method} ${req.route?.path || req.url}`, duration, {
+      requestId: logData.requestId,
+      correlationId: logData.correlationId
+    });
   });
 
   next();

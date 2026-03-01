@@ -1,10 +1,15 @@
 import { Router } from 'express';
 import { OrderController } from '../controllers/order.controller';
 import { CODDisputeController } from '../controllers/cod-dispute.controller';
+import { IdempotencyMiddleware } from '@shared/middleware/idempotency';
 
 const router = Router();
 
+const idempotencyMiddleware = new IdempotencyMiddleware(process.env.REDIS_URL!);
+
 export const setupOrderRoutes = (orderController: OrderController, codDisputeController: CODDisputeController) => {
+  router.use(idempotencyMiddleware.middleware());
+
   // Create new order
   router.post('/orders', (req, res) => orderController.placeOrder(req, res));
 

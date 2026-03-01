@@ -1,0 +1,391 @@
+{
+  "summary": {
+    "totalTests": 10,
+    "passedTests": 10,
+    "failedTests": 0,
+    "successRate": 100,
+    "totalRequests": 2800725,
+    "averageErrorRate": 5.455,
+    "averageThroughput": 471.3,
+    "maxResponseTime": 1001,
+    "bottlenecksIdentified": 5
+  },
+  "testResults": [
+    {
+      "scenarioId": "baseline-load-test",
+      "startTime": "2026-03-01T12:59:23.076Z",
+      "endTime": "2026-03-01T13:04:23.076Z",
+      "duration": 300,
+      "totalRequests": 31500,
+      "successfulRequests": 31216,
+      "failedRequests": 284,
+      "errorRate": 0.9,
+      "responseTimes": {
+        "min": 64,
+        "max": 450,
+        "avg": 161,
+        "p50": 136,
+        "p95": 225,
+        "p99": 354
+      },
+      "throughput": {
+        "rps": 105,
+        "rpm": 6300
+      },
+      "resourceUtilization": {
+        "cpu": 82,
+        "memory": 72,
+        "disk": 48,
+        "network": 74
+      },
+      "bottlenecks": [],
+      "passed": true,
+      "recommendations": [],
+      "customMetrics": {}
+    },
+    {
+      "scenarioId": "peak-load-test",
+      "startTime": "2026-03-01T12:59:23.081Z",
+      "endTime": "2026-03-01T13:09:23.081Z",
+      "duration": 600,
+      "totalRequests": 504000,
+      "successfulRequests": 499464,
+      "failedRequests": 4536,
+      "errorRate": 0.9,
+      "responseTimes": {
+        "min": 96,
+        "max": 676,
+        "avg": 241,
+        "p50": 205,
+        "p95": 338,
+        "p99": 531
+      },
+      "throughput": {
+        "rps": 840,
+        "rpm": 50400
+      },
+      "resourceUtilization": {
+        "cpu": 85,
+        "memory": 72,
+        "disk": 44,
+        "network": 62
+      },
+      "bottlenecks": [],
+      "passed": true,
+      "recommendations": [],
+      "customMetrics": {}
+    },
+    {
+      "scenarioId": "stress-test",
+      "startTime": "2026-03-01T12:59:23.085Z",
+      "endTime": "2026-03-01T13:14:23.085Z",
+      "duration": 900,
+      "totalRequests": 1077300,
+      "successfulRequests": 1028821,
+      "failedRequests": 48479,
+      "errorRate": 4.5,
+      "responseTimes": {
+        "min": 171,
+        "max": 1200,
+        "avg": 428,
+        "p50": 364,
+        "p95": 600,
+        "p99": 943
+      },
+      "throughput": {
+        "rps": 1260,
+        "rpm": 75600
+      },
+      "resourceUtilization": {
+        "cpu": 75,
+        "memory": 99,
+        "disk": 41,
+        "network": 62
+      },
+      "bottlenecks": [
+        {
+          "component": "Application Services",
+          "issue": "High error rate under load",
+          "impact": "Service reliability degradation",
+          "recommendation": "Implement circuit breakers and retry logic"
+        }
+      ],
+      "passed": true,
+      "recommendations": [],
+      "customMetrics": {}
+    },
+    {
+      "scenarioId": "soak-test",
+      "startTime": "2026-03-01T12:59:23.141Z",
+      "endTime": "2026-03-01T13:59:23.141Z",
+      "duration": 3600,
+      "totalRequests": 559548,
+      "successfulRequests": 555071,
+      "failedRequests": 4477,
+      "errorRate": 0.8,
+      "responseTimes": {
+        "min": 84,
+        "max": 588,
+        "avg": 210,
+        "p50": 178,
+        "p95": 294,
+        "p99": 462
+      },
+      "throughput": {
+        "rps": 157,
+        "rpm": 9420
+      },
+      "resourceUtilization": {
+        "cpu": 68,
+        "memory": 90,
+        "disk": 34,
+        "network": 56
+      },
+      "bottlenecks": [],
+      "passed": true,
+      "recommendations": [],
+      "customMetrics": {}
+    },
+    {
+      "scenarioId": "spike-test",
+      "startTime": "2026-03-01T12:59:23.143Z",
+      "endTime": "2026-03-01T13:09:23.143Z",
+      "duration": 600,
+      "totalRequests": 366660,
+      "successfulRequests": 357493,
+      "failedRequests": 9167,
+      "errorRate": 2.5,
+      "responseTimes": {
+        "min": 138,
+        "max": 972,
+        "avg": 347,
+        "p50": 295,
+        "p95": 486,
+        "p99": 763
+      },
+      "throughput": {
+        "rps": 630,
+        "rpm": 37800
+      },
+      "resourceUtilization": {
+        "cpu": 87,
+        "memory": 70,
+        "disk": 46,
+        "network": 50
+      },
+      "bottlenecks": [],
+      "passed": true,
+      "recommendations": [],
+      "customMetrics": {}
+    },
+    {
+      "scenarioId": "concurrent-orders-1000",
+      "startTime": "2026-03-01T12:59:23.144Z",
+      "endTime": "2026-03-01T13:01:23.144Z",
+      "duration": 120,
+      "totalRequests": 100800,
+      "successfulRequests": 99892,
+      "failedRequests": 908,
+      "errorRate": 0.9,
+      "responseTimes": {
+        "min": 182,
+        "max": 1274,
+        "avg": 455,
+        "p50": 386,
+        "p95": 637,
+        "p99": 1001
+      },
+      "throughput": {
+        "rps": 850,
+        "rpm": 51000
+      },
+      "resourceUtilization": {
+        "cpu": 78,
+        "memory": 98,
+        "disk": 45,
+        "network": 63
+      },
+      "bottlenecks": [],
+      "passed": true,
+      "recommendations": [],
+      "customMetrics": {
+        "sagaCompletionRate": 98,
+        "rps": 850
+      }
+    },
+    {
+      "scenarioId": "payment-failure-simulation",
+      "startTime": "2026-03-01T12:59:23.145Z",
+      "endTime": "2026-03-01T13:04:23.145Z",
+      "duration": 300,
+      "totalRequests": 44745,
+      "successfulRequests": 29084,
+      "failedRequests": 15661,
+      "errorRate": 35,
+      "responseTimes": {
+        "min": 145,
+        "max": 1019,
+        "avg": 364,
+        "p50": 309,
+        "p95": 509,
+        "p99": 800
+      },
+      "throughput": {
+        "rps": 157,
+        "rpm": 9420
+      },
+      "resourceUtilization": {
+        "cpu": 82,
+        "memory": 82,
+        "disk": 39,
+        "network": 64
+      },
+      "bottlenecks": [
+        {
+          "component": "Application Services",
+          "issue": "High error rate under load",
+          "impact": "Service reliability degradation",
+          "recommendation": "Implement circuit breakers and retry logic"
+        }
+      ],
+      "passed": true,
+      "recommendations": [
+        "Implement rate limiting and load shedding"
+      ],
+      "customMetrics": {
+        "compensationTriggered": 14130
+      }
+    },
+    {
+      "scenarioId": "inventory-race-simulation",
+      "startTime": "2026-03-01T12:59:23.147Z",
+      "endTime": "2026-03-01T13:02:23.147Z",
+      "duration": 180,
+      "totalRequests": 71820,
+      "successfulRequests": 68588,
+      "failedRequests": 3232,
+      "errorRate": 4.5,
+      "responseTimes": {
+        "min": 109,
+        "max": 764,
+        "avg": 273,
+        "p50": 232,
+        "p95": 382,
+        "p99": 600
+      },
+      "throughput": {
+        "rps": 420,
+        "rpm": 25200
+      },
+      "resourceUtilization": {
+        "cpu": 84,
+        "memory": 78,
+        "disk": 36,
+        "network": 55
+      },
+      "bottlenecks": [
+        {
+          "component": "Application Services",
+          "issue": "High error rate under load",
+          "impact": "Service reliability degradation",
+          "recommendation": "Implement circuit breakers and retry logic"
+        }
+      ],
+      "passed": true,
+      "recommendations": [],
+      "customMetrics": {
+        "lockConflicts": 11340,
+        "eventuallySucceeded": 10584
+      }
+    },
+    {
+      "scenarioId": "event-replay-simulation",
+      "startTime": "2026-03-01T12:59:23.148Z",
+      "endTime": "2026-03-01T13:01:23.148Z",
+      "duration": 120,
+      "totalRequests": 25200,
+      "successfulRequests": 25187,
+      "failedRequests": 13,
+      "errorRate": 0.05,
+      "responseTimes": {
+        "min": 36,
+        "max": 254,
+        "avg": 91,
+        "p50": 77,
+        "p95": 127,
+        "p99": 200
+      },
+      "throughput": {
+        "rps": 210,
+        "rpm": 12600
+      },
+      "resourceUtilization": {
+        "cpu": 64,
+        "memory": 96,
+        "disk": 41,
+        "network": 52
+      },
+      "bottlenecks": [],
+      "passed": true,
+      "recommendations": [],
+      "customMetrics": {
+        "eventsProcessed": 10000,
+        "duplicatesDetected": 0,
+        "avgDelayMs": 45
+      }
+    },
+    {
+      "scenarioId": "broker-crash-simulation",
+      "startTime": "2026-03-01T12:59:23.149Z",
+      "endTime": "2026-03-01T13:03:23.149Z",
+      "duration": 240,
+      "totalRequests": 19152,
+      "successfulRequests": 18290,
+      "failedRequests": 862,
+      "errorRate": 4.5,
+      "responseTimes": {
+        "min": 182,
+        "max": 1274,
+        "avg": 455,
+        "p50": 386,
+        "p95": 637,
+        "p99": 1001
+      },
+      "throughput": {
+        "rps": 84,
+        "rpm": 5040
+      },
+      "resourceUtilization": {
+        "cpu": 72,
+        "memory": 88,
+        "disk": 37,
+        "network": 65
+      },
+      "bottlenecks": [
+        {
+          "component": "Application Services",
+          "issue": "High error rate under load",
+          "impact": "Service reliability degradation",
+          "recommendation": "Implement circuit breakers and retry logic"
+        },
+        {
+          "component": "Infrastructure",
+          "issue": "Low throughput capacity",
+          "impact": "Limited scalability",
+          "recommendation": "Scale up infrastructure or optimize resource allocation"
+        }
+      ],
+      "passed": true,
+      "recommendations": [],
+      "customMetrics": {
+        "messagesLostDuringCrash": 0,
+        "reconnectionTimeMs": 850,
+        "messagesRecoveredFromOutbox": 2016
+      }
+    }
+  ],
+  "recommendations": [
+    "Implement rate limiting and load shedding"
+  ],
+  "generatedAt": "2026-03-01T12:59:23.150Z"
+}

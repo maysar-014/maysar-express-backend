@@ -1,4 +1,4 @@
-import { eventBus } from './shared/events/eventBus';
+import { eventBus } from '@shared-events/eventBus';
 
 console.log('Compliance Service started successfully');
 console.log('Monitoring KYC compliance only');

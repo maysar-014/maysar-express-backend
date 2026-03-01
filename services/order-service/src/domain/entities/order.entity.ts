@@ -24,6 +24,7 @@ export class Order {
   public deliveryAddress: Address;
   public createdAt: Date;
   public updatedAt: Date;
+  public version: number;
 
   // COD Specific Fields
   public codCommitmentFee?: number;
@@ -51,7 +52,7 @@ export class Order {
     this.items = data.items || [];
     this.totalAmount = new Money(data.totalAmount, data.currency || 'TZS');
     this.totalWeight = data.totalWeight;
-    this.status = OrderStatus.PENDING;
+    this.status = data.status || OrderStatus.PENDING;
     this.paymentMethod = data.paymentMethod;
     this.deliveryAddress = new Address(
       data.deliveryAddress.street,
@@ -61,8 +62,9 @@ export class Order {
       data.deliveryAddress.latitude,
       data.deliveryAddress.longitude
     );
-    this.createdAt = new Date();
-    this.updatedAt = new Date();
+    this.createdAt = data.createdAt ? new Date(data.createdAt) : new Date();
+    this.updatedAt = data.updatedAt ? new Date(data.updatedAt) : new Date();
+    this.version = data.version ?? 0;
 
     // Assign COD fields if provided
     this.codCommitmentFee = data.codCommitmentFee;

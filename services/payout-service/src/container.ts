@@ -1,12 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { PayoutRepository } from './infrastructure/repositories/payout.repository';
+import { PiiEncryptionService } from '../../../shared/encryption/pii-encryption.service';
 import { PayoutController } from './api/controllers/payout.controller';
 import { InitiatePayoutUseCase } from './application/use-cases/initiate-payout.use-case';
 import { CompletePayoutUseCase } from './application/use-cases/complete-payout.use-case';
 import { CancelPayoutUseCase } from './application/use-cases/cancel-payout.use-case';
 import { PayoutPolicy } from './domain/policies/payout.policy';
 import { OutboxRepository } from './infrastructure/messaging/outbox.repository';
-import { inMemoryEventBus } from '@shared-events/in-memory-event-bus';
+import { inMemoryEventBus } from '@shared-events/eventBus';
 import { OutboxProcessor } from './infrastructure/messaging/outbox-processor';
 import { IEventBus } from './infrastructure/messaging/event-bus.interface';
 import { provideSagaLogRepository } from './infrastructure/repositories/saga.repository';
@@ -23,7 +24,8 @@ export class Container {
 
     private constructor() {
         this.prisma = new PrismaClient();
-        const payoutRepository = new PayoutRepository(this.prisma);
+        const piiEncryptionService = new PiiEncryptionService();
+        const payoutRepository = new PayoutRepository(this.prisma, piiEncryptionService);
         const payoutPolicy = new PayoutPolicy();
 
         const outboxRepository = new OutboxRepository(this.prisma);

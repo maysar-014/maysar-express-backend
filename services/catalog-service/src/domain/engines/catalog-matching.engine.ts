@@ -1,3 +1,12 @@
+/**
+ * Catalog Matching Engine
+ * 
+ * Performance Envelope:
+ * - Expected QPS: 10-20 (CPU intensive).
+ * - Memory Limit: 256MB.
+ * - Indexing Strategy: UNIQUE indexes on gtin/mpn/isbn/fingerprint.
+ */
+
 import { Product } from '../entities/product.entity';
 import { MatchResult, MatchLevel } from '../value-objects/match-result.value-object';
 import { ProductIdentifiers } from '../value-objects/product-identifiers.value-object';
@@ -18,7 +27,16 @@ export interface ProductCandidate {
 export class CatalogMatchingEngine {
     /**
      * Evaluates a candidate product against a list of existing products to find a match.
-     * Returns a MatchResult indicating the best match found.
+     * 
+     * Phased Cascade Semantics:
+     * 1. Exact Match: Direct identifier equality (SKU/UPC). Threshold: 1.0.
+     * 2. Strong Match: Fingerprint hash matching. Threshold: 0.95.
+     * 3. Possible Match: Normalized similarity scoring. Threshold: >= 0.85.
+     * 4. No Match: Fallback results.
+     * 
+     * @param candidate - The product data to be matched.
+     * @param existingProducts - The catalog of products to compare against.
+     * @returns A MatchResult with the level, score, and matched product ID.
      */
     static matchProduct(candidate: ProductCandidate, existingProducts: Product[]): MatchResult {
         // 1. Exact Match Check (Identifiers)

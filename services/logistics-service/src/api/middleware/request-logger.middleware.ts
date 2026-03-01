@@ -1,10 +1,41 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../../infrastructure/services/logger.service';
 
-export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
-    const start = Date.now();
-    res.on('finish', () => {
-        logger.info('Request', { method: req.method, url: req.url, status: res.statusCode, time: `${Date.now() - start}ms` });
+export const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
+    const startTime = Date.now();
+    const requestId = req.get('X-Request-ID') || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    res.set('X-Request-ID', requestId);
+
+    logger.info('Request Started', {
+        requestId,
+        correlationId: (req as any).correlationId,
+        method: req.method,
+        url: req.url,
+        userAgent: req.get('User-Agent'),
+        ip: req.ip
     });
+
+    res.on('finish', () => {
+        const duration = Date.now() - startTime;
+        const logData = {
+            requestId: (req as any).requestId || req.get('X-Request-ID'),
+            correlationId: (req as any).correlationId || req.get('X-Correlation-ID'),
+            method: req.method,
+            url: req.url,
+            statusCode: res.statusCode,
+            executionTime: duration,
+            userId: (req as any).user?.id
+        };
+
+        if (res.statusCode >= 500) {
+            logger.error('Request Completed with Server Error', logData);
+        } else if (res.statusCode >= 400) {
+            logger.warn('Request Completed with Client Error', logData);
+        } else {
+            logger.info('Request Completed', logData);
+        }
+    });
+
     next();
 };

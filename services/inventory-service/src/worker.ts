@@ -1,16 +1,18 @@
 import { PrismaClient } from '@prisma/client';
-import { eventBus } from './shared/events/eventBus';
+import { eventBus } from '@shared-events/eventBus';
 import { StockManager } from './modules/stock/stockManager';
 import { ReservationEngine } from './modules/reservation/reservationEngine';
 import { WarehouseManager } from './modules/warehouse/warehouseManager';
 import { InventoryEventHandlers } from './modules/events/eventHandlers';
+import { EventIdempotency } from '@shared/middleware/idempotency';
 
 async function startWorker() {
   const prisma = new PrismaClient();
   const stockManager = new StockManager(prisma, eventBus);
   const warehouseManager = new WarehouseManager(prisma);
   const reservationEngine = new ReservationEngine(prisma, stockManager, warehouseManager, eventBus);
-  const eventHandlers = new InventoryEventHandlers(stockManager, reservationEngine);
+  const eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, prisma);
+  const eventHandlers = new InventoryEventHandlers(stockManager, reservationEngine, eventIdempotency);
 
   console.log('Inventory worker started - running background tasks');
 

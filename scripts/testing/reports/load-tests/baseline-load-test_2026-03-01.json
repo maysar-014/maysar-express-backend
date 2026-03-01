@@ -1,0 +1,32 @@
+{
+  "scenarioId": "baseline-load-test",
+  "startTime": "2026-03-01T12:59:23.076Z",
+  "endTime": "2026-03-01T13:04:23.076Z",
+  "duration": 300,
+  "totalRequests": 31500,
+  "successfulRequests": 31216,
+  "failedRequests": 284,
+  "errorRate": 0.9,
+  "responseTimes": {
+    "min": 64,
+    "max": 450,
+    "avg": 161,
+    "p50": 136,
+    "p95": 225,
+    "p99": 354
+  },
+  "throughput": {
+    "rps": 105,
+    "rpm": 6300
+  },
+  "resourceUtilization": {
+    "cpu": 82,
+    "memory": 72,
+    "disk": 48,
+    "network": 74
+  },
+  "bottlenecks": [],
+  "passed": true,
+  "recommendations": [],
+  "customMetrics": {}
+}

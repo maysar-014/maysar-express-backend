@@ -15,13 +15,16 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
   res.on('finish', () => {
     const duration = Date.now() - startTime;
     const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
-    logger.log(level, 'Request Completed', {
-      requestId,
+    const logData = {
+      requestId: (req as any).requestId,
+      correlationId: req.get('X-Correlation-ID'),
       method: req.method,
       url: req.url,
       statusCode: res.statusCode,
-      duration: `${duration}ms`
-    });
+      executionTime: duration
+    };
+
+    logger.log(level, 'Request Completed', logData);
   });
   next();
 };

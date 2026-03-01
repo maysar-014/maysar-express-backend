@@ -1,0 +1,43 @@
+{
+  "scenarioId": "payment-failure-simulation",
+  "startTime": "2026-03-01T12:59:23.145Z",
+  "endTime": "2026-03-01T13:04:23.145Z",
+  "duration": 300,
+  "totalRequests": 44745,
+  "successfulRequests": 29084,
+  "failedRequests": 15661,
+  "errorRate": 35,
+  "responseTimes": {
+    "min": 145,
+    "max": 1019,
+    "avg": 364,
+    "p50": 309,
+    "p95": 509,
+    "p99": 800
+  },
+  "throughput": {
+    "rps": 157,
+    "rpm": 9420
+  },
+  "resourceUtilization": {
+    "cpu": 82,
+    "memory": 82,
+    "disk": 39,
+    "network": 64
+  },
+  "bottlenecks": [
+    {
+      "component": "Application Services",
+      "issue": "High error rate under load",
+      "impact": "Service reliability degradation",
+      "recommendation": "Implement circuit breakers and retry logic"
+    }
+  ],
+  "passed": true,
+  "recommendations": [
+    "Implement rate limiting and load shedding"
+  ],
+  "customMetrics": {
+    "compensationTriggered": 14130
+  }
+}

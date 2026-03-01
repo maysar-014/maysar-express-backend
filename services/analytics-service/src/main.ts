@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 
+import { tracingService, correlationMiddleware } from '../../../shared/tracing/openTelemetry';
+import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
+
 // Infrastructure
 import { EventBusAdapter } from './infrastructure/messaging/EventBusAdapter';
 import { SellerAnalyticsRepository } from './infrastructure/repositories/SellerAnalyticsRepository';
@@ -45,6 +48,13 @@ async function bootstrap() {
   app.use(helmet());
   app.use(cors());
   app.use(express.json());
+  app.use(correlationMiddleware());
+
+  // Prometheus metrics
+  app.get('/metrics', async (req, res) => {
+    res.set('Content-Type', metricsRegistry.contentType);
+    res.end(await metricsRegistry.metrics());
+  });
 
   // --- Dependency Injection ---
 
@@ -107,6 +117,9 @@ async function bootstrap() {
     console.log('Clean Architecture layers initialized with General Analytics foundation');
   });
 }
+
+// Initialize Tracing
+tracingService.start();
 
 bootstrap().catch(err => {
   console.error('Failed to start application:', err);

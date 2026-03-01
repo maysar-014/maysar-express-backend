@@ -4,9 +4,13 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { DatabaseConnection } from './infrastructure/database/prisma-client';
 import { logger } from './infrastructure/services/logger.service';
+import { tracingService, correlationMiddleware } from '../../../shared/tracing/openTelemetry';
+import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
 import { createNotificationRoutes } from './api/routes/notification.routes';
 import { createTemplateRoutes } from './api/routes/template.routes';
 import { createPreferenceRoutes } from './api/routes/preference.routes';
+import { createSmsRouter } from './sms/api/routes';
+
 import { healthRoutes } from './api/routes/health.routes';
 import { errorHandler } from './api/middleware/error.middleware';
 import { requestLogger } from './api/middleware/request-logger.middleware';
@@ -109,6 +113,7 @@ class NotificationServiceApplication {
   }
 
   private initializeMiddleware(): void {
+    this.app.use(correlationMiddleware()); // Correlation ID tracking
     this.app.use(helmet({ contentSecurityPolicy: false }));
     this.app.use(cors({ origin: true, credentials: true }));
     this.app.use(compression());
@@ -116,17 +121,32 @@ class NotificationServiceApplication {
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
     this.app.use(requestLogger);
     this.app.use('/health', healthRoutes);
+
+    // Prometheus metrics
+    this.app.get('/metrics', async (req, res) => {
+      res.set('Content-Type', metricsRegistry.contentType);
+      res.end(await metricsRegistry.metrics());
+    });
   }
 
   private initializeRoutes(): void {
     this.app.use('/api/v1/notifications', createNotificationRoutes(notificationController));
     this.app.use('/api/v1/templates', createTemplateRoutes(templateController));
     this.app.use('/api/v1/preferences', createPreferenceRoutes(preferenceController));
+    this.app.use('/api/v1/sms', createSmsRouter());
+
     this.app.get('/', (_req, res) => {
       res.json({
         service: 'Notification Service',
         version: '1.0.0',
-        endpoints: { health: '/health', notifications: '/api/v1/notifications', templates: '/api/v1/templates', preferences: '/api/v1/preferences' },
+        endpoints: {
+          health: '/health',
+          notifications: '/api/v1/notifications',
+          templates: '/api/v1/templates',
+          preferences: '/api/v1/preferences',
+          sms: '/api/v1/sms'
+        },
+
         timestamp: new Date().toISOString()
       });
     });
@@ -143,8 +163,12 @@ class NotificationServiceApplication {
   async start(): Promise<void> {
     try {
       await DatabaseConnection.initialize();
+      
+      // Initialize Saga Event Handlers
+      await this.initializeEventHandlers();
+      
       this.app.listen(this.port, '0.0.0.0', () => {
-        logger.info('Notification Service started', {
+        logger.info(`Notification Service running on port ${this.port} `, {
           port: this.port,
           environment: process.env.NODE_ENV || 'development'
         });
@@ -153,6 +177,26 @@ class NotificationServiceApplication {
     } catch (error) {
       logger.error('Failed to start Notification Service', { error });
       process.exit(1);
+    }
+  }
+
+  private async initializeEventHandlers(): Promise<void> {
+    try {
+      const { eventBus } = await import('@shared/events/eventBus');
+      const { SagaEventHandler } = await import('./application/sagas/saga-event-handler');
+      
+      const sagaEventHandler = new SagaEventHandler(
+        notificationRepository,
+        preferenceRepository,
+        validationService,
+        sendViaChannel,
+        recordMetrics
+      );
+      sagaEventHandler.setupSubscriptions(eventBus);
+      
+      logger.info('✅ Notification Saga Event Handlers initialized');
+    } catch (error) {
+      logger.warn('⚠️ Failed to initialize Notification Saga Event Handlers', { error });
     }
   }
 
@@ -175,6 +219,9 @@ class NotificationServiceApplication {
     return this.app;
   }
 }
+
+// Initialize Tracing
+tracingService.start();
 
 const application = new NotificationServiceApplication();
 

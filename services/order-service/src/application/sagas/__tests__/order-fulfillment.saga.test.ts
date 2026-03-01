@@ -1,4 +1,13 @@
 import { OrderFulfillmentSaga } from '../order-fulfillment.saga';
+import { EventIdempotency } from '@shared/middleware/idempotency';
+
+const mockEventIdempotency = {
+    isProcessed: jest.fn().mockResolvedValue(false),
+    markProcessed: jest.fn().mockResolvedValue(undefined),
+    withIdempotency: jest.fn().mockImplementation(
+        (_eventId: string, _consumer: string, handler: () => Promise<any>) => handler()
+    ),
+} as unknown as EventIdempotency;
 
 class TestableOrderFulfillmentSaga extends OrderFulfillmentSaga {
     public async testPublishCommand(command: string, payload: Record<string, unknown>, correlationId: string) {
@@ -11,7 +20,8 @@ describe('OrderFulfillmentSaga', () => {
     let saga: TestableOrderFulfillmentSaga;
 
     beforeEach(() => {
-        saga = new TestableOrderFulfillmentSaga();
+        jest.clearAllMocks();
+        saga = new TestableOrderFulfillmentSaga(mockEventIdempotency);
     });
 
     const payload = {
@@ -88,7 +98,22 @@ describe('OrderFulfillmentSaga', () => {
 
             await saga.handleStockReserved('saga-1');
 
+            expect(mockEventIdempotency.withIdempotency).toHaveBeenCalledWith(
+                'saga-1',
+                'OrderFulfillmentSaga.StockReserved',
+                expect.any(Function)
+            );
             expect(saga.completeStep).toHaveBeenCalledWith('saga-1', 'StockReservation');
+        });
+
+        it('should skip handler when event already processed', async () => {
+            saga.completeStep = jest.fn();
+            (mockEventIdempotency.withIdempotency as jest.Mock).mockResolvedValueOnce(null);
+
+            const result = await saga.handleStockReserved('saga-1');
+
+            expect(result).toBeNull();
+            expect(saga.completeStep).not.toHaveBeenCalled();
         });
     });
 });

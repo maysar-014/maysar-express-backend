@@ -2,21 +2,26 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import morgan from 'morgan';
 import { moduleRegistry } from './core/module-registry';
 import { prisma } from './config/prisma';
+import { correlationMiddleware } from '../shared/tracing/openTelemetry';
+import { appLogger } from '../shared/logger/logger';
+import { requestLoggingMiddleware, performanceMonitoringMiddleware, errorLoggingMiddleware } from '../services/order-service/src/middleware/logging.middleware';
+import { requestLoggingMiddleware, performanceMonitoringMiddleware, errorLoggingMiddleware } from '../services/order-service/src/middleware/logging.middleware';
 
 export const createApp = () => {
     const app = express();
 
     // Global Middleware
+    app.use(correlationMiddleware());
     const corsOrigin = process.env.CORS_ORIGIN
         ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
         : false;
     app.use(cors({ origin: corsOrigin }));
     app.use(helmet());
     app.use(compression());
-    app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+    app.use(requestLoggingMiddleware);
+    app.use(performanceMonitoringMiddleware);
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
 
@@ -29,7 +34,7 @@ export const createApp = () => {
 
         if (module.routes) {
             app.use(routePath, module.routes);
-            console.log(`Mounted routes for ${module.name} at ${routePath}`);
+            appLogger.info(`Mounted routes for ${module.name} at ${routePath}`);
         }
     });
 
@@ -56,7 +61,7 @@ export const createApp = () => {
         } catch (error) {
             checks.database = 'disconnected';
             isReady = false;
-            console.error('Readiness check failed (database):', error);
+            appLogger.error('Readiness check failed (database):', error);
         }
 
         // Check Redis
@@ -75,7 +80,7 @@ export const createApp = () => {
         } catch (error) {
             checks.redis = 'disconnected';
             isReady = false;
-            console.error('Readiness check failed (redis):', error);
+            appLogger.error('Readiness check failed (redis):', error);
         }
 
         if (isReady) {
@@ -87,7 +92,7 @@ export const createApp = () => {
 
     // Global Error Handler
     app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-        console.error(err);
+        appLogger.error('Global Error Handler', err);
         const status = (err as { status?: number; statusCode?: number }).status ?? (err as { status?: number; statusCode?: number }).statusCode ?? 500;
         const response: { error: string; message: string; stack?: string } = {
             error: 'Internal Server Error',

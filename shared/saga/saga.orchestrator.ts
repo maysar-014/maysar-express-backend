@@ -1,23 +1,77 @@
 import { v4 as uuidv4 } from 'uuid';
-import { eventBus } from '../events/eventBus';
+import { eventBus } from '../events/eventBus'; // Unified event bus singleton
 import { SagaLogEntry, SagaStatus, ISagaLogRepository, SagaStepStatus, SagaStepLog } from './saga.log';
 import { createEventMetadata } from '../events/metadata';
+import { withRetry, RetryPresets, RetryOptions } from '../utils/retry.util';
+import { ISagaDeadLetterRepository } from './saga-dead-letter.repository';
+import { Counter, Histogram, Gauge } from 'prom-client';
+import { metricsRegistry } from '../metrics/metrics.factory';
+import { createLogger } from '../logger/logger';
 
 export interface SagaStep<T> {
     name: string;
     execute: (payload: T, sagaId: string) => Promise<void>;
     compensate: (payload: T, sagaId: string) => Promise<void>;
+    validateCompensation?: (payload: T, sagaId: string) => Promise<boolean>;
 }
+
+// Module-level metrics shared across all saga types
+const sagaStepDuration = new Histogram({
+    name: 'saga_step_duration_seconds',
+    help: 'Duration of saga steps in seconds',
+    labelNames: ['sagaType', 'stepName', 'outcome'],
+    buckets: [0.1, 0.5, 1, 2, 5, 10, 30],
+    registers: [metricsRegistry]
+}) as any;
+
+const sagaFailures = new Counter({
+    name: 'saga_failures_total',
+    help: 'Total number of saga failures',
+    labelNames: ['sagaType', 'failedStep'],
+    registers: [metricsRegistry]
+}) as any;
+
+const sagaCompensations = new Counter({
+    name: 'saga_compensations_total',
+    help: 'Total number of saga compensations',
+    labelNames: ['sagaType'],
+    registers: [metricsRegistry]
+}) as any;
+
+const sagaDeadLetters = new Counter({
+    name: 'saga_dead_letters_total',
+    help: 'Total number of saga dead letter events',
+    labelNames: ['sagaType', 'reason'],
+    registers: [metricsRegistry]
+}) as any;
+
+const sagaActive = new Gauge({
+    name: 'saga_active_total',
+    help: 'Total number of active sagas',
+    labelNames: ['sagaType', 'status'],
+    registers: [metricsRegistry]
+}) as any;
 
 export abstract class DistributedSagaOrchestrator<T = any> {
     protected abstract sagaType: string;
     private steps: SagaStep<T>[] = [];
+    private stepRetryOptions: Partial<RetryOptions>;
+    private compensationRetryOptions: Partial<RetryOptions>;
+    private deadLetterRepository?: ISagaDeadLetterRepository;
+    protected readonly logger: any;
 
     constructor(
         protected readonly sagaLogRepository: ISagaLogRepository,
         protected readonly serviceName: string,
-        protected readonly outbox?: any
+        protected readonly outbox?: any,
+        stepRetryOptions?: Partial<RetryOptions>,
+        compensationRetryOptions?: Partial<RetryOptions>,
+        deadLetterRepository?: ISagaDeadLetterRepository
     ) {
+        this.stepRetryOptions = stepRetryOptions ?? RetryPresets.STANDARD;
+        this.compensationRetryOptions = compensationRetryOptions ?? RetryPresets.SLOW;
+        this.deadLetterRepository = deadLetterRepository;
+        this.logger = createLogger(this.constructor.name, serviceName);
         this.steps = this.defineSteps();
     }
 
@@ -46,19 +100,20 @@ export abstract class DistributedSagaOrchestrator<T = any> {
         };
 
         await this.sagaLogRepository.save(entry);
-        console.log(`Saga ${this.sagaType} started: ${sagaId}`);
+        this.logger.info(`Saga ${this.sagaType} started: ${sagaId}`, { sagaId, sagaType: this.sagaType });
+        sagaActive.labels(this.sagaType, 'STARTED').inc();
 
         // Invoke onStart hook
         try {
             await this.onStart(sagaId, payload, correlationId);
         } catch (err) {
-            console.error(`Error in onStart hook for saga ${sagaId}:`, err);
+            this.logger.error(`Error in onStart hook for saga ${sagaId}:`, err, { sagaId });
             // We continue as the saga entry is already persisted
         }
 
         // Start execution from the first step
         this.executeNextStep(sagaId, payload, 0).catch(err => {
-            console.error(`Unhandled error starting saga ${sagaId}:`, err);
+            this.logger.error(`Unhandled error starting saga ${sagaId}:`, err, { sagaId });
         });
 
         return sagaId;
@@ -87,7 +142,29 @@ export abstract class DistributedSagaOrchestrator<T = any> {
                 updatedAt: new Date()
             });
 
-            await step.execute(payload, sagaId);
+            const startTime = Date.now();
+            let outcome = 'success';
+            try {
+                const result = await withRetry(
+                    () => step.execute(payload, sagaId),
+                    {
+                        ...this.stepRetryOptions,
+                        onRetry: (attempt, error, delay) => {
+                            this.logger.info(`Saga ${sagaId} step ${step.name} retry attempt ${attempt} after ${delay}ms: ${error.message}`, { sagaId, stepName: step.name, attempt });
+                        }
+                    }
+                );
+
+                if (!result.success) {
+                    throw result.error;
+                }
+            } catch (error) {
+                outcome = 'failure';
+                throw error;
+            } finally {
+                const duration = (Date.now() - startTime) / 1000;
+                sagaStepDuration.labels(this.sagaType, step.name, outcome).observe(duration);
+            }
 
             await this.sagaLogRepository.updateStep(stepId, {
                 status: SagaStepStatus.COMPLETED,
@@ -98,7 +175,8 @@ export abstract class DistributedSagaOrchestrator<T = any> {
             await this.executeNextStep(sagaId, payload, stepIndex + 1);
 
         } catch (error: any) {
-            console.error(`Saga ${sagaId} failed at step ${step.name}:`, error);
+            this.logger.error(`Saga ${sagaId} failed at step ${step.name}:`, error, { sagaId, stepName: step.name });
+            sagaFailures.labels(this.sagaType, step.name).inc();
 
             await this.sagaLogRepository.updateStep(stepId, {
                 status: SagaStepStatus.FAILED,
@@ -120,7 +198,7 @@ export abstract class DistributedSagaOrchestrator<T = any> {
         try {
             await this.onCompensate(sagaId, failedStepName);
         } catch (err) {
-            console.error(`Error in onCompensate hook for saga ${sagaId}:`, err);
+            this.logger.error(`Error in onCompensate hook for saga ${sagaId}:`, err, { sagaId });
         }
 
         // Start compensation from the failed step backwards (key change: including failed step if it needs compensation, 
@@ -150,21 +228,67 @@ export abstract class DistributedSagaOrchestrator<T = any> {
         }
 
         const step = this.steps[stepIndex];
-        console.log(`Compensating step ${step.name} for saga ${sagaId}`);
+        this.logger.info(`Compensating step ${step.name} for saga ${sagaId}`, { sagaId, stepName: step.name });
+        sagaCompensations.labels(this.sagaType).inc();
 
-        try {
-            // Log compensation start if needed
-            await step.compensate(payload, sagaId);
+        const compensateResult = await withRetry(
+            () => step.compensate(payload, sagaId),
+            {
+                ...this.compensationRetryOptions,
+                onRetry: (attempt, error, delay) => {
+                    this.logger.info(`Saga ${sagaId} compensate ${step.name} retry attempt ${attempt} after ${delay}ms: ${error.message}`, { sagaId, stepName: step.name, attempt });
+                }
+            }
+        );
 
-            // Proceed to previous step
-            await this.compensate(sagaId, payload, stepIndex - 1);
-        } catch (error) {
-            console.error(`Compensation failed for step ${step.name} in saga ${sagaId}`, error);
-            // In a real system, we might need manual intervention here
-            // We'll log it and continue compensating others or stop? 
-            // Usually best effort compensation.
-            await this.compensate(sagaId, payload, stepIndex - 1);
+        if (!compensateResult.success) {
+            this.logger.error(`Compensation exhausted retries for step ${step.name} in saga ${sagaId}`, compensateResult.error, { sagaId, stepName: step.name });
+            await this.routeToDeadLetter(sagaId, payload, compensateResult.error?.message ?? 'Unknown compensation error', 'MAX_COMPENSATION_RETRIES_EXCEEDED');
+            return;
         }
+
+        // Validate compensation if hook is defined
+        if (step.validateCompensation) {
+            try {
+                const isValid = await step.validateCompensation(payload, sagaId);
+                if (!isValid) {
+                    this.logger.error(`Compensation validation failed for step ${step.name} in saga ${sagaId}`, { sagaId, stepName: step.name });
+                    await this.routeToDeadLetter(sagaId, payload, `Compensation validation failed for step ${step.name}`, 'COMPENSATION_VALIDATION_FAILED');
+                    return;
+                }
+            } catch (validationError: any) {
+                this.logger.error(`Compensation validation threw for step ${step.name} in saga ${sagaId}`, validationError, { sagaId, stepName: step.name });
+                await this.routeToDeadLetter(sagaId, payload, validationError.message, 'COMPENSATION_VALIDATION_FAILED');
+                return;
+            }
+        }
+
+        // Proceed to previous step
+        await this.compensate(sagaId, payload, stepIndex - 1);
+    }
+
+    private async routeToDeadLetter(sagaId: string, payload: T, lastError: string, reason: string): Promise<void> {
+        await this.sagaLogRepository.update(sagaId, {
+            status: SagaStatus.FAILED,
+            updatedAt: new Date()
+        });
+
+        if (this.deadLetterRepository) {
+            try {
+                await this.deadLetterRepository.save({
+                    sagaId,
+                    sagaType: this.sagaType,
+                    payload,
+                    lastError,
+                    reason
+                });
+                sagaDeadLetters.labels(this.sagaType, reason).inc();
+            } catch (dlError) {
+                this.logger.error(`Failed to write dead letter for saga ${sagaId}:`, dlError, { sagaId });
+            }
+        }
+
+        this.logger.error(`[DEAD LETTER] Saga ${sagaId} (${this.sagaType}) routed to dead letter: ${reason} — ${lastError}`, { sagaId, sagaType: this.sagaType, reason });
     }
 
     protected async completeSaga(sagaId: string): Promise<void> {
@@ -172,7 +296,9 @@ export abstract class DistributedSagaOrchestrator<T = any> {
             status: SagaStatus.COMPLETED,
             updatedAt: new Date()
         });
-        console.log(`Saga ${this.sagaType} completed: ${sagaId}`);
+        this.logger.info(`Saga ${this.sagaType} completed: ${sagaId}`, { sagaId, sagaType: this.sagaType });
+        sagaActive.labels(this.sagaType, 'STARTED').dec();
+        sagaActive.labels(this.sagaType, 'COMPLETED').inc();
     }
 
     protected async markAsCompensated(sagaId: string): Promise<void> {
@@ -180,7 +306,9 @@ export abstract class DistributedSagaOrchestrator<T = any> {
             status: SagaStatus.COMPENSATED,
             updatedAt: new Date()
         });
-        console.log(`Saga ${this.sagaType} fully compensated: ${sagaId}`);
+        this.logger.info(`Saga ${this.sagaType} fully compensated: ${sagaId}`, { sagaId, sagaType: this.sagaType });
+        sagaActive.labels(this.sagaType, 'STARTED').dec();
+        sagaActive.labels(this.sagaType, 'COMPENSATED').inc();
     }
 
     /**
@@ -244,6 +372,48 @@ export abstract class DistributedSagaOrchestrator<T = any> {
         const saga = await this.sagaLogRepository.getById(sagaId);
         if (!saga) throw new Error(`Saga ${sagaId} not found`);
         return saga;
+    }
+
+    /**
+     * Resume a stuck saga — re-executes or re-compensates based on current status
+     */
+    async resume(sagaId: string): Promise<void> {
+        const saga = await this.sagaLogRepository.getById(sagaId);
+        if (!saga) throw new Error(`Saga ${sagaId} not found`);
+
+        if (saga.status === SagaStatus.STARTED || saga.status === SagaStatus.IN_PROGRESS) {
+            const stepIndex = this.steps.findIndex(s => s.name === saga.currentStep);
+            if (stepIndex === -1) {
+                console.error(`Cannot resume saga ${sagaId}: step ${saga.currentStep} not found`);
+                return;
+            }
+            console.log(`Resuming saga ${sagaId} at step ${saga.currentStep} (index ${stepIndex})`);
+            await this.executeNextStep(sagaId, saga.payload as T, stepIndex);
+            return;
+        }
+
+        if (saga.status === SagaStatus.COMPENSATING) {
+            const steps = await this.sagaLogRepository.getSteps(sagaId);
+            const lastActiveStep = [...steps].reverse().find(
+                s => s.status === SagaStepStatus.STARTED || s.status === SagaStepStatus.FAILED
+            );
+            if (!lastActiveStep) {
+                console.log(`Saga ${sagaId} has no active/failed steps to compensate, marking compensated`);
+                await this.markAsCompensated(sagaId);
+                return;
+            }
+            const stepIndex = this.steps.findIndex(s => s.name === lastActiveStep.stepName);
+            if (stepIndex === -1) {
+                console.error(`Cannot resume compensation for saga ${sagaId}: step ${lastActiveStep.stepName} not found`);
+                return;
+            }
+            this.logger.info(`Resuming compensation for saga ${sagaId} at step ${lastActiveStep.stepName} (index ${stepIndex})`, { sagaId, stepName: lastActiveStep.stepName });
+            await this.compensate(sagaId, saga.payload as T, stepIndex);
+            return;
+        }
+
+        // COMPLETED, COMPENSATED, FAILED — nothing to recover
+        this.logger.info(`Saga ${sagaId} is in terminal state ${saga.status}, skipping resume`, { sagaId, status: saga.status });
     }
 
     /**

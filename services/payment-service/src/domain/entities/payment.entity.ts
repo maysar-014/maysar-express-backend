@@ -56,6 +56,7 @@ export interface PaymentProps {
     createdAt: Date;
     updatedAt: Date;
     completedAt?: Date;
+    version: number;
 }
 
 export class Payment {
@@ -121,6 +122,10 @@ export class Payment {
 
     get completedAt(): Date | undefined {
         return this.props.completedAt;
+    }
+
+    get version(): number {
+        return this.props.version;
     }
 
     // Business Methods

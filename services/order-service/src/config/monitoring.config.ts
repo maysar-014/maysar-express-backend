@@ -272,10 +272,12 @@ export function shouldAlert(metric: string, value: number): boolean {
 
 // Log monitoring configuration summary
 export function logMonitoringConfigSummary(): void {
-  console.log('📊 Monitoring Configuration:');
-  console.log(`  Logging: ${loggingConfig.enabled ? 'Enabled' : 'Disabled'} (${loggingConfig.level})`);
-  console.log(`  Metrics: ${metricsConfig.enabled ? 'Enabled' : 'Disabled'} (port: ${metricsConfig.port})`);
-  console.log(`  Health Checks: ${healthCheckConfig.enabled ? 'Enabled' : 'Disabled'}`);
-  console.log(`  Tracing: ${tracingConfig.enabled ? 'Enabled' : 'Disabled'}`);
-  console.log(`  Alerting: ${alertingConfig.enabled ? 'Enabled' : 'Disabled'}`);
+  const { appLogger } = require('../infrastructure/monitoring/logger');
+  appLogger.info('Monitoring Configuration', {
+    logging: `${loggingConfig.enabled ? 'Enabled' : 'Disabled'} (${loggingConfig.level})`,
+    metrics: `${metricsConfig.enabled ? 'Enabled' : 'Disabled'} (port: ${metricsConfig.port})`,
+    healthChecks: healthCheckConfig.enabled ? 'Enabled' : 'Disabled',
+    tracing: tracingConfig.enabled ? 'Enabled' : 'Disabled',
+    alerting: alertingConfig.enabled ? 'Enabled' : 'Disabled',
+  });
 }

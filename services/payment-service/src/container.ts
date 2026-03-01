@@ -15,9 +15,10 @@ import { PaymentLimitsPolicy } from './domain/policies/payment-limits.policy';
 import { FraudPreventionPolicy } from './domain/policies/fraud-prevention.policy';
 import { RefundPolicy } from './domain/policies/refund.policy';
 import { PaymentController } from './api/controllers/payment.controller';
-import { inMemoryEventBus } from '@shared-events/in-memory-event-bus';
+import { inMemoryEventBus } from '@shared-events/eventBus';
 import { IEventBus } from './infrastructure/messaging/event-bus.interface';
 import { OutboxRepository } from './infrastructure/messaging/outbox.repository';
+import { OutboxProcessor } from './infrastructure/messaging/outbox-processor';
 
 import { WalletServiceClient } from './infrastructure/clients/wallet-service.client';
 import { SagaEventHandler } from './api/sagas/saga.event-handler';
@@ -27,6 +28,7 @@ import { IPaymentProvider } from './domain/repositories/payment-provider.gateway
 import { PaymentEventHandlers } from './infrastructure/events/payment.event-handlers';
 import { PrismaSagaLogRepository } from '../../../shared/saga/saga-log.repository';
 import { ISagaLogRepository } from '../../../shared/saga/saga.log';
+import { EventIdempotency } from '@shared/middleware/idempotency';
 
 
 export class Container {
@@ -46,6 +48,9 @@ export class Container {
 
     // Messaging
     public eventBus: IEventBus;
+
+    // Outbox
+    public outboxProcessor: OutboxProcessor;
 
     // Saga
     public paymentProcessingSaga: PaymentProcessingSaga;
@@ -80,8 +85,9 @@ export class Container {
         this.refundRepository = new RefundRepository(this.prisma);
         this.fraudRepository = new FraudRepository(this.prisma);
         this.outboxRepository = new OutboxRepository(this.prisma);
+        this.outboxProcessor = new OutboxProcessor(this.outboxRepository, this.eventBus);
 
-        // Helper casting because shared PrismaSagaLogRepository expects generic PrismaClient, 
+        // Helper casting
         // but ours is specific. Usually works if models match.
         this.sagaLogRepository = new PrismaSagaLogRepository(this.prisma as any);
 
@@ -140,6 +146,7 @@ export class Container {
         );
 
         // Sagas
+        const eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, this.prisma);
         this.paymentProcessingSaga = new PaymentProcessingSaga(
             this.sagaLogRepository,
             'payment-service',
@@ -147,7 +154,8 @@ export class Container {
             paymentProviderFactory,
             this.fraudEngine,
             this.paymentProcessingEngine,
-            this.outboxRepository
+            this.outboxRepository,
+            eventIdempotency
         );
 
         this.sagaEventHandler = new SagaEventHandler(

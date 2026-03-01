@@ -1,38 +1,32 @@
 import { Router } from 'express';
 import { Module } from '../../src/core/module.interface';
+import { logger } from './src/infrastructure/services/logger.service';
 
-// SMS service integration
-let smsRoutes: Router | null = null;
-try {
-    const { createSmsRouter } = require('./src/sms/api/routes');
-    smsRoutes = createSmsRouter();
-} catch (e) {
-    console.warn('SMS routes not available:', e);
-}
+import { createSmsRouter } from './src/sms/api/routes';
+
 
 export const NotificationModule: Module = {
     name: 'notification-service',
     initialize: async () => {
-        console.log('Initializing notification-service module (fully merged)');
+        logger.info('Initializing notification-service module (fully merged)');
 
         // Initialize SMS service
         try {
             const { SmsModule } = require('./src/sms/index');
             if (SmsModule && SmsModule.initialize) {
                 await SmsModule.initialize();
-                console.log('SMS service initialized');
+                logger.info('SMS service initialized');
             }
         } catch (e) {
-            console.warn('SMS service not initialized:', e);
+            logger.warn('SMS service not initialized:', e);
         }
     },
     routes: (() => {
         const router = Router();
 
         // Mount SMS routes under /sms
-        if (smsRoutes) {
-            router.use('/sms', smsRoutes);
-        }
+        router.use('/sms', createSmsRouter());
+
 
         // Health checks
         router.get('/health', (req, res) => {
@@ -47,14 +41,14 @@ export const NotificationModule: Module = {
         return router;
     })(),
     shutdown: async () => {
-        console.log('Shutting down notification-service module');
+        logger.info('Shutting down notification-service module');
         try {
             const { SmsModule } = require('./src/sms/index');
             if (SmsModule && SmsModule.shutdown) {
                 await SmsModule.shutdown();
             }
         } catch (e) {
-            console.warn('SMS shutdown error:', e);
+            logger.warn('SMS shutdown error:', e);
         }
     }
 };

@@ -6,6 +6,7 @@
 import winston from 'winston';
 import { loggingConfig } from '../../config/monitoring.config';
 import { AppError, ErrorType } from '../../domain/errors';
+import { LogContext } from '../../../../../shared/logger/logger';
 
 // Define log levels
 const levels = {
@@ -60,7 +61,7 @@ const fileTransport = new winston.transports.File({
 
 // Error-specific file transport
 const errorFileTransport = new winston.transports.File({
-  filename: 'logs/order-service-error.log',
+  filename: loggingConfig.transports.filePath?.replace('.log', '-error.log') || 'logs/order-service-error.log',
   level: 'error',
   format: winston.format.combine(
     winston.format.uncolorize(),
@@ -90,11 +91,16 @@ export class Logger {
     this.context = context;
   }
 
-  private formatMessage(message: string, meta?: any): any {
+  private formatMessage(message: string, meta?: LogContext & Record<string, any>): any {
     return {
       message,
       context: this.context,
       timestamp: new Date().toISOString(),
+      requestId: meta?.requestId,
+      correlationId: meta?.correlationId,
+      sagaId: meta?.sagaId,
+      eventId: meta?.eventId,
+      executionTime: meta?.executionTime,
       ...meta,
     };
   }
@@ -150,7 +156,7 @@ export class Logger {
 
   security(event: string, severity: 'low' | 'medium' | 'high' | 'critical', details?: any): void {
     const level = severity === 'critical' || severity === 'high' ? 'error' :
-                 severity === 'medium' ? 'warn' : 'info';
+      severity === 'medium' ? 'warn' : 'info';
 
     this[level](`SECURITY: ${event}`, {
       security: {
@@ -224,7 +230,7 @@ export function logRequest(req: any, res: any, next: any): void {
   const start = Date.now();
   const originalEnd = res.end;
 
-  res.end = function(...args: any[]) {
+  res.end = function (...args: any[]) {
     const duration = Date.now() - start;
     const userId = req.user?.id || req.headers['x-user-id'];
 

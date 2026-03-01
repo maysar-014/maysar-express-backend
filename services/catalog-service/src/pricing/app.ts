@@ -5,6 +5,7 @@ import cors from 'cors';
 import { healthRoutes } from './api/routes/health.routes';
 import { errorHandler } from './api/middleware/error.middleware';
 import { requestLogger } from './api/middleware/request-logger.middleware';
+import { metricsRegistry } from '../infrastructure/monitoring/metrics';
 
 export function createApp() {
     const app = express();
@@ -18,6 +19,12 @@ export function createApp() {
     app.use('/health', healthRoutes);
 
     // TODO: Add pricing routes
+
+    // Prometheus metrics
+    app.get('/metrics', async (req, res) => {
+        res.set('Content-Type', metricsRegistry.contentType);
+        res.end(await metricsRegistry.metrics());
+    });
 
     // Error handling
     app.use(errorHandler);

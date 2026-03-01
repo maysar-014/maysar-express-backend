@@ -5,6 +5,7 @@ import { INotificationPreferenceRepository } from '../../domain/repositories';
 import { NotificationValidationService } from '../../domain/services/notification-validation.service';
 import { executeNotificationDeliverySaga } from './notification-delivery.saga';
 import { logger } from '../../infrastructure/services/logger.service';
+import { EventEnvelope, IEventBus } from '@shared/events/eventBus';
 
 export interface UserRegisteredEventPayload {
   aggregateId: string;
@@ -21,6 +22,20 @@ export class SagaEventHandler {
     private sendViaChannel: (n: Notification) => Promise<void>,
     private recordMetrics: (id: string, ch: string) => Promise<void>
   ) {}
+
+  setupSubscriptions(eventBus: IEventBus): void {
+    eventBus.subscribe('NotificationCreated', async (envelope: EventEnvelope) => {
+      await this.handleNotificationCreatedEvent(envelope.data);
+    });
+
+    eventBus.subscribe('NotificationFailed', async (envelope: EventEnvelope) => {
+      await this.handleNotificationFailedEvent(envelope.data);
+    });
+
+    eventBus.subscribe('UserRegistered', async (envelope: EventEnvelope) => {
+      await this.handleUserRegisteredEvent(envelope.data);
+    });
+  }
 
   async handleNotificationCreatedEvent(event: NotificationCreatedEvent): Promise<void> {
     try {

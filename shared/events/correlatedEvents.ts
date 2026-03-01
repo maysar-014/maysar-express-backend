@@ -1,9 +1,8 @@
-import { EventEnvelope } from '../../events';
+import { EventEnvelope } from './eventBus';
 import { v4 as uuidv4 } from 'uuid';
 import { tracingService, TraceContext } from '../tracing/openTelemetry';
 
-export interface CorrelatedEventEnvelope<T = any> extends EventEnvelope<T> {
-  correlationId: string;
+export interface CorrelatedEventEnvelope<T = any> extends EventEnvelope {
   causationId?: string;
   traceId?: string;
   spanId?: string;
@@ -20,18 +19,26 @@ export class EventCorrelationService {
     }
   ): CorrelatedEventEnvelope<T> {
     const correlationId = context?.correlationId || uuidv4();
+    const eventId = uuidv4();
+    const timestamp = new Date().toISOString();
+    const producer = process.env.SERVICE_NAME || 'unknown-service';
+    const version = 'v1';
     
     return {
-      eventId: uuidv4(),
       eventType,
-      timestamp: new Date().toISOString(),
+      data: payload,
+      eventId,
       correlationId,
-      causationId: context?.causationId,
-      traceId: context?.traceContext?.traceId,
-      spanId: context?.traceContext?.spanId,
-      producer: process.env.SERVICE_NAME || 'unknown-service',
-      version: 'v1',
-      payload
+      metadata: {
+        eventId,
+        timestamp,
+        correlationId,
+        causationId: context?.causationId,
+        traceId: context?.traceContext?.traceId,
+        spanId: context?.traceContext?.spanId,
+        producer,
+        version
+      }
     };
   }
 
@@ -78,7 +85,9 @@ export class EventChainTracker {
   private chains = new Map<string, EventChainInfo>();
 
   addEvent(event: CorrelatedEventEnvelope): void {
-    const { correlationId, eventId, eventType, causationId, timestamp } = event;
+    const { correlationId, eventId, eventType } = event;
+    const causationId = event.metadata?.causationId;
+    const timestamp = event.metadata?.timestamp || new Date().toISOString();
     
     if (!this.chains.has(correlationId)) {
       this.chains.set(correlationId, {

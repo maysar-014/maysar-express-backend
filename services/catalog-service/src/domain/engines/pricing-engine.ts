@@ -4,7 +4,7 @@
  * Pure business logic - no side effects or external dependencies
  */
 
-import { Price, WholesalePricing, CostPrice, WholesaleTier } from '../value-objects/monetary.value-object';
+import { Price, WholesalePricing, WholesaleTier } from '../value-objects/monetary.value-object';
 import { ProductType } from '../value-objects/product-types.value-object';
 
 export interface PricingContext {

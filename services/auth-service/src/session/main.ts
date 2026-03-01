@@ -1,3 +1,4 @@
+// DEPRECATED: Session is now served by auth-service main.ts
 import 'reflect-metadata';
 import { Container } from 'inversify';
 import { SessionServiceApplication } from './app';

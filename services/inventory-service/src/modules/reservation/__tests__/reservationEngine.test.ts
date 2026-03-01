@@ -1,12 +1,12 @@
 import { ReservationEngine, ReservationRequest } from '../reservationEngine';
 import { StockManager } from '../../stock/stockManager';
 import { WarehouseManager } from '../../warehouse/warehouseManager';
-import { EventBus } from '../../../../shared/events/eventBus';
+import { EventBus } from '../../../../../shared/events/eventBus';
 import { PrismaClient } from '@prisma/client';
 
 jest.mock('../../stock/stockManager');
 jest.mock('../../warehouse/warehouseManager');
-jest.mock('../../../../shared/events/eventBus');
+jest.mock('../../../../../shared/events/eventBus');
 
 describe('ReservationEngine', () => {
   let engine: ReservationEngine;

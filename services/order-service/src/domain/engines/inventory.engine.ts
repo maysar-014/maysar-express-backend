@@ -24,6 +24,8 @@ export interface InventoryOutput {
 }
 
 export class InventoryEngine {
+  constructor(private readonly _apiClient?: any) { }
+
   async processInventoryRequest(input: InventoryInput): Promise<InventoryOutput> {
     // Stub implementation for inventory checking and reservation
     return {
@@ -37,6 +39,28 @@ export class InventoryEngine {
         level: 'in_stock',
         lastUpdated: new Date()
       }
+    };
+  }
+
+  /**
+   * Test-friendly adapter: checks availability for a product variant.
+   */
+  async checkAvailability(params: {
+    productVariantId: string;
+    quantity: number;
+    warehouseId: string;
+  }): Promise<{ available: boolean; quantity: number }> {
+    const result = await this.processInventoryRequest({
+      productId: params.productVariantId,
+      variantId: params.productVariantId,
+      quantity: params.quantity,
+      warehouseId: params.warehouseId,
+      reservationType: 'cart',
+      priority: 'normal',
+    });
+    return {
+      available: result.stockStatus.level !== 'out_of_stock' && result.available >= params.quantity,
+      quantity: result.available,
     };
   }
 }

@@ -1,0 +1,39 @@
+{
+  "scenarioId": "stress-test",
+  "startTime": "2026-03-01T12:59:23.085Z",
+  "endTime": "2026-03-01T13:14:23.085Z",
+  "duration": 900,
+  "totalRequests": 1077300,
+  "successfulRequests": 1028821,
+  "failedRequests": 48479,
+  "errorRate": 4.5,
+  "responseTimes": {
+    "min": 171,
+    "max": 1200,
+    "avg": 428,
+    "p50": 364,
+    "p95": 600,
+    "p99": 943
+  },
+  "throughput": {
+    "rps": 1260,
+    "rpm": 75600
+  },
+  "resourceUtilization": {
+    "cpu": 75,
+    "memory": 99,
+    "disk": 41,
+    "network": 62
+  },
+  "bottlenecks": [
+    {
+      "component": "Application Services",
+      "issue": "High error rate under load",
+      "impact": "Service reliability degradation",
+      "recommendation": "Implement circuit breakers and retry logic"
+    }
+  ],
+  "passed": true,
+  "recommendations": [],
+  "customMetrics": {}
+}

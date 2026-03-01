@@ -3,7 +3,7 @@
  * Testing exponential backoff retry functionality
  */
 
-import { withRetry, RetryOptions, RetryPresets, retryStats } from '../../../utils/retry.util';
+import { withRetry, RetryOptions, RetryPresets, retryStats } from '@shared/utils/retry.util';
 
 describe('Retry Utility', () => {
   beforeEach(() => {

@@ -1,6 +1,7 @@
 import { CreditWalletUseCase } from '../../application/use-cases/credit-wallet.use-case';
 import { AuditInfo, ActorType } from '../../domain/value-objects/audit-info.value-object';
 import { EventEnvelope } from '../../../../shared-contracts/types';
+import { EventIdempotency } from '@shared/middleware/idempotency';
 
 interface PaymentCompletedEvent {
     orderId: string;
@@ -12,7 +13,8 @@ interface PaymentCompletedEvent {
 
 export class PaymentCompletedHandler {
     constructor(
-        private readonly creditWalletUseCase: CreditWalletUseCase
+        private readonly creditWalletUseCase: CreditWalletUseCase,
+        private readonly eventIdempotency: EventIdempotency
     ) { }
 
     async handle(event: EventEnvelope<PaymentCompletedEvent>): Promise<void> {
@@ -24,28 +26,34 @@ export class PaymentCompletedHandler {
             return;
         }
 
-        console.log(`[PaymentCompletedHandler] Processing top-up for user ${payload.userId}, amount ${payload.amount}`);
+        return this.eventIdempotency.withIdempotency(
+            payload.paymentId,
+            'PaymentCompletedHandler',
+            async () => {
+                console.log(`[PaymentCompletedHandler] Processing top-up for user ${payload.userId}, amount ${payload.amount}`);
 
-        try {
-            await this.creditWalletUseCase.execute({
-                userId: payload.userId,
-                amount: payload.amount,
-                currency: payload.currency,
-                description: `Wallet top-up via ${payload.orderId}`,
-                idempotencyKey: `topup_${payload.paymentId}`, // Use paymentId for idempotency
-                correlationId: payload.paymentId,
-                auditInfo: new AuditInfo({
-                    actor: 'system',
-                    actorType: ActorType.SYSTEM,
-                    action: 'WALLET_TOPUP',
-                    reason: `Payment ${payload.paymentId} completed`,
-                    timestamp: new Date()
-                })
-            });
-            console.log(`[PaymentCompletedHandler] Wallet successfully credited for user ${payload.userId}`);
-        } catch (error) {
-            console.error(`[PaymentCompletedHandler] Failed to credit wallet for user ${payload.userId}:`, error);
-            // In production, this would be retried or moved to a dead letter queue
-        }
+                try {
+                    await this.creditWalletUseCase.execute({
+                        userId: payload.userId,
+                        amount: payload.amount,
+                        currency: payload.currency,
+                        description: `Wallet top-up via ${payload.orderId}`,
+                        idempotencyKey: `topup_${payload.paymentId}`, // Use paymentId for idempotency
+                        correlationId: payload.paymentId,
+                        auditInfo: new AuditInfo({
+                            actor: 'system',
+                            actorType: ActorType.SYSTEM,
+                            action: 'WALLET_TOPUP',
+                            reason: `Payment ${payload.paymentId} completed`,
+                            timestamp: new Date()
+                        })
+                    });
+                    console.log(`[PaymentCompletedHandler] Wallet successfully credited for user ${payload.userId}`);
+                } catch (error) {
+                    console.error(`[PaymentCompletedHandler] Failed to credit wallet for user ${payload.userId}:`, error);
+                    // In production, this would be retried or moved to a dead letter queue
+                }
+            }
+        ) as any;
     }
 }

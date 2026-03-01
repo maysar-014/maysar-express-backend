@@ -1,0 +1,32 @@
+{
+  "scenarioId": "soak-test",
+  "startTime": "2026-03-01T12:59:23.141Z",
+  "endTime": "2026-03-01T13:59:23.141Z",
+  "duration": 3600,
+  "totalRequests": 559548,
+  "successfulRequests": 555071,
+  "failedRequests": 4477,
+  "errorRate": 0.8,
+  "responseTimes": {
+    "min": 84,
+    "max": 588,
+    "avg": 210,
+    "p50": 178,
+    "p95": 294,
+    "p99": 462
+  },
+  "throughput": {
+    "rps": 157,
+    "rpm": 9420
+  },
+  "resourceUtilization": {
+    "cpu": 68,
+    "memory": 90,
+    "disk": 34,
+    "network": 56
+  },
+  "bottlenecks": [],
+  "passed": true,
+  "recommendations": [],
+  "customMetrics": {}
+}

@@ -1,33 +1,36 @@
 import { Module } from './module.interface';
+import { createLogger } from '../../shared/logger/logger';
+
+const registryLogger = createLogger('ModuleRegistry', 'core');
 
 export class ModuleRegistry {
     private modules: Module[] = [];
 
     register(module: Module) {
-        console.log(`Registering module: ${module.name}`);
+        registryLogger.info(`Registering module: ${module.name}`);
         this.modules.push(module);
     }
 
     async initializeAll() {
-        console.log('Initializing all modules...');
+        registryLogger.info('Initializing all modules...');
         for (const module of this.modules) {
             try {
-                console.log(`Initializing ${module.name}...`);
+                registryLogger.info(`Initializing ${module.name}...`);
                 await module.initialize();
             } catch (error) {
-                console.error(`Failed to initialize module ${module.name}:`, error);
+                registryLogger.error(`Failed to initialize module ${module.name}:`, error);
                 throw error;
             }
         }
     }
 
     async shutdownAll() {
-        console.log('Shutting down all modules...');
+        registryLogger.info('Shutting down all modules...');
         for (const module of this.modules.slice().reverse()) {
             try {
                 await module.shutdown();
             } catch (error) {
-                console.error(`Error shutting down module ${module.name}:`, error);
+                registryLogger.error(`Error shutting down module ${module.name}:`, error);
             }
         }
     }

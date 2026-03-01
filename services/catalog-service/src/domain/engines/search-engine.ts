@@ -1,7 +1,15 @@
 /**
  * Search Engine
- * Domain engine for product search and filtering logic
- * Pure business logic - no side effects or external dependencies
+ * Domain engine for product search and filtering logic.
+ * 
+ * Performance Envelope:
+ * - Expected QPS: 200-500 depending on query complexity.
+ * - Memory Limit: 512MB (cached product metadata).
+ * - Indexing Strategy: GIN indexes on tags, B-Tree on category/brand/price.
+ * 
+ * Strategy Responsibilities:
+ * - TextSearchStrategy: Handles tokenization and relevance scoring.
+ * - FilterStrategy: Handles Boolean filtering and range checks.
  */
 
 import { ProductId, SellerId } from '../value-objects/ids.value-object';
@@ -78,6 +86,13 @@ export interface SearchResponse {
 }
 
 export class TextSearchStrategy {
+  /**
+   * Executes a text-based search across a list of products.
+   * 
+   * @param query - The search query containing the text to look for.
+   * @param products - The collection of searchable products.
+   * @returns A sorted array of search results with relevance scores.
+   */
   search(query: SearchQuery, products: SearchableProduct[]): SearchResult[] {
     if (!query.text) return [];
 
@@ -110,6 +125,16 @@ export class TextSearchStrategy {
       .map(word => word.toLowerCase());
   }
 
+  /**
+   * Calculates a relevance score for a product based on weighted text matches.
+   * 
+   * Weights:
+   * - Name match: 10 pts
+   * - Description match: 5 pts
+   * - Tags/Category match: 2 pts
+   * - Fuzzy match: 0.5 pts per word
+   * - Exact phrase in name: 1.5x multiplier
+   */
   private calculateTextRelevance(product: SearchableProduct, searchTerms: string[]): number {
     let totalScore = 0;
     const searchableText = [
@@ -232,6 +257,9 @@ export class TextSearchStrategy {
 }
 
 export class FilterStrategy {
+  /**
+   * Filters a list of products based on category, price, stock, ratings, and tags.
+   */
   applyFilters(query: SearchQuery, products: SearchableProduct[]): SearchableProduct[] {
     return products.filter(product => {
       // Category filter
@@ -305,6 +333,9 @@ export class FilterStrategy {
 }
 
 export class SortStrategy {
+  /**
+   * Sorts search results by relevance, price, rating, or popularity.
+   */
   sort(results: SearchResult[], query: SearchQuery, products: SearchableProduct[]): SearchResult[] {
     const sortBy = query.sortBy || 'relevance';
 
@@ -350,6 +381,9 @@ export class SortStrategy {
 }
 
 export class FacetStrategy {
+  /**
+   * Aggregates facet counts for categories, brands, price ranges, and ratings.
+   */
   generateFacets(products: SearchableProduct[], query: SearchQuery): SearchResponse['facets'] {
     const facets = {
       categories: [] as FacetResult[],
@@ -451,8 +485,15 @@ export class ProductSearchEngine {
     private readonly filterStrategy: FilterStrategy = new FilterStrategy(),
     private readonly sortStrategy: SortStrategy = new SortStrategy(),
     private readonly facetStrategy: FacetStrategy = new FacetStrategy()
-  ) {}
+  ) { }
 
+  /**
+   * Orchestrates the full search lifecycle: filtering, text search, sorting, and facet generation.
+   * 
+   * @param query - The search query and filters.
+   * @param products - The full catalog of products.
+   * @returns A search response with results, metadata, and facets.
+   */
   search(query: SearchQuery, products: SearchableProduct[]): SearchResponse {
     const startTime = Date.now();
 
@@ -497,6 +538,10 @@ export class ProductSearchEngine {
     };
   }
 
+  /**
+   * Generates query suggestions based on partial input and popular query history.
+   * Uses prefix matching and fuzzy matching as a fallback.
+   */
   suggestQueries(partialQuery: string, popularQueries: string[], maxSuggestions: number = 5): string[] {
     if (!partialQuery.trim()) {
       return popularQueries.slice(0, maxSuggestions);
@@ -518,10 +563,10 @@ export class ProductSearchEngine {
         .filter(query =>
           !suggestions.includes(query) &&
           (query.toLowerCase().includes(queryLower) ||
-           this.levenshteinDistance(query.toLowerCase(), queryLower) <= 2)
+            this.levenshteinDistance(query.toLowerCase(), queryLower) <= 2)
         )
         .sort((a, b) => this.levenshteinDistance(a.toLowerCase(), queryLower) -
-                        this.levenshteinDistance(b.toLowerCase(), queryLower));
+          this.levenshteinDistance(b.toLowerCase(), queryLower));
 
       suggestions.push(...fuzzyMatches.slice(0, maxSuggestions - suggestions.length));
     }
@@ -529,6 +574,11 @@ export class ProductSearchEngine {
     return suggestions.slice(0, maxSuggestions);
   }
 
+  /**
+   * Analyzes search result metrics to provide quality insights.
+   * 
+   * @returns Scores for effectiveness, diversity, and relevance with actionable recommendations.
+   */
   analyzeSearchPerformance(searchResponse: SearchResponse): {
     effectiveness: number;
     diversity: number;

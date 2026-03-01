@@ -1,4 +1,8 @@
 import { createApp } from './app';
+import { tracingService } from '../../../shared/tracing/openTelemetry';
+
+// Initialize Tracing
+tracingService.start();
 
 const PORT = process.env.PORT || 3010;
 

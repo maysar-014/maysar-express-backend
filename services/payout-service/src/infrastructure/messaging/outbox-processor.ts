@@ -25,7 +25,16 @@ export class OutboxProcessor {
         }
     }
 
+    private intervalId: ReturnType<typeof setInterval> | null = null;
+
     start(intervalMs: number = 5000): void {
-        setInterval(() => this.process(), intervalMs);
+        this.intervalId = setInterval(() => this.process(), intervalMs);
+    }
+
+    stop(): void {
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+        }
     }
 }

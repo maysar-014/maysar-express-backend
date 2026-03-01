@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import Redis from 'ioredis';
 import { createHash } from 'crypto';
+import { PrismaClient } from '@prisma/client';
 
 interface IdempotencyConfig {
   ttlSeconds: number;
@@ -28,8 +29,8 @@ export class IdempotencyMiddleware {
 
   middleware() {
     return async (req: Request, res: Response, next: NextFunction) => {
-      // Only apply to non-GET requests
-      if (req.method === 'GET') {
+      // Only enforce idempotency for POST, PUT, and DELETE
+      if (!['POST', 'PUT', 'DELETE'].includes(req.method)) {
         return next();
       }
 
@@ -107,22 +108,68 @@ export class IdempotencyMiddleware {
 // Event consumer idempotency
 export class EventIdempotency {
   private redis: Redis;
+  private prisma?: PrismaClient;
   private keyPrefix = 'event:processed:';
   private ttlSeconds = 24 * 60 * 60; // 24 hours
 
-  constructor(redisUrl: string) {
+  constructor(redisUrl: string, prisma?: PrismaClient) {
     this.redis = new Redis(redisUrl);
+    this.prisma = prisma;
   }
 
   async isProcessed(eventId: string, consumerName: string): Promise<boolean> {
     const key = `${this.keyPrefix}${consumerName}:${eventId}`;
-    const result = await this.redis.get(key);
-    return result !== null;
+
+    // Fast path: check Redis first
+    try {
+      const redisResult = await this.redis.get(key);
+      if (redisResult !== null) return true;
+    } catch (error) {
+      console.error('Redis isProcessed check failed, falling back to DB:', error);
+    }
+
+    // Fallback: check database
+    if (this.prisma) {
+      try {
+        const dbResult = await this.prisma.eventLog.findUnique({
+          where: { eventId_consumerName: { eventId, consumerName } }
+        });
+        if (dbResult) {
+          // Re-populate Redis cache for future fast-path hits
+          try {
+            await this.redis.setex(key, this.ttlSeconds, '1');
+          } catch { /* ignore Redis write failure */ }
+          return true;
+        }
+      } catch (error) {
+        console.error('DB isProcessed check failed:', error);
+      }
+    }
+
+    return false;
   }
 
   async markProcessed(eventId: string, consumerName: string): Promise<void> {
     const key = `${this.keyPrefix}${consumerName}:${eventId}`;
-    await this.redis.setex(key, this.ttlSeconds, '1');
+
+    const redisWrite = this.redis.setex(key, this.ttlSeconds, '1').catch((error) => {
+      console.error('Redis markProcessed failed:', error);
+    });
+
+    const dbWrite = this.prisma
+      ? this.prisma.eventLog.create({
+          data: { eventId, consumerName }
+        }).catch((error: any) => {
+          // Ignore unique constraint violations (race condition / duplicate)
+          if (error?.code === 'P2002') {
+            return; // Duplicate key is expected and non-fatal
+          }
+          // Propagate all other DB failures so upstream can retry
+          throw error;
+        })
+      : Promise.resolve();
+
+    await Promise.all([redisWrite, dbWrite]);
   }
 
   async withIdempotency<T>(
@@ -130,14 +177,65 @@ export class EventIdempotency {
     consumerName: string,
     handler: () => Promise<T>
   ): Promise<T | null> {
-    if (await this.isProcessed(eventId, consumerName)) {
-      console.log(`Event ${eventId} already processed by ${consumerName}`);
-      return null;
+    const key = `${this.keyPrefix}${consumerName}:${eventId}`;
+
+    // Fast path: check Redis cache first
+    try {
+      const redisResult = await this.redis.get(key);
+      if (redisResult !== null) {
+        console.log(`Event ${eventId} already processed by ${consumerName} (Redis fast-path)`);
+        return null;
+      }
+    } catch (error) {
+      console.error('Redis fast-path check failed, falling back to DB claim:', error);
     }
 
-    const result = await handler();
-    await this.markProcessed(eventId, consumerName);
-    return result;
+    // Atomic DB claim: attempt insert; if duplicate key, skip execution
+    if (this.prisma) {
+      try {
+        await this.prisma.eventLog.create({
+          data: { eventId, consumerName }
+        });
+      } catch (error: any) {
+        if (error?.code === 'P2002') {
+          // Already claimed/processed by another handler
+          console.log(`Event ${eventId} already processed by ${consumerName} (DB claim)`);
+          // Re-populate Redis cache for future fast-path hits
+          try {
+            await this.redis.setex(key, this.ttlSeconds, '1');
+          } catch { /* ignore Redis write failure */ }
+          return null;
+        }
+        // Non-duplicate DB error – propagate so caller can retry
+        throw error;
+      }
+    }
+
+    // Execute handler; roll back DB claim on failure so retries remain possible
+    try {
+      const result = await handler();
+
+      // Success: populate Redis cache
+      try {
+        await this.redis.setex(key, this.ttlSeconds, '1');
+      } catch (error) {
+        console.error('Redis cache write after handler success failed:', error);
+      }
+
+      return result;
+    } catch (handlerError) {
+      // Roll back the DB claim so the event can be retried
+      if (this.prisma) {
+        try {
+          await this.prisma.eventLog.delete({
+            where: { eventId_consumerName: { eventId, consumerName } }
+          });
+        } catch (rollbackError) {
+          console.error('Failed to roll back DB claim after handler error:', rollbackError);
+        }
+      }
+      throw handlerError;
+    }
   }
 }
 

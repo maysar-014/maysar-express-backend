@@ -1,14 +1,21 @@
-
 import { IEventBus } from './event-bus.interface';
+import { KafkaEventBus, getKafkaEventBus } from '../../../../../shared/events/kafka.event-bus';
 
 export class RabbitMQEventBus implements IEventBus {
-    async publish(event: any): Promise<void> {
-        console.log(`[RabbitMQ] Publishing event: ${event.eventType}`, event);
-        // Implementation would use amqplib to publish to exchange
+    private kafka: KafkaEventBus;
+
+    constructor() {
+        this.kafka = getKafkaEventBus({
+            clientId: 'payment-service',
+            groupId: 'payment-service-group'
+        });
     }
 
-    async subscribe(eventType: string, handler: (event: any) => Promise<void>): Promise<void> {
-        console.log(`[RabbitMQ] Subscribing to: ${eventType}`);
-        // Implementation would create queue and bind to exchange
+    async publish(eventType: string, data: any, metadata?: any): Promise<void> {
+        await this.kafka.publish(eventType, data, metadata);
+    }
+
+    async subscribe(eventType: string, handler: (envelope: any) => Promise<void>): Promise<void> {
+        await this.kafka.subscribe(eventType, handler);
     }
 }

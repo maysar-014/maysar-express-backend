@@ -1,17 +1,30 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
+import { RedisRateLimitStore } from '../../../../../shared/middleware/redis-rate-limit.store';
+import Redis from 'ioredis';
 import { WalletController } from '../controllers/wallet.controller';
 import { validateRequest } from '../middleware/validation.middleware';
 import { WalletValidator } from '../validators/wallet.validator';
 import { authenticate } from '../middleware/authentication.middleware';
 import { AuthorizationMiddleware } from '../middleware/authorization.middleware';
 import { correlationMiddleware } from '../middleware/correlation.middleware';
+import { IdempotencyMiddleware } from '@shared/middleware/idempotency';
+
+const idempotencyMiddleware = new IdempotencyMiddleware(process.env.REDIS_URL!);
+const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 
 export function createWalletRoutes(controller: WalletController): Router {
     const router = Router();
 
     // All wallet routes require authentication
     router.use(authenticate);
+    router.use(rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 60,
+        store: new RedisRateLimitStore(redisClient, 'rl:wallet:')
+    }));
     router.use(correlationMiddleware);
+    router.use(idempotencyMiddleware.middleware());
 
     // General wallet access (read)
     router.get('/:userId',

@@ -32,8 +32,10 @@ export class TracingService {
   }
 
   start(): void {
+    const { createLogger } = require('../logger/logger');
+    const logger = createLogger('TracingService', 'shared');
     this.sdk.start();
-    console.log(`Tracing initialized for ${this.sdk['_resource'].attributes[SemanticResourceAttributes.SERVICE_NAME]}`);
+    logger.info(`Tracing initialized for ${this.sdk['_resource'].attributes[SemanticResourceAttributes.SERVICE_NAME]}`);
   }
 
   stop(): Promise<void> {
@@ -63,7 +65,7 @@ export class TracingService {
     parentContext?: TraceContext
   ): Promise<T> {
     const { span, traceId, spanId, correlationId } = this.createSpan(name, parentContext);
-    
+
     const traceContext: TraceContext = {
       traceId,
       spanId,
@@ -75,7 +77,7 @@ export class TracingService {
       const result = await context.with(trace.setSpan(context.active(), span), () =>
         operation(traceContext)
       );
-      
+
       span.setStatus({ code: SpanStatusCode.OK });
       return result;
     } catch (error) {

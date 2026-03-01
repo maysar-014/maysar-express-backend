@@ -1,5 +1,5 @@
 import { TransactionalOutbox, OutboxStatus } from './outboxPattern';
-import { inMemoryEventBus } from '../events/in-memory-event-bus';
+import { inMemoryEventBus, IEventBus } from '../events/eventBus';
 import { PrismaClient } from '@prisma/client';
 
 export class OutboxPublisher {
@@ -8,7 +8,7 @@ export class OutboxPublisher {
 
   constructor(
     private outbox: TransactionalOutbox,
-    private eventBus: typeof inMemoryEventBus = inMemoryEventBus,
+    private eventBus: IEventBus = inMemoryEventBus,
     private config = {
       pollInterval: 5000,
       batchSize: 50,

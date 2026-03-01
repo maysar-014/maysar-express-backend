@@ -10,6 +10,11 @@ import { healthRoutes } from './api/routes/health.routes';
 import { errorHandler } from './api/middleware/error.middleware';
 import { requestLogger } from './api/middleware/request-logger.middleware';
 import { logger } from './infrastructure/services/logger.service';
+import { tracingService, correlationMiddleware } from '../../../shared/tracing/openTelemetry';
+import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
+
+// Initialize Tracing
+tracingService.start();
 
 const app = express();
 
@@ -30,6 +35,14 @@ new CheckoutEventHandlers(eventBus, checkoutRepository);
 
 // Health check routes
 app.use('/health', healthRoutes);
+
+app.use(correlationMiddleware());
+
+// Prometheus metrics
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', metricsRegistry.contentType);
+  res.end(await metricsRegistry.metrics());
+});
 
 // Register routes
 app.use('/api/checkout', createCheckoutRoutes(cartController, checkoutController));

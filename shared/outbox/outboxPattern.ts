@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { EventEnvelope } from '../../events';
+import { EventEnvelope } from '../events/eventBus';
 import { v4 as uuidv4 } from 'uuid';
 
 export enum OutboxStatus {
@@ -23,15 +23,26 @@ export interface OutboxEntry {
 }
 
 export class TransactionalOutbox {
-  constructor(private prisma: PrismaClient) { }
+  private model: any;
+
+  constructor(
+    private prisma: PrismaClient,
+    private modelName: string = 'outboxEvent'
+  ) {
+    this.model = (this.prisma as any)[this.modelName];
+    if (!this.model) {
+      throw new Error(`Prisma model ${this.modelName} not found in client`);
+    }
+  }
 
   async saveEvent<T>(
     envelope: EventEnvelope<T>,
     transaction?: any
   ): Promise<void> {
     const prismaClient = transaction || this.prisma;
+    const model = (prismaClient as any)[this.modelName];
 
-    await prismaClient.outboxEvent.create({
+    await model.create({
       data: {
         id: uuidv4(),
         eventId: envelope.eventId,
@@ -45,7 +56,7 @@ export class TransactionalOutbox {
   }
 
   async getPendingEvents(limit = 100): Promise<OutboxEntry[]> {
-    const results = await this.prisma.outboxEvent.findMany({
+    const results = await this.model.findMany({
       where: {
         status: OutboxStatus.PENDING,
         OR: [
@@ -57,7 +68,7 @@ export class TransactionalOutbox {
       take: limit
     });
 
-    return results.map(record => ({
+    return results.map((record: any) => ({
       ...record,
       status: record.status as OutboxStatus,
       processedAt: record.processedAt ?? undefined,
@@ -67,7 +78,7 @@ export class TransactionalOutbox {
   }
 
   async markAsProcessing(eventId: string): Promise<void> {
-    await this.prisma.outboxEvent.update({
+    await this.model.update({
       where: { eventId },
       data: {
         status: OutboxStatus.PROCESSING,
@@ -77,7 +88,7 @@ export class TransactionalOutbox {
   }
 
   async markAsSent(eventId: string): Promise<void> {
-    await this.prisma.outboxEvent.update({
+    await this.model.update({
       where: { eventId },
       data: {
         status: OutboxStatus.SENT,
@@ -87,7 +98,7 @@ export class TransactionalOutbox {
   }
 
   async markAsFailed(eventId: string, error: string, nextRetryAt?: Date): Promise<void> {
-    await this.prisma.outboxEvent.update({
+    await this.model.update({
       where: { eventId },
       data: {
         attempts: { increment: 1 },
@@ -99,7 +110,7 @@ export class TransactionalOutbox {
   }
 
   async markAsDeadLetter(eventId: string, error: string): Promise<void> {
-    await this.prisma.outboxEvent.update({
+    await this.model.update({
       where: { eventId },
       data: {
         status: OutboxStatus.FAILED,
@@ -112,7 +123,7 @@ export class TransactionalOutbox {
   }
 
   async resetToRetry(eventId: string): Promise<void> {
-    await this.prisma.outboxEvent.update({
+    await this.model.update({
       where: { eventId },
       data: {
         status: OutboxStatus.PENDING,

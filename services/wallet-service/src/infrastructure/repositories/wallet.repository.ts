@@ -6,6 +6,7 @@
 import { PrismaClient, Wallet_Wallet } from '@prisma/client';
 import { Wallet, WalletProps, WalletStatus } from '../../domain/entities/wallet.entity';
 import { IWalletRepository } from '../../domain/repositories/wallet.repository';
+import { OptimisticLockError } from '../../../../shared/errors/optimistic-lock.error';
 
 export class WalletRepository implements IWalletRepository {
     constructor(private readonly prisma: PrismaClient) { }
@@ -26,6 +27,7 @@ export class WalletRepository implements IWalletRepository {
                 codCommitmentLimit: props.codCommitmentLimit,
                 codCommitmentUsed: props.codCommitmentUsed,
                 codCommitmentCount: props.codCommitmentCount,
+                version: 0,
             },
         });
     }
@@ -49,8 +51,8 @@ export class WalletRepository implements IWalletRepository {
     async update(wallet: Wallet): Promise<void> {
         const props = wallet.toObject();
 
-        await this.prisma.wallet_Wallet.update({
-            where: { id: props.id },
+        const result = await this.prisma.wallet_Wallet.updateMany({
+            where: { id: props.id, version: props.version },
             data: {
                 balance: props.balance,
                 status: props.status,
@@ -58,8 +60,13 @@ export class WalletRepository implements IWalletRepository {
                 updatedAt: props.updatedAt,
                 codCommitmentUsed: props.codCommitmentUsed,
                 codCommitmentCount: props.codCommitmentCount,
+                version: { increment: 1 },
             },
         });
+
+        if (result.count === 0) {
+            throw new OptimisticLockError('Wallet', props.id, props.version);
+        }
     }
 
     async updateBalance(
@@ -127,6 +134,7 @@ export class WalletRepository implements IWalletRepository {
             codCommitmentLimit: Number(data.codCommitmentLimit),
             codCommitmentUsed: Number(data.codCommitmentUsed),
             codCommitmentCount: data.codCommitmentCount,
+            version: data.version,
         };
 
         return new Wallet(props);

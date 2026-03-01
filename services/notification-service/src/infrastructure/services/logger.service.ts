@@ -1,47 +1,38 @@
-/**
- * Logger service for Notification Service
- */
+import { ServiceLogger, LogContext } from '../../../../../shared/logger/logger';
 
-type LogLevel = 'error' | 'warn' | 'info' | 'debug';
+export class Logger {
+    private delegate: ServiceLogger;
 
-class Logger {
-  private service = 'notification-service';
-
-  error(message: string, meta?: Record<string, any>): void {
-    this.log('error', message, meta);
-  }
-
-  warn(message: string, meta?: Record<string, any>): void {
-    this.log('warn', message, meta);
-  }
-
-  info(message: string, meta?: Record<string, any>): void {
-    this.log('info', message, meta);
-  }
-
-  debug(message: string, meta?: Record<string, any>): void {
-    this.log('debug', message, meta);
-  }
-
-  log(level: LogLevel, message: string, meta?: Record<string, any>): void {
-    this.logInternal(level, message, meta);
-  }
-
-  private logInternal(level: LogLevel, message: string, meta?: Record<string, any>): void {
-    const payload = {
-      level,
-      service: this.service,
-      message,
-      timestamp: new Date().toISOString(),
-      ...meta
-    };
-    if (process.env.NODE_ENV === 'production') {
-      console.log(JSON.stringify(payload));
-    } else {
-      const fn = level === 'debug' ? 'log' : level;
-      (console as any)[fn](message, meta ?? '');
+    constructor() {
+        this.delegate = new ServiceLogger('NotificationService', 'notification-service');
     }
-  }
+
+    error(msg: string, meta?: LogContext & Record<string, any>) { this.delegate.error(msg, meta); }
+    warn(msg: string, meta?: LogContext & Record<string, any>) { this.delegate.warn(msg, meta); }
+    info(msg: string, meta?: LogContext & Record<string, any>) { this.delegate.info(msg, meta); }
+    debug(msg: string, meta?: LogContext & Record<string, any>) { this.delegate.debug(msg, meta); }
+
+    /** legacy support */
+    log(level: string, msg: string, meta?: any) {
+        if (level === 'error') this.error(msg, meta);
+        else if (level === 'warn') this.warn(msg, meta);
+        else this.info(msg, meta);
+    }
+
+    logRequest(req: any, res: any, duration: number) {
+        this.delegate.info(`API: ${req.method} ${req.url}`, {
+            requestId: req.requestId || req.get('X-Request-ID'),
+            correlationId: req.correlationId || req.get('X-Correlation-ID'),
+            method: req.method,
+            url: req.url,
+            statusCode: res.statusCode,
+            executionTime: duration
+        });
+    }
+
+    logPerformance(operation: string, duration: number, metadata?: Record<string, any>) {
+        this.delegate.performance(operation, duration, metadata);
+    }
 }
 
 export const logger = new Logger();

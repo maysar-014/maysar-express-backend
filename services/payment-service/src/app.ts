@@ -11,6 +11,9 @@ import { createPaymentRoutes } from './api/routes/payment.routes';
 import { healthRoutes } from './api/routes/health.routes';
 import { errorHandler } from './api/middleware/error.middleware';
 import { requestLogger } from './api/middleware/request-logger.middleware';
+import { correlationMiddleware } from '../../../shared/tracing/openTelemetry';
+import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
+import { logger } from './infrastructure/services/logger.service';
 import { Container } from './container';
 
 export function createApp(): Express {
@@ -19,12 +22,13 @@ export function createApp(): Express {
 
     // Initialize Saga Subscriptions
     container.sagaEventHandler.setupSubscriptions().catch((err: Error) => {
-        console.error('Failed to setup saga subscriptions:', err);
+        logger.error('Failed to setup saga subscriptions:', err);
     });
 
     container.paymentEventHandlers.registerHandlers();
 
     // Middleware
+    app.use(correlationMiddleware());
     app.use(helmet());
     app.use(cors());
     app.use(requestLogger);
@@ -35,6 +39,12 @@ export function createApp(): Express {
 
     // Routes
     app.use('/api/payments', createPaymentRoutes(container.paymentController));
+
+    // Prometheus metrics
+    app.get('/metrics', async (req, res) => {
+        res.set('Content-Type', metricsRegistry.contentType);
+        res.end(await metricsRegistry.metrics());
+    });
 
     // Error Handling
     app.use(errorHandler);

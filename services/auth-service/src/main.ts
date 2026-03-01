@@ -2,8 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import { json, urlencoded } from 'express';
 import dotenv from 'dotenv';
+import { csrfTokenMiddleware } from '../../../../shared/middleware/csrf.middleware';
+import { createLogger } from '../../../shared/logger/logger';
+import { tracingService, correlationMiddleware } from '../../../shared/tracing/openTelemetry';
+
+const mainLogger = createLogger('AuthService-Bootstrap', 'auth-service');
 
 // Import configuration
 import { config } from './config';
@@ -15,21 +21,51 @@ import { requestLogger } from './api/middleware/logging.middleware';
 import { validationMiddleware } from './api/middleware/validation.middleware';
 
 // Import routes
-import { authRoutes } from './api/routes/auth.routes';
+import { createAuthRoutes } from './api/routes/auth.routes';
+import { AuthController } from './api/controllers/auth.controller';
+import { RegisterUserUseCase } from './application/use-cases/register-user.use-case';
+import { AuthenticateUserUseCase } from './application/use-cases/authenticate-user.use-case';
+import { PrismaClient } from '@prisma/client';
+import { PrismaUserRepository } from './infrastructure/repositories/prisma-user.repository';
 import { healthRoutes } from './api/routes/health.routes';
 import { adminRoutes } from './api/routes/admin.routes';
+
+// 2FA Imports
+import { EncryptionService } from './2fa/infrastructure/services/encryption.service';
+import { PrismaTwoFactorRepository } from './2fa/infrastructure/repositories/prisma-two-factor.repository';
+import { SetupTwoFactorUseCase } from './2fa/application/use-cases/setup-two-factor.use-case';
+import { VerifyTwoFactorSetupUseCase } from './2fa/application/use-cases/verify-two-factor-setup.use-case';
+import { VerifyTwoFactorLoginUseCase } from './2fa/application/use-cases/verify-two-factor-login.use-case';
+import { VerifyBackupCodeUseCase } from './2fa/application/use-cases/verify-backup-code.use-case';
+import { DisableTwoFactorUseCase } from './2fa/application/use-cases/disable-two-factor.use-case';
+import { RegenerateBackupCodesUseCase } from './2fa/application/use-cases/regenerate-backup-codes.use-case';
+import { GetTwoFactorStatusUseCase } from './2fa/application/use-cases/get-two-factor-status.use-case';
+import { TwoFactorController } from './2fa/api/controllers/two-factor.controller';
+import { createTwoFactorRouter } from './2fa/api/routes/two-factor.routes';
+import { QRCodeService } from './2fa/infrastructure/services/qr-code.service';
+
+// Session Imports
+import { createSessionRouter } from './session/api/routes/session.routes';
+import { SessionEngine } from './domain/engines/session.engine';
+
 
 // Import services
 import { logger } from './infrastructure/services/logger.service';
 import { initializeDatabase } from './infrastructure/database/connection';
 import { initializeRedis } from './infrastructure/cache/connection';
 import { initializeKafka } from './infrastructure/messaging/connection';
+import { metricsRegistry } from './infrastructure/monitoring/metrics';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = config.port || 3001;
+
+// Set up correlation ID tracking before anything else
+app.use(correlationMiddleware());
+app.use(cookieParser());
+app.use(csrfTokenMiddleware);
 
 // Security middleware
 app.use(helmet({
@@ -48,47 +84,92 @@ app.use(helmet({
   }
 }));
 
-  // CORS configuration
-  app.use(cors({
-    origin: config.cors.origin,
-    credentials: config.cors.credentials,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-ID']
-  }));
+// CORS configuration
+app.use(cors({
+  origin: config.cors.origin,
+  credentials: config.cors.credentials,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-ID', 'X-CSRF-Token']
+}));
 
-  // Compression middleware
-  app.use(compression({
-    level: 6,
-    threshold: 1024,
-    filter: (req: any, res: any) => {
-      if (req.headers['x-no-compression']) {
-        return false;
-      }
-      return compression.filter(req, res);
+// Compression middleware
+app.use(compression({
+  level: 6,
+  threshold: 1024,
+  filter: (req: any, res: any) => {
+    if (req.headers['x-no-compression']) {
+      return false;
     }
-  }));
-
-  // Body parsing middleware
-  app.use(json({ limit: '10mb' }));
-  app.use(urlencoded({ extended: true, limit: '10mb' }));
-
-  // Logging middleware
-  app.use(requestLogger);
-
-  // Rate limiting
-  app.use(rateLimiter);
-
-  // Health check (no auth required)
-  app.use('/health', healthRoutes);
-
-  // API routes
-  app.use('/api/v1/auth', authRoutes);
-  app.use('/api/v1/admin', adminRoutes);
-
-  // Swagger documentation (development only)
-  if (config.environment === 'development') {
-    // Swagger setup would go here in future phases
+    return compression.filter(req, res);
   }
+}));
+
+// Body parsing middleware
+app.use(json({ limit: '10mb' }));
+app.use(urlencoded({ extended: true, limit: '10mb' }));
+
+// Logging middleware
+app.use(requestLogger);
+
+// Rate limiting
+app.use(rateLimiter);
+
+// Health check (no auth required)
+app.use('/health', healthRoutes);
+
+// Wire up AuthController and routes
+const authPrisma = new PrismaClient();
+const userRepository = new PrismaUserRepository(authPrisma);
+const registerUserUseCase = new RegisterUserUseCase(userRepository);
+const authenticateUserUseCase = new AuthenticateUserUseCase();
+const authController = new AuthController(registerUserUseCase, authenticateUserUseCase);
+const authRoutes = createAuthRoutes(authController);
+
+// API routes
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/admin', adminRoutes);
+
+// Wire up 2FA
+const encryptionService = new EncryptionService(process.env.TWO_FACTOR_ENCRYPTION_KEY || 'default-two-factor-encryption-key-32-chars!!');
+
+const twoFactorRepository = new PrismaTwoFactorRepository(authPrisma, encryptionService);
+const qrCodeService = new QRCodeService();
+
+const setupTwoFactorUseCase = new SetupTwoFactorUseCase(twoFactorRepository, qrCodeService);
+const verifyTwoFactorSetupUseCase = new VerifyTwoFactorSetupUseCase(twoFactorRepository);
+const verifyTwoFactorLoginUseCase = new VerifyTwoFactorLoginUseCase(twoFactorRepository);
+const verifyBackupCodeUseCase = new VerifyBackupCodeUseCase(twoFactorRepository);
+const disableTwoFactorUseCase = new DisableTwoFactorUseCase(twoFactorRepository);
+const regenerateBackupCodesUseCase = new RegenerateBackupCodesUseCase(twoFactorRepository);
+const getTwoFactorStatusUseCase = new GetTwoFactorStatusUseCase(twoFactorRepository);
+
+const twoFactorController = new TwoFactorController(
+  setupTwoFactorUseCase,
+  verifyTwoFactorSetupUseCase,
+  verifyTwoFactorLoginUseCase,
+  verifyBackupCodeUseCase,
+  disableTwoFactorUseCase,
+  regenerateBackupCodesUseCase,
+  getTwoFactorStatusUseCase
+);
+
+app.use('/api/v1/auth/2fa', createTwoFactorRouter(twoFactorController));
+
+// Wire up Session
+const sessionEngine = new SessionEngine();
+app.use('/api/v1/sessions', createSessionRouter(sessionEngine));
+
+
+// Swagger documentation (development only)
+if (config.environment === 'development') {
+  // Swagger setup would go here in future phases
+}
+
+// Prometheus metrics
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', metricsRegistry.contentType);
+  res.end(await metricsRegistry.metrics());
+});
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
@@ -124,7 +205,7 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Unhandled rejection handling
 process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  logger.error('Unhandled Rejection', { at: promise, reason });
   // Don't exit in production, but log the error
   if (config.environment === 'development') {
     process.exit(1);
@@ -137,9 +218,14 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
+let server: any;
+
 // Start server
 async function startServer() {
   try {
+    // Initialize tracing
+    tracingService.start();
+
     // Initialize infrastructure
     logger.info('Initializing infrastructure...');
 
@@ -152,8 +238,8 @@ async function startServer() {
     logger.info('Infrastructure initialized successfully');
 
     // Start HTTP server
-    const server = app.listen(PORT, config.host, () => {
-      logger.info(`🚀 Auth Service started successfully`);
+    server = app.listen(config.port, () => {
+      mainLogger.info(`Auth service started on port ${config.port}`);
       logger.info(`📍 Server running on http://${config.host}:${PORT}`);
       logger.info(`🌍 Environment: ${config.environment}`);
       logger.info(`📊 Health check: http://${config.host}:${PORT}/health`);

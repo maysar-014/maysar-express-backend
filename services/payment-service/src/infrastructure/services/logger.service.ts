@@ -1,27 +1,27 @@
-import winston from 'winston';
+import { ServiceLogger, LogContext } from '../../../../../shared/logger/logger';
 
 export class Logger {
-    private logger: winston.Logger;
+    private delegate: ServiceLogger;
 
     constructor() {
-        this.logger = winston.createLogger({
-            level: process.env.LOG_LEVEL || 'info',
-            format: winston.format.combine(
-                winston.format.timestamp(),
-                winston.format.json()
-            ),
-            defaultMeta: { service: 'payment-service' },
-            transports: [
-                new winston.transports.Console({
-                    format: winston.format.simple()
-                })
-            ]
-        });
+        this.delegate = new ServiceLogger('PaymentService', 'payment-service');
     }
 
-    error(msg: string, meta?: any) { this.logger.error(msg, meta); }
-    warn(msg: string, meta?: any) { this.logger.warn(msg, meta); }
-    info(msg: string, meta?: any) { this.logger.info(msg, meta); }
+    error(msg: string, meta?: LogContext & Record<string, any>) { this.delegate.error(msg, meta); }
+    warn(msg: string, meta?: LogContext & Record<string, any>) { this.delegate.warn(msg, meta); }
+    info(msg: string, meta?: LogContext & Record<string, any>) { this.delegate.info(msg, meta); }
+    debug(msg: string, meta?: LogContext & Record<string, any>) { this.delegate.debug(msg, meta); }
+
+    /** legacy support */
+    log(level: string, msg: string, meta?: any) {
+        if (level === 'error') this.error(msg, meta);
+        else if (level === 'warn') this.warn(msg, meta);
+        else this.info(msg, meta);
+    }
+
+    logPerformance(operation: string, duration: number, metadata?: Record<string, any>) {
+        this.delegate.performance(operation, duration, metadata);
+    }
 }
 
 export const logger = new Logger();

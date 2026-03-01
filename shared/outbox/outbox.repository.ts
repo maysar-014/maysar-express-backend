@@ -28,11 +28,23 @@ export interface IOutboxRepository {
 }
 
 export class PrismaOutboxRepository implements IOutboxRepository {
-    constructor(private prisma: PrismaClient) { }
+    private model: any;
+
+    constructor(
+        private prisma: PrismaClient,
+        private modelName: string = 'outboxEvent'
+    ) {
+        this.model = (this.prisma as any)[this.modelName];
+        if (!this.model) {
+            throw new Error(`Prisma model ${this.modelName} not found in client`);
+        }
+    }
 
     async save(entry: Partial<OutboxEntry>, transaction?: any): Promise<void> {
         const client = transaction || this.prisma;
-        await client.outboxEvent.create({
+        const model = (client as any)[this.modelName];
+
+        await model.create({
             data: {
                 id: entry.id || uuidv4(),
                 eventId: entry.eventId!,
@@ -46,7 +58,7 @@ export class PrismaOutboxRepository implements IOutboxRepository {
     }
 
     async update(eventId: string, updates: Partial<OutboxEntry>): Promise<void> {
-        await this.prisma.outboxEvent.update({
+        await this.model.update({
             where: { eventId },
             data: {
                 status: updates.status,
@@ -59,7 +71,7 @@ export class PrismaOutboxRepository implements IOutboxRepository {
     }
 
     async getPending(limit = 100): Promise<OutboxEntry[]> {
-        return this.prisma.outboxEvent.findMany({
+        return this.model.findMany({
             where: {
                 status: OutboxStatus.PENDING,
                 OR: [

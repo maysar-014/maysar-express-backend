@@ -1,6 +1,7 @@
-import { eventBus } from '../../shared/events/eventBus';
+import { eventBus } from '@shared-events/eventBus';
 import { StockManager } from '../stock/stockManager';
 import { ReservationEngine } from '../reservation/reservationEngine';
+import { EventIdempotency } from '@shared/middleware/idempotency';
 
 // Order events from shared contracts
 interface OrderCreatedEvent {
@@ -59,10 +60,14 @@ interface ShipmentDeliveredEvent {
 }
 
 export class InventoryEventHandlers {
+  private eventIdempotency: EventIdempotency;
+
   constructor(
     private stockManager: StockManager,
-    private reservationEngine: ReservationEngine
+    private reservationEngine: ReservationEngine,
+    eventIdempotency: EventIdempotency
   ) {
+    this.eventIdempotency = eventIdempotency;
     this.registerEventHandlers();
   }
 
@@ -84,135 +89,144 @@ export class InventoryEventHandlers {
    * Handle stock reservation command for Saga
    */
   async handleStockReservationCommand(event: any): Promise<void> {
-    const { sagaId, orderId, items, shippingAddress } = event.payload || event.data;
-    console.log(`[Saga] Processing StockReservation command for saga ${sagaId}, order ${orderId}`);
+    const eventId = event.eventId || event.payload?.sagaId || event.data?.sagaId;
+    return this.eventIdempotency.withIdempotency(eventId, 'InventoryEventHandlers.StockReservationCommand', async () => {
+      const { sagaId, orderId, items, shippingAddress } = event.payload || event.data;
+      console.log(`[Saga] Processing StockReservation command for saga ${sagaId}, order ${orderId}`);
 
-    try {
-      const result = await this.reservationEngine.reserveStock({
-        orderId,
-        items: items.map((i: any) => ({
-          id: i.productId, // Map productId to id for reservation engine
-          variantId: i.productId,
-          quantity: i.quantity,
-          price: 0 // Price not strictly needed for reservation logic here
-        })),
-        shippingAddress
-      });
-
-      if (result.success) {
-        await eventBus.emit('StockReservation.Success.v1', {
-          sagaId,
+      try {
+        const result = await this.reservationEngine.reserveStock({
           orderId,
-          reservations: result.reservations,
-          timestamp: new Date().toISOString()
+          items: items.map((i: any) => ({
+            id: i.productId, // Map productId to id for reservation engine
+            variantId: i.productId,
+            quantity: i.quantity,
+            price: 0 // Price not strictly needed for reservation logic here
+          })),
+          shippingAddress
         });
-      } else {
-        await eventBus.emit('StockReservation.Failure.v1', {
+
+        if (result.success) {
+          await eventBus.publish('StockReservation.Success.v1', {
+            sagaId,
+            orderId,
+            reservations: result.reservations,
+            timestamp: new Date().toISOString()
+          });
+        } else {
+          await eventBus.publish('StockReservation.Failure.v1', {
+            sagaId,
+            orderId,
+            reason: result.error || 'Insufficient stock',
+            unavailableItems: result.unavailableItems,
+            timestamp: new Date().toISOString()
+          });
+        }
+      } catch (error: any) {
+        console.error(`[Saga] Error in StockReservation handler:`, error);
+        await eventBus.publish('StockReservation.Failure.v1', {
           sagaId,
           orderId,
-          reason: result.error || 'Insufficient stock',
-          unavailableItems: result.unavailableItems,
+          reason: error.message,
           timestamp: new Date().toISOString()
         });
       }
-    } catch (error: any) {
-      console.error(`[Saga] Error in StockReservation handler:`, error);
-      await eventBus.emit('StockReservation.Failure.v1', {
-        sagaId,
-        orderId,
-        reason: error.message,
-        timestamp: new Date().toISOString()
-      });
-    }
+    }) as any;
   }
 
   /**
    * Handle stock release command for Saga compensation
    */
   async handleStockReleaseCommand(event: any): Promise<void> {
-    const { sagaId, orderId } = event.payload || event.data;
-    console.log(`[Saga] Processing StockRelease command (compensation) for saga ${sagaId}, order ${orderId}`);
+    const eventId = event.eventId || event.payload?.sagaId || event.data?.sagaId;
+    return this.eventIdempotency.withIdempotency(eventId, 'InventoryEventHandlers.StockReleaseCommand', async () => {
+      const { sagaId, orderId } = event.payload || event.data;
+      console.log(`[Saga] Processing StockRelease command (compensation) for saga ${sagaId}, order ${orderId}`);
 
-    try {
-      await this.reservationEngine.cancelReservations(orderId);
-      await eventBus.emit('StockRelease.Success.v1', {
-        sagaId,
-        orderId,
-        timestamp: new Date().toISOString()
-      });
-    } catch (error: any) {
-      console.error(`[Saga] Error in StockRelease handler:`, error);
-      await eventBus.emit('StockRelease.Failure.v1', {
-        sagaId,
-        orderId,
-        reason: error.message,
-        timestamp: new Date().toISOString()
-      });
-    }
+      try {
+        await this.reservationEngine.cancelReservations(orderId);
+        await eventBus.publish('StockRelease.Success.v1', {
+          sagaId,
+          orderId,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error: any) {
+        console.error(`[Saga] Error in StockRelease handler:`, error);
+        await eventBus.publish('StockRelease.Failure.v1', {
+          sagaId,
+          orderId,
+          reason: error.message,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }) as any;
   }
 
   /**
    * Handle order creation - reserve stock immediately
    */
   async handleOrderCreated(event: OrderCreatedEvent): Promise<void> {
-    console.log(`Processing OrderCreated event for order ${event.payload.orderId}`);
+    return this.eventIdempotency.withIdempotency(event.eventId, 'InventoryEventHandlers.OrderCreated', async () => {
+      console.log(`Processing OrderCreated event for order ${event.payload.orderId}`);
 
-    try {
-      const result = await this.reservationEngine.reserveStock({
-        orderId: event.payload.orderId,
-        items: event.payload.items.map(item => ({
-          id: item.id,
-          variantId: item.variantId,
-          quantity: item.quantity,
-          price: item.price
-        })),
-        shippingAddress: event.payload.shippingAddress
-      });
+      try {
+        const result = await this.reservationEngine.reserveStock({
+          orderId: event.payload.orderId,
+          items: event.payload.items.map(item => ({
+            id: item.id,
+            variantId: item.variantId,
+            quantity: item.quantity,
+            price: item.price
+          })),
+          shippingAddress: event.payload.shippingAddress
+        });
 
-      if (!result.success) {
-        console.error(`Stock reservation failed for order ${event.payload.orderId}:`, result.error);
-        // In a real implementation, you might want to emit a ReservationFailed event
-        // or trigger order cancellation
-      } else {
-        console.log(`Stock reserved for order ${event.payload.orderId}:`, result.reservations);
+        if (!result.success) {
+          console.error(`Stock reservation failed for order ${event.payload.orderId}:`, result.error);
+        } else {
+          console.log(`Stock reserved for order ${event.payload.orderId}:`, result.reservations);
+        }
+      } catch (error) {
+        console.error(`Error processing OrderCreated for ${event.payload.orderId}:`, error);
       }
-    } catch (error) {
-      console.error(`Error processing OrderCreated for ${event.payload.orderId}:`, error);
-      // Consider implementing retry logic or dead letter queue
-    }
+    }) as any;
   }
 
   /**
    * Handle order cancellation - release reserved stock
    */
   async handleOrderCancelled(event: OrderCancelledEvent): Promise<void> {
-    console.log(`Processing OrderCancelled event for order ${event.payload.orderId}`);
+    return this.eventIdempotency.withIdempotency(event.eventId, 'InventoryEventHandlers.OrderCancelled', async () => {
+      console.log(`Processing OrderCancelled event for order ${event.payload.orderId}`);
 
-    try {
-      await this.reservationEngine.cancelReservations(event.payload.orderId);
-      console.log(`Reservations cancelled for order ${event.payload.orderId}`);
-    } catch (error) {
-      console.error(`Error cancelling reservations for ${event.payload.orderId}:`, error);
-    }
+      try {
+        await this.reservationEngine.cancelReservations(event.payload.orderId);
+        console.log(`Reservations cancelled for order ${event.payload.orderId}`);
+      } catch (error) {
+        console.error(`Error cancelling reservations for ${event.payload.orderId}:`, error);
+      }
+    }) as any;
   }
 
   /**
    * Handle shipment delivery - actually reduce stock
    */
   async handleShipmentDelivered(event: ShipmentDeliveredEvent): Promise<void> {
-    console.log(`Processing ShipmentDelivered event for order ${event.payload.orderId}`);
+    return this.eventIdempotency.withIdempotency(event.eventId, 'InventoryEventHandlers.ShipmentDelivered', async () => {
+      console.log(`Processing ShipmentDelivered event for order ${event.payload.orderId}`);
 
-    try {
-      // First, fulfill the reservations (mark as completed)
-      await this.reservationEngine.fulfillReservations(event.payload.orderId);
+      try {
+        // First, fulfill the reservations (mark as completed)
+        await this.reservationEngine.fulfillReservations(event.payload.orderId);
 
-      // Then, reduce actual stock levels
-      await this.stockManager.reduceStock(event.payload.orderId, event.payload.items);
+        // Then, reduce actual stock levels
+        await this.stockManager.reduceStock(event.payload.orderId, event.payload.items);
 
-      console.log(`Stock fulfilled for order ${event.payload.orderId}`);
-    } catch (error) {
-      console.error(`Error processing shipment delivery for ${event.payload.orderId}:`, error);
-    }
+        console.log(`Stock fulfilled for order ${event.payload.orderId}`);
+      } catch (error) {
+        console.error(`Error processing shipment delivery for ${event.payload.orderId}:`, error);
+      }
+    }) as any;
   }
 
   /**

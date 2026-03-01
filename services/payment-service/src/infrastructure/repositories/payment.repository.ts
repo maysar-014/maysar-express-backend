@@ -6,6 +6,7 @@
 import { PrismaClient } from '@prisma/client';
 import { Payment, PaymentProps, PaymentStatus, PaymentMethod, PaymentProvider } from '../../domain/entities/payment.entity';
 import { IPaymentRepository } from '../../domain/repositories/payment.repository';
+import { OptimisticLockError } from '../../../../shared/errors/optimistic-lock.error';
 
 export class PaymentRepository implements IPaymentRepository {
     constructor(private readonly prisma: PrismaClient) { }
@@ -29,6 +30,7 @@ export class PaymentRepository implements IPaymentRepository {
                 createdAt: props.createdAt,
                 updatedAt: props.updatedAt,
                 completedAt: props.completedAt,
+                version: 0,
             },
         });
     }
@@ -77,8 +79,8 @@ export class PaymentRepository implements IPaymentRepository {
     async update(payment: Payment): Promise<void> {
         const props = payment.toObject();
 
-        await this.prisma.payment.update({
-            where: { id: props.id },
+        const result = await this.prisma.payment_Payment.updateMany({
+            where: { id: props.id, version: props.version },
             data: {
                 status: props.status,
                 metadata: props.metadata as any,
@@ -86,8 +88,13 @@ export class PaymentRepository implements IPaymentRepository {
                 failureReason: props.failureReason,
                 updatedAt: props.updatedAt,
                 completedAt: props.completedAt,
+                version: { increment: 1 },
             },
         });
+
+        if (result.count === 0) {
+            throw new OptimisticLockError('Payment', props.id, props.version);
+        }
     }
 
     async getTotalAmountByUserId(
@@ -170,6 +177,7 @@ export class PaymentRepository implements IPaymentRepository {
             createdAt: data.createdAt,
             updatedAt: data.updatedAt,
             completedAt: data.completedAt,
+            version: data.version,
         };
 
         return new Payment(props);

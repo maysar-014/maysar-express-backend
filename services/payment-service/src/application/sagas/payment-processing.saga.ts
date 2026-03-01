@@ -1,5 +1,6 @@
 import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
 import { ISagaLogRepository, SagaLogEntry } from '@shared/saga/saga.log';
+import { EventIdempotency } from '@shared/middleware/idempotency';
 
 export interface PaymentSagaPayload {
     paymentId: string;
@@ -21,6 +22,8 @@ export interface PaymentSagaContext extends PaymentSagaPayload {
 export class PaymentProcessingSaga extends DistributedSagaOrchestrator<PaymentSagaPayload> {
     protected sagaType = 'PaymentProcessingSaga';
 
+    private eventIdempotency: EventIdempotency;
+
     constructor(
         protected readonly sagaLogRepository: ISagaLogRepository,
         protected readonly serviceName: string,
@@ -28,9 +31,11 @@ export class PaymentProcessingSaga extends DistributedSagaOrchestrator<PaymentSa
         private readonly paymentProviderFactory: any,
         private readonly fraudEngine: any,
         private readonly paymentProcessingEngine: any,
-        protected readonly outbox?: any
+        protected readonly outbox?: any,
+        eventIdempotency?: EventIdempotency
     ) {
         super(sagaLogRepository, serviceName, outbox);
+        this.eventIdempotency = eventIdempotency!;
     }
 
     protected async onStart(sagaId: string, payload: PaymentSagaPayload, correlationId?: string): Promise<void> {
@@ -148,11 +153,11 @@ export class PaymentProcessingSaga extends DistributedSagaOrchestrator<PaymentSa
     }
 
     async handleWalletPaymentProcessed(sagaId: string): Promise<void> {
-        await this.completeStep(sagaId, 'ProcessPayment');
+        await this.eventIdempotency.withIdempotency(sagaId, 'PaymentProcessingSaga.WalletPaymentProcessed', () => this.completeStep(sagaId, 'ProcessPayment'));
     }
 
     async handleWalletPaymentFailed(sagaId: string, error: string): Promise<void> {
-        await this.failStep(sagaId, 'ProcessPayment', error);
+        await this.eventIdempotency.withIdempotency(sagaId, 'PaymentProcessingSaga.WalletPaymentFailed', () => this.failStep(sagaId, 'ProcessPayment', error));
     }
 }
 

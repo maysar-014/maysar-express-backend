@@ -1,0 +1,42 @@
+{
+  "scenarioId": "inventory-race-simulation",
+  "startTime": "2026-03-01T12:59:23.147Z",
+  "endTime": "2026-03-01T13:02:23.147Z",
+  "duration": 180,
+  "totalRequests": 71820,
+  "successfulRequests": 68588,
+  "failedRequests": 3232,
+  "errorRate": 4.5,
+  "responseTimes": {
+    "min": 109,
+    "max": 764,
+    "avg": 273,
+    "p50": 232,
+    "p95": 382,
+    "p99": 600
+  },
+  "throughput": {
+    "rps": 420,
+    "rpm": 25200
+  },
+  "resourceUtilization": {
+    "cpu": 84,
+    "memory": 78,
+    "disk": 36,
+    "network": 55
+  },
+  "bottlenecks": [
+    {
+      "component": "Application Services",
+      "issue": "High error rate under load",
+      "impact": "Service reliability degradation",
+      "recommendation": "Implement circuit breakers and retry logic"
+    }
+  ],
+  "passed": true,
+  "recommendations": [],
+  "customMetrics": {
+    "lockConflicts": 11340,
+    "eventuallySucceeded": 10584
+  }
+}

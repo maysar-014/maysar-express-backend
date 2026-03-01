@@ -1,5 +1,6 @@
 import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
 import { ISagaLogRepository, SagaStatus } from '@shared/saga/saga.log';
+import { EventIdempotency } from '@shared/middleware/idempotency';
 
 export enum TrainingModule {
   SAFETY_BASICS = 'safety_basics',
@@ -61,13 +62,17 @@ export class TrainingSaga extends DistributedSagaOrchestrator<TrainingSagaContex
     { module: TrainingModule.EMERGENCY_PROTOCOLS, minimumScore: 90, validityPeriod: 365, mandatory: true }
   ];
 
+  private readonly eventIdempotency: EventIdempotency;
+
   constructor(
     sagaLogRepository: ISagaLogRepository,
     serviceName: string,
     private readonly trainingRecordRepository: ITrainingRecordRepository,
-    private readonly eligibilityPort: ICourierEligibilityPort
+    private readonly eligibilityPort: ICourierEligibilityPort,
+    eventIdempotency: EventIdempotency
   ) {
     super(sagaLogRepository, serviceName);
+    this.eventIdempotency = eventIdempotency;
   }
 
   protected defineSteps(): SagaStep<TrainingSagaContext>[] {
@@ -168,11 +173,13 @@ export class TrainingSaga extends DistributedSagaOrchestrator<TrainingSagaContex
 
   // External completion method
   async handleTrainingFinished(sagaId: string, score: number): Promise<void> {
-    await this.completeStep(sagaId, 'record_completion', undefined, async (saga) => {
-      const context = saga.payload as TrainingSagaContext;
-      context.score = score;
-      // Optionally update the context in DB here? 
-      // completeStep calls executeNextStep which will pick up the context from memory/passing
-    });
+    await this.eventIdempotency.withIdempotency(
+      `${sagaId}:training_finished:${score}`,
+      'TrainingSaga.TrainingFinished',
+      () => this.completeStep(sagaId, 'record_completion', undefined, async (saga) => {
+        const context = saga.payload as TrainingSagaContext;
+        context.score = score;
+      })
+    );
   }
 }

@@ -72,13 +72,13 @@ global.testUtils = {
 expect.extend({
   toBeValidOrder(received) {
     const pass = received &&
-                typeof received === 'object' &&
-                received.id &&
-                received.buyerId &&
-                received.sellerId &&
-                received.items &&
-                Array.isArray(received.items) &&
-                received.status;
+      typeof received === 'object' &&
+      received.id &&
+      received.buyerId &&
+      received.sellerId &&
+      received.items &&
+      Array.isArray(received.items) &&
+      received.status;
 
     return {
       message: () => `expected ${received} to be a valid order object`,
@@ -88,12 +88,12 @@ expect.extend({
 
   toBeValidPayment(received) {
     const pass = received &&
-                typeof received === 'object' &&
-                received.id &&
-                received.orderId &&
-                received.amount &&
-                received.currency &&
-                received.status;
+      typeof received === 'object' &&
+      received.id &&
+      received.orderId &&
+      received.amount &&
+      received.currency &&
+      received.status;
 
     return {
       message: () => `expected ${received} to be a valid payment object`,
@@ -103,12 +103,12 @@ expect.extend({
 });
 
 // Mock external services
-jest.mock('../src/infrastructure/database/prisma-order.repository');
-jest.mock('../src/infrastructure/database/supabase-order.repository');
-jest.mock('../src/infrastructure/cache/redis-cache');
-jest.mock('../src/infrastructure/monitoring/logger');
-jest.mock('../src/infrastructure/monitoring/metrics');
-jest.mock('../src/infrastructure/messaging/event-publisher');
+jest.mock('@order/infrastructure/database/prisma-order.repository');
+jest.mock('@order/infrastructure/database/supabase-order.repository');
+jest.mock('@order/infrastructure/cache/redis-cache');
+jest.mock('@order/infrastructure/monitoring/logger');
+jest.mock('@order/infrastructure/monitoring/metrics');
+jest.mock('@order/infrastructure/messaging/event-publisher');
 
 // Mock Prisma client
 jest.mock('@prisma/client', () => ({
@@ -182,6 +182,7 @@ jest.mock('ioredis', () => {
 
 // Mock Winston logger
 jest.mock('winston', () => ({
+  addColors: jest.fn(),
   createLogger: jest.fn().mockReturnValue({
     info: jest.fn(),
     error: jest.fn(),
@@ -196,7 +197,11 @@ jest.mock('winston', () => ({
     json: jest.fn(),
     colorize: jest.fn(),
     simple: jest.fn(),
-    printf: jest.fn()
+    printf: jest.fn(),
+    errors: jest.fn(),
+    uncolorize: jest.fn(),
+    splat: jest.fn(),
+    ms: jest.fn()
   },
   transports: {
     Console: jest.fn(),

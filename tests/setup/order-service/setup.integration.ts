@@ -8,7 +8,7 @@ import { PrismaClient } from '@prisma/client';
 
 // Use a separate test database for integration tests
 process.env.DATABASE_URL = process.env.DATABASE_URL_INTEGRATION ||
-                         'postgresql://test:test@localhost:5432/test_integration_db';
+  'postgresql://test:test@localhost:5432/test_integration_db';
 
 // Create a real Prisma client for integration tests (not mocked)
 let prismaClient: PrismaClient | null = null;
@@ -44,10 +44,10 @@ export async function cleanupTestDatabase(): Promise<void> {
 
   try {
     // Clean up in reverse dependency order
-    await prismaClient.settlement.deleteMany();
-    await prismaClient.payment.deleteMany();
-    await prismaClient.orderItem.deleteMany();
-    await prismaClient.order.deleteMany();
+    await (prismaClient as any).commissionPayout?.deleteMany({});
+    await (prismaClient as any).payment_Transaction?.deleteMany({});
+    await (prismaClient as any).checkout_OrderItem?.deleteMany({});
+    await (prismaClient as any).checkout_Order?.deleteMany({});
 
   } catch (error) {
     console.warn('Database cleanup failed:', error);

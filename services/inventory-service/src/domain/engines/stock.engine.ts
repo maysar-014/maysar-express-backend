@@ -17,9 +17,17 @@ export interface StockAvailability {
   confidence: number;
 }
 
+import Redis from 'ioredis';
+import { RedisLock } from '../../../../shared/locking/redis-lock';
+
 export class StockEngine {
   private readonly RESERVATION_TTL = 900; // 15 minutes
   private readonly ACCURACY_TARGET = 99.9;
+
+  constructor(
+    private readonly redis: Redis,
+    private readonly redisLock: RedisLock
+  ) {}
 
   async checkAvailability(productVariantId: string, quantity: number): Promise<StockAvailability> {
     const stockData = await this.getStockData(productVariantId);
@@ -40,42 +48,44 @@ export class StockEngine {
   }
 
   async reserveStock(productVariantId: string, quantity: number, orderId: string): Promise<StockReservation> {
-    const availability = await this.checkAvailability(productVariantId, quantity);
-    
-    if (availability.availableStock < quantity) {
-      throw new Error(`Insufficient stock. Available: ${availability.availableStock}, Requested: ${quantity}`);
-    }
-    
-    const reservationId = this.generateReservationId();
-    const expiresAt = new Date(Date.now() + this.RESERVATION_TTL * 1000);
-    
-    const reservation: StockReservation = {
-      reservationId,
-      productVariantId,
-      quantity,
-      reservedFor: orderId,
-      expiresAt,
-      status: 'active'
-    };
-    
-    // Store reservation with TTL
-    await this.redis.setex(
-      `reservation:${reservationId}`, 
-      this.RESERVATION_TTL, 
-      JSON.stringify(reservation)
-    );
-    
-    // Add to product reservations set
-    await this.redis.zadd(
-      `reservations:${productVariantId}`, 
-      expiresAt.getTime(), 
-      reservationId
-    );
-    
-    // Update reserved quantity
-    await this.redis.incrby(`reserved:${productVariantId}`, quantity);
-    
-    return reservation;
+    return this.redisLock.withLock(`inventory:reserve:${productVariantId}`, 5000, async () => {
+      const availability = await this.checkAvailability(productVariantId, quantity);
+      
+      if (availability.availableStock < quantity) {
+        throw new Error(`Insufficient stock. Available: ${availability.availableStock}, Requested: ${quantity}`);
+      }
+      
+      const reservationId = this.generateReservationId();
+      const expiresAt = new Date(Date.now() + this.RESERVATION_TTL * 1000);
+      
+      const reservation: StockReservation = {
+        reservationId,
+        productVariantId,
+        quantity,
+        reservedFor: orderId,
+        expiresAt,
+        status: 'active'
+      };
+      
+      // Store reservation with TTL
+      await this.redis.setex(
+        `reservation:${reservationId}`, 
+        this.RESERVATION_TTL, 
+        JSON.stringify(reservation)
+      );
+      
+      // Add to product reservations set
+      await this.redis.zadd(
+        `reservations:${productVariantId}`, 
+        expiresAt.getTime(), 
+        reservationId
+      );
+      
+      // Update reserved quantity
+      await this.redis.incrby(`reserved:${productVariantId}`, quantity);
+      
+      return reservation;
+    });
   }
 
   async confirmReservation(reservationId: string): Promise<boolean> {

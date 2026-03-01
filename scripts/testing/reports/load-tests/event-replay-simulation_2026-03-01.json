@@ -1,0 +1,36 @@
+{
+  "scenarioId": "event-replay-simulation",
+  "startTime": "2026-03-01T12:59:23.148Z",
+  "endTime": "2026-03-01T13:01:23.148Z",
+  "duration": 120,
+  "totalRequests": 25200,
+  "successfulRequests": 25187,
+  "failedRequests": 13,
+  "errorRate": 0.05,
+  "responseTimes": {
+    "min": 36,
+    "max": 254,
+    "avg": 91,
+    "p50": 77,
+    "p95": 127,
+    "p99": 200
+  },
+  "throughput": {
+    "rps": 210,
+    "rpm": 12600
+  },
+  "resourceUtilization": {
+    "cpu": 64,
+    "memory": 96,
+    "disk": 41,
+    "network": 52
+  },
+  "bottlenecks": [],
+  "passed": true,
+  "recommendations": [],
+  "customMetrics": {
+    "eventsProcessed": 10000,
+    "duplicatesDetected": 0,
+    "avgDelayMs": 45
+  }
+}

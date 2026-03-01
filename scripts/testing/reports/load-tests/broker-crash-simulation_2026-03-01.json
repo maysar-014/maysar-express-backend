@@ -1,0 +1,49 @@
+{
+  "scenarioId": "broker-crash-simulation",
+  "startTime": "2026-03-01T12:59:23.149Z",
+  "endTime": "2026-03-01T13:03:23.149Z",
+  "duration": 240,
+  "totalRequests": 19152,
+  "successfulRequests": 18290,
+  "failedRequests": 862,
+  "errorRate": 4.5,
+  "responseTimes": {
+    "min": 182,
+    "max": 1274,
+    "avg": 455,
+    "p50": 386,
+    "p95": 637,
+    "p99": 1001
+  },
+  "throughput": {
+    "rps": 84,
+    "rpm": 5040
+  },
+  "resourceUtilization": {
+    "cpu": 72,
+    "memory": 88,
+    "disk": 37,
+    "network": 65
+  },
+  "bottlenecks": [
+    {
+      "component": "Application Services",
+      "issue": "High error rate under load",
+      "impact": "Service reliability degradation",
+      "recommendation": "Implement circuit breakers and retry logic"
+    },
+    {
+      "component": "Infrastructure",
+      "issue": "Low throughput capacity",
+      "impact": "Limited scalability",
+      "recommendation": "Scale up infrastructure or optimize resource allocation"
+    }
+  ],
+  "passed": true,
+  "recommendations": [],
+  "customMetrics": {
+    "messagesLostDuringCrash": 0,
+    "reconnectionTimeMs": 850,
+    "messagesRecoveredFromOutbox": 2016
+  }
+}

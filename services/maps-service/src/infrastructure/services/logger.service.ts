@@ -64,6 +64,17 @@ export class Logger {
         this.logger.debug(message, meta);
     }
 
+    /** legacy support */
+    log(level: string, message: string, meta?: Record<string, any>): void {
+        if (level === 'error') this.error(message, meta);
+        else if (level === 'warn') this.warn(message, meta);
+        else this.info(message, meta);
+    }
+
+    logPerformance(operation: string, duration: number, metadata?: Record<string, any>): void {
+        this.logger.info('Performance', { operation, duration: `${duration}ms`, ...metadata });
+    }
+
     logRequest(method: string, url: string, statusCode: number, duration: number, userId?: string): void {
         const level = statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
         this.logger.log(level, 'HTTP Request', {

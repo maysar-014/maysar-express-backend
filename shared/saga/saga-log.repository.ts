@@ -1,4 +1,4 @@
-import { ISagaLogRepository, SagaLogEntry, SagaStepLog } from './saga.log';
+import { ISagaLogRepository, SagaLogEntry, SagaStatus, SagaStepLog } from './saga.log';
 
 export class PrismaSagaLogRepository implements ISagaLogRepository {
     constructor(private readonly prisma: any) { }
@@ -63,6 +63,17 @@ export class PrismaSagaLogRepository implements ISagaLogRepository {
         return this.prisma.sagaStepLog.findMany({
             where: { sagaId },
             orderBy: { startedAt: 'asc' }
+        });
+    }
+
+    async findStuck(statuses: SagaStatus[], olderThanMs: number): Promise<SagaLogEntry[]> {
+        const cutoff = new Date(Date.now() - olderThanMs);
+        return this.prisma.sagaLog.findMany({
+            where: {
+                status: { in: statuses },
+                updatedAt: { lt: cutoff }
+            },
+            orderBy: { updatedAt: 'asc' }
         });
     }
 }

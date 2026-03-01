@@ -4,11 +4,16 @@ services:
   maysar-backend:
     build: .
     image: maysar-backend:latest
+    restart: unless-stopped
     environment:
       # See .env.example for required configuration
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
       REDIS_URL: redis://redis:6379
       PORT: 3000
+      METRICS_ENABLED: "true"
+      JAEGER_ENDPOINT: "http://jaeger:14268/api/traces"
+      SERVICE_NAME: "maysar-monolith"
+      SERVICE_VERSION: "1.0.0"
     depends_on:
       postgres:
         condition: service_healthy
@@ -19,15 +24,25 @@ services:
     # No volume mounts or dev dependencies in production
     networks:
       - maysar-network
-    restart: unless-stopped
+    # Note: deploy.replicas: 2 requires a load balancer (e.g., Nginx or Traefik) in front.
+    # Refer to docs/scaling-strategy.md for more details.
     deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
       resources:
         limits:
-          cpus: '1.0'
-          memory: 512M
+          cpus: '2.0'
+          memory: 1G
         reservations:
-          cpus: '0.2'
-          memory: 128M
+          cpus: '0.5'
+          memory: 256M
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -35,6 +50,7 @@ services:
 
   postgres:
     image: postgres:15
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-maysar}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -49,15 +65,15 @@ services:
     # No ports exposed to host in production-like setup
     networks:
       - maysar-network
-    restart: unless-stopped
+    command: postgres -c shared_buffers=512MB -c max_connections=200 -c work_mem=4MB
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 512M
+          cpus: '2.0'
+          memory: 2G
         reservations:
-          cpus: '0.2'
-          memory: 128M
+          cpus: '0.5'
+          memory: 512M
 
   redis:
     image: redis:7-alpine
@@ -77,14 +93,111 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: 256M
+          memory: 512M
         reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    networks:
+      - maysar-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    networks:
+      - maysar-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+  postgres-backup:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - maysar-network
+    volumes:
+      - ./scripts/backup/postgres-backup.sh:/backup.sh:ro
+      - backups:/backups
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-maysar}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      BACKUP_DIR: /backups/postgres
+      BACKUP_RETENTION_DAYS: ${POSTGRES_BACKUP_RETENTION_DAYS:-7}
+      S3_BUCKET: ${BACKUP_S3_BUCKET:-}
+    entrypoint: >
+      sh -c "apk add --no-cache aws-cli &&
+             chmod +x /backup.sh &&
+             echo '0 * * * * /backup.sh >> /var/log/postgres-backup.log 2>&1' | crontab - &&
+             crond -f -l 2"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  redis-backup:
+    image: redis:7-alpine
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - maysar-network
+    volumes:
+      - ./scripts/backup/redis-backup.sh:/backup.sh:ro
+      - redis_data:/data:ro
+      - backups:/backups
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis}
+      BACKUP_DIR: /backups/redis
+      BACKUP_RETENTION_DAYS: ${REDIS_BACKUP_RETENTION_DAYS:-7}
+      S3_BUCKET: ${BACKUP_S3_BUCKET:-}
+    entrypoint: >
+      sh -c "apk add --no-cache aws-cli &&
+             chmod +x /backup.sh &&
+             echo '0 * * * * /backup.sh >> /var/log/redis-backup.log 2>&1' | crontab - &&
+             crond -f -l 2"
+    deploy:
+      resources:
+        limits:
           cpus: '0.1'
           memory: 64M
 
 volumes:
   postgres_data:
   redis_data:
+  backups:
 
 
 networks:

@@ -2,6 +2,10 @@ import 'reflect-metadata';
 import { Container } from 'inversify';
 import { MapsServiceApplication } from './app';
 import { logger } from './infrastructure/services/logger.service';
+import { tracingService } from '../../../shared/tracing/openTelemetry';
+
+// Initialize Tracing
+tracingService.start();
 
 async function bootstrap() {
     const container = new Container();

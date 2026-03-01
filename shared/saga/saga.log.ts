@@ -45,4 +45,6 @@ export interface ISagaLogRepository {
     saveStep(step: SagaStepLog, transaction?: any): Promise<void>;
     updateStep(stepId: string, updates: Partial<SagaStepLog>, transaction?: any): Promise<void>;
     getSteps(sagaId: string): Promise<SagaStepLog[]>;
+
+    findStuck(statuses: SagaStatus[], olderThanMs: number): Promise<SagaLogEntry[]>;
 }

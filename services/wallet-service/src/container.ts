@@ -10,8 +10,7 @@ import { WalletEngine } from './domain/engines/wallet.engine';
 import { LimitPolicy } from './domain/policies/wallet-limit.policy';
 import { VelocityCheckPolicy } from './domain/policies/velocity-check.policy';
 import { OutboxRepository } from './infrastructure/messaging/outbox.repository';
-import { RabbitMQEventBus } from './infrastructure/messaging/rabbitmq.event-bus';
-import { inMemoryEventBus } from '@shared-events/in-memory-event-bus';
+import { inMemoryEventBus } from '@shared-events/eventBus';
 import { OutboxProcessor } from './infrastructure/messaging/outbox-processor';
 import { IEventBus } from './infrastructure/messaging/event-bus.interface';
 import { IdempotencyRepository } from './infrastructure/repositories/idempotency.repository';
@@ -32,6 +31,7 @@ import { NotificationAdapter } from './infrastructure/adapters/notification.adap
 import { PaymentServiceClient } from './infrastructure/clients/payment-service.client';
 import { TopUpWalletUseCase } from './application/use-cases/top-up-wallet.use-case';
 import { PaymentCompletedHandler } from './infrastructure/messaging/payment-completed.handler';
+import { EventIdempotency } from '@shared/middleware/idempotency';
 import { PayoutServiceClient } from './infrastructure/clients/payout-service.client';
 import { InitiatePayoutFromWalletUseCase } from './application/use-cases/initiate-payout-from-wallet.use-case';
 import { provideSagaLogRepository } from './infrastructure/repositories/saga.repository';
@@ -133,7 +133,8 @@ export class Container {
         );
 
         // Event Handlers
-        const paymentCompletedHandler = new PaymentCompletedHandler(creditUseCase);
+        const eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, this.prisma);
+        const paymentCompletedHandler = new PaymentCompletedHandler(creditUseCase, eventIdempotency);
         this.eventBus.subscribe('PaymentCompleted', paymentCompletedHandler.handle.bind(paymentCompletedHandler));
 
         // Jobs

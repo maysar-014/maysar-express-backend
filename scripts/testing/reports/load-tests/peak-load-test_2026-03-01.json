@@ -1,0 +1,32 @@
+{
+  "scenarioId": "peak-load-test",
+  "startTime": "2026-03-01T12:59:23.081Z",
+  "endTime": "2026-03-01T13:09:23.081Z",
+  "duration": 600,
+  "totalRequests": 504000,
+  "successfulRequests": 499464,
+  "failedRequests": 4536,
+  "errorRate": 0.9,
+  "responseTimes": {
+    "min": 96,
+    "max": 676,
+    "avg": 241,
+    "p50": 205,
+    "p95": 338,
+    "p99": 531
+  },
+  "throughput": {
+    "rps": 840,
+    "rpm": 50400
+  },
+  "resourceUtilization": {
+    "cpu": 85,
+    "memory": 72,
+    "disk": 44,
+    "network": 62
+  },
+  "bottlenecks": [],
+  "passed": true,
+  "recommendations": [],
+  "customMetrics": {}
+}

@@ -1,6 +1,6 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { eventBus } from '../src/events/eventBus';
+import { eventBus } from '@shared-events/eventBus';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
 import { SearchEngineInitializer } from './src/infrastructure/search-initializer';

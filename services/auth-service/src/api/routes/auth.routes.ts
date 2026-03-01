@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { validateRequest } from '../middleware/validation.middleware';
 import { asyncHandler } from '../middleware/error-handler.middleware';
 import { rateLimit } from '../middleware/rate-limiting.middleware';
+import { csrfValidationMiddleware } from '../../../../../shared/middleware/csrf.middleware';
+
 // Export factory function instead of router instance directly
 export const createAuthRoutes = (authController: any): Router => { // Using any for controller to avoid type issues if imports vary, but ideally AuthController
   const router = Router();
@@ -16,7 +18,8 @@ export const createAuthRoutes = (authController: any): Router => { // Using any 
    */
   router.post(
     '/login',
-    rateLimit({ windowMs: 15 * 60 * 1000, max: 5 }), // Stricter limit for login
+    rateLimit({ windowMs: 15 * 60 * 1000, max: 5, prefix: 'rl:login:' }), // Stricter limit for login
+    csrfValidationMiddleware,
     validateRequest({
       body: {
         email: { type: 'string', required: true, format: 'email' },
@@ -33,11 +36,7 @@ export const createAuthRoutes = (authController: any): Router => { // Using any 
    */
   router.post(
     '/logout',
-    validateRequest({
-      body: {
-        refreshToken: { type: 'string', required: true }
-      }
-    }),
+    csrfValidationMiddleware,
     asyncHandler(authController.logout.bind(authController))
   );
 
@@ -47,11 +46,6 @@ export const createAuthRoutes = (authController: any): Router => { // Using any 
    */
   router.post(
     '/refresh',
-    validateRequest({
-      body: {
-        refreshToken: { type: 'string', required: true }
-      }
-    }),
     asyncHandler(authController.refreshToken.bind(authController))
   );
 
@@ -79,7 +73,8 @@ export const createAuthRoutes = (authController: any): Router => { // Using any 
    */
   router.post(
     '/forgot-password',
-    rateLimit({ windowMs: 60 * 60 * 1000, max: 3 }), // 3 requests per hour
+    rateLimit({ windowMs: 60 * 60 * 1000, max: 3, prefix: 'rl:forgot-pwd:' }), // 3 requests per hour
+    csrfValidationMiddleware,
     validateRequest({
       body: {
         email: { type: 'string', required: true, format: 'email' }
@@ -94,6 +89,7 @@ export const createAuthRoutes = (authController: any): Router => { // Using any 
    */
   router.post(
     '/reset-password',
+    csrfValidationMiddleware,
     validateRequest({
       body: {
         token: { type: 'string', required: true, minLength: 32 },
@@ -114,6 +110,7 @@ export const createAuthRoutes = (authController: any): Router => { // Using any 
    */
   router.post(
     '/2fa/enable',
+    csrfValidationMiddleware,
     validateRequest({
       body: {
         password: { type: 'string', required: true },
@@ -129,6 +126,7 @@ export const createAuthRoutes = (authController: any): Router => { // Using any 
    */
   router.post(
     '/2fa/disable',
+    csrfValidationMiddleware,
     validateRequest({
       body: {
         password: { type: 'string', required: true }

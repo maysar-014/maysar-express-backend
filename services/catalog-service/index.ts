@@ -1,5 +1,13 @@
 import { Router } from 'express';
 import { Module } from '../../src/core/module.interface';
+import { logger } from './src/infrastructure/services/logger.service';
+import { PrismaClient } from '@prisma/client';
+import { TransactionalOutbox } from '../../shared/outbox/outboxPattern';
+import { OutboxProcessor } from '../../shared/outbox/outbox.processor';
+import { eventBus } from '../../shared/events/eventBus';
+import { initializeEventRegistry } from '../../shared/events/registry';
+
+let outboxProcessor: OutboxProcessor | null = null;
 
 // Campaign service integration
 let campaignRoutes: Router | null = null;
@@ -7,7 +15,9 @@ try {
     const { createCampaignRoutes } = require('./src/campaigns/api/routes/campaign.routes');
     campaignRoutes = createCampaignRoutes();
 } catch (e) {
-    console.warn('Campaign routes not available:', e);
+    // Basic logger not yet available here safely if it depends on infrastructure, 
+    // but we can use appLogger or just wait until init.
+    // For now, let's just keep the catch quiet or use a temporary logger.
 }
 
 // Pricing service integration
@@ -16,13 +26,15 @@ try {
     const { createPricingRouter } = require('./src/pricing/api/routes');
     pricingRoutes = createPricingRouter();
 } catch (e) {
-    console.warn('Pricing routes not available:', e);
 }
 
 export const CatalogModule: Module = {
     name: 'catalog-service',
     initialize: async () => {
-        console.log('Initializing catalog-service module (fully merged)');
+        logger.info('Initializing catalog-service module (fully merged)');
+
+        // Initialize event registry
+        initializeEventRegistry();
 
         // Initialize campaign event handlers
         try {
@@ -31,26 +43,37 @@ export const CatalogModule: Module = {
             const { ProductDeletedHandler } = require('./src/campaigns/application/handlers/product-deleted.handler');
             const { CategoryDeletedHandler } = require('./src/campaigns/application/handlers/category-deleted.handler');
 
-            const eventBus = container.get<any>(TYPES.EventBus);
-            const productDeletedHandler = container.get<ProductDeletedHandler>(TYPES.ProductDeletedHandler);
-            const categoryDeletedHandler = container.get<CategoryDeletedHandler>(TYPES.CategoryDeletedHandler);
+            const eventBus = container.get(TYPES.EventBus);
+            const productDeletedHandler = container.get(TYPES.ProductDeletedHandler);
+            const categoryDeletedHandler = container.get(TYPES.CategoryDeletedHandler);
 
             if (eventBus) {
                 eventBus.subscribe('ProductDeleted', (event: any) => productDeletedHandler.handle(event));
                 eventBus.subscribe('CategoryDeleted', (event: any) => categoryDeletedHandler.handle(event));
-                console.log('Campaign handlers subscribed to events');
+                logger.info('Campaign handlers subscribed to events');
             }
         } catch (e) {
-            console.warn('Campaign handlers not initialized:', e);
+            logger.warn('Campaign handlers not initialized:', e);
         }
 
         // Initialize pricing
         try {
             const { pricingContainer } = require('./src/pricing/container');
             // Additional pricing init if needed
-            console.log('Pricing module initialized');
+            logger.info('Pricing module initialized');
         } catch (e) {
-            console.warn('Pricing handlers not initialized:', e);
+            logger.warn('Pricing handlers not initialized:', e);
+        }
+
+        // Initialize and start OutboxProcessor
+        try {
+            const prisma = new PrismaClient();
+            const outbox = new TransactionalOutbox(prisma, 'catalogOutboxEvent');
+            outboxProcessor = new OutboxProcessor(prisma, outbox, eventBus, 'catalog-service');
+            outboxProcessor.start();
+            logger.info('Catalog-service outbox processor started');
+        } catch (e) {
+            logger.error('Failed to start catalog-service outbox processor:', e);
         }
     },
     routes: (() => {
@@ -79,6 +102,9 @@ export const CatalogModule: Module = {
         return router;
     })(),
     shutdown: async () => {
-        console.log('Shutting down catalog-service module');
+        logger.info('Shutting down catalog-service module');
+        if (outboxProcessor) {
+            outboxProcessor.stop();
+        }
     }
 };

@@ -18,6 +18,11 @@ import { PrismaEnablerRepository } from './infrastructure/repositories/prisma-en
 import { PrismaProductListingRepository } from './infrastructure/repositories/prisma-product-listing.repository';
 import { PrismaEnablerOrderRepository } from './infrastructure/repositories/prisma-enabler-order.repository';
 import { EnablerEventPublisher } from './infrastructure/messaging/enabler-event-publisher';
+import { tracingService, correlationMiddleware } from '../../../shared/tracing/openTelemetry';
+import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
+
+// Initialize Tracing
+tracingService.start();
 
 // API
 import { EnablerController } from './api/controllers/enabler.controller';
@@ -34,7 +39,7 @@ import hubRoutes from './api/routes/hub.routes';
 class EnablerService {
     private app: express.Application;
     private prisma: PrismaClient;
-    private eventPublisher: EnablerEventPublisher;
+    private eventPublisher!: EnablerEventPublisher;
     private logger: winston.Logger;
 
     constructor() {
@@ -87,6 +92,13 @@ class EnablerService {
         this.app.use(compression());
         this.app.use(express.json());
         this.app.use(express.urlencoded({ extended: true }));
+        this.app.use(correlationMiddleware());
+
+        // Prometheus metrics
+        this.app.get('/metrics', async (req, res) => {
+            res.set('Content-Type', metricsRegistry.contentType);
+            res.end(await metricsRegistry.metrics());
+        });
 
         this.app.use((req, res, next) => {
             this.logger.info(`${req.method} ${req.path}`);
