@@ -10,6 +10,7 @@ import { createNotificationRoutes } from './api/routes/notification.routes';
 import { createTemplateRoutes } from './api/routes/template.routes';
 import { createPreferenceRoutes } from './api/routes/preference.routes';
 import { createSmsRouter } from './sms/api/routes';
+import { eventBus } from '@shared/events/eventBus';
 
 import { healthRoutes } from './api/routes/health.routes';
 import { errorHandler } from './api/middleware/error.middleware';
@@ -198,12 +199,55 @@ class NotificationServiceApplication {
     } catch (error) {
       logger.warn('⚠️ Failed to initialize Notification Saga Event Handlers', { error });
     }
+
+    // Initialize Saga Recovery Worker
+    try {
+      const { NotificationDeliverySaga } = await import('./application/sagas/notification-delivery.saga');
+      const { BatchNotificationSaga } = await import('./application/sagas/batch-notification.saga');
+      const { ScheduledNotificationSaga } = await import('./application/sagas/scheduled-notification.saga');
+      const { sagaLogRepository } = await import('./infrastructure/repositories/saga.repository');
+      const { SagaRecoveryWorker } = await import('@shared/saga/saga-recovery.worker');
+      const { DistributedSagaOrchestrator } = await import('@shared/saga/saga.orchestrator');
+
+      const notificationDeliverySaga = new NotificationDeliverySaga(
+        notificationRepository,
+        preferenceRepository,
+        validationService,
+        sendViaChannel,
+        recordMetrics
+      );
+      
+      const batchNotificationSaga = new BatchNotificationSaga(async (n) => {
+        await triggerDeliverySaga(n);
+      });
+      
+      const scheduledNotificationSaga = new ScheduledNotificationSaga(
+        notificationRepository,
+        triggerDeliverySaga
+      );
+      
+      const orchestratorRegistry = new Map<string, DistributedSagaOrchestrator<unknown>>();
+      orchestratorRegistry.set('NotificationDeliverySaga', notificationDeliverySaga as DistributedSagaOrchestrator<unknown>);
+      orchestratorRegistry.set('BatchNotificationSaga', batchNotificationSaga as DistributedSagaOrchestrator<unknown>);
+      orchestratorRegistry.set('ScheduledNotificationSaga', scheduledNotificationSaga as DistributedSagaOrchestrator<unknown>);
+
+      const sagaRecoveryWorker = new SagaRecoveryWorker(sagaLogRepository, orchestratorRegistry, {
+        stuckThresholdMs: 5 * 60 * 1000,
+        pollIntervalMs: 60 * 1000
+      });
+      sagaRecoveryWorker.start();
+
+      logger.info('✅ Saga Recovery Worker initialized with 3 registered saga types');
+    } catch (error) {
+      logger.warn('⚠️ Failed to initialize Saga Recovery Worker', { error });
+    }
   }
 
   private setupGracefulShutdown(): void {
     const shutdown = async (signal: string) => {
       logger.info(`Received ${signal}, shutting down...`);
       try {
+        await eventBus.shutdown();
         await DatabaseConnection.close();
         process.exit(0);
       } catch (error) {

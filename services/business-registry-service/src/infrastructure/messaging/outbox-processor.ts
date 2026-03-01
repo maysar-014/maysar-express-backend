@@ -1,10 +1,3 @@
-import {
-  BusinessRegisteredEvent,
-  BusinessVerifiedEvent,
-  BusinessSuspendedEvent,
-  BusinessReactivatedEvent,
-  BusinessUpdatedEvent
-} from '../../domain/events';
 import { IOutboxRepository, OutboxEventRecord } from '../repositories/outbox.repository';
 import { SagaEventHandler } from '../../application/sagas/saga-event-handler';
 import { logger } from '../services/logger.service';
@@ -46,84 +39,14 @@ export class OutboxProcessor {
   private async processEvent(record: OutboxEventRecord): Promise<void> {
     const { eventType } = record;
 
-    // Publish to Kafka event bus
+    // Publish to Kafka event bus - saga handlers will be invoked via setupSubscriptions
     await eventBus.publish(eventType, record.eventData, {
       eventId: record.eventId,
       source: 'business-registry-service'
     });
 
     logger.debug('Published event to Kafka', { eventType, eventId: record.eventId });
-
-    // Invoke saga handler based on event type
-    const domainEvent = this.reconstructEvent(record);
-    if (!domainEvent) {
-      logger.warn('OutboxProcessor: unknown event type', { eventType });
-      return;
-    }
-
-    switch (eventType) {
-      case 'BusinessRegistered':
-        await this.sagaEventHandler.handleBusinessRegisteredEvent(domainEvent as BusinessRegisteredEvent);
-        break;
-      case 'BusinessVerified':
-        await this.sagaEventHandler.handleBusinessVerifiedEvent(domainEvent as BusinessVerifiedEvent);
-        break;
-      case 'BusinessSuspended':
-        await this.sagaEventHandler.handleBusinessSuspendedEvent(domainEvent as BusinessSuspendedEvent);
-        break;
-      case 'BusinessUpdated':
-        await this.sagaEventHandler.handleBusinessUpdatedEvent(domainEvent as BusinessUpdatedEvent);
-        break;
-      case 'BusinessReactivated':
-        await this.sagaEventHandler.handleBusinessReactivatedEvent(domainEvent as BusinessReactivatedEvent);
-        break;
-      default:
-        logger.warn('OutboxProcessor: no saga handler for event type', { eventType });
-    }
   }
 
-  private reconstructEvent(record: OutboxEventRecord): unknown {
-    const { eventType, eventData } = record;
-    const p = eventData as Record<string, unknown>;
 
-    switch (eventType) {
-      case 'BusinessRegistered':
-        return new BusinessRegisteredEvent(
-          p.aggregateId as string,
-          p.ownerId as string,
-          p.businessType as never,
-          p.registrationNumber as string,
-          p.metadata as Record<string, unknown>
-        );
-      case 'BusinessVerified':
-        return new BusinessVerifiedEvent(
-          p.aggregateId as string,
-          p.verifiedBy as string,
-          p.ownerId as string,
-          p.metadata as Record<string, unknown>
-        );
-      case 'BusinessSuspended':
-        return new BusinessSuspendedEvent(
-          p.aggregateId as string,
-          p.suspendedBy as string,
-          p.reason as string | undefined,
-          p.metadata as Record<string, unknown>
-        );
-      case 'BusinessUpdated':
-        return new BusinessUpdatedEvent(
-          p.aggregateId as string,
-          p.updatedBy as string,
-          (p.changes as string[]) ?? [],
-          p.metadata as Record<string, unknown>
-        );
-      case 'BusinessReactivated':
-        return new BusinessReactivatedEvent(
-          p.aggregateId as string,
-          p.reactivatedBy as string,
-          p.metadata as Record<string, unknown>
-        );
-      default:
-        return null;
-    }
-  }
 }

@@ -15,7 +15,14 @@ export class PrismaClientManager {
     return PrismaClientManager.instance;
   }
 
-  async getClient(): Promise<PrismaClient> {
+  getClient(): PrismaClient {
+    if (!this.client) {
+      throw new Error('Prisma client not initialized. Call connect() first.');
+    }
+    return this.client;
+  }
+
+  async getClientAsync(): Promise<PrismaClient> {
     if (!this.client) {
       await this.connect();
     }

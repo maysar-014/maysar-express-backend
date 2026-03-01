@@ -162,4 +162,6 @@ export class SagaEventHandler {
   }
 }
 
-
+// Singleton instance using shared service instances for backward compatibility with use-cases
+import { emailService, notificationClient } from '../../infrastructure/services/service-instances';
+export const sagaEventHandler = new SagaEventHandler(emailService, notificationClient);

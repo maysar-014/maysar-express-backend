@@ -10,7 +10,13 @@ import { ProductType } from '../../value-objects/product-types.value-object';
 
 describe('PricingEngine', () => {
   let engine: PricingEngine;
-  let baseContext: any;
+  let baseContext: {
+    productType: ProductType;
+    demandLevel: 'low' | 'medium' | 'high';
+    seasonalityFactor: number;
+    sellerReputation: number;
+    productCondition: 'new' | 'used' | 'refurbished';
+  };
 
   beforeEach(() => {
     engine = new PricingEngine();

@@ -1,6 +1,6 @@
 import { CreditWalletUseCase } from '../../application/use-cases/credit-wallet.use-case';
 import { AuditInfo, ActorType } from '../../domain/value-objects/audit-info.value-object';
-import { EventEnvelope } from '../../../../shared-contracts/types';
+import { EventEnvelope } from '../../../../../shared/events/eventBus';
 import { EventIdempotency } from '@shared/middleware/idempotency';
 
 interface PaymentCompletedEvent {
@@ -17,40 +17,40 @@ export class PaymentCompletedHandler {
         private readonly eventIdempotency: EventIdempotency
     ) { }
 
-    async handle(event: EventEnvelope<PaymentCompletedEvent>): Promise<void> {
-        const { payload } = event;
+    async handle(event: EventEnvelope): Promise<void> {
+        const { data } = event;
 
         // Check if this payment is for a wallet top-up
-        if (!payload.orderId || !payload.orderId.startsWith('TOPUP_')) {
-            console.log(`[PaymentCompletedHandler] Skipping non-top-up payment: ${payload.orderId}`);
+        if (!data.orderId || !data.orderId.startsWith('TOPUP_')) {
+            console.log(`[PaymentCompletedHandler] Skipping non-top-up payment: ${data.orderId}`);
             return;
         }
 
         return this.eventIdempotency.withIdempotency(
-            payload.paymentId,
+            data.paymentId,
             'PaymentCompletedHandler',
             async () => {
-                console.log(`[PaymentCompletedHandler] Processing top-up for user ${payload.userId}, amount ${payload.amount}`);
+                console.log(`[PaymentCompletedHandler] Processing top-up for user ${data.userId}, amount ${data.amount}`);
 
                 try {
                     await this.creditWalletUseCase.execute({
-                        userId: payload.userId,
-                        amount: payload.amount,
-                        currency: payload.currency,
-                        description: `Wallet top-up via ${payload.orderId}`,
-                        idempotencyKey: `topup_${payload.paymentId}`, // Use paymentId for idempotency
-                        correlationId: payload.paymentId,
+                        userId: data.userId,
+                        amount: data.amount,
+                        currency: data.currency,
+                        description: `Wallet top-up via ${data.orderId}`,
+                        idempotencyKey: `topup_${data.paymentId}`, // Use paymentId for idempotency
+                        correlationId: data.paymentId,
                         auditInfo: new AuditInfo({
                             actor: 'system',
                             actorType: ActorType.SYSTEM,
                             action: 'WALLET_TOPUP',
-                            reason: `Payment ${payload.paymentId} completed`,
+                            reason: `Payment ${data.paymentId} completed`,
                             timestamp: new Date()
                         })
                     });
-                    console.log(`[PaymentCompletedHandler] Wallet successfully credited for user ${payload.userId}`);
+                    console.log(`[PaymentCompletedHandler] Wallet successfully credited for user ${data.userId}`);
                 } catch (error) {
-                    console.error(`[PaymentCompletedHandler] Failed to credit wallet for user ${payload.userId}:`, error);
+                    console.error(`[PaymentCompletedHandler] Failed to credit wallet for user ${data.userId}:`, error);
                     // In production, this would be retried or moved to a dead letter queue
                 }
             }

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { DatabaseConnection } from '../../infrastructure/database/prisma-client';
 // rate limiting removed from this service; monitoring disabled
 import { logger } from '../../infrastructure/services/logger.service';
+import { eventBus } from '@shared/events/eventBus';
 
 const router = Router();
 
@@ -20,6 +21,20 @@ router.get('/', async (_req: Request, res: Response) => {
     // Memory usage
     const memUsage = process.memoryUsage();
     const uptime = process.uptime();
+
+    const dlq = eventBus.getDLQ();
+    const eventBusMetrics = {
+      subscribers: {
+        UserCreated: eventBus.getSubscriberCount('UserCreated'),
+        UserUpdated: eventBus.getSubscriberCount('UserUpdated'),
+        UserVerified: eventBus.getSubscriberCount('UserVerified')
+      },
+      dlqSizes: {
+        UserCreated: dlq.get('UserCreated')?.length ?? 0,
+        UserUpdated: dlq.get('UserUpdated')?.length ?? 0,
+        UserVerified: dlq.get('UserVerified')?.length ?? 0
+      }
+    };
 
     const healthCheck = {
       status: 'healthy',
@@ -56,6 +71,8 @@ router.get('/', async (_req: Request, res: Response) => {
           pid: process.pid
         }
       },
+
+      eventBus: eventBusMetrics,
 
       responseTime: `${Date.now() - startTime}ms`
     };

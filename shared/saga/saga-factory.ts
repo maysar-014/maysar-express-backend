@@ -22,6 +22,14 @@ export class SagaFactory {
     }
 
     /**
+     * Register an orchestrator by its saga type.
+     * Used to ensure recovery worker can find orchestrators by the sagaType string.
+     */
+    static registerByType(sagaType: string, orchestrator: DistributedSagaOrchestrator): void {
+        this.instances.set(sagaType, orchestrator);
+    }
+
+    /**
      * Returns the internal orchestrator registry map.
      * Used by SagaRecoveryWorker to look up orchestrators by saga type.
      */

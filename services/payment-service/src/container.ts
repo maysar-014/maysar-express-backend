@@ -29,6 +29,7 @@ import { PaymentEventHandlers } from './infrastructure/events/payment.event-hand
 import { PrismaSagaLogRepository } from '../../../shared/saga/saga-log.repository';
 import { ISagaLogRepository } from '../../../shared/saga/saga.log';
 import { EventIdempotency } from '@shared/middleware/idempotency';
+import { SagaFactory } from '@shared/saga/saga-factory';
 
 
 export class Container {
@@ -85,6 +86,9 @@ export class Container {
         this.refundRepository = new RefundRepository(this.prisma);
         this.fraudRepository = new FraudRepository(this.prisma);
         this.outboxRepository = new OutboxRepository(this.prisma);
+
+        // Messaging - MUST be assigned before OutboxProcessor construction
+        this.eventBus = inMemoryEventBus;
         this.outboxProcessor = new OutboxProcessor(this.outboxRepository, this.eventBus);
 
         // Helper casting
@@ -93,9 +97,6 @@ export class Container {
 
         // Clients
         this.walletServiceClient = new WalletServiceClient(process.env.WALLET_SERVICE_URL || 'http://wallet-service:3002');
-
-        // Messaging
-        this.eventBus = inMemoryEventBus;
 
         // Providers
         this.pesapalAdapter = new PesapalAdapter();
@@ -157,6 +158,7 @@ export class Container {
             this.outboxRepository,
             eventIdempotency
         );
+        SagaFactory.registerByType('PaymentProcessingSaga', this.paymentProcessingSaga);
 
         this.sagaEventHandler = new SagaEventHandler(
             this.paymentProcessingSaga,

@@ -10,8 +10,9 @@ import { errorHandler } from './api/middleware/error.middleware';
 import { requestLogger } from './api/middleware/request-logger.middleware';
 import { validationErrorHandler } from './api/middleware/validation.middleware';
 import { correlationMiddleware, tracingService } from '../../../shared/tracing/openTelemetry';
-import { prisma } from './infrastructure/database/prisma.client';
 import { metricsRegistry } from './infrastructure/monitoring/metrics';
+import { eventBus } from '@shared/events/eventBus';
+import type { DistributedSagaOrchestrator } from '@shared/saga/saga.orchestrator';
 
 /**
  * User Service - Enterprise-grade user management microservice
@@ -29,7 +30,6 @@ class UserServiceApplication {
     this.initializeMiddleware();
     this.initializeRoutes();
     this.initializeErrorHandling();
-    this.initializeEventHandlers();
   }
 
   /**
@@ -111,7 +111,7 @@ class UserServiceApplication {
       strict: true,
       verify: (_req, _res, buf) => {
         // Store raw body for webhook signature verification
-        (_req as any).rawBody = buf;
+        (_req as express.Request & { rawBody: Buffer }).rawBody = buf;
       }
     }));
 
@@ -202,18 +202,55 @@ class UserServiceApplication {
     }
 
     try {
-      const { EmailService } = await import('./infrastructure/services/email.service');
-      const { notificationClient } = await import('./application/sagas/service-clients');
+      const { emailService, notificationClient } = await import('./infrastructure/services/service-instances');
       const { SagaEventHandler } = await import('./application/sagas/saga-event-handler');
       const { eventBus } = await import('@shared/events/eventBus');
 
-      const emailService = new EmailService();
       const sagaEventHandler = new SagaEventHandler(emailService, notificationClient);
       sagaEventHandler.setupSubscriptions(eventBus);
 
       logger.info('✅ Saga Event Handlers initialized');
     } catch (error) {
       logger.warn('⚠️ Failed to initialize Saga Event Handlers', { error });
+    }
+
+    // Initialize Saga Recovery Worker
+    try {
+      const { UserRegistrationSaga } = await import('./application/sagas/user-registration.saga');
+      const { TwoFactorSetupSaga } = await import('./application/sagas/two-factor-setup.saga');
+      const { SecurityPolicyBreachSaga } = await import('./application/sagas/security-policy-breach.saga');
+      const { RoleChangeSaga } = await import('./application/sagas/role-change.saga');
+      const { ProfileUpdateSaga } = await import('./application/sagas/profile-update.saga');
+      const { PhoneVerificationSaga } = await import('./application/sagas/phone-verification.saga');
+      const { PasswordResetSaga } = await import('./application/sagas/password-reset.saga');
+      const { EmailVerificationSaga } = await import('./application/sagas/email-verification.saga');
+      const { AccountSuspensionSaga } = await import('./application/sagas/account-suspension.saga');
+      const { AccountDeletionSaga } = await import('./application/sagas/account-deletion.saga');
+      const { emailService, notificationClient } = await import('./infrastructure/services/service-instances');
+      const { sagaLogRepository } = await import('./infrastructure/repositories/saga.repository');
+      const { SagaRecoveryWorker } = await import('@shared/saga/saga-recovery.worker');
+
+      const orchestratorRegistry = new Map<string, DistributedSagaOrchestrator<unknown>>();
+      orchestratorRegistry.set('UserRegistrationSaga', new UserRegistrationSaga(emailService, notificationClient) as DistributedSagaOrchestrator<unknown>);
+      orchestratorRegistry.set('TwoFactorSetupSaga', new TwoFactorSetupSaga(emailService, notificationClient) as DistributedSagaOrchestrator<unknown>);
+      orchestratorRegistry.set('SecurityPolicyBreachSaga', new SecurityPolicyBreachSaga(emailService, notificationClient) as DistributedSagaOrchestrator<unknown>);
+      orchestratorRegistry.set('RoleChangeSaga', new RoleChangeSaga(emailService, notificationClient) as DistributedSagaOrchestrator<unknown>);
+      orchestratorRegistry.set('ProfileUpdateSaga', new ProfileUpdateSaga(emailService, notificationClient) as DistributedSagaOrchestrator<unknown>);
+      orchestratorRegistry.set('PhoneVerificationSaga', new PhoneVerificationSaga(emailService, notificationClient) as DistributedSagaOrchestrator<unknown>);
+      orchestratorRegistry.set('PasswordResetSaga', new PasswordResetSaga(emailService, notificationClient) as DistributedSagaOrchestrator<unknown>);
+      orchestratorRegistry.set('EmailVerificationSaga', new EmailVerificationSaga(emailService, notificationClient) as DistributedSagaOrchestrator<unknown>);
+      orchestratorRegistry.set('AccountSuspensionSaga', new AccountSuspensionSaga(emailService, notificationClient) as DistributedSagaOrchestrator<unknown>);
+      orchestratorRegistry.set('AccountDeletionSaga', new AccountDeletionSaga(emailService, notificationClient) as DistributedSagaOrchestrator<unknown>);
+
+      const sagaRecoveryWorker = new SagaRecoveryWorker(sagaLogRepository, orchestratorRegistry, {
+        stuckThresholdMs: 5 * 60 * 1000,
+        pollIntervalMs: 60 * 1000
+      });
+      sagaRecoveryWorker.start();
+
+      logger.info('✅ Saga Recovery Worker initialized with 10 registered saga types');
+    } catch (error) {
+      logger.warn('⚠️ Failed to initialize Saga Recovery Worker', { error });
     }
   }
 
@@ -227,6 +264,9 @@ class UserServiceApplication {
 
       // Initialize database connection
       await DatabaseConnection.initialize();
+
+      // Initialize event handlers before starting server
+      await this.initializeEventHandlers();
 
       // Start HTTP server
       this.app.listen(this.port, '0.0.0.0', () => {
@@ -254,6 +294,7 @@ class UserServiceApplication {
       logger.info(`Received ${signal}, initiating graceful shutdown...`);
 
       try {
+        await eventBus.shutdown();
         // Close database connections
         await DatabaseConnection.close();
 

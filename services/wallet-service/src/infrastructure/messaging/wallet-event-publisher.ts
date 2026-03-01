@@ -30,4 +30,12 @@ export class WalletEventPublisher {
     async publishWalletPayoutInitiated(event: any): Promise<void> {
         await this.eventBus.publish('WalletPayoutInitiated', event);
     }
+
+    async publishWalletPaymentProcessed(event: any): Promise<void> {
+        await this.eventBus.publish('WalletPaymentProcessed', event);
+    }
+
+    async publishWalletPaymentFailed(event: any): Promise<void> {
+        await this.eventBus.publish('WalletPaymentFailed', event);
+    }
 }

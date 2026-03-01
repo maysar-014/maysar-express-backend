@@ -46,11 +46,11 @@ export class PaymentEventHandlers {
 
             await eventBus.publish('TransactionDetailsFetched', {
                 transactionId, transaction, relatedTransactions, adminId
-            }, { correlationId: envelope.metadata.correlationId });
+            }, { correlationId: envelope.metadata?.correlationId });
         } catch (error: any) {
             await eventBus.publish('TransactionDetailsFetchFailed', {
                 transactionId, error: error.message
-            }, { correlationId: envelope.metadata.correlationId });
+            }, { correlationId: envelope.metadata?.correlationId });
         }
     }
 
@@ -66,11 +66,11 @@ export class PaymentEventHandlers {
 
             await eventBus.publish('FraudAnalysisCompleted', {
                 transactionId, fraudAnalysis, adminId
-            }, { correlationId: envelope.metadata.correlationId });
+            }, { correlationId: envelope.metadata?.correlationId });
         } catch (error: any) {
             await eventBus.publish('FraudAnalysisFailed', {
                 transactionId, error: error.message
-            }, { correlationId: envelope.metadata.correlationId });
+            }, { correlationId: envelope.metadata?.correlationId });
         }
     }
 
@@ -92,9 +92,9 @@ export class PaymentEventHandlers {
             payment.updateMetadata({ blockedBy: adminId, blockedAt: new Date(), blockReason: reason });
             await this.paymentRepository.update(payment);
 
-            await eventBus.publish('TransactionBlockProcessed', { transactionId, adminId }, { correlationId: envelope.metadata.correlationId });
+            await eventBus.publish('TransactionBlockProcessed', { transactionId, adminId }, { correlationId: envelope.metadata?.correlationId });
         } catch (error: any) {
-            await eventBus.publish('TransactionBlockFailed', { transactionId, error: error.message }, { correlationId: envelope.metadata.correlationId });
+            await eventBus.publish('TransactionBlockFailed', { transactionId, error: error.message }, { correlationId: envelope.metadata?.correlationId });
         }
     }
 
@@ -102,9 +102,9 @@ export class PaymentEventHandlers {
         const { transactionId, adminId, refundAmount, reason } = envelope.data;
         try {
             // This would normally delegate to RefundPaymentUseCase
-            await eventBus.publish('TransactionRefundProcessed', { transactionId, refundAmount, adminId }, { correlationId: envelope.metadata.correlationId });
+            await eventBus.publish('TransactionRefundProcessed', { transactionId, refundAmount, adminId }, { correlationId: envelope.metadata?.correlationId });
         } catch (error: any) {
-            await eventBus.publish('TransactionRefundFailed', { transactionId, error: error.message }, { correlationId: envelope.metadata.correlationId });
+            await eventBus.publish('TransactionRefundFailed', { transactionId, error: error.message }, { correlationId: envelope.metadata?.correlationId });
         }
     }
     private async handleDisputeEvidenceRequested(envelope: EventEnvelope): Promise<void> {
@@ -117,9 +117,9 @@ export class PaymentEventHandlers {
                 disputeId,
                 transactionId,
                 evidence: { status: transaction.status, amount: transaction.amount, createdAt: transaction.createdAt }
-            }, { correlationId: envelope.metadata.correlationId });
+            }, { correlationId: envelope.metadata?.correlationId });
         } catch (error: any) {
-            await eventBus.publish('DisputeEvidenceGatheringFailed', { disputeId, error: error.message }, { correlationId: envelope.metadata.correlationId });
+            await eventBus.publish('DisputeEvidenceGatheringFailed', { disputeId, error: error.message }, { correlationId: envelope.metadata?.correlationId });
         }
     }
 

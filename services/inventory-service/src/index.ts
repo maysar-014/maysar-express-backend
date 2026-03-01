@@ -110,12 +110,14 @@ app.use(errorHandler);
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully');
   inventoryRecoveryWorker.stop();
+  await eventBus.shutdown();
   await prisma.$disconnect();
   process.exit(0);
 });
 process.on('SIGINT', async () => {
   logger.info('SIGINT received, shutting down gracefully');
   inventoryRecoveryWorker.stop();
+  await eventBus.shutdown();
   await prisma.$disconnect();
   process.exit(0);
 });

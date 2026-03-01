@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { Container } from '../../container';
 import { HealthCheckService } from '../../infrastructure/services/health-check.service';
+import { eventBus } from '@shared/events/eventBus';
 
 const router = Router();
 
@@ -28,9 +29,23 @@ router.get('/', async (_req: Request, res: Response) => {
         const service = getHealthCheckService();
         const health = await service.checkAll();
 
+        const dlq = eventBus.getDLQ();
+        const eventBusMetrics = {
+            subscribers: {
+                PaymentInitiated: eventBus.getSubscriberCount('PaymentInitiated'),
+                PaymentCompleted: eventBus.getSubscriberCount('PaymentCompleted'),
+                PaymentFailed: eventBus.getSubscriberCount('PaymentFailed')
+            },
+            dlqSizes: {
+                PaymentInitiated: dlq.get('PaymentInitiated')?.length ?? 0,
+                PaymentCompleted: dlq.get('PaymentCompleted')?.length ?? 0,
+                PaymentFailed: dlq.get('PaymentFailed')?.length ?? 0
+            }
+        };
+
         const statusCode = health.status === 'healthy' ? 200 : 503;
 
-        res.status(statusCode).json(health);
+        res.status(statusCode).json({ ...health, eventBus: eventBusMetrics });
     } catch (error) {
         res.status(503).json({
             status: 'unhealthy',

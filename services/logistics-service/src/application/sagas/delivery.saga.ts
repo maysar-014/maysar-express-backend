@@ -21,6 +21,8 @@ import {
 export interface DeliverySagaContext {
   deliveryId: string;
   orderId: string;
+  buyerId?: string;
+  paymentMethod?: string;
   courierId?: string;
   pickupLocation: { lat: number; lng: number; address: string };
   deliveryLocation: { lat: number; lng: number; address: string };
@@ -151,6 +153,16 @@ export class DeliverySaga extends DistributedSagaOrchestrator<DeliverySagaContex
           }, context.requestId || sagaId, sagaId);
         },
         compensate: async (context: DeliverySagaContext, sagaId: string) => {
+          await (this as any).publishCommand('Delivery.Failure.v1', {
+            sagaId,
+            orderId: context.orderId,
+            deliveryId: context.deliveryId,
+            buyerId: context.buyerId,
+            paymentMethod: context.paymentMethod,
+            isCOD: context.paymentMethod === 'COD',
+            reason: context.courierId ? 'Courier assignment failed' : 'No couriers available'
+          }, context.requestId || sagaId, sagaId);
+
           if (!context.courierId) return;
 
           await this.courierRepository.updateCourierAvailability(context.courierId, true);
@@ -221,6 +233,16 @@ export class DeliverySaga extends DistributedSagaOrchestrator<DeliverySagaContex
           await (this as any).publishCommand('DeliveryDelivered', {
             courierId: context.courierId!,
             deliveryTime: context.deliveredAt
+          }, context.requestId || sagaId, sagaId);
+
+          await (this as any).publishCommand('Delivery.Success.v1', {
+            sagaId,
+            orderId: context.orderId,
+            deliveryId: context.deliveryId,
+            buyerId: context.buyerId,
+            paymentMethod: context.paymentMethod,
+            isCOD: context.paymentMethod === 'COD',
+            deliveredAt: context.deliveredAt
           }, context.requestId || sagaId, sagaId);
         },
         compensate: async (context: DeliverySagaContext, sagaId: string) => {

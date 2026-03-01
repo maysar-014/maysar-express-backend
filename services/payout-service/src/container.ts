@@ -45,6 +45,10 @@ export class Container {
             payoutProviderFactory
         );
 
+        // Register saga in SagaFactory
+        const { SagaFactory } = require('@shared/saga/saga-factory');
+        SagaFactory.registerByType('PayoutProcessingSaga', this.payoutProcessingSaga);
+
         const initiateUseCase = new InitiatePayoutUseCase(payoutRepository, payoutPolicy, this.payoutProcessingSaga);
         const completeUseCase = new CompletePayoutUseCase(payoutRepository);
         const cancelUseCase = new CancelPayoutUseCase(payoutRepository);

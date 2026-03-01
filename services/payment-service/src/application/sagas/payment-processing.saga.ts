@@ -59,6 +59,7 @@ export class PaymentProcessingSaga extends DistributedSagaOrchestrator<PaymentSa
                         orderId: context.orderId,
                         userId: context.userId,
                         amount: context.amount,
+                        currency: context.currency,
                         method: context.method
                     }, context.correlationId, sagaId);
                 },
@@ -81,6 +82,12 @@ export class PaymentProcessingSaga extends DistributedSagaOrchestrator<PaymentSa
                         amount: context.amount
                     });
                     if (assessment.recommendation === 'decline') {
+                        await this.publishCommand('Payment.Failure.v1', {
+                            sagaId,
+                            orderId: context.orderId,
+                            paymentId: context.paymentId,
+                            error: 'Fraud check failed'
+                        }, context.correlationId, sagaId);
                         throw new Error('Fraud check failed');
                     }
                     context.fraudAssessment = assessment;
@@ -109,7 +116,15 @@ export class PaymentProcessingSaga extends DistributedSagaOrchestrator<PaymentSa
                         paymentId: context.paymentId,
                         amount: context.amount
                     });
-                    if (!response.success) throw new Error(response.message);
+                    if (!response.success) {
+                        await this.publishCommand('Payment.Failure.v1', {
+                            sagaId,
+                            orderId: context.orderId,
+                            paymentId: context.paymentId,
+                            error: response.message || 'Payment processing failed'
+                        }, context.correlationId, sagaId);
+                        throw new Error(response.message);
+                    }
 
                     context.providerReference = response.providerReference;
                     await this.sagaLogRepository.update(sagaId, { context });
@@ -129,6 +144,7 @@ export class PaymentProcessingSaga extends DistributedSagaOrchestrator<PaymentSa
                     const saga = await this.getSagaOrThrow(sagaId);
                     const context = saga.context as PaymentSagaContext;
                     await this.publishCommand('Payment.Success.v1', {
+                        sagaId,
                         orderId: context.orderId,
                         paymentId: context.paymentId,
                         amount: context.amount
@@ -157,7 +173,17 @@ export class PaymentProcessingSaga extends DistributedSagaOrchestrator<PaymentSa
     }
 
     async handleWalletPaymentFailed(sagaId: string, error: string): Promise<void> {
-        await this.eventIdempotency.withIdempotency(sagaId, 'PaymentProcessingSaga.WalletPaymentFailed', () => this.failStep(sagaId, 'ProcessPayment', error));
+        await this.eventIdempotency.withIdempotency(sagaId, 'PaymentProcessingSaga.WalletPaymentFailed', async () => {
+            const saga = await this.getSagaOrThrow(sagaId);
+            const context = saga.context as PaymentSagaContext;
+            await this.publishCommand('Payment.Failure.v1', {
+                sagaId,
+                orderId: context.orderId,
+                paymentId: context.paymentId,
+                error
+            }, context.correlationId, sagaId);
+            await this.failStep(sagaId, 'ProcessPayment', error);
+        });
     }
 }
 

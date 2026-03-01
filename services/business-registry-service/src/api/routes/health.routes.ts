@@ -1,14 +1,30 @@
 import { Router, Request, Response } from 'express';
 import { getPrismaClient } from '../../infrastructure/database/prisma-client';
+import { eventBus } from '@shared/events/eventBus';
 
 export function createHealthRoutes(): Router {
   const router = Router();
 
   router.get('/', (_req: Request, res: Response) => {
+    const dlq = eventBus.getDLQ();
+    const eventBusMetrics = {
+      subscribers: {
+        BusinessRegistered: eventBus.getSubscriberCount('BusinessRegistered'),
+        BusinessVerified: eventBus.getSubscriberCount('BusinessVerified'),
+        BusinessUpdated: eventBus.getSubscriberCount('BusinessUpdated')
+      },
+      dlqSizes: {
+        BusinessRegistered: dlq.get('BusinessRegistered')?.length ?? 0,
+        BusinessVerified: dlq.get('BusinessVerified')?.length ?? 0,
+        BusinessUpdated: dlq.get('BusinessUpdated')?.length ?? 0
+      }
+    };
+
     res.status(200).json({
       status: 'ok',
       service: 'business-registry-service',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      eventBus: eventBusMetrics
     });
   });
 

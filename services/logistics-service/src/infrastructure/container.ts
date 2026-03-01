@@ -12,6 +12,7 @@ import { SupabaseClientManager } from './database/supabase.client';
 import { PrismaClientManager } from './database/prisma.client';
 import { PrismaSagaLogRepository } from '../../../../shared/saga/saga-log.repository';
 import { ISagaLogRepository } from '../../../../shared/saga/saga.log';
+import { SagaFactory } from '../../../../shared/saga/saga-factory';
 
 // Domain layer
 import { LogisticsEngine } from '../domain/engines/logistics.engine';
@@ -216,6 +217,7 @@ export class DependencyContainer {
 
     this.sagaRegistry = SagaRegistry.getInstance();
     this.sagaRegistry.registerOrchestrator('DeliverySaga', this.deliverySaga);
+    SagaFactory.registerByType('DeliverySaga', this.deliverySaga);
 
     this.codDeliveryConfirmationSaga = new CODDeliveryConfirmationSaga(
       this.sagaLogRepository,
@@ -224,6 +226,7 @@ export class DependencyContainer {
       this.codConfirmationEngine
     );
     this.sagaRegistry.registerOrchestrator('CODDeliveryConfirmationSaga', this.codDeliveryConfirmationSaga);
+    SagaFactory.registerByType('CODDeliveryConfirmationSaga', this.codDeliveryConfirmationSaga);
 
     this.verifyCODDeliveryUseCase = new VerifyCODDeliveryUseCase(
       this.deliveryRepository,
@@ -425,6 +428,10 @@ export class DependencyContainer {
 
   public getInitiateCODDeliveryUseCase(): InitiateCODDeliveryUseCase {
     return this.initiateCODDeliveryUseCase;
+  }
+
+  public getSagaLogRepository(): ISagaLogRepository {
+    return this.sagaLogRepository;
   }
 
   // Cleanup method for testing

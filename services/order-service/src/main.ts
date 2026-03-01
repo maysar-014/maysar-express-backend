@@ -11,11 +11,11 @@ import { setupOrderRoutes } from './api/routes/order.routes';
 import { securityStack } from './middleware/security.middleware';
 import { loggingMiddlewareStack } from './middleware/logging.middleware';
 import { errorHandler, gracefulDegradationHandler, recoveryHandler } from './middleware/error-handling.middleware';
-import { appConfig, validateConfiguration, logConfigurationSummary } from './config/index';
+import { validateConfiguration, logConfigurationSummary } from './config/index';
 import { logSecurityConfigSummary } from './config/security.config';
 import { logMonitoringConfigSummary } from './config/monitoring.config';
-import { databaseManager, loadDatabaseConfig } from './config/database.config';
-import { logger, logStartup, logShutdown, flushLogs } from './infrastructure/monitoring/logger';
+import { databaseManager } from './config/database.config';
+import { logger } from './infrastructure/monitoring/logger';
 import { RateLimitingMiddleware } from './middleware/rate-limiting.middleware';
 import { OrderFulfillmentSaga } from './application/sagas/order-fulfillment.saga';
 import { SagaReplyHandler } from './infrastructure/messaging/saga-reply-handler';
@@ -104,26 +104,50 @@ async function initializeService() {
     const orderFulfillmentSaga = new OrderFulfillmentSaga(eventIdempotency);
     const sagaReplyHandler = new SagaReplyHandler(orderFulfillmentSaga);
 
-    // Saga Recovery Worker
+    // Import and instantiate additional sagas
+    const { PaymentSaga } = await import('./application/sagas/payment.saga');
+    const { SettlementSaga } = await import('./application/sagas/settlement.saga');
+    const { TrainingSaga } = await import('./application/sagas/training.saga');
     const { sagaLogRepository } = await import('./infrastructure/repositories/saga.repository');
-    const orchestratorRegistry = new Map<string, DistributedSagaOrchestrator>();
-    orchestratorRegistry.set('OrderFulfillmentSaga', orderFulfillmentSaga);
+    const { PesapalAdapter } = await import('./infrastructure/providers/pesapal.adapter');
+    const { SettlementService } = await import('./domain/engines/settlement.engine');
+    
+    const pesapalAdapter = new PesapalAdapter();
+    const settlementService = new SettlementService();
+    
+    const paymentSaga = new PaymentSaga(pesapalAdapter);
+    const settlementSaga = new SettlementSaga(settlementService);
+    const trainingSaga = new TrainingSaga(
+      sagaLogRepository,
+      'order-service',
+      {} as import('./application/sagas/training.saga').ITrainingRecordRepository,
+      {} as import('./application/sagas/training.saga').ICourierEligibilityPort,
+      eventIdempotency
+    );
+
+    // Saga Recovery Worker
+    const orchestratorRegistry = new Map<string, DistributedSagaOrchestrator<unknown>>();
+    orchestratorRegistry.set('OrderFulfillmentSaga', orderFulfillmentSaga as DistributedSagaOrchestrator<unknown>);
+    orchestratorRegistry.set('PaymentSaga', paymentSaga as DistributedSagaOrchestrator<unknown>);
+    orchestratorRegistry.set('SettlementSaga', settlementSaga as DistributedSagaOrchestrator<unknown>);
+    orchestratorRegistry.set('TrainingSaga', trainingSaga as DistributedSagaOrchestrator<unknown>);
+    
     const sagaRecoveryWorker = new SagaRecoveryWorker(sagaLogRepository, orchestratorRegistry, {
       stuckThresholdMs: 5 * 60 * 1000,
       pollIntervalMs: 60 * 1000
     });
     sagaRecoveryWorkerRef = sagaRecoveryWorker;
     sagaRecoveryWorker.start();
-    logger.info('✅ Saga recovery worker started');
+    logger.info('✅ Saga recovery worker started with 4 registered saga types');
 
     // Initializing Saga Subscriptions
     // Note: eventBus is already connected or doesn't need explicit connect()
-    eventBus.subscribe('StockReservation.Success', async (e: any) => sagaReplyHandler.handleStockReserved(e));
-    eventBus.subscribe('StockReservation.Failure', async (e: any) => sagaReplyHandler.handleStockFailed(e));
-    eventBus.subscribe('Payment.Success', async (e: any) => sagaReplyHandler.handlePaymentSuccess(e));
-    eventBus.subscribe('Payment.Failure', async (e: any) => sagaReplyHandler.handlePaymentFailed(e));
-    eventBus.subscribe('Delivery.Success', async (e: any) => sagaReplyHandler.handleDeliverySuccess(e));
-    eventBus.subscribe('Delivery.Failure', async (e: any) => sagaReplyHandler.handleDeliveryFailed(e));
+    eventBus.subscribe('StockReservation.Success.v1', async (e: unknown) => sagaReplyHandler.handleStockReserved(e));
+    eventBus.subscribe('StockReservation.Failure.v1', async (e: unknown) => sagaReplyHandler.handleStockFailed(e));
+    eventBus.subscribe('Payment.Success.v1', async (e: unknown) => sagaReplyHandler.handlePaymentSuccess(e));
+    eventBus.subscribe('Payment.Failure.v1', async (e: unknown) => sagaReplyHandler.handlePaymentFailed(e));
+    eventBus.subscribe('Delivery.Success.v1', async (e: unknown) => sagaReplyHandler.handleDeliverySuccess(e));
+    eventBus.subscribe('Delivery.Failure.v1', async (e: unknown) => sagaReplyHandler.handleDeliveryFailed(e));
 
     const { CODEligibilityEngine } = await import('./domain/engines/cod-eligibility.engine');
     const { CheckCODEligibilityUseCase } = await import('./application/use-cases/check-cod-eligibility.use-case');
@@ -236,6 +260,7 @@ process.on('SIGTERM', async () => {
   logger.info('🛑 SIGTERM received, shutting down gracefully...');
   sagaRecoveryWorkerRef?.stop();
   outboxProcessorRef?.stop();
+  await eventBus.shutdown();
   process.exit(0);
 });
 
@@ -243,6 +268,7 @@ process.on('SIGINT', async () => {
   logger.info('🛑 SIGINT received, shutting down gracefully...');
   sagaRecoveryWorkerRef?.stop();
   outboxProcessorRef?.stop();
+  await eventBus.shutdown();
   process.exit(0);
 });
 

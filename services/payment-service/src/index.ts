@@ -10,6 +10,8 @@ import { logger } from './infrastructure/services/logger.service';
 import { SagaRecoveryWorker } from '@shared/saga/saga-recovery.worker';
 import { DistributedSagaOrchestrator } from '@shared/saga/saga.orchestrator';
 import { tracingService } from '../../../shared/tracing/openTelemetry';
+import { SagaFactory } from '@shared/saga/saga-factory';
+import { eventBus } from '@shared/events/eventBus';
 
 async function startServer() {
     tracingService.start();
@@ -30,10 +32,7 @@ async function startServer() {
         logger.info('✅ Saga subscriptions initialized');
 
         // Saga Recovery Worker
-        const orchestratorRegistry = new Map<string, DistributedSagaOrchestrator>();
-        if (container.paymentProcessingSaga) {
-            orchestratorRegistry.set('PaymentProcessingSaga', container.paymentProcessingSaga);
-        }
+        const orchestratorRegistry = SagaFactory.getRegistry();
         const sagaRecoveryWorker = new SagaRecoveryWorker(container.sagaLogRepository, orchestratorRegistry, {
             stuckThresholdMs: 5 * 60 * 1000,
             pollIntervalMs: 60 * 1000
@@ -48,6 +47,7 @@ async function startServer() {
 
         const shutdown = async () => {
             logger.info('🛑 Shutting down gracefully...');
+            await eventBus.shutdown();
             sagaRecoveryWorker.stop();
             container.outboxProcessor.stop();
             await container.prisma.$disconnect();

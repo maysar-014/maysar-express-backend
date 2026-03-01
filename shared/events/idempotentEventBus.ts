@@ -29,7 +29,7 @@ export class IdempotentEventBus implements IEventBus {
       }
     };
 
-    eventBus.subscribe(eventPattern, wrappedConsumer.handler);
+    eventBus.subscribe(eventPattern, { name: wrappedConsumer.name, handler: wrappedConsumer.handler });
   }
 
   async publish(eventTypeOrObject: string | { type?: string; event?: string; data?: any; payload?: any }, data?: any, metadata?: any): Promise<void> {

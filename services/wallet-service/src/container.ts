@@ -36,6 +36,8 @@ import { PayoutServiceClient } from './infrastructure/clients/payout-service.cli
 import { InitiatePayoutFromWalletUseCase } from './application/use-cases/initiate-payout-from-wallet.use-case';
 import { provideSagaLogRepository } from './infrastructure/repositories/saga.repository';
 import { WalletTransactionSaga } from './application/sagas/wallet-transaction.saga';
+import { CODSettlementSaga } from './application/sagas/cod-settlement.saga';
+import { SagaFactory } from '@shared/saga/saga-factory';
 
 export class Container {
     private static instance: Container;
@@ -135,7 +137,10 @@ export class Container {
         // Event Handlers
         const eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, this.prisma);
         const paymentCompletedHandler = new PaymentCompletedHandler(creditUseCase, eventIdempotency);
-        this.eventBus.subscribe('PaymentCompleted', paymentCompletedHandler.handle.bind(paymentCompletedHandler));
+        this.eventBus.subscribe('Payment.Success.v1', {
+            name: 'payment-completed-handler',
+            handler: paymentCompletedHandler.handle.bind(paymentCompletedHandler)
+        });
 
         // Jobs
         this.holdExpiryJob = new HoldExpiryJob(holdRepository, expireHoldUseCase);
@@ -152,8 +157,69 @@ export class Container {
             debitUseCase,
             placeHoldUseCase,
             releaseHoldUseCase,
-            reverseTransactionUseCase
+            reverseTransactionUseCase,
+            eventPublisher
         );
+        SagaFactory.registerByType('WalletTransactionSaga', walletTransactionSaga);
+
+        this.eventBus.subscribe('WalletTransaction.Command.v1', {
+            name: 'wallet-transaction-saga',
+            handler: async (envelope) => {
+                await walletTransactionSaga.start(envelope.data, envelope.correlationId ?? envelope.metadata?.correlationId);
+            }
+        });
+
+        this.eventBus.subscribe('PaymentInitiated', {
+            name: 'wallet-transaction-saga-payment',
+            handler: async (envelope) => {
+                const { paymentId, userId, amount, currency, method } = envelope.data;
+                if (method !== 'WALLET') return;
+                
+                const sagaId = envelope.metadata?.sagaId || envelope.correlationId;
+                const payload: any = {
+                    transactionId: paymentId,
+                    userId,
+                    amount,
+                    currency,
+                    type: 'DEBIT',
+                    reason: `Payment debit for ${paymentId}`,
+                    idempotencyKey: `payment_${paymentId}`,
+                    correlationId: envelope.correlationId ?? envelope.metadata?.correlationId ?? paymentId,
+                    auditInfo: { actor: 'payment-service', actorType: 'SYSTEM', action: 'PAYMENT_DEBIT', timestamp: new Date() },
+                    paymentSagaId: sagaId
+                };
+                await walletTransactionSaga.start(payload, payload.correlationId);
+            }
+        });
+
+        const codSettlementSaga = new CODSettlementSaga(
+            sagaLogRepository,
+            'wallet-service',
+            releaseHoldUseCase,
+            captureHoldUseCase,
+            creditUseCase,
+            freezeUseCase
+        );
+        SagaFactory.registerByType('CODSettlementSaga', codSettlementSaga);
+
+        this.eventBus.subscribe('SettleCODPayment', {
+            name: 'cod-settlement-saga',
+            handler: async (envelope) => {
+                const { orderId, buyerId, sellerId, amount, currency, holdId } = envelope.data;
+                await codSettlementSaga.start({
+                    orderId,
+                    buyerId,
+                    sellerId,
+                    amount,
+                    currency,
+                    holdId,
+                    deliveryStatus: 'SUCCESS',
+                    sellerAmount: amount * 0.85,
+                    courierId: envelope.data.courierId || 'system',
+                    courierAmount: amount * 0.15
+                }, envelope.correlationId ?? envelope.metadata?.correlationId ?? orderId);
+            }
+        });
 
         this.walletController = new WalletController(
             creditUseCase,

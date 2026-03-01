@@ -11,6 +11,7 @@ import { healthRoutes } from './api/routes/health.routes';
 import { errorHandler } from './api/middleware/error.middleware';
 import { requestLogger } from './api/middleware/request-logger.middleware';
 import { OptimizationMiddleware } from './middleware/optimization.middleware';
+import { eventBus } from '@shared/events/eventBus';
 
 // Infrastructure components (still needed for health checks)
 import { SupabaseClientManager } from './infrastructure/database/supabase.client';
@@ -23,6 +24,7 @@ import { DistributedSagaOrchestrator } from '@shared/saga/saga.orchestrator';
 import { tracingService } from '../../../shared/tracing/openTelemetry';
 import { PrismaSagaLogRepository } from '@shared/saga/saga-log.repository';
 import { metricsRegistry } from './infrastructure/monitoring/metrics';
+import { SagaFactory } from '@shared/saga/saga-factory';
 
 class LogisticsService {
   private app: express.Application;
@@ -133,24 +135,15 @@ class LogisticsService {
 
       // Saga Recovery Worker
       const { container: logisticsContainer } = await import('./infrastructure/container');
-      const logisticsPrisma = logisticsContainer.getPrisma?.() ?? (logisticsContainer as any).prisma;
-      if (logisticsPrisma) {
-        const logisticsSagaLogRepo = new PrismaSagaLogRepository(logisticsPrisma);
-        const logisticsOrchestratorRegistry = new Map<string, DistributedSagaOrchestrator>();
-        // Register logistics sagas if available
-        try {
-          const { DeliverySaga } = await import('./application/sagas/delivery.saga');
-          const { CODDeliveryConfirmationSaga } = await import('./application/sagas/cod-delivery-confirmation.saga');
-          // Sagas are registered at construction time via SagaFactory; use the registry if available
-        } catch { /* sagas may not be importable in all environments */ }
-        const logisticsRecoveryWorker = new SagaRecoveryWorker(logisticsSagaLogRepo, logisticsOrchestratorRegistry, {
-          stuckThresholdMs: 5 * 60 * 1000,
-          pollIntervalMs: 60 * 1000
-        });
-        logisticsRecoveryWorker.start();
-        (this as any)._sagaRecoveryWorker = logisticsRecoveryWorker;
-        this.logger.info('✅ Saga recovery worker started');
-      }
+      const logisticsSagaLogRepo = logisticsContainer.getSagaLogRepository();
+      const logisticsOrchestratorRegistry = SagaFactory.getRegistry();
+      const logisticsRecoveryWorker = new SagaRecoveryWorker(logisticsSagaLogRepo, logisticsOrchestratorRegistry, {
+        stuckThresholdMs: 5 * 60 * 1000,
+        pollIntervalMs: 60 * 1000
+      });
+      logisticsRecoveryWorker.start();
+      (this as any)._sagaRecoveryWorker = logisticsRecoveryWorker;
+      this.logger.info('✅ Saga recovery worker started');
 
       // Now that all dependencies are ready, start the server
       const port = this.appConfig.getConfig().port;
@@ -189,6 +182,8 @@ class LogisticsService {
       (this as any)._sagaRecoveryWorker.stop();
     }
 
+    await eventBus.shutdown();
+
     // Clean up all resources to prevent memory leaks
     try {
       // Clean up cache managers and optimizers
@@ -212,7 +207,14 @@ class LogisticsService {
   }
 }
 
+const service = new LogisticsService();
+
 process.on('SIGINT', async () => {
+  await service.shutdown();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
   await service.shutdown();
   process.exit(0);
 });

@@ -6,13 +6,19 @@ import { TransactionalOutbox } from '../../shared/outbox/outboxPattern';
 import { OutboxProcessor } from '../../shared/outbox/outbox.processor';
 import { eventBus } from '../../shared/events/eventBus';
 import { initializeEventRegistry } from '../../shared/events/registry';
+import type { DistributedSagaOrchestrator } from '../../shared/saga/saga.orchestrator';
+import { createCampaignRoutes } from './src/campaigns/api/routes/campaign.routes';
+import { container } from './src/campaigns/infrastructure/container';
+import { TYPES } from './src/campaigns/types';
+import { sagaLogRepository } from './src/campaigns/infrastructure/repositories/saga.repository';
+import { createSagaFactory } from './src/application/sagas/saga-factory';
+import pricingRoutes from './src/pricing/api/routes/pricing.routes';
 
 let outboxProcessor: OutboxProcessor | null = null;
 
 // Campaign service integration
 let campaignRoutes: Router | null = null;
 try {
-    const { createCampaignRoutes } = require('./src/campaigns/api/routes/campaign.routes');
     campaignRoutes = createCampaignRoutes();
 } catch (e) {
     // Basic logger not yet available here safely if it depends on infrastructure, 
@@ -21,12 +27,6 @@ try {
 }
 
 // Pricing service integration
-let pricingRoutes: Router | null = null;
-try {
-    const { createPricingRouter } = require('./src/pricing/api/routes');
-    pricingRoutes = createPricingRouter();
-} catch (e) {
-}
 
 export const CatalogModule: Module = {
     name: 'catalog-service',
@@ -38,18 +38,13 @@ export const CatalogModule: Module = {
 
         // Initialize campaign event handlers
         try {
-            const { container } = require('./src/campaigns/container');
-            const { TYPES } = require('./src/campaigns/types');
-            const { ProductDeletedHandler } = require('./src/campaigns/application/handlers/product-deleted.handler');
-            const { CategoryDeletedHandler } = require('./src/campaigns/application/handlers/category-deleted.handler');
+            const campaignEventBus = container.get(TYPES.EventBus) as { subscribe: (event: string, handler: (e: unknown) => void) => void };
+            const productDeletedHandler = container.get(TYPES.ProductDeletedHandler) as { handle: (event: unknown) => void };
+            const categoryDeletedHandler = container.get(TYPES.CategoryDeletedHandler) as { handle: (event: unknown) => void };
 
-            const eventBus = container.get(TYPES.EventBus);
-            const productDeletedHandler = container.get(TYPES.ProductDeletedHandler);
-            const categoryDeletedHandler = container.get(TYPES.CategoryDeletedHandler);
-
-            if (eventBus) {
-                eventBus.subscribe('ProductDeleted', (event: any) => productDeletedHandler.handle(event));
-                eventBus.subscribe('CategoryDeleted', (event: any) => categoryDeletedHandler.handle(event));
+            if (campaignEventBus && campaignEventBus.subscribe) {
+                campaignEventBus.subscribe('ProductDeleted', (event: unknown) => productDeletedHandler.handle(event));
+                campaignEventBus.subscribe('CategoryDeleted', (event: unknown) => categoryDeletedHandler.handle(event));
                 logger.info('Campaign handlers subscribed to events');
             }
         } catch (e) {
@@ -58,7 +53,6 @@ export const CatalogModule: Module = {
 
         // Initialize pricing
         try {
-            const { pricingContainer } = require('./src/pricing/container');
             // Additional pricing init if needed
             logger.info('Pricing module initialized');
         } catch (e) {
@@ -74,6 +68,39 @@ export const CatalogModule: Module = {
             logger.info('Catalog-service outbox processor started');
         } catch (e) {
             logger.error('Failed to start catalog-service outbox processor:', e);
+        }
+
+        // Initialize Saga Recovery Worker
+        try {
+            const { SagaRecoveryWorker } = await import('../../shared/saga/saga-recovery.worker');
+
+            const sagaFactory = createSagaFactory({
+                sagaLogRepository,
+                productRepository: {} as import('./src/domain/interfaces').ProductRepository,
+                categoryRepository: {} as import('./src/domain/interfaces').CategoryRepository,
+                mediaRepository: {} as import('./src/domain/interfaces').MediaRepository,
+                searchService: {} as import('./src/domain/interfaces').SearchService,
+                eventPublisher: {} as import('./src/domain/interfaces').DomainEventPublisher,
+                idGenerator: {} as import('./src/domain/interfaces').IdGenerator,
+                dateTimeService: {} as import('./src/domain/interfaces').DateTimeService,
+            });
+
+            const productPublishingSaga = sagaFactory.getProductPublishingSaga();
+            const bulkProductUpdateSaga = sagaFactory.getBulkProductUpdateSaga();
+            
+            const orchestratorRegistry = new Map<string, DistributedSagaOrchestrator<unknown>>();
+            orchestratorRegistry.set('ProductPublishing', productPublishingSaga as DistributedSagaOrchestrator<unknown>);
+            orchestratorRegistry.set('BulkProductUpdate', bulkProductUpdateSaga as DistributedSagaOrchestrator<unknown>);
+
+            const sagaRecoveryWorker = new SagaRecoveryWorker(sagaLogRepository, orchestratorRegistry, {
+                stuckThresholdMs: 5 * 60 * 1000,
+                pollIntervalMs: 60 * 1000
+            });
+            sagaRecoveryWorker.start();
+
+            logger.info('✅ Saga Recovery Worker initialized with 2 registered saga types');
+        } catch (e) {
+            logger.warn('⚠️ Failed to initialize Saga Recovery Worker', { error: e });
         }
     },
     routes: (() => {
@@ -108,3 +135,5 @@ export const CatalogModule: Module = {
         }
     }
 };
+
+

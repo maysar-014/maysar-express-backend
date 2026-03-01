@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { DatabaseConnection } from '../../infrastructure/database/prisma-client';
 import { logger } from '../../infrastructure/services/logger.service';
+import { eventBus } from '@shared/events/eventBus';
 
 const router = Router();
 
@@ -8,6 +9,21 @@ router.get('/', async (_req: Request, res: Response) => {
   try {
     const dbStatus = await DatabaseConnection.getConnectionStatus();
     const memUsage = process.memoryUsage();
+
+    const dlq = eventBus.getDLQ();
+    const eventBusMetrics = {
+      subscribers: {
+        NotificationRequested: eventBus.getSubscriberCount('NotificationRequested'),
+        NotificationSent: eventBus.getSubscriberCount('NotificationSent'),
+        NotificationFailed: eventBus.getSubscriberCount('NotificationFailed')
+      },
+      dlqSizes: {
+        NotificationRequested: dlq.get('NotificationRequested')?.length ?? 0,
+        NotificationSent: dlq.get('NotificationSent')?.length ?? 0,
+        NotificationFailed: dlq.get('NotificationFailed')?.length ?? 0
+      }
+    };
+
     const healthCheck = {
       status: dbStatus.connected ? 'healthy' : 'degraded',
       service: 'notification-service',
@@ -26,7 +42,8 @@ router.get('/', async (_req: Request, res: Response) => {
           rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
           heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`
         }
-      }
+      },
+      eventBus: eventBusMetrics
     };
     res.status(200).json(healthCheck);
   } catch (error) {

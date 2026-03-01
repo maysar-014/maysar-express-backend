@@ -13,6 +13,7 @@ export interface WalletSagaPayload {
     correlationId: string;
     auditInfo: any;
     holdId?: string;
+    paymentSagaId?: string;
 }
 
 export interface WalletSagaContext extends WalletSagaPayload {
@@ -33,6 +34,7 @@ export class WalletTransactionSaga extends DistributedSagaOrchestrator<WalletSag
         private readonly placeHoldUseCase: any,
         private readonly releaseHoldUseCase: any,
         private readonly reverseTransactionUseCase: any,
+        private readonly eventPublisher: any,
         protected readonly outbox?: any
     ) {
         super(sagaLogRepository, serviceName, outbox);
@@ -70,17 +72,48 @@ export class WalletTransactionSaga extends DistributedSagaOrchestrator<WalletSag
                             break;
                         }
                         case 'DEBIT': {
-                            const result = await this.debitWalletUseCase.execute({
-                                userId: context.userId,
-                                amount: context.amount,
-                                currency: context.currency,
-                                description: context.reason,
-                                idempotencyKey: context.idempotencyKey,
-                                correlationId: context.correlationId,
-                                auditInfo: context.auditInfo
-                            });
-                            if (!result.success) throw new Error(result.message);
-                            context.resultTransactionId = result.transactionId;
+                            try {
+                                const result = await this.debitWalletUseCase.execute({
+                                    userId: context.userId,
+                                    amount: context.amount,
+                                    currency: context.currency,
+                                    description: context.reason,
+                                    idempotencyKey: context.idempotencyKey,
+                                    correlationId: context.correlationId,
+                                    auditInfo: context.auditInfo
+                                });
+                                if (!result.success) {
+                                    if (context.paymentSagaId) {
+                                        await this.eventPublisher.publishWalletPaymentFailed({
+                                            userId: context.userId,
+                                            amount: context.amount,
+                                            error: result.message,
+                                            metadata: { sagaId: context.paymentSagaId, correlationId: context.correlationId }
+                                        });
+                                    }
+                                    throw new Error(result.message);
+                                }
+                                context.resultTransactionId = result.transactionId;
+                                
+                                if (context.paymentSagaId) {
+                                    await this.eventPublisher.publishWalletPaymentProcessed({
+                                        transactionId: result.transactionId,
+                                        userId: context.userId,
+                                        amount: context.amount,
+                                        metadata: { sagaId: context.paymentSagaId, correlationId: context.correlationId }
+                                    });
+                                }
+                            } catch (error: any) {
+                                if (context.paymentSagaId) {
+                                    await this.eventPublisher.publishWalletPaymentFailed({
+                                        userId: context.userId,
+                                        amount: context.amount,
+                                        error: error.message,
+                                        metadata: { sagaId: context.paymentSagaId, correlationId: context.correlationId }
+                                    });
+                                }
+                                throw error;
+                            }
                             break;
                         }
                         case 'HOLD': {
@@ -112,6 +145,15 @@ export class WalletTransactionSaga extends DistributedSagaOrchestrator<WalletSag
                 compensate: async (payload, sagaId) => {
                     const saga = await this.getSagaOrThrow(sagaId);
                     const context = saga.context as WalletSagaContext;
+
+                    if (context.paymentSagaId) {
+                        await this.eventPublisher.publishWalletPaymentFailed({
+                            userId: context.userId,
+                            amount: context.amount,
+                            error: context.error || 'Wallet transaction failed',
+                            metadata: { sagaId: context.paymentSagaId, correlationId: context.correlationId }
+                        });
+                    }
 
                     if (context.type === 'CREDIT' || context.type === 'DEBIT') {
                         if (context.resultTransactionId) {

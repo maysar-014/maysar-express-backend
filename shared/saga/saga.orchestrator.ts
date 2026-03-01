@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { eventBus } from '../events/eventBus'; // Unified event bus singleton
-import { SagaLogEntry, SagaStatus, ISagaLogRepository, SagaStepStatus, SagaStepLog } from './saga.log';
-import { createEventMetadata } from '../events/metadata';
+import { SagaLogEntry, SagaStatus, ISagaLogRepository, SagaStepStatus } from './saga.log';
+import { createEventMetadata, EventMetadata } from '../events/metadata';
 import { withRetry, RetryPresets, RetryOptions } from '../utils/retry.util';
 import { ISagaDeadLetterRepository } from './saga-dead-letter.repository';
 import { Counter, Histogram, Gauge } from 'prom-client';
@@ -15,6 +15,15 @@ export interface SagaStep<T> {
     validateCompensation?: (payload: T, sagaId: string) => Promise<boolean>;
 }
 
+interface Logger {
+    info(message: string, meta?: Record<string, unknown>): void;
+    error(message: string, error?: unknown, meta?: Record<string, unknown>): void;
+}
+
+interface Outbox {
+    saveEvent(event: { eventType: string; data: unknown; metadata: unknown }, transaction?: unknown): Promise<void>;
+}
+
 // Module-level metrics shared across all saga types
 const sagaStepDuration = new Histogram({
     name: 'saga_step_duration_seconds',
@@ -22,48 +31,48 @@ const sagaStepDuration = new Histogram({
     labelNames: ['sagaType', 'stepName', 'outcome'],
     buckets: [0.1, 0.5, 1, 2, 5, 10, 30],
     registers: [metricsRegistry]
-}) as any;
+}) as Histogram & { labels: (sagaType: string, stepName: string, outcome: string) => { observe: (value: number) => void } };
 
 const sagaFailures = new Counter({
     name: 'saga_failures_total',
     help: 'Total number of saga failures',
     labelNames: ['sagaType', 'failedStep'],
     registers: [metricsRegistry]
-}) as any;
+}) as Counter & { labels: (sagaType: string, failedStep: string) => { inc: () => void } };
 
 const sagaCompensations = new Counter({
     name: 'saga_compensations_total',
     help: 'Total number of saga compensations',
     labelNames: ['sagaType'],
     registers: [metricsRegistry]
-}) as any;
+}) as Counter & { labels: (sagaType: string) => { inc: () => void } };
 
 const sagaDeadLetters = new Counter({
     name: 'saga_dead_letters_total',
     help: 'Total number of saga dead letter events',
     labelNames: ['sagaType', 'reason'],
     registers: [metricsRegistry]
-}) as any;
+}) as Counter & { labels: (sagaType: string, reason: string) => { inc: () => void } };
 
 const sagaActive = new Gauge({
     name: 'saga_active_total',
     help: 'Total number of active sagas',
     labelNames: ['sagaType', 'status'],
     registers: [metricsRegistry]
-}) as any;
+}) as Gauge & { labels: (sagaType: string, status: string) => { inc: () => void; dec: () => void } };
 
-export abstract class DistributedSagaOrchestrator<T = any> {
+export abstract class DistributedSagaOrchestrator<T = unknown> {
     protected abstract sagaType: string;
     private steps: SagaStep<T>[] = [];
     private stepRetryOptions: Partial<RetryOptions>;
     private compensationRetryOptions: Partial<RetryOptions>;
     private deadLetterRepository?: ISagaDeadLetterRepository;
-    protected readonly logger: any;
+    protected readonly logger: Logger;
 
     constructor(
         protected readonly sagaLogRepository: ISagaLogRepository,
         protected readonly serviceName: string,
-        protected readonly outbox?: any,
+        protected readonly outbox?: Outbox,
         stepRetryOptions?: Partial<RetryOptions>,
         compensationRetryOptions?: Partial<RetryOptions>,
         deadLetterRepository?: ISagaDeadLetterRepository
@@ -80,8 +89,8 @@ export abstract class DistributedSagaOrchestrator<T = any> {
     /**
      * Optional lifecycle hooks
      */
-    protected async onStart(sagaId: string, payload: T, correlationId?: string): Promise<void> { }
-    protected async onCompensate(sagaId: string, failedStepName: string): Promise<void> { }
+    protected async onStart(_sagaId: string, _payload: T, _correlationId?: string): Promise<void> { }
+    protected async onCompensate(_sagaId: string, _failedStepName: string): Promise<void> { }
 
     /**
      * Start a new saga instance
@@ -94,7 +103,7 @@ export abstract class DistributedSagaOrchestrator<T = any> {
             status: SagaStatus.STARTED,
             currentStep: 'START',
             payload,
-            context: { correlationId } as any,
+            context: { correlationId },
             createdAt: new Date(),
             updatedAt: new Date()
         };
@@ -102,6 +111,17 @@ export abstract class DistributedSagaOrchestrator<T = any> {
         await this.sagaLogRepository.save(entry);
         this.logger.info(`Saga ${this.sagaType} started: ${sagaId}`, { sagaId, sagaType: this.sagaType });
         sagaActive.labels(this.sagaType, 'STARTED').inc();
+
+        eventBus.publish('SagaStarted', {
+            sagaId,
+            sagaType: this.sagaType,
+            correlationId,
+            startedAt: new Date().toISOString()
+        }, {
+            correlationId: correlationId ?? sagaId,
+            sagaId,
+            source: this.serviceName
+        }).catch(err => this.logger.error('Failed to publish SagaStarted event', err, { sagaId }));
 
         // Invoke onStart hook
         try {
@@ -174,17 +194,18 @@ export abstract class DistributedSagaOrchestrator<T = any> {
             // Proceed to next step
             await this.executeNextStep(sagaId, payload, stepIndex + 1);
 
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const err = error as Error;
             this.logger.error(`Saga ${sagaId} failed at step ${step.name}:`, error, { sagaId, stepName: step.name });
             sagaFailures.labels(this.sagaType, step.name).inc();
 
             await this.sagaLogRepository.updateStep(stepId, {
                 status: SagaStepStatus.FAILED,
-                error: error.message,
+                error: err.message,
                 completedAt: new Date()
             });
 
-            await this.failSaga(sagaId, step.name, error.message, payload, stepIndex);
+            await this.failSaga(sagaId, step.name, err.message, payload, stepIndex);
         }
     }
     private async failSaga(sagaId: string, failedStepName: string, error: string, payload: T, failedStepIndex: number): Promise<void> {
@@ -217,9 +238,6 @@ export abstract class DistributedSagaOrchestrator<T = any> {
         const stepIndex = this.steps.findIndex(s => s.name === saga.currentStep);
         await this.compensate(sagaId, saga.payload as T, stepIndex - 1);
     }
-
-    protected context: T | undefined;
-    protected sagaId: string = '';
 
     protected async compensate(sagaId: string, payload: T, stepIndex: number): Promise<void> {
         if (stepIndex < 0) {
@@ -256,9 +274,10 @@ export abstract class DistributedSagaOrchestrator<T = any> {
                     await this.routeToDeadLetter(sagaId, payload, `Compensation validation failed for step ${step.name}`, 'COMPENSATION_VALIDATION_FAILED');
                     return;
                 }
-            } catch (validationError: any) {
+            } catch (validationError: unknown) {
+                const err = validationError as Error;
                 this.logger.error(`Compensation validation threw for step ${step.name} in saga ${sagaId}`, validationError, { sagaId, stepName: step.name });
-                await this.routeToDeadLetter(sagaId, payload, validationError.message, 'COMPENSATION_VALIDATION_FAILED');
+                await this.routeToDeadLetter(sagaId, payload, err.message, 'COMPENSATION_VALIDATION_FAILED');
                 return;
             }
         }
@@ -289,6 +308,18 @@ export abstract class DistributedSagaOrchestrator<T = any> {
         }
 
         this.logger.error(`[DEAD LETTER] Saga ${sagaId} (${this.sagaType}) routed to dead letter: ${reason} — ${lastError}`, { sagaId, sagaType: this.sagaType, reason });
+
+        eventBus.publish('SagaFailed', {
+            sagaId,
+            sagaType: this.sagaType,
+            reason,
+            lastError,
+            failedAt: new Date().toISOString()
+        }, {
+            correlationId: sagaId,
+            sagaId,
+            source: this.serviceName
+        }).catch(err => this.logger.error('Failed to publish SagaFailed event', err, { sagaId }));
     }
 
     protected async completeSaga(sagaId: string): Promise<void> {
@@ -299,6 +330,16 @@ export abstract class DistributedSagaOrchestrator<T = any> {
         this.logger.info(`Saga ${this.sagaType} completed: ${sagaId}`, { sagaId, sagaType: this.sagaType });
         sagaActive.labels(this.sagaType, 'STARTED').dec();
         sagaActive.labels(this.sagaType, 'COMPLETED').inc();
+
+        eventBus.publish('SagaCompleted', {
+            sagaId,
+            sagaType: this.sagaType,
+            completedAt: new Date().toISOString()
+        }, {
+            correlationId: sagaId,
+            sagaId,
+            source: this.serviceName
+        }).catch(err => this.logger.error('Failed to publish SagaCompleted event', err, { sagaId }));
     }
 
     protected async markAsCompensated(sagaId: string): Promise<void> {
@@ -309,6 +350,16 @@ export abstract class DistributedSagaOrchestrator<T = any> {
         this.logger.info(`Saga ${this.sagaType} fully compensated: ${sagaId}`, { sagaId, sagaType: this.sagaType });
         sagaActive.labels(this.sagaType, 'STARTED').dec();
         sagaActive.labels(this.sagaType, 'COMPENSATED').inc();
+
+        eventBus.publish('SagaCompensated', {
+            sagaId,
+            sagaType: this.sagaType,
+            compensatedAt: new Date().toISOString()
+        }, {
+            correlationId: sagaId,
+            sagaId,
+            source: this.serviceName
+        }).catch(err => this.logger.error('Failed to publish SagaCompensated event', err, { sagaId }));
     }
 
     /**
@@ -384,10 +435,10 @@ export abstract class DistributedSagaOrchestrator<T = any> {
         if (saga.status === SagaStatus.STARTED || saga.status === SagaStatus.IN_PROGRESS) {
             const stepIndex = this.steps.findIndex(s => s.name === saga.currentStep);
             if (stepIndex === -1) {
-                console.error(`Cannot resume saga ${sagaId}: step ${saga.currentStep} not found`);
+                this.logger.error(`Cannot resume saga ${sagaId}: step ${saga.currentStep} not found`, undefined, { sagaId, currentStep: saga.currentStep });
                 return;
             }
-            console.log(`Resuming saga ${sagaId} at step ${saga.currentStep} (index ${stepIndex})`);
+            this.logger.info(`Resuming saga ${sagaId} at step ${saga.currentStep} (index ${stepIndex})`, { sagaId, currentStep: saga.currentStep, stepIndex });
             await this.executeNextStep(sagaId, saga.payload as T, stepIndex);
             return;
         }
@@ -398,13 +449,13 @@ export abstract class DistributedSagaOrchestrator<T = any> {
                 s => s.status === SagaStepStatus.STARTED || s.status === SagaStepStatus.FAILED
             );
             if (!lastActiveStep) {
-                console.log(`Saga ${sagaId} has no active/failed steps to compensate, marking compensated`);
+                this.logger.info(`Saga ${sagaId} has no active/failed steps to compensate, marking compensated`, { sagaId });
                 await this.markAsCompensated(sagaId);
                 return;
             }
             const stepIndex = this.steps.findIndex(s => s.name === lastActiveStep.stepName);
             if (stepIndex === -1) {
-                console.error(`Cannot resume compensation for saga ${sagaId}: step ${lastActiveStep.stepName} not found`);
+                this.logger.error(`Cannot resume compensation for saga ${sagaId}: step ${lastActiveStep.stepName} not found`, undefined, { sagaId, stepName: lastActiveStep.stepName });
                 return;
             }
             this.logger.info(`Resuming compensation for saga ${sagaId} at step ${lastActiveStep.stepName} (index ${stepIndex})`, { sagaId, stepName: lastActiveStep.stepName });
@@ -421,10 +472,10 @@ export abstract class DistributedSagaOrchestrator<T = any> {
      */
     protected async publishCommand(
         commandType: string,
-        payload: any,
+        payload: unknown,
         correlationId: string,
         sagaId?: string,
-        transaction?: any
+        transaction?: unknown
     ): Promise<void> {
         const metadata = createEventMetadata(this.serviceName, {
             correlationId,
@@ -432,7 +483,7 @@ export abstract class DistributedSagaOrchestrator<T = any> {
         });
 
         if (sagaId) {
-            (metadata as any).sagaId = sagaId;
+            (metadata as EventMetadata & { sagaId?: string }).sagaId = sagaId;
         }
 
         if (this.outbox) {
@@ -446,5 +497,4 @@ export abstract class DistributedSagaOrchestrator<T = any> {
         }
     }
 }
-
 

@@ -51,14 +51,14 @@ export class OrderFulfillmentSaga extends DistributedSagaOrchestrator<OrderFulfi
             {
                 name: 'StockReservation',
                 execute: async (payload, sagaId) => {
-                    await this.publishCommand('StockReservation.Command', {
+                    await this.publishCommand('StockReservation.Command.v1', {
                         sagaId,
                         orderId: payload.orderId,
                         items: payload.items
                     }, sagaId);
                 },
                 compensate: async (payload, sagaId) => {
-                    await this.publishCommand('StockRelease.Command', {
+                    await this.publishCommand('StockRelease.Command.v1', {
                         sagaId,
                         orderId: payload.orderId
                     }, sagaId);
@@ -72,7 +72,7 @@ export class OrderFulfillmentSaga extends DistributedSagaOrchestrator<OrderFulfi
             {
                 name: 'Payment',
                 execute: async (payload, sagaId) => {
-                    await this.publishCommand('Payment.Command', {
+                    await this.publishCommand('Payment.Command.v1', {
                         sagaId,
                         orderId: payload.orderId,
                         amount: payload.amount,
@@ -80,7 +80,7 @@ export class OrderFulfillmentSaga extends DistributedSagaOrchestrator<OrderFulfi
                     }, sagaId);
                 },
                 compensate: async (payload, sagaId) => {
-                    await this.publishCommand('PaymentRefund.Command', {
+                    await this.publishCommand('PaymentRefund.Command.v1', {
                         sagaId,
                         orderId: payload.orderId
                     }, sagaId);
@@ -94,7 +94,7 @@ export class OrderFulfillmentSaga extends DistributedSagaOrchestrator<OrderFulfi
             {
                 name: 'Delivery',
                 execute: async (payload, sagaId) => {
-                    await this.publishCommand('Delivery.Command', {
+                    await this.publishCommand('Delivery.Command.v1', {
                         sagaId,
                         orderId: payload.orderId,
                         sellerId: payload.sellerId

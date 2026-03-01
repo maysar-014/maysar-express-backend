@@ -231,6 +231,9 @@ class CommunityService {
     this.logger.info('Shutting down Community Service...');
 
     try {
+      await inMemoryEventBus.shutdown();
+      this.logger.info('Event bus drained');
+
       // Close database connection
       await this.prisma.$disconnect();
       this.logger.info('Database disconnected');
