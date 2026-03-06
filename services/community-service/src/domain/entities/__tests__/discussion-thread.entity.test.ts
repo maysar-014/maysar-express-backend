@@ -1,14 +1,39 @@
-import { DiscussionThread } from '../discussion-thread.entity';
+import { DiscussionThread, ThreadStatus } from '../discussion-thread.entity';
+import { ExpertiseLevel } from '../../value-objects/expertise-badge.value-object';
 
 describe('DiscussionThread', () => {
     it('should create thread', () => {
-        const thread = DiscussionThread.create({ id: 't1', title: 'Test', authorId: 'u1' });
-        expect(thread.getId()).toBe('t1');
+        const thread = DiscussionThread.create({ 
+            id: 't1', 
+            authorId: 'u1', 
+            topic: 'Test Topic', 
+            content: 'This is a detailed discussion content that needs to be at least fifty characters long.',
+            category: 'GENERAL',
+            expertiseLevel: ExpertiseLevel.BEGINNER,
+            businessContext: {
+                industry: ['agriculture'],
+                businessStage: 'startup',
+                tags: ['farming']
+            }
+        });
+        expect(thread.id).toBe('t1');
     });
 
-    it('should add reply', () => {
-        const thread = DiscussionThread.create({ id: 't1', title: 'Test', authorId: 'u1' });
-        thread.addReply({ id: 'r1', authorId: 'u2', content: 'Reply' });
-        expect(thread.getReplyCount()).toBe(1);
+    it('should resolve thread', () => {
+        const thread = DiscussionThread.create({ 
+            id: 't1', 
+            authorId: 'u1', 
+            topic: 'Test Topic', 
+            content: 'This is a detailed discussion content that needs to be at least fifty characters long.',
+            category: 'GENERAL',
+            expertiseLevel: ExpertiseLevel.BEGINNER,
+            businessContext: {
+                industry: ['agriculture'],
+                businessStage: 'startup',
+                tags: ['farming']
+            }
+        });
+        thread.resolve('a1');
+        expect(thread.status).toBe(ThreadStatus.RESOLVED);
     });
 });

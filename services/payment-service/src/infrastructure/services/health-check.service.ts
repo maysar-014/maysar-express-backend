@@ -5,6 +5,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { PesapalAdapter } from '../providers/pesapal.adapter';
+import type { Redis } from 'ioredis';
 
 export interface HealthStatus {
 
@@ -30,7 +31,8 @@ export interface AggregateHealthStatus {
 export class HealthCheckService {
     constructor(
         private readonly prisma: PrismaClient,
-        private readonly pesapalAdapter?: PesapalAdapter
+        private readonly pesapalAdapter?: PesapalAdapter,
+        private readonly redisClient?: Redis
     ) { }
 
 
@@ -197,22 +199,41 @@ export class HealthCheckService {
      * Check cache system (Redis)
      */
     async checkCache(): Promise<HealthStatus> {
-        try {
-            // TODO: Implement actual cache health check when implemented
-            // For now, return healthy as cache is not yet implemented
-            // In production, this would check Redis connectivity with PING command
+        const startTime = Date.now();
+        
+        if (!this.redisClient) {
             return {
                 status: 'healthy',
                 timestamp: new Date(),
                 details: {
-                    connection: 'not_implemented',
-                    note: 'Cache health check not yet implemented - stub only'
+                    connection: 'not_configured',
+                    note: 'Redis not configured'
+                }
+            };
+        }
+
+        try {
+            await Promise.race([
+                this.redisClient.ping(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
+            ]);
+            
+            const latencyMs = Date.now() - startTime;
+            return {
+                status: 'healthy',
+                timestamp: new Date(),
+                latencyMs,
+                details: {
+                    connection: 'successful',
+                    type: 'redis'
                 }
             };
         } catch (error) {
+            const latencyMs = Date.now() - startTime;
             return {
                 status: 'unhealthy',
                 timestamp: new Date(),
+                latencyMs,
                 details: {
                     connection: 'failed',
                     error: error instanceof Error ? error.message : 'Unknown error'
@@ -265,21 +286,25 @@ export class HealthCheckService {
     }
 
     /**
-     * Check readiness - critical dependencies only
+     * Check readiness - critical dependencies only (DB, cache, messaging)
      */
     async checkReadiness(): Promise<{ ready: boolean; checks: Record<string, HealthStatus> }> {
-        const [database, paymentGateway] = await Promise.all([
+        const [database, cache, messaging] = await Promise.all([
             this.checkDatabase(),
-            this.checkPaymentGateway()
+            this.checkCache(),
+            this.checkMessaging()
         ]);
 
-        const ready = database.status === 'healthy' && paymentGateway.status === 'healthy';
+        const ready = database.status === 'healthy' && 
+                     (cache.status === 'healthy' || !this.redisClient) && 
+                     messaging.status === 'healthy';
 
         return {
             ready,
             checks: {
                 database,
-                paymentGateway
+                cache,
+                messaging
             }
         };
     }

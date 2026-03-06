@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { DiscussionThread } from '../../domain/entities/discussion-thread.entity';
 import {
     DiscussionThreadRepository
@@ -16,7 +16,7 @@ export class PrismaDiscussionThreadRepository implements DiscussionThreadReposit
             category: thread.category,
             status: thread.status,
             expertiseLevel: thread.expertiseLevel,
-            businessContext: thread.businessContext,
+            businessContext: thread.businessContext as unknown as Prisma.InputJsonValue,
             maxResponsesPerUser: thread.maxResponsesPerUser,
             acceptedAnswerId: thread.acceptedAnswerId,
             resolvedAt: thread.resolvedAt,

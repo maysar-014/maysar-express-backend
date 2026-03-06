@@ -21,6 +21,13 @@ export interface ProductRepository {
   save(product: any): Promise<any>;
 
   /**
+   * Save a product using persistence DTO
+   * @param dto The product persistence DTO
+   * @returns Promise resolving to the saved product
+   */
+  savePersistenceDto(dto: any): Promise<any>;
+
+  /**
    * Find product by ID
    * @param id Product identifier
    * @returns Promise resolving to product or null

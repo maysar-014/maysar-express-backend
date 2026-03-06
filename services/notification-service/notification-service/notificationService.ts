@@ -1,6 +1,7 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { eventBus } from '../../shared/events/eventBus';
+import { t } from '@shared/i18n/i18n';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -21,8 +22,8 @@ function initializeEnablerSagaHandlers() {
       recipientId: enablerId,
       recipientType: 'enabler',
       type: 'task_assignment',
-      title: 'New Task Available',
-      message: `Task ${taskId} has been assigned to you`,
+      title: t('notification:templates.taskAssignmentTitle'),
+      message: t('notification:templates.taskAssignmentMessage', { taskId }),
       channel: 'push'
     });
   });
@@ -34,8 +35,8 @@ function initializeEnablerSagaHandlers() {
       recipientId: enablerId,
       recipientType: 'enabler',
       type: 'task_submitted',
-      title: 'Task Submitted',
-      message: 'Your task completion has been submitted for review',
+      title: t('notification:templates.taskSubmittedTitle'),
+      message: t('notification:templates.taskSubmittedMessage'),
       channel: 'push'
     });
   });
@@ -48,8 +49,8 @@ function initializeEnablerSagaHandlers() {
       recipientId: enablerId,
       recipientType: 'enabler',
       type: 'training_scheduled',
-      title: 'Training Scheduled',
-      message: `Training session for ${trainingModule} has been scheduled`,
+      title: t('notification:templates.trainingScheduledTitle'),
+      message: t('notification:templates.trainingScheduledMessage', { trainingModule }),
       channel: 'email'
     });
   });
@@ -61,8 +62,8 @@ function initializeEnablerSagaHandlers() {
       recipientId: enablerId,
       recipientType: 'enabler',
       type: 'certificate_issued',
-      title: 'Certificate Issued',
-      message: `Training certificate ${certificateId} has been issued`,
+      title: t('notification:templates.certificateIssuedTitle'),
+      message: t('notification:templates.certificateIssuedMessage', { certificateId }),
       channel: 'email'
     });
   });
@@ -75,8 +76,8 @@ function initializeEnablerSagaHandlers() {
       recipientId: enablerId,
       recipientType: 'enabler',
       type: 'payout_scheduled',
-      title: 'Payout Scheduled',
-      message: `Your payout of $${totalEarnings} has been scheduled`,
+      title: t('notification:templates.payoutScheduledTitle'),
+      message: t('notification:templates.payoutScheduledMessage', { totalEarnings }),
       channel: 'email'
     });
   });
@@ -88,8 +89,8 @@ function initializeEnablerSagaHandlers() {
       recipientId: enablerId,
       recipientType: 'enabler',
       type: 'improvement_plan',
-      title: 'Performance Improvement Plan',
-      message: 'A new improvement plan has been created for you',
+      title: t('notification:templates.improvementPlanTitle'),
+      message: t('notification:templates.improvementPlanMessage'),
       channel: 'email'
     });
   });
@@ -102,8 +103,8 @@ function initializeEnablerSagaHandlers() {
       recipientId: enablerId,
       recipientType: 'enabler',
       type: 'kyc_approved',
-      title: 'KYC Verification Approved',
-      message: 'Your KYC verification has been approved',
+      title: t('notification:templates.kycApprovedTitle'),
+      message: t('notification:templates.kycApprovedMessage'),
       channel: 'email'
     });
   });
@@ -115,8 +116,8 @@ function initializeEnablerSagaHandlers() {
       recipientId: enablerId,
       recipientType: 'enabler',
       type: 'settings_updated',
-      title: 'Settings Updated',
-      message: 'Your account settings have been updated successfully',
+      title: t('notification:templates.settingsUpdatedTitle'),
+      message: t('notification:templates.settingsUpdatedMessage'),
       channel: 'push'
     });
   });
@@ -129,8 +130,8 @@ function initializeEnablerSagaHandlers() {
       recipientId: enablerId,
       recipientType: 'enabler',
       type: 'support_completed',
-      title: 'Support Task Completed',
-      message: `Logistics support for seller has been ${solutionResult.success ? 'resolved' : 'escalated'}`,
+      title: t('notification:templates.supportCompletedTitle'),
+      message: t('notification:templates.supportCompletedMessage', { result: solutionResult.success ? 'resolved' : 'escalated' }),
       channel: 'push'
     });
   });
@@ -142,8 +143,8 @@ function initializeEnablerSagaHandlers() {
       recipientId: enablerId,
       recipientType: 'enabler',
       type: 'sales_outcome',
-      title: 'Sales Support Outcome',
-      message: outcome === 'sale' ? `Sale completed: $${saleValue}` : 'Sales support completed',
+      title: t('notification:templates.salesOutcomeTitle'),
+      message: outcome === 'sale' ? t('notification:templates.salesOutcomeMessageSale', { saleValue }) : t('notification:templates.salesOutcomeMessageOther'),
       channel: 'push'
     });
   });
@@ -155,8 +156,8 @@ function initializeEnablerSagaHandlers() {
       recipientId: enablerId,
       recipientType: 'enabler',
       type: 'onboarding_completed',
-      title: 'Seller Onboarding Completed',
-      message: 'Seller onboarding has been completed successfully',
+      title: t('notification:templates.onboardingCompletedTitle'),
+      message: t('notification:templates.onboardingCompletedMessage'),
       channel: 'push'
     });
   });
@@ -171,8 +172,8 @@ function initializeSellerSagaHandlers() {
       recipientId: sellerId,
       recipientType: 'seller',
       type: 'pricing_updated',
-      title: 'Pricing Updated',
-      message: `Product pricing has been updated successfully`,
+      title: t('notification:templates.pricingUpdatedTitle'),
+      message: t('notification:templates.pricingUpdatedMessage'),
       channel: 'push'
     });
   });
@@ -184,8 +185,8 @@ function initializeSellerSagaHandlers() {
       recipientId: sellerId,
       recipientType: 'seller',
       type: 'campaign_activated',
-      title: 'Campaign Activated',
-      message: `Your promotional campaign has been activated`,
+      title: t('notification:templates.campaignActivatedTitle'),
+      message: t('notification:templates.campaignActivatedMessage'),
       channel: 'email'
     });
   });
@@ -197,8 +198,8 @@ function initializeSellerSagaHandlers() {
       recipientId: sellerId,
       recipientType: 'seller',
       type: 'payout_processed',
-      title: 'Payout Processed',
-      message: `Your payout has been processed successfully`,
+      title: t('notification:templates.payoutProcessedTitle'),
+      message: t('notification:templates.payoutProcessedMessage'),
       channel: 'email'
     });
   });
@@ -207,14 +208,14 @@ function initializeSellerSagaHandlers() {
     const { sellerId, kycStatus } = event.data;
     
     const message = kycStatus === 'verified' 
-      ? 'Your KYC verification has been approved'
-      : 'Your KYC verification requires additional documents';
+      ? t('notification:templates.kycStatusUpdateMessageVerified')
+      : t('notification:templates.kycStatusUpdateMessagePending');
     
     await sendNotification({
       recipientId: sellerId,
       recipientType: 'seller',
       type: 'kyc_status_update',
-      title: 'KYC Status Update',
+      title: t('notification:templates.kycStatusUpdateTitle'),
       message,
       channel: 'email'
     });
@@ -227,8 +228,8 @@ function initializeSellerSagaHandlers() {
       recipientId: sellerId,
       recipientType: 'seller',
       type: 'settings_updated',
-      title: 'Settings Updated',
-      message: 'Your account settings have been updated successfully',
+      title: t('notification:templates.settingsUpdatedTitle'),
+      message: t('notification:templates.settingsUpdatedMessage'),
       channel: 'push'
     });
   });
@@ -240,8 +241,8 @@ function initializeSellerSagaHandlers() {
       recipientId: sellerId,
       recipientType: 'seller',
       type: 'support_resolved',
-      title: 'Support Request Resolved',
-      message: `Your support request has been resolved`,
+      title: t('notification:templates.supportResolvedTitle'),
+      message: t('notification:templates.supportResolvedMessage'),
       channel: 'email'
     });
   });
@@ -253,8 +254,8 @@ function initializeSellerSagaHandlers() {
       recipientId: sellerId,
       recipientType: 'seller',
       type: 'enabler_collaboration',
-      title: 'Enabler Collaboration Established',
-      message: 'You have been matched with an enabler for assistance',
+      title: t('notification:templates.enablerCollaborationTitle'),
+      message: t('notification:templates.enablerCollaborationMessage'),
       channel: 'push'
     });
   });
@@ -267,8 +268,8 @@ function initializeSellerSagaHandlers() {
       recipientId: customerId,
       recipientType: 'customer',
       type: 'order_shipped',
-      title: 'Order Shipped',
-      message: `Your order ${orderId} has been shipped`,
+      title: t('notification:templates.orderShippedTitle'),
+      message: t('notification:templates.orderShippedMessage', { orderId }),
       channel: 'sms'
     });
   });
@@ -290,8 +291,8 @@ function initializeSellerSagaHandlers() {
       recipientId: 'customer',
       recipientType: 'customer',
       type: 'refund_processed',
-      title: 'Refund Processed',
-      message: `Your refund of $${refundAmount} has been processed`,
+      title: t('notification:templates.refundProcessedTitle'),
+      message: t('notification:templates.refundProcessedMessage', { refundAmount }),
       channel: 'email'
     });
   });
@@ -329,8 +330,8 @@ function initializeCourierNotificationHandlers() {
       recipientId: courierId,
       recipientType: 'courier',
       type: 'delivery_completed',
-      title: 'Delivery Completed',
-      message: `Delivery ${deliveryId} has been completed successfully`,
+      title: t('notification:templates.deliveryCompletedTitle'),
+      message: t('notification:templates.deliveryCompletedMessageCourier', { deliveryId }),
       channel: 'push'
     });
     
@@ -338,8 +339,8 @@ function initializeCourierNotificationHandlers() {
       recipientId: customerId,
       recipientType: 'customer',
       type: 'delivery_completed',
-      title: 'Package Delivered',
-      message: 'Your package has been delivered',
+      title: t('notification:templates.deliveryCompletedMessageCustomer'),
+      message: t('notification:templates.deliveryCompletedMessageCustomerDetail'),
       channel: 'sms'
     });
   });
@@ -352,8 +353,8 @@ function initializeCourierNotificationHandlers() {
       recipientId: courierId,
       recipientType: 'courier',
       type: 'payout_scheduled',
-      title: 'Payout Scheduled',
-      message: `Your payout of $${totalEarnings} has been scheduled`,
+      title: t('notification:templates.courierPayoutTitle'),
+      message: t('notification:templates.courierPayoutMessage', { totalEarnings }),
       channel: 'push'
     });
   });
@@ -363,14 +364,14 @@ function initializeCourierNotificationHandlers() {
     const { courierId, verificationStatus } = event.data;
     
     const message = verificationStatus === 'verified' 
-      ? 'Your KYC verification has been approved'
-      : 'Your KYC verification requires additional documents';
+      ? t('notification:templates.courierKycStatusMessageVerified')
+      : t('notification:templates.courierKycStatusMessagePending');
     
     await sendNotification({
       recipientId: courierId,
       recipientType: 'courier',
       type: 'kyc_status_update',
-      title: 'KYC Status Update',
+      title: t('notification:templates.courierKycStatusTitle'),
       message,
       channel: 'email'
     });
@@ -384,8 +385,8 @@ function initializeCourierNotificationHandlers() {
       recipientId: courierId,
       recipientType: 'courier',
       type: 'settings_updated',
-      title: 'Settings Updated',
-      message: 'Your preferences have been updated successfully',
+      title: t('notification:templates.courierPreferencesTitle'),
+      message: t('notification:templates.courierPreferencesMessage'),
       channel: 'push'
     });
   });
@@ -398,8 +399,8 @@ function initializeCourierNotificationHandlers() {
       recipientId: courierId,
       recipientType: 'courier',
       type: 'support_resolved',
-      title: 'Support Request Resolved',
-      message: `Your support request #${supportRequestId} has been resolved`,
+      title: t('notification:templates.courierSupportTitle'),
+      message: t('notification:templates.courierSupportMessage', { supportRequestId }),
       channel: 'email'
     });
   });
@@ -412,8 +413,8 @@ function initializeCourierNotificationHandlers() {
       recipientId: courierId,
       recipientType: 'courier',
       type: 'vehicle_status',
-      title: 'Vehicle Status Updated',
-      message: `Your vehicle ${vehicleId} status is now ${status}`,
+      title: t('notification:templates.vehicleStatusTitle'),
+      message: t('notification:templates.vehicleStatusMessage', { vehicleId, status }),
       channel: 'push'
     });
   });
@@ -426,8 +427,8 @@ function initializeCourierNotificationHandlers() {
       recipientId: courierId,
       recipientType: 'courier',
       type: 'performance_report',
-      title: 'Performance Report Available',
-      message: 'Your monthly performance report is ready to view',
+      title: t('notification:templates.performanceReportTitle'),
+      message: t('notification:templates.performanceReportMessage'),
       channel: 'push'
     });
   });

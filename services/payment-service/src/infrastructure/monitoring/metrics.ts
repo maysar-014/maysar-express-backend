@@ -26,6 +26,12 @@ export const businessMetrics = {
         help: 'Total number of refunds processed',
         labelNames: [],
         registers: [metricsRegistry]
+    }),
+    paymentOutcomesTotal: new Counter({
+        name: 'payment_service_payment_outcomes_total',
+        help: 'Total payment outcomes by status',
+        labelNames: ['status'],
+        registers: [metricsRegistry]
     })
 };
 

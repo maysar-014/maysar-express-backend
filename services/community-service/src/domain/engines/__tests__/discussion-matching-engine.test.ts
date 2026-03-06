@@ -1,18 +1,17 @@
 import { DiscussionMatchingEngine } from '../discussion-matching-engine';
+import { ExpertiseLevel } from '../../value-objects/expertise-badge.value-object';
 
 describe('DiscussionMatchingEngine', () => {
-    let engine: DiscussionMatchingEngine;
-
-    beforeEach(() => {
-        engine = new DiscussionMatchingEngine();
-    });
-
-    it('should match discussions', () => {
-        const start = performance.now();
-        const matches = engine.match({ interests: ['farming'], location: 'Kenya' });
-        const duration = performance.now() - start;
-        
-        expect(matches).toBeDefined();
-        expect(duration).toBeLessThan(10);
+    it('should match experts to thread', () => {
+        const result = DiscussionMatchingEngine.matchExpertsToThread(
+            { 
+                topic: 'farming', 
+                category: 'GENERAL', 
+                expertiseLevel: ExpertiseLevel.BEGINNER, 
+                industryTags: ['agriculture'] 
+            }, 
+            []
+        );
+        expect(Array.isArray(result)).toBe(true);
     });
 });

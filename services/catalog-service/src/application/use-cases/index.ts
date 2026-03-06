@@ -8,6 +8,8 @@
 export * from './create-product.use-case';
 export * from './get-product.use-case';
 export * from './search-products.use-case';
+export * from './load-category-attributes.use-case';
+export * from './preview-generated-description.use-case';
 
 /**
  * Use Case Factory Interface
@@ -20,6 +22,8 @@ export interface IUseCaseFactory {
   getProductUseCase(): any;
   getProductsBySellerUseCase(): any;
   searchProductsUseCase(): any;
+  loadCategoryAttributesUseCase(): any;
+  previewGeneratedDescriptionUseCase(): any;
 
   // Future use cases can be added here
   // updateProductUseCase(): any;

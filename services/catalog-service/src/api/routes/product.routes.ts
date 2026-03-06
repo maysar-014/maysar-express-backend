@@ -270,6 +270,30 @@ export function createProductRoutes(
     }
   );
 
+  /**
+   * Load Category Attributes
+   * GET /api/v1/categories/:categoryId/attributes
+   */
+  router.get(`${apiPrefix}/categories/:categoryId/attributes`,
+    ...commonMiddleware,
+    cache,
+    async (req, res) => {
+      await productController.loadCategoryAttributes(req, res);
+    }
+  );
+
+  /**
+   * Preview Generated Description
+   * POST /api/v1/products/preview-description
+   */
+  router.post(`${apiPrefix}/products/preview-description`,
+    ...sellerMiddleware,
+    validateRequest,
+    async (req, res) => {
+      await productController.previewGeneratedDescription(req, res);
+    }
+  );
+
   // =====================================================================================
   // PRODUCT LIFECYCLE MANAGEMENT
   // =====================================================================================
@@ -491,6 +515,8 @@ export const PRODUCT_ROUTES_METADATA = {
     // Search & Discovery
     { method: 'GET', path: '/products/search', description: 'Search products', auth: 'public' },
     { method: 'GET', path: '/sellers/:sellerId/products', description: 'Get seller products', auth: 'public' },
+    { method: 'GET', path: '/categories/:categoryId/attributes', description: 'Load category attributes', auth: 'public' },
+    { method: 'POST', path: '/products/preview-description', description: 'Preview generated description', auth: 'seller' },
 
     // Lifecycle Management
     { method: 'POST', path: '/products/:id/publish', description: 'Publish product', auth: 'seller' },

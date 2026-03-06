@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant Seller as Seller API
+    participant UC as CreateProduct UseCase
+    participant AttrUC as LoadCategoryAttributes UseCase
+    participant Gen as DescriptionGenerator
+    participant Score as QualityScorePolicy
+    participant Repo as ProductRepository
+    participant Bus as EventBus
+
+    Seller->>AttrUC: loadCategoryAttributes(categoryId)
+    AttrUC-->>Seller: CategoryAttributeSchema[]
+
+    Seller->>UC: createProduct(StructuredCreateProductDto)
+    
+    UC->>UC: Validate structuredAttributes against schema
+    UC->>Gen: generateDescription(attributes, template)
+    Gen-->>UC: GeneratedProductDescription
+    
+    UC->>UC: generateSeoTitle(brand, productName, keyAttribute)
+    UC->>UC: generateSlug(categorySlug, brand, productName, keyAttribute)
+    
+    UC->>Score: computeQualityScore(product)
+    Score-->>UC: QualityScore (0–100)
+    
+    UC->>UC: rejectIfScoreBelow(60)
+    
+    UC->>Repo: saveWithAttributesTransaction(product, attributes)
+    Repo-->>UC: Product saved
+    
+    UC->>Bus: publish(ProductCreatedWithStructuredDataEvent)
+    Bus-->>UC: Event published
+    
+    UC-->>Seller: ProductResponseDto {productId, qualityScore, slug}

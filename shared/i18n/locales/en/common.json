@@ -1,0 +1,8 @@
+{
+  "errors": {
+    "internalServerError": "Internal server error",
+    "notFound": "{{resource}} not found",
+    "validationError": "Validation error",
+    "rateLimitExceeded": "Too many requests, please try again later"
+  }
+}

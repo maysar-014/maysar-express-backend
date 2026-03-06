@@ -251,28 +251,18 @@ jobs:
         continue-on-error: false
 
       - name: 🔍 Run linter
-        run: |
-          if npm run lint --if-present 2>/dev/null; then
-            echo "✅ Linting passed for ${{ matrix.service }}"
-          else
-            echo "⚠️ No lint script or linting not configured for ${{ matrix.service }}"
-          fi
-        continue-on-error: true
+        run: npm run lint --if-present
+        continue-on-error: false
 
       - name: 🔧 Type check
-        run: npx tsc --noEmit || echo "⚠️ Type check failed or not configured for ${{ matrix.service }}"
-        continue-on-error: true
+        run: npx tsc --noEmit
+        continue-on-error: false
 
       - name: 🏗️ Build service module
         run: npm run build
 
       - name: 🧪 Run tests
-        run: |
-          if npm run test --if-present 2>/dev/null; then
-            echo "✅ Tests passed for ${{ matrix.service }}"
-          else
-            echo "⚠️ No tests or tests not configured for ${{ matrix.service }}"
-          fi
+        run: npm test --if-present
         env:
           NODE_ENV: test
           POSTGRES_DB: maysar_test
@@ -282,11 +272,10 @@ jobs:
           REDIS_URL: redis://localhost:6379
           JWT_SECRET: test-jwt-secret-for-ci-only-not-for-production-use
           JWT_EXPIRES_IN: 1h
-        continue-on-error: true
+        continue-on-error: false
 
       - name: 📦 Audit dependencies
-        run: npm audit --audit-level moderate
-        continue-on-error: true
+        run: npm audit --audit-level high
 
       - name: 📊 Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -296,11 +285,70 @@ jobs:
           retention-days: 7
         if: success()
 
+  # OpenAPI Validation
+  openapi-validation:
+    name: 📄 Validate OpenAPI Specs
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🜢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 📄 Validate all OpenAPI specs with Redocly
+        run: |
+          FAILED=0
+          
+          # Find all service directories
+          for SERVICE_DIR in services/*/; do
+            SERVICE_NAME=$(basename "$SERVICE_DIR")
+            
+            # Check for docs/api/ directory
+            if [ -d "${SERVICE_DIR}docs/api" ]; then
+              echo "🔍 Validating specs in ${SERVICE_DIR}docs/api/..."
+              for SPEC in "${SERVICE_DIR}docs/api/"*.{yaml,yml,json}; do
+                [ -f "$SPEC" ] || continue
+                echo "  • Validating $SPEC"
+                npx --yes @redocly/cli@latest lint "$SPEC" --config .redocly.yaml || FAILED=1
+              done
+            fi
+            
+            # Check for top-level openapi.* files
+            for SPEC in "${SERVICE_DIR}"openapi.{yaml,yml,json}; do
+              [ -f "$SPEC" ] || continue
+              echo "🔍 Validating $SPEC..."
+              npx --yes @redocly/cli@latest lint "$SPEC" --config .redocly.yaml || FAILED=1
+            done
+            
+            # Check for service-specific API contract files
+            for SPEC in "${SERVICE_DIR}"*-api*.{yaml,yml,json} "${SERVICE_DIR}"*-contract*.{yaml,yml,json}; do
+              [ -f "$SPEC" ] || continue
+              echo "🔍 Validating $SPEC..."
+              npx --yes @redocly/cli@latest lint "$SPEC" --config .redocly.yaml || FAILED=1
+            done
+            
+            # Check for AsyncAPI specs
+            for SPEC in "${SERVICE_DIR}"asyncapi.{yaml,yml,json} "${SERVICE_DIR}docs/api/"asyncapi.{yaml,yml,json}; do
+              [ -f "$SPEC" ] || continue
+              echo "🔍 Validating AsyncAPI $SPEC..."
+              npx --yes @asyncapi/cli@latest validate "$SPEC" || FAILED=1
+            done
+          done
+          
+          if [ "$FAILED" -ne 0 ]; then
+            echo "❌ One or more API specs failed validation"
+            exit 1
+          fi
+          echo "✅ All API specs valid"
+
   # Monolithic Backend Build
   backend-monolith-build:
     name: 🏗️ Build Monolithic Backend
     runs-on: ubuntu-latest
-    needs: [service-module-test, unit-tests-coverage]
+    needs: [service-module-test, unit-tests-coverage, openapi-validation]
 
     services:
       postgres:
@@ -341,7 +389,7 @@ jobs:
         run: npm ci
 
       - name: 🔍 Run root linter
-        run: npm run lint || echo "No lint script available"
+        run: npm run lint
 
       - name: 🔧 Type check
         run: npx tsc --noEmit
@@ -350,7 +398,7 @@ jobs:
         run: npm run build
 
       - name: 🧪 Run integration tests
-        run: npm test || echo "No tests available"
+        run: npm test --if-present
         env:
           NODE_ENV: test
           POSTGRES_DB: maysar_test
@@ -362,8 +410,7 @@ jobs:
           JWT_EXPIRES_IN: 1h
 
       - name: 📦 Audit dependencies
-        run: npm audit --audit-level moderate
-        continue-on-error: true
+        run: npm audit --audit-level high
 
       - name: 📊 Upload monolith build artifacts
         uses: actions/upload-artifact@v4
@@ -470,12 +517,14 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔐 Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: 🔐 Configure OCI Credentials
+        uses: oracle-actions/configure-oci-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION }}
+          user: ${{ secrets.OCI_USER_OCID }}
+          fingerprint: ${{ secrets.OCI_FINGERPRINT }}
+          tenancy: ${{ secrets.OCI_TENANCY_OCID }}
+          region: ${{ vars.OCI_REGION }}
+          private-key: ${{ secrets.OCI_PRIVATE_KEY }}
 
       - name: ☸️ Setup kubectl
         uses: azure/setup-kubectl@v3
@@ -483,9 +532,9 @@ jobs:
       - name: ⛵ Setup Helm
         uses: azure/setup-helm@v3
 
-      - name: 🚀 Deploy Monolith to EKS
+      - name: 🚀 Deploy Monolith to OKE
         run: |
-          aws eks update-kubeconfig --name maysar-staging-eks --region ${{ vars.AWS_REGION }}
+          oci ce cluster create-kubeconfig --cluster-id ${{ secrets.OKE_CLUSTER_OCID }} --region ${{ vars.OCI_REGION }} --file $HOME/.kube/config
           helm upgrade --install maysar-backend ./infra/k8s/helm-charts/maysar-backend \
             --namespace maysar-backend \
             --set image.tag=${{ github.sha }} \
@@ -584,7 +633,7 @@ jobs:
   code-quality:
     name: 📊 Code Quality Report
     runs-on: ubuntu-latest
-    needs: [frontend-test, service-module-test, backend-monolith-build]
+    needs: [frontend-test, service-module-test, backend-monolith-build, openapi-validation]
     if: always()
 
     steps:
@@ -619,7 +668,7 @@ jobs:
   notify:
     name: 📢 Notification
     runs-on: ubuntu-latest
-    needs: [security-scan, frontend-test, service-module-test, backend-monolith-build, code-quality]
+    needs: [security-scan, frontend-test, service-module-test, backend-monolith-build, code-quality, openapi-validation]
     if: always()
     steps:
       - name: 📢 Send notification

@@ -202,6 +202,22 @@ export class Post {
     return this._moderationReason;
   }
 
+  // Engagement metrics (would typically come from separate engagement tracking)
+  get likesCount(): number {
+    // This would be fetched from engagement data
+    return 0;
+  }
+
+  get commentsCount(): number {
+    // This would be fetched from engagement data
+    return 0;
+  }
+
+  get sharesCount(): number {
+    // This would be fetched from engagement data
+    return 0;
+  }
+
   // Business methods
   publish(): void {
     if (this._status !== PostStatus.DRAFT) {

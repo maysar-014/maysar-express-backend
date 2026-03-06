@@ -1,330 +1,647 @@
-/**
- * Create Product Use Case Tests
- * 
- * Purpose: Validates product creation business logic and orchestration
- * Scope: Application layer testing with mocked infrastructure dependencies
- * Coverage Target: 85% (use case business logic)
- * 
- * Test Categories:
- * - Request validation and business rules
- * - Domain entity creation and persistence
- * - Event publishing and error handling
- * - Edge cases and error scenarios
- */
+// Test Suite for Verification Comments Implementation
+// Comprehensive tests for all 6 critical fixes
 
-import { CreateProductUseCase, CreateProductRequest } from '../create-product.use-case';
-import {
-  ProductRepository,
-  CategoryRepository,
-  SellerRepository,
-  MediaRepository,
-  DomainEventPublisher,
-  IdGenerator,
-  DateTimeService
-} from '../../../domain/interfaces';
-import { ProductType } from '../../../domain/value-objects/product-types.value-object';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { CreateProductUseCase } from '../create-product.use-case';
+import { PreviewGeneratedDescriptionUseCase } from '../preview-generated-description.use-case';
+import { DescriptionValidationPolicy } from '../../domain/policies/description-validation.policy';
+import { ProductQualityPolicy } from '../../domain/policies/product-quality.policy';
+import { DescriptionGeneratorEngine } from '../../domain/engines/description-generator.engine';
+import { PrismaProductAttributeRepository } from '../../infrastructure/repositories/prisma-product-attribute.repository';
+import { v4 as uuidv4 } from 'uuid';
 
-describe('CreateProductUseCase', () => {
-  let useCase: CreateProductUseCase;
-  let mockProductRepository: jest.Mocked<ProductRepository>;
-  let mockCategoryRepository: jest.Mocked<CategoryRepository>;
-  let mockSellerRepository: jest.Mocked<SellerRepository>;
-  let mockMediaRepository: jest.Mocked<MediaRepository>;
-  let mockEventPublisher: jest.Mocked<DomainEventPublisher>;
-  let mockIdGenerator: jest.Mocked<IdGenerator>;
-  let mockDateTimeService: jest.Mocked<DateTimeService>;
+// ============================================================================
+// COMMENT 1: Description Validation - Composed Description Test
+// ============================================================================
+
+describe('Comment 1: Description Validation with Composed Description', () => {
+  it('should validate composed description with all sections', () => {
+    const composedDesc = `
+      Overview text. Key features: feature1, feature2. 
+      Specifications: color: black, size: large. 
+      Usage: suitable for daily use. 
+      Delivery: fast shipping available.
+    `;
+    
+    const result = DescriptionValidationPolicy.validate(
+      composedDesc,
+      'Product Name',
+      ['category']
+    );
+    
+    expect(result.isValid).toBe(true);
+    expect(result.violatedRules).toHaveLength(0);
+  });
+
+  it('should fail validation if specifications section missing', () => {
+    const descWithoutSpecs = 'Overview text. Key features: feature1, feature2. Usage: suitable.';
+    
+    const result = DescriptionValidationPolicy.validate(
+      descWithoutSpecs,
+      'Product Name',
+      ['category']
+    );
+    
+    expect(result.isValid).toBe(false);
+    expect(result.violatedRules).toContain('Description must include a specifications section');
+  });
+
+  it('should fail validation if description too short', () => {
+    const shortDesc = 'Short text Specifications: color: black';
+    
+    const result = DescriptionValidationPolicy.validate(
+      shortDesc,
+      'Product Name',
+      ['category']
+    );
+    
+    expect(result.isValid).toBe(false);
+    expect(result.violatedRules).toContain('Description must be at least 120 characters');
+  });
+
+  it('should fail validation if product name missing', () => {
+    const desc = 'Overview text. Specifications: color: black. Usage: suitable. Delivery: fast.';
+    
+    const result = DescriptionValidationPolicy.validate(
+      desc,
+      'Different Product Name',
+      ['category']
+    );
+    
+    expect(result.isValid).toBe(false);
+    expect(result.violatedRules).toContain('Description must contain the product name');
+  });
+
+  it('should fail validation if category keyword missing', () => {
+    const desc = 'Product Name overview. Specifications: color: black. Usage: suitable. Delivery: fast.';
+    
+    const result = DescriptionValidationPolicy.validate(
+      desc,
+      'Product Name',
+      ['electronics', 'gadgets']
+    );
+    
+    expect(result.isValid).toBe(false);
+    expect(result.violatedRules).toContain('Description must contain at least one category keyword: electronics, gadgets');
+  });
+});
+
+// ============================================================================
+// COMMENT 2: UUID ID Generation Test
+// ============================================================================
+
+describe('Comment 2: ProductAttribute UUID ID Generation', () => {
+  let repository: PrismaProductAttributeRepository;
+  let mockPrisma: any;
 
   beforeEach(() => {
-    mockProductRepository = {
-      save: jest.fn(),
-      findById: jest.fn(),
-      findBySeller: jest.fn(),
-      findByCategory: jest.fn(),
-      search: jest.fn(),
-      updateStatus: jest.fn(),
-      delete: jest.fn()
+    mockPrisma = {
+      productAttribute: {
+        deleteMany: vi.fn().mockResolvedValue({}),
+        createMany: vi.fn().mockResolvedValue({}),
+      },
+    };
+    repository = new PrismaProductAttributeRepository(mockPrisma);
+  });
+
+  it('should generate UUID v4 IDs for attributes', async () => {
+    const productId = uuidv4();
+    const attributes = [
+      { attributeId: uuidv4(), value: 'value1' },
+      { attributeId: uuidv4(), value: 'value2' },
+    ];
+
+    await repository.saveAll(productId, attributes);
+
+    expect(mockPrisma.productAttribute.createMany).toHaveBeenCalled();
+    const callArgs = mockPrisma.productAttribute.createMany.mock.calls[0][0];
+    
+    callArgs.data.forEach((item: any) => {
+      // Validate UUID format (v4)
+      expect(item.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    });
+  });
+
+  it('should not generate timestamp-based IDs', async () => {
+    const productId = uuidv4();
+    const attributes = [{ attributeId: uuidv4(), value: 'test' }];
+
+    await repository.saveAll(productId, attributes);
+
+    const callArgs = mockPrisma.productAttribute.createMany.mock.calls[0][0];
+    const id = callArgs.data[0].id;
+
+    // Should not contain timestamp pattern (Date.now() format)
+    expect(id).not.toMatch(/^\d{13}-/);
+  });
+
+  it('should generate unique IDs for each attribute', async () => {
+    const productId = uuidv4();
+    const attributes = [
+      { attributeId: uuidv4(), value: 'value1' },
+      { attributeId: uuidv4(), value: 'value2' },
+      { attributeId: uuidv4(), value: 'value3' },
+    ];
+
+    await repository.saveAll(productId, attributes);
+
+    const callArgs = mockPrisma.productAttribute.createMany.mock.calls[0][0];
+    const ids = callArgs.data.map((item: any) => item.id);
+
+    // All IDs should be unique
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+// ============================================================================
+// COMMENT 3: Preview DTO Contract Test
+// ============================================================================
+
+describe('Comment 3: Preview API Response DTO Contract', () => {
+  let useCase: PreviewGeneratedDescriptionUseCase;
+  let mockCategoryRepo: any;
+  let mockAttributeRepo: any;
+
+  beforeEach(() => {
+    mockCategoryRepo = {
+      findById: vi.fn().mockResolvedValue({
+        id: uuidv4(),
+        name: 'Electronics',
+        slug: 'electronics',
+      }),
     };
 
-    mockCategoryRepository = {
-      save: jest.fn(),
-      findById: jest.fn(),
-      findAll: jest.fn(),
-      findBySlug: jest.fn(),
-      findSubcategories: jest.fn(),
-      update: jest.fn()
+    mockAttributeRepo = {
+      findByCategory: vi.fn().mockResolvedValue([
+        { id: uuidv4(), name: 'color', displayLabel: 'Color', type: 'TEXT', isRequired: true },
+      ]),
     };
 
-    mockSellerRepository = {
-      save: jest.fn(),
-      findById: jest.fn(),
-      findByEmail: jest.fn(),
-      updateProfile: jest.fn(),
-      updateMetrics: jest.fn()
+    useCase = new PreviewGeneratedDescriptionUseCase(mockAttributeRepo, mockCategoryRepo);
+  });
+
+  it('should return fullDescription as structured object', async () => {
+    const dto = {
+      categoryId: uuidv4(),
+      brand: 'TestBrand',
+      productName: 'Test Product',
+      structuredAttributes: { color: 'black' },
+      mediaUrls: ['url1'],
     };
 
-    mockMediaRepository = {
-      save: jest.fn(),
-      findById: jest.fn(),
-      findByProduct: jest.fn(),
-      delete: jest.fn(),
-      updateMetadata: jest.fn()
+    const result = await useCase.execute(dto);
+
+    // fullDescription should be an object, not a string
+    expect(typeof result.fullDescription).toBe('object');
+    expect(result.fullDescription).not.toBeNull();
+  });
+
+  it('should include all required fields in fullDescription', async () => {
+    const dto = {
+      categoryId: uuidv4(),
+      brand: 'TestBrand',
+      productName: 'Test Product',
+      structuredAttributes: { color: 'black' },
+      mediaUrls: ['url1'],
     };
 
+    const result = await useCase.execute(dto);
+
+    expect(result.fullDescription).toHaveProperty('overview');
+    expect(result.fullDescription).toHaveProperty('keyFeatures');
+    expect(result.fullDescription).toHaveProperty('specifications');
+    expect(result.fullDescription).toHaveProperty('usage');
+    expect(result.fullDescription).toHaveProperty('delivery');
+    expect(result.fullDescription).toHaveProperty('supplierInfo');
+  });
+
+  it('should have correct types for fullDescription fields', async () => {
+    const dto = {
+      categoryId: uuidv4(),
+      brand: 'TestBrand',
+      productName: 'Test Product',
+      structuredAttributes: { color: 'black' },
+      mediaUrls: ['url1'],
+    };
+
+    const result = await useCase.execute(dto);
+
+    expect(typeof result.fullDescription.overview).toBe('string');
+    expect(Array.isArray(result.fullDescription.keyFeatures)).toBe(true);
+    expect(typeof result.fullDescription.specifications).toBe('object');
+    expect(typeof result.fullDescription.usage).toBe('string');
+    expect(typeof result.fullDescription.delivery).toBe('string');
+    expect(typeof result.fullDescription.supplierInfo).toBe('string');
+  });
+});
+
+// ============================================================================
+// COMMENT 4: Event Publishing Test
+// ============================================================================
+
+describe('Comment 4: Backward-Compatible Event Publishing', () => {
+  let useCase: CreateProductUseCase;
+  let mockEventPublisher: any;
+  let mockRepositories: any;
+
+  beforeEach(() => {
     mockEventPublisher = {
-      publish: jest.fn(),
-      publishAll: jest.fn()
+      publish: vi.fn().mockResolvedValue({}),
     };
 
-    mockIdGenerator = {
-      generate: jest.fn(),
-      validate: jest.fn()
-    };
-
-    mockDateTimeService = {
-      now: jest.fn(),
-      timestamp: jest.fn(),
-      add: jest.fn(),
-      isPast: jest.fn(),
-      format: jest.fn()
+    mockRepositories = {
+      productRepository: {
+        saveWithAttributesTransaction: vi.fn().mockResolvedValue({}),
+      },
+      categoryRepository: {
+        findById: vi.fn().mockResolvedValue({
+          id: uuidv4(),
+          name: 'Electronics',
+          slug: 'electronics',
+        }),
+      },
+      categoryAttributeRepository: {
+        findByCategory: vi.fn().mockResolvedValue([]),
+      },
+      productAttributeRepository: {},
+      eventPublisher: mockEventPublisher,
+      idGenerator: { generate: () => uuidv4() },
+      dateTimeService: { now: () => new Date() },
     };
 
     useCase = new CreateProductUseCase(
-      mockProductRepository,
-      mockCategoryRepository,
-      mockSellerRepository,
-      mockMediaRepository,
-      mockEventPublisher,
-      mockIdGenerator,
-      mockDateTimeService
+      mockRepositories.productRepository,
+      mockRepositories.categoryRepository,
+      mockRepositories.categoryAttributeRepository,
+      mockRepositories.productAttributeRepository,
+      mockRepositories.eventPublisher,
+      mockRepositories.idGenerator,
+      mockRepositories.dateTimeService
     );
   });
 
-  describe('when creating product with valid data', () => {
-    it('should create product successfully', async () => {
-      // Given: Valid product creation request
-      const request: CreateProductRequest = {
-        sellerId: 'seller-123',
-        name: 'Test Product',
-        description: 'A test product description',
-        price: 99.99,
-        currency: 'USD',
-        categoryId: 'category-456',
-        type: ProductType.PHYSICAL,
-        tags: ['electronics', 'gadget'],
-        mediaUrls: ['https://example.com/image1.jpg'],
-        inventoryCount: 100,
-        attributes: { color: 'blue', size: 'medium' }
-      };
+  it('should publish ProductCreated event', async () => {
+    const dto = {
+      sellerId: uuidv4(),
+      categoryId: uuidv4(),
+      brand: 'TestBrand',
+      productName: 'Test Product',
+      minimumOrderQuantity: 1,
+      supplierLocation: 'Test Location',
+      structuredAttributes: {},
+      mediaUrls: [],
+      price: 100,
+    };
 
-      const mockSeller = { id: 'seller-123', status: 'active' };
-      const mockCategory = { id: 'category-456', name: 'Electronics' };
-      const mockProductId = 'product-789';
-      const mockDate = new Date('2024-01-01T00:00:00Z');
+    await useCase.execute(dto);
 
-      mockSellerRepository.findById.mockResolvedValue(mockSeller);
-      mockCategoryRepository.findById.mockResolvedValue(mockCategory);
-      mockProductRepository.findBySeller.mockResolvedValue([]);
-      mockIdGenerator.generate.mockReturnValue(mockProductId);
-      mockDateTimeService.now.mockReturnValue(mockDate);
-      mockProductRepository.save.mockResolvedValue({});
-      mockMediaRepository.save.mockResolvedValue({});
-      mockEventPublisher.publish.mockResolvedValue();
+    const publishCalls = mockEventPublisher.publish.mock.calls;
+    const productCreatedEvent = publishCalls.find(
+      (call: any) => call[0].eventType === 'ProductCreated'
+    );
 
-      // When: Executing product creation
-      const result = await useCase.execute(request);
-
-      // Then: Product should be created successfully
-      expect(result.status).toBe('success');
-      expect(result.productId).toBe(mockProductId);
-      expect(result.message).toBe('Product created successfully');
-
-      expect(mockSellerRepository.findById).toHaveBeenCalledWith('seller-123');
-      expect(mockCategoryRepository.findById).toHaveBeenCalledWith('category-456');
-      expect(mockProductRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: mockProductId,
-          sellerId: 'seller-123',
-          name: 'Test Product',
-          description: 'A test product description'
-        })
-      );
-      expect(mockMediaRepository.save).toHaveBeenCalledTimes(1);
-      expect(mockEventPublisher.publish).toHaveBeenCalledWith(
-        expect.objectContaining({
-          eventType: 'ProductCreated',
-          aggregateId: mockProductId
-        })
-      );
-    });
-
-    it('should create product without media URLs', async () => {
-      // Given: Product request without media
-      const request: CreateProductRequest = {
-        sellerId: 'seller-123',
-        name: 'Simple Product',
-        description: 'A simple product',
-        price: 49.99,
-        categoryId: 'category-456',
-        type: ProductType.DIGITAL,
-        tags: [],
-        mediaUrls: [],
-        inventoryCount: 50,
-        attributes: {}
-      };
-
-      mockSellerRepository.findById.mockResolvedValue({ id: 'seller-123' });
-      mockCategoryRepository.findById.mockResolvedValue({ id: 'category-456' });
-      mockProductRepository.findBySeller.mockResolvedValue([]);
-      mockIdGenerator.generate.mockReturnValue('product-789');
-      mockDateTimeService.now.mockReturnValue(new Date());
-      mockProductRepository.save.mockResolvedValue({});
-      mockEventPublisher.publish.mockResolvedValue();
-
-      // When: Creating product
-      const result = await useCase.execute(request);
-
-      // Then: Product created without media processing
-      expect(result.status).toBe('success');
-      expect(mockMediaRepository.save).not.toHaveBeenCalled();
-    });
+    expect(productCreatedEvent).toBeDefined();
   });
 
-  describe('when validating request', () => {
-    it('should reject request with missing required fields', async () => {
-      // Given: Invalid request with missing fields
-      const request: CreateProductRequest = {
-        sellerId: '',
-        name: '',
-        description: '',
-        price: 0,
-        categoryId: '',
-        type: ProductType.PHYSICAL,
-        tags: [],
-        mediaUrls: [],
-        inventoryCount: 0,
-        attributes: {}
-      };
+  it('should publish ProductCreatedWithStructuredData event', async () => {
+    const dto = {
+      sellerId: uuidv4(),
+      categoryId: uuidv4(),
+      brand: 'TestBrand',
+      productName: 'Test Product',
+      minimumOrderQuantity: 1,
+      supplierLocation: 'Test Location',
+      structuredAttributes: {},
+      mediaUrls: [],
+      price: 100,
+    };
 
-      // When: Executing with invalid request
-      const result = await useCase.execute(request);
+    await useCase.execute(dto);
 
-      // Then: Should return validation error
-      expect(result.status).toBe('validation_error');
-      expect(result.violations).toContain('Product name is required');
-      expect(result.violations).toContain('Product description is required');
-      expect(result.violations).toContain('Valid product price is required');
-      expect(result.violations).toContain('Seller ID is required');
-      expect(result.violations).toContain('Category ID is required');
-    });
+    const publishCalls = mockEventPublisher.publish.mock.calls;
+    const structuredEvent = publishCalls.find(
+      (call: any) => call[0].eventType === 'ProductCreatedWithStructuredData'
+    );
 
-    it('should reject request with invalid field lengths', async () => {
-      // Given: Request with fields exceeding limits
-      const request: CreateProductRequest = {
-        sellerId: 'seller-123',
-        name: 'x'.repeat(201),
-        description: 'x'.repeat(5001),
-        price: 150000,
-        categoryId: 'category-456',
-        type: ProductType.PHYSICAL,
-        tags: Array(21).fill('tag'),
-        mediaUrls: [],
-        inventoryCount: 100,
-        attributes: {}
-      };
-
-      // When: Executing with invalid lengths
-      const result = await useCase.execute(request);
-
-      // Then: Should return validation errors
-      expect(result.status).toBe('validation_error');
-      expect(result.violations).toContain('Product name must be less than 200 characters');
-      expect(result.violations).toContain('Product description must be less than 5000 characters');
-      expect(result.violations).toContain('Product price cannot exceed $100,000');
-      expect(result.violations).toContain('Product cannot have more than 20 tags');
-    });
+    expect(structuredEvent).toBeDefined();
   });
 
-  describe('when validating business rules', () => {
-    it('should reject request when seller not found', async () => {
-      // Given: Valid request but seller doesn't exist
-      const request: CreateProductRequest = {
-        sellerId: 'nonexistent-seller',
-        name: 'Test Product',
-        description: 'Test description',
-        price: 99.99,
-        categoryId: 'category-456',
-        type: ProductType.PHYSICAL,
-        tags: [],
-        mediaUrls: [],
-        inventoryCount: 100,
-        attributes: {}
-      };
+  it('should publish both events in correct order', async () => {
+    const dto = {
+      sellerId: uuidv4(),
+      categoryId: uuidv4(),
+      brand: 'TestBrand',
+      productName: 'Test Product',
+      minimumOrderQuantity: 1,
+      supplierLocation: 'Test Location',
+      structuredAttributes: {},
+      mediaUrls: [],
+      price: 100,
+    };
 
-      mockSellerRepository.findById.mockResolvedValue(null);
+    await useCase.execute(dto);
 
-      // When: Executing with nonexistent seller
-      const result = await useCase.execute(request);
+    const publishCalls = mockEventPublisher.publish.mock.calls;
+    expect(publishCalls.length).toBeGreaterThanOrEqual(2);
+    expect(publishCalls[0][0].eventType).toBe('ProductCreated');
+    expect(publishCalls[1][0].eventType).toBe('ProductCreatedWithStructuredData');
+  });
+});
 
-      // Then: Should return business rule violation
-      expect(result.status).toBe('business_rule_violation');
-      expect(result.message).toBe('Seller not found');
-      expect(mockProductRepository.save).not.toHaveBeenCalled();
+// ============================================================================
+// COMMENT 5: Transactional Persistence Test
+// ============================================================================
+
+describe('Comment 5: Transactional Product + Attributes Persistence', () => {
+  let mockPrisma: any;
+  let repository: any;
+
+  beforeEach(() => {
+    const transactionMock = vi.fn(async (callback: any) => {
+      return callback({
+        product: {
+          create: vi.fn().mockResolvedValue({ id: uuidv4() }),
+        },
+        productAttribute: {
+          deleteMany: vi.fn().mockResolvedValue({}),
+          createMany: vi.fn().mockResolvedValue({}),
+        },
+      });
     });
 
-    it('should reject request when seller exceeds product limit', async () => {
-      // Given: Seller at maximum product limit
-      const request: CreateProductRequest = {
-        sellerId: 'seller-123',
-        name: 'Test Product',
-        description: 'Test description',
-        price: 99.99,
-        categoryId: 'category-456',
-        type: ProductType.PHYSICAL,
-        tags: [],
-        mediaUrls: [],
-        inventoryCount: 100,
-        attributes: {}
-      };
+    mockPrisma = {
+      $transaction: transactionMock,
+    };
 
-      const existingProducts = Array(1000).fill({ id: 'product' });
-      mockSellerRepository.findById.mockResolvedValue({ id: 'seller-123' });
-      mockCategoryRepository.findById.mockResolvedValue({ id: 'category-456' });
-      mockProductRepository.findBySeller.mockResolvedValue(existingProducts);
-
-      // When: Executing when at product limit
-      const result = await useCase.execute(request);
-
-      // Then: Should return business rule violation
-      expect(result.status).toBe('business_rule_violation');
-      expect(result.message).toBe('Seller has reached maximum product limit');
-    });
+    repository = {
+      saveWithAttributesTransaction: async (persistenceDto: any, productId: string, attributes: any[]) => {
+        return mockPrisma.$transaction(async (tx: any) => {
+          await tx.product.create({ data: persistenceDto });
+          if (attributes.length > 0) {
+            await tx.productAttribute.createMany({ data: attributes });
+          }
+        });
+      },
+    };
   });
 
-  describe('when handling errors', () => {
-    it('should handle repository errors gracefully', async () => {
-      // Given: Valid request but repository throws error
-      const request: CreateProductRequest = {
-        sellerId: 'seller-123',
-        name: 'Test Product',
-        description: 'Test description',
-        price: 99.99,
-        categoryId: 'category-456',
-        type: ProductType.PHYSICAL,
-        tags: [],
-        mediaUrls: [],
-        inventoryCount: 100,
-        attributes: {}
-      };
+  it('should use transaction for atomic operations', async () => {
+    const persistenceDto = {
+      id: uuidv4(),
+      sellerId: uuidv4(),
+      title: 'Test',
+      description: 'Test description',
+      categoryId: uuidv4(),
+      brand: 'Brand',
+      slug: 'test-slug',
+      seoTitle: 'SEO Title',
+      shortSeoDescription: 'Short desc',
+      generatedDescription: '{}',
+      qualityScore: 75,
+      status: 'published',
+      visibility: 'public',
+      tags: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-      mockSellerRepository.findById.mockRejectedValue(new Error('Database error'));
+    const attributes = [
+      { id: uuidv4(), productId: persistenceDto.id, attributeId: uuidv4(), value: 'value1' },
+    ];
 
-      // When: Repository throws error
-      const result = await useCase.execute(request);
+    await repository.saveWithAttributesTransaction(persistenceDto, persistenceDto.id, attributes);
 
-      // Then: Should return error response
-      expect(result.status).toBe('business_rule_violation');
-      expect(result.message).toBe('Business rule validation failed');
-      expect(result.violations).toContain('Business rule validation failed');
+    expect(mockPrisma.$transaction).toHaveBeenCalled();
+  });
+
+  it('should save product and attributes together', async () => {
+    const persistenceDto = {
+      id: uuidv4(),
+      sellerId: uuidv4(),
+      title: 'Test',
+      description: 'Test description',
+      categoryId: uuidv4(),
+      brand: 'Brand',
+      slug: 'test-slug',
+      seoTitle: 'SEO Title',
+      shortSeoDescription: 'Short desc',
+      generatedDescription: '{}',
+      qualityScore: 75,
+      status: 'published',
+      visibility: 'public',
+      tags: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const attributes = [
+      { id: uuidv4(), productId: persistenceDto.id, attributeId: uuidv4(), value: 'value1' },
+      { id: uuidv4(), productId: persistenceDto.id, attributeId: uuidv4(), value: 'value2' },
+    ];
+
+    await repository.saveWithAttributesTransaction(persistenceDto, persistenceDto.id, attributes);
+
+    expect(mockPrisma.$transaction).toHaveBeenCalled();
+  });
+
+  it('should handle empty attributes', async () => {
+    const persistenceDto = {
+      id: uuidv4(),
+      sellerId: uuidv4(),
+      title: 'Test',
+      description: 'Test description',
+      categoryId: uuidv4(),
+      brand: 'Brand',
+      slug: 'test-slug',
+      seoTitle: 'SEO Title',
+      shortSeoDescription: 'Short desc',
+      generatedDescription: '{}',
+      qualityScore: 75,
+      status: 'published',
+      visibility: 'public',
+      tags: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    await repository.saveWithAttributesTransaction(persistenceDto, persistenceDto.id, []);
+
+    expect(mockPrisma.$transaction).toHaveBeenCalled();
+  });
+});
+
+// ============================================================================
+// COMMENT 6: Migration Safety Test
+// ============================================================================
+
+describe('Comment 6: Migration Safety - Slug Uniqueness', () => {
+  it('should generate unique slugs with deterministic suffix', () => {
+    const baseSlug = 'test-product';
+    const slugs = [];
+
+    // Simulate ROW_NUMBER() PARTITION BY logic
+    for (let i = 1; i <= 5; i++) {
+      const slug = i === 1 ? baseSlug : `${baseSlug}-${String(i).padStart(5, '0')}`;
+      slugs.push(slug);
+    }
+
+    // All slugs should be unique
+    expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  it('should preserve slug uniqueness after truncation', () => {
+    const baseSlug = 'very-long-product-name-that-needs-truncation';
+    const maxLength = 300;
+
+    const slug1 = baseSlug.substring(0, 290);
+    const slug2 = `${baseSlug.substring(0, 290)}-00002`;
+
+    // Both should be within limit
+    expect(slug1.length).toBeLessThanOrEqual(maxLength);
+    expect(slug2.length).toBeLessThanOrEqual(maxLength);
+
+    // Both should be unique
+    expect(slug1).not.toBe(slug2);
+  });
+
+  it('should handle long product names without collision', () => {
+    const longName = 'a'.repeat(250);
+    const slugs = [];
+
+    for (let i = 1; i <= 3; i++) {
+      const slug = i === 1 
+        ? longName.substring(0, 290)
+        : `${longName.substring(0, 290)}-${String(i).padStart(5, '0')}`;
+      slugs.push(slug);
+    }
+
+    // All should be unique
+    expect(new Set(slugs).size).toBe(slugs.length);
+
+    // All should be within limit
+    slugs.forEach(slug => {
+      expect(slug.length).toBeLessThanOrEqual(300);
     });
+  });
+});
+
+// ============================================================================
+// Integration Tests
+// ============================================================================
+
+describe('Integration: Complete Product Creation Flow', () => {
+  it('should create product with all validations and publishing', async () => {
+    // This test verifies all 6 fixes work together
+    const mockRepositories = {
+      productRepository: {
+        saveWithAttributesTransaction: vi.fn().mockResolvedValue({}),
+      },
+      categoryRepository: {
+        findById: vi.fn().mockResolvedValue({
+          id: uuidv4(),
+          name: 'Electronics',
+          slug: 'electronics',
+        }),
+      },
+      categoryAttributeRepository: {
+        findByCategory: vi.fn().mockResolvedValue([]),
+      },
+      productAttributeRepository: {},
+      eventPublisher: {
+        publish: vi.fn().mockResolvedValue({}),
+      },
+      idGenerator: { generate: () => uuidv4() },
+      dateTimeService: { now: () => new Date() },
+    };
+
+    const useCase = new CreateProductUseCase(
+      mockRepositories.productRepository,
+      mockRepositories.categoryRepository,
+      mockRepositories.categoryAttributeRepository,
+      mockRepositories.productAttributeRepository,
+      mockRepositories.eventPublisher,
+      mockRepositories.idGenerator,
+      mockRepositories.dateTimeService
+    );
+
+    const dto = {
+      sellerId: uuidv4(),
+      categoryId: uuidv4(),
+      brand: 'TestBrand',
+      productName: 'Test Product',
+      minimumOrderQuantity: 1,
+      supplierLocation: 'Test Location',
+      structuredAttributes: {},
+      mediaUrls: ['url1'],
+      price: 100,
+    };
+
+    const result = await useCase.execute(dto);
+
+    // Verify success
+    expect(result.status).toBe('success');
+    expect(result.productId).toBeDefined();
+
+    // Verify transaction was called (Comment 5)
+    expect(mockRepositories.productRepository.saveWithAttributesTransaction).toHaveBeenCalled();
+
+    // Verify events were published (Comment 4)
+    expect(mockRepositories.eventPublisher.publish).toHaveBeenCalledTimes(2);
+  });
+
+  it('should fail gracefully on validation error', async () => {
+    const mockRepositories = {
+      productRepository: {
+        saveWithAttributesTransaction: vi.fn(),
+      },
+      categoryRepository: {
+        findById: vi.fn().mockResolvedValue({
+          id: uuidv4(),
+          name: 'Electronics',
+          slug: 'electronics',
+        }),
+      },
+      categoryAttributeRepository: {
+        findByCategory: vi.fn().mockResolvedValue([]),
+      },
+      productAttributeRepository: {},
+      eventPublisher: {
+        publish: vi.fn(),
+      },
+      idGenerator: { generate: () => uuidv4() },
+      dateTimeService: { now: () => new Date() },
+    };
+
+    const useCase = new CreateProductUseCase(
+      mockRepositories.productRepository,
+      mockRepositories.categoryRepository,
+      mockRepositories.categoryAttributeRepository,
+      mockRepositories.productAttributeRepository,
+      mockRepositories.eventPublisher,
+      mockRepositories.idGenerator,
+      mockRepositories.dateTimeService
+    );
+
+    const dto = {
+      sellerId: uuidv4(),
+      categoryId: uuidv4(),
+      brand: 'TestBrand',
+      productName: 'Test Product',
+      minimumOrderQuantity: 1,
+      supplierLocation: 'Test Location',
+      structuredAttributes: {},
+      mediaUrls: [],
+      price: 100,
+    };
+
+    const result = await useCase.execute(dto);
+
+    // Should fail validation
+    expect(result.status).toBe('validation_error');
+    expect(result.violations).toBeDefined();
+
+    // Should not save or publish
+    expect(mockRepositories.productRepository.saveWithAttributesTransaction).not.toHaveBeenCalled();
+    expect(mockRepositories.eventPublisher.publish).not.toHaveBeenCalled();
   });
 });

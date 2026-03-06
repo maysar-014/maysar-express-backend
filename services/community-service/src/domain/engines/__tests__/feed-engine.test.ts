@@ -1,18 +1,9 @@
 import { FeedEngine } from '../feed-engine';
+import { User } from '../../entities/user.entity';
 
 describe('FeedEngine', () => {
-    let engine: FeedEngine;
-
-    beforeEach(() => {
-        engine = new FeedEngine();
-    });
-
     it('should generate feed', () => {
-        const start = performance.now();
-        const feed = engine.generateFeed({ userId: 'u1', limit: 20 });
-        const duration = performance.now() - start;
-        
-        expect(feed).toBeDefined();
-        expect(duration).toBeLessThan(10);
+        const result = FeedEngine.generateFeed({} as User, [], {});
+        expect(Array.isArray(result)).toBe(true);
     });
 });

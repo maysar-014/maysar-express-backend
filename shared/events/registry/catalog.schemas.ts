@@ -20,6 +20,27 @@ export const ProductCreatedSchema: EventSchema = {
 };
 
 /**
+ * Product Created With Structured Data Event Schema
+ */
+export const ProductCreatedWithStructuredDataSchema: EventSchema = {
+    eventType: 'ProductCreatedWithStructuredData',
+    version: 'v1',
+    validate(data: any) {
+        const errors: string[] = [];
+        if (!data.productId) errors.push('productId is required');
+        if (!data.sellerId) errors.push('sellerId is required');
+        if (!data.slug) errors.push('slug is required');
+        if (!data.categorySlug) errors.push('categorySlug is required');
+        if (typeof data.qualityScore !== 'number') errors.push('qualityScore must be a number');
+
+        return {
+            valid: errors.length === 0,
+            errors: errors.length > 0 ? errors : undefined
+        };
+    }
+};
+
+/**
  * Category Created Event Schema
  */
 export const CategoryCreatedSchema: EventSchema = {
@@ -40,5 +61,6 @@ export const CategoryCreatedSchema: EventSchema = {
 // Register schemas
 export const registerCatalogSchemas = () => {
     eventRegistry.register(ProductCreatedSchema);
+    eventRegistry.register(ProductCreatedWithStructuredDataSchema);
     eventRegistry.register(CategoryCreatedSchema);
 };

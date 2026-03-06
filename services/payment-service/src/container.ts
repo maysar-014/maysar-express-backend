@@ -4,6 +4,7 @@ import { IRefundRepository } from './domain/repositories/refund.repository';
 import { IFraudRepository } from './domain/repositories/fraud.repository';
 import { RefundRepository } from './infrastructure/repositories/refund.repository';
 import { FraudRepository } from './infrastructure/repositories/fraud.repository';
+import Redis from 'ioredis';
 
 import { PesapalAdapter } from './infrastructure/providers/pesapal.adapter';
 import { ProcessPaymentUseCase } from './application/use-cases/process-payment.use-case';
@@ -15,6 +16,8 @@ import { PaymentLimitsPolicy } from './domain/policies/payment-limits.policy';
 import { FraudPreventionPolicy } from './domain/policies/fraud-prevention.policy';
 import { RefundPolicy } from './domain/policies/refund.policy';
 import { PaymentController } from './api/controllers/payment.controller';
+import { WebhookController } from './api/controllers/webhook.controller';
+import { HandlePesapalWebhookUseCase } from './application/use-cases/handle-pesapal-webhook.use-case';
 import { inMemoryEventBus } from '@shared-events/eventBus';
 import { IEventBus } from './infrastructure/messaging/event-bus.interface';
 import { OutboxRepository } from './infrastructure/messaging/outbox.repository';
@@ -36,6 +39,7 @@ export class Container {
     private static instance: Container;
 
     public prisma: PrismaClient;
+    public redisClient?: Redis;
 
     // Repositories
     public paymentRepository: PaymentRepository;
@@ -74,12 +78,19 @@ export class Container {
     public processPaymentUseCase: ProcessPaymentUseCase;
     public refundPaymentUseCase: RefundPaymentUseCase;
     public checkPaymentStatusUseCase: CheckPaymentStatusUseCase;
+    public handlePesapalWebhookUseCase: HandlePesapalWebhookUseCase;
 
     // Controllers
     public paymentController: PaymentController;
+    public webhookController: WebhookController;
 
     private constructor() {
         this.prisma = new PrismaClient();
+
+        // Redis client (optional)
+        if (process.env.REDIS_URL) {
+            this.redisClient = new Redis(process.env.REDIS_URL);
+        }
 
         // Repositories
         this.paymentRepository = new PaymentRepository(this.prisma);
@@ -139,11 +150,24 @@ export class Container {
             this.refundPolicy
         );
 
+        this.handlePesapalWebhookUseCase = new HandlePesapalWebhookUseCase(
+            this.paymentRepository,
+            this.pesapalAdapter,
+            this.eventBus
+        );
+
         // Controllers
         this.paymentController = new PaymentController(
             this.processPaymentUseCase,
             this.checkPaymentStatusUseCase,
-            this.refundPaymentUseCase
+            this.refundPaymentUseCase,
+            this.handlePesapalWebhookUseCase,
+            this.pesapalAdapter
+        );
+
+        this.webhookController = new WebhookController(
+            this.pesapalAdapter,
+            this.handlePesapalWebhookUseCase
         );
 
         // Sagas

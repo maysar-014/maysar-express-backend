@@ -1,0 +1,2490 @@
+openapi: 3.0.3
+info:
+  title: Maysar Express Backend API
+  version: 1.0.0
+  description: Complete API contract for Maysar Express e-commerce platform
+  contact:
+    name: Maysar Express Team
+    email: api@maysar.co.tz
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: https://api.maysar.co.tz
+    description: Production
+
+tags:
+  - name: Health
+    description: System health and readiness checks
+  - name: Auth
+    description: Authentication and authorization
+  - name: Users
+    description: User management
+  - name: Products
+    description: Product catalog management
+  - name: Search
+    description: Product search and discovery
+  - name: Pricing
+    description: Pricing calculations and rules
+  - name: Orders
+    description: Order management
+  - name: Checkout
+    description: Checkout process
+  - name: Payments
+    description: Payment processing
+  - name: Wallet
+    description: Wallet and balance management
+  - name: Inventory
+    description: Inventory management
+  - name: Logistics
+    description: Delivery and logistics
+  - name: Notifications
+    description: Notification management
+  - name: Analytics
+    description: Analytics and reporting
+  - name: Business
+    description: Business registration
+  - name: Commission
+    description: Commission calculations
+  - name: Community
+    description: Community features
+  - name: Training
+    description: Training modules
+  - name: Support
+    description: Customer support
+  - name: Enabler
+    description: Enabler management
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Fast health check to verify service is running
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  uptime:
+                    type: number
+                  timestamp:
+                    type: string
+                    format: date-time
+                  memoryUsage:
+                    type: object
+
+  /ready:
+    get:
+      tags: [Health]
+      summary: Readiness check
+      description: Checks if service and dependencies are ready
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ready
+                  checks:
+                    type: object
+                    properties:
+                      database:
+                        type: string
+                      redis:
+                        type: string
+        '503':
+          description: Service not ready
+
+  # ==================== AUTH SERVICE ====================
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: User login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                totpCode:
+                  type: string
+                  pattern: '^\d{6}$'
+      responses:
+        '200':
+          description: Login successful
+        '401':
+          description: Invalid credentials
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: User logout
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+
+  /api/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      responses:
+        '200':
+          description: Token refreshed
+
+  /api/auth/verify:
+    get:
+      tags: [Auth]
+      summary: Verify session/token validity
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Token valid
+
+  /api/auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Request password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Reset email sent
+
+  /api/auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password with token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword, confirmPassword]
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+                confirmPassword:
+                  type: string
+      responses:
+        '200':
+          description: Password reset successful
+
+  /api/auth/2fa/enable:
+    post:
+      tags: [Auth]
+      summary: Enable 2FA
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password, totpCode]
+              properties:
+                password:
+                  type: string
+                totpCode:
+                  type: string
+      responses:
+        '200':
+          description: 2FA enabled
+
+  /api/auth/2fa/disable:
+    post:
+      tags: [Auth]
+      summary: Disable 2FA
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+      responses:
+        '200':
+          description: 2FA disabled
+
+  /api/auth/2fa/verify:
+    post:
+      tags: [Auth]
+      summary: Verify 2FA setup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [secret, totpCode]
+              properties:
+                secret:
+                  type: string
+                totpCode:
+                  type: string
+      responses:
+        '200':
+          description: 2FA verified
+
+  # ==================== USER SERVICE ====================
+  /api/user:
+    post:
+      tags: [Users]
+      summary: Create new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, name]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                name:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '201':
+          description: User created
+
+  /api/user/profile:
+    get:
+      tags: [Users]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+    put:
+      tags: [Users]
+      summary: Update current user profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Profile updated
+
+  /api/user/{id}:
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User details
+    put:
+      tags: [Users]
+      summary: Update user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User updated
+    delete:
+      tags: [Users]
+      summary: Delete user account
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User deleted
+
+  /api/user/verify-email/{token}:
+    post:
+      tags: [Users]
+      summary: Verify email address
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Email verified
+
+  /api/user/request-password-reset:
+    post:
+      tags: [Users]
+      summary: Request password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+      responses:
+        '200':
+          description: Reset email sent
+
+  /api/user/{id}/password:
+    post:
+      tags: [Users]
+      summary: Change user password
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Password changed
+
+  /api/user/{id}/suspend:
+    post:
+      tags: [Users]
+      summary: Suspend user account
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User suspended
+
+  /api/user/{id}/role:
+    post:
+      tags: [Users]
+      summary: Change user role
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Role changed
+
+  /api/user/{userId}/cod-reputation:
+    get:
+      tags: [Users]
+      summary: Get COD reputation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: COD reputation data
+
+  # ==================== CATALOG SERVICE ====================
+  /api/catalog/api/v1/products:
+    post:
+      tags: [Products]
+      summary: Create product
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, price, categoryId]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: number
+                categoryId:
+                  type: string
+                attributes:
+                  type: object
+      responses:
+        '201':
+          description: Product created
+
+  /api/catalog/api/v1/products/{id}:
+    get:
+      tags: [Products]
+      summary: Get product by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product details
+    put:
+      tags: [Products]
+      summary: Update product
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product updated
+    delete:
+      tags: [Products]
+      summary: Delete product
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product deleted
+
+  /api/catalog/api/v1/products/search:
+    get:
+      tags: [Search]
+      summary: Search products
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: minPrice
+          in: query
+          schema:
+            type: number
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Search results
+
+  /api/catalog/api/v1/sellers/{sellerId}/products:
+    get:
+      tags: [Products]
+      summary: Get products by seller
+      description: Public endpoint for browsing seller products. Generates shareable URL like https://maysar.co.tz/seller/{sellerId}
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Seller products with metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  seller:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      shareUrl:
+                        type: string
+                        example: https://maysar.co.tz/seller/abc123
+                  products:
+                    type: array
+                    items:
+                      type: object
+                  pagination:
+                    type: object
+
+  /api/catalog/api/v1/products/{id}/publish:
+    post:
+      tags: [Products]
+      summary: Publish product
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product published
+
+  /api/catalog/api/v1/products/{id}/analytics:
+    get:
+      tags: [Products]
+      summary: Get product analytics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product analytics
+
+  /api/catalog/api/v1/products/bulk:
+    post:
+      tags: [Products]
+      summary: Bulk create products
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                products:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        '201':
+          description: Products created
+    put:
+      tags: [Products]
+      summary: Bulk update products
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Products updated
+    delete:
+      tags: [Products]
+      summary: Bulk delete products
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Products deleted
+
+  /api/catalog/api/v1/categories/{categoryId}/attributes:
+    get:
+      tags: [Products]
+      summary: Load category attributes
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Category attributes
+
+  /api/catalog/api/v1/search/suggestions:
+    get:
+      tags: [Search]
+      summary: Get search suggestions
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search suggestions
+
+  /api/catalog/api/v1/search/popular:
+    get:
+      tags: [Search]
+      summary: Get popular searches
+      responses:
+        '200':
+          description: Popular searches
+
+  /api/catalog/api/v1/pricing/calculate:
+    post:
+      tags: [Pricing]
+      summary: Calculate product price
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Price calculated
+
+  /api/catalog/api/v1/pricing/rules:
+    get:
+      tags: [Pricing]
+      summary: Get pricing rules
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Pricing rules
+    post:
+      tags: [Pricing]
+      summary: Create pricing rule
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Rule created
+
+  /api/catalog/api/v1/pricing/analytics:
+    get:
+      tags: [Pricing]
+      summary: Get pricing analytics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Pricing analytics
+
+  # ==================== ORDER SERVICE ====================
+  /api/order/orders:
+    post:
+      tags: [Orders]
+      summary: Place new order
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items, shippingAddress]
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                shippingAddress:
+                  type: object
+                paymentMethod:
+                  type: string
+      responses:
+        '201':
+          description: Order created
+    get:
+      tags: [Orders]
+      summary: Get all orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Orders list
+
+  /api/order/orders/cod/validate:
+    post:
+      tags: [Orders]
+      summary: Validate COD eligibility
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: COD validation result
+
+  /api/order/orders/{id}:
+    get:
+      tags: [Orders]
+      summary: Get order by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order details
+    put:
+      tags: [Orders]
+      summary: Update order
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order updated
+    delete:
+      tags: [Orders]
+      summary: Cancel order
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order cancelled
+
+  /api/order/orders/{id}/status:
+    post:
+      tags: [Orders]
+      summary: Update order status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+      responses:
+        '200':
+          description: Status updated
+
+  /api/order/orders/search:
+    get:
+      tags: [Orders]
+      summary: Search orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search results
+
+  /api/order/orders/analytics/stats:
+    get:
+      tags: [Orders]
+      summary: Get order analytics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Order analytics
+
+  /api/order/orders/disputes/{id}/resolve:
+    post:
+      tags: [Orders]
+      summary: Resolve COD dispute
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dispute resolved
+
+  # ==================== CHECKOUT SERVICE ====================
+  /api/checkout/initiate:
+    post:
+      tags: [Checkout]
+      summary: Initiate checkout
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Checkout initiated
+
+  /api/checkout/{id}:
+    get:
+      tags: [Checkout]
+      summary: Get checkout session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Checkout session
+
+  /api/checkout/{id}/confirm:
+    post:
+      tags: [Checkout]
+      summary: Confirm checkout
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Checkout confirmed
+
+  # ==================== PAYMENT SERVICE ====================
+  /api/payment:
+    post:
+      tags: [Payments]
+      summary: Create payment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orderId, amount, method]
+              properties:
+                orderId:
+                  type: string
+                amount:
+                  type: number
+                method:
+                  type: string
+      responses:
+        '201':
+          description: Payment created
+
+  /api/payment/{id}:
+    get:
+      tags: [Payments]
+      summary: Get payment by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment details
+
+  /api/payment/order/{orderId}:
+    get:
+      tags: [Payments]
+      summary: Get payment by order ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment details
+
+  /api/payment/{id}/status:
+    get:
+      tags: [Payments]
+      summary: Check payment status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment status
+
+  /api/payment/{id}/refund:
+    post:
+      tags: [Payments]
+      summary: Refund payment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Refund processed
+
+  /api/payment/webhooks/pesapal:
+    post:
+      tags: [Payments]
+      summary: Pesapal webhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed
+
+  # ==================== WALLET SERVICE ====================
+  /api/wallet/{userId}:
+    get:
+      tags: [Wallet]
+      summary: Get wallet
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Wallet details
+
+  /api/wallet/{userId}/balance:
+    get:
+      tags: [Wallet]
+      summary: Get wallet balance
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Wallet balance
+
+  /api/wallet/{userId}/credit:
+    post:
+      tags: [Wallet]
+      summary: Credit wallet
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount:
+                  type: number
+      responses:
+        '200':
+          description: Wallet credited
+
+  /api/wallet/{userId}/debit:
+    post:
+      tags: [Wallet]
+      summary: Debit wallet
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount:
+                  type: number
+      responses:
+        '200':
+          description: Wallet debited
+
+  /api/wallet/{userId}/hold:
+    post:
+      tags: [Wallet]
+      summary: Place hold on funds
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Hold placed
+
+  /api/wallet/{userId}/hold/{holdId}/release:
+    post:
+      tags: [Wallet]
+      summary: Release hold
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: holdId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Hold released
+
+  /api/wallet/{userId}/hold/{holdId}/capture:
+    post:
+      tags: [Wallet]
+      summary: Capture hold
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: holdId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Hold captured
+
+  /api/wallet/{userId}/statement:
+    get:
+      tags: [Wallet]
+      summary: Get wallet statement
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Wallet statement
+
+  /api/wallet/{userId}/topup:
+    post:
+      tags: [Wallet]
+      summary: Top up wallet
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Wallet topped up
+
+  /api/wallet/{userId}/payout:
+    post:
+      tags: [Wallet]
+      summary: Initiate payout
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payout initiated
+
+  # ==================== LOGISTICS SERVICE ====================
+  /api/logistics/deliveries:
+    post:
+      tags: [Logistics]
+      summary: Create delivery
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Delivery created
+    get:
+      tags: [Logistics]
+      summary: Get deliveries
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: courierId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deliveries list
+
+  /api/logistics/deliveries/{deliveryId}:
+    get:
+      tags: [Logistics]
+      summary: Get delivery by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delivery details
+
+  /api/logistics/deliveries/{deliveryId}/status:
+    post:
+      tags: [Logistics]
+      summary: Update delivery status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status updated
+
+  /api/logistics/deliveries/{deliveryId}/history:
+    get:
+      tags: [Logistics]
+      summary: Get delivery history
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delivery history
+
+  /api/logistics/cod/{deliveryId}/otp:
+    post:
+      tags: [Logistics]
+      summary: Generate COD OTP
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OTP generated
+
+  /api/logistics/cod/{deliveryId}/verify:
+    post:
+      tags: [Logistics]
+      summary: Verify COD delivery
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delivery verified
+
+  /api/logistics/routes:
+    get:
+      tags: [Logistics]
+      summary: Get routes
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Routes list
+
+  /api/logistics/routes/courier/{courierId}:
+    get:
+      tags: [Logistics]
+      summary: Get courier routes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courierId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Courier routes
+
+  /api/logistics/routes/optimize:
+    post:
+      tags: [Logistics]
+      summary: Optimize route
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Optimized route
+
+  /api/logistics/routes/{routeId}:
+    get:
+      tags: [Logistics]
+      summary: Get route by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: routeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Route details
+
+  /api/logistics/routes/{routeId}/progress:
+    put:
+      tags: [Logistics]
+      summary: Update route progress
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: routeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Progress updated
+
+  /api/logistics/couriers:
+    get:
+      tags: [Logistics]
+      summary: Get couriers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Couriers list
+
+  /api/logistics/couriers/{courierId}:
+    get:
+      tags: [Logistics]
+      summary: Get courier by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courierId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Courier details
+
+  /api/logistics/couriers/{courierId}/status:
+    put:
+      tags: [Logistics]
+      summary: Update courier status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courierId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status updated
+
+  /api/logistics/tracking/{trackingNumber}:
+    get:
+      tags: [Logistics]
+      summary: Get tracking history
+      parameters:
+        - name: trackingNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tracking history
+
+  /api/logistics/tracking/location:
+    post:
+      tags: [Logistics]
+      summary: Store location update
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Location stored
+
+  /api/logistics/analytics:
+    get:
+      tags: [Logistics]
+      summary: Get logistics analytics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Analytics data
+
+  /api/logistics/analytics/performance:
+    get:
+      tags: [Logistics]
+      summary: Get performance metrics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Performance metrics
+
+  /api/logistics/earnings:
+    get:
+      tags: [Logistics]
+      summary: Get earnings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Earnings data
+    post:
+      tags: [Logistics]
+      summary: Record earnings
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Earnings recorded
+
+  /api/logistics/earnings/courier/{courierId}:
+    get:
+      tags: [Logistics]
+      summary: Get courier earnings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courierId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Courier earnings
+
+  # ==================== NOTIFICATION SERVICE ====================
+  /api/notification:
+    post:
+      tags: [Notifications]
+      summary: Create notification
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Notification created
+    get:
+      tags: [Notifications]
+      summary: List notifications
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notifications list
+
+  /api/notification/bulk:
+    post:
+      tags: [Notifications]
+      summary: Bulk send notifications
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notifications sent
+
+  /api/notification/{id}:
+    get:
+      tags: [Notifications]
+      summary: Get notification
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notification details
+    delete:
+      tags: [Notifications]
+      summary: Cancel scheduled notification
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notification cancelled
+
+  /api/notification/{id}/status:
+    patch:
+      tags: [Notifications]
+      summary: Update notification status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status updated
+
+  /api/notification/{id}/retry:
+    post:
+      tags: [Notifications]
+      summary: Retry failed notification
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notification retried
+
+  # ==================== ANALYTICS SERVICE ====================
+  /api/analytics/analytics/dashboard/{sellerId}:
+    get:
+      tags: [Analytics]
+      summary: Get seller dashboard
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dashboard data
+
+  /api/analytics/analytics/sales/{sellerId}:
+    get:
+      tags: [Analytics]
+      summary: Get sales analytics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sales analytics
+
+  /api/analytics/supplier/analytics/{supplierId}:
+    get:
+      tags: [Analytics]
+      summary: Get supplier analytics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: supplierId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Supplier analytics
+
+  /api/analytics/courier/analytics/{courierId}:
+    get:
+      tags: [Analytics]
+      summary: Get courier analytics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courierId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Courier analytics
+
+  # ==================== BUSINESS REGISTRY SERVICE ====================
+  /api/business-registry:
+    post:
+      tags: [Business]
+      summary: Register business
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, type, ownerId]
+              properties:
+                name:
+                  type: string
+                type:
+                  type: string
+                ownerId:
+                  type: string
+      responses:
+        '201':
+          description: Business registered
+
+  /api/business-registry/search:
+    get:
+      tags: [Business]
+      summary: Search businesses
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search results
+
+  /api/business-registry/owner/{ownerId}:
+    get:
+      tags: [Business]
+      summary: Get businesses by owner
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ownerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Owner businesses
+
+  /api/business-registry/{id}:
+    get:
+      tags: [Business]
+      summary: Get business by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Business details
+    put:
+      tags: [Business]
+      summary: Update business
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Business updated
+    delete:
+      tags: [Business]
+      summary: Delete business
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Business deleted
+
+  /api/business-registry/{id}/verify:
+    post:
+      tags: [Business]
+      summary: Verify business
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Business verified
+
+  /api/business-registry/{id}/suspend:
+    post:
+      tags: [Business]
+      summary: Suspend business
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Business suspended
+
+  /api/business-registry/{id}/reactivate:
+    post:
+      tags: [Business]
+      summary: Reactivate business
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Business reactivated
+
+  # ==================== COMMISSION SERVICE ====================
+  /api/commission/calculate:
+    post:
+      tags: [Commission]
+      summary: Calculate commission
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Commission calculated
+
+  /api/commission/{id}/approve:
+    put:
+      tags: [Commission]
+      summary: Approve commission
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Commission approved
+
+  /api/commission/{id}:
+    get:
+      tags: [Commission]
+      summary: Get commission by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Commission details
+
+  /api/commission/sellers/{sellerId}:
+    get:
+      tags: [Commission]
+      summary: Get seller commissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Seller commissions
+
+  /api/commission/sellers/{sellerId}/summary:
+    get:
+      tags: [Commission]
+      summary: Get commission summary
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Commission summary
+
+  # ==================== COMMUNITY SERVICE ====================
+  /api/community/discover:
+    get:
+      tags: [Community]
+      summary: Get personalized content recommendations
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Content recommendations
+
+  /api/community/challenges:
+    post:
+      tags: [Community]
+      summary: Propose business challenge
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Challenge created
+    get:
+      tags: [Community]
+      summary: List business challenges
+      responses:
+        '200':
+          description: Challenges list
+
+  /api/community/challenges/{challengeId}/solutions:
+    post:
+      tags: [Community]
+      summary: Submit solution to challenge
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: challengeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Solution submitted
+
+  /api/community/knowledge/articles:
+    post:
+      tags: [Community]
+      summary: Submit knowledge article
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Article submitted
+    get:
+      tags: [Community]
+      summary: List knowledge articles
+      responses:
+        '200':
+          description: Articles list
+
+  /api/community/knowledge/articles/{articleId}:
+    get:
+      tags: [Community]
+      summary: Get article
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Article details
+
+  /api/community/knowledge/articles/{articleId}/reviews:
+    post:
+      tags: [Community]
+      summary: Submit peer review
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Review submitted
+
+  # ==================== TRAINING SERVICE ====================
+  /api/training/start:
+    post:
+      tags: [Training]
+      summary: Start training
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Training started
+
+  /api/training/{id}/complete:
+    post:
+      tags: [Training]
+      summary: Complete training
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Training completed
+
+  /api/training/progress/{learnerId}:
+    get:
+      tags: [Training]
+      summary: Get training progress
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: learnerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Training progress
+
+  /api/training/eligibility/{learnerId}:
+    get:
+      tags: [Training]
+      summary: Check training eligibility
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: learnerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Eligibility status
+
+  /api/training/available:
+    get:
+      tags: [Training]
+      summary: Get available training modules
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Available modules
+
+  # ==================== SUPPORT SERVICE ====================
+  /api/support/ticket:
+    post:
+      tags: [Support]
+      summary: Create support ticket
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subject, description]
+              properties:
+                subject:
+                  type: string
+                description:
+                  type: string
+                priority:
+                  type: string
+      responses:
+        '201':
+          description: Ticket created
+    get:
+      tags: [Support]
+      summary: List tickets
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Tickets list
+
+  /api/support/ticket/{id}:
+    get:
+      tags: [Support]
+      summary: Get ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ticket details
+
+  /api/support/ticket/{id}/assign:
+    post:
+      tags: [Support]
+      summary: Assign ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ticket assigned
+
+  /api/support/ticket/{id}/resolve:
+    post:
+      tags: [Support]
+      summary: Resolve ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ticket resolved
+
+  /api/support/ticket/{id}/close:
+    post:
+      tags: [Support]
+      summary: Close ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ticket closed
+
+  /api/support/ticket/{id}/messages:
+    post:
+      tags: [Support]
+      summary: Add message to ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Message added
+
+  # ==================== ENABLER SERVICE ====================
+  /api/enabler/register:
+    post:
+      tags: [Enabler]
+      summary: Register as enabler
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Enabler registered
+
+  /api/enabler/{id}/approve:
+    post:
+      tags: [Enabler]
+      summary: Approve enabler
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Enabler approved
+
+  /api/enabler/{id}:
+    get:
+      tags: [Enabler]
+      summary: Get enabler profile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Enabler profile
+
+  /api/enabler/{enablerId}/listings:
+    post:
+      tags: [Enabler]
+      summary: List product as enabler
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: enablerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Product listed
+    get:
+      tags: [Enabler]
+      summary: Get enabler listings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: enablerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Enabler listings
+
+  /api/enabler/{enablerId}/orders:
+    post:
+      tags: [Enabler]
+      summary: Create enabler order
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: enablerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Order created
+    get:
+      tags: [Enabler]
+      summary: Get enabler orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: enablerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Enabler orders
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        code:
+          type: string
+
+    Success:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+
+  # ==================== SELLER/SUPPLIER STOREFRONT ====================
+  /api/catalog/api/v1/sellers/{sellerId}/storefront:
+    get:
+      tags: [Products]
+      summary: Get seller storefront details
+      description: Public endpoint for seller storefront with shareable URL generation
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Seller storefront
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  logo:
+                    type: string
+                  shareUrl:
+                    type: string
+                    example: https://maysar.co.tz/seller/abc123
+                  shortUrl:
+                    type: string
+                    example: https://maysar.co.tz/s/abc123
+                  qrCode:
+                    type: string
+                    description: Base64 encoded QR code for the storefront
+                  stats:
+                    type: object
+                    properties:
+                      totalProducts:
+                        type: integer
+                      rating:
+                        type: number
+
+  /api/catalog/api/v1/sellers/{sellerId}/share-url:
+    post:
+      tags: [Products]
+      summary: Generate shareable URL for seller
+      description: Creates or retrieves shareable URL and QR code for seller storefront
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                includeQR:
+                  type: boolean
+                  default: true
+                customSlug:
+                  type: string
+      responses:
+        '200':
+          description: Shareable URL generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shareUrl:
+                    type: string
+                    example: https://maysar.co.tz/seller/abc123
+                  shortUrl:
+                    type: string
+                    example: https://maysar.co.tz/s/abc123
+                  qrCode:
+                    type: string
+                  expiresAt:
+                    type: string
+                    format: date-time

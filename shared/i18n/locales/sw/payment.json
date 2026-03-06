@@ -1,0 +1,15 @@
+{
+  "errors": {
+    "webhookNotConfigured": "Mfumo wa webhook haujawekwa",
+    "invalidSignature": "Saini batili",
+    "missingParameters": "Vigezo vinavyohitajika havipo",
+    "notFound": "Malipo hayajapatikana"
+  },
+  "status": {
+    "PENDING": "Inasubiri",
+    "COMPLETED": "Imekamilika",
+    "FAILED": "Imeshindwa",
+    "REFUNDED": "Imerudishwa",
+    "UNKNOWN": "Haijulikani"
+  }
+}

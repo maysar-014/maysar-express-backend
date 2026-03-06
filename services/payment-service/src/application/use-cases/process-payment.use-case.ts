@@ -10,6 +10,7 @@ import { FraudEngine } from '../../domain/engines/fraud.engine';
 import { PaymentProcessingEngine } from '../../domain/engines/payment-processing.engine';
 import { PaymentLimitsPolicy } from '../../domain/policies/payment-limits.policy';
 import { FraudPreventionPolicy } from '../../domain/policies/fraud-prevention.policy';
+import { businessMetrics } from '../../infrastructure/monitoring/metrics';
 
 export interface ProcessPaymentDTO {
     orderId: string;
@@ -62,6 +63,7 @@ export class ProcessPaymentUseCase {
         });
 
         if (!validation.isValid) {
+            businessMetrics.paymentOutcomesTotal.inc({ status: 'failed' });
             return {
                 success: false,
                 paymentId: '',
@@ -98,6 +100,7 @@ export class ProcessPaymentUseCase {
         );
 
         if (!limitsCheck.isWithinLimits) {
+            businessMetrics.paymentOutcomesTotal.inc({ status: 'failed' });
             return {
                 success: false,
                 paymentId: '',
@@ -168,6 +171,7 @@ export class ProcessPaymentUseCase {
         if (fraudDecision.autoDecline) {
             payment.markAsFailed(`Fraud detected: ${fraudDecision.reason}`);
             await this.paymentRepository.save(payment);
+            businessMetrics.paymentOutcomesTotal.inc({ status: 'failed' });
 
             return {
                 success: false,
@@ -184,6 +188,7 @@ export class ProcessPaymentUseCase {
 
         if (fraudDecision.requiresManualReview) {
             await this.paymentRepository.save(payment);
+            businessMetrics.paymentOutcomesTotal.inc({ status: 'pending' });
 
             return {
                 success: false,
@@ -236,6 +241,7 @@ export class ProcessPaymentUseCase {
 
                 await this.paymentRepository.update(payment);
 
+                businessMetrics.paymentOutcomesTotal.inc({ status: 'success' });
                 return {
                     success: true,
                     paymentId: payment.id,
@@ -247,6 +253,7 @@ export class ProcessPaymentUseCase {
             } else {
                 payment.markAsFailed(providerResponse.message || 'Provider error');
                 await this.paymentRepository.update(payment);
+                businessMetrics.paymentOutcomesTotal.inc({ status: 'failed' });
 
                 return {
                     success: false,
@@ -258,6 +265,7 @@ export class ProcessPaymentUseCase {
         } catch (error) {
             payment.markAsFailed(error instanceof Error ? error.message : 'Unknown error');
             await this.paymentRepository.update(payment);
+            businessMetrics.paymentOutcomesTotal.inc({ status: 'failed' });
 
             return {
                 success: false,

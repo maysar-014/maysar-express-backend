@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import './instrument';
 import 'dotenv/config';
 import 'reflect-metadata';
 import { tracingService } from '../shared/tracing/openTelemetry'; // Enable OpenTelemetry Tracing
@@ -40,6 +41,7 @@ async function bootstrap() {
         const server = app.listen(port, () => {
             bootstrapLogger.info(`Server running at http://localhost:${port}`);
             bootstrapLogger.info(`Health check available at http://localhost:${port}/health`);
+            bootstrapLogger.info(`Readiness probe at http://localhost:${port}/ready`);
         });
 
         // Graceful shutdown

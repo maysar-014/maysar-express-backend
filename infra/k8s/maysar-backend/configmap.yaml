@@ -22,7 +22,10 @@ metadata:
   name: maysar-backend-secrets
   namespace: maysar-backend
 type: Opaque
+# WARNING: Plaintext secrets are for local development only
+# Production: Use OCI Vault + ExternalSecrets or kubectl create secret at deploy time
+# See docs/secrets-management.md for proper secret injection
 stringData:
-  DATABASE_URL: "postgresql://user:pass@host:5432/db"
-  REDIS_URL: "redis://host:6379"
-  JWT_SECRET: "dacc72949afd8a56f190f9de190cb88b880c153df7104386270bf24334160bd8"
+  DATABASE_URL: "REPLACE_WITH_SECRET_MANAGER_VALUE"
+  REDIS_URL: "REPLACE_WITH_SECRET_MANAGER_VALUE"
+  JWT_SECRET: "REPLACE_WITH_SECRET_MANAGER_VALUE"

@@ -1,0 +1,7 @@
+{
+  "errors": {
+    "onlyKycSupported": "Only KYC compliance is supported",
+    "onlyKycReports": "Only KYC reports are supported",
+    "failed": "Operation failed"
+  }
+}

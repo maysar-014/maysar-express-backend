@@ -1,6 +1,5 @@
 // Module Registry Export
 export { AnalyticsModule } from './analytics-service';
-export { ApiGatewayModule } from './api-gateway';
 export { AuthModule } from './auth-service'; // Now includes session-service & two-factor-service
 export { BusinessRegistryModule } from './business-registry-service';
 // CampaignModule merged into CatalogModule
@@ -13,13 +12,10 @@ export { EnablerModule } from './enabler-service';
 export { InventoryModule } from './inventory-service';
 export { LogisticsModule } from './logistics-service';
 export { MapsModule } from './maps-service';
-export { ModerationModule } from './moderation-service';
 export { NotificationModule } from './notification-service'; // Now includes sms-service
 export { OrderModule } from './order-service';
 export { PaymentModule } from './payment-service';
 export { PayoutModule } from './payout-service';
-export { PermissionModule } from './permission-service';
-// PricingModule merged into CatalogModule
 export { ProductionModule } from './production-service';
 // SessionModule merged into AuthModule
 // SmsModule merged into NotificationModule

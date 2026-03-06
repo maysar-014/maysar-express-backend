@@ -1,0 +1,43 @@
+graph TB
+    subgraph Actors
+        Seller["👤 Seller"]
+        Admin["👤 Admin"]
+    end
+
+    subgraph UseCases
+        LoadAttrs["Load Category Attributes"]
+        PreviewDesc["Preview Description"]
+        CreateProduct["Create Structured Product"]
+        ValidateQuality["Validate Quality Score"]
+        PublishProduct["Publish Product"]
+    end
+
+    subgraph Systems
+        CatalogService["Catalog Service"]
+        SearchIndex["Search Index"]
+        SEOEngine["SEO Engine"]
+    end
+
+    Seller -->|1. Select Category| LoadAttrs
+    LoadAttrs -->|Returns Schema| Seller
+    Seller -->|2. Fill Attributes| PreviewDesc
+    PreviewDesc -->|Returns Preview| Seller
+    Seller -->|3. Submit Listing| CreateProduct
+    CreateProduct -->|Validate| ValidateQuality
+    ValidateQuality -->|Score ≥ 60| PublishProduct
+    ValidateQuality -->|Score < 60| Seller
+    PublishProduct -->|Trigger| CatalogService
+    CatalogService -->|Index| SearchIndex
+    CatalogService -->|Generate| SEOEngine
+    Admin -->|Monitor| CatalogService
+
+    style Seller fill:#e1f5ff
+    style Admin fill:#f3e5f5
+    style LoadAttrs fill:#fff3e0
+    style PreviewDesc fill:#fff3e0
+    style CreateProduct fill:#fff3e0
+    style ValidateQuality fill:#fff3e0
+    style PublishProduct fill:#fff3e0
+    style CatalogService fill:#e8f5e9
+    style SearchIndex fill:#e8f5e9
+    style SEOEngine fill:#e8f5e9

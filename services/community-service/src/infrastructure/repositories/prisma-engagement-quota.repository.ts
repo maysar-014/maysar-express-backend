@@ -29,13 +29,11 @@ export class PrismaEngagementQuotaRepository implements EngagementQuotaRepositor
             quotaType: quota.quotaType,
             dailyLimit: quota.dailyLimit,
             weeklyLimit: quota.weeklyLimit,
-            dailyUsed: quota.dailyUsed,
-            weeklyUsed: quota.weeklyUsed,
             dailyRemaining: quota.dailyRemaining,
             weeklyRemaining: quota.weeklyRemaining,
-            lastResetDaily: quota.lastResetDaily,
-            lastResetWeekly: quota.lastResetWeekly,
-            qualityBonus: quota.qualityBonus,
+            dailyResetAt: quota.dailyResetAt,
+            weeklyResetAt: quota.weeklyResetAt,
+            qualityBonusEarned: quota.qualityBonusEarned,
             updatedAt: new Date(),
         };
 
@@ -59,13 +57,11 @@ export class PrismaEngagementQuotaRepository implements EngagementQuotaRepositor
             quotaType: record.quotaType as QuotaType,
             dailyLimit: record.dailyLimit,
             weeklyLimit: record.weeklyLimit,
-            dailyUsed: record.dailyUsed,
-            weeklyUsed: record.weeklyUsed,
             dailyRemaining: record.dailyRemaining,
             weeklyRemaining: record.weeklyRemaining,
-            lastResetDaily: record.lastResetDaily,
-            lastResetWeekly: record.lastResetWeekly,
-            qualityBonus: record.qualityBonus,
+            dailyResetAt: record.dailyResetAt,
+            weeklyResetAt: record.weeklyResetAt,
+            qualityBonusEarned: record.qualityBonusEarned,
         });
     }
 }

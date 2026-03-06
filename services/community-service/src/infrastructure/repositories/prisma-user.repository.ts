@@ -11,7 +11,7 @@ export class PrismaUserRepository implements IUserRepository {
   constructor(private prisma: PrismaClient) {}
 
   async findById(id: string): Promise<User | null> {
-    const userData = await this.prisma.user.findUnique({
+    const userData = await this.prisma.communityUser.findUnique({
       where: { id }
     });
 
@@ -25,7 +25,7 @@ export class PrismaUserRepository implements IUserRepository {
 
   async findByUsername(username: string): Promise<User | null> {
     // Note: In this schema, username is not unique, so we use findFirst
-    const userData = await this.prisma.user.findFirst({
+    const userData = await this.prisma.communityUser.findFirst({
       where: { username }
     });
 
@@ -39,7 +39,7 @@ export class PrismaUserRepository implements IUserRepository {
   async save(user: User): Promise<void> {
     const userData = this.mapToPrismaData(user);
 
-    await this.prisma.user.upsert({
+    await this.prisma.communityUser.upsert({
       where: { id: user.id },
       update: userData,
       create: userData
@@ -47,7 +47,7 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   async updateTrustMetadata(userId: string, metadata: TrustMetadata): Promise<void> {
-    await this.prisma.user.update({
+    await this.prisma.communityUser.update({
       where: { id: userId },
       data: {
         reputation: metadata.ratingScore,
@@ -58,7 +58,7 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   async findByRole(role: UserRole): Promise<User[]> {
-    const usersData = await this.prisma.user.findMany({
+    const usersData = await this.prisma.communityUser.findMany({
       where: {
         // Note: Prisma schema uses string role, need to map
         // This is a simplified mapping - in real implementation,
@@ -70,7 +70,7 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   async searchUsers(query: string, limit: number = 20): Promise<User[]> {
-    const usersData = await this.prisma.user.findMany({
+    const usersData = await this.prisma.communityUser.findMany({
       where: {
         OR: [
           { username: { contains: query, mode: 'insensitive' } },

@@ -123,6 +123,53 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
   }
 
   /**
+   * Save product with attributes in a single transaction
+   * Ensures both product and attributes are persisted atomically
+   */
+  async saveWithAttributesTransaction(
+    persistenceDto: any,
+    productId: string,
+    attributes: Array<{ attributeId: string; value: string }>
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx: any) => {
+      // Save product
+      await tx.product.create({
+        data: {
+          id: persistenceDto.id,
+          sellerId: persistenceDto.sellerId,
+          title: persistenceDto.title,
+          description: persistenceDto.description,
+          categoryId: persistenceDto.categoryId,
+          brand: persistenceDto.brand,
+          slug: persistenceDto.slug,
+          seoTitle: persistenceDto.seoTitle,
+          shortSeoDescription: persistenceDto.shortSeoDescription,
+          generatedDescription: persistenceDto.generatedDescription,
+          qualityScore: persistenceDto.qualityScore,
+          status: persistenceDto.status,
+          visibility: persistenceDto.visibility,
+          tags: persistenceDto.tags,
+          createdAt: persistenceDto.createdAt,
+          updatedAt: persistenceDto.updatedAt
+        }
+      });
+
+      // Save attributes if any
+      if (attributes.length > 0) {
+        await tx.productAttribute.createMany({
+          data: attributes.map((attr: any) => ({
+            id: require('uuid').v4(),
+            productId,
+            attributeId: attr.attributeId,
+            value: attr.value,
+            createdAt: new Date()
+          }))
+        });
+      }
+    });
+  }
+
+  /**
    * Find product by ID with variants
    */
   async findById(id: string): Promise<any | null> {

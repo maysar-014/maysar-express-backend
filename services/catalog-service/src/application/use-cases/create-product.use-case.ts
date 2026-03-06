@@ -1,35 +1,11 @@
-/**
- * Create Product Use Case
- * Application layer orchestration for product creation
- * Coordinates domain objects to fulfill the create product business use case
- */
-
-import {
-  ProductRepository,
-  CategoryRepository,
-  SellerRepository,
-  MediaRepository,
-  DomainEventPublisher,
-  IdGenerator,
-  DateTimeService
-} from '../../domain/interfaces';
-import { ProductId, SellerId, CategoryId } from '../../domain/value-objects/ids.value-object';
-import { Price } from '../../domain/value-objects/monetary.value-object';
-import { ProductType } from '../../domain/value-objects/product-types.value-object';
-
-export interface CreateProductRequest {
-  sellerId: string;
-  name: string;
-  description: string;
-  price: number;
-  currency?: string;
-  categoryId: string;
-  type: ProductType;
-  tags: string[];
-  mediaUrls: string[];
-  inventoryCount: number;
-  attributes: Record<string, any>;
-}
+import { StructuredCreateProductDto } from '../dto/product.dto';
+import { StructuredProductAttributes } from '../../domain/value-objects/product-attributes.value-object';
+import { DescriptionGeneratorEngine } from '../../domain/engines/description-generator.engine';
+import { SeoTitleGeneratorEngine } from '../../domain/engines/seo-title-generator.engine';
+import { SeoSlug } from '../../domain/value-objects/seo-slug.value-object';
+import { ProductQualityPolicy } from '../../domain/policies/product-quality.policy';
+import { DescriptionValidationPolicy } from '../../domain/policies/description-validation.policy';
+import { DomainError } from '../../domain/errors/domain.error';
 
 export interface CreateProductResponse {
   productId: string;
@@ -38,222 +14,208 @@ export interface CreateProductResponse {
   violations?: string[];
 }
 
-/**
- * Create Product Use Case
- * Orchestrates domain objects to create a new product
- * Validates business rules and coordinates persistence
- */
+export interface ProductPersistenceDto {
+  id: string;
+  sellerId: string;
+  title: string;
+  description: string;
+  categoryId: string;
+  brand: string;
+  slug: string;
+  seoTitle: string;
+  shortSeoDescription: string;
+  generatedDescription: string;
+  qualityScore: number;
+  status: string;
+  visibility: string;
+  tags: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IProductRepository {
+  saveWithAttributesTransaction(
+    persistenceDto: ProductPersistenceDto,
+    productId: string,
+    attributes: Array<{ attributeId: string; value: string }>
+  ): Promise<void>;
+}
+
 export class CreateProductUseCase {
   constructor(
-    private readonly productRepository: ProductRepository,
-    private readonly categoryRepository: CategoryRepository,
-    private readonly sellerRepository: SellerRepository,
-    private readonly mediaRepository: MediaRepository,
-    private readonly eventPublisher: DomainEventPublisher,
-    private readonly idGenerator: IdGenerator,
-    private readonly dateTimeService: DateTimeService
+    private readonly productRepository: IProductRepository,
+    private readonly categoryRepository: any,
+    private readonly categoryAttributeRepository: any,
+    private readonly productAttributeRepository: any,
+    private readonly eventPublisher: any,
+    private readonly idGenerator: any,
+    private readonly dateTimeService: any
   ) {}
 
-  async execute(request: CreateProductRequest): Promise<CreateProductResponse> {
+  async execute(dto: StructuredCreateProductDto): Promise<CreateProductResponse> {
     try {
-      // Validate input
-      const validation = await this.validateRequest(request);
-      if (!validation.isValid) {
+      const category = await this.categoryRepository.findById(dto.categoryId);
+      if (!category) {
+        return { productId: '', status: 'validation_error', message: 'Category not found', violations: ['Category not found'] };
+      }
+
+      const schemaData = await this.categoryAttributeRepository.findByCategory(dto.categoryId);
+      const schema = schemaData.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        displayLabel: s.displayLabel,
+        type: s.type,
+        options: s.options,
+        isRequired: s.isRequired,
+        placeholder: s.placeholder,
+      }));
+
+      const attributes = StructuredProductAttributes.create(dto.structuredAttributes, schema);
+
+      const generatedDesc = DescriptionGeneratorEngine.generate(
+        attributes,
+        category.slug,
+        dto.productName,
+        dto.brand
+      );
+
+      const keyAttribute = attributes.getKeyAttribute();
+      const seoTitle = SeoTitleGeneratorEngine.generate({
+        brand: dto.brand,
+        productName: dto.productName,
+        keyAttribute,
+        categoryKeyword: category.name,
+      });
+
+      const slug = SeoSlug.fromAttributes({
+        categorySlug: category.slug,
+        brand: dto.brand,
+        productName: dto.productName,
+        keyAttribute,
+      });
+
+      const composedDescription = `${generatedDesc.overview} ${generatedDesc.keyFeatures.join(' ')} Specifications: ${Object.entries(generatedDesc.specifications).map(([k, v]) => `${k}: ${v}`).join(', ')} ${generatedDesc.usage} ${generatedDesc.delivery}`;
+      
+      const validationResult = DescriptionValidationPolicy.validate(
+        composedDescription,
+        dto.productName,
+        [category.name, category.slug]
+      );
+
+      if (!validationResult.isValid) {
         return {
           productId: '',
           status: 'validation_error',
-          message: 'Request validation failed',
-          violations: validation.violations
+          message: 'Description validation failed',
+          violations: validationResult.violatedRules,
         };
       }
 
-      // Check business rules
-      const businessRulesCheck = await this.checkBusinessRules(request);
-      if (!businessRulesCheck.allowed) {
-        return {
-          productId: '',
-          status: 'business_rule_violation',
-          message: businessRulesCheck.reason,
-          violations: [businessRulesCheck.reason]
-        };
+      const qualityScore = ProductQualityPolicy.computeScore({
+        brand: dto.brand,
+        productName: dto.productName,
+        keyAttribute,
+        requiredAttributesFilled: schema.filter((s: any) => s.isRequired && dto.structuredAttributes[s.name]).length,
+        totalRequiredAttributes: schema.filter((s: any) => s.isRequired).length,
+        imageCount: dto.mediaUrls?.length || 0,
+        descriptionLength: composedDescription.length,
+        isLeafCategory: true,
+      });
+
+      if (!qualityScore.isPublishable()) {
+        throw new DomainError(
+          `Quality score ${qualityScore.getValue()} is below publish threshold of 60`,
+          'QUALITY_SCORE_TOO_LOW'
+        );
       }
 
-      // Generate product ID
-      const productId = ProductId.create(this.idGenerator);
+      const productId = this.idGenerator.generate();
+      const now = this.dateTimeService.now();
 
-      // Create product entity (would use domain factory in real implementation)
-      const product = await this.createProductEntity(request, productId);
+      const persistenceDto: ProductPersistenceDto = {
+        id: productId,
+        sellerId: dto.sellerId,
+        title: dto.productName,
+        description: composedDescription,
+        categoryId: dto.categoryId,
+        brand: dto.brand,
+        slug: slug.getValue(),
+        seoTitle,
+        shortSeoDescription: composedDescription.substring(0, 160),
+        generatedDescription: JSON.stringify(generatedDesc),
+        qualityScore: qualityScore.getValue(),
+        status: 'published',
+        visibility: 'public',
+        tags: [],
+        createdAt: now,
+        updatedAt: now,
+      };
 
-      // Save product
-      await this.productRepository.save(product);
+      const attributesToSave = schema
+        .filter((s: any) => dto.structuredAttributes[s.name])
+        .map((s: any) => ({
+          attributeId: s.id,
+          value: dto.structuredAttributes[s.name],
+        }));
 
-      // Create and save media if provided
-      if (request.mediaUrls.length > 0) {
-        await this.createProductMedia(productId, request.mediaUrls);
-      }
+      await this.productRepository.saveWithAttributesTransaction(persistenceDto, productId, attributesToSave);
 
-      // Publish product created event (inventory service will listen and initialize stock)
       await this.eventPublisher.publish({
         eventId: this.idGenerator.generate(),
         eventType: 'ProductCreated',
-        aggregateId: productId.toString(),
+        aggregateId: productId,
         version: 1,
-        timestamp: this.dateTimeService.now(),
+        timestamp: now,
         payload: {
-          productId: productId.toString(),
-          sellerId: request.sellerId,
-          name: request.name,
-          price: request.price,
-          categoryId: request.categoryId,
-          initialInventoryCount: request.inventoryCount
-        }
+          productId,
+          sellerId: dto.sellerId,
+          name: dto.productName,
+          categoryId: dto.categoryId,
+          brand: dto.brand,
+          slug: slug.getValue(),
+          price: 0,
+        },
+      });
+
+      await this.eventPublisher.publish({
+        eventId: this.idGenerator.generate(),
+        eventType: 'ProductCreatedWithStructuredData',
+        aggregateId: productId,
+        version: 1,
+        timestamp: now,
+        payload: {
+          productId,
+          sellerId: dto.sellerId,
+          slug: slug.getValue(),
+          categorySlug: category.slug,
+          supplierLocation: dto.supplierLocation,
+          brand: dto.brand,
+          seoTitle,
+          qualityScore: qualityScore.getValue(),
+        },
       });
 
       return {
-        productId: productId.toString(),
+        productId,
         status: 'success',
-        message: 'Product created successfully'
+        message: 'Product created successfully',
       };
-
     } catch (error) {
-      // Log error (would use logging service in real implementation)
+      if (error instanceof DomainError) {
+        return {
+          productId: '',
+          status: 'business_rule_violation',
+          message: error.message,
+          violations: [error.message],
+        };
+      }
       console.error('CreateProductUseCase error:', error);
-
       return {
         productId: '',
         status: 'validation_error',
-        message: 'Internal error occurred during product creation',
-        violations: ['Internal system error']
+        message: 'Internal error occurred',
+        violations: [(error as Error).message],
       };
     }
-  }
-
-  private async validateRequest(request: CreateProductRequest): Promise<{
-    isValid: boolean;
-    violations: string[];
-  }> {
-    const violations: string[] = [];
-
-    // Required fields validation
-    if (!request.name || request.name.trim().length === 0) {
-      violations.push('Product name is required');
-    }
-
-    if (!request.description || request.description.trim().length === 0) {
-      violations.push('Product description is required');
-    }
-
-    if (!request.price || request.price <= 0) {
-      violations.push('Valid product price is required');
-    }
-
-    if (!request.sellerId) {
-      violations.push('Seller ID is required');
-    }
-
-    if (!request.categoryId) {
-      violations.push('Category ID is required');
-    }
-
-    if (!request.type) {
-      violations.push('Product type is required');
-    }
-
-    // Business rules validation
-    if (request.name && request.name.length > 200) {
-      violations.push('Product name must be less than 200 characters');
-    }
-
-    if (request.description && request.description.length > 5000) {
-      violations.push('Product description must be less than 5000 characters');
-    }
-
-    if (request.price && request.price > 100000) {
-      violations.push('Product price cannot exceed $100,000');
-    }
-
-    if (request.tags && request.tags.length > 20) {
-      violations.push('Product cannot have more than 20 tags');
-    }
-
-    return {
-      isValid: violations.length === 0,
-      violations
-    };
-  }
-
-  private async checkBusinessRules(request: CreateProductRequest): Promise<{
-    allowed: boolean;
-    reason: string;
-  }> {
-    try {
-      // Check if seller exists and is active
-      const seller = await this.sellerRepository.findById(request.sellerId);
-      if (!seller) {
-        return { allowed: false, reason: 'Seller not found' };
-      }
-
-      // Check if category exists
-      const category = await this.categoryRepository.findById(request.categoryId);
-      if (!category) {
-        return { allowed: false, reason: 'Category not found' };
-      }
-
-      // Check seller product limits (simplified)
-      const sellerProducts = await this.productRepository.findBySeller(request.sellerId);
-      if (sellerProducts.length >= 1000) { // Example limit
-        return { allowed: false, reason: 'Seller has reached maximum product limit' };
-      }
-
-      return { allowed: true, reason: '' };
-
-    } catch (error) {
-      return { allowed: false, reason: 'Business rule validation failed' };
-    }
-  }
-
-  private async createProductEntity(request: CreateProductRequest, productId: ProductId): Promise<any> {
-    // In a real implementation, this would use a domain factory
-    // For now, creating a simplified product entity structure
-    return {
-      id: productId.toString(),
-      sellerId: request.sellerId,
-      name: request.name.trim(),
-      description: request.description.trim(),
-      price: new Price(request.price, request.currency || 'USD'),
-      categoryId: request.categoryId,
-      type: request.type,
-      tags: request.tags || [],
-      attributes: request.attributes || {},
-      status: 'draft',
-      createdAt: this.dateTimeService.now(),
-      updatedAt: this.dateTimeService.now()
-    };
-  }
-
-  private async createProductMedia(productId: ProductId, mediaUrls: string[]): Promise<void> {
-    for (let i = 0; i < mediaUrls.length; i++) {
-      const media = {
-        id: this.idGenerator.generate(),
-        productId: productId.toString(),
-        url: mediaUrls[i],
-        type: this.inferMediaType(mediaUrls[i]),
-        order: i,
-        createdAt: this.dateTimeService.now()
-      };
-
-      await this.mediaRepository.save(media);
-    }
-  }
-
-  private inferMediaType(url: string): string {
-    const extension = url.split('.').pop()?.toLowerCase();
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
-      return 'image';
-    }
-    if (['mp4', 'avi', 'mov', 'wmv'].includes(extension || '')) {
-      return 'video';
-    }
-    return 'unknown';
   }
 }

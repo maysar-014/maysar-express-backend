@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Community_PostType } from '@prisma/client';
 import { Post, PostType, PostVisibility, PostStatus } from '../../domain/entities/post.entity';
 import { IPostRepository } from '../../domain/repositories';
 
@@ -117,7 +117,7 @@ export class PrismaPostRepository implements IPostRepository {
         status: PostStatus.PUBLISHED,
         OR: [
           // Same type
-          { type: originalPost.type },
+          { type: originalPost.type as unknown as Community_PostType },
           // Common tags
           originalPost.getTags().length > 0 ? {
             tags: { hasSome: originalPost.getTags() }

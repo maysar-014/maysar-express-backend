@@ -11,6 +11,7 @@ import { createTemplateRoutes } from './api/routes/template.routes';
 import { createPreferenceRoutes } from './api/routes/preference.routes';
 import { createSmsRouter } from './sms/api/routes';
 import { eventBus } from '@shared/events/eventBus';
+import { i18next, i18nextMiddleware } from '@shared/i18n/i18n';
 
 import { healthRoutes } from './api/routes/health.routes';
 import { errorHandler } from './api/middleware/error.middleware';
@@ -115,6 +116,7 @@ class NotificationServiceApplication {
 
   private initializeMiddleware(): void {
     this.app.use(correlationMiddleware()); // Correlation ID tracking
+    this.app.use(i18nextMiddleware.handle(i18next));
     this.app.use(helmet({ contentSecurityPolicy: false }));
     this.app.use(cors({ origin: true, credentials: true }));
     this.app.use(compression());

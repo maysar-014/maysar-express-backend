@@ -7,6 +7,63 @@
 import { ProductType } from '../../domain/value-objects/product-types.value-object';
 
 /**
+ * Structured Create Product DTO
+ * Input contract for creating a new product with structured attributes
+ */
+export interface StructuredCreateProductDto {
+  sellerId: string;
+  categoryId: string;
+  brand: string;
+  productName: string;
+  minimumOrderQuantity: number;
+  supplierLocation: string;
+  structuredAttributes: Record<string, string>;
+  mediaUrls: string[];
+  price: number;
+  currency?: string;
+  seoKeywordsOverride?: string[];
+}
+
+/**
+ * Category Attribute Schema DTO
+ * Output contract for category attribute definitions
+ */
+export interface CategoryAttributeSchemaDto {
+  categoryId: string;
+  categoryName: string;
+  categorySlug: string;
+  attributes: Array<{
+    id: string;
+    name: string;
+    displayLabel: string;
+    type: 'TEXT' | 'NUMBER' | 'SELECT' | 'BOOLEAN';
+    isRequired: boolean;
+    options?: string[];
+    placeholder?: string;
+  }>;
+}
+
+/**
+ * Generated Description DTO
+ * Output contract for preview of generated product description
+ */
+export interface GeneratedDescriptionDto {
+  seoTitle: string;
+  shortSeoDescription: string;
+  fullDescription: {
+    overview: string;
+    keyFeatures: string[];
+    specifications: Record<string, string>;
+    usage: string;
+    delivery: string;
+    supplierInfo: string;
+  };
+  qualityScore: number;
+  scoreBreakdown: Record<string, number>;
+  slug: string;
+}
+
+/**
  * Create Product DTO
  * Input contract for creating a new product
  */

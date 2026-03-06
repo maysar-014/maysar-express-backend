@@ -1,0 +1,44 @@
+stateDiagram-v2
+    [*] --> DRAFT_INCOMPLETE: Product created
+
+    DRAFT_INCOMPLETE --> DRAFT_INCOMPLETE: Add attributes
+    DRAFT_INCOMPLETE --> DRAFT_INCOMPLETE: Upload images
+    DRAFT_INCOMPLETE --> DRAFT_INCOMPLETE: Edit description
+
+    DRAFT_INCOMPLETE --> DRAFT_READY: Quality score ≥ 60
+    DRAFT_INCOMPLETE --> REJECTED: Quality score < 40
+
+    DRAFT_READY --> DRAFT_INCOMPLETE: Edit product
+    DRAFT_READY --> PUBLISHED: Seller confirms publish
+
+    PUBLISHED --> DRAFT_READY: Seller unpublishes
+    PUBLISHED --> SUSPENDED: Admin suspends
+    PUBLISHED --> ARCHIVED: Seller archives
+
+    SUSPENDED --> PUBLISHED: Admin unsuspends
+    SUSPENDED --> ARCHIVED: Seller archives
+
+    REJECTED --> DRAFT_INCOMPLETE: Seller improves
+    REJECTED --> [*]
+
+    ARCHIVED --> [*]
+
+    note right of DRAFT_INCOMPLETE
+        Quality Score < 60
+        Missing required attributes
+        No images uploaded
+        Description too short
+    end note
+
+    note right of DRAFT_READY
+        Quality Score ≥ 60
+        All required attributes filled
+        At least 1 image
+        Description ≥ 120 chars
+    end note
+
+    note right of PUBLISHED
+        Product visible in catalog
+        Indexed in search
+        SEO pages generated
+    end note

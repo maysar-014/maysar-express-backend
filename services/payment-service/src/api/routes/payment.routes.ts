@@ -4,11 +4,13 @@
  */
 
 import { Router } from 'express';
+import express from 'express';
 import rateLimit from 'express-rate-limit';
 import { RedisRateLimitStore } from '../../../../../shared/middleware/redis-rate-limit.store';
 import Redis from 'ioredis';
 import { PaymentController } from '../controllers/payment.controller';
 import { IdempotencyMiddleware } from '@shared/middleware/idempotency';
+import { createHash } from 'crypto';
 
 const idempotencyMiddleware = new IdempotencyMiddleware(process.env.REDIS_URL!);
 const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
@@ -18,6 +20,23 @@ const paymentLimiter = rateLimit({
     max: 20,
     store: new RedisRateLimitStore(redisClient, 'rl:payment:')
 });
+
+const webhookIdempotencyMiddleware = new IdempotencyMiddleware(
+    process.env.REDIS_URL!,
+    {
+        keyPrefix: 'webhook:idempotency:',
+        headerName: 'x-webhook-idempotency-key',
+        generateKey: (req) => {
+            const { OrderTrackingId, OrderMerchantReference } = req.query;
+            if (OrderTrackingId && OrderMerchantReference) {
+                return createHash('sha256')
+                    .update(`${OrderTrackingId}:${OrderMerchantReference}`)
+                    .digest('hex');
+            }
+            return '';
+        }
+    }
+);
 
 export function createPaymentRoutes(paymentController: PaymentController): Router {
     const router = Router();
@@ -39,6 +58,14 @@ export function createPaymentRoutes(paymentController: PaymentController): Route
 
     // Refund payment
     router.post('/:id/refund', (req, res) => paymentController.refundPayment(req, res));
+
+    // Webhook endpoint (POST with idempotency based on query params)
+    router.post(
+        '/webhooks/pesapal',
+        express.raw({ type: '*/*' }),
+        webhookIdempotencyMiddleware.middleware(),
+        (req, res) => paymentController.handlePesapalWebhook(req, res)
+    );
 
     return router;
 }

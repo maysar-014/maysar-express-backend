@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { BusinessChallenge } from '../../domain/entities/business-challenge.entity';
 import {
     BusinessChallengeRepository
@@ -16,7 +16,7 @@ export class PrismaBusinessChallengeRepository implements BusinessChallengeRepos
             category: challenge.category,
             industryTags: challenge.industryTags,
             constraints: challenge.constraints,
-            successCriteria: challenge.successCriteria,
+            successCriteria: challenge.successCriteria as unknown as Prisma.InputJsonValue,
             status: challenge.status,
             deadline: challenge.deadline,
             acceptedSolutionId: challenge.acceptedSolutionId,

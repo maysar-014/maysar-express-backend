@@ -1,0 +1,7 @@
+{
+  "errors": {
+    "onlyKycSupported": "Ni KYC tu inayoungwa mkono",
+    "onlyKycReports": "Ni ripoti za KYC tu zinazohusika",
+    "failed": "Operesheni imeshindwa"
+  }
+}

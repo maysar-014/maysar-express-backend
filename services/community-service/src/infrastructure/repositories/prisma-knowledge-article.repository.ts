@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { KnowledgeArticle } from '../../domain/entities/knowledge-article.entity';
 import {
     KnowledgeArticleRepository
@@ -13,7 +13,7 @@ export class PrismaKnowledgeArticleRepository implements KnowledgeArticleReposit
             authorId: article.authorId,
             title: article.title,
             summary: article.summary,
-            sections: article.sections,
+            sections: article.sections as unknown as Prisma.InputJsonValue,
             category: article.category,
             industryTags: article.industryTags,
             expertiseLevel: article.expertiseLevel,

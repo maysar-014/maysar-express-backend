@@ -13,7 +13,9 @@ const getHealthCheckService = (): HealthCheckService => {
     if (!healthCheckService) {
         const container = Container.getInstance();
         healthCheckService = new HealthCheckService(
-            container.prisma
+            container.prisma,
+            container.pesapalAdapter,
+            container.redisClient
         );
     }
     return healthCheckService;

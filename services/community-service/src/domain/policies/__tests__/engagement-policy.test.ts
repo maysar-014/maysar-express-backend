@@ -1,19 +1,14 @@
 import { EngagementPolicy } from '../engagement-policy';
+import { ReputationTier } from '../../engines/reputation-engine';
 
 describe('EngagementPolicy', () => {
-    let policy: EngagementPolicy;
-
-    beforeEach(() => {
-        policy = new EngagementPolicy();
+    it('should get daily limit for tier', () => {
+        const limit = EngagementPolicy.getDailyLimitForTier(ReputationTier.CONTRIBUTOR, 'POST');
+        expect(limit).toBeGreaterThan(0);
     });
 
-    it('should calculate engagement score', () => {
-        const score = policy.calculateScore({ likes: 10, comments: 5, shares: 2 });
-        expect(score).toBeGreaterThan(0);
-    });
-
-    it('should determine trending content', () => {
-        const isTrending = policy.isTrending({ score: 100, timeframe: 'hour' });
-        expect(isTrending).toBeDefined();
+    it('should check minimum quality score', () => {
+        const result = EngagementPolicy.meetsMinimumQualityScore(70, ReputationTier.CONTRIBUTOR);
+        expect(result).toBe(true);
     });
 });

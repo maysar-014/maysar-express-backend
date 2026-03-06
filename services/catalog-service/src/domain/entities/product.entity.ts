@@ -197,7 +197,7 @@ export class Product {
 
   // Business logic methods
   isPublished(): boolean {
-    return this.status.isPublished();
+    return this.status.isPublished;
   }
 
   isActive(): boolean {

@@ -2,18 +2,20 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
+import { setupExpressErrorHandler } from '@sentry/node';
 import { moduleRegistry } from './core/module-registry';
 import { prisma } from './config/prisma';
 import { correlationMiddleware } from '../shared/tracing/openTelemetry';
 import { appLogger } from '../shared/logger/logger';
-import { requestLoggingMiddleware, performanceMonitoringMiddleware, errorLoggingMiddleware } from '../services/order-service/src/middleware/logging.middleware';
-import { requestLoggingMiddleware, performanceMonitoringMiddleware, errorLoggingMiddleware } from '../services/order-service/src/middleware/logging.middleware';
+import { requestLoggingMiddleware, performanceMonitoringMiddleware} from '../services/order-service/src/middleware/logging.middleware';
+import { i18next, i18nextMiddleware } from '../shared/i18n/i18n';
 
 export const createApp = () => {
     const app = express();
 
     // Global Middleware
     app.use(correlationMiddleware());
+    app.use(i18nextMiddleware.handle(i18next));
     const corsOrigin = process.env.CORS_ORIGIN
         ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
         : false;
@@ -67,7 +69,6 @@ export const createApp = () => {
         // Check Redis
         try {
             const Redis = await import('ioredis');
-            // @ts-expect-error - Redis default export type issue
             const redis = new Redis.default(process.env.REDIS_URL || 'redis://redis:6379', {
                 lazyConnect: true,
                 connectTimeout: 2000,
@@ -90,6 +91,16 @@ export const createApp = () => {
         }
     });
 
+    // Sentry test endpoint
+    app.get('/debug-sentry', (_req, _res) => {
+        throw new Error('My first Sentry error!');
+    });
+
+    // Sentry error handler (before global error handler)
+    if (process.env.SENTRY_DSN) {
+        setupExpressErrorHandler(app);
+    }
+
     // Global Error Handler
     app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
         appLogger.error('Global Error Handler', err);
@@ -105,7 +116,7 @@ export const createApp = () => {
     });
 
     // 404 Handler
-    app.use((req, res) => {
+    app.use((_req, res) => {
         res.status(404).json({ error: 'Not Found' });
     });
 

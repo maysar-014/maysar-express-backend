@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../../infrastructure/services/logger.service';
+import { metricsCollector } from '../../infrastructure/monitoring/metrics';
 
 export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
     const start = Date.now();
@@ -16,6 +17,14 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
         };
 
         logger.info('Request Completed', logData);
+        
+        // Record HTTP metrics
+        metricsCollector.recordHttpRequest(
+            req.method,
+            req.route?.path || req.path,
+            res.statusCode,
+            duration
+        );
     });
     next();
 };

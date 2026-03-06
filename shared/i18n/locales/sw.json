@@ -1,0 +1,44 @@
+{
+  "common": {
+    "errors": {
+      "internalServerError": "Hitilafu ya seva ya ndani",
+      "notFound": "{{resource}} haikupatikana",
+      "validationError": "Kosa la uthibitishaji",
+      "rateLimitExceeded": "Maombi mengi sana, tafadhali jaribu tena baadaye"
+    }
+  },
+  "payment": {
+    "errors": {
+      "webhookNotConfigured": "Mfumo wa webhook haujawekwa",
+      "invalidSignature": "Saini batili",
+      "missingParameters": "Vigezo vinavyohitajika havipo"
+    },
+    "status": {
+      "PENDING": "Inasubiri",
+      "COMPLETED": "Imekamilika",
+      "FAILED": "Imeshindwa",
+      "REFUNDED": "Imerudishwa",
+      "UNKNOWN": "Haijulikani"
+    }
+  },
+  "notification": {
+    "errors": {
+      "validationError": "Uthibitishaji wa arifa umeshindwa",
+      "notFound": "Arifa haikupatikana",
+      "rateLimitExceeded": "Kiwango cha arifa kimefikiwa",
+      "internalError": "Kushindwa kushughulikia arifa",
+      "cancelInvalid": "Ni arifa zilizopangwa zinazosubiri tu zinazoweza kufutwa"
+    },
+    "templates": {
+      "taskAssignmentTitle": "Kazi Mpya Inapatikana",
+      "taskAssignmentMessage": "Kazi {{taskId}} imekupewa"
+    }
+  },
+  "compliance": {
+    "errors": {
+      "onlyKycSupported": "Ni KYC tu inayoungwa mkono",
+      "onlyKycReports": "Ni ripoti za KYC tu zinazohusika",
+      "failed": "Operesheni imeshindwa"
+    }
+  }
+}

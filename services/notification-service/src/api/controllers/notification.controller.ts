@@ -9,6 +9,7 @@ import {
   NotificationNotFoundError,
   RateLimitExceededError
 } from '../../domain/errors/notification.errors';
+import { t } from '@shared/i18n/i18n';
 
 export class NotificationController {
   constructor(
@@ -38,7 +39,7 @@ export class NotificationController {
       }
       res.status(500).json({
         success: false,
-        error: { code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create notification' }
+        error: { code: 'INTERNAL_SERVER_ERROR', message: t('notification:errors.internalError', { lng: (req as any).language }) }
       });
     }
   }
@@ -48,7 +49,7 @@ export class NotificationController {
       const { id } = req.params;
       const notification = await this.notificationRepository.findById(id);
       if (!notification) {
-        res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Notification not found' } });
+        res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: t('notification:errors.notFound', { lng: (req as any).language }) } });
         return;
       }
       res.status(200).json({
@@ -58,7 +59,7 @@ export class NotificationController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: { code: 'INTERNAL_SERVER_ERROR', message: 'Failed to get notification' }
+        error: { code: 'INTERNAL_SERVER_ERROR', message: t('notification:errors.internalError', { lng: (req as any).language }) }
       });
     }
   }
@@ -86,7 +87,7 @@ export class NotificationController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: { code: 'INTERNAL_SERVER_ERROR', message: 'Failed to list notifications' }
+        error: { code: 'INTERNAL_SERVER_ERROR', message: t('notification:errors.internalError', { lng: (req as any).language }) }
       });
     }
   }
@@ -97,7 +98,7 @@ export class NotificationController {
       const { status } = req.body;
       const notification = await this.notificationRepository.findById(id);
       if (!notification) {
-        res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Notification not found' } });
+        res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: t('notification:errors.notFound', { lng: (req as any).language }) } });
         return;
       }
       let updated = notification;
@@ -113,7 +114,7 @@ export class NotificationController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: { code: 'INTERNAL_SERVER_ERROR', message: 'Failed to update status' }
+        error: { code: 'INTERNAL_SERVER_ERROR', message: t('notification:errors.internalError', { lng: (req as any).language }) }
       });
     }
   }
@@ -138,7 +139,7 @@ export class NotificationController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: { code: 'INTERNAL_SERVER_ERROR', message: 'Bulk send failed' }
+        error: { code: 'INTERNAL_SERVER_ERROR', message: t('notification:errors.internalError', { lng: (req as any).language }) }
       });
     }
   }
@@ -148,13 +149,13 @@ export class NotificationController {
       const { id } = req.params;
       const notification = await this.notificationRepository.findById(id);
       if (!notification) {
-        res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Notification not found' } });
+        res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: t('notification:errors.notFound', { lng: (req as any).language }) } });
         return;
       }
       if (notification.status !== 'pending' || !notification.scheduledAt) {
         res.status(400).json({
           success: false,
-          error: { code: 'BAD_REQUEST', message: 'Only pending scheduled notifications can be cancelled' }
+          error: { code: 'BAD_REQUEST', message: t('notification:errors.cancelInvalid', { lng: (req as any).language }) }
         });
         return;
       }
@@ -163,7 +164,7 @@ export class NotificationController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: { code: 'INTERNAL_SERVER_ERROR', message: 'Failed to cancel' }
+        error: { code: 'INTERNAL_SERVER_ERROR', message: t('notification:errors.internalError', { lng: (req as any).language }) }
       });
     }
   }
@@ -188,7 +189,7 @@ export class NotificationController {
       }
       res.status(500).json({
         success: false,
-        error: { code: 'INTERNAL_SERVER_ERROR', message: 'Retry failed' }
+        error: { code: 'INTERNAL_SERVER_ERROR', message: t('notification:errors.internalError', { lng: (req as any).language }) }
       });
     }
   }

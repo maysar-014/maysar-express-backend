@@ -18,8 +18,3 @@ healthRouter.get('/', async (req, res) => {
 healthRouter.get('/liveness', (req, res) => {
     res.status(200).send('OK');
 });
-
-healthRouter.get('/readiness', async (req, res) => {
-    // Add checks for DB/Redis here
-    res.status(200).send('OK');
-});

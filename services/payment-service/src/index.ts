@@ -3,6 +3,7 @@
  * Starts the HTTP server
  */
 
+import './instrument';
 import { createApp } from './app';
 import { config } from './config/config';
 import { Container } from './container';

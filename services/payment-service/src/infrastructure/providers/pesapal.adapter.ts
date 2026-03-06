@@ -4,6 +4,7 @@
  * Supports Tanzanian mobile money and other payment methods
  */
 
+import crypto from 'crypto';
 import {
     IPaymentProvider,
     PaymentProviderRequest,
@@ -12,7 +13,8 @@ import {
     PayoutRequest,
     PayoutResponse,
     WebhookPayload,
-} from '../../domain/ports/payment-provider.port';
+} from '../../domain/repositories/payment-provider.gateway';
+import { logger } from '../services/logger.service';
 
 export class PesapalAdapter implements IPaymentProvider {
     private readonly pesapalUrl: string;
@@ -20,15 +22,21 @@ export class PesapalAdapter implements IPaymentProvider {
     private readonly consumerSecret: string;
     private readonly baseUrl: string;
     private tokenCache: { token: string; expiresAt: number } | null = null;
+    private ipnId: string | null = null;
 
     constructor() {
         this.pesapalUrl = process.env.PESAPAL_URL || 'https://cybqa.pesapal.com/pesapalv3';
         this.consumerKey = process.env.PESAPAL_CONSUMER_KEY || '';
         this.consumerSecret = process.env.PESAPAL_CONSUMER_SECRET || '';
         this.baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+        this.ipnId = process.env.PESAPAL_IPN_ID || null;
 
         if (!this.consumerKey || !this.consumerSecret) {
             throw new Error('Pesapal credentials not configured');
+        }
+
+        if (!this.ipnId) {
+            logger.warn('PESAPAL_IPN_ID not set - will register IPN on first payment');
         }
     }
 
@@ -196,14 +204,19 @@ export class PesapalAdapter implements IPaymentProvider {
     }
 
     verifyWebhookSignature(payload: string, signature: string): boolean {
-        // Pesapal uses HMAC-SHA256 for webhook signatures
-        const crypto = require('crypto');
         const expectedSignature = crypto
             .createHmac('sha256', this.consumerSecret)
             .update(payload)
             .digest('hex');
 
-        return expectedSignature === signature;
+        const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+        const signatureBuffer = Buffer.from(signature, 'hex');
+
+        if (expectedBuffer.length !== signatureBuffer.length) {
+            return false;
+        }
+
+        return crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
     }
 
     getProviderName(): string {
@@ -253,8 +266,10 @@ export class PesapalAdapter implements IPaymentProvider {
      * Get or register IPN notification ID
      */
     private async getNotificationId(token: string): Promise<string> {
-        // In production, this should be cached or stored in database
-        // For now, we'll register it each time (Pesapal handles duplicates)
+        if (this.ipnId) {
+            return this.ipnId;
+        }
+
         const response = await fetch(`${this.pesapalUrl}/api/URLSetup/RegisterIPN`, {
             method: 'POST',
             headers: {
@@ -276,6 +291,9 @@ export class PesapalAdapter implements IPaymentProvider {
         if (!result.ipn_id) {
             throw new Error('No IPN ID in response');
         }
+
+        this.ipnId = result.ipn_id;
+        logger.info('Registered new IPN ID', { ipnId: this.ipnId });
 
         return result.ipn_id;
     }

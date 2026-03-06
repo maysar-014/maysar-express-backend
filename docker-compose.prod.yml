@@ -102,6 +102,7 @@ services:
     image: prom/prometheus:latest
     volumes:
       - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infra/prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
     ports:

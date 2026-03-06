@@ -7,12 +7,19 @@ import { Request, Response } from 'express';
 import { ProcessPaymentUseCase } from '../../application/use-cases/process-payment.use-case';
 import { CheckPaymentStatusUseCase } from '../../application/use-cases/check-payment-status.use-case';
 import { RefundPaymentUseCase } from '../../application/use-cases/refund-payment.use-case';
+import { HandlePesapalWebhookUseCase } from '../../application/use-cases/handle-pesapal-webhook.use-case';
+import { PesapalAdapter } from '../../infrastructure/providers/pesapal.adapter';
+import { WebhookPayload } from '../../domain/repositories/payment-provider.gateway';
+import { logger } from '../../infrastructure/services/logger.service';
+import { t } from '@shared/i18n/i18n';
 
 export class PaymentController {
     constructor(
         private readonly processPaymentUseCase: ProcessPaymentUseCase,
         private readonly checkPaymentStatusUseCase: CheckPaymentStatusUseCase,
-        private readonly refundPaymentUseCase: RefundPaymentUseCase
+        private readonly refundPaymentUseCase: RefundPaymentUseCase,
+        private readonly handlePesapalWebhookUseCase?: HandlePesapalWebhookUseCase,
+        private readonly pesapalAdapter?: PesapalAdapter
     ) { }
 
     /**
@@ -66,7 +73,7 @@ export class PaymentController {
         } catch (error) {
             res.status(500).json({
                 success: false,
-                error: 'Internal server error',
+                error: t('common:errors.internalServerError', { lng: (req as any).language }),
                 message: error instanceof Error ? error.message : 'Unknown error',
             });
         }
@@ -90,13 +97,13 @@ export class PaymentController {
             } else {
                 res.status(404).json({
                     success: false,
-                    error: 'Payment not found',
+                    error: t('payment:errors.notFound', { lng: (req as any).language }),
                 });
             }
         } catch (error) {
             res.status(500).json({
                 success: false,
-                error: 'Internal server error',
+                error: t('common:errors.internalServerError', { lng: (req as any).language }),
                 message: error instanceof Error ? error.message : 'Unknown error',
             });
         }
@@ -120,13 +127,13 @@ export class PaymentController {
             } else {
                 res.status(404).json({
                     success: false,
-                    error: 'Payment not found',
+                    error: t('payment:errors.notFound', { lng: (req as any).language }),
                 });
             }
         } catch (error) {
             res.status(500).json({
                 success: false,
-                error: 'Internal server error',
+                error: t('common:errors.internalServerError', { lng: (req as any).language }),
                 message: error instanceof Error ? error.message : 'Unknown error',
             });
         }
@@ -165,7 +172,7 @@ export class PaymentController {
         } catch (error) {
             res.status(500).json({
                 success: false,
-                error: 'Internal server error',
+                error: t('common:errors.internalServerError', { lng: (req as any).language }),
                 message: error instanceof Error ? error.message : 'Unknown error',
             });
         }
@@ -195,14 +202,72 @@ export class PaymentController {
             } else {
                 res.status(404).json({
                     success: false,
-                    error: 'Payment not found',
+                    error: t('payment:errors.notFound', { lng: (req as any).language }),
                 });
             }
         } catch (error) {
             res.status(500).json({
                 success: false,
-                error: 'Internal server error',
+                error: t('common:errors.internalServerError', { lng: (req as any).language }),
             });
+        }
+    }
+
+    /**
+     * POST /webhooks/pesapal
+     * Handle Pesapal webhook notification
+     */
+    async handlePesapalWebhook(req: Request, res: Response): Promise<void> {
+        try {
+            if (!this.handlePesapalWebhookUseCase || !this.pesapalAdapter) {
+                res.status(501).json({ error: t('payment:errors.webhookNotConfigured', { lng: (req as any).language }) });
+                return;
+            }
+
+            const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
+            const signature = req.headers['x-pesapal-signature'] as string;
+
+            if (!signature || !this.pesapalAdapter.verifyWebhookSignature(queryString, signature)) {
+                logger.warn('Invalid webhook signature', { signature });
+                res.status(401).json({ error: t('payment:errors.invalidSignature', { lng: (req as any).language }) });
+                return;
+            }
+
+            const { OrderTrackingId, OrderMerchantReference, Status } = req.query;
+
+            if (!OrderTrackingId || !OrderMerchantReference) {
+                logger.warn('Missing webhook parameters', { query: req.query });
+                res.status(400).json({ error: t('payment:errors.missingParameters', { lng: (req as any).language }) });
+                return;
+            }
+
+            const webhookPayload: WebhookPayload = {
+                eventType: 'payment.status.update',
+                providerReference: OrderTrackingId as string,
+                status: Status as string || 'UNKNOWN',
+                amount: 0,
+                currency: 'TZS',
+                timestamp: new Date(),
+                metadata: {
+                    merchantReference: OrderMerchantReference as string,
+                    rawQuery: req.query
+                }
+            };
+
+            await this.pesapalAdapter.handleWebhook(webhookPayload);
+
+            const result = await this.handlePesapalWebhookUseCase.execute(
+                OrderTrackingId as string,
+                OrderMerchantReference as string,
+                Status as string || 'UNKNOWN',
+                webhookPayload
+            );
+
+            logger.info('Webhook processed successfully', result);
+            res.status(200).json({ status: 'OK' });
+        } catch (error) {
+            logger.error('Webhook processing failed', { error });
+            res.status(500).json({ error: t('common:errors.internalServerError', { lng: (req as any).language }) });
         }
     }
 }

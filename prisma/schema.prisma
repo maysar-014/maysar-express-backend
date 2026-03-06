@@ -406,50 +406,58 @@ model EventStore {
 }
 
 model Category {
-  id           String     @id @default(uuid()) @db.Uuid
-  parentId     String?    @db.Uuid
-  name         String     @db.VarChar(255)
-  slug         String     @unique @db.VarChar(255)
+  id           String              @id @default(uuid()) @db.Uuid
+  parentId     String?             @db.Uuid
+  name         String              @db.VarChar(255)
+  slug         String              @unique @db.VarChar(255)
   description  String?
-  imageUrl     String?    @db.VarChar(500)
-  displayOrder Int        @default(0)
-  isActive     Boolean    @default(true)
+  imageUrl     String?             @db.VarChar(500)
+  displayOrder Int                 @default(0)
+  isActive     Boolean             @default(true)
   seoMetadata  Json?
-  createdAt    DateTime   @default(now()) @db.Timestamp(6)
-  parent       Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children     Category[] @relation("CategoryHierarchy")
+  createdAt    DateTime            @default(now()) @db.Timestamp(6)
+  parent       Category?           @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children     Category[]          @relation("CategoryHierarchy")
   products     Product[]
+  attributes   CategoryAttribute[]
 
   @@map("catalog_categories")
 }
 
 model Product {
-  id                 String                @id @default(uuid()) @db.Uuid
-  sellerId           String                @db.Uuid
-  title              String                @db.VarChar(255)
-  description        String?
-  categoryId         String                @db.Uuid
-  brand              String?               @db.VarChar(100)
-  model              String?               @db.VarChar(100)
-  status             Catalog_ProductStatus @default(draft)
-  visibility         Catalog_Visibility    @default(public)
-  seoMetadata        Json?
-  tags               String[]
-  gtin               String?               @db.VarChar(14)
-  mpn                String?               @db.VarChar(100)
-  isbn               String?               @db.VarChar(13)
-  fingerprint        String?               @db.VarChar(64)
-  fingerprintVersion Int                   @default(1)
-  createdAt          DateTime              @default(now()) @db.Timestamp(6)
-  updatedAt          DateTime              @updatedAt @db.Timestamp(6)
-  variants           ProductVariant[]
-  category           Category              @relation(fields: [categoryId], references: [id])
+  id                    String                @id @default(uuid()) @db.Uuid
+  sellerId              String                @db.Uuid
+  title                 String                @db.VarChar(255)
+  description           String?
+  categoryId            String                @db.Uuid
+  brand                 String?               @db.VarChar(100)
+  model                 String?               @db.VarChar(100)
+  status                Catalog_ProductStatus @default(draft)
+  visibility            Catalog_Visibility    @default(public)
+  seoMetadata           Json?
+  tags                  String[]
+  gtin                  String?               @db.VarChar(14)
+  mpn                   String?               @db.VarChar(100)
+  isbn                  String?               @db.VarChar(13)
+  fingerprint           String?               @db.VarChar(64)
+  fingerprintVersion    Int                   @default(1)
+  slug                  String                @unique @db.VarChar(300)
+  seoTitle              String?               @db.VarChar(160)
+  shortSeoDescription   String?               @db.VarChar(160)
+  generatedDescription  String?
+  qualityScore          Int                   @default(0)
+  createdAt             DateTime              @default(now()) @db.Timestamp(6)
+  updatedAt             DateTime              @updatedAt @db.Timestamp(6)
+  variants              ProductVariant[]
+  category              Category              @relation(fields: [categoryId], references: [id])
+  structuredAttributes  ProductAttribute[]
 
   @@unique([categoryId, fingerprint])
   @@index([gtin])
   @@index([mpn])
   @@index([isbn])
   @@index([brand, model, categoryId])
+  @@index([slug])
   @@map("catalog_products")
 }
 
@@ -549,6 +557,38 @@ model Catalog_MatchConfirmation {
   @@index([sellerId, status])
   @@index([expiresAt])
   @@map("catalog_match_confirmations")
+}
+
+model CategoryAttribute {
+  id           String             @id @default(uuid()) @db.Uuid
+  categoryId   String             @db.Uuid
+  name         String             @db.VarChar(100)
+  displayLabel String             @db.VarChar(150)
+  type         Catalog_AttributeType
+  options      Json?
+  isRequired   Boolean            @default(false)
+  displayOrder Int                @default(0)
+  placeholder  String?            @db.VarChar(200)
+  createdAt    DateTime           @default(now()) @db.Timestamp(6)
+  category     Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  productAttributes ProductAttribute[]
+
+  @@index([categoryId])
+  @@map("catalog_category_attributes")
+}
+
+model ProductAttribute {
+  id          String            @id @default(uuid()) @db.Uuid
+  productId   String            @db.Uuid
+  attributeId String            @db.Uuid
+  value       String
+  createdAt   DateTime          @default(now()) @db.Timestamp(6)
+  product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attribute   CategoryAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([attributeId])
+  @@map("catalog_product_attributes")
 }
 
 model CatalogOutboxEvent {
@@ -2950,6 +2990,13 @@ enum Catalog_InventoryPolicy {
 enum Catalog_VariantStatus {
   active
   inactive
+}
+
+enum Catalog_AttributeType {
+  TEXT
+  NUMBER
+  SELECT
+  BOOLEAN
 }
 
 enum Commission_CommissionType {

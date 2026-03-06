@@ -1,5 +1,5 @@
 export class CreateProductListingDto {
-    productId: string;
+    productId!: string;
     customPrice?: number;
     priceMarkup?: number;
     minOrderQuantity?: number;
@@ -18,17 +18,17 @@ export class UpdateProductListingDto {
 }
 
 export class ProductListingResponseDto {
-    id: string;
-    enablerId: string;
-    productId: string;
-    sellerId: string;
-    status: string;
+    id!: string;
+    enablerId!: string;
+    productId!: string;
+    sellerId!: string;
+    status!: string;
     customPrice?: number;
     priceMarkup?: number;
-    visibility: boolean;
-    sellerApproved: boolean;
-    views: number;
-    clicks: number;
-    orders: number;
-    createdAt: Date;
+    visibility!: boolean;
+    sellerApproved!: boolean;
+    views!: number;
+    clicks!: number;
+    orders!: number;
+    createdAt!: Date;
 }

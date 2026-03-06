@@ -1,0 +1,46 @@
+apiDefinitions:
+  main: services/*/openapi.yaml
+
+lint:
+  extends:
+    - recommended
+  
+  rules:
+    info-contact: error
+    info-license: error
+    operation-description: error
+    operation-operationId: error
+    operation-summary: error
+    operation-tags: error
+    operation-tag-defined: error
+    path-parameters-defined: error
+    no-path-trailing-slash: error
+    no-identical-paths: error
+    no-ambiguous-paths: error
+    parameter-description: error
+    tag-description: error
+    tags-alphabetical: off
+    no-unused-components: warn
+    no-undefined-server-variable: error
+    operation-operationId-unique: error
+    operation-parameters-unique: error
+    component-name-unique: error
+    path-declaration-must-exist: error
+    path-not-include-query: error
+    path-params-defined: error
+    operation-4xx-response: error
+    operation-operationId-url-safe: error
+    operation-security-defined: error
+    spec: error
+    
+  oas3_1:
+    spec: error
+    
+  preprocessors:
+    oas3_1-version-check:
+      severity: error
+      message: OpenAPI version must be 3.1.0 or higher per api-documentation-constitution.md
+
+  decorators:
+    info-version-check:
+      severity: error

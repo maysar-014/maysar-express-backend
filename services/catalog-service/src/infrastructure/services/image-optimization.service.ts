@@ -733,6 +733,72 @@ export class ImageOptimizationService {
   }
 
   /**
+   * Generate SEO metadata for product image
+   */
+  async generateImageSeoMetadata(params: {
+    brand: string;
+    productName: string;
+    keyAttribute?: string;
+    imageIndex: number;
+  }): Promise<{
+    fileName: string;
+    altText: string;
+    imageTitle: string;
+  }> {
+    const { brand, productName, keyAttribute, imageIndex } = params;
+    const parts = [brand, productName, keyAttribute].filter(Boolean);
+    const baseSlug = parts.join('-').toLowerCase().replace(/[^a-z0-9-]/g, '');
+    
+    return {
+      fileName: `${baseSlug}-wholesale-tanzania-${imageIndex}.webp`,
+      altText: `${brand} ${productName}${keyAttribute ? ` ${keyAttribute}` : ''} – Wholesale Supplier Tanzania`,
+      imageTitle: `${brand} ${productName}${keyAttribute ? ` ${keyAttribute}` : ''} – Wholesale Supplier Tanzania`,
+    };
+  }
+
+  /**
+   * Store product image with SEO metadata
+   */
+  async storeProductImageWithSeo(
+    buffer: Buffer,
+    params: {
+      brand: string;
+      productName: string;
+      keyAttribute?: string;
+      imageIndex: number;
+      customPath?: string;
+    }
+  ): Promise<{
+    url: string;
+    metadata: {
+      fileName: string;
+      altText: string;
+      imageTitle: string;
+    };
+  }> {
+    const seoMetadata = await this.generateImageSeoMetadata(params);
+    
+    if (!this.cdnProvider) {
+      throw new Error('CDN provider not configured');
+    }
+
+    const basePath = params.customPath || 'product-images';
+    const result = await this.cdnProvider.uploadFile(buffer, {
+      key: `${basePath}/${seoMetadata.fileName}`,
+      contentType: 'image/webp',
+      metadata: {
+        'alt-text': seoMetadata.altText,
+        'image-title': seoMetadata.imageTitle,
+      }
+    });
+
+    return {
+      url: result.url || '',
+      metadata: seoMetadata,
+    };
+  }
+
+  /**
    * Get optimization statistics
    */
   getStats(): {

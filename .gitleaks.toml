@@ -1,0 +1,19 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist for known false positives"
+
+# Allow test secrets used in CI workflows
+regexes = [
+  '''test-jwt-secret-for-ci-only''',
+  '''test-jwt-secret-for-ci-only-not-for-production-use''',
+  '''integration-jwt-secret-not-for-production''',
+  '''test_password_123''',
+  '''integration_password_123''',
+]
+
+# Allow .env.example file (contains placeholder values, not real secrets)
+paths = [
+  '''.env.example''',
+]

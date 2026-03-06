@@ -1,6 +1,6 @@
 
-import { Wallet } from '../../domain/entities/wallet.entity';
-import { Transaction } from '../../domain/entities/transaction.entity';
+import { Wallet } from '@wallet/domain/entities/wallet.entity';
+import { Transaction } from '@wallet/domain/entities/transaction.entity';
 import { WalletResponseDto, TransactionResponseDto } from '../dtos/wallet.dto';
 
 export class WalletMapper {

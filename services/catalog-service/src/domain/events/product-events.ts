@@ -240,6 +240,43 @@ export class ProductViewedEvent extends ProductDomainEvent {
   }
 }
 
+export class ProductCreatedWithStructuredDataEvent extends ProductDomainEvent {
+  constructor(
+    eventId: string,
+    aggregateId: ProductId,
+    public readonly sellerId: SellerId,
+    public readonly slug: string,
+    public readonly categorySlug: string,
+    public readonly supplierLocation: string,
+    public readonly brand: string,
+    public readonly seoTitle: string,
+    public readonly qualityScore: number,
+    occurredAt?: Date
+  ) {
+    super(eventId, aggregateId, occurredAt);
+  }
+
+  get eventType(): string {
+    return 'ProductCreatedWithStructuredData';
+  }
+}
+
+export class ProductSeoPageIndexedEvent extends ProductDomainEvent {
+  constructor(
+    eventId: string,
+    aggregateId: ProductId,
+    public readonly slug: string,
+    public readonly indexedAt: Date,
+    occurredAt?: Date
+  ) {
+    super(eventId, aggregateId, occurredAt);
+  }
+
+  get eventType(): string {
+    return 'ProductSeoPageIndexed';
+  }
+}
+
 // Union type for all product events
 export type ProductEvent =
   | ProductCreatedEvent
@@ -252,4 +289,6 @@ export type ProductEvent =
   | ProductVariantUpdatedEvent
   | ProductSEOUpdatedEvent
   | ProductInventoryUpdatedEvent
-  | ProductViewedEvent;
+  | ProductViewedEvent
+  | ProductCreatedWithStructuredDataEvent
+  | ProductSeoPageIndexedEvent;

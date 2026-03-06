@@ -236,7 +236,7 @@ export class FeedEngine {
    * Determines if a post is visible to a specific user
    */
   private static isPostVisibleToUser(post: Post, user: User): boolean {
-    return post.isVisibleToUser(user.id, post.authorId, false); // Placeholder for follower check
+    return post.isVisibleTo(user.id, post.authorId, false); // Placeholder for follower check
   }
 
   /**

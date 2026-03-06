@@ -70,12 +70,12 @@ export class EnablerCommissionEntity {
     canBeApproved(): boolean {
         return this.props.status === 'pending' &&
             this.props.fraudCheckStatus === 'cleared' &&
-            !this.isOnHold();
+            !this.isOnHold;
     }
 
     canBePaid(): boolean {
         return this.props.status === 'approved' &&
-            !this.isOnHold() &&
+            !this.isOnHold &&
             this.props.fraudCheckStatus === 'cleared';
     }
 

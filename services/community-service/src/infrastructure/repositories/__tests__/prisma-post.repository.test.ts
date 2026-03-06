@@ -1,9 +1,10 @@
 import { PrismaPostRepository } from '../prisma-post.repository';
 import { PrismaClient } from '@prisma/client';
+import { Post, PostType } from '../../../domain/entities/post.entity';
 
 const mockPrisma = {
     post: {
-        create: jest.fn(),
+        upsert: jest.fn(),
         findUnique: jest.fn(),
         findMany: jest.fn(),
         update: jest.fn()
@@ -18,9 +19,10 @@ describe('PrismaPostRepository', () => {
         repository = new PrismaPostRepository(mockPrisma);
     });
 
-    it('should create post', async () => {
-        (mockPrisma.post.create as jest.Mock).mockResolvedValue({ id: 'p1' });
-        const result = await repository.create({} as any);
-        expect(mockPrisma.post.create).toHaveBeenCalled();
+    it('should save post', async () => {
+        (mockPrisma.post.upsert as jest.Mock).mockResolvedValue({ id: 'p1' });
+        const post = Post.create({ id: 'p1', authorId: 'u1', content: 'test', type: PostType.TEXT });
+        await repository.save(post);
+        expect(mockPrisma.post.upsert).toHaveBeenCalled();
     });
 });

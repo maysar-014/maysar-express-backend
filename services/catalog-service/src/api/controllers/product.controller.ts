@@ -9,7 +9,9 @@ import {
   CreateProductUseCase,
   GetProductUseCase,
   GetProductsBySellerUseCase,
-  SearchProductsUseCase
+  SearchProductsUseCase,
+  LoadCategoryAttributesUseCase,
+  PreviewGeneratedDescriptionUseCase
 } from '../../application/use-cases';
 import { CreateProductWithMatchingUseCase } from '../../application/use-cases/create-product-with-matching.use-case';
 import {
@@ -17,7 +19,8 @@ import {
   UpdateProductDto,
   ProductDetailsDto,
   ProductSummaryDto,
-  ProductSearchDto
+  ProductSearchDto,
+  StructuredCreateProductDto
 } from '../../application/dto/product.dto';
 import { ProductMapper } from '../../application/mappers/product-mapper';
 
@@ -92,6 +95,8 @@ export class ProductController {
     private readonly getProductsBySellerUseCase: GetProductsBySellerUseCase,
     private readonly searchProductsUseCase: SearchProductsUseCase,
     private readonly productMapper: ProductMapper,
+    private readonly loadCategoryAttributesUseCase: LoadCategoryAttributesUseCase,
+    private readonly previewGeneratedDescriptionUseCase: PreviewGeneratedDescriptionUseCase,
     private readonly createProductWithMatchingUseCase?: CreateProductWithMatchingUseCase,
     config: Partial<ProductControllerConfig> = {}
   ) {
@@ -99,112 +104,68 @@ export class ProductController {
   }
 
   /**
-   * Create Product
+   * Create Product (Structured or with Matching)
    * POST /api/products
    */
   async createProduct(req: Request, res: Response): Promise<void> {
     try {
-      // Validate request body
-      const validation = this.validateCreateProductRequest(req.body);
+      const validation = this.validateStructuredCreateProductRequest(req.body);
       if (!validation.isValid) {
         this.sendValidationError(res, validation.errors);
         return;
       }
 
-      // Map to DTO
-      const createDto = this.mapToCreateProductDto(req.body);
-
-      // Check if matching is enabled and use case is available
-      const enableMatching = req.query.enableMatching !== 'false' && this.createProductWithMatchingUseCase;
+      const dto: StructuredCreateProductDto = req.body;
+      const enableMatching = req.query.enableMatching === 'true' && this.createProductWithMatchingUseCase;
 
       if (enableMatching && this.createProductWithMatchingUseCase) {
-        // Use matching-enabled creation
-        const matchingRequest = {
-          sellerId: createDto.sellerId,
-          name: createDto.name,
-          description: createDto.description,
-          brand: req.body.brand,
-          model: req.body.model,
-          categoryId: createDto.categoryId,
-          identifiers: req.body.identifiers,
-          attributes: createDto.attributes,
-          price: createDto.price,
-          currency: createDto.currency,
-          type: createDto.type,
-          tags: createDto.tags,
-          mediaUrls: createDto.mediaUrls,
-          inventoryCount: createDto.inventoryCount
-        };
-
-        const matchingResult = await this.createProductWithMatchingUseCase.execute(matchingRequest);
+        const matchingResult = await this.createProductWithMatchingUseCase.execute({
+          sellerId: dto.sellerId,
+          categoryId: dto.categoryId,
+          brand: dto.brand,
+          productName: dto.productName,
+          structuredAttributes: dto.structuredAttributes,
+          mediaUrls: dto.mediaUrls,
+          price: dto.price,
+          currency: dto.currency,
+          supplierLocation: dto.supplierLocation,
+          minimumOrderQuantity: dto.minimumOrderQuantity,
+        });
 
         if (matchingResult.confirmationRequired) {
-          // Return confirmation required response
-          const response: ApiResponse = {
+          res.status(200).json({
             success: true,
             data: {
               matchingRequired: true,
               confirmationId: matchingResult.confirmationId,
               candidates: matchingResult.candidates
             },
-            meta: {
-              timestamp: new Date(),
-              requestId: this.getRequestId(req)
-            }
-          };
-          res.status(200).json(response);
+            meta: { timestamp: new Date(), requestId: this.getRequestId(req) }
+          });
           return;
         } else if (matchingResult.matchedProductId) {
-          // Product created or merged
-          const response: ApiResponse<{ productId: string; matched: boolean }> = {
+          res.status(201).json({
             success: true,
-            data: {
-              productId: matchingResult.matchedProductId,
-              matched: matchingResult.matchFound || false
-            },
-            meta: {
-              timestamp: new Date(),
-              requestId: this.getRequestId(req)
-            }
-          };
-          res.status(201).json(response);
+            data: { productId: matchingResult.matchedProductId, matched: matchingResult.matchFound || false },
+            meta: { timestamp: new Date(), requestId: this.getRequestId(req) }
+          });
           return;
         }
       }
 
-      // Fall back to standard creation (no matching)
-      const result = await this.createProductUseCase.execute({
-        sellerId: createDto.sellerId,
-        name: createDto.name,
-        description: createDto.description,
-        price: createDto.price,
-        currency: createDto.currency,
-        categoryId: createDto.categoryId,
-        type: createDto.type,
-        tags: createDto.tags,
-        mediaUrls: createDto.mediaUrls,
-        inventoryCount: createDto.inventoryCount,
-        attributes: createDto.attributes
-      });
+      const result = await this.createProductUseCase.execute(dto);
 
-      // Handle response
       if (result.status === 'success') {
-        const response: ApiResponse<{ productId: string }> = {
+        res.status(201).json({
           success: true,
           data: { productId: result.productId },
-          meta: {
-            timestamp: new Date(),
-            requestId: this.getRequestId(req)
-          }
-        };
-
-        res.status(201).json(response);
+          meta: { timestamp: new Date(), requestId: this.getRequestId(req) }
+        });
       } else if (result.status === 'validation_error') {
         this.sendValidationError(res, result.violations || []);
       } else {
         this.sendBusinessRuleError(res, result.message);
       }
-
     } catch (error) {
       console.error('ProductController.createProduct error:', error);
       this.sendInternalError(res, error as Error);
@@ -540,39 +501,65 @@ export class ProductController {
     }
   }
 
+  /**
+   * Load Category Attributes
+   * GET /api/categories/:categoryId/attributes
+   */
+  async loadCategoryAttributes(req: Request, res: Response): Promise<void> {
+    try {
+      const categoryId = req.params.categoryId;
+      if (!categoryId) {
+        this.sendValidationError(res, ['Category ID is required']);
+        return;
+      }
+
+      const result = await this.loadCategoryAttributesUseCase.execute(categoryId);
+      res.status(200).json({
+        success: true,
+        data: result,
+        meta: { timestamp: new Date(), requestId: this.getRequestId(req) }
+      });
+    } catch (error) {
+      console.error('ProductController.loadCategoryAttributes error:', error);
+      this.sendInternalError(res, error as Error);
+    }
+  }
+
+  /**
+   * Preview Generated Description
+   * POST /api/products/preview-description
+   */
+  async previewGeneratedDescription(req: Request, res: Response): Promise<void> {
+    try {
+      const validation = this.validatePreviewDescriptionRequest(req.body);
+      if (!validation.isValid) {
+        this.sendValidationError(res, validation.errors);
+        return;
+      }
+
+      const result = await this.previewGeneratedDescriptionUseCase.execute(req.body);
+      res.status(200).json({
+        success: true,
+        data: result,
+        meta: { timestamp: new Date(), requestId: this.getRequestId(req) }
+      });
+    } catch (error) {
+      console.error('ProductController.previewGeneratedDescription error:', error);
+      this.sendInternalError(res, error as Error);
+    }
+  }
+
   // Private helper methods
 
-  private validateCreateProductRequest(body: any): { isValid: boolean; errors: string[] } {
+  private validateStructuredCreateProductRequest(body: any): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
-
-    if (!body.name || typeof body.name !== 'string' || body.name.trim().length === 0) {
-      errors.push('Product name is required and must be a non-empty string');
-    }
-
-    if (!body.description || typeof body.description !== 'string' || body.description.trim().length === 0) {
-      errors.push('Product description is required and must be a non-empty string');
-    }
-
-    if (!body.price || typeof body.price !== 'number' || body.price <= 0) {
-      errors.push('Product price is required and must be a positive number');
-    }
-
-    if (!body.sellerId || typeof body.sellerId !== 'string') {
-      errors.push('Seller ID is required and must be a string');
-    }
-
-    if (!body.categoryId || typeof body.categoryId !== 'string') {
-      errors.push('Category ID is required and must be a string');
-    }
-
-    if (!body.type || typeof body.type !== 'string') {
-      errors.push('Product type is required and must be a string');
-    }
-
-    if (body.inventoryCount !== undefined && (typeof body.inventoryCount !== 'number' || body.inventoryCount < 0)) {
-      errors.push('Inventory count must be a non-negative number');
-    }
-
+    if (!body.sellerId) errors.push('Seller ID is required');
+    if (!body.categoryId) errors.push('Category ID is required');
+    if (!body.brand) errors.push('Brand is required');
+    if (!body.productName) errors.push('Product name is required');
+    if (!body.structuredAttributes) errors.push('Structured attributes are required');
+    if (!body.mediaUrls || body.mediaUrls.length === 0) errors.push('At least one media URL is required');
+    if (!body.price || body.price <= 0) errors.push('Valid price is required');
     return { isValid: errors.length === 0, errors };
   }
 
@@ -589,6 +576,28 @@ export class ProductController {
 
     if (body.tags && !Array.isArray(body.tags)) {
       errors.push('Tags must be an array of strings');
+    }
+
+    return { isValid: errors.length === 0, errors };
+  }
+
+  private validatePreviewDescriptionRequest(body: any): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    if (!body.categoryId || typeof body.categoryId !== 'string') {
+      errors.push('Category ID is required');
+    }
+
+    if (!body.brand || typeof body.brand !== 'string') {
+      errors.push('Brand is required');
+    }
+
+    if (!body.productName || typeof body.productName !== 'string') {
+      errors.push('Product name is required');
+    }
+
+    if (!body.structuredAttributes || typeof body.structuredAttributes !== 'object') {
+      errors.push('Structured attributes are required');
     }
 
     return { isValid: errors.length === 0, errors };
@@ -819,6 +828,8 @@ export class ProductControllerFactory {
     getProductsBySellerUseCase: GetProductsBySellerUseCase,
     searchProductsUseCase: SearchProductsUseCase,
     productMapper: ProductMapper,
+    loadCategoryAttributesUseCase: LoadCategoryAttributesUseCase,
+    previewGeneratedDescriptionUseCase: PreviewGeneratedDescriptionUseCase,
     createProductWithMatchingUseCase?: CreateProductWithMatchingUseCase,
     config: Partial<ProductControllerConfig> = {}
   ): ProductController {
@@ -828,6 +839,8 @@ export class ProductControllerFactory {
       getProductsBySellerUseCase,
       searchProductsUseCase,
       productMapper,
+      loadCategoryAttributesUseCase,
+      previewGeneratedDescriptionUseCase,
       createProductWithMatchingUseCase,
       config
     );

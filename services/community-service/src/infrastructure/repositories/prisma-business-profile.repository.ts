@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { BusinessProfile } from '../../domain/entities/business-profile.entity';
 import {
     BusinessProfileRepository
@@ -13,14 +13,14 @@ export class PrismaBusinessProfileRepository implements BusinessProfileRepositor
             id: profile.id,
             userId: profile.userId,
             businessId: profile.businessId,
-            expertiseAreas: profile.expertiseAreas,
+            expertiseAreas: profile.expertiseAreas as unknown as Prisma.InputJsonValue,
             industryExperience: profile.industryExperience,
             certifications: profile.certifications,
             contributionScore: profile.contributionScore,
-            contributionMetrics: profile.contributionMetrics,
+            contributionMetrics: profile.contributionMetrics as unknown as Prisma.InputJsonValue,
             reputationTier: profile.reputationTier,
-            businessGoals: profile.businessGoals,
-            learningObjectives: profile.learningObjectives,
+            businessGoals: profile.businessGoals as unknown as Prisma.InputJsonValue,
+            learningObjectives: profile.learningObjectives as unknown as Prisma.InputJsonValue,
             availableForMentorship: profile.availableForMentorship,
             mentorshipCapacity: profile.mentorshipCapacity,
             createdAt: profile.createdAt,

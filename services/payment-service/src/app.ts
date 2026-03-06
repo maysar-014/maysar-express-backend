@@ -7,6 +7,7 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import { setupExpressErrorHandler } from '@sentry/node';
 import { createPaymentRoutes } from './api/routes/payment.routes';
 import { healthRoutes } from './api/routes/health.routes';
 import { errorHandler } from './api/middleware/error.middleware';
@@ -15,6 +16,7 @@ import { correlationMiddleware } from '../../../shared/tracing/openTelemetry';
 import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
 import { logger } from './infrastructure/services/logger.service';
 import { Container } from './container';
+import { i18next, i18nextMiddleware } from '@shared/i18n/i18n';
 
 export function createApp(): Express {
     const app = express();
@@ -29,6 +31,7 @@ export function createApp(): Express {
 
     // Middleware
     app.use(correlationMiddleware());
+    app.use(i18nextMiddleware.handle(i18next));
     app.use(helmet());
     app.use(cors());
     app.use(requestLogger);
@@ -45,6 +48,16 @@ export function createApp(): Express {
         res.set('Content-Type', metricsRegistry.contentType);
         res.end(await metricsRegistry.metrics());
     });
+
+    // Sentry test endpoint
+    app.get('/debug-sentry', (req, res) => {
+        throw new Error('Payment Service Sentry test error!');
+    });
+
+    // Sentry error handler (before error handler)
+    if (process.env.SENTRY_DSN) {
+        setupExpressErrorHandler(app);
+    }
 
     // Error Handling
     app.use(errorHandler);

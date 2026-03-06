@@ -1,0 +1,44 @@
+{
+  "common": {
+    "errors": {
+      "internalServerError": "Internal server error",
+      "notFound": "{{resource}} not found",
+      "validationError": "Validation error",
+      "rateLimitExceeded": "Too many requests, please try again later"
+    }
+  },
+  "payment": {
+    "errors": {
+      "webhookNotConfigured": "Webhook handling not configured",
+      "invalidSignature": "Invalid signature",
+      "missingParameters": "Missing required parameters"
+    },
+    "status": {
+      "PENDING": "Pending",
+      "COMPLETED": "Completed",
+      "FAILED": "Failed",
+      "REFUNDED": "Refunded",
+      "UNKNOWN": "Unknown"
+    }
+  },
+  "notification": {
+    "errors": {
+      "validationError": "Notification validation failed",
+      "notFound": "Notification not found",
+      "rateLimitExceeded": "Notification rate limit exceeded",
+      "internalError": "Failed to process notification",
+      "cancelInvalid": "Only pending scheduled notifications can be cancelled"
+    },
+    "templates": {
+      "taskAssignmentTitle": "New Task Available",
+      "taskAssignmentMessage": "Task {{taskId}} has been assigned to you"
+    }
+  },
+  "compliance": {
+    "errors": {
+      "onlyKycSupported": "Only KYC compliance is supported",
+      "onlyKycReports": "Only KYC reports are supported",
+      "failed": "Operation failed"
+    }
+  }
+}

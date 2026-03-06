@@ -1,19 +1,27 @@
 import { ExpertiseValidationPolicy } from '../expertise-validation.policy';
+import { ExpertiseLevel } from '../../value-objects/expertise-badge.value-object';
+import { ReputationTier } from '../../engines/reputation-engine';
 
 describe('ExpertiseValidationPolicy', () => {
-    let policy: ExpertiseValidationPolicy;
-
-    beforeEach(() => {
-        policy = new ExpertiseValidationPolicy();
+    it('should validate beginner expertise', () => {
+        const result = ExpertiseValidationPolicy.canEarnBadge(ExpertiseLevel.BEGINNER, { 
+            peerEndorsements: 0, 
+            trainingCompletions: 0, 
+            businessVerified: false, 
+            contributionScore: 0, 
+            reputationTier: ReputationTier.NEWCOMER 
+        });
+        expect(result.eligible).toBe(true);
     });
 
-    it('should validate expertise', () => {
-        const result = policy.validate({ userId: 'u1', domain: 'farming', experience: 5 });
-        expect(result.isValid).toBe(true);
-    });
-
-    it('should reject invalid expertise', () => {
-        const result = policy.validate({ userId: 'u1', domain: 'farming', experience: 0 });
-        expect(result.isValid).toBe(false);
+    it('should reject expert level without requirements', () => {
+        const result = ExpertiseValidationPolicy.canEarnBadge(ExpertiseLevel.EXPERT, { 
+            peerEndorsements: 0, 
+            trainingCompletions: 0, 
+            businessVerified: false, 
+            contributionScore: 0, 
+            reputationTier: ReputationTier.NEWCOMER 
+        });
+        expect(result.eligible).toBe(false);
     });
 });

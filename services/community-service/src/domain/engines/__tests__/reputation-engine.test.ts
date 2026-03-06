@@ -1,18 +1,18 @@
-import { ReputationEngine } from '../reputation-engine';
+import { ReputationEngine, ReputationTier } from '../reputation-engine';
 
 describe('ReputationEngine', () => {
-    let engine: ReputationEngine;
-
-    beforeEach(() => {
-        engine = new ReputationEngine();
-    });
-
     it('should calculate reputation', () => {
-        const start = performance.now();
-        const score = engine.calculateReputation({ posts: 10, likes: 50, comments: 20 });
-        const duration = performance.now() - start;
-        
-        expect(score).toBeGreaterThan(0);
-        expect(duration).toBeLessThan(10);
+        const result = ReputationEngine.calculateReputation({ 
+            contributionScore: 600, 
+            expertiseBadges: 1, 
+            peerEndorsements: 2, 
+            helpfulAnswers: 5, 
+            knowledgeShared: 3, 
+            mentorshipHours: 0, 
+            articlesPublished: 1, 
+            challengesSolved: 1 
+        });
+        expect(result.score).toBeDefined();
+        expect(result.tier).toBe(ReputationTier.CONTRIBUTOR);
     });
 });

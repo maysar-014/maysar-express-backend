@@ -1,0 +1,15 @@
+{
+  "errors": {
+    "webhookNotConfigured": "Webhook handling not configured",
+    "invalidSignature": "Invalid signature",
+    "missingParameters": "Missing required parameters",
+    "notFound": "Payment not found"
+  },
+  "status": {
+    "PENDING": "Pending",
+    "COMPLETED": "Completed",
+    "FAILED": "Failed",
+    "REFUNDED": "Refunded",
+    "UNKNOWN": "Unknown"
+  }
+}
