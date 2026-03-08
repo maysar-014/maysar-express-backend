@@ -1,5 +1,37 @@
 import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
 import { ISagaLogRepository } from '@shared/saga/saga.log';
+import { ReleaseHoldUseCase } from '../use-cases/release-hold.use-case';
+import { CaptureHoldUseCase } from '../use-cases/capture-hold.use-case';
+import { CreditWalletUseCase } from '../use-cases/credit-wallet.use-case';
+import { FreezeFundsUseCase } from '../use-cases/freeze-funds.use-case';
+import { TransactionalOutbox } from '@shared/outbox/outboxPattern';
+import { AuditInfo, ActorType } from '../../domain/value-objects/audit-info.value-object';
+import { EventEnvelope } from '@shared/events/eventBus';
+import { randomUUID } from 'crypto';
+
+const createSagaOutboxAdapter = (outbox?: TransactionalOutbox) => {
+    if (!outbox) {
+        return undefined;
+    }
+
+    return {
+        saveEvent: async (
+            event: { eventType: string; data: unknown; metadata: unknown },
+            _transaction?: unknown
+        ): Promise<void> => {
+            const envelope: EventEnvelope = {
+                eventId: randomUUID(),
+                eventType: event.eventType,
+                data: event.data,
+                metadata: (typeof event.metadata === 'object' && event.metadata !== null)
+                    ? (event.metadata as Record<string, unknown>)
+                    : undefined,
+                timestamp: new Date()
+            };
+            await outbox.saveEvent(envelope);
+        }
+    };
+};
 
 export interface CODSettlementPayload {
     orderId: string;
@@ -29,13 +61,13 @@ export class CODSettlementSaga extends DistributedSagaOrchestrator<CODSettlement
     constructor(
         sagaLogRepository: ISagaLogRepository,
         serviceName: string,
-        private readonly releaseHoldUseCase: any,
-        private readonly captureHoldUseCase: any,
-        private readonly creditWalletUseCase: any,
-        private readonly freezeWalletUseCase: any,
-        outbox?: any
+        private readonly releaseHoldUseCase: ReleaseHoldUseCase,
+        private readonly captureHoldUseCase: CaptureHoldUseCase,
+        private readonly creditWalletUseCase: CreditWalletUseCase,
+        private readonly freezeWalletUseCase: FreezeFundsUseCase,
+        outbox?: TransactionalOutbox
     ) {
-        super(sagaLogRepository, serviceName, outbox);
+        super(sagaLogRepository, serviceName, createSagaOutboxAdapter(outbox));
     }
 
     protected defineSteps(): SagaStep<CODSettlementPayload>[] {
@@ -50,7 +82,6 @@ export class CODSettlementSaga extends DistributedSagaOrchestrator<CODSettlement
                     // Implementing an actual delay for the dispute window.
                     // In production, this would be a persistent scheduled event or a message queue delay.
                     // For current orchestrator compatibility, we use a promise-based delay.
-                    const DISPUTE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
                     // We check if a dispute was already filed before proceeding (simulated check)
                     console.log(`[${sagaId}] Dispute window timer started for order ${payload.orderId}`);
@@ -61,7 +92,7 @@ export class CODSettlementSaga extends DistributedSagaOrchestrator<CODSettlement
 
                     console.log(`[${sagaId}] Dispute window passed for order ${payload.orderId}. Proceeding to settlement.`);
                 },
-                compensate: async (payload, sagaId) => {
+                compensate: async (_payload, _sagaId) => {
                     // No action needed
                 }
             },
@@ -69,18 +100,30 @@ export class CODSettlementSaga extends DistributedSagaOrchestrator<CODSettlement
                 name: 'ProcessCODCommitment',
                 execute: async (payload, sagaId) => {
                     if (!payload.holdId) return;
+                    const auditInfo = AuditInfo.create({
+                        actor: 'wallet-service',
+                        actorType: ActorType.SYSTEM,
+                        action: 'COD_SETTLEMENT',
+                        reason: `COD settlement processing for order ${payload.orderId}`,
+                        metadata: { sagaId, orderId: payload.orderId }
+                    });
 
                     if (payload.deliveryStatus === 'SUCCESS') {
                         await this.releaseHoldUseCase.execute({
                             holdId: payload.holdId,
                             userId: payload.buyerId,
-                            reason: `COD Commitment Released - Order ${payload.orderId} confirmed after dispute window.`
+                            reason: `COD Commitment Released - Order ${payload.orderId} confirmed after dispute window.`,
+                            idempotencyKey: `cod_release_${payload.orderId}`,
+                            auditInfo
                         });
                     } else if (payload.deliveryStatus === 'REFUSED') {
                         await this.captureHoldUseCase.execute({
                             holdId: payload.holdId,
                             userId: payload.buyerId,
-                            reason: `COD Commitment Captured - Order ${payload.orderId} refused.`
+                            reason: `COD Commitment Captured - Order ${payload.orderId} refused.`,
+                            idempotencyKey: `cod_capture_${payload.orderId}`,
+                            correlationId: sagaId,
+                            auditInfo
                         });
                     } else if (payload.deliveryStatus === 'DISPUTED') {
                         // For DISPUTED, we keep the commitment hold active instead of releasing/capturing.
@@ -92,8 +135,14 @@ export class CODSettlementSaga extends DistributedSagaOrchestrator<CODSettlement
                             await this.freezeWalletUseCase.execute({
                                 userId: payload.buyerId,
                                 amount: payload.amount,
-                                currency: payload.currency,
-                                reason: `COD Dispute - Order ${payload.orderId} funds frozen pending resolution.`
+                                description: `COD Dispute - Order ${payload.orderId} funds frozen pending resolution.`,
+                                reason: `COD dispute hold for order ${payload.orderId}`,
+                                correlationId: sagaId,
+                                auditInfo,
+                                metadata: {
+                                    orderId: payload.orderId,
+                                    currency: payload.currency
+                                }
                             });
                         }
                     }
@@ -107,6 +156,20 @@ export class CODSettlementSaga extends DistributedSagaOrchestrator<CODSettlement
                 name: 'PayoutSellerAndCourier',
                 execute: async (payload, sagaId) => {
                     if (payload.deliveryStatus !== 'SUCCESS') return;
+                    const sellerAuditInfo = AuditInfo.create({
+                        actor: 'wallet-service',
+                        actorType: ActorType.SYSTEM,
+                        action: 'COD_SELLER_PAYOUT',
+                        reason: `Seller payout for order ${payload.orderId}`,
+                        metadata: { sagaId, orderId: payload.orderId }
+                    });
+                    const courierAuditInfo = AuditInfo.create({
+                        actor: 'wallet-service',
+                        actorType: ActorType.SYSTEM,
+                        action: 'COD_COURIER_PAYOUT',
+                        reason: `Courier payout for order ${payload.orderId}`,
+                        metadata: { sagaId, orderId: payload.orderId }
+                    });
 
                     console.log(`[${sagaId}] Crediting seller ${payload.sellerId} and courier ${payload.courierId}`);
 
@@ -115,7 +178,10 @@ export class CODSettlementSaga extends DistributedSagaOrchestrator<CODSettlement
                         userId: payload.sellerId,
                         amount: payload.sellerAmount,
                         currency: payload.currency,
-                        description: `COD Payout - Order ${payload.orderId}`
+                        description: `COD Payout - Order ${payload.orderId}`,
+                        idempotencyKey: `cod_seller_credit_${payload.orderId}`,
+                        correlationId: sagaId,
+                        auditInfo: sellerAuditInfo
                     });
 
                     // Credit Courier
@@ -123,10 +189,13 @@ export class CODSettlementSaga extends DistributedSagaOrchestrator<CODSettlement
                         userId: payload.courierId,
                         amount: payload.courierAmount,
                         currency: payload.currency,
-                        description: `COD Delivery Fee - Order ${payload.orderId}`
+                        description: `COD Delivery Fee - Order ${payload.orderId}`,
+                        idempotencyKey: `cod_courier_credit_${payload.orderId}`,
+                        correlationId: sagaId,
+                        auditInfo: courierAuditInfo
                     });
 
-                    await (this as any).publishCommand('EventBus.Emit', {
+                    await this.publishCommand('EventBus.Emit', {
                         type: 'Settlement.Completed',
                         payload: { orderId: payload.orderId, status: 'SETTLED' }
                     }, sagaId, sagaId);

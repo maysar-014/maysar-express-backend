@@ -2,7 +2,7 @@ import { EventEnvelope } from './eventBus';
 import { v4 as uuidv4 } from 'uuid';
 import { tracingService, TraceContext } from '../tracing/openTelemetry';
 
-export interface CorrelatedEventEnvelope<T = any> extends EventEnvelope {
+export interface CorrelatedEventEnvelope extends EventEnvelope {
   causationId?: string;
   traceId?: string;
   spanId?: string;
@@ -17,10 +17,10 @@ export class EventCorrelationService {
       causationId?: string;
       traceContext?: TraceContext;
     }
-  ): CorrelatedEventEnvelope<T> {
+  ): CorrelatedEventEnvelope {
     const correlationId = context?.correlationId || uuidv4();
     const eventId = uuidv4();
-    const timestamp = new Date().toISOString();
+    const timestamp = new Date();
     const producer = process.env.SERVICE_NAME || 'unknown-service';
     const version = 'v1';
     
@@ -29,9 +29,10 @@ export class EventCorrelationService {
       data: payload,
       eventId,
       correlationId,
+      timestamp,
       metadata: {
         eventId,
-        timestamp,
+        timestamp: timestamp.toISOString(),
         correlationId,
         causationId: context?.causationId,
         traceId: context?.traceContext?.traceId,
@@ -46,14 +47,14 @@ export class EventCorrelationService {
     sourceEvent: CorrelatedEventEnvelope,
     newEventType: string,
     newPayload: T
-  ): CorrelatedEventEnvelope<T> {
+  ): CorrelatedEventEnvelope {
     return this.createCorrelatedEvent(newEventType, newPayload, {
-      correlationId: sourceEvent.correlationId,
+      correlationId: sourceEvent.correlationId || '',
       causationId: sourceEvent.eventId,
       traceContext: {
         traceId: sourceEvent.traceId || '',
         spanId: sourceEvent.spanId || '',
-        correlationId: sourceEvent.correlationId
+        correlationId: sourceEvent.correlationId || ''
       }
     });
   }
@@ -61,7 +62,7 @@ export class EventCorrelationService {
   static async publishWithTracing<T>(
     eventType: string,
     payload: T,
-    publisher: (event: CorrelatedEventEnvelope<T>) => Promise<void>,
+    publisher: (event: CorrelatedEventEnvelope) => Promise<void>,
     context?: TraceContext
   ): Promise<void> {
     await tracingService.executeWithSpan(
@@ -85,9 +86,13 @@ export class EventChainTracker {
   private chains = new Map<string, EventChainInfo>();
 
   addEvent(event: CorrelatedEventEnvelope): void {
-    const { correlationId, eventId, eventType } = event;
-    const causationId = event.metadata?.causationId;
-    const timestamp = event.metadata?.timestamp || new Date().toISOString();
+    const correlationId = event.correlationId || '';
+    const eventId = event.eventId || '';
+    const eventType = event.eventType || event.type || event.event || 'unknown';
+    const causationIdValue = event.metadata?.causationId;
+    const causationId = typeof causationIdValue === 'string' ? causationIdValue : undefined;
+    const timestampValue = event.metadata?.timestamp;
+    const timestamp = typeof timestampValue === 'string' ? timestampValue : new Date().toISOString();
     
     if (!this.chains.has(correlationId)) {
       this.chains.set(correlationId, {
@@ -100,7 +105,7 @@ export class EventChainTracker {
 
     const chain = this.chains.get(correlationId)!;
     chain.events.push({
-      eventId,
+      eventId: eventId || '',
       eventType,
       causationId,
       timestamp,

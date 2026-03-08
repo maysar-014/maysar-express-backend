@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { Router } from 'express';
 import { container } from '../../container';
 import { TYPES } from '../../types';

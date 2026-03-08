@@ -10,7 +10,7 @@ export interface CreatePaymentDTO {
     customerName?: string;
     phoneNumber?: string;
     callbackUrl?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
 }
 
 export interface PaymentResponse {
@@ -36,7 +36,7 @@ export class PaymentServiceClient {
         return response.data;
     }
 
-    async getPaymentStatus(paymentId: string): Promise<any> {
+    async getPaymentStatus(paymentId: string): Promise<unknown> {
         const response = await axios.get(`${this.baseUrl}/api/payments/${paymentId}`);
         return response.data;
     }

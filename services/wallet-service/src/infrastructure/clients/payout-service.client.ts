@@ -2,6 +2,7 @@ import axios from 'axios';
 import {
     InitiatePayoutDTO,
     PayoutResponse,
+    PayoutStatus,
     IPayoutServiceClient
 } from '../../../../../shared-contracts/payout-service-contracts';
 
@@ -16,11 +17,16 @@ export class PayoutServiceClient implements IPayoutServiceClient {
         try {
             const response = await axios.post(`${this.baseUrl}/api/payouts`, dto);
             return response.data;
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = axios.isAxiosError(error)
+                ? (error.response?.data as { error?: string } | undefined)?.error || error.message
+                : error instanceof Error
+                    ? error.message
+                    : 'Unknown error';
             return {
                 success: false,
-                status: 'FAILED' as any,
-                message: error.response?.data?.error || error.message || 'Unknown error'
+                status: PayoutStatus.FAILED,
+                message
             };
         }
     }
@@ -29,11 +35,16 @@ export class PayoutServiceClient implements IPayoutServiceClient {
         try {
             const response = await axios.get(`${this.baseUrl}/api/payouts/${payoutId}`);
             return response.data;
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = axios.isAxiosError(error)
+                ? (error.response?.data as { error?: string } | undefined)?.error || error.message
+                : error instanceof Error
+                    ? error.message
+                    : 'Unknown error';
             return {
                 success: false,
-                status: 'FAILED' as any,
-                message: error.response?.data?.error || error.message || 'Unknown error'
+                status: PayoutStatus.FAILED,
+                message
             };
         }
     }

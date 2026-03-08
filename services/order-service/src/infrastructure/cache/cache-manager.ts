@@ -214,7 +214,7 @@ export class CacheManager {
   }> {
     const strategies = await Promise.all(
       this.strategies.map(async (strategy) => {
-        let stats = undefined;
+        let stats: any = undefined;
         if (strategy instanceof RedisCache) {
           stats = await strategy.getStats();
         }

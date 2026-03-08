@@ -2,7 +2,7 @@ import { IWalletRepository } from '../../domain/repositories/wallet.repository';
 import { ITransactionRepository } from '../../domain/repositories/transaction.repository';
 import { Transaction, TransactionType } from '../../domain/entities/transaction.entity';
 
-import { AuditInfo, ActorType } from '../../domain/value-objects/audit-info.value-object';
+import { AuditInfo } from '../../domain/value-objects/audit-info.value-object';
 
 export interface UnfreezeFundsDTO {
     userId: string;
@@ -11,7 +11,7 @@ export interface UnfreezeFundsDTO {
     reason?: string;
     correlationId: string;
     auditInfo: AuditInfo;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
 }
 
 export interface UnfreezeFundsResultDTO {
@@ -64,7 +64,9 @@ export class UnfreezeFundsUseCase {
                 initiatedBy: dto.auditInfo.actor,
                 initiatedByType: dto.auditInfo.actorType,
                 reason: dto.reason || 'FUNDS_UNFREEZE',
-                isReversed: false
+                isReversed: false,
+                isCODRelated: false,
+                codConfirmationRequired: false
             });
 
             await this.transactionRepository.save(transaction);

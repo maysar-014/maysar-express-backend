@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "services/**/*.ts",
+    "shared/**/*.ts",
+    "shared-contracts/**/*.ts",
+    "events/**/*.ts",
+    "src/**/*.ts",
+    "*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "services/notification-service/notification-service/**"
+  ]
+}

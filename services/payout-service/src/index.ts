@@ -4,7 +4,7 @@ import { Container } from './container';
 import { tracingService } from '../../../shared/tracing/openTelemetry';
 import { SagaRecoveryWorker } from '@shared/saga/saga-recovery.worker';
 import { SagaFactory } from '@shared/saga/saga-factory';
-import { inMemoryEventBus } from '@shared-events/eventBus';
+import { EventBus } from '@shared-events/eventBus';
 
 // Initialize Tracing
 tracingService.start();
@@ -41,7 +41,7 @@ async function startServer() {
             console.log('\n🛑 Shutting down gracefully...');
             sagaRecoveryWorker?.stop();
             container.outboxProcessor.stop();
-            await inMemoryEventBus.shutdown();
+            await new EventBus().shutdown();
             await container.prisma.$disconnect();
             process.exit(0);
         };

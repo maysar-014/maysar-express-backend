@@ -86,10 +86,6 @@ export class BusinessRegistrationPolicy {
       return { allowed: false, reason: 'Only suspended businesses can be reactivated' };
     }
 
-    if (business.status === BusinessStatus.CLOSED) {
-      return { allowed: false, reason: 'Closed businesses cannot be reactivated' };
-    }
-
     return { allowed: true };
   }
 }

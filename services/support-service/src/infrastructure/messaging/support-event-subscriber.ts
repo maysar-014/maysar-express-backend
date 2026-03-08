@@ -26,7 +26,7 @@ export class SupportEventSubscriber {
     }
 
     private async handleUserRegistered(envelope: EventEnvelope): Promise<void> {
-        const data = envelope.data;
+        const data = (envelope.data ?? {}) as { userId?: string };
         logger.info(`User registered: ${data.userId}. Ready to handle support for them.`);
         // Potential logic: create a default welcome ticket or similar
     }

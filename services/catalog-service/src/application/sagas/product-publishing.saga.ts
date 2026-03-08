@@ -16,6 +16,17 @@ import {
 import { DistributedSagaOrchestrator, SagaStep } from '../../../../../shared/saga/saga.orchestrator';
 import { ISagaLogRepository } from '../../../../../shared/saga/saga.log';
 import { ProductId, SellerId } from '../../domain/value-objects/ids.value-object';
+type SagaOutbox = ConstructorParameters<typeof DistributedSagaOrchestrator<any>>[2];
+
+const noopSagaLogRepository: ISagaLogRepository = {
+  save: async () => { },
+  update: async () => { },
+  getById: async () => null,
+  saveStep: async () => { },
+  updateStep: async () => { },
+  getSteps: async () => [],
+  findStuck: async () => [],
+};
 
 export interface ProductPublishingContext {
   productId: string;
@@ -45,20 +56,85 @@ export interface ProductPublishingContext {
 
 export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPublishingContext> {
   protected sagaType = 'ProductPublishing';
+  private readonly productRepository: ProductRepository;
+  private readonly categoryRepository: CategoryRepository;
+  private readonly mediaRepository: MediaRepository;
+  private readonly searchService: SearchService;
+  private readonly eventPublisher: DomainEventPublisher;
+  private readonly idGenerator: IdGenerator;
+  private readonly dateTimeService: DateTimeService;
+  private lastContext: ProductPublishingContext | null;
+  private completed: boolean;
 
   constructor(
     sagaLogRepository: ISagaLogRepository,
     serviceName: string,
-    private readonly productRepository: ProductRepository,
-    private readonly categoryRepository: CategoryRepository,
-    private readonly mediaRepository: MediaRepository,
-    private readonly searchService: SearchService,
-    private readonly eventPublisher: DomainEventPublisher, // Retained for helper methods if needed, but orchestrator uses publishCommand
-    private readonly idGenerator: IdGenerator, // Retained for helper methods if needed
-    private readonly dateTimeService: DateTimeService,
-    outbox?: any
+    productRepository: ProductRepository,
+    categoryRepository: CategoryRepository,
+    mediaRepository: MediaRepository,
+    searchService: SearchService,
+    eventPublisher: DomainEventPublisher,
+    idGenerator: IdGenerator,
+    dateTimeService: DateTimeService,
+    outbox?: SagaOutbox
+  );
+  constructor(
+    productRepository: ProductRepository,
+    categoryRepository: CategoryRepository,
+    mediaRepository: MediaRepository,
+    searchService: SearchService,
+    eventPublisher: DomainEventPublisher,
+    idGenerator: IdGenerator,
+    dateTimeService: DateTimeService,
+    _legacyContext?: ProductPublishingContext
+  );
+  constructor(
+    arg1: ISagaLogRepository | ProductRepository,
+    arg2: string | CategoryRepository,
+    arg3: ProductRepository | MediaRepository,
+    arg4: CategoryRepository | SearchService,
+    arg5: MediaRepository | DomainEventPublisher,
+    arg6: SearchService | IdGenerator,
+    arg7: DomainEventPublisher | DateTimeService,
+    arg8?: IdGenerator | ProductPublishingContext,
+    arg9?: DateTimeService,
+    arg10?: SagaOutbox
   ) {
+    const isOrchestratedMode = typeof arg2 === 'string';
+    const sagaLogRepository = isOrchestratedMode ? (arg1 as ISagaLogRepository) : noopSagaLogRepository;
+    const serviceName = isOrchestratedMode ? (arg2 as string) : 'catalog-service';
+    const outbox = isOrchestratedMode ? arg10 : undefined;
     super(sagaLogRepository, serviceName, outbox);
+
+    this.lastContext = null;
+    this.completed = false;
+
+    if (isOrchestratedMode) {
+      this.productRepository = arg3 as ProductRepository;
+      this.categoryRepository = arg4 as CategoryRepository;
+      this.mediaRepository = arg5 as MediaRepository;
+      this.searchService = arg6 as SearchService;
+      this.eventPublisher = arg7 as DomainEventPublisher;
+      this.idGenerator = arg8 as IdGenerator;
+      this.dateTimeService = arg9 as DateTimeService;
+      return;
+    }
+    this.productRepository = arg1 as ProductRepository;
+    this.categoryRepository = arg2 as CategoryRepository;
+    this.mediaRepository = arg3 as MediaRepository;
+    this.searchService = arg4 as SearchService;
+    this.eventPublisher = arg5 as DomainEventPublisher;
+    this.idGenerator = arg6 as IdGenerator;
+    this.dateTimeService = arg7 as DateTimeService;
+  }
+
+  public override async start(
+    payload: ProductPublishingContext,
+    correlationId?: string
+  ): Promise<string> {
+    this.lastContext = payload;
+    this.completed = false;
+    return super.start(payload, correlationId);
   }
 
   protected defineSteps(): SagaStep<ProductPublishingContext>[] {
@@ -207,12 +283,61 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
             searchIndexed: context.searchIndexed,
             notificationsSent: context.notificationsSentTo?.length || 0
           }, context.requestId, sagaId);
+          this.completed = true;
         },
         compensate: async (context: ProductPublishingContext, sagaId: string) => {
           console.log(`[${sagaId}] Compensating success event`);
+          this.completed = false;
         }
       }
     ];
+  }
+
+  public getState(): ProductPublishingContext {
+    return this.lastContext ?? {
+      productId: '',
+      sellerId: '',
+      autoPublish: false,
+      notifyFollowers: false,
+      updateSearchIndex: false,
+      requestId: '',
+      timestamp: new Date(),
+      currentStep: 'initialized',
+      productValidated: false,
+      published: false,
+      errors: [],
+      retryCount: 0,
+    };
+  }
+
+  public isCompleted(): boolean {
+    return this.completed;
+  }
+
+  public async handleEvent(event: {
+    eventType?: string;
+    payload?: Record<string, unknown>;
+  }): Promise<void> {
+    const context = this.lastContext;
+    if (!context) return;
+    const eventProductId = typeof event.payload?.productId === 'string' ? event.payload.productId : '';
+    if (eventProductId && eventProductId !== context.productId) return;
+
+    if (event.eventType === 'ProductValidationFailed' || event.eventType === 'MediaProcessingFailed') {
+      await this.compensate();
+    }
+  }
+
+  public override async compensate(
+    sagaId?: string,
+    payload?: ProductPublishingContext,
+    stepIndex?: number
+  ): Promise<void> {
+    this.completed = false;
+    if (sagaId && payload && typeof stepIndex === 'number') {
+      this.lastContext = payload;
+      await super.compensate(sagaId, payload, stepIndex);
+    }
   }
 
   // Response handlers for asynchronous steps

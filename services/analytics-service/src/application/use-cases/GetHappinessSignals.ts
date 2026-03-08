@@ -13,10 +13,10 @@ export class GetHappinessSignals {
         const referralRawData = await this.repository.getReferralData();
         const sellerActivityData = await this.repository.getSellerActivityData(90);
 
-        const sellerMap = new Map(sellerActivityData.map(s => [s.id, s.createdAt]));
+        const sellerMap = new Map(sellerActivityData.map((s: any) => [s.id, s.createdAt]));
 
         const productExpansionData: ProductExpansionData[] = Array.from(
-            productExpansionRawData.reduce((map, product) => {
+            productExpansionRawData.reduce((map, product: any) => {
                 const existing = map.get(product.sellerId) || {
                     sellerId: product.sellerId,
                     userCreatedAt: sellerMap.get(product.sellerId) || new Date(),
@@ -28,7 +28,7 @@ export class GetHappinessSignals {
             }, new Map()).values()
         );
 
-        const referralDataFormatted: ReferralData[] = referralRawData.map(ref => ({
+        const referralDataFormatted: ReferralData[] = referralRawData.map((ref: any) => ({
             referrerId: ref.referrerId,
             referralId: ref.id,
             status: ref.status

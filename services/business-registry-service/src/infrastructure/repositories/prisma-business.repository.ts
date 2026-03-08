@@ -132,10 +132,10 @@ export class PrismaBusinessRepository implements IBusinessRepository {
           where: { businessId: business.id },
           select: { id: true }
         });
-        const existingIds = new Set(existingAddresses.map((a) => a.id));
-        const providedIds = new Set(business.addresses.map((a) => a.getId()));
+        const existingIds = new Set<string>(existingAddresses.map((a) => a.id));
+        const providedIds = new Set<string>(business.addresses.map((a) => a.getId()));
 
-        const toDelete = [...existingIds].filter((id) => !providedIds.has(id));
+        const toDelete = Array.from(existingIds).filter((id) => !providedIds.has(id));
         if (toDelete.length > 0) {
           await tx.businessAddress.deleteMany({
             where: { id: { in: toDelete }, businessId: business.id }

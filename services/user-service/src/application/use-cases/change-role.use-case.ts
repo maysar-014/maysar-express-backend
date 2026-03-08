@@ -28,7 +28,7 @@ export class ChangeRoleUseCase {
 
   async execute(input: ChangeRoleInput): Promise<ChangeRoleOutput> {
     try {
-      logger.logBusiness('Starting role change', input.changedBy, { userId: input.userId, newRole: input.newRole });
+      logger.info('Starting role change', { userId: input.userId, newRole: input.newRole, changedBy: input.changedBy });
 
       const user = await this.userRepository.findById(input.userId);
       if (!user) {
@@ -68,8 +68,9 @@ export class ChangeRoleUseCase {
 
       await sagaEventHandler.handleRoleChangeEvent(event, this.emailService, this.notificationClient);
 
-      logger.logBusiness('Role changed successfully', input.changedBy, {
+      logger.info('Role changed successfully', {
         userId: input.userId,
+        changedBy: input.changedBy,
         oldRole,
         newRole: input.newRole
       });

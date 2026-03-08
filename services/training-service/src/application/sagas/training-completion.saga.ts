@@ -1,4 +1,4 @@
-import { eventBus } from '../../../../../shared/events/eventBus';
+import { eventBus } from '@shared-events/eventBus';
 import { AwardBadgeUseCase } from '../use-cases/award-badge.use-case';
 import { ILeaderboardRepository } from '../../domain/repositories/leaderboard.repository';
 import { ITrainingRecordRepository } from '../../domain/repositories/training-record.repository';

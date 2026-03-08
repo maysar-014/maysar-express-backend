@@ -147,7 +147,7 @@ export interface RecordLoginActivityRequest {
 /**
  * Standard API response wrapper
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data: T;
   meta: {
     requestId: string;
@@ -164,7 +164,7 @@ export interface ApiErrorResponse {
   error: {
     code: string;
     message: string;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
   };
   meta: {
     requestId: string;

@@ -24,7 +24,7 @@ describe('QualityCheckpoint Entity', () => {
         expect(cp.status).toBe(QualityStatus.PASSED);
         expect(cp.passed).toBe(true);
         expect(cp.defectCount).toBe(0);
-        expect(cp.props.notes).toBe('All good');
+        expect(cp.notes).toBe('All good');
     });
 
     it('should record failure', () => {

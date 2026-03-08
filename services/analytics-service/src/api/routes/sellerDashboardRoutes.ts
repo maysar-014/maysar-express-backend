@@ -20,8 +20,8 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
 // Authorization middleware
 const sellerAuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const { sellerId } = req.params;
-  const userId = req.user?.id;
-  const userRole = req.user?.role;
+  const userId = req.user?.userId;
+  const userRole = req.user?.roles?.[0];
 
   if (userRole !== 'SELLER') {
     return res.status(403).json({ error: 'Only sellers can access this resource' });

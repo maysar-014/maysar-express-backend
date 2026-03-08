@@ -21,7 +21,7 @@ export interface HoldProps {
     updatedAt: Date;
     releasedAt?: Date;
     capturedAt?: Date;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
 }
 
 export class Hold {
@@ -45,7 +45,7 @@ export class Hold {
     get updatedAt(): Date { return this.props.updatedAt; }
     get releasedAt(): Date | undefined { return this.props.releasedAt; }
     get capturedAt(): Date | undefined { return this.props.capturedAt; }
-    get metadata(): Record<string, any> | undefined { return this.props.metadata; }
+    get metadata(): Record<string, unknown> | undefined { return this.props.metadata; }
 
     public isExpired(): boolean {
         return this.props.status === HoldStatus.ACTIVE && new Date() > this.props.expiresAt;

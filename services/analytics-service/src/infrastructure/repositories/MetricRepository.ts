@@ -2,11 +2,12 @@ import prisma from '../database/prisma';
 import { Metric } from '../../domain/entities/Metric.entity';
 import { MetricMapper } from '../../application/mappers/metric.mapper';
 import { IMetricRepository } from '../../domain/interfaces/IMetricRepository';
+import { Analytics_Metric } from '@prisma/client';
 
 export class MetricRepository implements IMetricRepository {
     async save(metric: Metric): Promise<void> {
         const data = MetricMapper.toDto(metric);
-        await prisma.metric.upsert({
+        await prisma.analytics_Metric.upsert({
             where: { id: data.id },
             update: {
                 value: data.value,
@@ -26,7 +27,7 @@ export class MetricRepository implements IMetricRepository {
     }
 
     async findByPeriod(type: string, dimension: string, start: Date, end: Date): Promise<Metric[]> {
-        const records = await prisma.metric.findMany({
+        const records = await prisma.analytics_Metric.findMany({
             where: {
                 metricType: type,
                 dimension,
@@ -40,7 +41,7 @@ export class MetricRepository implements IMetricRepository {
             }
         });
 
-        return records.map(record => MetricMapper.toEntity({
+        return records.map((record: Analytics_Metric) => MetricMapper.toEntity({
             id: record.id,
             type: record.metricType,
             value: record.value,
@@ -52,7 +53,7 @@ export class MetricRepository implements IMetricRepository {
     }
 
     async getLatest(type: string, dimension: string): Promise<Metric | null> {
-        const record = await prisma.metric.findFirst({
+        const record = await prisma.analytics_Metric.findFirst({
             where: {
                 metricType: type,
                 dimension

@@ -4,6 +4,14 @@ import { IProductionRepository } from '../../domain/interfaces/IProductionReposi
 import { ProductionPlan, ProductionStatus, ProductionPriority } from '../../domain/entities/ProductionPlan.entity';
 import { ProductionSchedule } from '../../domain/value-objects/production-schedule.value-object';
 
+interface ProductionPlanDelegate {
+    create(args: Record<string, unknown>): Promise<unknown>;
+    findUnique(args: Record<string, unknown>): Promise<unknown | null>;
+    findMany(args: Record<string, unknown>): Promise<unknown[]>;
+    update(args: Record<string, unknown>): Promise<unknown>;
+    delete(args: Record<string, unknown>): Promise<unknown>;
+}
+
 export class ProductionPlanRepository implements IProductionRepository {
     private prisma: PrismaClient;
 
@@ -12,7 +20,7 @@ export class ProductionPlanRepository implements IProductionRepository {
     }
 
     async save(plan: ProductionPlan): Promise<ProductionPlan> {
-        const data = await this.prisma.production_Plan.create({
+        const data = await this.planDelegate.create({
             data: {
                 id: plan.id,
                 supplierId: plan.supplierId,
@@ -30,25 +38,25 @@ export class ProductionPlanRepository implements IProductionRepository {
     }
 
     async findById(id: string): Promise<ProductionPlan | null> {
-        const data = await this.prisma.production_Plan.findUnique({ where: { id } });
+        const data = await this.planDelegate.findUnique({ where: { id } });
         if (!data) return null;
         return this.toEntity(data);
     }
 
     async findBySupplierId(supplierId: string): Promise<ProductionPlan[]> {
-        const data = await this.prisma.production_Plan.findMany({ where: { supplierId } });
-        return data.map(d => this.toEntity(d));
+        const data = await this.planDelegate.findMany({ where: { supplierId } });
+        return data.map((d: any) => this.toEntity(d));
     }
 
     async updateStatus(id: string, status: string): Promise<void> {
-        await this.prisma.production_Plan.update({
+        await this.planDelegate.update({
             where: { id },
             data: { status: status as any }
         });
     }
 
     async delete(id: string): Promise<void> {
-        await this.prisma.production_Plan.delete({ where: { id } });
+        await this.planDelegate.delete({ where: { id } });
     }
 
     private toEntity(data: any): ProductionPlan {
@@ -68,5 +76,15 @@ export class ProductionPlanRepository implements IProductionRepository {
             createdAt: data.createdAt,
             updatedAt: data.updatedAt
         });
+    }
+
+    private get planDelegate(): ProductionPlanDelegate {
+        const client = this.prisma as unknown as Record<string, unknown>;
+        const delegate = (client.production_Plan ??
+            client.productionPlan) as ProductionPlanDelegate | undefined;
+        if (!delegate) {
+            throw new Error('Production plan delegate is not configured on prisma client');
+        }
+        return delegate;
     }
 }

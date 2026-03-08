@@ -1,7 +1,7 @@
-import { PrismaClient, Reservation } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { StockManager } from '../stock/stockManager';
 import { WarehouseManager } from '../warehouse/warehouseManager';
-import { EventBus } from '../../../shared/events/eventBus';
+import { EventBus } from '@shared-events/eventBus';
 
 export interface OrderItem {
   id: string;
@@ -40,9 +40,62 @@ export interface ReservationResult {
   error?: string;
 }
 
+interface ReservationWarehouseAddress {
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+}
+
+interface WarehouseStockItem {
+  productVariantId: string;
+  quantityAvailable: number;
+  reorderPoint?: number;
+}
+
+interface WarehouseRecord {
+  id: string;
+  type: string;
+  status: string;
+  address: Prisma.JsonValue | ReservationWarehouseAddress;
+  operatingHours?: Prisma.JsonValue | null;
+  stockItems: WarehouseStockItem[];
+}
+
+interface ReservationRecord {
+  id: string;
+  orderId: string;
+  orderItemId: string;
+  productVariantId: string;
+  warehouseId: string;
+  quantityReserved: number;
+  status: string;
+  createdAt: Date;
+  expiresAt: Date;
+  fulfilledAt?: Date | null;
+  warehouse?: unknown;
+  stockItem?: unknown;
+}
+
+interface WarehouseDelegate {
+  findMany(args: Record<string, unknown>): Promise<WarehouseRecord[]>;
+}
+
+interface ReservationDelegate {
+  findMany(args: Record<string, unknown>): Promise<ReservationRecord[]>;
+  updateMany(args: Record<string, unknown>): Promise<{ count: number }>;
+}
+
+interface ReservationEnginePrisma {
+  inventory_Warehouse?: WarehouseDelegate;
+  warehouse?: WarehouseDelegate;
+  inventory_Reservation?: ReservationDelegate;
+  reservation?: ReservationDelegate;
+}
+
 export class ReservationEngine {
   constructor(
-    private prisma: PrismaClient,
+    private prisma: ReservationEnginePrisma,
     private stockManager: StockManager,
     private warehouseManager: WarehouseManager,
     private eventBus: EventBus
@@ -163,7 +216,7 @@ export class ReservationEngine {
 
       return {
         success: false,
-        error: error.message || 'Reservation failed due to system error'
+        error: error instanceof Error ? error.message : 'Reservation failed due to system error'
       };
     }
   }
@@ -177,7 +230,7 @@ export class ReservationEngine {
     shippingAddress?: { latitude: number; longitude: number; country: string; city: string }
   ): Promise<{ id: string; score: number } | null> {
     // Get all warehouses with available stock for this variant
-    const warehouses = await this.prisma.warehouse.findMany({
+    const warehouses = await this.warehouseDelegate.findMany({
       where: { status: 'active' },
       include: {
         stockItems: {
@@ -189,7 +242,7 @@ export class ReservationEngine {
       }
     });
 
-    const candidates = warehouses.filter(w => w.stockItems.length > 0);
+    const candidates = warehouses.filter((warehouse) => warehouse.stockItems.length > 0);
 
     if (candidates.length === 0) {
       return null;
@@ -213,7 +266,7 @@ export class ReservationEngine {
    * Calculate warehouse score based on multiple factors
    */
   private async calculateWarehouseScore(
-    warehouse: any,
+    warehouse: WarehouseRecord,
     variantId: string,
     quantity: number,
     shippingAddress?: { latitude: number; longitude: number; country: string; city: string }
@@ -222,8 +275,10 @@ export class ReservationEngine {
 
     // Factor 1: Geographic proximity (40% weight)
     if (shippingAddress) {
+      const address = (warehouse.address ?? {}) as ReservationWarehouseAddress;
+      const warehouseCoords = address.coordinates ?? { lat: 0, lng: 0 };
       const distance = await this.calculateDistance(
-        warehouse.address.coordinates,
+        warehouseCoords,
         { lat: shippingAddress.latitude, lng: shippingAddress.longitude }
       );
 
@@ -236,7 +291,8 @@ export class ReservationEngine {
 
     // Factor 2: Stock level efficiency (30% weight)
     const stockItem = warehouse.stockItems[0];
-    const stockEfficiency = Math.min(1, stockItem.quantityAvailable / (stockItem.reorderPoint * 2));
+    const reorderPoint = Math.max(1, stockItem.reorderPoint ?? 1);
+    const stockEfficiency = Math.min(1, stockItem.quantityAvailable / (reorderPoint * 2));
     score += stockEfficiency * 30;
 
     // Factor 3: Warehouse capacity utilization (15% weight)
@@ -304,7 +360,7 @@ export class ReservationEngine {
    * Release expired reservations
    */
   async releaseExpiredReservations(): Promise<number> {
-    const expiredReservations = await this.prisma.reservation.findMany({
+    const expiredReservations = await this.reservationDelegate.findMany({
       where: {
         status: 'active',
         expiresAt: { lt: new Date() }
@@ -321,8 +377,8 @@ export class ReservationEngine {
   /**
    * Get active reservations for an order
    */
-  async getActiveReservations(orderId: string): Promise<Reservation[]> {
-    return await this.prisma.reservation.findMany({
+  async getActiveReservations(orderId: string): Promise<ReservationRecord[]> {
+    return await this.reservationDelegate.findMany({
       where: {
         orderId,
         status: 'active'
@@ -355,7 +411,7 @@ export class ReservationEngine {
     const reservations = await this.getActiveReservations(orderId);
 
     // Update reservation status
-    await this.prisma.reservation.updateMany({
+    await this.reservationDelegate.updateMany({
       where: { orderId, status: 'active' },
       data: { status: 'fulfilled', fulfilledAt: new Date() }
     });
@@ -375,5 +431,21 @@ export class ReservationEngine {
    */
   private toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
+  }
+
+  private get warehouseDelegate(): WarehouseDelegate {
+    const delegate = this.prisma.inventory_Warehouse ?? this.prisma.warehouse;
+    if (!delegate) {
+      throw new Error('Warehouse delegate is not configured on prisma client');
+    }
+    return delegate;
+  }
+
+  private get reservationDelegate(): ReservationDelegate {
+    const delegate = this.prisma.inventory_Reservation ?? this.prisma.reservation;
+    if (!delegate) {
+      throw new Error('Reservation delegate is not configured on prisma client');
+    }
+    return delegate;
   }
 }

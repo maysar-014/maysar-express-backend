@@ -3,11 +3,16 @@ import { PrismaClient } from '@prisma/client';
 import { IQualityRepository } from '../../domain/interfaces/IQualityRepository';
 import { QualityCheckpoint, QualityStatus } from '../../domain/entities/QualityCheckpoint.entity';
 
+interface QualityCheckpointDelegate {
+    create(args: Record<string, unknown>): Promise<unknown>;
+    findMany(args: Record<string, unknown>): Promise<unknown[]>;
+}
+
 export class QualityCheckpointRepository implements IQualityRepository {
     constructor(private readonly prisma: PrismaClient) { }
 
     async save(checkpoint: QualityCheckpoint): Promise<QualityCheckpoint> {
-        const data = await this.prisma.production_QualityCheckpoint.create({
+        const data = await this.qualityCheckpointDelegate.create({
             data: {
                 id: checkpoint.id,
                 productionOrderId: (checkpoint as any).props.productionOrderId,
@@ -22,8 +27,8 @@ export class QualityCheckpointRepository implements IQualityRepository {
     }
 
     async findByOrderId(productionOrderId: string): Promise<QualityCheckpoint[]> {
-        const data = await this.prisma.production_QualityCheckpoint.findMany({ where: { productionOrderId } });
-        return data.map(d => this.toEntity(d));
+        const data = await this.qualityCheckpointDelegate.findMany({ where: { productionOrderId } });
+        return data.map((d: any) => this.toEntity(d));
     }
 
     private toEntity(data: any): QualityCheckpoint {
@@ -39,5 +44,15 @@ export class QualityCheckpointRepository implements IQualityRepository {
             createdAt: data.createdAt,
             updatedAt: data.updatedAt
         });
+    }
+
+    private get qualityCheckpointDelegate(): QualityCheckpointDelegate {
+        const client = this.prisma as unknown as Record<string, unknown>;
+        const delegate = (client.production_QualityCheckpoint ??
+            client.qualityCheckpoint) as QualityCheckpointDelegate | undefined;
+        if (!delegate) {
+            throw new Error('Quality checkpoint delegate is not configured on prisma client');
+        }
+        return delegate;
     }
 }

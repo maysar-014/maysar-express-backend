@@ -5,6 +5,11 @@ import { User, UserRole, UserStatus } from '../entities/user.entity';
  * Contains all business rules for authentication permissions and access control
  */
 export class AuthenticationPolicy {
+  private static normalizeRole(role: UserRole | string): UserRole {
+    const normalizedRole = String(role).toUpperCase();
+    const matchedRole = Object.values(UserRole).find((value) => value === normalizedRole);
+    return (matchedRole as UserRole) ?? UserRole.USER;
+  }
   /**
    * Determines if a user role can perform authentication operations
    */
@@ -190,8 +195,12 @@ export class AuthenticationPolicy {
   /**
    * Determines role hierarchy for permission checking
    */
-  static getRoleHierarchy(): Record<UserRole, number> {
+  static getRoleHierarchy(): Record<string, number> {
     return {
+      [UserRole.ADMIN]: 0,
+      [UserRole.USER]: 0,
+      [UserRole.MODERATOR]: 0,
+      [UserRole.GUEST]: 0,
       [UserRole.BUYER]: 1,
       [UserRole.SELLER]: 2,
       [UserRole.SUPPLIER]: 3,
@@ -204,17 +213,19 @@ export class AuthenticationPolicy {
   /**
    * Checks if one role has higher or equal permissions than another
    */
-  static hasHigherOrEqualRole(userRole: UserRole, requiredRole: UserRole): boolean {
+  static hasHigherOrEqualRole(userRole: UserRole | string, requiredRole: UserRole | string): boolean {
     const hierarchy = this.getRoleHierarchy();
-    return hierarchy[userRole] >= hierarchy[requiredRole];
+    const normalizedUserRole = this.normalizeRole(userRole);
+    const normalizedRequiredRole = this.normalizeRole(requiredRole);
+    return hierarchy[normalizedUserRole] >= hierarchy[normalizedRequiredRole];
   }
 
   /**
    * Gets all allowed roles for a given user role
    */
-  static getAllowedRolesFor(userRole: UserRole): UserRole[] {
+  static getAllowedRolesFor(userRole: UserRole | string): UserRole[] {
     const hierarchy = this.getRoleHierarchy();
-    const userLevel = hierarchy[userRole];
+    const userLevel = hierarchy[this.normalizeRole(userRole)];
 
     return Object.entries(hierarchy)
       .filter(([, level]) => level <= userLevel)
@@ -224,7 +235,7 @@ export class AuthenticationPolicy {
   /**
    * Determines if a role transition is allowed
    */
-  static canChangeUserRole(changer: User, target: User, newRole: UserRole): boolean {
+  static canChangeUserRole(changer: User, target: User, newRole: UserRole | string): boolean {
     // Only system users can change roles
     if (changer.role !== UserRole.SYSTEM) {
       return false;
@@ -236,7 +247,7 @@ export class AuthenticationPolicy {
     }
 
     // Cannot set roles to system
-    if (newRole === UserRole.SYSTEM) {
+    if (this.normalizeRole(newRole) === UserRole.SYSTEM) {
       return false;
     }
 
@@ -246,15 +257,16 @@ export class AuthenticationPolicy {
   /**
    * Determines if a user can create accounts with specific roles
    */
-  static canCreateUserWithRole(creator: User, targetRole: UserRole): boolean {
+  static canCreateUserWithRole(creator: User, targetRole: UserRole | string): boolean {
+    const normalizedTargetRole = this.normalizeRole(targetRole);
     // System can create any role
     if (creator.role === UserRole.SYSTEM) {
-      return targetRole !== UserRole.SYSTEM;
+      return normalizedTargetRole !== UserRole.SYSTEM;
     }
 
     // Enablers can create buyer, seller, supplier, courier roles
     if (creator.role === UserRole.ENABLER) {
-      return [UserRole.BUYER, UserRole.SELLER, UserRole.SUPPLIER, UserRole.COURIER].includes(targetRole);
+      return [UserRole.BUYER, UserRole.SELLER, UserRole.SUPPLIER, UserRole.COURIER].includes(normalizedTargetRole);
     }
 
     // Other roles cannot create accounts
@@ -264,7 +276,7 @@ export class AuthenticationPolicy {
   /**
    * Business rules for authentication limits
    */
-  static getAuthenticationLimits(userRole: UserRole): {
+  static getAuthenticationLimits(userRole: UserRole | string): {
     maxSessions: number;
     maxFailedAttempts: number;
     lockoutDurationMinutes: number;
@@ -276,7 +288,7 @@ export class AuthenticationPolicy {
     };
 
     // System users have higher limits
-    if (userRole === UserRole.SYSTEM) {
+    if (this.normalizeRole(userRole) === UserRole.SYSTEM) {
       return {
         maxSessions: 10,
         maxFailedAttempts: 3,

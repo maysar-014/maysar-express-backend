@@ -36,7 +36,7 @@ export class PrismaTemplateRepository implements INotificationTemplateRepository
       data: {
         id: template.id,
         name: template.name,
-        type: template.type,
+        type: template.type as any,
         channel: template.channel,
         subject: template.subject,
         bodyTemplate: template.bodyTemplate,
@@ -44,7 +44,7 @@ export class PrismaTemplateRepository implements INotificationTemplateRepository
         isActive: template.isActive,
         version: template.version,
         createdBy: template.createdBy
-      }
+      } as any
     });
     return toDomain(row);
   }
@@ -54,7 +54,7 @@ export class PrismaTemplateRepository implements INotificationTemplateRepository
       where: { id: template.id },
       data: {
         name: template.name,
-        type: template.type,
+        type: template.type as any,
         channel: template.channel,
         subject: template.subject,
         bodyTemplate: template.bodyTemplate,
@@ -62,7 +62,7 @@ export class PrismaTemplateRepository implements INotificationTemplateRepository
         isActive: template.isActive,
         version: template.version,
         updatedAt: new Date()
-      }
+      } as any
     });
     return toDomain(row);
   }
@@ -73,14 +73,14 @@ export class PrismaTemplateRepository implements INotificationTemplateRepository
 
   async findByChannel(channel: string): Promise<NotificationTemplate[]> {
     const rows = await prisma.notificationTemplate.findMany({
-      where: { channel, isActive: true }
+      where: { channel, isActive: true } as any
     });
     return rows.map(toDomain);
   }
 
   async findActive(): Promise<NotificationTemplate[]> {
     const rows = await prisma.notificationTemplate.findMany({
-      where: { isActive: true }
+      where: { isActive: true } as any
     });
     return rows.map(toDomain);
   }

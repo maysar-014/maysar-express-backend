@@ -1,5 +1,19 @@
-import { InventoryRepository } from '../inventory.repository';
-import { PrismaClient } from '@prisma/client';
+import { InventoryRepository } from './inventory.repository';
+
+interface MockPrisma {
+  inventory: {
+    findFirst: jest.Mock;
+    findMany: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+    updateMany: jest.Mock;
+  };
+  inventoryReservation: {
+    findMany: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+  };
+}
 
 const mockPrisma = {
   inventory: {
@@ -14,7 +28,7 @@ const mockPrisma = {
     create: jest.fn(),
     update: jest.fn()
   }
-} as unknown as PrismaClient;
+} as MockPrisma;
 
 describe('InventoryRepository', () => {
   let repository: InventoryRepository;

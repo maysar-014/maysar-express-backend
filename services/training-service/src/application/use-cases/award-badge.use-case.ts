@@ -1,7 +1,7 @@
 import { AwardBadgeRequest, AwardBadgeResponse } from '../dto/award-badge.dto';
 import { IBadgeRepository } from '../../domain/repositories/badge.repository';
 import { ILeaderboardRepository } from '../../domain/repositories/leaderboard.repository';
-import { IEventPublisher, eventBus } from '../../../../../shared/events/eventBus';
+import { IEventPublisher, eventBus } from '@shared-events/eventBus';
 import { v4 as uuidv4 } from 'uuid';
 
 export class AwardBadgeUseCase {

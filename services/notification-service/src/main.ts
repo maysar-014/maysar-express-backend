@@ -209,7 +209,6 @@ class NotificationServiceApplication {
       const { ScheduledNotificationSaga } = await import('./application/sagas/scheduled-notification.saga');
       const { sagaLogRepository } = await import('./infrastructure/repositories/saga.repository');
       const { SagaRecoveryWorker } = await import('@shared/saga/saga-recovery.worker');
-      const { DistributedSagaOrchestrator } = await import('@shared/saga/saga.orchestrator');
 
       const notificationDeliverySaga = new NotificationDeliverySaga(
         notificationRepository,
@@ -228,10 +227,10 @@ class NotificationServiceApplication {
         triggerDeliverySaga
       );
       
-      const orchestratorRegistry = new Map<string, DistributedSagaOrchestrator<unknown>>();
-      orchestratorRegistry.set('NotificationDeliverySaga', notificationDeliverySaga as DistributedSagaOrchestrator<unknown>);
-      orchestratorRegistry.set('BatchNotificationSaga', batchNotificationSaga as DistributedSagaOrchestrator<unknown>);
-      orchestratorRegistry.set('ScheduledNotificationSaga', scheduledNotificationSaga as DistributedSagaOrchestrator<unknown>);
+      const orchestratorRegistry = new Map<string, any>();
+      orchestratorRegistry.set('NotificationDeliverySaga', notificationDeliverySaga as any);
+      orchestratorRegistry.set('BatchNotificationSaga', batchNotificationSaga as any);
+      orchestratorRegistry.set('ScheduledNotificationSaga', scheduledNotificationSaga as any);
 
       const sagaRecoveryWorker = new SagaRecoveryWorker(sagaLogRepository, orchestratorRegistry, {
         stuckThresholdMs: 5 * 60 * 1000,
@@ -249,7 +248,6 @@ class NotificationServiceApplication {
     const shutdown = async (signal: string) => {
       logger.info(`Received ${signal}, shutting down...`);
       try {
-        await eventBus.shutdown();
         await DatabaseConnection.close();
         process.exit(0);
       } catch (error) {

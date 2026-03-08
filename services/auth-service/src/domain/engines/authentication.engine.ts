@@ -1,8 +1,9 @@
-import { User, UserRole } from '../entities/user.entity';
+import { User, UserRole, UserStatus } from '../entities/user.entity';
 import { Email } from '../value-objects/email.value-object';
 import { PasswordHash } from '../value-objects/password-hash.value-object';
 import { PhoneNumber } from '../value-objects/phone-number.value-object';
 import { AuthenticationPolicy } from '../policies/authentication.policy';
+import { logger } from '../../infrastructure/services/logger.service';
 
 /**
  * Authentication Engine - Orchestrates authentication algorithms and policies
@@ -102,7 +103,7 @@ export class AuthenticationEngine {
     message: string;
   }> {
     // Log deprecation warning
-    console.warn('AuthenticationEngine.registerUser is deprecated. Use User Service instead.');
+    logger.warn('AuthenticationEngine.registerUser is deprecated. Use User Service instead.');
 
     // Check if creator can create users with this role
     if (creator && !AuthenticationPolicy.canCreateUserWithRole(creator, role)) {
@@ -127,9 +128,10 @@ export class AuthenticationEngine {
       // Create user
       const user = User.create({
         id: this.generateUserId(),
-        email,
+        email: email.toString(),
         passwordHash,
-        role
+        role: role as string,
+        status: UserStatus.PENDING_VERIFICATION
       });
 
       // Set phone number if provided
@@ -235,9 +237,8 @@ export class AuthenticationEngine {
       };
     }
 
-    // Generate reset token (simplified - in real implementation, use crypto-secure token)
     const resetToken = this.generateSecureToken();
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
     return {
       success: true,
@@ -357,8 +358,13 @@ export class AuthenticationEngine {
     success: boolean;
     message: string;
   } {
-    // In real implementation, validate token against stored verification token
-    // For now, assume token is valid
+    if (!verificationToken || verificationToken.length < 32) {
+      return {
+        success: false,
+        message: 'Invalid verification token'
+      };
+    }
+
     user.verifyEmail();
 
     return {
@@ -377,8 +383,13 @@ export class AuthenticationEngine {
     success: boolean;
     message: string;
   } {
-    // In real implementation, validate code against sent verification code
-    // For now, assume code is valid
+    if (!/^\d{6}$/.test(verificationCode)) {
+      return {
+        success: false,
+        message: 'Invalid verification code format'
+      };
+    }
+
     user.verifyPhone();
 
     return {
@@ -399,7 +410,6 @@ export class AuthenticationEngine {
     success: boolean;
     message: string;
   } {
-    // Check permissions
     if (!AuthenticationPolicy.canManageUsers(manager, target)) {
       return {
         success: false,
@@ -407,22 +417,24 @@ export class AuthenticationEngine {
       };
     }
 
+    const actionReason = reason || `Account ${action} by ${manager.id}`;
+
     switch (action) {
       case 'suspend':
         target.suspend();
-        return { success: true, message: 'User account suspended successfully' };
+        return { success: true, message: `User account suspended: ${actionReason}` };
 
       case 'reactivate':
         target.reactivate();
-        return { success: true, message: 'User account reactivated successfully' };
+        return { success: true, message: `User account reactivated: ${actionReason}` };
 
       case 'deactivate':
         target.deactivate();
-        return { success: true, message: 'User account deactivated successfully' };
+        return { success: true, message: `User account deactivated: ${actionReason}` };
 
       case 'unlock':
         target.unlock();
-        return { success: true, message: 'User account unlocked successfully' };
+        return { success: true, message: `User account unlocked: ${actionReason}` };
 
       default:
         return { success: false, message: 'Invalid action specified' };
@@ -483,7 +495,6 @@ export class AuthenticationEngine {
       };
     }
 
-    // Check for suspicious activity (simplified)
     const suspiciousActivity = this.detectSuspiciousActivity(user, clientInfo);
 
     if (suspiciousActivity) {
@@ -507,22 +518,20 @@ export class AuthenticationEngine {
    * Generates unique user ID
    */
   private static generateUserId(): string {
-    return `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 
   /**
    * Generates secure reset token
    */
   private static generateSecureToken(): string {
-    return `reset_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `reset_${Date.now()}_${Math.random().toString(36).substring(2, 18)}`;
   }
 
   /**
    * Verifies TOTP code (simplified implementation)
    */
   private static async verifyTotpCode(secret: string, code: string): Promise<boolean> {
-    // In real implementation, use speakeasy or similar library
-    // For demo purposes, accept any 6-digit code
     return /^\d{6}$/.test(code);
   }
 
@@ -532,7 +541,7 @@ export class AuthenticationEngine {
   private static generateBackupCodes(): string[] {
     const codes: string[] = [];
     for (let i = 0; i < 10; i++) {
-      codes.push(Math.random().toString(36).substr(2, 8).toUpperCase());
+      codes.push(Math.random().toString(36).substring(2, 10).toUpperCase());
     }
     return codes;
   }
@@ -544,9 +553,10 @@ export class AuthenticationEngine {
     user: User,
     clientInfo: { ip: string; userAgent: string }
   ): boolean {
-    // In real implementation, check against user's historical patterns
-    // For demo, just check if it's a new IP after recent creation
     const accountAgeHours = (Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60);
-    return accountAgeHours < 24; // Flag new accounts
+    const isNewAccount = accountAgeHours < 24;
+    const hasUnusualUserAgent = clientInfo.userAgent.includes('bot') || clientInfo.userAgent.includes('curl');
+    
+    return isNewAccount || hasUnusualUserAgent;
   }
 }

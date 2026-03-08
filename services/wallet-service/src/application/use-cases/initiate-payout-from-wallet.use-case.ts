@@ -1,6 +1,6 @@
 import { DebitWalletUseCase } from './debit-wallet.use-case';
 import { CreditWalletUseCase } from './credit-wallet.use-case';
-import { IPayoutServiceClient, PayoutMethod } from '../../../../../shared-contracts/payout-service-contracts';
+import { IPayoutServiceClient, PayoutMethod, InitiatePayoutDTO } from '../../../../../shared-contracts/payout-service-contracts';
 import { AuditInfo, ActorType } from '../../domain/value-objects/audit-info.value-object';
 import { WalletEventPublisher } from '../../infrastructure/messaging/wallet-event-publisher';
 import { isPayoutEligibleRole, UserRole } from '../../../../../shared-contracts/user-service-contracts';
@@ -11,8 +11,8 @@ export interface InitiatePayoutFromWalletDTO {
     amount: number;
     currency: string;
     method: PayoutMethod;
-    bankDetails?: any;
-    mobileMoneyDetails?: any;
+    bankDetails?: InitiatePayoutDTO['bankDetails'];
+    mobileMoneyDetails?: InitiatePayoutDTO['mobileMoneyDetails'];
     idempotencyKey: string;
     correlationId: string;
     auditInfo: AuditInfo;
@@ -105,7 +105,7 @@ export class InitiatePayoutFromWalletUseCase {
 
             // 3. Publish Success Event
             // Note: publishWalletPayoutInitiated will be added to the publisher
-            await (this.eventPublisher as any).publishWalletPayoutInitiated({
+            await (this.eventPublisher as unknown as { publishWalletPayoutInitiated: (data: unknown) => Promise<void> }).publishWalletPayoutInitiated({
                 userId: dto.userId,
                 userRole: dto.userRole,
                 amount: dto.amount,
@@ -123,20 +123,20 @@ export class InitiatePayoutFromWalletUseCase {
                 message: 'Payout initiated from wallet successfully'
             };
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             // Compensating transaction on unexpected error
             await this.creditWalletUseCase.execute({
                 userId: dto.userId,
                 amount: dto.amount,
                 currency: dto.currency,
-                description: `Reversal: Payout initiation error. ${error.message}`,
+                description: `Reversal: Payout initiation error. ${error instanceof Error ? error.message : 'Unknown error'}`,
                 idempotencyKey: `${dto.idempotencyKey}_payout_error_reversal`,
                 correlationId: dto.correlationId,
                 auditInfo: AuditInfo.create({
                     actor: 'SYSTEM',
                     actorType: ActorType.SYSTEM,
                     action: 'PAYOUT_ERROR_REVERSAL',
-                    reason: `Payout unexpected error: ${error.message}`,
+                    reason: `Payout unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`,
                     ipAddress: '127.0.0.1',
                     userAgent: 'Internal'
                 })
@@ -144,7 +144,7 @@ export class InitiatePayoutFromWalletUseCase {
 
             return {
                 success: false,
-                message: `Unexpected error during payout: ${error.message}`
+                message: `Unexpected error during payout: ${error instanceof Error ? error.message : 'Unknown error'}`
             };
         }
     }

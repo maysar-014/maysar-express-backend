@@ -29,7 +29,7 @@ export class ReverseTransactionUseCase {
     async execute(dto: ReverseTransactionDTO): Promise<{ reversed: boolean; reversalTransactionId: string }> {
         const idempotencyKey = IdempotencyKey.create(dto.idempotencyKey);
 
-        const cached = await this.idempotencyService.checkIdempotency(idempotencyKey);
+        const cached = await this.idempotencyService.checkIdempotency<{ reversed: boolean; reversalTransactionId: string }>(idempotencyKey);
         if (cached) return cached;
 
         const originalTransaction = await this.transactionRepository.findById(dto.transactionId); // or by original ID if passed
@@ -72,55 +72,11 @@ export class ReverseTransactionUseCase {
             throw new Error(`Cannot reverse transaction type ${originalTransaction.type}`);
         }
 
-        const balanceBefore = wallet.balance; // Actually this is balance AFTER operation above happened in memory
-        // Wait, balanceBefore in transaction should be before modifications.
-        // Let's correct trace:
-        // wallet.credit/debit updates balance in place.
-        // So standard practice: note balance before, do op, note balance after.
-
-        // Simpler: use createReversal method on Transaction entity if it supported full logic,
-        // but it doesn't know about wallet balance.
-
-        // Let's create new transaction manually or enhance entity.
-        // `createReversal` in entity creates props, but we need to set balance props correctly.
-
-        // Actually `wallet.credit` updates `wallet.balance`.
-        // So we can capture state.
+        const balanceBefore = wallet.balance - (reversalType === TransactionType.CREDIT ? reversalAmount : -reversalAmount);
 
         await this.walletRepository.update(wallet);
 
-        // Mark original as reversed
-        // Note: Transaction entity is immutable ideally, but we might update a flag or create a link.
-        // Since we have `isReversed` field, we might need update method on repo to set it.
-        // Or if strictly append-only, we just append a new transaction that references the old one,
-        // and "isReversed" is derived from existence of reversal. Be we added a flag for optimization.
-        // Let's assume we can update the flag on the original transaction.
-        // But `Transaction` entity didn't have setters exposed easily.
-        // We'll need to handle that.
-
-        // Create new reversal transaction
-
-        // We need to fixup balance fields on reversalTx because `createReversal` implementation 
-        // in entity (step 281) didn't access wallet balance.
-        // We need to set them.
-        // But Transaction props are private/readonly?
-        // Check `Transaction` entity. `props` is private. 
-        // `createReversal` logic:
-        /*
-            const reversalProps: TransactionProps = {
-                ...this.props, // copies old props
-                id: reversalId,
-                referenceId: this.props.id,
-                referenceType: 'TRANSACTION',
-                ...
-            };
-        */
-        // It copies `balanceBefore`/`After` from OLD transaction which is WRONG!
-        // The reversal happens NOW.
-        // So I need to override them.
-
-        // Since I cannot change them easily without public setters or a better factory,
-        // I should probably instantiate `Transaction` directly here like in Credit/Debit use cases.
+        // Mark original as reversed and create new reversal transaction
 
         const newTransaction = new Transaction({
             id: randomUUID(),
@@ -129,11 +85,7 @@ export class ReverseTransactionUseCase {
             type: reversalType,
             amount: reversalAmount,
             currency: wallet.currency, // use wallet currency
-            // Correct balances
-            balanceBefore: wallet.balance - (reversalType === TransactionType.CREDIT ? reversalAmount : -reversalAmount),
-            // Reverse engineering "before" state from current "after" state
-            // If we Credited (reversing debit), balance increased. So before was (current - amount).
-            // If we Debited (reversing credit), balance decreased. So before was (current + amount).
+            balanceBefore,
 
             balanceAfter: wallet.balance,
             frozenAmountBefore: wallet.frozenAmount,
@@ -150,7 +102,9 @@ export class ReverseTransactionUseCase {
             initiatedByType: dto.auditInfo.actorType,
             reason: dto.reason,
             isReversed: false,
-            reversalTransactionId: undefined
+            reversalTransactionId: undefined,
+            isCODRelated: false,
+            codConfirmationRequired: false
         });
 
         await this.transactionRepository.save(newTransaction);

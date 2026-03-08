@@ -1,1 +1,1 @@
-export { IEventBus } from '../../../../shared/events/eventBus';
+export { IEventBus } from '@shared-events/eventBus';

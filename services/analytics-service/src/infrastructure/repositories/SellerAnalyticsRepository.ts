@@ -1,4 +1,5 @@
 import prisma from '../database/prisma';
+import { Prisma } from '@prisma/client';
 
 export class SellerAnalyticsRepository {
     async getMetrics(sellerId: string) {
@@ -7,11 +8,11 @@ export class SellerAnalyticsRepository {
         });
     }
 
-    async updateMetrics(sellerId: string, data: any) {
+    async updateMetrics(sellerId: string, data: Prisma.Analytics_SellerMetricsUpdateInput) {
         return prisma.analytics_SellerMetrics.upsert({
             where: { sellerId },
             update: data,
-            create: { sellerId, ...data }
+            create: { ...data as Prisma.Analytics_SellerMetricsCreateInput, sellerId }
         });
     }
 
@@ -23,7 +24,7 @@ export class SellerAnalyticsRepository {
         });
     }
 
-    async saveSalesAnalytics(sellerId: string, insights: any) {
+    async saveSalesAnalytics(sellerId: string, insights: Record<string, unknown>) {
         return prisma.analytics_SalesAnalytics.create({
             data: {
                 sellerId,
@@ -49,7 +50,7 @@ export class SellerAnalyticsRepository {
         });
     }
 
-    async getSellerRevenueTrends(timeWindow: 'weekly' | 'monthly') {
+    async getSellerRevenueTrends(_timeWindow: 'weekly' | 'monthly') {
         return prisma.order_Order.groupBy({
             by: ['sellerId'],
             where: {
@@ -105,7 +106,7 @@ export class SellerAnalyticsRepository {
     }
 
     async getPayoutTimingData(sellerId?: string) {
-        return prisma.payout_Payout.findMany({
+        return prisma.payout.findMany({
             where: {
                 status: 'COMPLETED',
                 ...(sellerId && { userId: sellerId })
@@ -137,7 +138,7 @@ export class SellerAnalyticsRepository {
     }
 
     async getProductExpansionData() {
-        return prisma.catalog_Product.findMany({
+        return prisma.product.findMany({
             select: {
                 id: true,
                 sellerId: true,

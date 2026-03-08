@@ -1,9 +1,16 @@
 import { WarehouseManager } from '../warehouseManager';
-import { PrismaClient } from '@prisma/client';
+
+interface MockPrisma {
+  warehouse: {
+    findMany: jest.Mock;
+    findUnique: jest.Mock;
+    update: jest.Mock;
+  };
+}
 
 describe('WarehouseManager', () => {
   let manager: WarehouseManager;
-  let mockPrisma: jest.Mocked<PrismaClient>;
+  let mockPrisma: MockPrisma;
 
   beforeEach(() => {
     mockPrisma = {
@@ -12,8 +19,8 @@ describe('WarehouseManager', () => {
         findUnique: jest.fn(),
         update: jest.fn()
       }
-    } as any;
-    manager = new WarehouseManager(mockPrisma);
+    };
+    manager = new WarehouseManager(mockPrisma as unknown as never);
   });
 
   describe('getActiveWarehouses', () => {

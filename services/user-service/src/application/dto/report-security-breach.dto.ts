@@ -8,7 +8,7 @@ export namespace ReportSecurityBreachDTO {
     userId: string;
     breachType: 'suspicious_login' | 'multiple_failed_attempts' | 'unusual_activity' | 'location_anomaly';
     severity: 'low' | 'medium' | 'high' | 'critical';
-    details: Record<string, any>;
+    details: Record<string, unknown>;
     reportedBy?: string;
   }
 

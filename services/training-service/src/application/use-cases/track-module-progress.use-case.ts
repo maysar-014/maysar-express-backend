@@ -1,7 +1,7 @@
 import { TrackModuleProgressRequest, TrackModuleProgressResponse } from '../dto/track-module-progress.dto';
 import { ITrainingRecordRepository } from '../../domain/repositories/training-record.repository';
 import { NotFoundError } from '../../domain/errors/domain.error';
-import { IEventPublisher, eventBus } from '../../../../../shared/events/eventBus';
+import { IEventPublisher, eventBus } from '@shared-events/eventBus';
 
 export class TrackModuleProgressUseCase {
     constructor(

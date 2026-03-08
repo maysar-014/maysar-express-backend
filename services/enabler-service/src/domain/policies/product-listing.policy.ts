@@ -2,7 +2,7 @@ import { Enabler_ListingStatus, Enabler_Tier } from '@prisma/client';
 
 export interface ProductListingContext {
     enablerTier: Enabler_Tier;
-    enablerStatus: Enabler_Status;
+    enablerStatus: string;
     productStatus: string; // From catalog
     sellerAllowsEnablers: boolean;
     sellerBlockedEnablers?: string[];

@@ -2,7 +2,7 @@ import prisma from '../../infrastructure/database/prisma';
 
 export class CalculateInventoryHealth {
   async execute(sellerId: string) {
-    const products = await prisma.catalog_Product.findMany({
+    const products = await prisma.product.findMany({
       where: { sellerId }
     });
 

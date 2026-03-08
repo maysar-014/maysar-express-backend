@@ -1,3 +1,16 @@
+export interface PayoutSchedule { 
+    frequency: string;
+    dayOfWeek?: number;
+    dayOfMonth?: number;
+}
+
+export interface PayoutEligibility { 
+    canPayout: boolean;
+    reasons: string[];
+    minimumAmount?: number;
+    nextPayoutDate?: Date;
+}
+
 export class PayoutPolicy {
     private readonly MINIMUM_PAYOUT_AMOUNT = 10000; // TZS 10,000
     private readonly MINIMUM_BALANCE_AFTER_PAYOUT = 1000; // TZS 1,000

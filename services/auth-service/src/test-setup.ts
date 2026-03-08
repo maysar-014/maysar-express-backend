@@ -20,3 +20,5 @@ process.env.REDIS_URL = 'redis://localhost:6379/1';
 
 // Global test timeout
 jest.setTimeout(10000);
+
+export {};

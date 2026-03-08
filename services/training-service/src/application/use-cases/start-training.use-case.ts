@@ -2,11 +2,11 @@ import { StartTrainingRequest, StartTrainingResponse } from '../dto/start-traini
 import { ITrainingRecordRepository } from '../../domain/repositories/training-record.repository';
 import { ITrainingModuleRepository } from '../../domain/repositories/training-module.repository';
 import { ICertificationRequirementRepository } from '../../domain/repositories/certification-requirement.repository';
-import { IEventPublisher, eventBus } from '../../../../../shared/events/eventBus';
+import { IEventPublisher, eventBus } from '@shared-events/eventBus';
 import { TrainingPolicy } from '../../domain/policies/training.policy';
 import { TrainingRecord } from '../../domain/entities/training-record.entity';
 import { v4 as uuidv4 } from 'uuid';
-import { NotFoundError, BusinessRuleError } from '../../domain/errors/domain.error';
+import { NotFoundError } from '../../domain/errors/domain.error';
 
 export class StartTrainingUseCase {
     constructor(

@@ -38,8 +38,19 @@ import { RouteValidator } from '../validators/route.validator';
 import { EarningsValidator } from '../validators/earnings.validator';
 import { TrackingValidator } from '../validators/tracking.validator';
 import { AnalyticsValidator } from '../validators/analytics.validator';
-import { ValidationMiddleware } from '../middleware/validation.middleware';
+import { validationResult } from 'express-validator';
 import { IdempotencyMiddleware } from '@shared/middleware/idempotency';
+
+// Simple validation middleware
+const handleValidationErrors = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  next();
+};
+
+const createApiValidationChain = () => (req: express.Request, res: express.Response, next: express.NextFunction) => next();
 
 const router = express.Router();
 const idempotencyMiddleware = new IdempotencyMiddleware(process.env.REDIS_URL!);
@@ -121,28 +132,28 @@ function getCODController(): CODController {
 // Delivery API: http://localhost:3007/api/v1/deliveries/*
 
 router.post('/deliveries',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   DeliveryValidator.createDelivery(),
-  ValidationMiddleware.handleValidationErrors,
+  handleValidationErrors,
   (req: express.Request, res: express.Response) => getDeliveryController().createDelivery(req, res)
 );
 
 router.get('/deliveries/:deliveryId',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   (req: express.Request, res: express.Response) => getDeliveryController().getDelivery(req, res)
 );
 
 router.get('/deliveries',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   DeliveryValidator.getDeliveries(),
-  ValidationMiddleware.handleValidationErrors,
+  handleValidationErrors,
   (req: express.Request, res: express.Response) => getDeliveryController().getDeliveries(req, res)
 );
 
 router.post('/deliveries/:deliveryId/status',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   DeliveryValidator.updateDeliveryStatus(),
-  ValidationMiddleware.handleValidationErrors,
+  handleValidationErrors,
   (req: express.Request, res: express.Response) => getDeliveryController().updateDeliveryStatus(req, res)
 );
 
@@ -150,12 +161,12 @@ router.post('/deliveries/:deliveryId/status',
 // COD API: http://localhost:3007/api/v1/cod/*
 
 router.post('/cod/:deliveryId/otp',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   (req: express.Request, res: express.Response) => getCODController().generateOTP(req, res)
 );
 
 router.post('/cod/:deliveryId/verify',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   (req: express.Request, res: express.Response) => getCODController().verifyDelivery(req, res)
 );
 
@@ -163,12 +174,12 @@ router.post('/cod/:deliveryId/verify',
 // Route API: http://localhost:3007/api/v1/routes/*
 
 router.get('/routes',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   (req: express.Request, res: express.Response) => getRouteController().getRoutes(req, res)
 );
 
 router.get('/routes/courier/:courierId',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   (req: express.Request, res: express.Response) => getRouteController().getCourierRoutes(req, res)
 );
 
@@ -195,17 +206,17 @@ router.post('/routes/:routeId/alternatives',
 // Courier API: http://localhost:3007/api/v1/couriers/*
 
 router.get('/couriers',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   (req: express.Request, res: express.Response) => getCourierController().getCouriers(req, res)
 );
 
 router.get('/couriers/:courierId',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   (req: express.Request, res: express.Response) => getCourierController().getCourier(req, res)
 );
 
 router.put('/couriers/:courierId/status',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   (req: express.Request, res: express.Response) => getCourierController().updateCourierStatus(req, res)
 );
 
@@ -213,23 +224,23 @@ router.put('/couriers/:courierId/status',
 // Tracking API: http://localhost:3007/api/v1/tracking/*
 
 router.get('/tracking/:trackingNumber',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   TrackingValidator.getTrackingHistory(),
-  ValidationMiddleware.handleValidationErrors,
+  handleValidationErrors,
   (req: express.Request, res: express.Response) => getTrackingController().getTrackingHistory(req, res)
 );
 
 router.post('/tracking/location',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   TrackingValidator.storeLocationUpdate(),
-  ValidationMiddleware.handleValidationErrors,
+  handleValidationErrors,
   (req: express.Request, res: express.Response) => getTrackingController().storeLocationUpdate(req, res)
 );
 
 router.get('/tracking/courier/:courierId/history',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   TrackingValidator.getCourierLocationHistory(),
-  ValidationMiddleware.handleValidationErrors,
+  handleValidationErrors,
   (req: express.Request, res: express.Response) => getTrackingController().getCourierLocationHistory(req, res)
 );
 
@@ -237,19 +248,19 @@ router.get('/tracking/courier/:courierId/history',
 // Analytics API: http://localhost:3007/api/v1/analytics/*
 
 router.get('/analytics',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   AnalyticsValidator.getAnalytics(),
-  ValidationMiddleware.handleValidationErrors,
+  handleValidationErrors,
   (req: express.Request, res: express.Response) => getAnalyticsController().getAnalytics(req, res)
 );
 
 router.get('/analytics/performance',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   (req: express.Request, res: express.Response) => getAnalyticsController().getPerformanceMetrics(req, res)
 );
 
 router.get('/analytics/courier/:courierId',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   (req: express.Request, res: express.Response) => getAnalyticsController().getCourierAnalytics(req, res)
 );
 
@@ -296,37 +307,37 @@ router.get('/deliveries/:deliveryId/history', async (req, res) => {
 // Earnings API: http://localhost:3007/api/v1/earnings/*
 
 router.get('/earnings',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   EarningsValidator.getEarnings(),
-  ValidationMiddleware.handleValidationErrors,
+  handleValidationErrors,
   (req: express.Request, res: express.Response) => getEarningsController().getEarnings(req, res)
 );
 
 router.get('/earnings/courier/:courierId',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   EarningsValidator.getCourierEarningsReport(),
-  ValidationMiddleware.handleValidationErrors,
+  handleValidationErrors,
   (req: express.Request, res: express.Response) => getEarningsController().getCourierEarnings(req, res)
 );
 
 router.post('/earnings',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   EarningsValidator.recordEarnings(),
-  ValidationMiddleware.handleValidationErrors,
+  handleValidationErrors,
   (req: express.Request, res: express.Response) => getEarningsController().recordEarnings(req, res)
 );
 
 router.post('/earnings/calculate',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   EarningsValidator.calculateCommissions(),
-  ValidationMiddleware.handleValidationErrors,
+  handleValidationErrors,
   (req: express.Request, res: express.Response) => getEarningsController().calculateCommissions(req, res)
 );
 
 router.get('/earnings/summary',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   EarningsValidator.getEarningsSummary(),
-  ValidationMiddleware.handleValidationErrors,
+  handleValidationErrors,
   (req: express.Request, res: express.Response) => getEarningsController().getEarningsSummary(req, res)
 );
 
@@ -380,7 +391,7 @@ router.get('/engines/status', async (req, res) => {
 // ==================== TEST ENDPOINTS ====================
 
 router.get('/test/all-engines',
-  ValidationMiddleware.createApiValidationChain(),
+  createApiValidationChain(),
   (req: express.Request, res: express.Response) => getTestController().testAllEngines(req, res)
 );
 

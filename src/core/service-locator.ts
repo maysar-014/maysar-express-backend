@@ -1,7 +1,7 @@
 export class ServiceLocator {
-    private static services = new Map<string, any>();
+    private static services = new Map<string, unknown>();
 
-    static register(name: string, service: any) {
+    static register(name: string, service: unknown) {
         this.services.set(name, service);
         console.log(`[ServiceLocator] Registered service: ${name}`);
     }
@@ -11,7 +11,7 @@ export class ServiceLocator {
         if (!service) {
             throw new Error(`Service ${name} not found in Service Locator`);
         }
-        return service;
+        return service as T;
     }
 
     static reset() {

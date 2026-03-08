@@ -438,3 +438,34 @@ export class EventPublishingMetrics {
     this.metrics.lastPublishedAt = null;
   }
 }
+
+type LegacyPublisherAdapter = {
+  publish?: (eventType: string, payload: unknown) => Promise<void>;
+  publishBatch?: (events: Array<{ type: string; data: unknown }>) => Promise<void>;
+};
+
+/**
+ * Legacy EventPublisher facade retained for older tests/callers.
+ */
+export class EventPublisher {
+  constructor(private readonly adapter?: LegacyPublisherAdapter) { }
+
+  async publish(eventType: string, payload: unknown): Promise<void> {
+    if (this.adapter?.publish) {
+      await this.adapter.publish(eventType, payload);
+    }
+  }
+
+  async publishBatch(events: Array<{ type: string; data: unknown }>): Promise<void> {
+    if (this.adapter?.publishBatch) {
+      await this.adapter.publishBatch(events);
+      return;
+    }
+
+    if (this.adapter?.publish) {
+      for (const event of events) {
+        await this.adapter.publish(event.type, event.data);
+      }
+    }
+  }
+}

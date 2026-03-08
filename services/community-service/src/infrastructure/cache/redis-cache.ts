@@ -1,3 +1,4 @@
+import { logger } from '@modules/auth-service/src/infrastructure/services/logger.service';
 import { createClient, RedisClientType } from 'redis';
 
 /**
@@ -15,17 +16,17 @@ export class RedisCache {
     this.client = createClient({ url: redisUrl });
 
     this.client.on('error', (err) => {
-      console.error('Redis Client Error:', err);
+      logger.error('Redis Client Error:', err);
     });
 
     this.client.on('connect', () => {
       this.isConnected = true;
-      console.log('Connected to Redis');
+      logger.info('Connected to Redis');
     });
 
     this.client.on('disconnect', () => {
       this.isConnected = false;
-      console.log('Disconnected from Redis');
+      logger.info('Disconnected from Redis');
     });
   }
 
@@ -61,7 +62,7 @@ export class RedisCache {
     try {
       return await this.client.get(key);
     } catch (error) {
-      console.error(`Redis GET error for key ${key}:`, error);
+      logger.error(`Redis GET error for key ${key}:`, error);
       return null;
     }
   }
@@ -73,7 +74,7 @@ export class RedisCache {
     try {
       return await this.client.mGet(keys);
     } catch (error) {
-      console.error(`Redis MGET error for keys ${keys}:`, error);
+      logger.error(`Redis MGET error for keys ${keys}:`, error);
       return new Array(keys.length).fill(null);
     }
   }
@@ -86,7 +87,7 @@ export class RedisCache {
       const expireTime = ttl || this.defaultTtl;
       await this.client.setEx(key, expireTime, value);
     } catch (error) {
-      console.error(`Redis SET error for key ${key}:`, error);
+      logger.error(`Redis SET error for key ${key}:`, error);
       throw error;
     }
   }
@@ -105,7 +106,7 @@ export class RedisCache {
 
       await pipeline.exec();
     } catch (error) {
-      console.error('Redis MSET error:', error);
+      logger.error('Redis MSET error:', error);
       throw error;
     }
   }
@@ -118,7 +119,7 @@ export class RedisCache {
       const result = await this.client.del(key);
       return result > 0;
     } catch (error) {
-      console.error(`Redis DEL error for key ${key}:`, error);
+      logger.error(`Redis DEL error for key ${key}:`, error);
       return false;
     }
   }
@@ -130,7 +131,7 @@ export class RedisCache {
     try {
       return await this.client.del(keys);
     } catch (error) {
-      console.error(`Redis DEL error for keys ${keys}:`, error);
+      logger.error(`Redis DEL error for keys ${keys}:`, error);
       return 0;
     }
   }
@@ -143,7 +144,7 @@ export class RedisCache {
       const result = await this.client.exists(key);
       return result > 0;
     } catch (error) {
-      console.error(`Redis EXISTS error for key ${key}:`, error);
+      logger.error(`Redis EXISTS error for key ${key}:`, error);
       return false;
     }
   }
@@ -153,9 +154,10 @@ export class RedisCache {
    */
   async expire(key: string, ttl: number): Promise<boolean> {
     try {
-      return await this.client.expire(key, ttl);
+      const result = await this.client.expire(key, ttl);
+      return result === 1;
     } catch (error) {
-      console.error(`Redis EXPIRE error for key ${key}:`, error);
+      logger.error(`Redis EXPIRE error for key ${key}:`, error);
       return false;
     }
   }
@@ -167,7 +169,7 @@ export class RedisCache {
     try {
       return await this.client.ttl(key);
     } catch (error) {
-      console.error(`Redis TTL error for key ${key}:`, error);
+      logger.error(`Redis TTL error for key ${key}:`, error);
       return -1;
     }
   }
@@ -179,7 +181,7 @@ export class RedisCache {
     try {
       return await this.client.incrBy(key, amount);
     } catch (error) {
-      console.error(`Redis INCR error for key ${key}:`, error);
+      logger.error(`Redis INCR error for key ${key}:`, error);
       throw error;
     }
   }
@@ -191,7 +193,7 @@ export class RedisCache {
     try {
       return await this.client.decrBy(key, amount);
     } catch (error) {
-      console.error(`Redis DECR error for key ${key}:`, error);
+      logger.error(`Redis DECR error for key ${key}:`, error);
       throw error;
     }
   }
@@ -203,7 +205,7 @@ export class RedisCache {
     try {
       return await this.client.keys(pattern);
     } catch (error) {
-      console.error(`Redis KEYS error for pattern ${pattern}:`, error);
+      logger.error(`Redis KEYS error for pattern ${pattern}:`, error);
       return [];
     }
   }
@@ -215,7 +217,7 @@ export class RedisCache {
     try {
       await this.client.flushDb();
     } catch (error) {
-      console.error('Redis FLUSHDB error:', error);
+      logger.error('Redis FLUSHDB error:', error);
       throw error;
     }
   }
@@ -225,7 +227,7 @@ export class RedisCache {
   /**
    * Cache user feed
    */
-  async cacheUserFeed(userId: string, feedData: any, ttl: number = 300): Promise<void> {
+  async cacheUserFeed(userId: string, feedData: unknown, ttl: number = 300): Promise<void> {
     const key = `feed:user:${userId}`;
     await this.set(key, JSON.stringify(feedData), ttl);
   }
@@ -233,7 +235,7 @@ export class RedisCache {
   /**
    * Get cached user feed
    */
-  async getCachedUserFeed(userId: string): Promise<any | null> {
+  async getCachedUserFeed(userId: string): Promise<unknown> {
     const key = `feed:user:${userId}`;
     const data = await this.get(key);
     return data ? JSON.parse(data) : null;
@@ -242,7 +244,7 @@ export class RedisCache {
   /**
    * Cache post data
    */
-  async cachePost(postId: string, postData: any, ttl: number = 3600): Promise<void> {
+  async cachePost(postId: string, postData: unknown, ttl: number = 3600): Promise<void> {
     const key = `post:${postId}`;
     await this.set(key, JSON.stringify(postData), ttl);
   }
@@ -250,7 +252,7 @@ export class RedisCache {
   /**
    * Get cached post data
    */
-  async getCachedPost(postId: string): Promise<any | null> {
+  async getCachedPost(postId: string): Promise<unknown> {
     const key = `post:${postId}`;
     const data = await this.get(key);
     return data ? JSON.parse(data) : null;
@@ -259,7 +261,7 @@ export class RedisCache {
   /**
    * Cache trending topics
    */
-  async cacheTrendingTopics(topics: any[], ttl: number = 600): Promise<void> {
+  async cacheTrendingTopics(topics: unknown[], ttl: number = 600): Promise<void> {
     const key = 'trending:topics';
     await this.set(key, JSON.stringify(topics), ttl);
   }
@@ -267,7 +269,7 @@ export class RedisCache {
   /**
    * Get cached trending topics
    */
-  async getCachedTrendingTopics(): Promise<any[] | null> {
+  async getCachedTrendingTopics(): Promise<unknown[] | null> {
     const key = 'trending:topics';
     const data = await this.get(key);
     return data ? JSON.parse(data) : null;
@@ -313,7 +315,7 @@ export class RedisCache {
   /**
    * Cache search results
    */
-  async cacheSearchResults(query: string, results: any[], ttl: number = 1800): Promise<void> {
+  async cacheSearchResults(query: string, results: unknown[], ttl: number = 1800): Promise<void> {
     const key = `search:${this.hashQuery(query)}`;
     await this.set(key, JSON.stringify(results), ttl);
   }
@@ -321,7 +323,7 @@ export class RedisCache {
   /**
    * Get cached search results
    */
-  async getCachedSearchResults(query: string): Promise<any[] | null> {
+  async getCachedSearchResults(query: string): Promise<unknown[] | null> {
     const key = `search:${this.hashQuery(query)}`;
     const data = await this.get(key);
     return data ? JSON.parse(data) : null;

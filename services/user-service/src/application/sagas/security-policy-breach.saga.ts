@@ -12,7 +12,7 @@ export interface SecurityPolicyBreachEvent {
   userId: string;
   breachType: 'suspicious_login' | 'multiple_failed_attempts' | 'unusual_activity' | 'location_anomaly';
   severity: 'low' | 'medium' | 'high' | 'critical';
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   timestamp: Date;
   metadata?: { correlationId: string };
 }
@@ -69,14 +69,14 @@ export class SecurityPolicyBreachSaga extends DistributedSagaOrchestrator<Securi
       },
       {
         name: 'RecordSecurityEvent',
-        execute: async (payload, sagaId) => {
+        execute: async (payload, _sagaId) => {
           await auditClient.recordEvent(payload.userId, 'security_breach_detected', {
             breachType: payload.breachType,
             severity: payload.severity,
             details: payload.details
           });
         },
-        compensate: async (payload, sagaId) => {
+        compensate: async (payload, _sagaId) => {
           await auditClient.recordEvent(payload.userId, 'security_breach_compensated', {
             originalEventId: payload.eventId
           });
@@ -84,7 +84,7 @@ export class SecurityPolicyBreachSaga extends DistributedSagaOrchestrator<Securi
       },
       {
         name: 'NotifyUser',
-        execute: async (payload, sagaId) => {
+        execute: async (payload, _sagaId) => {
           const template = payload.severity === 'critical' ? 'security_alert_critical' : 'security_alert';
           await this.notificationClient.sendEmail(payload.userId, template, {
             breachType: payload.breachType,
@@ -93,7 +93,7 @@ export class SecurityPolicyBreachSaga extends DistributedSagaOrchestrator<Securi
             timestamp: new Date().toISOString()
           });
         },
-        compensate: async (payload, sagaId) => {
+        compensate: async (_payload, _sagaId) => {
           // Cannot unsend notification
         }
       }

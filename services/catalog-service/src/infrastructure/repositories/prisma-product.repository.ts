@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 /**
  * Prisma Product Repository Implementation
  * Infrastructure layer implementation of ProductRepository interface

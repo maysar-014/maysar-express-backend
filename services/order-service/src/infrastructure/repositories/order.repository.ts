@@ -1,7 +1,7 @@
 import { PrismaClient, Order_Order } from '@prisma/client';
 import { OrderRepository } from '../../domain/repositories/order.repository';
 import { Order, OrderStatus, OrderItem } from '../../domain/entities/order.entity';
-import { OptimisticLockError } from '../../../../shared/errors/optimistic-lock.error';
+import { OptimisticLockError } from '../../../../../shared/errors/optimistic-lock.error';
 
 export class OrderRepositoryImpl implements OrderRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -12,12 +12,19 @@ export class OrderRepositoryImpl implements OrderRepository {
         id: order.id,
         buyerId: order.buyerId,
         sellerId: order.sellerId,
-        status: this.toDbStatus(order.status),
-        paymentMethod: this.toDbPaymentMethod(order.paymentMethod),
+        status: this.toDbStatus(order.status) as any,
+        paymentMethod: this.toDbPaymentMethod(order.paymentMethod) as any,
         totalAmount: order.totalAmount.amount,
         currency: order.totalAmount.currency,
         totalWeight: order.totalWeight,
-        deliveryAddress: order.deliveryAddress.toJSON(),
+        deliveryAddress: {
+          street: order.deliveryAddress.street,
+          city: order.deliveryAddress.city,
+          postalCode: order.deliveryAddress.postalCode,
+          country: order.deliveryAddress.country,
+          latitude: order.deliveryAddress.latitude,
+          longitude: order.deliveryAddress.longitude
+        },
         codCommitmentFee: order.codCommitmentFee,
         codCommitmentPaid: order.codCommitmentPaid,
         codReputationScore: order.codReputationScore,
@@ -56,7 +63,7 @@ export class OrderRepositoryImpl implements OrderRepository {
 
   async findByStatus(status: OrderStatus): Promise<Order[]> {
     const records = await this.prisma.order_Order.findMany({
-      where: { status: this.toDbStatus(status) },
+      where: { status: this.toDbStatus(status) as any },
       include: { items: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -72,10 +79,17 @@ export class OrderRepositoryImpl implements OrderRepository {
     const result = await this.prisma.order_Order.updateMany({
       where: { id: order.id, version: order.version },
       data: {
-        status: this.toDbStatus(order.status),
+        status: this.toDbStatus(order.status) as any,
         totalAmount: order.totalAmount.amount,
         totalWeight: order.totalWeight,
-        deliveryAddress: order.deliveryAddress.toJSON(),
+        deliveryAddress: {
+          street: order.deliveryAddress.street,
+          city: order.deliveryAddress.city,
+          postalCode: order.deliveryAddress.postalCode,
+          country: order.deliveryAddress.country,
+          latitude: order.deliveryAddress.latitude,
+          longitude: order.deliveryAddress.longitude
+        },
         codCommitmentFee: order.codCommitmentFee,
         codCommitmentPaid: order.codCommitmentPaid,
         codReputationScore: order.codReputationScore,
@@ -94,7 +108,7 @@ export class OrderRepositoryImpl implements OrderRepository {
     });
 
     if (result.count === 0) {
-      throw new OptimisticLockError('Order', order.id, order.version);
+      throw new OptimisticLockError(`Order ${order.id} version ${order.version} was modified concurrently`);
     }
   }
 
@@ -108,7 +122,7 @@ export class OrderRepositoryImpl implements OrderRepository {
       quantity: item.quantity,
       price: { amount: Number(item.price), currency: data.currency },
       weight: item.weight,
-    }));
+    })) as any;
 
     return new Order({
       id: data.id,

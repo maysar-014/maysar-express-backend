@@ -17,10 +17,10 @@ export class CODReputationController {
                 success: true,
                 data: reputation
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             res.status(404).json({
                 success: false,
-                error: error.message
+                error: error instanceof Error ? error.message : 'Not found'
             });
         }
     }

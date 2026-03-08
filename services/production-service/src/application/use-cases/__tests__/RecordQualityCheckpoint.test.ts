@@ -1,6 +1,6 @@
 import { RecordQualityCheckpoint } from '../RecordQualityCheckpoint';
 
-const mockRepository = { create: jest.fn() } as any;
+const mockRepository = { save: jest.fn() } as any;
 const mockEngine = { assessQuality: jest.fn() } as any;
 
 describe('RecordQualityCheckpoint', () => {
@@ -12,8 +12,8 @@ describe('RecordQualityCheckpoint', () => {
     });
 
     it('should record quality checkpoint', async () => {
-        mockEngine.assessQuality.mockReturnValue({ passed: true, score: 95 });
-        const result = await useCase.execute({ productId: 'p1', metrics: {} });
-        expect(result.passed).toBe(true);
+        mockRepository.save.mockResolvedValue(undefined);
+        await useCase.execute({ orderId: 'o1', passed: true, defectCount: 0 });
+        expect(mockRepository.save).toHaveBeenCalled();
     });
 });

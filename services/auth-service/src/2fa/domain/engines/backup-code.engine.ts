@@ -6,7 +6,7 @@ export class BackupCodeEngine {
      * Generates a set of cryptographically secure random backup codes
      */
     public static async generateCodes(count: number = 10): Promise<{ plain: string; hash: string }[]> {
-        const codes = [];
+        const codes: { plain: string; hash: string }[] = [];
         for (let i = 0; i < count; i++) {
             const plain = crypto.randomBytes(5).toString('hex').toUpperCase(); // 10 characters
             const hash = await bcrypt.hash(plain, 10);

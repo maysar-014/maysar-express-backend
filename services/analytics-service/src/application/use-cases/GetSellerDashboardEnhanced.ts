@@ -43,7 +43,7 @@ export class GetSellerDashboardEnhanced {
       where: { userId: sellerId }
     });
 
-    const nextPayout = await prisma.payout_Payout.findFirst({
+    const nextPayout = await prisma.payout.findFirst({
       where: {
         userId: sellerId,
         status: 'PENDING'
@@ -51,7 +51,7 @@ export class GetSellerDashboardEnhanced {
       orderBy: { createdAt: 'asc' }
     });
 
-    const thisMonthCommissions = await prisma.commission_Commission.aggregate({
+    const thisMonthCommissions = await prisma.commission.aggregate({
       where: {
         sellerId,
         createdAt: { gte: monthStart }
@@ -69,8 +69,8 @@ export class GetSellerDashboardEnhanced {
         amount: thisMonthOrders._sum.totalAmount || 0,
         currency: 'TZS',
         growth: this.calculateGrowth(
-          thisMonthOrders._sum.totalAmount || 0,
-          lastMonthOrders._sum.totalAmount || 0
+          Number(thisMonthOrders._sum.totalAmount || 0),
+          Number(lastMonthOrders._sum.totalAmount || 0)
         )
       },
       walletBalance: {
@@ -79,7 +79,7 @@ export class GetSellerDashboardEnhanced {
         currency: 'TZS'
       },
       nextPayoutDate: nextPayout?.createdAt || null,
-      netPayout: (thisMonthOrders._sum.totalAmount || 0) - (thisMonthCommissions._sum.amount || 0)
+      netPayout: Number(thisMonthOrders._sum.totalAmount || 0) - Number(thisMonthCommissions._sum.amount || 0)
     };
 
     // Section 2: Performance Insights
@@ -110,7 +110,7 @@ export class GetSellerDashboardEnhanced {
 
     let bestProductName = 'N/A';
     if (bestProductPerf) {
-      const product = await prisma.catalog_Product.findUnique({
+      const product = await prisma.product.findUnique({
         where: { id: bestProductPerf.productId },
         select: { title: true }
       });
@@ -161,7 +161,7 @@ export class GetSellerDashboardEnhanced {
     const payoutTransparency = {
       totalEarned: thisMonthOrders._sum.totalAmount || 0,
       commissionDeducted: thisMonthCommissions._sum.amount || 0,
-      netPayout: (thisMonthOrders._sum.totalAmount || 0) - (thisMonthCommissions._sum.amount || 0),
+      netPayout: Number(thisMonthOrders._sum.totalAmount || 0) - Number(thisMonthCommissions._sum.amount || 0),
       nextPayoutDate: nextPayout?.createdAt?.toISOString() || null,
       feeBreakdown: [
         {
@@ -239,7 +239,7 @@ export class GetSellerDashboardEnhanced {
     return ((current - previous) / previous) * 100;
   }
 
-  private calculateTrend(data: any[]): string {
+  private calculateTrend(data: Array<{ revenue: unknown }>): string {
     if (data.length < 2) return 'flat';
     const last3 = data.slice(-3);
     const prev4 = data.slice(0, Math.max(1, data.length - 3));

@@ -738,13 +738,3 @@ export class ResourceMappingManager {
 // =====================================================================================
 
 export const resourceMappingManager = ResourceMappingManager.getInstance();
-export { ResourceMappingManager };
-export type { 
-  ResourceAction, 
-  ResourceScope, 
-  ResourceCategory, 
-  ResourceMapping, 
-  EndpointMapping, 
-  ServiceMapping 
-};
-export { CORE_RESOURCES, USER_RESOURCES, SYSTEM_RESOURCES };

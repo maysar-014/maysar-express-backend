@@ -564,3 +564,34 @@ export class EventSubscriptionManager {
     await this.subscriber.stop();
   }
 }
+
+type LegacySubscriberAdapter = {
+  subscribe?: (eventType: string, handler: (...args: unknown[]) => unknown) => Promise<void>;
+  unsubscribe?: (eventType: string) => Promise<void>;
+  handleMessage?: (eventType: string, payload: unknown) => Promise<void>;
+};
+
+/**
+ * Legacy EventSubscriber facade retained for older tests/callers.
+ */
+export class EventSubscriber {
+  constructor(private readonly adapter?: LegacySubscriberAdapter) { }
+
+  async subscribe(eventType: string, handler: (...args: unknown[]) => unknown): Promise<void> {
+    if (this.adapter?.subscribe) {
+      await this.adapter.subscribe(eventType, handler);
+    }
+  }
+
+  async unsubscribe(eventType: string): Promise<void> {
+    if (this.adapter?.unsubscribe) {
+      await this.adapter.unsubscribe(eventType);
+    }
+  }
+
+  async handleMessage(eventType: string, payload: unknown): Promise<void> {
+    if (this.adapter?.handleMessage) {
+      await this.adapter.handleMessage(eventType, payload);
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { eventBus, EventBus } from '../../../shared/events/eventBus';
+import { eventBus, EventBus } from '@shared-events/eventBus';
 import { t } from '@shared/i18n/i18n';
 import { i18next, i18nextMiddleware } from '@shared/i18n/i18n';
 import { z } from 'zod';
@@ -222,8 +222,8 @@ app.post('/api/compliance/generate-report', async (req, res) => {
     });
 
     const getCount = (status: string) => {
-      const group = statusGroups.find(g => g.verificationStatus === status);
-      return group ? (typeof group._count === 'number' ? group._count : group._count._all || 0) : 0;
+      const group: any = statusGroups.find(g => g.verificationStatus === status);
+      return group ? (typeof group._count === 'number' ? group._count : group._count?._all || 0) : 0;
     };
 
     const reportData = {

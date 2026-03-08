@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { LogisticsEngine } from './engines/logistics.engine';
 import { RouteOptimizationEngine } from './engines/route-optimization.engine';
 import { PerformanceAnalyticsEngine } from './engines/performance-analytics.engine';
@@ -17,7 +18,7 @@ class EngineTestRunner {
   private results: TestResult[] = [];
 
   async runAllTests(): Promise<void> {
-    console.log('🧪 MAYSAR EXPRESS BACKEND - ENGINE TESTING SUITE');
+    console.log('ðŸ§ª MAYSAR EXPRESS BACKEND - ENGINE TESTING SUITE');
     console.log('================================================');
     console.log('Testing all logistics engines...\n');
 
@@ -32,7 +33,7 @@ class EngineTestRunner {
   }
 
   private async testLogisticsEngine(): Promise<void> {
-    console.log('🔄 Testing Logistics Engine...');
+    console.log('ðŸ”„ Testing Logistics Engine...');
     const startTime = Date.now();
     
     try {
@@ -86,7 +87,7 @@ class EngineTestRunner {
         error: result.success ? undefined : 'Logistics processing failed'
       });
 
-      console.log(`✅ Logistics Engine: ${result.success ? 'PASS' : 'FAIL'} (${responseTime}ms)`);
+      console.log(`âœ… Logistics Engine: ${result.success ? 'PASS' : 'FAIL'} (${responseTime}ms)`);
     } catch (error: any) {
       this.results.push({
         engine: 'Logistics Engine',
@@ -95,12 +96,12 @@ class EngineTestRunner {
         accuracy: 0,
         error: error.message
       });
-      console.log(`❌ Logistics Engine: FAIL (${error.message})`);
+      console.log(`âŒ Logistics Engine: FAIL (${error.message})`);
     }
   }
 
   private async testRouteOptimizationEngine(): Promise<void> {
-    console.log('🔄 Testing Route Optimization Engine...');
+    console.log('ðŸ”„ Testing Route Optimization Engine...');
     const startTime = Date.now();
     
     try {
@@ -131,7 +132,7 @@ class EngineTestRunner {
         error: result.success ? undefined : 'Optimization failed'
       });
 
-      console.log(`✅ Route Optimization Engine: ${result.success ? 'PASS' : 'FAIL'} (${responseTime}ms)`);
+      console.log(`âœ… Route Optimization Engine: ${result.success ? 'PASS' : 'FAIL'} (${responseTime}ms)`);
     } catch (error: any) {
       this.results.push({
         engine: 'Route Optimization Engine',
@@ -140,12 +141,12 @@ class EngineTestRunner {
         accuracy: 0,
         error: error.message
       });
-      console.log(`❌ Route Optimization Engine: FAIL (${error.message})`);
+      console.log(`âŒ Route Optimization Engine: FAIL (${error.message})`);
     }
   }
 
   private async testPerformanceAnalyticsEngine(): Promise<void> {
-    console.log('🔄 Testing Performance Analytics Engine...');
+    console.log('ðŸ”„ Testing Performance Analytics Engine...');
     const startTime = Date.now();
     
     try {
@@ -164,7 +165,7 @@ class EngineTestRunner {
         error: success ? undefined : 'Analytics calculation failed'
       });
 
-      console.log(`✅ Performance Analytics Engine: ${success ? 'PASS' : 'FAIL'} (${responseTime}ms)`);
+      console.log(`âœ… Performance Analytics Engine: ${success ? 'PASS' : 'FAIL'} (${responseTime}ms)`);
     } catch (error: any) {
       this.results.push({
         engine: 'Performance Analytics Engine',
@@ -173,12 +174,12 @@ class EngineTestRunner {
         accuracy: 0,
         error: error.message
       });
-      console.log(`❌ Performance Analytics Engine: FAIL (${error.message})`);
+      console.log(`âŒ Performance Analytics Engine: FAIL (${error.message})`);
     }
   }
 
   private async testEarningsManagementEngine(): Promise<void> {
-    console.log('🔄 Testing Earnings Management Engine...');
+    console.log('ðŸ”„ Testing Earnings Management Engine...');
     const startTime = Date.now();
     
     try {
@@ -197,7 +198,7 @@ class EngineTestRunner {
         error: success ? undefined : 'Earnings calculation failed'
       });
 
-      console.log(`✅ Earnings Management Engine: ${success ? 'PASS' : 'FAIL'} (${responseTime}ms)`);
+      console.log(`âœ… Earnings Management Engine: ${success ? 'PASS' : 'FAIL'} (${responseTime}ms)`);
     } catch (error: any) {
       this.results.push({
         engine: 'Earnings Management Engine',
@@ -206,12 +207,12 @@ class EngineTestRunner {
         accuracy: 0,
         error: error.message
       });
-      console.log(`❌ Earnings Management Engine: FAIL (${error.message})`);
+      console.log(`âŒ Earnings Management Engine: FAIL (${error.message})`);
     }
   }
 
   private async testRealTimeTrackingEngine(): Promise<void> {
-    console.log('🔄 Testing Real-Time Tracking Engine...');
+    console.log('ðŸ”„ Testing Real-Time Tracking Engine...');
     const startTime = Date.now();
     
     try {
@@ -237,7 +238,7 @@ class EngineTestRunner {
         error: success ? undefined : 'Tracking failed'
       });
 
-      console.log(`✅ Real-Time Tracking Engine: ${success ? 'PASS' : 'FAIL'} (${responseTime}ms)`);
+      console.log(`âœ… Real-Time Tracking Engine: ${success ? 'PASS' : 'FAIL'} (${responseTime}ms)`);
     } catch (error: any) {
       this.results.push({
         engine: 'Real-Time Tracking Engine',
@@ -246,12 +247,12 @@ class EngineTestRunner {
         accuracy: 0,
         error: error.message
       });
-      console.log(`❌ Real-Time Tracking Engine: FAIL (${error.message})`);
+      console.log(`âŒ Real-Time Tracking Engine: FAIL (${error.message})`);
     }
   }
 
   private async testSuperEfficiencyOptimizer(): Promise<void> {
-    console.log('🔄 Testing Super Efficiency Optimizer...');
+    console.log('ðŸ”„ Testing Super Efficiency Optimizer...');
     const startTime = Date.now();
     
     try {
@@ -270,7 +271,7 @@ class EngineTestRunner {
         error: success ? undefined : 'Optimization failed'
       });
 
-      console.log(`✅ Super Efficiency Optimizer: ${success ? 'PASS' : 'FAIL'} (${responseTime}ms)`);
+      console.log(`âœ… Super Efficiency Optimizer: ${success ? 'PASS' : 'FAIL'} (${responseTime}ms)`);
     } catch (error: any) {
       this.results.push({
         engine: 'Super Efficiency Optimizer',
@@ -279,12 +280,12 @@ class EngineTestRunner {
         accuracy: 0,
         error: error.message
       });
-      console.log(`❌ Super Efficiency Optimizer: FAIL (${error.message})`);
+      console.log(`âŒ Super Efficiency Optimizer: FAIL (${error.message})`);
     }
   }
 
   private generateReport(): void {
-    console.log('\n📊 TEST RESULTS SUMMARY');
+    console.log('\nðŸ“Š TEST RESULTS SUMMARY');
     console.log('========================');
     
     const totalTests = this.results.length;
@@ -301,25 +302,25 @@ class EngineTestRunner {
     console.log(`Average Response Time: ${avgResponseTime.toFixed(1)}ms`);
     console.log(`Average Accuracy: ${avgAccuracy.toFixed(1)}%`);
     
-    console.log('\n📋 DETAILED RESULTS:');
+    console.log('\nðŸ“‹ DETAILED RESULTS:');
     this.results.forEach(result => {
-      const status = result.status === 'PASS' ? '✅' : '❌';
+      const status = result.status === 'PASS' ? 'âœ…' : 'âŒ';
       console.log(`${status} ${result.engine}: ${result.status} (${result.responseTime}ms, ${result.accuracy}% accuracy)`);
       if (result.error) {
         console.log(`   Error: ${result.error}`);
       }
     });
 
-    console.log('\n🎯 OVERALL SYSTEM HEALTH:');
+    console.log('\nðŸŽ¯ OVERALL SYSTEM HEALTH:');
     if (successRate >= 90) {
-      console.log('🟢 EXCELLENT - All engines operational');
+      console.log('ðŸŸ¢ EXCELLENT - All engines operational');
     } else if (successRate >= 75) {
-      console.log('🟡 GOOD - Most engines operational');
+      console.log('ðŸŸ¡ GOOD - Most engines operational');
     } else {
-      console.log('🔴 NEEDS ATTENTION - Multiple engine failures');
+      console.log('ðŸ”´ NEEDS ATTENTION - Multiple engine failures');
     }
 
-    console.log(`\n🏆 API SATISFACTION TARGET: ${successRate >= 95 ? '99% ACHIEVED' : `${successRate.toFixed(1)}% (Target: 99%)`}`);
+    console.log(`\nðŸ† API SATISFACTION TARGET: ${successRate >= 95 ? '99% ACHIEVED' : `${successRate.toFixed(1)}% (Target: 99%)`}`);
   }
 }
 

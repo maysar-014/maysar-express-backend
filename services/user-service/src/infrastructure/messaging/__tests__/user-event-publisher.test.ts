@@ -45,12 +45,12 @@ describe('UserEventPublisher', () => {
       expect.objectContaining({
         eventId: expect.any(String),
         eventType: 'UserRegistered',
-        eventData: expect.objectContaining({
+        data: expect.objectContaining({
           password: '[REDACTED]',
           token: '[REDACTED]'
-        })
-      }),
-      undefined
+        }),
+        timestamp: expect.any(Date)
+      })
     );
     expect(logger.info).toHaveBeenCalled();
   });

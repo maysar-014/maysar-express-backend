@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { createError } from './error.middleware';
 
 export interface UserContext {
-    id: string;
+    userId: string;
     roles: string[];
 }
 
@@ -13,7 +13,7 @@ export class AuthorizationMiddleware {
      */
     public static authorizeWalletAccess() {
         return (req: Request, _res: Response, next: NextFunction) => {
-            const user = (req as any).user as UserContext;
+            const user = req.user as UserContext | undefined;
 
             if (!user) {
                 return next(createError.unauthorized('Authentication required'));
@@ -22,7 +22,7 @@ export class AuthorizationMiddleware {
             const requestedUserId = req.params.userId;
 
             // Admin/Support can access everything
-            const normalizedUserRoles = user.roles.map(role => role.toLowerCase());
+            const normalizedUserRoles = (user.roles || []).map(role => role.toLowerCase());
             if (normalizedUserRoles.includes('admin') || normalizedUserRoles.includes('support')) {
                 return next();
             }
@@ -35,7 +35,7 @@ export class AuthorizationMiddleware {
             }
 
             // Users can only access their own wallet
-            if (requestedUserId && user.id !== requestedUserId) {
+            if (requestedUserId && user.userId !== requestedUserId) {
                 return next(createError.forbidden('You do not have permission to access this wallet'));
             }
 
@@ -48,7 +48,7 @@ export class AuthorizationMiddleware {
      */
     public static authorizeRole(roles: string[]) {
         return (req: Request, _res: Response, next: NextFunction) => {
-            const user = (req as any).user as UserContext;
+            const user = req.user as UserContext | undefined;
 
             if (!user) {
                 return next(createError.unauthorized('Authentication required'));
@@ -56,7 +56,7 @@ export class AuthorizationMiddleware {
 
             // Normalize role casing for comparison (handles BUYER, buyer, Buyer etc.)
             const normalizedAllowedRoles = roles.map(role => role.toLowerCase());
-            const normalizedUserRoles = user.roles.map(role => role.toLowerCase());
+            const normalizedUserRoles = (user.roles || []).map(role => role.toLowerCase());
 
             const hasRole = normalizedAllowedRoles.some(role => normalizedUserRoles.includes(role));
             if (!hasRole) {

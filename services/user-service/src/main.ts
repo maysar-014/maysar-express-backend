@@ -294,7 +294,7 @@ class UserServiceApplication {
       logger.info(`Received ${signal}, initiating graceful shutdown...`);
 
       try {
-        await eventBus.shutdown();
+        // EventBus doesn't have shutdown method - it's in-memory and doesn't need cleanup
         // Close database connections
         await DatabaseConnection.close();
 

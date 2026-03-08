@@ -61,6 +61,7 @@ describe('Outbox Pattern Reliability Tests', () => {
     const eventEnvelope: EventEnvelope = {
       eventType: 'test.event.v1',
       data: { test: 'data' },
+      timestamp: new Date(),
       metadata: {
         eventId: randomUUID(),
         timestamp: new Date().toISOString(),
@@ -97,7 +98,7 @@ describe('Outbox Pattern Reliability Tests', () => {
     expect(events[0].status).toBe(OutboxStatus.PENDING);
     
     // Verify stored envelope shape
-    const storedEvent = JSON.parse(events[0].eventData);
+    const storedEvent = JSON.parse(events[0].eventData as string);
     expect(storedEvent.data).toEqual({ test: 'data' });
     expect(storedEvent.metadata.producer).toBe('test-service');
   });
@@ -106,6 +107,7 @@ describe('Outbox Pattern Reliability Tests', () => {
     const eventEnvelope: EventEnvelope = {
       eventType: 'test.event.v1',
       data: { test: 'data' },
+      timestamp: new Date(),
       metadata: {
         eventId: randomUUID(),
         timestamp: new Date().toISOString(),
@@ -138,6 +140,7 @@ describe('Outbox Pattern Reliability Tests', () => {
     const eventEnvelope: EventEnvelope = {
       eventType: 'test.event.v1',
       data: { test: 'data' },
+      timestamp: new Date(),
       metadata: {
         eventId: randomUUID(),
         timestamp: new Date().toISOString(),
@@ -166,7 +169,7 @@ describe('Outbox Pattern Reliability Tests', () => {
     expect(events[0].lastError).toBe('Test failure');
     
     // Verify stored envelope shape preserved
-    const storedEvent = JSON.parse(events[0].eventData);
+    const storedEvent = JSON.parse(events[0].eventData as string);
     expect(storedEvent.data).toEqual({ test: 'data' });
     expect(storedEvent.metadata.version).toBe('v1');
   });
@@ -175,6 +178,7 @@ describe('Outbox Pattern Reliability Tests', () => {
     const eventEnvelope: EventEnvelope = {
       eventType: 'test.event.v1',
       data: { test: 'data' },
+      timestamp: new Date(),
       metadata: {
         eventId: randomUUID(),
         timestamp: new Date().toISOString(),
@@ -202,6 +206,7 @@ describe('Outbox Pattern Reliability Tests', () => {
     const eventEnvelope: EventEnvelope = {
       eventType: 'test.event.v1',
       data: { test: 'data' },
+      timestamp: new Date(),
       metadata: {
         eventId,
         timestamp: new Date().toISOString(),

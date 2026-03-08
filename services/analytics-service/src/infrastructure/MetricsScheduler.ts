@@ -1,3 +1,4 @@
+import { logger } from '@modules/auth-service/src/infrastructure/services/logger.service';
 import { SellerMetricsCalculationJob } from './SellerMetricsCalculationJob';
 
 export class MetricsScheduler {
@@ -10,21 +11,21 @@ export class MetricsScheduler {
 
   start(intervalMinutes: number = 15) {
     if (this.intervalId) {
-      console.log('[MetricsScheduler] Already running');
+      logger.info('[MetricsScheduler] Already running');
       return;
     }
 
-    console.log(`[MetricsScheduler] Starting with ${intervalMinutes} minute interval`);
+    logger.info(`[MetricsScheduler] Starting with ${intervalMinutes} minute interval`);
     
     // Run immediately on start
     this.job.execute().catch(error => {
-      console.error('[MetricsScheduler] Initial run failed:', error);
+      logger.error('[MetricsScheduler] Initial run failed:', error);
     });
 
     // Schedule recurring execution
     this.intervalId = setInterval(() => {
       this.job.execute().catch(error => {
-        console.error('[MetricsScheduler] Scheduled run failed:', error);
+        logger.error('[MetricsScheduler] Scheduled run failed:', error);
       });
     }, intervalMinutes * 60 * 1000);
   }
@@ -33,7 +34,7 @@ export class MetricsScheduler {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
-      console.log('[MetricsScheduler] Stopped');
+      logger.info('[MetricsScheduler] Stopped');
     }
   }
 }

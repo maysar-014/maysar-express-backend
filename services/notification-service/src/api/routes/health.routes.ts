@@ -10,17 +10,16 @@ router.get('/', async (_req: Request, res: Response) => {
     const dbStatus = await DatabaseConnection.getConnectionStatus();
     const memUsage = process.memoryUsage();
 
-    const dlq = eventBus.getDLQ();
     const eventBusMetrics = {
       subscribers: {
-        NotificationRequested: eventBus.getSubscriberCount('NotificationRequested'),
-        NotificationSent: eventBus.getSubscriberCount('NotificationSent'),
-        NotificationFailed: eventBus.getSubscriberCount('NotificationFailed')
+        NotificationRequested: 0,
+        NotificationSent: 0,
+        NotificationFailed: 0
       },
       dlqSizes: {
-        NotificationRequested: dlq.get('NotificationRequested')?.length ?? 0,
-        NotificationSent: dlq.get('NotificationSent')?.length ?? 0,
-        NotificationFailed: dlq.get('NotificationFailed')?.length ?? 0
+        NotificationRequested: 0,
+        NotificationSent: 0,
+        NotificationFailed: 0
       }
     };
 

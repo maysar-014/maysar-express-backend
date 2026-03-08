@@ -134,14 +134,19 @@
         }
     },
     "include": [
-        "services/**/*",
-        "shared/**/*",
-        "shared-contracts/**/*",
-        "events/**/*",
-        "src/**/*"
+        "services/**/src/**/*.ts",
+        "shared/**/*.ts",
+        "shared-contracts/**/*.ts",
+        "events/**/*.ts",
+        "src/**/*.ts"
     ],
     "exclude": [
         "node_modules",
-        "dist"
+        "dist",
+        "**/__tests__/**",
+        "**/tests/**",
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "services/notification-service/notification-service/**"
     ]
 }

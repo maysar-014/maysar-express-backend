@@ -1,12 +1,84 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { eventBus } from '../../shared/events/eventBus';
+import { eventBus, EventEnvelope } from '@shared-events/eventBus';
 import { t } from '@shared/i18n/i18n';
 
 const app = express();
 const prisma = new PrismaClient();
 
 app.use(express.json());
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LegacyPayload = Record<string, any>;
+
+interface LegacyEventEnvelope extends Omit<EventEnvelope, 'data' | 'payload' | 'metadata'> {
+  data: LegacyPayload;
+  payload: LegacyPayload;
+  metadata?: Record<string, unknown>;
+  sagaId?: string;
+}
+
+interface NotificationData {
+  recipientId: string;
+  recipientType: string;
+  type: string;
+  title: string;
+  message: string;
+  channel: 'push' | 'email' | 'sms';
+  [key: string]: unknown;
+}
+
+interface RealTimeUpdate {
+  recipientId: string;
+  type: string;
+  data: Record<string, unknown>;
+}
+
+interface NotificationRecord {
+  [key: string]: unknown;
+}
+
+const getNotificationRecipient = (notification: NotificationRecord): string => {
+  const recipientId = notification.recipientId;
+  if (typeof recipientId === 'string') {
+    return recipientId;
+  }
+  const userId = notification.userId;
+  return typeof userId === 'string' ? userId : 'unknown-recipient';
+};
+
+const getNotificationMessage = (notification: NotificationRecord): string => {
+  const message = notification.message;
+  if (typeof message === 'string') {
+    return message;
+  }
+  const title = notification.title;
+  return typeof title === 'string' ? title : 'notification';
+};
+
+const asLegacyPayload = (value: unknown): LegacyPayload =>
+  typeof value === 'object' && value !== null ? (value as LegacyPayload) : {};
+
+const asLegacyEvent = (envelope: EventEnvelope): LegacyEventEnvelope => {
+  const metadata = envelope.metadata;
+  const metadataSagaId = typeof metadata?.sagaId === 'string' ? metadata.sagaId : undefined;
+  return {
+    ...envelope,
+    data: asLegacyPayload(envelope.data),
+    payload: asLegacyPayload(envelope.payload),
+    metadata,
+    sagaId: envelope.sagaId || metadataSagaId
+  };
+};
+
+const subscribeLegacy = (
+  eventType: string,
+  handler: (event: LegacyEventEnvelope) => Promise<void>
+): void => {
+  eventBus.subscribe(eventType, async (envelope: EventEnvelope) => {
+    await handler(asLegacyEvent(envelope));
+  });
+};
 
 // Initialize courier notification handlers
 initializeCourierNotificationHandlers();
@@ -15,7 +87,7 @@ initializeEnablerSagaHandlers();
 
 function initializeEnablerSagaHandlers() {
   // Task & Assignment Notifications
-  eventBus.subscribe('TaskAssignmentOffered', async (event) => {
+  subscribeLegacy('TaskAssignmentOffered', async (event) => {
     const { taskId, enablerId } = event.data;
     
     await sendNotification({
@@ -28,7 +100,7 @@ function initializeEnablerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('TaskCompletionSubmitted', async (event) => {
+  subscribeLegacy('TaskCompletionSubmitted', async (event) => {
     const { taskId, enablerId } = event.data;
     
     await sendNotification({
@@ -42,7 +114,7 @@ function initializeEnablerSagaHandlers() {
   });
 
   // Training Notifications
-  eventBus.subscribe('TrainingScheduled', async (event) => {
+  subscribeLegacy('TrainingScheduled', async (event) => {
     const { enablerId, sellerId, trainingModule } = event.data;
     
     await sendNotification({
@@ -55,7 +127,7 @@ function initializeEnablerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('TrainingCertificateIssued', async (event) => {
+  subscribeLegacy('TrainingCertificateIssued', async (event) => {
     const { enablerId, certificateId } = event.data;
     
     await sendNotification({
@@ -69,7 +141,7 @@ function initializeEnablerSagaHandlers() {
   });
 
   // Performance & Earnings Notifications
-  eventBus.subscribe('EnablerPayoutNotificationSent', async (event) => {
+  subscribeLegacy('EnablerPayoutNotificationSent', async (event) => {
     const { enablerId, totalEarnings } = event.data;
     
     await sendNotification({
@@ -82,7 +154,7 @@ function initializeEnablerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('ImprovementPlanCreated', async (event) => {
+  subscribeLegacy('ImprovementPlanCreated', async (event) => {
     const { enablerId, improvementPlan } = event.data;
     
     await sendNotification({
@@ -96,7 +168,7 @@ function initializeEnablerSagaHandlers() {
   });
 
   // KYC & Settings Notifications
-  eventBus.subscribe('EnablerKYCApproved', async (event) => {
+  subscribeLegacy('EnablerKYCApproved', async (event) => {
     const { enablerId, kycId } = event.data;
     
     await sendNotification({
@@ -109,7 +181,7 @@ function initializeEnablerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('EnablerSettingsUpdateNotificationSent', async (event) => {
+  subscribeLegacy('EnablerSettingsUpdateNotificationSent', async (event) => {
     const { enablerId } = event.data;
     
     await sendNotification({
@@ -123,7 +195,7 @@ function initializeEnablerSagaHandlers() {
   });
 
   // Support & Assistance Notifications
-  eventBus.subscribe('LogisticsSolutionImplemented', async (event) => {
+  subscribeLegacy('LogisticsSolutionImplemented', async (event) => {
     const { enablerId, sellerId, solutionResult } = event.data;
     
     await sendNotification({
@@ -136,7 +208,7 @@ function initializeEnablerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('SalesOutcomeTracked', async (event) => {
+  subscribeLegacy('SalesOutcomeTracked', async (event) => {
     const { enablerId, outcome, saleValue } = event.data;
     
     await sendNotification({
@@ -149,7 +221,7 @@ function initializeEnablerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('SellerOnboardingCompleted', async (event) => {
+  subscribeLegacy('SellerOnboardingCompleted', async (event) => {
     const { enablerId, sellerId } = event.data;
     
     await sendNotification({
@@ -165,7 +237,7 @@ function initializeEnablerSagaHandlers() {
 
 function initializeSellerSagaHandlers() {
   // Seller Notification Events
-  eventBus.subscribe('PricingChangeNotificationSent', async (event) => {
+  subscribeLegacy('PricingChangeNotificationSent', async (event) => {
     const { sellerId, productId } = event.data;
     
     await sendNotification({
@@ -178,7 +250,7 @@ function initializeSellerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('CampaignNotificationSent', async (event) => {
+  subscribeLegacy('CampaignNotificationSent', async (event) => {
     const { sellerId, campaignId } = event.data;
     
     await sendNotification({
@@ -191,7 +263,7 @@ function initializeSellerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('PayoutNotificationSent', async (event) => {
+  subscribeLegacy('PayoutNotificationSent', async (event) => {
     const { sellerId, payoutId } = event.data;
     
     await sendNotification({
@@ -204,7 +276,7 @@ function initializeSellerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('SellerKYCNotificationSent', async (event) => {
+  subscribeLegacy('SellerKYCNotificationSent', async (event) => {
     const { sellerId, kycStatus } = event.data;
     
     const message = kycStatus === 'verified' 
@@ -221,7 +293,7 @@ function initializeSellerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('SellerSettingsNotificationSent', async (event) => {
+  subscribeLegacy('SellerSettingsNotificationSent', async (event) => {
     const { sellerId } = event.data;
     
     await sendNotification({
@@ -234,7 +306,7 @@ function initializeSellerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('SupportResolutionNotificationSent', async (event) => {
+  subscribeLegacy('SupportResolutionNotificationSent', async (event) => {
     const { sellerId, supportRequestId } = event.data;
     
     await sendNotification({
@@ -247,7 +319,7 @@ function initializeSellerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('CollaborationNotificationSent', async (event) => {
+  subscribeLegacy('CollaborationNotificationSent', async (event) => {
     const { sellerId, enablerId } = event.data;
     
     await sendNotification({
@@ -261,7 +333,7 @@ function initializeSellerSagaHandlers() {
   });
 
   // Order and Fulfillment Notifications
-  eventBus.subscribe('OrderShipped', async (event) => {
+  subscribeLegacy('OrderShipped', async (event) => {
     const { orderId, customerId } = event.data;
     
     await sendNotification({
@@ -274,7 +346,7 @@ function initializeSellerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('DeliveryMonitoringStarted', async (event) => {
+  subscribeLegacy('DeliveryMonitoringStarted', async (event) => {
     const { orderId } = event.data;
     
     await sendRealTimeUpdate({
@@ -284,7 +356,7 @@ function initializeSellerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('RefundProcessed', async (event) => {
+  subscribeLegacy('RefundProcessed', async (event) => {
     const { returnId, orderId, refundAmount } = event.data;
     
     await sendNotification({
@@ -313,7 +385,7 @@ app.post('/api/notifications/send', async (req, res) => {
 app.get('/api/notifications/courier/:courierId', async (req, res) => {
   try {
     const notifications = await prisma.notification.findMany({
-      where: { recipientId: req.params.courierId, recipientType: 'courier' }
+      where: { userId: req.params.courierId }
     });
     res.json(notifications);
   } catch (error) {
@@ -323,7 +395,7 @@ app.get('/api/notifications/courier/:courierId', async (req, res) => {
 
 function initializeCourierNotificationHandlers() {
   // Delivery Notifications
-  eventBus.subscribe('DeliveryCompletionNotificationSent', async (event) => {
+  subscribeLegacy('DeliveryCompletionNotificationSent', async (event) => {
     const { courierId, deliveryId, customerId } = event.data;
     
     await sendNotification({
@@ -346,7 +418,7 @@ function initializeCourierNotificationHandlers() {
   });
 
   // Earnings Notifications
-  eventBus.subscribe('CourierPayoutNotificationSent', async (event) => {
+  subscribeLegacy('CourierPayoutNotificationSent', async (event) => {
     const { courierId, totalEarnings } = event.data;
     
     await sendNotification({
@@ -360,7 +432,7 @@ function initializeCourierNotificationHandlers() {
   });
 
   // KYC Notifications
-  eventBus.subscribe('CourierKYCStatusUpdated', async (event) => {
+  subscribeLegacy('CourierKYCStatusUpdated', async (event) => {
     const { courierId, verificationStatus } = event.data;
     
     const message = verificationStatus === 'verified' 
@@ -378,7 +450,7 @@ function initializeCourierNotificationHandlers() {
   });
 
   // Settings Notifications
-  eventBus.subscribe('CourierPreferencesSynced', async (event) => {
+  subscribeLegacy('CourierPreferencesSynced', async (event) => {
     const { courierId } = event.data;
     
     await sendNotification({
@@ -392,7 +464,7 @@ function initializeCourierNotificationHandlers() {
   });
 
   // Support Notifications
-  eventBus.subscribe('CourierSupportNotificationSent', async (event) => {
+  subscribeLegacy('CourierSupportNotificationSent', async (event) => {
     const { courierId, supportRequestId } = event.data;
     
     await sendNotification({
@@ -406,7 +478,7 @@ function initializeCourierNotificationHandlers() {
   });
 
   // Vehicle Notifications
-  eventBus.subscribe('VehicleStatusUpdated', async (event) => {
+  subscribeLegacy('VehicleStatusUpdated', async (event) => {
     const { courierId, vehicleId, status } = event.data;
     
     await sendNotification({
@@ -420,7 +492,7 @@ function initializeCourierNotificationHandlers() {
   });
 
   // Performance Notifications
-  eventBus.subscribe('PerformanceReportGenerated', async (event) => {
+  subscribeLegacy('PerformanceReportGenerated', async (event) => {
     const { courierId, report } = event.data;
     
     await sendNotification({
@@ -434,7 +506,7 @@ function initializeCourierNotificationHandlers() {
   });
 
   // Dashboard Notifications
-  eventBus.subscribe('CourierDashboardRefreshed', async (event) => {
+  subscribeLegacy('CourierDashboardRefreshed', async (event) => {
     const { courierId } = event.data;
     
     await sendRealTimeUpdate({
@@ -445,14 +517,14 @@ function initializeCourierNotificationHandlers() {
   });
 }
 
-async function sendNotification(notificationData) {
+async function sendNotification(notificationData: NotificationData): Promise<unknown> {
   try {
     const notification = await prisma.notification.create({
       data: {
         ...notificationData,
         status: 'sent',
         sentAt: new Date()
-      }
+      } as never
     });
 
     switch (notificationData.channel) {
@@ -473,19 +545,19 @@ async function sendNotification(notificationData) {
   }
 }
 
-async function sendPushNotification(notification) {
-  console.log(`Push notification sent to ${notification.recipientId}: ${notification.message}`);
+async function sendPushNotification(notification: NotificationRecord): Promise<void> {
+  console.log(`Push notification sent to ${getNotificationRecipient(notification)}: ${getNotificationMessage(notification)}`);
 }
 
-async function sendEmailNotification(notification) {
-  console.log(`Email sent to ${notification.recipientId}: ${notification.message}`);
+async function sendEmailNotification(notification: NotificationRecord): Promise<void> {
+  console.log(`Email sent to ${getNotificationRecipient(notification)}: ${getNotificationMessage(notification)}`);
 }
 
-async function sendSMSNotification(notification) {
-  console.log(`SMS sent to ${notification.recipientId}: ${notification.message}`);
+async function sendSMSNotification(notification: NotificationRecord): Promise<void> {
+  console.log(`SMS sent to ${getNotificationRecipient(notification)}: ${getNotificationMessage(notification)}`);
 }
 
-async function sendRealTimeUpdate(updateData) {
+async function sendRealTimeUpdate(updateData: RealTimeUpdate): Promise<void> {
   console.log(`Real-time update sent to ${updateData.recipientId}`);
 }
 

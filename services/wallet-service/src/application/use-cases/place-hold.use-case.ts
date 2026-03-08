@@ -35,7 +35,7 @@ export class PlaceHoldUseCase {
         const idempotencyKey = IdempotencyKey.create(dto.idempotencyKey);
 
         // 1. Check Idempotency
-        const cachedResult = await this.idempotencyService.checkIdempotency(idempotencyKey);
+        const cachedResult = await this.idempotencyService.checkIdempotency<PlaceHoldResult>(idempotencyKey);
         if (cachedResult) {
             return cachedResult;
         }

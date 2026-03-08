@@ -64,7 +64,8 @@ export class SearchUsersUseCase {
    */
   async execute(input: SearchUsersInput): Promise<SearchUsersOutput> {
     try {
-      logger.logBusiness('Starting user search', input.requestingUserId, {
+      logger.info('Starting user search', {
+        requestingUserId: input.requestingUserId,
         filters: input.filters,
         pagination: input.pagination
       });
@@ -116,7 +117,8 @@ export class SearchUsersUseCase {
         hasPrev: pagination.page > 1
       };
 
-      logger.logBusiness('User search completed', input.requestingUserId, {
+      logger.info('User search completed', {
+        requestingUserId: input.requestingUserId,
         resultCount: users.length,
         totalCount,
         page: pagination.page

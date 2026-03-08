@@ -15,7 +15,7 @@ export interface QualityCheckpointProps {
     status: QualityStatus;
     passed?: boolean | null;
     defectCount: number;
-    defectDetails?: any;
+    defectDetails?: Record<string, unknown>;
     notes?: string | null;
     images: string[];
     createdAt: Date;
@@ -37,6 +37,7 @@ export class QualityCheckpoint {
     get status(): QualityStatus { return this.props.status; }
     get passed(): boolean | undefined | null { return this.props.passed; }
     get defectCount(): number { return this.props.defectCount; }
+    get notes(): string | null | undefined { return this.props.notes; }
 
     recordResult(passed: boolean, defectCount: number, notes?: string): void {
         this.props.passed = passed;

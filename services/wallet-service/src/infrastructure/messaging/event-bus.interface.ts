@@ -1,2 +1,2 @@
-export { IEventBus, EventEnvelope } from '../../../../shared/events/eventBus';
+export { IEventBus, EventEnvelope } from '@shared-events/eventBus';
 

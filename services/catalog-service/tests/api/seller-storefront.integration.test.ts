@@ -1,7 +1,7 @@
 import request from 'supertest';
 import express from 'express';
-import { createSellerStorefrontRoutes } from '../../../src/api/routes/seller-storefront.routes';
-import { SellerStorefrontController } from '../../../src/api/controllers/seller-storefront.controller';
+import { createSellerStorefrontRoutes } from '../../api/routes/seller-storefront.routes';
+import { SellerStorefrontController } from '../../api/controllers/seller-storefront.controller';
 
 describe('Seller Storefront Routes Integration', () => {
   let app: express.Application;

@@ -5,6 +5,7 @@ This directory contains all Mermaid diagrams and modeling artifacts for the Stru
 ## Overview
 
 The Structured Product SEO System introduces a comprehensive framework for managing product listings with:
+
 - Structured attribute schemas per category
 - Automated SEO content generation
 - Quality scoring and publish gates
@@ -26,15 +27,18 @@ modeling/
 ## Diagrams
 
 ### 1. Use Case Diagram: Structured Product Listing
+
 **File**: `use-cases/structured-product-listing.mmd`
 
 **Purpose**: Shows all actors and use cases in the structured product listing workflow.
 
 **Actors**:
+
 - **Seller**: Creates and manages product listings
 - **Admin**: Monitors and manages the catalog system
 
 **Use Cases**:
+
 1. **Load Category Attributes** - Fetch attribute schema for selected category
 2. **Preview Description** - Generate and preview SEO content before submission
 3. **Create Structured Product** - Submit product with structured attributes
@@ -42,6 +46,7 @@ modeling/
 5. **Publish Product** - Make product visible in catalog
 
 **Key Flows**:
+
 - Seller selects category → system loads attribute schema
 - Seller fills attributes → system generates preview
 - Seller submits → system validates quality score
@@ -49,11 +54,13 @@ modeling/
 - If score < 60 → seller must improve
 
 ### 2. Sequence Diagram: Structured Product Creation
+
 **File**: `sequence/structured-product-creation.mmd`
 
 **Purpose**: Shows the detailed interaction sequence during product creation.
 
 **Participants**:
+
 - Seller API
 - CreateProduct UseCase
 - LoadCategoryAttributes UseCase
@@ -63,6 +70,7 @@ modeling/
 - EventBus
 
 **Sequence**:
+
 1. Seller loads category attributes
 2. Seller submits product with structured attributes
 3. UseCase validates attributes against schema
@@ -74,32 +82,30 @@ modeling/
 9. ProductCreatedWithStructuredDataEvent is published
 
 ### 3. State Machine: Product Quality Gate
+
 **File**: `state-machines/product-quality-gate.mmd`
 
 **Purpose**: Shows all product states and transitions through the quality gate.
 
 **States**:
+
 - **DRAFT_INCOMPLETE**: Initial state, quality score < 60
   - Missing required attributes
   - No images uploaded
   - Description too short
-  
 - **DRAFT_READY**: Quality score ≥ 60
   - All required attributes filled
   - At least 1 image uploaded
   - Description ≥ 120 characters
-  
 - **PUBLISHED**: Product visible in catalog
   - Indexed in search
   - SEO pages generated
-  
 - **SUSPENDED**: Admin suspended the product
-  
 - **ARCHIVED**: Product archived (terminal state)
-  
 - **REJECTED**: Quality score < 40 (terminal state)
 
 **Transitions**:
+
 - DRAFT_INCOMPLETE → DRAFT_READY: Quality score ≥ 60
 - DRAFT_INCOMPLETE → REJECTED: Quality score < 40
 - DRAFT_READY → PUBLISHED: Seller confirms
@@ -111,20 +117,22 @@ modeling/
 
 ### Scoring Signals (Total: 100 points)
 
-| Signal | Max Points | Criteria |
-|--------|-----------|----------|
-| Title Completeness | 20 | Brand + name + key attribute present |
-| Attributes Completeness | 25 | All required attributes filled |
-| Images Uploaded | 20 | At least 1 image |
-| Description Length | 20 | ≥ 120 characters |
-| Category Accuracy | 15 | Leaf category selected |
+| Signal                  | Max Points | Criteria                             |
+| ----------------------- | ---------- | ------------------------------------ |
+| Title Completeness      | 20         | Brand + name + key attribute present |
+| Attributes Completeness | 25         | All required attributes filled       |
+| Images Uploaded         | 20         | At least 1 image                     |
+| Description Length      | 20         | ≥ 120 characters                     |
+| Category Accuracy       | 15         | Leaf category selected               |
 
 ### Publish Gate
+
 - **Threshold**: 60 points
 - **Minimum**: 0 points
 - **Maximum**: 100 points
 
 ### Score Breakdown Example
+
 ```
 Title Completeness:      20/20 ✓
 Attributes Completeness: 25/25 ✓
@@ -162,9 +170,11 @@ maysar.co.tz/suppliers/{city-slug}/{categorySlug}
 ## Domain Events
 
 ### ProductCreatedWithStructuredDataEvent
+
 Emitted when a product is successfully created with structured data.
 
 **Payload**:
+
 ```json
 {
   "productId": "uuid",
@@ -179,15 +189,18 @@ Emitted when a product is successfully created with structured data.
 ```
 
 **Consumers**:
+
 - Search index updater
 - SEO page generator
 - Supplier profile updater
 - Location-category page updater
 
 ### ProductSeoPageIndexedEvent
+
 Emitted when SEO pages are indexed.
 
 **Payload**:
+
 ```json
 {
   "productId": "uuid",
@@ -261,6 +274,7 @@ Emitted when SEO pages are indexed.
 ## Maintenance
 
 When updating the system:
+
 1. Update relevant Mermaid diagrams
 2. Update this README with new use cases/states
 3. Keep diagrams in sync with code

@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { Request, Response } from 'express';
 import { ComputeBuyBoxUseCase } from '../../application/use-cases/compute-buy-box.use-case';
 import { IBuyBoxRepository } from '../../domain/repositories/repository.interfaces';

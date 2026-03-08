@@ -1,5 +1,17 @@
 import { IUserRepository } from '../../domain/repositories/user.repository';
-import { IEventPublisher, eventBus, EventEnvelope } from '../../../../../shared/events/eventBus';
+import { EventEnvelope, IEventPublisher, eventBus } from '../../../../../shared/events/eventBus';
+
+interface AdminPermissionValidationRequestedData {
+    adminId: string;
+    action: string;
+    targetUserId: string;
+}
+
+interface UserCreationRequestedData {
+    userId: string;
+    adminId: string;
+    userData: unknown;
+}
 
 export class AuthEventHandlers {
     constructor(
@@ -11,7 +23,8 @@ export class AuthEventHandlers {
         eventBus.subscribe('AdminPermissionValidationRequested', {
             name: 'auth-permission-validation',
             handler: async (envelope: EventEnvelope) => {
-                const { adminId, action, targetUserId } = envelope.data;
+                const data = envelope.data as AdminPermissionValidationRequestedData;
+                const { adminId, action, targetUserId } = data;
                 // Implementation...
             }
         });
@@ -19,7 +32,8 @@ export class AuthEventHandlers {
         eventBus.subscribe('UserCreationRequested', {
             name: 'auth-user-creation',
             handler: async (envelope: EventEnvelope) => {
-                const { userId, adminId, userData } = envelope.data;
+                const data = envelope.data as UserCreationRequestedData;
+                const { userId, adminId, userData } = data;
                 // Implementation...
             }
         });

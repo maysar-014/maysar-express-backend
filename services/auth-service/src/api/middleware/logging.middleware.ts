@@ -49,6 +49,11 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
   next();
 };
 
+function getRequestIdHeader(req: Request): string | undefined {
+  const header = req.headers['x-request-id'];
+  return Array.isArray(header) ? header[0] : header;
+}
+
 /**
  * Generate a unique request ID
  */
@@ -82,7 +87,7 @@ export const securityLogger = (req: Request, res: Response, next: NextFunction):
   res.end = function (chunk?: any, encoding?: any) {
     if (securityEvents.length > 0) {
       logger.warn('Security events detected', {
-        requestId: req.headers['x-request-id'],
+        requestId: getRequestIdHeader(req),
         correlationId: (req as any).correlationId,
         method: req.method,
         url: req.url,
@@ -124,7 +129,7 @@ export const performanceLogger = (req: Request, res: Response, next: NextFunctio
     // Log slow requests
     if (duration > 1000) {
       logger.warn('Slow request detected', {
-        requestId: req.headers['x-request-id'],
+        requestId: getRequestIdHeader(req),
         correlationId: (req as any).correlationId,
         method: req.method,
         url: req.url,
@@ -137,7 +142,7 @@ export const performanceLogger = (req: Request, res: Response, next: NextFunctio
     // Log memory usage for all requests in development
     if (process.env.NODE_ENV === 'development') {
       logger.debug('Request performance metrics', {
-        requestId: req.headers['x-request-id'],
+        requestId: getRequestIdHeader(req),
         method: req.method,
         url: req.url,
         duration: `${duration.toFixed(2)}ms`,

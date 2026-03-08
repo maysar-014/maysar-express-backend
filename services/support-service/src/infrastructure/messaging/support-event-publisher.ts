@@ -1,6 +1,6 @@
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../types';
-import { EventBus } from '../../../../shared/events/eventBus';
+import { EventBus, EventEnvelope } from '@shared-events/eventBus';
 import { TicketCreatedEvent, TicketAssignedEvent, TicketResolvedEvent, TicketClosedEvent, MessageAddedEvent } from '../../domain/events/ticket-events';
 
 @injectable()
@@ -10,22 +10,27 @@ export class SupportEventPublisher {
     ) { }
 
     public async publishTicketCreated(event: TicketCreatedEvent): Promise<void> {
-        await this.eventBus.publish('TicketCreated', event);
+        const envelope: EventEnvelope = { eventId: crypto.randomUUID(), eventType: 'TicketCreated', data: event, timestamp: new Date() };
+        await this.eventBus.publish(envelope);
     }
 
     public async publishTicketAssigned(event: TicketAssignedEvent): Promise<void> {
-        await this.eventBus.publish('TicketAssigned', event);
+        const envelope: EventEnvelope = { eventId: crypto.randomUUID(), eventType: 'TicketAssigned', data: event, timestamp: new Date() };
+        await this.eventBus.publish(envelope);
     }
 
     public async publishTicketResolved(event: TicketResolvedEvent): Promise<void> {
-        await this.eventBus.publish('TicketResolved', event);
+        const envelope: EventEnvelope = { eventId: crypto.randomUUID(), eventType: 'TicketResolved', data: event, timestamp: new Date() };
+        await this.eventBus.publish(envelope);
     }
 
     public async publishTicketClosed(event: TicketClosedEvent): Promise<void> {
-        await this.eventBus.publish('TicketClosed', event);
+        const envelope: EventEnvelope = { eventId: crypto.randomUUID(), eventType: 'TicketClosed', data: event, timestamp: new Date() };
+        await this.eventBus.publish(envelope);
     }
 
     public async publishMessageAdded(event: MessageAddedEvent): Promise<void> {
-        await this.eventBus.publish('MessageAdded', event);
+        const envelope: EventEnvelope = { eventId: crypto.randomUUID(), eventType: 'MessageAdded', data: event, timestamp: new Date() };
+        await this.eventBus.publish(envelope);
     }
 }

@@ -37,8 +37,9 @@ export class VerifyEmailUseCase {
    */
   async execute(input: VerifyEmailInput): Promise<VerifyEmailOutput> {
     try {
-      logger.logBusiness('Starting email verification', input.verifiedBy || 'system', {
+      logger.info('Starting email verification', {
         userId: input.userId,
+        verifiedBy: input.verifiedBy || 'system',
         method: input.verifiedBy ? 'admin' : 'token'
       });
 
@@ -110,8 +111,9 @@ export class VerifyEmailUseCase {
 
       await this.eventPublisher.publish(emailVerifiedEvent);
 
-      logger.logBusiness('Email verified successfully', input.verifiedBy || 'system', {
+      logger.info('Email verified successfully', {
         userId: input.userId,
+        verifiedBy: input.verifiedBy || 'system',
         email: user.email.toString(),
         method: verificationMethod
       });

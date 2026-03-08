@@ -44,6 +44,8 @@ jest.mock('../../providers/image-processing.provider', () => ({
 
 import { S3CDNProvider } from '../../providers/cdn.provider';
 import { SharpImageProvider } from '../../providers/image-processing.provider';
+import { FileUploadResult as CdnFileUploadResult } from '../../providers/cdn.provider';
+import { ImageProcessingResult } from '../../providers/image-processing.provider';
 
 // Mock crypto and fs
 jest.mock('crypto', () => ({
@@ -420,7 +422,7 @@ describe('FileUploadService', () => {
       mimeType: 'image/jpeg',
       size: 1024 * 1024,
       buffer: Buffer.from('image-data'),
-      metadata: {}
+      metadata: {} as Record<string, unknown>
     };
 
     it('should resize images when requested', async () => {
@@ -461,8 +463,11 @@ describe('FileUploadService', () => {
         buffer: Buffer.from('webp-image'),
         size: 200 * 1024,
         width: 1920,
-        height: 1080
-      });
+        height: 1080,
+        format: 'webp',
+        processingTime: 100,
+        originalSize: 1024 * 1024
+      } as ImageProcessingResult);
 
       const result = await (uploadService as any).processImage(imageFile, options, imageFile.metadata);
 
@@ -487,8 +492,11 @@ describe('FileUploadService', () => {
         buffer: Buffer.from('watermarked-image'),
         size: 1024 * 1024,
         width: 1920,
-        height: 1080
-      });
+        height: 1080,
+        format: 'jpeg',
+        processingTime: 100,
+        originalSize: 1024 * 1024
+      } as ImageProcessingResult);
 
       await (uploadService as any).processImage(imageFile, options, imageFile.metadata);
 
@@ -534,8 +542,12 @@ describe('FileUploadService', () => {
       mockCDNProvider.uploadFile.mockResolvedValue({
         url: 'https://cdn.example.com/test-id.jpg',
         signedUrl: 'https://cdn.example.com/signed/test-id.jpg',
-        key: 'test-id.jpg'
-      });
+        key: 'test-id.jpg',
+        etag: '"etag"',
+        size: 1024,
+        uploadTime: 100,
+        timestamp: new Date()
+      } as CdnFileUploadResult);
 
       const file = {
         buffer: Buffer.from('file-data'),
@@ -713,7 +725,10 @@ describe('MultipartFileParser', () => {
   describe('middleware', () => {
     it('should parse multipart files from request', () => {
       const middleware = parser.middleware();
-      const mockReq = {
+      const mockReq: {
+        files?: Record<string, unknown>;
+        parsedFiles?: Array<{ originalName: string }>;
+      } = {
         files: {
           images: [
             {
@@ -748,10 +763,10 @@ describe('MultipartFileParser', () => {
 
       middleware(mockReq, mockRes, mockNext);
 
-      expect(mockReq.parsedFiles).toHaveLength(3);
-      expect(mockReq.parsedFiles[0].originalName).toBe('test1.jpg');
-      expect(mockReq.parsedFiles[1].originalName).toBe('test2.png');
-      expect(mockReq.parsedFiles[2].originalName).toBe('doc.pdf');
+      expect(mockReq.parsedFiles!).toHaveLength(3);
+      expect(mockReq.parsedFiles![0].originalName).toBe('test1.jpg');
+      expect(mockReq.parsedFiles![1].originalName).toBe('test2.png');
+      expect(mockReq.parsedFiles![2].originalName).toBe('doc.pdf');
       expect(mockNext).toHaveBeenCalled();
     });
 
@@ -784,7 +799,7 @@ describe('MultipartFileParser', () => {
 
     it('should handle requests without files', () => {
       const middleware = parser.middleware();
-      const mockReq = {};
+      const mockReq: { files?: unknown; parsedFiles?: unknown[] } = {};
       const mockRes = {};
       const mockNext = jest.fn();
 
@@ -796,7 +811,7 @@ describe('MultipartFileParser', () => {
 
     it('should handle parsing errors', () => {
       const middleware = parser.middleware();
-      const mockReq = {
+      const mockReq: { files: null; parsedFiles?: unknown[] } = {
         files: null // This might cause issues in real parsing
       };
       const mockRes = {

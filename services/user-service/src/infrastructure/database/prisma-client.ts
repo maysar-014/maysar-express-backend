@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { logger } from '../services/logger.service';
 
 /**
@@ -55,10 +55,10 @@ export class DatabaseConnection {
           provider: 'postgresql'
         }
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         connected: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         connectionInfo: null
       };
     }
@@ -173,18 +173,18 @@ export class DatabaseConnection {
   /**
    * Execute raw SQL with logging
    */
-  static async executeRaw(query: string, _params: any[] = []): Promise<any> {
+  static async executeRaw(query: string, _params: unknown[] = []): Promise<unknown> {
     const startTime = Date.now();
     try {
       // Use prisma.$queryRaw for actual execution
       const result = await prisma.$queryRaw`${query}`;
       const duration = Date.now() - startTime;
 
-      logger.logDatabase('raw_query', 'custom', duration, true);
+      logger.info('Raw query executed', { operation: 'raw_query', type: 'custom', duration, success: true });
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      logger.logDatabase('raw_query', 'custom', duration, false, (error as Error).message);
+      logger.error('Raw query failed', { operation: 'raw_query', type: 'custom', duration, success: false, error: (error as Error).message });
       throw error;
     }
   }
@@ -193,18 +193,18 @@ export class DatabaseConnection {
    * Execute transaction with automatic rollback on error
    */
   static async executeTransaction<T>(
-    callback: (tx: any) => Promise<T>
+    callback: (tx: Prisma.TransactionClient) => Promise<T>
   ): Promise<T> {
     const startTime = Date.now();
     try {
       const result = await prisma.$transaction(callback);
       const duration = Date.now() - startTime;
 
-      logger.logDatabase('transaction', 'multiple', duration, true);
+      logger.info('Transaction completed', { operation: 'transaction', type: 'multiple', duration, success: true });
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      logger.logDatabase('transaction', 'multiple', duration, false, (error as Error).message);
+      logger.error('Transaction failed', { operation: 'transaction', type: 'multiple', duration, success: false, error: (error as Error).message });
       throw error;
     }
   }

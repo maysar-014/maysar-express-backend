@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
@@ -25,11 +26,11 @@ app.get('/health', (req, res) => {
 // Logistics calculation endpoint
 app.post('/api/v1/logistics/calculate', async (req, res) => {
   try {
-    console.log('📦 Processing logistics request...');
+    console.log('ðŸ“¦ Processing logistics request...');
     const engine = new LogisticsEngine();
     const result = await engine.processLogisticsRequest(req.body);
     
-    console.log(`✅ Logistics calculated: ${result.deliveryId} - ${result.shippingCost} TZS`);
+    console.log(`âœ… Logistics calculated: ${result.deliveryId} - ${result.shippingCost} TZS`);
     
     res.json({
       success: true,
@@ -37,7 +38,7 @@ app.post('/api/v1/logistics/calculate', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('❌ Logistics calculation failed:', error.message);
+    console.error('âŒ Logistics calculation failed:', error.message);
     res.status(500).json({
       success: false,
       error: {
@@ -120,9 +121,9 @@ app.use('*', (req, res) => {
 
 // Start server
 app.listen(port, () => {
-  console.log(`🚚 Logistics API Server running on port ${port}`);
-  console.log(`📍 Health check: http://localhost:${port}/health`);
-  console.log(`🧮 Calculate endpoint: POST http://localhost:${port}/api/v1/logistics/calculate`);
-  console.log(`🧪 Test endpoint: GET http://localhost:${port}/api/v1/logistics/test`);
-  console.log('✅ Ready to process logistics requests!');
+  console.log(`ðŸšš Logistics API Server running on port ${port}`);
+  console.log(`ðŸ“ Health check: http://localhost:${port}/health`);
+  console.log(`ðŸ§® Calculate endpoint: POST http://localhost:${port}/api/v1/logistics/calculate`);
+  console.log(`ðŸ§ª Test endpoint: GET http://localhost:${port}/api/v1/logistics/test`);
+  console.log('âœ… Ready to process logistics requests!');
 });

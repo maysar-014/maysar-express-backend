@@ -142,12 +142,12 @@ async function initializeService() {
 
     // Initializing Saga Subscriptions
     // Note: eventBus is already connected or doesn't need explicit connect()
-    eventBus.subscribe('StockReservation.Success.v1', async (e: unknown) => sagaReplyHandler.handleStockReserved(e));
-    eventBus.subscribe('StockReservation.Failure.v1', async (e: unknown) => sagaReplyHandler.handleStockFailed(e));
-    eventBus.subscribe('Payment.Success.v1', async (e: unknown) => sagaReplyHandler.handlePaymentSuccess(e));
-    eventBus.subscribe('Payment.Failure.v1', async (e: unknown) => sagaReplyHandler.handlePaymentFailed(e));
-    eventBus.subscribe('Delivery.Success.v1', async (e: unknown) => sagaReplyHandler.handleDeliverySuccess(e));
-    eventBus.subscribe('Delivery.Failure.v1', async (e: unknown) => sagaReplyHandler.handleDeliveryFailed(e));
+    eventBus.subscribe('StockReservation.Success.v1', async (e: any) => sagaReplyHandler.handleStockReserved(e));
+    eventBus.subscribe('StockReservation.Failure.v1', async (e: any) => sagaReplyHandler.handleStockFailed(e));
+    eventBus.subscribe('Payment.Success.v1', async (e: any) => sagaReplyHandler.handlePaymentSuccess(e));
+    eventBus.subscribe('Payment.Failure.v1', async (e: any) => sagaReplyHandler.handlePaymentFailed(e));
+    eventBus.subscribe('Delivery.Success.v1', async (e: any) => sagaReplyHandler.handleDeliverySuccess(e));
+    eventBus.subscribe('Delivery.Failure.v1', async (e: any) => sagaReplyHandler.handleDeliveryFailed(e));
 
     const { CODEligibilityEngine } = await import('./domain/engines/cod-eligibility.engine');
     const { CheckCODEligibilityUseCase } = await import('./application/use-cases/check-cod-eligibility.use-case');
@@ -260,7 +260,6 @@ process.on('SIGTERM', async () => {
   logger.info('🛑 SIGTERM received, shutting down gracefully...');
   sagaRecoveryWorkerRef?.stop();
   outboxProcessorRef?.stop();
-  await eventBus.shutdown();
   process.exit(0);
 });
 
@@ -268,7 +267,6 @@ process.on('SIGINT', async () => {
   logger.info('🛑 SIGINT received, shutting down gracefully...');
   sagaRecoveryWorkerRef?.stop();
   outboxProcessorRef?.stop();
-  await eventBus.shutdown();
   process.exit(0);
 });
 

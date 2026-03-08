@@ -28,7 +28,7 @@ export const requestLoggingMiddleware = expressWinston.logger({
   responseWhitelist: ['statusCode', 'headers'],
   bodyWhitelist: [], // Don't log request bodies for security
   bodyBlacklist: ['password', 'token', 'secret', 'key'],
-  dynamicMeta: (req: Request, res: Response) => {
+  dynamicMeta: (req: any, res: any) => {
     const meta: any = {};
 
     // Add user information if available

@@ -1,13 +1,11 @@
 // DEPRECATED: SMS is now served by notification-service main.ts
 import 'reflect-metadata';
-import { Container } from 'inversify';
 import { SmsServiceApplication } from './app';
 import { logger } from './infrastructure/services/logger.service';
 
 async function bootstrap() {
-    const container = new Container();
     const port = parseInt(process.env.PORT || '3009', 10);
-    const app = new SmsServiceApplication(container);
+    const app = new SmsServiceApplication();
 
     try {
         await app.start(port);

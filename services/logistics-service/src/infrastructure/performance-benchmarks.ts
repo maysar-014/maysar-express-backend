@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 /**
  * Performance Benchmarking Engine - Constitution Section 6: Testing Constitution
  *
@@ -52,7 +53,7 @@ export class PerformanceBenchmarkEngine {
       memoryEfficiency: number;
     };
   }> {
-    console.log('🚀 Starting Performance Benchmark Suite...');
+    console.log('ðŸš€ Starting Performance Benchmark Suite...');
 
     // Database operations benchmarks
     await this.benchmarkDatabaseOperations();
@@ -71,14 +72,14 @@ export class PerformanceBenchmarkEngine {
 
     const summary = this.generateSummary();
 
-    console.log('✅ Benchmark Suite Complete');
-    console.log(`📊 Results: ${summary.totalOperations} operations, ${summary.averageDuration.toFixed(2)}ms avg, ${summary.successRate.toFixed(1)}% success rate`);
+    console.log('âœ… Benchmark Suite Complete');
+    console.log(`ðŸ“Š Results: ${summary.totalOperations} operations, ${summary.averageDuration.toFixed(2)}ms avg, ${summary.successRate.toFixed(1)}% success rate`);
 
     return { results: this.results, summary };
   }
 
   private async benchmarkDatabaseOperations(): Promise<void> {
-    console.log('📊 Benchmarking Database Operations...');
+    console.log('ðŸ“Š Benchmarking Database Operations...');
 
     // Test courier repository operations
     await this.benchmarkOperation(
@@ -118,7 +119,7 @@ export class PerformanceBenchmarkEngine {
   }
 
   private async benchmarkExternalAPIs(): Promise<void> {
-    console.log('🌐 Benchmarking External APIs...');
+    console.log('ðŸŒ Benchmarking External APIs...');
 
     // Test Google Maps route optimization
     await this.benchmarkOperation(
@@ -154,7 +155,7 @@ export class PerformanceBenchmarkEngine {
   }
 
   private async benchmarkBusinessLogic(): Promise<void> {
-    console.log('🧠 Benchmarking Business Logic...');
+    console.log('ðŸ§  Benchmarking Business Logic...');
 
     // Test logistics engine calculations
     await this.benchmarkOperation(
@@ -193,7 +194,7 @@ export class PerformanceBenchmarkEngine {
   }
 
   private async benchmarkSagaOperations(): Promise<void> {
-    console.log('🎭 Benchmarking Saga Operations...');
+    console.log('ðŸŽ­ Benchmarking Saga Operations...');
 
     // Note: Saga benchmarking would require careful setup to avoid actual side effects
     // For now, we'll benchmark the saga creation and validation logic
@@ -214,7 +215,7 @@ export class PerformanceBenchmarkEngine {
   }
 
   private async benchmarkSerialization(): Promise<void> {
-    console.log('📦 Benchmarking Serialization...');
+    console.log('ðŸ“¦ Benchmarking Serialization...');
 
     const testData = {
       deliveryId: 'test-delivery-' + Date.now(),
@@ -344,7 +345,7 @@ export class PerformanceBenchmarkEngine {
     concurrency: number = 10,
     totalRequests: number = 100
   ): Promise<LoadTestResult> {
-    console.log(`🔥 Running Load Test: ${operationName} (${concurrency} concurrent, ${totalRequests} total)`);
+    console.log(`ðŸ”¥ Running Load Test: ${operationName} (${concurrency} concurrent, ${totalRequests} total)`);
 
     const startTime = Date.now();
     const promises: Promise<any>[] = [];
@@ -403,7 +404,7 @@ export class PerformanceBenchmarkEngine {
       recommendations: this.generateRecommendations(metrics)
     };
 
-    console.log(`✅ Load Test Complete: ${metrics.throughput.toFixed(1)} req/sec, ${metrics.errorRate.toFixed(1)}% errors`);
+    console.log(`âœ… Load Test Complete: ${metrics.throughput.toFixed(1)} req/sec, ${metrics.errorRate.toFixed(1)}% errors`);
     return result;
   }
 

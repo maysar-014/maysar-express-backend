@@ -18,9 +18,71 @@ export interface CommunicationResult {
   confidence: number;
 }
 
+interface RedisClient {
+  lrange(key: string, start: number, end: number): Promise<string[]>;
+  set(key: string, value: string): Promise<void>;
+  get(key: string): Promise<string | null>;
+  hget(key: string, field: string): Promise<string | null>;
+  hset(key: string, field: string, value: string): Promise<void>;
+  expire(key: string, ttlSeconds: number): Promise<void>;
+  lpush(key: string, value: string): Promise<void>;
+  ltrim(key: string, start: number, end: number): Promise<void>;
+  setex(key: string, ttlSeconds: number, value: string): Promise<void>;
+}
+
+interface WebsocketService {
+  sendToUser(userId: string, event: string, payload: unknown): Promise<void>;
+}
+
+interface NotificationEngine {
+  sendNotification(request: {
+    recipientId: string;
+    recipientType: string;
+    templateId: string;
+    data: Record<string, unknown>;
+    channels: string[];
+    priority: CommunicationRequest['priority'];
+  }): Promise<void>;
+}
+
+interface UserDataStore {
+  getActiveUsersByRole(role: string): Promise<Array<{ id: string }>>;
+}
+
+const defaultRedisClient: RedisClient = {
+  lrange: async () => [],
+  set: async () => { },
+  get: async () => null,
+  hget: async () => null,
+  hset: async () => { },
+  expire: async () => { },
+  lpush: async () => { },
+  ltrim: async () => { },
+  setex: async () => { }
+};
+
+const defaultWebsocketService: WebsocketService = {
+  sendToUser: async () => { }
+};
+
+const defaultNotificationEngine: NotificationEngine = {
+  sendNotification: async () => { }
+};
+
+const defaultUserDataStore: UserDataStore = {
+  getActiveUsersByRole: async () => []
+};
+
 export class CommunicationEngine {
   private readonly MESSAGE_TTL = 2592000; // 30 days
   private readonly DELIVERY_TARGET = 99.9;
+
+  constructor(
+    private readonly redis: RedisClient = defaultRedisClient,
+    private readonly websocketService: WebsocketService = defaultWebsocketService,
+    private readonly notificationEngine: NotificationEngine = defaultNotificationEngine,
+    private readonly db: UserDataStore = defaultUserDataStore
+  ) { }
 
   async sendMessage(request: CommunicationRequest): Promise<CommunicationResult> {
     // Validate communication rules
@@ -64,7 +126,7 @@ export class CommunicationEngine {
     await this.validateConversationAccess(contextId, userId, role);
     
     const messages = await this.redis.lrange(`conversation:${contextId}`, 0, -1);
-    return messages.map(msg => JSON.parse(msg)).reverse();
+    return messages.map((msg: string) => JSON.parse(msg)).reverse();
   }
 
   async markMessageAsRead(messageId: string, userId: string): Promise<void> {
@@ -96,7 +158,7 @@ export class CommunicationEngine {
       toUserId: recipient.id,
       toRole: role,
       contextId: `broadcast_${Date.now()}`,
-      contextType: contextType as any,
+      contextType: contextType as CommunicationRequest['contextType'],
       message,
       priority
     }));
@@ -139,7 +201,7 @@ export class CommunicationEngine {
     await this.redis.ltrim(`user:${request.toUserId}:messages`, 0, 999); // Keep last 1000 messages
   }
 
-  private async deliverRealTimeMessage(userId: string, messageData: any): Promise<boolean> {
+  private async deliverRealTimeMessage(userId: string, messageData: unknown): Promise<boolean> {
     try {
       // Check if user is online
       const isOnline = await this.redis.get(`user:${userId}:online`);
@@ -156,7 +218,7 @@ export class CommunicationEngine {
   private async sendFallbackNotification(request: CommunicationRequest): Promise<void> {
     await this.notificationEngine.sendNotification({
       recipientId: request.toUserId,
-      recipientType: request.toRole as any,
+      recipientType: request.toRole,
       templateId: 'new_message',
       data: {
         fromRole: request.fromRole,

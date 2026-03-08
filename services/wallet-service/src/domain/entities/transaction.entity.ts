@@ -1,5 +1,3 @@
-import { Money } from '../value-objects/money.value-object';
-import { IdempotencyKey } from '../value-objects/idempotency-key.value-object';
 import { AuditInfo, ActorType } from '../value-objects/audit-info.value-object';
 
 /**
@@ -37,7 +35,7 @@ export interface TransactionProps {
     referenceType?: string;
     referenceId?: string;
     description: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
     createdAt: Date;
     // New fields
     correlationId: string;
@@ -118,7 +116,7 @@ export class Transaction {
         return this.props.description;
     }
 
-    get metadata(): Record<string, any> | undefined {
+    get metadata(): Record<string, unknown> | undefined {
         return this.props.metadata ? { ...this.props.metadata } : undefined;
     }
 
@@ -317,7 +315,7 @@ export class Transaction {
         switch (props.type) {
             case TransactionType.CREDIT:
             case TransactionType.TRANSFER_IN:
-            case TransactionType.REFUND:
+            case TransactionType.REFUND: {
                 // Balance should increase by amount
                 const expectedBalanceAfterCredit = props.balanceBefore + props.amount;
                 if (Math.abs(props.balanceAfter - expectedBalanceAfterCredit) > tolerance) {
@@ -326,10 +324,11 @@ export class Transaction {
                     );
                 }
                 break;
+            }
 
             case TransactionType.DEBIT:
             case TransactionType.TRANSFER_OUT:
-            case TransactionType.PAYOUT:
+            case TransactionType.PAYOUT: {
                 // Balance should decrease by amount
                 const expectedBalanceAfterDebit = props.balanceBefore - props.amount;
                 if (Math.abs(props.balanceAfter - expectedBalanceAfterDebit) > tolerance) {
@@ -338,8 +337,9 @@ export class Transaction {
                     );
                 }
                 break;
+            }
 
-            case TransactionType.FREEZE:
+            case TransactionType.FREEZE: {
                 // Balance stays same, frozen amount increases
                 if (Math.abs(props.balanceAfter - props.balanceBefore) > tolerance) {
                     throw new Error('Balance should not change for FREEZE');
@@ -351,8 +351,9 @@ export class Transaction {
                     );
                 }
                 break;
+            }
 
-            case TransactionType.UNFREEZE:
+            case TransactionType.UNFREEZE: {
                 // Balance stays same, frozen amount decreases
                 if (Math.abs(props.balanceAfter - props.balanceBefore) > tolerance) {
                     throw new Error('Balance should not change for UNFREEZE');
@@ -364,8 +365,9 @@ export class Transaction {
                     );
                 }
                 break;
+            }
 
-            case TransactionType.DEBIT_FROZEN:
+            case TransactionType.DEBIT_FROZEN: {
                 // Both balance and frozen amount decrease
                 const expectedBalanceAfterDebitFrozen = props.balanceBefore - props.amount;
                 const expectedFrozenAfterDebitFrozen = props.frozenAmountBefore - props.amount;
@@ -380,6 +382,7 @@ export class Transaction {
                     );
                 }
                 break;
+            }
         }
     }
 

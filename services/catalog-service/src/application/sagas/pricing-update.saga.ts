@@ -309,7 +309,7 @@ export class PricingUpdateSaga extends BaseSaga {
         this.results.pricingImpact = {
           totalRevenueChange: this.state.totalRevenueChange,
           averagePriceChangePercent: this.state.priceChangePercentages.length > 0
-            ? this.state.priceChangePercentages.reduce((a, b) => a + b, 0) / this.state.priceChangePercentages.length
+            ? this.state.priceChangePercentages.reduce((a: number, b: number) => a + b, 0) / this.state.priceChangePercentages.length
             : 0,
           productsAffected: this.results.successful.length
         };

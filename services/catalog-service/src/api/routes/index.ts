@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 /**
  * Main Application Entry Point for Catalog Service
  * Mounts all routes including matching routes

@@ -28,7 +28,7 @@ export class ModuleRegistry {
         registryLogger.info('Shutting down all modules...');
         for (const module of this.modules.slice().reverse()) {
             try {
-                await module.shutdown();
+                await module.shutdown?.();
             } catch (error) {
                 registryLogger.error(`Error shutting down module ${module.name}:`, error);
             }

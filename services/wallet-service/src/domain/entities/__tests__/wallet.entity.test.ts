@@ -12,6 +12,10 @@ describe('Wallet Entity', () => {
         frozenAmount: 0,
         createdAt: new Date('2024-01-01'),
         updatedAt: new Date('2024-01-01'),
+        codCommitmentLimit: 0,
+        codCommitmentUsed: 0,
+        codCommitmentCount: 0,
+        version: 0,
         ...overrides,
     });
 

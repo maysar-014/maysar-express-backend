@@ -14,6 +14,9 @@ import { EmailService } from '../../infrastructure/services/email.service';
 import { NotificationServiceClient } from './service-clients';
 import { EventEnvelope, IEventBus } from '@shared/events/eventBus';
 
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
 export class SagaEventHandler {
   constructor(
     private readonly emailService: EmailService,
@@ -22,45 +25,92 @@ export class SagaEventHandler {
 
   setupSubscriptions(eventBus: IEventBus): void {
     eventBus.subscribe('UserRegistered', async (envelope: EventEnvelope) => {
-      await this.handleUserRegisteredEvent(envelope.data, this.emailService, this.notificationClient);
+      await this.handleUserRegisteredEvent(
+        this.requireEventPayload<UserRegisteredEvent>(envelope.data, 'UserRegistered'),
+        this.emailService,
+        this.notificationClient
+      );
     });
 
     eventBus.subscribe('UserEmailVerified', async (envelope: EventEnvelope) => {
-      await this.handleUserEmailVerifiedEvent(envelope.data, this.emailService, this.notificationClient);
+      await this.handleUserEmailVerifiedEvent(
+        this.requireEventPayload<UserEmailVerifiedEvent>(envelope.data, 'UserEmailVerified'),
+        this.emailService,
+        this.notificationClient
+      );
     });
 
     eventBus.subscribe('UserPasswordChanged', async (envelope: EventEnvelope) => {
-      await this.handleUserPasswordChangedEvent(envelope.data, this.emailService, this.notificationClient);
+      await this.handleUserPasswordChangedEvent(
+        this.requireEventPayload<UserPasswordChangedEvent>(envelope.data, 'UserPasswordChanged'),
+        this.emailService,
+        this.notificationClient
+      );
     });
 
     eventBus.subscribe('UserProfileUpdated', async (envelope: EventEnvelope) => {
-      await this.handleUserProfileUpdatedEvent(envelope.data, this.emailService, this.notificationClient);
+      await this.handleUserProfileUpdatedEvent(
+        this.requireEventPayload<UserProfileUpdatedEvent>(envelope.data, 'UserProfileUpdated'),
+        this.emailService,
+        this.notificationClient
+      );
     });
 
     eventBus.subscribe('TwoFactorSetup', async (envelope: EventEnvelope) => {
-      await this.handleTwoFactorSetupEvent(envelope.data, this.emailService, this.notificationClient);
+      await this.handleTwoFactorSetupEvent(
+        this.requireEventPayload<TwoFactorSetupEvent>(envelope.data, 'TwoFactorSetup'),
+        this.emailService,
+        this.notificationClient
+      );
     });
 
     eventBus.subscribe('AccountSuspension', async (envelope: EventEnvelope) => {
-      await this.handleAccountSuspensionEvent(envelope.data, this.emailService, this.notificationClient);
+      await this.handleAccountSuspensionEvent(
+        this.requireEventPayload<AccountSuspensionEvent>(envelope.data, 'AccountSuspension'),
+        this.emailService,
+        this.notificationClient
+      );
     });
 
     eventBus.subscribe('AccountDeletion', async (envelope: EventEnvelope) => {
-      await this.handleAccountDeletionEvent(envelope.data, this.emailService, this.notificationClient);
+      await this.handleAccountDeletionEvent(
+        this.requireEventPayload<AccountDeletionEvent>(envelope.data, 'AccountDeletion'),
+        this.emailService,
+        this.notificationClient
+      );
     });
 
     eventBus.subscribe('RoleChange', async (envelope: EventEnvelope) => {
-      await this.handleRoleChangeEvent(envelope.data, this.emailService, this.notificationClient);
+      await this.handleRoleChangeEvent(
+        this.requireEventPayload<RoleChangeEvent>(envelope.data, 'RoleChange'),
+        this.emailService,
+        this.notificationClient
+      );
     });
 
     eventBus.subscribe('PhoneVerification', async (envelope: EventEnvelope) => {
-      await this.handlePhoneVerificationEvent(envelope.data, this.emailService, this.notificationClient);
+      await this.handlePhoneVerificationEvent(
+        this.requireEventPayload<PhoneVerificationEvent>(envelope.data, 'PhoneVerification'),
+        this.emailService,
+        this.notificationClient
+      );
     });
 
     eventBus.subscribe('SecurityPolicyBreach', async (envelope: EventEnvelope) => {
-      await this.handleSecurityPolicyBreachEvent(envelope.data, this.emailService, this.notificationClient);
+      await this.handleSecurityPolicyBreachEvent(
+        this.requireEventPayload<SecurityPolicyBreachEvent>(envelope.data, 'SecurityPolicyBreach'),
+        this.emailService,
+        this.notificationClient
+      );
     });
   }
+  private requireEventPayload<T>(payload: unknown, eventType: string): T {
+    if (!isObject(payload)) {
+      throw new Error(`Invalid payload for ${eventType}`);
+    }
+    return payload as unknown as T;
+  }
+
   async handleUserRegisteredEvent(event: UserRegisteredEvent, emailService: EmailService, notificationClient: NotificationServiceClient): Promise<void> {
     try {
       logger.info('Handling UserRegisteredEvent', { eventId: event.eventId });

@@ -1,13 +1,13 @@
 import { logger } from '../../infrastructure/services/logger.service';
 
 export interface NotificationServiceClient {
-  sendEmail(userId: string, template: string, data: Record<string, any>): Promise<void>;
+  sendEmail(userId: string, template: string, data: Record<string, unknown>): Promise<void>;
   sendSMS(userId: string, message: string): Promise<void>;
   sendPushNotification(userId: string, title: string, body: string): Promise<void>;
 }
 
 export interface AuditServiceClient {
-  recordEvent(userId: string, action: string, metadata: Record<string, any>): Promise<void>;
+  recordEvent(userId: string, action: string, metadata: Record<string, unknown>): Promise<void>;
 }
 
 export interface SessionServiceClient {
@@ -17,7 +17,7 @@ export interface SessionServiceClient {
 
 // Mock implementations for development
 export class MockNotificationServiceClient implements NotificationServiceClient {
-  async sendEmail(userId: string, template: string, data: Record<string, any>): Promise<void> {
+  async sendEmail(userId: string, template: string, data: Record<string, unknown>): Promise<void> {
     logger.info(`[NOTIFICATION] Email sent`, { userId, template, data });
   }
 
@@ -31,7 +31,7 @@ export class MockNotificationServiceClient implements NotificationServiceClient 
 }
 
 export class MockAuditServiceClient implements AuditServiceClient {
-  async recordEvent(userId: string, action: string, metadata: Record<string, any>): Promise<void> {
+  async recordEvent(userId: string, action: string, metadata: Record<string, unknown>): Promise<void> {
     logger.info(`[AUDIT] Event recorded`, { userId, action, metadata });
   }
 }

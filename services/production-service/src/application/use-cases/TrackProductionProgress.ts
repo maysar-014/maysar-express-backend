@@ -9,7 +9,7 @@ export class TrackProductionProgress {
         if (!order) throw new Error('Order not found');
 
         return {
-            produced: order.producedQty || 0, // Accessing private props via getter if exists, or direct if permitted
+            produced: order.producedQty,
             status: order.status,
             phase: order.phase
         };

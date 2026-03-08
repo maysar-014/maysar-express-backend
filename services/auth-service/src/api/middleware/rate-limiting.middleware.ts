@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import expressRateLimit from 'express-rate-limit';
 import Redis from 'ioredis';
 import { logger } from '../../infrastructure/services/logger.service';
-import { RedisRateLimitStore } from '../../../../../shared/middleware/redis-rate-limit.store';
+import { RedisRateLimitStore } from '@shared/middleware/redis-rate-limit.store';
 
 const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 

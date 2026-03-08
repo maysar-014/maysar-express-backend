@@ -1,5 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { Database } from './types';
+
+type RealtimePayload = RealtimePostgresChangesPayload<Record<string, unknown>>;
 
 // Supabase configuration
 const supabaseUrl = process.env.SUPABASE_URL || 'https://your-project.supabase.co';
@@ -32,10 +34,10 @@ export const supabaseAdmin = createClient<Database>(supabaseUrl, supabaseService
 export const createRealtimeSubscription = (
   table: string,
   filter?: string,
-  callback?: (payload: any) => void
+  callback?: (payload: RealtimePayload) => void
 ) => {
   const channel = supabase.channel(`${table}_changes`);
-  return (channel as any).on(
+  return channel.on(
     'postgres_changes',
     {
       event: '*',
@@ -43,7 +45,7 @@ export const createRealtimeSubscription = (
       table,
       filter
     },
-    callback || ((payload: any) => console.log('Change received!', payload))
+    callback || ((payload: RealtimePayload) => console.log('Change received!', payload))
   ).subscribe();
 };
 
@@ -51,14 +53,23 @@ export const createRealtimeSubscription = (
 export const listenToTableChanges = (
   table: string,
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*' = '*',
-  callback: (payload: any) => void
+  callback: (payload: RealtimePayload) => void
 ) => {
   const channel = supabase.channel(`${table}_${event}`);
-  return (channel as any).on(
-    'postgres_changes',
-    { event, schema: 'public', table },
-    callback
-  ).subscribe();
+
+  if (event === 'INSERT') {
+    return channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table }, callback).subscribe();
+  }
+
+  if (event === 'UPDATE') {
+    return channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table }, callback).subscribe();
+  }
+
+  if (event === 'DELETE') {
+    return channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table }, callback).subscribe();
+  }
+
+  return channel.on('postgres_changes', { event: '*', schema: 'public', table }, callback).subscribe();
 };
 
 // Helper functions for common operations
@@ -77,7 +88,11 @@ export const signInWithEmail = async (email: string, password: string) => {
   return data;
 };
 
-export const signUpWithEmail = async (email: string, password: string, metadata?: any) => {
+export const signUpWithEmail = async (
+  email: string,
+  password: string,
+  metadata?: Record<string, unknown>
+) => {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -119,7 +134,7 @@ export const getAnalytics = async (
 // Database health check
 export const healthCheck = async () => {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('users')
       .select('count')
       .limit(1);

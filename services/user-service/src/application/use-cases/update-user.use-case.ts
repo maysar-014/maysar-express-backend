@@ -48,8 +48,9 @@ export class UpdateUserUseCase {
    */
   async execute(input: UpdateUserInput): Promise<UpdateUserOutput> {
     try {
-      logger.logBusiness('Starting user update', input.updatedBy, {
+      logger.info('Starting user update', {
         targetUserId: input.userId,
+        updatedBy: input.updatedBy,
         fields: Object.keys(input.updates)
       });
 
@@ -153,8 +154,9 @@ export class UpdateUserUseCase {
         await this.eventPublisher.publish(profileUpdatedEvent);
       }
 
-      logger.logBusiness('User updated successfully', input.updatedBy, {
+      logger.info('User updated successfully', {
         targetUserId: input.userId,
+        updatedBy: input.updatedBy,
         changes: changes
       });
 

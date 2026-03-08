@@ -36,7 +36,7 @@ describe('PrismaUserRepository unit tests (mocked prisma)', () => {
     };
 
     Object.assign(prisma, prismaOverrides);
-    return new PrismaUserRepository(prisma as unknown as PrismaClient);
+    return new PrismaUserRepository(prisma as unknown as PrismaClient, { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v) } as any);
   }
 
   it('findById -> maps to domain user when found', async () => {

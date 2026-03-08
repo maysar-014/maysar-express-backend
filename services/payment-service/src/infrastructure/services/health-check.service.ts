@@ -130,7 +130,7 @@ export class HealthCheckService {
                 };
             }
 
-            const result = await response.json();
+            const result: any = await response.json();
 
             if (!result.token) {
                 return {

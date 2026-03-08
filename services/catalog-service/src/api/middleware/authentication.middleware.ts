@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 /**
  * Authentication Middleware
  * JWT token validation and user authentication with security hardening

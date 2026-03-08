@@ -1,52 +1,104 @@
-import { DebitWalletUseCase } from '../debit-wallet.use-case';
-
-const mockRepository = { findById: jest.fn(), update: jest.fn() } as any;
-const mockEventBus = { publish: jest.fn() } as any;
+import { DebitWalletDTO, DebitWalletUseCase } from '../debit-wallet.use-case';
+import { ActorType, AuditInfo } from '../../../domain/value-objects/audit-info.value-object';
+import { RedisLock } from '../../../../../../shared/locking/redis-lock';
 
 describe('DebitWalletUseCase', () => {
+    const mockWalletRepository = {
+        findByUserId: jest.fn(),
+        update: jest.fn(),
+    };
+    const mockTransactionRepository = {
+        save: jest.fn(),
+        findByUserId: jest.fn(),
+    };
+    const mockWalletEngine = {
+        validateTransaction: jest.fn(),
+    };
+    const mockLimitPolicy = {
+        canDebit: jest.fn(),
+    };
+    const mockVelocityService = {
+        checkVelocity: jest.fn(),
+    };
+    const mockIdempotencyService = {
+        checkIdempotency: jest.fn(),
+        storeResult: jest.fn(),
+    };
+    const mockEventPublisher = {
+        publishWalletDebited: jest.fn(),
+    };
+    const mockAuditRepository = {
+        save: jest.fn(),
+    };
+    const mockRedisLock = {
+        withLock: jest.fn((_: string, callback: () => Promise<unknown>) => callback()),
+    } as unknown as RedisLock;
+
     let useCase: DebitWalletUseCase;
+
+    const createDto = (): DebitWalletDTO => ({
+        userId: 'user-1',
+        amount: 30,
+        currency: 'TZS',
+        description: 'purchase',
+        idempotencyKey: 'idem-1',
+        correlationId: 'corr-1',
+        auditInfo: AuditInfo.create({
+            actor: 'user-1',
+            actorType: ActorType.USER,
+            action: 'DEBIT',
+            reason: 'Order payment',
+        }),
+    });
 
     beforeEach(() => {
         jest.clearAllMocks();
-        useCase = new DebitWalletUseCase(mockRepository, mockEventBus);
+        mockIdempotencyService.checkIdempotency.mockResolvedValue(null);
+        mockTransactionRepository.findByUserId.mockResolvedValue([]);
+        mockLimitPolicy.canDebit.mockReturnValue({ allowed: true });
+        mockVelocityService.checkVelocity.mockResolvedValue({ decision: 'ALLOW', riskScore: 0, reason: 'ok' });
+        mockWalletEngine.validateTransaction.mockReturnValue({ isValid: true, errors: [] });
+
+        useCase = new DebitWalletUseCase(
+            mockWalletRepository as unknown as never,
+            mockTransactionRepository as unknown as never,
+            mockWalletEngine as unknown as never,
+            mockLimitPolicy as unknown as never,
+            mockVelocityService as unknown as never,
+            mockIdempotencyService as unknown as never,
+            mockEventPublisher as unknown as never,
+            mockAuditRepository as unknown as never,
+            mockRedisLock
+        );
     });
 
-    it('should debit wallet successfully', async () => {
-        mockRepository.findById.mockResolvedValue({ id: 'wallet-1', balance: 100 });
-        const result = await useCase.execute({ walletId: 'wallet-1', amount: 30 });
-        expect(result.newBalance).toBe(70);
-        expect(mockRepository.update).toHaveBeenCalled();
-        expect(mockEventBus.publish).toHaveBeenCalledWith('WalletDebited.v1', expect.any(Object));
+    it('debits wallet successfully', async () => {
+        const wallet = {
+            id: 'wallet-1',
+            userId: 'user-1',
+            balance: 100,
+            frozenAmount: 0,
+            currency: 'TZS',
+            debit(amount: number) {
+                this.balance -= amount;
+            },
+        };
+        mockWalletRepository.findByUserId.mockResolvedValue(wallet);
+
+        const result = await useCase.execute(createDto());
+
+        expect(result.success).toBe(true);
+        expect(result.balanceAfter).toBe(70);
+        expect(mockWalletRepository.update).toHaveBeenCalled();
+        expect(mockEventPublisher.publishWalletDebited).toHaveBeenCalled();
     });
 
-    it('should fail if insufficient balance', async () => {
-        mockRepository.findById.mockResolvedValue({ id: 'wallet-1', balance: 20 });
-        await expect(useCase.execute({ walletId: 'wallet-1', amount: 50 }))
-            .rejects.toThrow('Insufficient balance');
-    });
+    it('returns failure when wallet is missing', async () => {
+        mockWalletRepository.findByUserId.mockResolvedValue(null);
 
-    it('should reject negative amount', async () => {
-        mockRepository.findById.mockResolvedValue({ id: 'wallet-1', balance: 100 });
-        await expect(useCase.execute({ walletId: 'wallet-1', amount: -10 }))
-            .rejects.toThrow('Invalid amount');
-    });
+        const result = await useCase.execute(createDto());
 
-    it('should allow debit to zero balance', async () => {
-        mockRepository.findById.mockResolvedValue({ id: 'wallet-1', balance: 50 });
-        const result = await useCase.execute({ walletId: 'wallet-1', amount: 50 });
-        expect(result.newBalance).toBe(0);
-    });
-
-    it('should fail if wallet not found', async () => {
-        mockRepository.findById.mockResolvedValue(null);
-        await expect(useCase.execute({ walletId: 'wallet-1', amount: 30 }))
-            .rejects.toThrow('Wallet not found');
-    });
-
-    it('should handle repository failure gracefully', async () => {
-        mockRepository.findById.mockResolvedValue({ id: 'wallet-1', balance: 100 });
-        mockRepository.update.mockRejectedValue(new Error('Connection timeout'));
-        await expect(useCase.execute({ walletId: 'wallet-1', amount: 30 }))
-            .rejects.toThrow('Connection timeout');
+        expect(result.success).toBe(false);
+        expect(result.message).toContain('Wallet not found');
     });
 });

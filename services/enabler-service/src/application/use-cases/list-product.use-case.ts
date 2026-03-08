@@ -34,7 +34,7 @@ export class ListProductUseCase {
 
         const policyCheck = ProductListingPolicy.canListProduct({
             enablerTier: enabler.tier,
-            enablerStatus: enabler.status,
+            enablerStatus: enabler.status as Enabler_Status,
             productStatus: product.status,
             sellerAllowsEnablers: product.seller.allowsEnablers, // Assuming structure
             sellerBlockedEnablers: product.seller.blockedEnablers,

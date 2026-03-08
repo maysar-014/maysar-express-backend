@@ -1,13 +1,35 @@
-import { StockManager, StockUpdate } from '../stockManager';
-import { PrismaClient } from '@prisma/client';
-import { EventBus } from '../../../../../shared/events/eventBus';
+import {
+  StockManager,
+  StockUpdate,
+  StockManagerPrisma,
+  StockItemRecord,
+  ReservationRecord
+} from '../stockManager';
+import { EventBus } from '@shared-events/eventBus';
 
 jest.mock('@prisma/client');
 jest.mock('../../../../../shared/events/eventBus');
 
 describe('StockManager', () => {
+  type MockStockManagerPrisma = {
+    stockItem: {
+      findMany: jest.Mock<Promise<StockItemRecord[]>, [unknown]>;
+      findUnique: jest.Mock<Promise<StockItemRecord | null>, [unknown]>;
+      update: jest.Mock<Promise<StockItemRecord>, [unknown]>;
+    };
+    inventoryMovement: {
+      create: jest.Mock<Promise<unknown>, [unknown]>;
+    };
+    reservation: {
+      create: jest.Mock<Promise<unknown>, [unknown]>;
+      findMany: jest.Mock<Promise<ReservationRecord[]>, [unknown]>;
+      update: jest.Mock<Promise<unknown>, [unknown]>;
+    };
+    $transaction: jest.Mock<Promise<unknown>, [(callback: (tx: StockManagerPrisma) => Promise<unknown>) => Promise<unknown>]>;
+  };
+
   let stockManager: StockManager;
-  let mockPrisma: jest.Mocked<PrismaClient>;
+  let mockPrisma: MockStockManagerPrisma;
   let mockEventBus: jest.Mocked<EventBus>;
 
   beforeEach(() => {
@@ -26,13 +48,13 @@ describe('StockManager', () => {
         update: jest.fn(),
       },
       $transaction: jest.fn((callback) => callback(mockPrisma)),
-    } as any;
+    } as unknown as MockStockManagerPrisma;
 
     mockEventBus = {
       emit: jest.fn(),
     } as any;
 
-    stockManager = new StockManager(mockPrisma, mockEventBus);
+    stockManager = new StockManager(mockPrisma as unknown as StockManagerPrisma, mockEventBus);
   });
 
   afterEach(() => {

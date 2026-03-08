@@ -1,14 +1,27 @@
-import { PrismaClient } from '@prisma/client';
 import { OrderRepository } from '../../domain/repositories/order.repository';
 import { Order } from '../../domain/entities/order.entity';
 import { OrderStatus } from '../../domain/entities/order.entity';
 import { databaseManager } from '../../config/database.config';
 
+interface OrderDelegate {
+  create(args: Record<string, unknown>): Promise<unknown>;
+  findUnique(args: Record<string, unknown>): Promise<unknown | null>;
+  findMany(args: Record<string, unknown>): Promise<unknown[]>;
+  update(args: Record<string, unknown>): Promise<unknown>;
+  delete(args: Record<string, unknown>): Promise<unknown>;
+  count(args?: Record<string, unknown>): Promise<number>;
+}
+
+interface OrderPrismaClient {
+  order?: OrderDelegate;
+  order_Order?: OrderDelegate;
+}
+
 export class PrismaOrderRepository implements OrderRepository {
-  private prisma: PrismaClient;
+  private prisma: OrderPrismaClient;
 
   constructor() {
-    this.prisma = databaseManager.getPrisma();
+    this.prisma = databaseManager.getPrisma() as unknown as OrderPrismaClient;
   }
 
   async save(order: Order): Promise<void> {
@@ -41,7 +54,7 @@ export class PrismaOrderRepository implements OrderRepository {
         }
       };
 
-      await this.prisma.order.create({
+      await this.orderDelegate.create({
         data: orderData,
         include: {
           items: true
@@ -56,7 +69,7 @@ export class PrismaOrderRepository implements OrderRepository {
 
   async findById(id: string): Promise<Order | null> {
     try {
-      const prismaOrder = await this.prisma.order.findUnique({
+      const prismaOrder = await this.orderDelegate.findUnique({
         where: { id },
         include: {
           items: true
@@ -77,7 +90,7 @@ export class PrismaOrderRepository implements OrderRepository {
 
   async findByBuyerId(buyerId: string): Promise<Order[]> {
     try {
-      const prismaOrders = await this.prisma.order.findMany({
+      const prismaOrders = await this.orderDelegate.findMany({
         where: { buyerId },
         include: {
           items: true
@@ -114,7 +127,7 @@ export class PrismaOrderRepository implements OrderRepository {
         updatedAt: new Date()
       };
 
-      await this.prisma.order.update({
+      await this.orderDelegate.update({
         where: { id: order.id },
         data: orderData
       });
@@ -127,7 +140,7 @@ export class PrismaOrderRepository implements OrderRepository {
 
   async delete(id: string): Promise<void> {
     try {
-      await this.prisma.order.delete({
+      await this.orderDelegate.delete({
         where: { id }
       });
 
@@ -174,7 +187,7 @@ export class PrismaOrderRepository implements OrderRepository {
   // Additional helper methods for robust operations
   async exists(id: string): Promise<boolean> {
     try {
-      const count = await this.prisma.order.count({
+      const count = await this.orderDelegate.count({
         where: { id }
       });
       return count > 0;
@@ -186,7 +199,7 @@ export class PrismaOrderRepository implements OrderRepository {
 
   async count(): Promise<number> {
     try {
-      return await this.prisma.order.count();
+      return await this.orderDelegate.count();
     } catch (error) {
       console.error('Error counting orders:', error);
       throw new Error(`Failed to count orders: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -195,7 +208,7 @@ export class PrismaOrderRepository implements OrderRepository {
 
   async findByStatus(status: OrderStatus): Promise<Order[]> {
     try {
-      const prismaOrders = await this.prisma.order.findMany({
+      const prismaOrders = await this.orderDelegate.findMany({
         where: { status: status as any },
         include: {
           items: true
@@ -211,5 +224,13 @@ export class PrismaOrderRepository implements OrderRepository {
       console.error('Error finding orders by status:', error);
       throw new Error(`Failed to find orders by status: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  private get orderDelegate(): OrderDelegate {
+    const delegate = this.prisma.order_Order ?? this.prisma.order;
+    if (!delegate) {
+      throw new Error('Order delegate is not configured on prisma client');
+    }
+    return delegate;
   }
 }

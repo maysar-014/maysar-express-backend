@@ -13,8 +13,8 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
   res.set('X-Request-ID', requestId);
 
   // Store request start time and ID for later use
-  (req as any).startTime = startTime;
-  (req as any).requestId = requestId;
+  req.startTime = startTime;
+  req.requestId = requestId;
 
   // Log the incoming request
   logger.info('Request Started', {
@@ -39,8 +39,8 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
 
     // Log the response
     const logData = {
-      requestId: (req as any).requestId || req.get('X-Request-ID'),
-      correlationId: (req as any).correlationId || req.get('X-Correlation-ID'),
+      requestId: req.requestId || req.get('X-Request-ID'),
+      correlationId: req.correlationId || req.get('X-Correlation-ID'),
       method: req.method,
       url: req.url,
       statusCode: res.statusCode,
@@ -83,7 +83,7 @@ function generateRequestId(): string {
 export const ensureRequestId = (req: Request, res: Response, next: NextFunction): void => {
   const requestId = req.get('X-Request-ID') || generateRequestId();
   res.set('X-Request-ID', requestId);
-  (req as any).requestId = requestId;
+  req.requestId = requestId;
   next();
 };
 
@@ -93,7 +93,7 @@ export const ensureRequestId = (req: Request, res: Response, next: NextFunction)
 export const logRequestBody = (req: Request, _res: Response, next: NextFunction): void => {
   if (process.env.NODE_ENV === 'development' && req.body && Object.keys(req.body).length > 0) {
     logger.debug('Request Body', {
-      requestId: (req as any).requestId,
+      requestId: req.requestId,
       method: req.method,
       url: req.url,
       body: sanitizeRequestBody(req.body)
@@ -105,12 +105,12 @@ export const logRequestBody = (req: Request, _res: Response, next: NextFunction)
 /**
  * Sanitize sensitive data from request body for logging
  */
-function sanitizeRequestBody(body: any): any {
+function sanitizeRequestBody(body: unknown): unknown {
   if (!body || typeof body !== 'object') {
     return body;
   }
 
-  const sanitized = { ...body };
+  const sanitized = { ...(body as Record<string, unknown>) };
   const sensitiveFields = [
     'password',
     'passwordHash',
@@ -122,14 +122,14 @@ function sanitizeRequestBody(body: any): any {
   ];
 
   // Recursively sanitize sensitive fields
-  function sanitize(obj: any): any {
+  function sanitize(obj: unknown): unknown {
     if (Array.isArray(obj)) {
       return obj.map(item => sanitize(item));
     }
 
     if (obj && typeof obj === 'object') {
-      const result: any = {};
-      for (const [key, value] of Object.entries(obj)) {
+      const result: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
         if (sensitiveFields.includes(key.toLowerCase())) {
           result[key] = '[REDACTED]';
         } else {

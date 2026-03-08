@@ -16,7 +16,7 @@ export class OutboxProcessor {
                     aggregateId: entry.eventId,
                     aggregateType: 'Outbox',
                     payload: entry.eventData,
-                    occurredAt: entry.createdAt
+                    timestamp: entry.createdAt
                 });
                 await this.outboxRepository.markAsProcessed(entry.id);
             } catch (error) {

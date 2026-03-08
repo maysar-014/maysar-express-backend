@@ -3,20 +3,20 @@ export interface CacheOptions {
 }
 
 export class MetricsCacheService {
-  private cache: Map<string, { value: any; expiresAt: number }> = new Map();
+  private cache: Map<string, { value: unknown; expiresAt: number }> = new Map();
   private defaultTTL = 3600; // 1 hour in seconds
 
   generateKey(sellerId: string, metric: string, timeWindow: string): string {
     return `seller-metrics:${sellerId}:${metric}:${timeWindow}`;
   }
 
-  set(key: string, value: any, options?: CacheOptions): void {
+  set(key: string, value: unknown, options?: CacheOptions): void {
     const ttl = options?.ttl || this.defaultTTL;
     const expiresAt = Date.now() + ttl * 1000;
     this.cache.set(key, { value, expiresAt });
   }
 
-  get(key: string): any | null {
+  get(key: string): unknown | null {
     const entry = this.cache.get(key);
     if (!entry) return null;
 
@@ -48,7 +48,7 @@ export class MetricsCacheService {
   ): Promise<T> {
     const cached = this.get(key);
     if (cached !== null) {
-      return cached;
+      return cached as T;
     }
 
     const result = await computeFn();

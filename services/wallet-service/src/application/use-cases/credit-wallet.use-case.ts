@@ -6,17 +6,16 @@ import { ITransactionRepository } from '../../domain/repositories/transaction.re
 import { IdempotencyKey } from '../../domain/value-objects/idempotency-key.value-object';
 import { IdempotencyService } from '../services/idempotency.service';
 import { AuditInfo } from '../../domain/value-objects/audit-info.value-object';
-import { Money } from '../../domain/value-objects/money.value-object';
 import { WalletEventPublisher } from '../../infrastructure/messaging/wallet-event-publisher';
 import { IAuditLogRepository } from '../../infrastructure/repositories/audit-log.repository';
-import { RedisLock } from '../../../../shared/locking/redis-lock';
+import { RedisLock } from '../../../../../shared/locking/redis-lock';
 
 export interface CreditWalletDTO {
     userId: string;
     amount: number;
     currency: string;
     description: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
     idempotencyKey: string;
     correlationId: string;
     auditInfo: AuditInfo;
@@ -45,10 +44,10 @@ export class CreditWalletUseCase {
         const idempotencyKey = IdempotencyKey.create(dto.idempotencyKey);
 
         // 1. Idempotency Check
-        const cached = await this.idempotencyService.checkIdempotency(idempotencyKey);
+        const cached = await this.idempotencyService.checkIdempotency<CreditWalletResultDTO>(idempotencyKey);
         if (cached) return cached;
 
-        return this.redisLock.withLock(`wallet:${dto.userId}`, 8000, async () => {
+        return this.redisLock.withLock(`wallet:${dto.userId}`, async () => {
             // Find or create wallet
             let wallet = await this.walletRepository.findByUserId(dto.userId);
             if (!wallet) {
@@ -61,6 +60,9 @@ export class CreditWalletUseCase {
                     frozenAmount: 0,
                     createdAt: new Date(),
                     updatedAt: new Date(),
+                    codCommitmentLimit: 0,
+                    codCommitmentUsed: 0,
+                    codCommitmentCount: 0,
                     version: 0,
                 });
                 await this.walletRepository.save(wallet);
@@ -94,7 +96,9 @@ export class CreditWalletUseCase {
                 initiatedBy: dto.auditInfo.actor,
                 initiatedByType: dto.auditInfo.actorType,
                 reason: `CREDIT_REQUEST: ${dto.description}`,
-                isReversed: false
+                isReversed: false,
+                isCODRelated: false,
+                codConfirmationRequired: false
             });
 
             await this.transactionRepository.save(transaction);

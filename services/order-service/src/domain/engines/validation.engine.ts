@@ -106,24 +106,70 @@ export class ValidationEngine {
   async validateOrder(params: {
     customerId: string;
     items: Array<{ productVariantId: string; quantity: number }>;
-    totalAmount: number;
-  }): Promise<{ valid: boolean; processed: boolean }> {
+    totalAmount?: number;
+    shippingAddress?: {
+      street?: string;
+      city?: string;
+      region?: string;
+      postalCode?: string;
+      country?: string;
+    };
+    customerType?: string;
+    orderType?: string;
+  }): Promise<{
+    valid: boolean;
+    processed: boolean;
+    compliance: Record<string, unknown>;
+    requiresApproval?: boolean;
+  }> {
+    if (this._apiClient?.post) {
+      const response = await this._apiClient.post('/validation/order', params);
+      const data = response?.data ?? {};
+      const compliance =
+        data.compliance && typeof data.compliance === 'object'
+          ? (data.compliance as Record<string, unknown>)
+          : undefined;
+
+      return {
+        valid: Boolean(data.valid),
+        processed: true,
+        compliance: compliance ?? {},
+        requiresApproval: Boolean(data.requiresApproval),
+      };
+    }
+
+    const totalAmount = params.totalAmount ?? 0;
     const input: ValidationInput = {
       customerId: params.customerId,
       productItems: params.items.map(item => ({
         productId: item.productVariantId,
         variantId: item.productVariantId,
         quantity: item.quantity,
-        unitPrice: params.totalAmount / params.items.length,
+        unitPrice: totalAmount / Math.max(1, params.items.length),
         sellerId: 'default',
       })),
-      shippingAddress: { street: 'Test', city: 'Test', region: 'Test', country: 'TZ' },
+      shippingAddress: {
+        street: params.shippingAddress?.street ?? 'Test',
+        city: params.shippingAddress?.city ?? 'Test',
+        region: params.shippingAddress?.region ?? 'Test',
+        postalCode: params.shippingAddress?.postalCode,
+        country: params.shippingAddress?.country ?? 'TZ',
+      },
       paymentMethod: { type: 'mobile_money', provider: 'mpesa', verified: true },
       orderType: 'standard',
       channel: 'api',
     };
     const result = await this.processValidationRequest(input);
-    return { valid: result.isValid, processed: result.success };
+    return {
+      valid: result.isValid,
+      processed: result.success,
+      compliance: {
+        gdpr: result.compliance.gdprCompliant,
+        bot: result.compliance.botCompliant,
+        tax: result.compliance.taxCompliant,
+        dataRetention: result.compliance.dataRetentionCompliant
+      }
+    };
   }
 
   async processValidationRequest(input: ValidationInput): Promise<ValidationOutput> {

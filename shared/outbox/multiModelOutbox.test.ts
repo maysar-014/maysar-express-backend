@@ -32,7 +32,7 @@ describe('Generalized Outbox Infrastructure', () => {
     });
 
     it('should be able to initialize PrismaOutboxRepository with different model names', () => {
-        const repo = new PrismaOutboxRepository(prisma, 'order_OutboxEvent');
+        const repo = new PrismaOutboxRepository(prisma);
         expect(repo).toBeDefined();
     });
 });

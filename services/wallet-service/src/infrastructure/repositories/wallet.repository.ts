@@ -6,7 +6,7 @@
 import { PrismaClient, Wallet_Wallet } from '@prisma/client';
 import { Wallet, WalletProps, WalletStatus } from '../../domain/entities/wallet.entity';
 import { IWalletRepository } from '../../domain/repositories/wallet.repository';
-import { OptimisticLockError } from '../../../../shared/errors/optimistic-lock.error';
+import { OptimisticLockError } from '../../../../../shared/errors/optimistic-lock.error';
 
 export class WalletRepository implements IWalletRepository {
     constructor(private readonly prisma: PrismaClient) { }
@@ -65,7 +65,7 @@ export class WalletRepository implements IWalletRepository {
         });
 
         if (result.count === 0) {
-            throw new OptimisticLockError('Wallet', props.id, props.version);
+            throw new OptimisticLockError(`Wallet ${props.id} version ${props.version} was modified concurrently`);
         }
     }
 

@@ -35,7 +35,7 @@ export class SendNotificationUseCase {
     const canSend = this.deliveryPolicy.canSendNotification(
       { id: dto.userId },
       notification,
-      preference ?? undefined,
+      preference ?? null,
       sentCount
     );
     if (!canSend.allowed) {

@@ -1,8 +1,12 @@
 import { ReservationEngine, ReservationRequest } from '../reservationEngine';
 import { StockManager } from '../../stock/stockManager';
 import { WarehouseManager } from '../../warehouse/warehouseManager';
-import { EventBus } from '../../../../../shared/events/eventBus';
-import { PrismaClient } from '@prisma/client';
+import { EventBus } from '@shared-events/eventBus';
+
+interface MockPrisma {
+  warehouse: { findMany: jest.Mock };
+  reservation: { findMany: jest.Mock; updateMany: jest.Mock };
+}
 
 jest.mock('../../stock/stockManager');
 jest.mock('../../warehouse/warehouseManager');
@@ -10,7 +14,7 @@ jest.mock('../../../../../shared/events/eventBus');
 
 describe('ReservationEngine', () => {
   let engine: ReservationEngine;
-  let mockPrisma: jest.Mocked<PrismaClient>;
+  let mockPrisma: MockPrisma;
   let mockStockManager: jest.Mocked<StockManager>;
   let mockWarehouseManager: jest.Mocked<WarehouseManager>;
   let mockEventBus: jest.Mocked<EventBus>;
@@ -19,7 +23,7 @@ describe('ReservationEngine', () => {
     mockPrisma = {
       warehouse: { findMany: jest.fn() },
       reservation: { findMany: jest.fn(), updateMany: jest.fn() }
-    } as any;
+    };
     mockStockManager = { getStockLevel: jest.fn(), reserveStock: jest.fn(), releaseStock: jest.fn(), reduceStock: jest.fn() } as any;
     mockWarehouseManager = {} as any;
     mockEventBus = { emit: jest.fn() } as any;

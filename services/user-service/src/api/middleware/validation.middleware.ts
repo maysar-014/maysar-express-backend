@@ -8,7 +8,7 @@ import { logger } from '../../infrastructure/services/logger.service';
 export interface ValidationError {
   field: string;
   message: string;
-  value?: any;
+  value?: unknown;
 }
 
 /**
@@ -19,10 +19,25 @@ export interface ValidationResult {
   errors: ValidationError[];
 }
 
+interface ValidationDetail {
+  path: Array<string | number>;
+  message: string;
+  context?: { value?: unknown };
+}
+
+interface JoiLikeError {
+  isJoi: boolean;
+  details: ValidationDetail[];
+}
+
+interface ValidatableSchema {
+  validate(value: unknown, options?: Record<string, unknown>): { error?: JoiLikeError; value: unknown };
+}
+
 /**
  * Request validation middleware factory
  */
-export const validateRequest = (schema: any) => {
+export const validateRequest = (schema: ValidatableSchema) => {
   return (_req: Request, _res: Response, next: NextFunction) => {
     try {
       const { error, value } = schema.validate(_req.body, {
@@ -32,7 +47,7 @@ export const validateRequest = (schema: any) => {
       });
 
       if (error) {
-        const errors: ValidationError[] = error.details.map((detail: any) => ({
+        const errors: ValidationError[] = error.details.map((detail) => ({
           field: detail.path.join('.'),
           message: detail.message,
           value: detail.context?.value
@@ -60,7 +75,7 @@ export const validateRequest = (schema: any) => {
 /**
  * Query parameter validation middleware
  */
-export const validateQuery = (schema: any) => {
+export const validateQuery = (schema: ValidatableSchema) => {
   return (_req: Request, _res: Response, next: NextFunction) => {
     try {
       const { error, value } = schema.validate(_req.query, {
@@ -70,7 +85,7 @@ export const validateQuery = (schema: any) => {
       });
 
       if (error) {
-        const errors: ValidationError[] = error.details.map((detail: any) => ({
+        const errors: ValidationError[] = error.details.map((detail) => ({
           field: detail.path.join('.'),
           message: detail.message,
           value: detail.context?.value
@@ -87,7 +102,7 @@ export const validateQuery = (schema: any) => {
       }
 
       // Replace query with validated and sanitized data
-      _req.query = value;
+      _req.query = value as Request['query'];
       next();
     } catch (err) {
       logger.error('Query validation error', { error: err, path: _req.path });
@@ -99,7 +114,7 @@ export const validateQuery = (schema: any) => {
 /**
  * Route parameter validation middleware
  */
-export const validateParams = (schema: any) => {
+export const validateParams = (schema: ValidatableSchema) => {
   return (_req: Request, _res: Response, next: NextFunction) => {
     try {
       const { error, value } = schema.validate(_req.params, {
@@ -108,7 +123,7 @@ export const validateParams = (schema: any) => {
       });
 
       if (error) {
-        const errors: ValidationError[] = error.details.map((detail: any) => ({
+        const errors: ValidationError[] = error.details.map((detail) => ({
           field: detail.path.join('.'),
           message: detail.message,
           value: detail.context?.value
@@ -125,7 +140,7 @@ export const validateParams = (schema: any) => {
       }
 
       // Replace params with validated data
-      _req.params = value;
+      _req.params = value as Request['params'];
       next();
     } catch (err) {
       logger.error('Parameter validation error', { error: err, path: _req.path });
@@ -138,14 +153,14 @@ export const validateParams = (schema: any) => {
  * Global validation error handler
  */
 export const validationErrorHandler = (
-  error: any,
+  error: unknown,
   req: Request,
   res: Response,
   next: NextFunction
 ): void => {
   // Handle Joi validation errors
-  if (error && error.isJoi) {
-    const errors: ValidationError[] = error.details.map((detail: any) => ({
+  if (isJoiLikeError(error)) {
+    const errors: ValidationError[] = error.details.map((detail) => ({
       field: detail.path.join('.'),
       message: detail.message,
       value: detail.context?.value
@@ -190,14 +205,15 @@ export const sanitizeRequest = (req: Request, _res: Response, next: NextFunction
 /**
  * Recursively sanitize object fields
  */
-function sanitizeObject(obj: any): void {
+function sanitizeObject(obj: Record<string, unknown>): void {
   for (const key in obj) {
-    if (typeof obj[key] === 'string') {
-      obj[key] = obj[key].trim();
+    const value = obj[key];
+    if (typeof value === 'string') {
+      obj[key] = value.trim();
       // Remove potential XSS characters
-      obj[key] = obj[key].replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-    } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-      sanitizeObject(obj[key]);
+      obj[key] = value.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    } else if (typeof value === 'object' && value !== null) {
+      sanitizeObject(value as Record<string, unknown>);
     }
   }
 }
@@ -239,7 +255,7 @@ export const validateAuth = (_options?: {
  */
 export const requireRole = (...allowedRoles: string[]) => {
   return (_req: Request, _res: Response, next: NextFunction) => {
-    const user = (_req as any).user;
+    const user = extractUserInfo(_req.user);
 
     if (!user) {
       return next(createError.unauthorized('Authentication required'));
@@ -265,7 +281,7 @@ export const requireRole = (...allowedRoles: string[]) => {
  */
 export const validateOwnership = (resourceIdParam: string) => {
   return (_req: Request, _res: Response, next: NextFunction) => {
-    const user = (_req as any).user;
+    const user = extractUserInfo(_req.user);
     const resourceId = _req.params[resourceIdParam];
 
     if (!user) {
@@ -318,7 +334,7 @@ export const sanitizeSqlInput = (req: Request, _res: Response, next: NextFunctio
     /('|(\\x27)|(\\x2D))/i
   ];
 
-  const checkForDangerousInput = (input: any): boolean => {
+  const checkForDangerousInput = (input: unknown): boolean => {
     if (typeof input === 'string') {
       return dangerousPatterns.some(pattern => pattern.test(input));
     } else if (Array.isArray(input)) {
@@ -341,3 +357,28 @@ export const sanitizeSqlInput = (req: Request, _res: Response, next: NextFunctio
 
   next();
 };
+
+function isJoiLikeError(error: unknown): error is JoiLikeError {
+  if (typeof error !== 'object' || error === null) {
+    return false;
+  }
+
+  const candidate = error as Partial<JoiLikeError>;
+  return Boolean(candidate.isJoi) && Array.isArray(candidate.details);
+}
+
+function extractUserInfo(user: unknown): { id: string; role: string } | null {
+  if (typeof user !== 'object' || user === null) {
+    return null;
+  }
+
+  const userRecord = user as Record<string, unknown>;
+  const id = typeof userRecord.id === 'string' ? userRecord.id : undefined;
+  const role = typeof userRecord.role === 'string' ? userRecord.role : undefined;
+
+  if (!id || !role) {
+    return null;
+  }
+
+  return { id, role };
+}

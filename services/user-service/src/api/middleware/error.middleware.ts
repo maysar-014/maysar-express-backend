@@ -37,7 +37,7 @@ export const errorHandler = (
   let statusCode = 500;
   let message = 'Internal server error';
   let code: string | undefined;
-  let details: any = undefined;
+  let details: unknown = undefined;
 
   // Handle known error types
   if (error instanceof APIError) {
@@ -49,10 +49,10 @@ export const errorHandler = (
     statusCode = 400;
     message = 'Validation failed';
     code = 'VALIDATION_ERROR';
-    details = (error as any).details;
+    details = (error as { details?: unknown }).details;
   } else if (error.name === 'PrismaClientKnownRequestError') {
     // Prisma known errors
-    const prismaError = error as any;
+    const prismaError = error as { code?: string };
     switch (prismaError.code) {
       case 'P2002':
         statusCode = 409;
@@ -90,7 +90,7 @@ export const errorHandler = (
     statusCode,
     message,
     code,
-    userId: (req as any).userId,
+    userId: req.userId,
     ip: req.ip,
     userAgent: req.get('User-Agent'),
     error: {
@@ -107,7 +107,17 @@ export const errorHandler = (
   }
 
   // Send error response
-  const errorResponse: any = {
+  const errorResponse: {
+    error: {
+      message: string;
+      code: string | undefined;
+      timestamp: string;
+      path: string;
+      method: string;
+      details?: unknown;
+      stack?: string;
+    };
+  } = {
     error: {
       message,
       code,
@@ -135,7 +145,9 @@ export const errorHandler = (
  * Async error wrapper for route handlers
  * Wraps async route handlers to catch rejected promises
  */
-export const asyncHandler = (fn: Function) => {
+export const asyncHandler = (
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>
+) => {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };

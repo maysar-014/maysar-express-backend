@@ -1,5 +1,11 @@
 import { EventBusAdapter } from './EventBusAdapter';
 import { ProcessAnalyticsEventUseCase } from '../../application/use-cases/ProcessAnalyticsEventUseCase';
+import { EventEnvelope } from '@shared-events/eventBus';
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+    typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+
+const asSellerId = (value: unknown): string | undefined => (typeof value === 'string' ? value : undefined);
 
 export class EventSubscriber {
     constructor(
@@ -9,7 +15,8 @@ export class EventSubscriber {
 
     initialize(): void {
         // Subscriber for order events
-        this.eventBus.subscribe('order.created', async (data) => {
+        this.eventBus.subscribe('order.created', async (envelope: EventEnvelope) => {
+            const data = asRecord(envelope.data);
             await this.processUseCase.execute({
                 eventType: 'order',
                 data,
@@ -17,13 +24,14 @@ export class EventSubscriber {
                 context: {
                     channel: 'unknown',
                     source: 'order-service',
-                    sellerId: data.sellerId
+                    sellerId: asSellerId(data.sellerId)
                 }
             });
         });
 
         // Subscriber for payment events
-        this.eventBus.subscribe('payment.processed', async (data) => {
+        this.eventBus.subscribe('payment.processed', async (envelope: EventEnvelope) => {
+            const data = asRecord(envelope.data);
             await this.processUseCase.execute({
                 eventType: 'payment',
                 data,
@@ -31,7 +39,7 @@ export class EventSubscriber {
                 context: {
                     channel: 'unknown',
                     source: 'payment-service',
-                    sellerId: data.sellerId
+                    sellerId: asSellerId(data.sellerId)
                 }
             });
         });

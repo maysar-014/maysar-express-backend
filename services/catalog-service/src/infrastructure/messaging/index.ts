@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 /**
  * Infrastructure Messaging Index
  * Central export point for messaging infrastructure

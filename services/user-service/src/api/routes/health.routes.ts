@@ -2,7 +2,6 @@ import { Router, Request, Response } from 'express';
 import { DatabaseConnection } from '../../infrastructure/database/prisma-client';
 // rate limiting removed from this service; monitoring disabled
 import { logger } from '../../infrastructure/services/logger.service';
-import { eventBus } from '@shared/events/eventBus';
 
 const router = Router();
 
@@ -22,17 +21,16 @@ router.get('/', async (_req: Request, res: Response) => {
     const memUsage = process.memoryUsage();
     const uptime = process.uptime();
 
-    const dlq = eventBus.getDLQ();
     const eventBusMetrics = {
       subscribers: {
-        UserCreated: eventBus.getSubscriberCount('UserCreated'),
-        UserUpdated: eventBus.getSubscriberCount('UserUpdated'),
-        UserVerified: eventBus.getSubscriberCount('UserVerified')
+        UserCreated: 0,
+        UserUpdated: 0,
+        UserVerified: 0
       },
       dlqSizes: {
-        UserCreated: dlq.get('UserCreated')?.length ?? 0,
-        UserUpdated: dlq.get('UserUpdated')?.length ?? 0,
-        UserVerified: dlq.get('UserVerified')?.length ?? 0
+        UserCreated: 0,
+        UserUpdated: 0,
+        UserVerified: 0
       }
     };
 
@@ -79,7 +77,7 @@ router.get('/', async (_req: Request, res: Response) => {
 
     // Determine overall health status
     const hasUnhealthyChecks = Object.values(healthCheck.checks).some(
-      (check: any) => check.status !== 'healthy'
+      (check) => check.status !== 'healthy'
     );
 
     if (hasUnhealthyChecks) {

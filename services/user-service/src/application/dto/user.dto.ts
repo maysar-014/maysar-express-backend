@@ -183,7 +183,7 @@ export interface BulkUserOperationDto {
   userIds: string[];
   operation: 'activate' | 'deactivate' | 'suspend' | 'verifyEmail' | 'verifyPhone';
   reason?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**

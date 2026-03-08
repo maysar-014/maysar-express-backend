@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../types';
 import { MaysarPricingEngine } from '../../domain/engines/maysar-pricing.engine';

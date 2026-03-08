@@ -14,7 +14,7 @@ export function errorHandlerMiddleware(err: Error, req: Request, res: Response, 
         status = 400;
     } else if (err instanceof ValidationError || err.name === 'ValidationError') {
         status = 400;
-        errors = err.errors;
+        errors = (err as ValidationError).errors;
     }
 
     res.status(status).json({

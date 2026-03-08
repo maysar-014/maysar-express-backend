@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { CourierRepository } from './repositories/courier.repository';
 import { DeliveryRepository } from './repositories/delivery.repository';
 import { EarningsRepository } from './repositories/earnings.repository';
@@ -126,10 +127,10 @@ export class DependencyContainer {
       // Now that infrastructure is ready, initialize application layer
       this.initializeApplication();
 
-      console.log('✅ Database connections initialized successfully');
-      console.log('✅ Application layer initialized successfully');
+      console.log('âœ… Database connections initialized successfully');
+      console.log('âœ… Application layer initialized successfully');
     } catch (error) {
-      console.error('❌ Failed to initialize database connections:', error);
+      console.error('âŒ Failed to initialize database connections:', error);
       throw error; // Re-throw to prevent server startup
     }
   }

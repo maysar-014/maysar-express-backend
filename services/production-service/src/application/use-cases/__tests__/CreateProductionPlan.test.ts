@@ -1,7 +1,7 @@
 import { CreateProductionPlan } from '../CreateProductionPlan';
 
-const mockRepository = { create: jest.fn() } as any;
-const mockEngine = { createPlan: jest.fn() } as any;
+const mockRepository = { save: jest.fn() } as any;
+const mockEngine = { validatePlan: jest.fn() } as any;
 
 describe('CreateProductionPlan', () => {
     let useCase: CreateProductionPlan;
@@ -12,8 +12,9 @@ describe('CreateProductionPlan', () => {
     });
 
     it('should create production plan', async () => {
-        mockEngine.createPlan.mockReturnValue({ id: 'plan1', steps: [] });
-        const result = await useCase.execute({ orderId: 'o1', quantity: 100 });
+        mockEngine.validatePlan.mockReturnValue(true);
+        mockRepository.save.mockResolvedValue({ id: 'plan1', supplierId: 's1', name: 'Test', targetQuantity: 100, actualQuantity: 0, status: 'DRAFT', priority: 'MEDIUM', version: 1, schedule: {}, createdAt: new Date(), updatedAt: new Date() });
+        const result = await useCase.execute({ supplierId: 's1', name: 'Test Plan', targetQuantity: 100, startDate: '2024-01-01', endDate: '2024-12-31' });
         expect(result.id).toBe('plan1');
     });
 });

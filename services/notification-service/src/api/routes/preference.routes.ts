@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Request, Response, Router } from 'express';
 import { PreferenceController } from '../controllers/preference.controller';
 import { asyncHandler } from '../middleware/error.middleware';
 import { authMiddleware } from '../middleware/auth.middleware';
@@ -9,9 +9,9 @@ export function createPreferenceRoutes(controller: PreferenceController): Router
   router.use(authMiddleware);
   router.use(rateLimit({ limit: 60, windowMs: 60000 }));
 
-  router.get('/:userId', asyncHandler((req, res) => controller.getPreferences(req, res)));
-  router.put('/:userId', asyncHandler((req, res) => controller.updatePreferences(req, res)));
-  router.post('/:userId/opt-out', asyncHandler((req, res) => controller.optOut(req, res)));
+  router.get('/:userId', asyncHandler((req: Request, res: Response) => controller.getPreferences(req, res)));
+  router.put('/:userId', asyncHandler((req: Request, res: Response) => controller.updatePreferences(req, res)));
+  router.post('/:userId/opt-out', asyncHandler((req: Request, res: Response) => controller.optOut(req, res)));
 
   return router;
 }

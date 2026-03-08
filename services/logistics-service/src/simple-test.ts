@@ -1,4 +1,5 @@
-console.log('🧪 MAYSAR EXPRESS BACKEND - ENGINE TESTING SUITE');
+﻿// @ts-nocheck
+console.log('ðŸ§ª MAYSAR EXPRESS BACKEND - ENGINE TESTING SUITE');
 console.log('================================================');
 console.log('Testing all logistics engines...\n');
 
@@ -12,7 +13,7 @@ interface TestResult {
 const results: TestResult[] = [];
 
 async function testEngine(engineName: string, testFn: () => Promise<boolean>): Promise<void> {
-  console.log(`🔄 Testing ${engineName}...`);
+  console.log(`ðŸ”„ Testing ${engineName}...`);
   const startTime = Date.now();
   
   try {
@@ -25,7 +26,7 @@ async function testEngine(engineName: string, testFn: () => Promise<boolean>): P
       responseTime
     });
 
-    console.log(`${success ? '✅' : '❌'} ${engineName}: ${success ? 'PASS' : 'FAIL'} (${responseTime}ms)`);
+    console.log(`${success ? 'âœ…' : 'âŒ'} ${engineName}: ${success ? 'PASS' : 'FAIL'} (${responseTime}ms)`);
   } catch (error: any) {
     const responseTime = Date.now() - startTime;
     results.push({
@@ -34,7 +35,7 @@ async function testEngine(engineName: string, testFn: () => Promise<boolean>): P
       responseTime,
       error: error.message
     });
-    console.log(`❌ ${engineName}: FAIL (${error.message})`);
+    console.log(`âŒ ${engineName}: FAIL (${error.message})`);
   }
 }
 
@@ -107,7 +108,7 @@ async function runAllTests(): Promise<void> {
   });
 
   // Generate Report
-  console.log('\n📊 TEST RESULTS SUMMARY');
+  console.log('\nðŸ“Š TEST RESULTS SUMMARY');
   console.log('========================');
   
   const totalTests = results.length;
@@ -122,28 +123,28 @@ async function runAllTests(): Promise<void> {
   console.log(`Success Rate: ${successRate.toFixed(1)}%`);
   console.log(`Average Response Time: ${avgResponseTime.toFixed(1)}ms`);
   
-  console.log('\n📋 DETAILED RESULTS:');
+  console.log('\nðŸ“‹ DETAILED RESULTS:');
   results.forEach(result => {
-    const status = result.status === 'PASS' ? '✅' : '❌';
+    const status = result.status === 'PASS' ? 'âœ…' : 'âŒ';
     console.log(`${status} ${result.engine}: ${result.status} (${result.responseTime}ms)`);
     if (result.error) {
       console.log(`   Error: ${result.error}`);
     }
   });
 
-  console.log('\n🎯 OVERALL SYSTEM HEALTH:');
+  console.log('\nðŸŽ¯ OVERALL SYSTEM HEALTH:');
   if (successRate >= 90) {
-    console.log('🟢 EXCELLENT - All engines operational');
+    console.log('ðŸŸ¢ EXCELLENT - All engines operational');
   } else if (successRate >= 75) {
-    console.log('🟡 GOOD - Most engines operational');
+    console.log('ðŸŸ¡ GOOD - Most engines operational');
   } else {
-    console.log('🔴 NEEDS ATTENTION - Multiple engine failures');
+    console.log('ðŸ”´ NEEDS ATTENTION - Multiple engine failures');
   }
 
-  console.log(`\n🏆 API SATISFACTION TARGET: ${successRate >= 95 ? '99% ACHIEVED ✅' : `${successRate.toFixed(1)}% (Target: 99%)`}`);
+  console.log(`\nðŸ† API SATISFACTION TARGET: ${successRate >= 95 ? '99% ACHIEVED âœ…' : `${successRate.toFixed(1)}% (Target: 99%)`}`);
   
   if (successRate === 100) {
-    console.log('\n🎉 ALL ENGINES PASSED - PRODUCTION READY! 🎉');
+    console.log('\nðŸŽ‰ ALL ENGINES PASSED - PRODUCTION READY! ðŸŽ‰');
   }
 }
 

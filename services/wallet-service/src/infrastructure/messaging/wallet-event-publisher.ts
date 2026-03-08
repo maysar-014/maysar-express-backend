@@ -3,39 +3,39 @@ import { IEventBus } from './event-bus.interface';
 export class WalletEventPublisher {
     constructor(private readonly eventBus: IEventBus) { }
 
-    async publishWalletCredited(event: any): Promise<void> {
+    async publishWalletCredited(event: unknown): Promise<void> {
         await this.eventBus.publish('WalletCredited', event);
     }
 
-    async publishWalletDebited(event: any): Promise<void> {
+    async publishWalletDebited(event: unknown): Promise<void> {
         await this.eventBus.publish('WalletDebited', event);
     }
 
-    async publishHoldPlaced(event: any): Promise<void> {
+    async publishHoldPlaced(event: unknown): Promise<void> {
         await this.eventBus.publish('HoldPlaced', event);
     }
 
-    async publishHoldReleased(event: any): Promise<void> {
+    async publishHoldReleased(event: unknown): Promise<void> {
         await this.eventBus.publish('HoldReleased', event);
     }
 
-    async publishHoldCaptured(event: any): Promise<void> {
+    async publishHoldCaptured(event: unknown): Promise<void> {
         await this.eventBus.publish('HoldCaptured', event);
     }
 
-    async publishHoldExpired(event: any): Promise<void> {
+    async publishHoldExpired(event: unknown): Promise<void> {
         await this.eventBus.publish('HoldExpired', event);
     }
 
-    async publishWalletPayoutInitiated(event: any): Promise<void> {
+    async publishWalletPayoutInitiated(event: unknown): Promise<void> {
         await this.eventBus.publish('WalletPayoutInitiated', event);
     }
 
-    async publishWalletPaymentProcessed(event: any): Promise<void> {
+    async publishWalletPaymentProcessed(event: unknown): Promise<void> {
         await this.eventBus.publish('WalletPaymentProcessed', event);
     }
 
-    async publishWalletPaymentFailed(event: any): Promise<void> {
+    async publishWalletPaymentFailed(event: unknown): Promise<void> {
         await this.eventBus.publish('WalletPaymentFailed', event);
     }
 }

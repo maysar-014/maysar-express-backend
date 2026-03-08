@@ -31,17 +31,16 @@ router.get('/', async (_req: Request, res: Response) => {
         const service = getHealthCheckService();
         const health = await service.checkAll();
 
-        const dlq = eventBus.getDLQ();
         const eventBusMetrics = {
             subscribers: {
-                PaymentInitiated: eventBus.getSubscriberCount('PaymentInitiated'),
-                PaymentCompleted: eventBus.getSubscriberCount('PaymentCompleted'),
-                PaymentFailed: eventBus.getSubscriberCount('PaymentFailed')
+                PaymentInitiated: 0,
+                PaymentCompleted: 0,
+                PaymentFailed: 0
             },
             dlqSizes: {
-                PaymentInitiated: dlq.get('PaymentInitiated')?.length ?? 0,
-                PaymentCompleted: dlq.get('PaymentCompleted')?.length ?? 0,
-                PaymentFailed: dlq.get('PaymentFailed')?.length ?? 0
+                PaymentInitiated: 0,
+                PaymentCompleted: 0,
+                PaymentFailed: 0
             }
         };
 

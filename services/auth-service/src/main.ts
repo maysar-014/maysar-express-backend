@@ -5,9 +5,9 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { json, urlencoded } from 'express';
 import dotenv from 'dotenv';
-import { csrfTokenMiddleware } from '../../../../shared/middleware/csrf.middleware';
-import { createLogger } from '../../../shared/logger/logger';
-import { tracingService, correlationMiddleware } from '../../../shared/tracing/openTelemetry';
+import { csrfTokenMiddleware } from '@shared/middleware/csrf.middleware';
+import { createLogger } from '@shared/logger/logger';
+import { tracingService, correlationMiddleware } from '@shared/tracing/openTelemetry';
 
 const mainLogger = createLogger('AuthService-Bootstrap', 'auth-service');
 
@@ -18,7 +18,6 @@ import { config } from './config';
 import { errorHandler } from './api/middleware/error-handler.middleware';
 import { rateLimiter } from './api/middleware/rate-limiting.middleware';
 import { requestLogger } from './api/middleware/logging.middleware';
-import { validationMiddleware } from './api/middleware/validation.middleware';
 
 // Import routes
 import { createAuthRoutes } from './api/routes/auth.routes';
@@ -53,7 +52,6 @@ import { SessionEngine } from './domain/engines/session.engine';
 import { logger } from './infrastructure/services/logger.service';
 import { initializeDatabase } from './infrastructure/database/connection';
 import { initializeRedis } from './infrastructure/cache/connection';
-import { initializeKafka } from './infrastructure/messaging/connection';
 import { metricsRegistry } from './infrastructure/monitoring/metrics';
 
 // Load environment variables
@@ -185,7 +183,6 @@ const gracefulShutdown = (signal: string) => {
     await Promise.all([
       // Database cleanup
       // Redis cleanup
-      // Kafka cleanup
     ]);
 
     logger.info('All connections closed, exiting');
@@ -231,8 +228,7 @@ async function startServer() {
 
     await Promise.all([
       initializeDatabase(),
-      initializeRedis(),
-      initializeKafka()
+      initializeRedis()
     ]);
 
     logger.info('Infrastructure initialized successfully');
@@ -247,7 +243,7 @@ async function startServer() {
     });
 
     // Handle server errors
-    server.on('error', (error) => {
+    server.on('error', (error: Error) => {
       logger.error('Server error:', error);
       process.exit(1);
     });

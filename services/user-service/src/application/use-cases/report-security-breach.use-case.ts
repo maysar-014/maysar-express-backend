@@ -9,7 +9,7 @@ export interface ReportSecurityBreachInput {
   userId: string;
   breachType: 'suspicious_login' | 'multiple_failed_attempts' | 'unusual_activity' | 'location_anomaly';
   severity: 'low' | 'medium' | 'high' | 'critical';
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   reportedBy?: string | undefined;
 }
 
@@ -28,10 +28,11 @@ export class ReportSecurityBreachUseCase {
 
   async execute(input: ReportSecurityBreachInput): Promise<ReportSecurityBreachOutput> {
     try {
-      logger.logBusiness('Reporting security breach', input.reportedBy || 'system', {
+      logger.info('Reporting security breach', {
         userId: input.userId,
         breachType: input.breachType,
-        severity: input.severity
+        severity: input.severity,
+        reportedBy: input.reportedBy || 'system'
       });
 
       const user = await this.userRepository.findById(input.userId);
@@ -55,13 +56,15 @@ export class ReportSecurityBreachUseCase {
       const alertId = `security-alert-${input.userId}-${Date.now()}`;
       await this.userRepository.recordSecurityEvent(input.userId, {
         action: 'security_breach_reported',
-        alertId,
-        breachType: input.breachType,
-        severity: input.severity,
-        details: input.details,
-        reportedBy: input.reportedBy || 'system',
-        timestamp: new Date().toISOString()
-      } as any);
+        success: true,
+        metadata: {
+          alertId,
+          breachType: input.breachType,
+          severity: input.severity,
+          details: input.details,
+          reportedBy: input.reportedBy || 'system'
+        }
+      });
 
       // Publish security breach event to trigger saga
       const event: SecurityPolicyBreachEvent = {
@@ -76,10 +79,11 @@ export class ReportSecurityBreachUseCase {
 
       await sagaEventHandler.handleSecurityPolicyBreachEvent(event, this.emailService, this.notificationClient);
 
-      logger.logBusiness('Security breach reported', input.reportedBy || 'system', {
+      logger.info('Security breach reported', {
         userId: input.userId,
         alertId,
-        severity: input.severity
+        severity: input.severity,
+        reportedBy: input.reportedBy || 'system'
       });
 
       return {

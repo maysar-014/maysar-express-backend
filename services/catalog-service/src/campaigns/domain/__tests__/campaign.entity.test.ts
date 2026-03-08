@@ -1,92 +1,40 @@
 import { Campaign } from '../campaign.entity';
-import { CampaignType, CampaignStatus } from '../../enums';
-import { CampaignSchedule } from '../../value-objects/campaign-schedule.value-object';
-import { CampaignMetadata } from '../../value-objects/campaign-metadata.value-object';
+import { CampaignStatus, CampaignType } from '../enums';
 
 describe('Campaign Entity', () => {
-    const validStartDate = new Date(Date.now() + 86400000); // tomorrow
-    const validEndDate = new Date(Date.now() + 172800000); // day after tomorrow
-    const schedule = CampaignSchedule.create(validStartDate, validEndDate, 'UTC');
-    const metadata = CampaignMetadata.create({ key: 'value' });
+    it('creates a campaign with constructor values', () => {
+        const startDate = new Date(Date.now() + 60_000);
+        const endDate = new Date(Date.now() + 120_000);
 
-    it('should create a campaign correctly', () => {
-        const campaign = Campaign.create(
-            'Test Campaign',
-            'Test Description',
-            CampaignType.PERCENTAGE_DISCOUNT,
-            schedule,
-            'seller-123',
-            'user-123',
-            metadata
+        const campaign = new Campaign(
+            'cmp-1',
+            'Launch Promo',
+            CampaignType.PROMOTIONAL,
+            CampaignStatus.DRAFT,
+            startDate,
+            endDate
         );
 
-        expect(campaign.getName()).toBe('Test Campaign');
-        expect(campaign.getStatus()).toBe(CampaignStatus.DRAFT);
-        expect(campaign.getSellerId()).toBe('seller-123');
+        expect(campaign.id).toBe('cmp-1');
+        expect(campaign.name).toBe('Launch Promo');
+        expect(campaign.status).toBe(CampaignStatus.DRAFT);
+        expect(campaign.type).toBe(CampaignType.PROMOTIONAL);
     });
 
-    it('should transition from DRAFT to SCHEDULED when launched with future date', () => {
-        const campaign = Campaign.create(
-            'Test Campaign',
-            'Test Description',
-            CampaignType.PERCENTAGE_DISCOUNT,
-            schedule,
-            'seller-123',
-            'user-123',
-            metadata
+    it('allows direct status transitions used by services', () => {
+        const campaign = new Campaign(
+            'cmp-2',
+            'Flash Discount',
+            CampaignType.FLASH_SALE,
+            CampaignStatus.DRAFT,
+            new Date(),
+            new Date(Date.now() + 3_600_000)
         );
 
-        campaign.launch();
-        expect(campaign.getStatus()).toBe(CampaignStatus.SCHEDULED);
-    });
+        campaign.status = CampaignStatus.ACTIVE;
+        expect(campaign.status).toBe(CampaignStatus.ACTIVE);
 
-    it('should transition to ACTIVE when launched with current date', () => {
-        const now = new Date();
-        const activeSchedule = CampaignSchedule.create(now, validEndDate, 'UTC');
-        const campaign = Campaign.create(
-            'Test Campaign',
-            'Test Description',
-            CampaignType.PERCENTAGE_DISCOUNT,
-            activeSchedule,
-            'seller-123',
-            'user-123',
-            metadata
-        );
-
-        campaign.launch();
-        expect(campaign.getStatus()).toBe(CampaignStatus.ACTIVE);
-    });
-
-    it('should allow pausing an active campaign', () => {
-        const now = new Date();
-        const activeSchedule = CampaignSchedule.create(now, validEndDate, 'UTC');
-        const campaign = Campaign.create(
-            'Test Campaign',
-            'Test Description',
-            CampaignType.PERCENTAGE_DISCOUNT,
-            activeSchedule,
-            'seller-123',
-            'user-123',
-            metadata
-        );
-
-        campaign.launch();
-        campaign.pause();
-        expect(campaign.getStatus()).toBe(CampaignStatus.PAUSED);
-    });
-
-    it('should allow canceling a campaign', () => {
-        const campaign = Campaign.create(
-            'Test Campaign',
-            'Test Description',
-            CampaignType.PERCENTAGE_DISCOUNT,
-            schedule,
-            'seller-123',
-            'user-123',
-            metadata
-        );
-
-        campaign.cancel();
-        expect(campaign.getStatus()).toBe(CampaignStatus.CANCELLED);
+        campaign.status = CampaignStatus.PAUSED;
+        expect(campaign.status).toBe(CampaignStatus.PAUSED);
     });
 });

@@ -1,7 +1,7 @@
 
 import { ProductionPlan } from '../entities/ProductionPlan.entity';
 import { ProductionSchedulingAlgorithm } from '../algorithms/ProductionSchedulingAlgorithm';
-import { CapacityManagementEngine } from './CapacityManagementEngine.ts';
+import { CapacityManagementEngine } from './CapacityManagementEngine';
 import { ProductionApprovalPolicy } from '../policies/ProductionApprovalPolicy';
 import { ProductionCapacity } from '../value-objects/production-capacity.value-object';
 

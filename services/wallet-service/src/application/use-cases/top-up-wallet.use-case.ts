@@ -13,7 +13,7 @@ export interface TopUpWalletDTO {
     phoneNumber?: string;
     callbackUrl?: string;
     auditInfo: AuditInfo;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
 }
 
 export interface TopUpWalletResultDTO {
@@ -74,10 +74,11 @@ export class TopUpWalletUseCase {
                 redirectUrl: response.data.redirectUrl,
                 message: response.message
             };
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const err = error as Error & { response?: { data?: { error?: string } } };
             return {
                 success: false,
-                message: error.response?.data?.error || error.message || 'Failed to initiate top-up'
+                message: err.response?.data?.error || err.message || 'Failed to initiate top-up'
             };
         }
     }

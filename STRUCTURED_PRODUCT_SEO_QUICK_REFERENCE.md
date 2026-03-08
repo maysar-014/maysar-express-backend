@@ -3,11 +3,12 @@
 ## Quick Start
 
 ### 1. Load Category Attributes
+
 ```typescript
 // Get attribute schema for a category
 const useCase = new LoadCategoryAttributesUseCase(
   categoryAttributeRepository,
-  categoryRepository
+  categoryRepository,
 );
 
 const schema = await useCase.execute(categoryId);
@@ -15,23 +16,25 @@ const schema = await useCase.execute(categoryId);
 ```
 
 ### 2. Preview Product Description
+
 ```typescript
 // Generate preview without saving
 const useCase = new PreviewGeneratedDescriptionUseCase(repository);
 
 const preview = await useCase.execute({
-  categoryId: 'cooking-oil-uuid',
-  brand: 'Azam',
-  productName: 'Cooking Oil',
+  categoryId: "cooking-oil-uuid",
+  brand: "Azam",
+  productName: "Cooking Oil",
   structuredAttributes: {
-    volume: '5L',
-    oil_type: 'Vegetable'
-  }
+    volume: "5L",
+    oil_type: "Vegetable",
+  },
 });
 // Returns: GeneratedDescriptionDto with SEO content and quality score
 ```
 
 ### 3. Create Structured Product
+
 ```typescript
 // Create product with structured attributes
 const useCase = new CreateProductUseCase(
@@ -41,23 +44,23 @@ const useCase = new CreateProductUseCase(
   productAttributeRepository,
   eventPublisher,
   idGenerator,
-  dateTimeService
+  dateTimeService,
 );
 
 const result = await useCase.execute({
-  sellerId: 'seller-uuid',
-  categoryId: 'cooking-oil-uuid',
-  brand: 'Azam',
-  productName: 'Cooking Oil',
+  sellerId: "seller-uuid",
+  categoryId: "cooking-oil-uuid",
+  brand: "Azam",
+  productName: "Cooking Oil",
   minimumOrderQuantity: 10,
-  supplierLocation: 'Dar es Salaam',
+  supplierLocation: "Dar es Salaam",
   structuredAttributes: {
-    volume: '5L',
-    oil_type: 'Vegetable'
+    volume: "5L",
+    oil_type: "Vegetable",
   },
-  mediaUrls: ['https://example.com/image.jpg'],
+  mediaUrls: ["https://example.com/image.jpg"],
   price: 15000,
-  currency: 'TZS'
+  currency: "TZS",
 });
 // Returns: { productId, status, message }
 ```
@@ -67,6 +70,7 @@ const result = await useCase.execute({
 ## API Endpoints
 
 ### Load Category Attributes
+
 ```http
 GET /api/v1/categories/:categoryId/attributes
 
@@ -93,6 +97,7 @@ Response:
 ```
 
 ### Preview Generated Description
+
 ```http
 POST /api/v1/products/preview-description
 
@@ -135,6 +140,7 @@ Response:
 ```
 
 ### Create Structured Product
+
 ```http
 POST /api/v1/products
 
@@ -178,15 +184,17 @@ Response (Quality Score Too Low):
 ## Quality Scoring
 
 ### Scoring Signals
-| Signal | Max Points | How to Maximize |
-|--------|-----------|-----------------|
-| Title Completeness | 20 | Include brand, product name, key attribute |
-| Attributes Completeness | 25 | Fill all required attributes |
-| Images Uploaded | 20 | Upload at least 3 images |
-| Description Length | 20 | Write 300+ character description |
-| Category Accuracy | 15 | Select leaf category (no children) |
+
+| Signal                  | Max Points | How to Maximize                            |
+| ----------------------- | ---------- | ------------------------------------------ |
+| Title Completeness      | 20         | Include brand, product name, key attribute |
+| Attributes Completeness | 25         | Fill all required attributes               |
+| Images Uploaded         | 20         | Upload at least 3 images                   |
+| Description Length      | 20         | Write 300+ character description           |
+| Category Accuracy       | 15         | Select leaf category (no children)         |
 
 ### Example Score Calculation
+
 ```
 Brand present:           +7 points
 Product name present:    +7 points
@@ -219,24 +227,26 @@ TOTAL SCORE:             95/100 ✓ PUBLISHABLE
 ## Value Objects
 
 ### StructuredProductAttributes
+
 ```typescript
 // Create with validation
 const attributes = StructuredProductAttributes.create(
   {
-    volume: '5L',
-    oil_type: 'Vegetable',
-    packaging: 'Bottle'
+    volume: "5L",
+    oil_type: "Vegetable",
+    packaging: "Bottle",
   },
-  schema // CategoryAttributeSchema[]
+  schema, // CategoryAttributeSchema[]
 );
 
 // Access values
-const volume = attributes.get('volume');
+const volume = attributes.get("volume");
 const all = attributes.getAll();
 const keyAttr = attributes.getKeyAttribute();
 ```
 
 ### QualityScore
+
 ```typescript
 // Create from signals
 const score = QualityScore.create({
@@ -244,7 +254,7 @@ const score = QualityScore.create({
   attributesCompleteness: 25,
   imagesUploaded: 20,
   descriptionLength: 15,
-  categoryAccuracy: 15
+  categoryAccuracy: 15,
 });
 
 // Check publishability
@@ -257,13 +267,14 @@ const suggestions = score.getSuggestionsForImprovement();
 ```
 
 ### SeoSlug
+
 ```typescript
 // Generate from attributes
 const slug = SeoSlug.fromAttributes({
-  categorySlug: 'cooking-oil',
-  brand: 'Azam',
-  productName: 'Cooking Oil',
-  keyAttribute: '5L'
+  categorySlug: "cooking-oil",
+  brand: "Azam",
+  productName: "Cooking Oil",
+  keyAttribute: "5L",
 });
 
 // Result: "cooking-oil-azam-cooking-oil-5l"
@@ -275,6 +286,7 @@ const value = slug.getValue();
 ## Engines
 
 ### DescriptionGeneratorEngine
+
 ```typescript
 // Generate description
 const description = DescriptionGeneratorEngine.generate(
@@ -300,13 +312,14 @@ const description = DescriptionGeneratorEngine.generate(
 ```
 
 ### SeoTitleGeneratorEngine
+
 ```typescript
 // Generate SEO title
 const title = SeoTitleGeneratorEngine.generate({
-  brand: 'Azam',
-  productName: 'Cooking Oil',
-  keyAttribute: '5L',
-  categoryKeyword: 'Cooking Oil'
+  brand: "Azam",
+  productName: "Cooking Oil",
+  keyAttribute: "5L",
+  categoryKeyword: "Cooking Oil",
 });
 
 // Result: "Azam Cooking Oil 5L – Cooking Oil"
@@ -318,17 +331,18 @@ const title = SeoTitleGeneratorEngine.generate({
 ## Policies
 
 ### ProductQualityPolicy
+
 ```typescript
 // Compute quality score
 const score = ProductQualityPolicy.computeScore({
-  brand: 'Azam',
-  productName: 'Cooking Oil',
-  keyAttribute: '5L',
+  brand: "Azam",
+  productName: "Cooking Oil",
+  keyAttribute: "5L",
   requiredAttributesFilled: 2,
   totalRequiredAttributes: 2,
   imageCount: 3,
   descriptionLength: 250,
-  isLeafCategory: true
+  isLeafCategory: true,
 });
 
 // Check if can publish
@@ -341,6 +355,7 @@ const threshold = ProductQualityPolicy.getPublishThreshold(); // 60
 ```
 
 ### DescriptionValidationPolicy
+
 ```typescript
 // Validate description
 const result = DescriptionValidationPolicy.validate(
@@ -377,11 +392,12 @@ const result = DescriptionValidationPolicy.validate(
 ### Common Errors
 
 #### Missing Required Attributes
+
 ```typescript
 try {
   const attributes = StructuredProductAttributes.create(
-    { volume: '5L' }, // Missing oil_type
-    schema
+    { volume: "5L" }, // Missing oil_type
+    schema,
   );
 } catch (error) {
   // DomainError: "Missing required attributes: Oil Type"
@@ -389,10 +405,11 @@ try {
 ```
 
 #### Quality Score Too Low
+
 ```typescript
 try {
   const result = await createProductUseCase.execute(dto);
-  if (result.status === 'business_rule_violation') {
+  if (result.status === "business_rule_violation") {
     // Quality score 45 is below publish threshold of 60
   }
 } catch (error) {
@@ -401,11 +418,12 @@ try {
 ```
 
 #### Invalid Attribute Type
+
 ```typescript
 try {
   const attributes = StructuredProductAttributes.create(
-    { volume: 'invalid' }, // Not in SELECT options
-    schema
+    { volume: "invalid" }, // Not in SELECT options
+    schema,
   );
 } catch (error) {
   // DomainError: "Volume must be one of: 1L, 2L, 5L, 10L"
@@ -417,58 +435,57 @@ try {
 ## Testing Examples
 
 ### Unit Test: StructuredProductAttributes
+
 ```typescript
-describe('StructuredProductAttributes', () => {
-  it('should validate required attributes', () => {
+describe("StructuredProductAttributes", () => {
+  it("should validate required attributes", () => {
     expect(() => {
       StructuredProductAttributes.create(
-        { volume: '5L' }, // Missing required oil_type
-        schema
+        { volume: "5L" }, // Missing required oil_type
+        schema,
       );
-    }).toThrow('Missing required attributes');
+    }).toThrow("Missing required attributes");
   });
 
-  it('should validate attribute types', () => {
+  it("should validate attribute types", () => {
     expect(() => {
-      StructuredProductAttributes.create(
-        { volume: 'invalid' },
-        schema
-      );
-    }).toThrow('must be one of');
+      StructuredProductAttributes.create({ volume: "invalid" }, schema);
+    }).toThrow("must be one of");
   });
 });
 ```
 
 ### Integration Test: Product Creation
+
 ```typescript
-describe('CreateProductUseCase', () => {
-  it('should create product with quality score >= 60', async () => {
+describe("CreateProductUseCase", () => {
+  it("should create product with quality score >= 60", async () => {
     const result = await useCase.execute({
-      sellerId: 'seller-uuid',
-      categoryId: 'cooking-oil-uuid',
-      brand: 'Azam',
-      productName: 'Cooking Oil',
+      sellerId: "seller-uuid",
+      categoryId: "cooking-oil-uuid",
+      brand: "Azam",
+      productName: "Cooking Oil",
       minimumOrderQuantity: 10,
-      supplierLocation: 'Dar es Salaam',
+      supplierLocation: "Dar es Salaam",
       structuredAttributes: {
-        volume: '5L',
-        oil_type: 'Vegetable'
+        volume: "5L",
+        oil_type: "Vegetable",
       },
-      mediaUrls: ['https://example.com/image.jpg'],
-      price: 15000
+      mediaUrls: ["https://example.com/image.jpg"],
+      price: 15000,
     });
 
-    expect(result.status).toBe('success');
+    expect(result.status).toBe("success");
     expect(result.productId).toBeDefined();
   });
 
-  it('should reject product with quality score < 60', async () => {
+  it("should reject product with quality score < 60", async () => {
     const result = await useCase.execute({
       // ... minimal attributes
     });
 
-    expect(result.status).toBe('business_rule_violation');
-    expect(result.message).toContain('Quality score');
+    expect(result.status).toBe("business_rule_violation");
+    expect(result.message).toContain("Quality score");
   });
 });
 ```
@@ -478,6 +495,7 @@ describe('CreateProductUseCase', () => {
 ## Common Patterns
 
 ### Pattern 1: Load Schema → Fill Form → Preview → Submit
+
 ```typescript
 // Step 1: Load schema
 const schema = await loadCategoryAttributesUseCase.execute(categoryId);
@@ -485,12 +503,12 @@ const schema = await loadCategoryAttributesUseCase.execute(categoryId);
 // Step 2: User fills form with attributes
 const userInput = {
   categoryId,
-  brand: 'Azam',
-  productName: 'Cooking Oil',
+  brand: "Azam",
+  productName: "Cooking Oil",
   structuredAttributes: {
-    volume: '5L',
-    oil_type: 'Vegetable'
-  }
+    volume: "5L",
+    oil_type: "Vegetable",
+  },
 };
 
 // Step 3: Preview
@@ -502,13 +520,14 @@ console.log(`SEO Title: ${preview.seoTitle}`);
 if (preview.qualityScore >= 60) {
   const result = await createProductUseCase.execute({
     ...userInput,
-    mediaUrls: ['...'],
-    price: 15000
+    mediaUrls: ["..."],
+    price: 15000,
   });
 }
 ```
 
 ### Pattern 2: Batch Product Creation
+
 ```typescript
 const products = [
   { brand: 'Azam', productName: 'Oil 5L', ... },
@@ -531,7 +550,9 @@ for (const product of products) {
 ## Troubleshooting
 
 ### Issue: Quality Score Too Low
+
 **Solution**: Check the score breakdown and improve:
+
 - Add brand, product name, key attribute to title
 - Fill all required attributes
 - Upload at least 1 image
@@ -539,14 +560,18 @@ for (const product of products) {
 - Select a leaf category
 
 ### Issue: Attribute Validation Failed
+
 **Solution**: Verify:
+
 - All required attributes are provided
 - Attribute values match the type (TEXT, NUMBER, SELECT, BOOLEAN)
 - SELECT values are in the options list
 - TEXT values are ≤ 500 characters
 
 ### Issue: Description Validation Failed
+
 **Solution**: Ensure:
+
 - Description is 120-5000 characters
 - Product name is mentioned
 - Category keyword is included

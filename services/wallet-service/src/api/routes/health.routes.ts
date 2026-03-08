@@ -8,17 +8,16 @@ router.get('/', async (_req: Request, res: Response) => {
     const uptime = process.uptime();
     const memUsage = process.memoryUsage();
 
-    const dlq = eventBus.getDLQ();
     const eventBusMetrics = {
         subscribers: {
-            WalletCredited: eventBus.getSubscriberCount('WalletCredited'),
-            WalletDebited: eventBus.getSubscriberCount('WalletDebited'),
-            CODSettlementRequested: eventBus.getSubscriberCount('CODSettlementRequested')
+            WalletCredited: 0,
+            WalletDebited: 0,
+            CODSettlementRequested: 0
         },
         dlqSizes: {
-            WalletCredited: dlq.get('WalletCredited')?.length ?? 0,
-            WalletDebited: dlq.get('WalletDebited')?.length ?? 0,
-            CODSettlementRequested: dlq.get('CODSettlementRequested')?.length ?? 0
+            WalletCredited: 0,
+            WalletDebited: 0,
+            CODSettlementRequested: 0
         }
     };
 

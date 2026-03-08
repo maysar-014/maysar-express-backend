@@ -1,16 +1,39 @@
 import { EventSchema, eventRegistry } from './base';
 
+interface ProductCreatedData {
+    productId?: string;
+    name?: string;
+    price?: number;
+}
+
+interface ProductCreatedWithStructuredData {
+    productId?: string;
+    sellerId?: string;
+    slug?: string;
+    categorySlug?: string;
+    qualityScore?: number;
+}
+
+interface CategoryCreatedData {
+    categoryId?: string;
+    name?: string;
+}
+
+const asRecord = (data: unknown): Record<string, unknown> =>
+    typeof data === 'object' && data !== null ? (data as Record<string, unknown>) : {};
+
 /**
  * Product Created Event Schema
  */
-export const ProductCreatedSchema: EventSchema = {
+export const ProductCreatedSchema: EventSchema<ProductCreatedData> = {
     eventType: 'ProductCreated',
     version: 'v1',
-    validate(data: any) {
+    validate(data: unknown) {
+        const parsed = asRecord(data) as ProductCreatedData;
         const errors: string[] = [];
-        if (!data.productId) errors.push('productId is required');
-        if (!data.name) errors.push('name is required');
-        if (typeof data.price !== 'number') errors.push('price must be a number');
+        if (!parsed.productId) errors.push('productId is required');
+        if (!parsed.name) errors.push('name is required');
+        if (typeof parsed.price !== 'number') errors.push('price must be a number');
 
         return {
             valid: errors.length === 0,
@@ -22,16 +45,17 @@ export const ProductCreatedSchema: EventSchema = {
 /**
  * Product Created With Structured Data Event Schema
  */
-export const ProductCreatedWithStructuredDataSchema: EventSchema = {
+export const ProductCreatedWithStructuredDataSchema: EventSchema<ProductCreatedWithStructuredData> = {
     eventType: 'ProductCreatedWithStructuredData',
     version: 'v1',
-    validate(data: any) {
+    validate(data: unknown) {
+        const parsed = asRecord(data) as ProductCreatedWithStructuredData;
         const errors: string[] = [];
-        if (!data.productId) errors.push('productId is required');
-        if (!data.sellerId) errors.push('sellerId is required');
-        if (!data.slug) errors.push('slug is required');
-        if (!data.categorySlug) errors.push('categorySlug is required');
-        if (typeof data.qualityScore !== 'number') errors.push('qualityScore must be a number');
+        if (!parsed.productId) errors.push('productId is required');
+        if (!parsed.sellerId) errors.push('sellerId is required');
+        if (!parsed.slug) errors.push('slug is required');
+        if (!parsed.categorySlug) errors.push('categorySlug is required');
+        if (typeof parsed.qualityScore !== 'number') errors.push('qualityScore must be a number');
 
         return {
             valid: errors.length === 0,
@@ -43,13 +67,14 @@ export const ProductCreatedWithStructuredDataSchema: EventSchema = {
 /**
  * Category Created Event Schema
  */
-export const CategoryCreatedSchema: EventSchema = {
+export const CategoryCreatedSchema: EventSchema<CategoryCreatedData> = {
     eventType: 'CategoryCreated',
     version: 'v1',
-    validate(data: any) {
+    validate(data: unknown) {
+        const parsed = asRecord(data) as CategoryCreatedData;
         const errors: string[] = [];
-        if (!data.categoryId) errors.push('categoryId is required');
-        if (!data.name) errors.push('name is required');
+        if (!parsed.categoryId) errors.push('categoryId is required');
+        if (!parsed.name) errors.push('name is required');
 
         return {
             valid: errors.length === 0,

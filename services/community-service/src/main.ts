@@ -9,7 +9,7 @@ import winston from 'winston';
 // Infrastructure components
 import { PrismaPostRepository } from './infrastructure/repositories/prisma-post.repository';
 import { PrismaUserRepository } from './infrastructure/repositories/prisma-user.repository';
-import { inMemoryEventBus } from '@shared-events/eventBus';
+import { EventBus, eventBus } from '@shared-events/eventBus';
 import { RedisCache } from './infrastructure/cache/redis-cache';
 import { UuidGeneratorService } from './infrastructure/services/uuid-generator.service';
 
@@ -33,7 +33,7 @@ import { register as metricsRegistry } from './infrastructure/monitoring/metrics
 class CommunityService {
   private app: express.Application;
   private prisma!: PrismaClient;
-  private eventPublisher!: typeof inMemoryEventBus;
+  private eventPublisher!: EventBus;
   private cache!: RedisCache;
   private logger: winston.Logger;
 
@@ -64,8 +64,8 @@ class CommunityService {
       this.logger.info('Cache connected successfully');
 
       // Initialize event publisher
-      this.eventPublisher = inMemoryEventBus;
-      this.logger.info('In-memory event bus initialized');
+      this.eventPublisher = eventBus;
+      this.logger.info('Shared event bus initialized');
 
     } catch (error) {
 
@@ -231,9 +231,7 @@ class CommunityService {
     this.logger.info('Shutting down Community Service...');
 
     try {
-      await inMemoryEventBus.shutdown();
-      this.logger.info('Event bus drained');
-
+      // EventBus doesn't have shutdown method - it's in-memory
       // Close database connection
       await this.prisma.$disconnect();
       this.logger.info('Database disconnected');

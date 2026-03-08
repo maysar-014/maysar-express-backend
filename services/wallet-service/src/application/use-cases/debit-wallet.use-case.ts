@@ -11,14 +11,14 @@ import { AuditInfo } from '../../domain/value-objects/audit-info.value-object';
 import { Money } from '../../domain/value-objects/money.value-object';
 import { WalletEventPublisher } from '../../infrastructure/messaging/wallet-event-publisher';
 import { IAuditLogRepository } from '../../infrastructure/repositories/audit-log.repository';
-import { RedisLock } from '../../../../shared/locking/redis-lock';
+import { RedisLock } from '../../../../../shared/locking/redis-lock';
 
 export interface DebitWalletDTO {
     userId: string;
     amount: number;
     currency: string;
     description: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
     idempotencyKey: string;
     correlationId: string;
     auditInfo: AuditInfo;
@@ -50,10 +50,10 @@ export class DebitWalletUseCase {
         const idempotencyKey = IdempotencyKey.create(dto.idempotencyKey);
 
         // 1. Idempotency
-        const cached = await this.idempotencyService.checkIdempotency(idempotencyKey);
+        const cached = await this.idempotencyService.checkIdempotency<DebitWalletResultDTO>(idempotencyKey);
         if (cached) return cached;
 
-        return this.redisLock.withLock(`wallet:${dto.userId}`, 8000, async () => {
+        return this.redisLock.withLock(`wallet:${dto.userId}`, async () => {
             const wallet = await this.walletRepository.findByUserId(dto.userId);
             if (!wallet) {
                 return {
@@ -146,7 +146,9 @@ export class DebitWalletUseCase {
                 initiatedBy: dto.auditInfo.actor,
                 initiatedByType: dto.auditInfo.actorType,
                 reason: `DEBIT_REQUEST: ${dto.description}`,
-                isReversed: false
+                isReversed: false,
+                isCODRelated: false,
+                codConfirmationRequired: false
             });
 
             await this.transactionRepository.save(transaction);

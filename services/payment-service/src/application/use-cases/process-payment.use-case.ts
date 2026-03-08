@@ -165,6 +165,7 @@ export class ProcessPaymentUseCase {
             },
             createdAt: new Date(),
             updatedAt: new Date(),
+            version: 0,
         });
 
         // Step 5: Handle fraud decision

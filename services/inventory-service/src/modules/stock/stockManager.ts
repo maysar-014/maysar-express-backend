@@ -1,6 +1,63 @@
-import { PrismaClient, StockItem, Warehouse } from '@prisma/client';
-import { EventBus } from '../../../shared/events/eventBus';
+import { EventBus } from '@shared-events/eventBus';
 import { LowStockAlertEvent, InventoryUpdatedEvent } from '../events/inventoryEvents';
+
+export interface StockItemRecord {
+  id?: string;
+  productVariantId: string;
+  warehouseId: string;
+  quantityAvailable: number;
+  quantityReserved: number;
+  reorderPoint?: number | null;
+  maxStock?: number | null;
+  unitCost?: number | null;
+  updatedAt: Date;
+}
+
+export interface ReservationRecord {
+  id: string;
+  orderId: string;
+  productVariantId: string;
+  warehouseId: string;
+  quantityReserved: number;
+  status: string;
+}
+
+type StockItemWhereUnique = {
+  productVariantId_warehouseId: {
+    productVariantId: string;
+    warehouseId: string;
+  };
+};
+
+interface StockItemDelegate {
+  findMany(args: {
+    where: Record<string, unknown>;
+    include?: Record<string, unknown>;
+    orderBy?: Record<string, unknown>;
+  }): Promise<StockItemRecord[]>;
+  findUnique(args: { where: StockItemWhereUnique }): Promise<StockItemRecord | null>;
+  update(args: { where: StockItemWhereUnique; data: Record<string, unknown> }): Promise<StockItemRecord>;
+}
+
+interface InventoryMovementDelegate {
+  create(args: { data: Record<string, unknown> }): Promise<unknown>;
+}
+
+interface ReservationDelegate {
+  create(args: { data: Record<string, unknown> }): Promise<unknown>;
+  findMany(args: { where: Record<string, unknown> }): Promise<ReservationRecord[]>;
+  update(args: { where: { id: string }; data: Record<string, unknown> }): Promise<unknown>;
+}
+
+export interface StockManagerTxClient {
+  stockItem: StockItemDelegate;
+  inventoryMovement: InventoryMovementDelegate;
+  reservation: ReservationDelegate;
+}
+
+export interface StockManagerPrisma extends StockManagerTxClient {
+  $transaction<T>(callback: (tx: StockManagerTxClient) => Promise<T>): Promise<T>;
+}
 
 export interface StockLevel {
   variantId: string;
@@ -25,7 +82,7 @@ export interface StockUpdate {
 
 export class StockManager {
   constructor(
-    private prisma: PrismaClient,
+    private prisma: StockManagerPrisma,
     private eventBus: EventBus
   ) {}
 
@@ -43,7 +100,7 @@ export class StockManager {
       orderBy: { updatedAt: 'desc' }
     });
 
-    return stockItems.map(item => ({
+    return stockItems.map((item: StockItemRecord) => ({
       variantId: item.productVariantId,
       warehouseId: item.warehouseId,
       available: item.quantityAvailable,
@@ -59,7 +116,7 @@ export class StockManager {
    */
   async updateStock(updates: StockUpdate[]): Promise<void> {
     const operations = updates.map(async (update) => {
-      return await this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx: StockManagerTxClient) => {
         // Get current stock item
         const stockItem = await tx.stockItem.findUnique({
           where: {
@@ -168,7 +225,7 @@ export class StockManager {
    * Reserve stock for pending orders
    */
   async reserveStock(orderId: string, orderItemId: string, variantId: string, warehouseId: string, quantity: number): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: StockManagerTxClient) => {
       // Check available stock
       const stockItem = await tx.stockItem.findUnique({
         where: {
@@ -222,7 +279,7 @@ export class StockManager {
     });
 
     for (const reservation of reservations) {
-      await this.prisma.$transaction(async (tx) => {
+      await this.prisma.$transaction(async (tx: StockManagerTxClient) => {
         // Update reservation status
         await tx.reservation.update({
           where: { id: reservation.id },
@@ -251,7 +308,7 @@ export class StockManager {
   /**
    * Check for low stock conditions and emit alerts
    */
-  private async checkLowStockAlert(stockItem: StockItem): Promise<void> {
+  private async checkLowStockAlert(stockItem: StockItemRecord): Promise<void> {
     const availableStock = stockItem.quantityAvailable;
     const reorderPoint = stockItem.reorderPoint || 0;
 
@@ -265,14 +322,14 @@ export class StockManager {
         reorderPoint,
         urgency,
         timestamp: new Date().toISOString()
-      } as LowStockAlertEvent);
+      } as unknown as LowStockAlertEvent);
     }
   }
 
   /**
    * Validate stock update operations
    */
-  private async validateStockUpdate(currentStock: StockItem, newQuantity: number, update: StockUpdate): Promise<void> {
+  private async validateStockUpdate(currentStock: StockItemRecord, newQuantity: number, update: StockUpdate): Promise<void> {
     // Check maximum stock limits
     if (currentStock.maxStock && newQuantity > currentStock.maxStock) {
       throw new Error(`Stock update would exceed maximum stock limit of ${currentStock.maxStock}`);
@@ -292,7 +349,7 @@ export class StockManager {
   /**
    * Calculate stock status based on availability
    */
-  private calculateStockStatus(stockItem: StockItem): 'in_stock' | 'low_stock' | 'out_of_stock' {
+  private calculateStockStatus(stockItem: StockItemRecord): 'in_stock' | 'low_stock' | 'out_of_stock' {
     const available = stockItem.quantityAvailable;
     const reorderPoint = stockItem.reorderPoint || 0;
 

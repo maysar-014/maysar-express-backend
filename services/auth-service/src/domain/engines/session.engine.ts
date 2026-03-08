@@ -238,6 +238,10 @@ export class SessionEngine {
    */
   private getPermissionsForRole(role: UserRole): string[] {
     const rolePermissions: Record<UserRole, string[]> = {
+      [UserRole.ADMIN]: ['*'],
+      [UserRole.USER]: ['manage_own_profile'],
+      [UserRole.MODERATOR]: ['manage_users', 'manage_own_profile'],
+      [UserRole.GUEST]: ['view_products'],
       [UserRole.BUYER]: ['view_products', 'create_orders', 'view_own_orders', 'manage_own_profile'],
       [UserRole.SELLER]: ['manage_products', 'view_orders', 'update_inventory', 'manage_own_profile', 'view_analytics'],
       [UserRole.COURIER]: ['view_deliveries', 'update_delivery_status', 'manage_own_profile'],

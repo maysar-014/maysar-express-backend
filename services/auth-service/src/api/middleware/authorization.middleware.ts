@@ -897,8 +897,9 @@ export class AuthorizationMiddleware {
     }
 
     // Failed login attempts
-    if (user.securityContext?.failedLoginAttempts > 0) {
-      riskScore += user.securityContext.failedLoginAttempts * 10;
+    const failedLoginAttempts = user.securityContext?.failedLoginAttempts ?? 0;
+    if (failedLoginAttempts > 0) {
+      riskScore += failedLoginAttempts * 10;
     }
 
     // Session age

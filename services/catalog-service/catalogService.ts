@@ -1,6 +1,6 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { eventBus } from '@shared-events/eventBus';
+import { eventBus, EventEnvelope } from '@shared-events/eventBus';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
 import { SearchEngineInitializer } from './src/infrastructure/search-initializer';
@@ -9,11 +9,52 @@ dotenv.config();
 
 const app = express();
 const prisma = new PrismaClient();
+const legacyWholesalePricingModel = (prisma as unknown as {
+  wholesalePricing: {
+    findMany(args: Record<string, unknown>): Promise<unknown[]>;
+    create(args: Record<string, unknown>): Promise<unknown>;
+    upsert(args: Record<string, unknown>): Promise<unknown>;
+  };
+}).wholesalePricing;
 
 app.use(express.json());
 
 let searchEngine: any;
 let indexManager: any;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LegacyPayload = Record<string, any>;
+
+interface LegacySagaEvent extends Omit<EventEnvelope, 'data' | 'payload' | 'metadata'> {
+  data: LegacyPayload;
+  payload: LegacyPayload;
+  metadata?: Record<string, unknown>;
+  sagaId?: string;
+}
+
+const asLegacyPayload = (value: unknown): LegacyPayload =>
+  typeof value === 'object' && value !== null ? (value as LegacyPayload) : {};
+
+const asLegacyEvent = (envelope: EventEnvelope): LegacySagaEvent => {
+  const metadata = envelope.metadata;
+  const metadataSagaId = typeof metadata?.sagaId === 'string' ? metadata.sagaId : undefined;
+  return {
+    ...envelope,
+    data: asLegacyPayload(envelope.data),
+    payload: asLegacyPayload(envelope.payload),
+    metadata,
+    sagaId: envelope.sagaId || metadataSagaId
+  };
+};
+
+const subscribeLegacy = (
+  eventType: string,
+  handler: (event: LegacySagaEvent) => Promise<void>
+): void => {
+  eventBus.subscribe(eventType, async (envelope: EventEnvelope) => {
+    await handler(asLegacyEvent(envelope));
+  });
+};
 
 async function initializeServices() {
   const { searchEngine: engine, indexManager: manager } = await SearchEngineInitializer.initialize(prisma);
@@ -27,14 +68,16 @@ initializeSellerSagaHandlers();
 
 function initializeSellerSagaHandlers() {
   // Product Catalog Management Saga Events
-  eventBus.subscribe('ProductCreationStarted', async (event) => {
+  subscribeLegacy('ProductCreationStarted', async (event) => {
     const { sellerId, productName, category, sagaId } = event.payload;
 
     const product = await prisma.product.create({
       data: {
-        name: productName,
-        category: category,
-        sellerId,
+        title: String(productName),
+        categoryId: String(category),
+        sellerId: String(sellerId),
+        slug: `legacy-${uuidv4()}`,
+        tags: [],
         status: 'draft'
       }
     });
@@ -49,7 +92,7 @@ function initializeSellerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('ProductImagesUploaded', async (event) => {
+  subscribeLegacy('ProductImagesUploaded', async (event) => {
     const { images, sagaId } = event.payload;
 
     await eventBus.publish({
@@ -62,7 +105,7 @@ function initializeSellerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('ProductSEOOptimized', async (event) => {
+  subscribeLegacy('ProductSEOOptimized', async (event) => {
     const { seoData, sagaId } = event.payload;
 
     await eventBus.publish({
@@ -75,7 +118,7 @@ function initializeSellerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('ProductCatalogSynced', async (event) => {
+  subscribeLegacy('ProductCatalogSynced', async (event) => {
     const { sagaId } = event.payload;
 
     await eventBus.publish({
@@ -89,7 +132,7 @@ function initializeSellerSagaHandlers() {
   });
 
   // Pricing Management Saga Events
-  eventBus.subscribe('PricingValidationRequested', async (event) => {
+  subscribeLegacy('PricingValidationRequested', async (event) => {
     const { sellerId, productId, pricing, sagaId } = event.payload;
 
     const isValid = pricing.price > 0;
@@ -106,7 +149,7 @@ function initializeSellerSagaHandlers() {
     }
   });
 
-  eventBus.subscribe('ProductPricingUpdated', async (event) => {
+  subscribeLegacy('ProductPricingUpdated', async (event) => {
     const { productId, pricing, sagaId } = event.payload;
 
     await prisma.productVariant.updateMany({
@@ -128,7 +171,7 @@ function initializeSellerSagaHandlers() {
   });
 
   // Promotional Campaign Saga Events
-  eventBus.subscribe('CampaignValidationRequested', async (event) => {
+  subscribeLegacy('CampaignValidationRequested', async (event) => {
     const { sellerId, campaign, sagaId } = event.payload;
 
     const isValid = campaign.startDate && campaign.endDate && campaign.discountPercentage > 0;
@@ -145,7 +188,7 @@ function initializeSellerSagaHandlers() {
     }
   });
 
-  eventBus.subscribe('PromotionalCampaignCreated', async (event) => {
+  subscribeLegacy('PromotionalCampaignCreated', async (event) => {
     const { sellerId, campaign, sagaId } = event.payload;
 
     await eventBus.publish({
@@ -158,7 +201,7 @@ function initializeSellerSagaHandlers() {
     });
   });
 
-  eventBus.subscribe('CampaignActivated', async (event) => {
+  subscribeLegacy('CampaignActivated', async (event) => {
     const { sellerId, campaignId, sagaId } = event.payload;
 
     await eventBus.publish({
@@ -221,7 +264,7 @@ app.post('/api/products/search', async (req, res) => {
 // Wholesale pricing endpoints
 app.get('/api/wholesale/pricing/:supplierId', async (req, res) => {
   try {
-    const pricing = await prisma.wholesalePricing.findMany({
+    const pricing = await legacyWholesalePricingModel.findMany({
       where: { supplierId: req.params.supplierId }
     });
     res.json(pricing);
@@ -232,7 +275,7 @@ app.get('/api/wholesale/pricing/:supplierId', async (req, res) => {
 
 app.post('/api/wholesale/pricing', async (req, res) => {
   try {
-    const pricing = await prisma.wholesalePricing.create({
+    const pricing = await legacyWholesalePricingModel.create({
       data: req.body
     });
     res.json(pricing);
@@ -243,7 +286,7 @@ app.post('/api/wholesale/pricing', async (req, res) => {
 
 function initializeSupplierPricingHandlers() {
   // Wholesale Pricing Events
-  eventBus.subscribe('WholesaleCostAnalyzed', async (event) => {
+  subscribeLegacy('WholesaleCostAnalyzed', async (event) => {
     const { supplierId, products, costAnalysis, sagaId } = event.payload;
 
     const pricing = await calculateWholesalePricing(products, costAnalysis);
@@ -258,7 +301,7 @@ function initializeSupplierPricingHandlers() {
     });
   });
 
-  eventBus.subscribe('WholesalePricingCalculated', async (event) => {
+  subscribeLegacy('WholesalePricingCalculated', async (event) => {
     const { supplierId, products, pricing, sagaId } = event.payload;
 
     const approvedPricing = pricing;
@@ -273,11 +316,11 @@ function initializeSupplierPricingHandlers() {
     });
   });
 
-  eventBus.subscribe('WholesalePricingApproved', async (event) => {
+  subscribeLegacy('WholesalePricingApproved', async (event) => {
     const { supplierId, products, approvedPricing, sagaId } = event.payload;
 
     for (const product of products) {
-      await prisma.wholesalePricing.upsert({
+      await legacyWholesalePricingModel.upsert({
         where: {
           supplierId_productId: {
             supplierId,
@@ -307,7 +350,7 @@ function initializeSupplierPricingHandlers() {
     });
   });
 
-  eventBus.subscribe('WholesalePricingPublished', async (event) => {
+  subscribeLegacy('WholesalePricingPublished', async (event) => {
     const { supplierId, products, sagaId } = event.payload;
 
     await eventBus.publish({
@@ -343,7 +386,7 @@ async function calculateWholesalePricing(products: any[], costAnalysis: any) {
 
 function initializeEventHandlers() {
   // Product Catalog Management Saga Events
-  eventBus.subscribe('ProductCreationRequested', async (event) => {
+  subscribeLegacy('ProductCreationRequested', async (event) => {
     const { sellerId, productData, sagaId } = event.payload;
 
     const product = await prisma.product.create({
@@ -357,7 +400,7 @@ function initializeEventHandlers() {
     if (indexManager) {
       const searchableProduct = {
         id: product.id,
-        name: product.name,
+        name: product.title,
         description: product.description || '',
         price: 0,
         category: productData.category,
@@ -381,7 +424,7 @@ function initializeEventHandlers() {
     });
   });
 
-  eventBus.subscribe('ProductImageUploadRequested', async (event) => {
+  subscribeLegacy('ProductImageUploadRequested', async (event) => {
     const { productId, images, sagaId } = event.payload;
 
     // Store product images
@@ -408,7 +451,7 @@ function initializeEventHandlers() {
     });
   });
 
-  eventBus.subscribe('SEOOptimizationRequested', async (event) => {
+  subscribeLegacy('SEOOptimizationRequested', async (event) => {
     const { productId, seoData, sagaId } = event.payload;
 
     await prisma.product.update({
@@ -426,7 +469,7 @@ function initializeEventHandlers() {
     });
   });
 
-  eventBus.subscribe('CatalogSyncRequested', async (event) => {
+  subscribeLegacy('CatalogSyncRequested', async (event) => {
     const { sellerId, sagaId } = event.payload;
 
     // Sync catalog with external systems
@@ -445,7 +488,7 @@ function initializeEventHandlers() {
     });
   });
 
-  eventBus.subscribe('ProductPublicationRequested', async (event) => {
+  subscribeLegacy('ProductPublicationRequested', async (event) => {
     const { productId, sagaId } = event.payload;
 
     await prisma.product.update({
@@ -464,7 +507,7 @@ function initializeEventHandlers() {
   });
 
   // Bulk Product Operations Saga Events
-  eventBus.subscribe('BulkProductOperationRequested', async (event) => {
+  subscribeLegacy('BulkProductOperationRequested', async (event) => {
     const { sellerId, operation, productIds, sagaId } = event.payload;
 
     await eventBus.publish({
@@ -477,7 +520,7 @@ function initializeEventHandlers() {
     });
   });
 
-  eventBus.subscribe('BulkProductOperationInitiated', async (event) => {
+  subscribeLegacy('BulkProductOperationInitiated', async (event) => {
     const { operation, productIds, sagaId } = event.payload;
 
     if (operation === 'publish') {
@@ -503,7 +546,7 @@ function initializeEventHandlers() {
   });
 
   // Pricing Management Saga Events
-  eventBus.subscribe('PricingValidationRequested', async (event) => {
+  subscribeLegacy('PricingValidationRequested', async (event) => {
     const { sellerId, productId, pricing, sagaId } = event.payload;
 
     // Validate pricing rules
@@ -523,7 +566,7 @@ function initializeEventHandlers() {
     }
   });
 
-  eventBus.subscribe('ProductPricingUpdated', async (event) => {
+  subscribeLegacy('ProductPricingUpdated', async (event) => {
     const { productId, pricing, sagaId } = event.payload;
 
     await prisma.productVariant.updateMany({
@@ -546,7 +589,7 @@ function initializeEventHandlers() {
   });
 
   // Promotional Campaign Saga Events
-  eventBus.subscribe('CampaignValidationRequested', async (event) => {
+  subscribeLegacy('CampaignValidationRequested', async (event) => {
     const { sellerId, campaign, sagaId } = event.payload;
 
     // Validate campaign parameters
@@ -566,7 +609,7 @@ function initializeEventHandlers() {
     }
   });
 
-  eventBus.subscribe('PromotionalCampaignCreated', async (event) => {
+  subscribeLegacy('PromotionalCampaignCreated', async (event) => {
     const { sellerId, campaign, sagaId } = event.payload;
 
     // Apply campaign to products
@@ -577,7 +620,7 @@ function initializeEventHandlers() {
         });
 
         for (const variant of variants) {
-          const discountedPrice = variant.price * (1 - campaign.discountPercentage / 100);
+          const discountedPrice = Number(variant.price) * (1 - Number(campaign.discountPercentage) / 100);
           await prisma.productVariant.update({
             where: { id: variant.id },
             data: { compareAtPrice: variant.price, price: discountedPrice }
@@ -596,7 +639,7 @@ function initializeEventHandlers() {
     });
   });
 
-  eventBus.subscribe('CampaignActivated', async (event) => {
+  subscribeLegacy('CampaignActivated', async (event) => {
     const { sellerId, campaignId, sagaId } = event.payload;
 
     await eventBus.publish({

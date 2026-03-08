@@ -26,4 +26,4 @@ i18next
 
 export { i18next };
 export const i18nextMiddleware = middleware;
-export const t = (key: string, options?: any) => i18next.t(key, options);
+export const t = (key: string, options?: Record<string, unknown>) => i18next.t(key, options);

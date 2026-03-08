@@ -1,245 +1,306 @@
-import { EventEmitter } from 'events';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
-export interface EventEnvelope {
-  eventType: string;
-  data: any;
-  metadata?: any;
+export interface EventEnvelope<T = unknown> {
   eventId?: string;
+  eventType?: string;
+  version?: string;
+  producer?: string;
+  data?: T;
+  type?: string;
+  event?: string;
+  payload?: T;
+  eventData?: T;
+  aggregateId?: string;
+  aggregateType?: string;
   sagaId?: string;
+  metadata?: Record<string, unknown>;
+  timestamp?: Date | string;
   correlationId?: string;
 }
 
-export interface EventBusAuditEntry {
-  eventType: string;
-  eventId: string;
-  correlationId?: string;
-  sagaId?: string;
-  timestamp: string;
-  dataSummary: string;
+export type EventHandler<T = EventEnvelope> = (envelope: T) => Promise<void>;
+
+export interface SubscriptionOptions<T = EventEnvelope> {
+  name: string;
+  handler: EventHandler<T>;
 }
 
 export interface IEventPublisher {
-  publish(eventType: string, data: any, metadata?: any): Promise<void>;
+  publish(envelope: EventEnvelope): Promise<void>;
+  publish(eventType: string, data: unknown, metadata?: Record<string, unknown>): Promise<void>;
+  emit(envelope: EventEnvelope): Promise<void>;
+  emit(eventType: string, data: unknown, metadata?: Record<string, unknown>): Promise<void>;
 }
 
 export interface IEventSubscriber {
-  subscribe(eventType: string, handler: (envelope: EventEnvelope) => Promise<void>): Promise<void>;
-  subscribe(eventType: string, options: { name: string; handler: (envelope: EventEnvelope) => Promise<void> }): Promise<void>;
+  subscribe<T = EventEnvelope>(eventType: string, handler: EventHandler<T>): Promise<void>;
+  subscribe<T = EventEnvelope>(eventType: string, options: SubscriptionOptions<T>): Promise<void>;
 }
 
 export interface IEventBus extends IEventPublisher, IEventSubscriber {}
 
-/**
- * Reserved event names:
- * - 'dead-letter': Internal event emitted when a subscriber exhausts all retries
- */
-export class EventBus extends EventEmitter implements IEventBus {
-  private logger: typeof console;
-  private auditMiddlewares: ((envelope: EventEnvelope) => void)[] = [];
-  private dlq: Map<string, EventEnvelope[]> = new Map();
-  private _inFlightCount = 0;
-  private _shuttingDown = false;
-  private _shutdownResolvers: Array<() => void> = [];
+interface LegacyEventLike {
+  type?: string;
+  event?: string;
+  eventType?: string;
+  data?: unknown;
+  payload?: unknown;
+  eventData?: unknown;
+  metadata?: Record<string, unknown>;
+  timestamp?: Date | string;
+  eventId?: string;
+  correlationId?: string;
+}
 
-  constructor() {
-    super();
-    const maxListeners = parseInt(process.env.EVENT_BUS_MAX_LISTENERS ?? '200', 10);
-    this.setMaxListeners(isNaN(maxListeners) ? 200 : maxListeners);
-    this.logger = console;
-    this.initializeAudit();
-  }
+interface SubscriberEntry {
+  name: string;
+  handler: EventHandler<EventEnvelope>;
+}
 
-  private initializeAudit(): void {
-    this.addAuditMiddleware((envelope: EventEnvelope) => {
-      try {
-        let dataSummary: string;
-        try {
-          dataSummary = JSON.stringify(envelope.data).substring(0, 256);
-        } catch {
-          dataSummary = String(envelope.data).substring(0, 256);
-        }
-        import('../audit/audit.service').then(({ AuditService }) => {
-          const auditService = AuditService.getInstance();
-          auditService.saveEventBusAudit({
-            eventType: envelope.eventType,
-            eventId: envelope.eventId!,
-            correlationId: envelope.correlationId,
-            sagaId: envelope.sagaId,
-            timestamp: envelope.metadata?.timestamp || new Date().toISOString(),
-            dataSummary
-          });
-        }).catch(err => this.logger.error('[EventBus] Audit error:', err));
-      } catch (err) {
-        this.logger.error('[EventBus] Audit middleware error:', err);
-      }
-    });
-  }
+interface DeadLetterEntry {
+  envelope: EventEnvelope;
+  subscriberName: string;
+  error: string;
+  failedAt: Date;
+}
 
-  addAuditMiddleware(fn: (envelope: EventEnvelope) => void): void {
-    this.auditMiddlewares.push(fn);
-  }
+export class EventBus implements IEventBus {
+  private handlers = new Map<string, SubscriberEntry[]>();
+  private deadLetterQueue = new Map<string, DeadLetterEntry[]>();
 
-  async publish(eventType: string, data: any, metadata?: any): Promise<void>;
-  async publish(eventObject: { type?: string; event?: string; data?: any; payload?: any;[key: string]: any }): Promise<void>;
-  async publish(eventTypeOrObject: string | { type?: string; event?: string; data?: any; payload?: any;[key: string]: any }, data?: any, metadata?: any): Promise<void> {
-    let finalEventType: string;
-    let finalData: any;
-    let finalMetadata: any;
+  async publish(envelope: EventEnvelope): Promise<void>;
+  async publish(eventType: string, data: unknown, metadata?: Record<string, unknown>): Promise<void>;
+  async publish(
+    eventTypeOrEnvelope: string | EventEnvelope | LegacyEventLike,
+    data?: unknown,
+    metadata?: Record<string, unknown>
+  ): Promise<void> {
+    const envelope = this.normalizeEnvelope(eventTypeOrEnvelope, data, metadata);
+    const eventType = envelope.eventType || 'unknown';
+    const handlers = this.handlers.get(eventType) || [];
 
-    if (typeof eventTypeOrObject === 'string') {
-      finalEventType = eventTypeOrObject;
-      finalData = data;
-      finalMetadata = metadata;
-    } else {
-      const obj = eventTypeOrObject;
-      finalEventType = obj.type || obj.event || 'unknown';
-      finalData = obj.data || obj.payload;
-      finalMetadata = { ...obj };
-      delete finalMetadata.type;
-      delete finalMetadata.event;
-      delete finalMetadata.data;
-      delete finalMetadata.payload;
-    }
-
-    const envelope: EventEnvelope = {
-      eventType: finalEventType,
-      data: finalData,
-      metadata: {
-        eventId: uuidv4(),
-        timestamp: new Date().toISOString(),
-        ...finalMetadata
-      },
-      eventId: finalMetadata?.eventId || uuidv4(),
-      sagaId: finalMetadata?.sagaId,
-      correlationId: finalMetadata?.correlationId
-    };
-
-    this.logger.log(`[EventBus] Publishing: ${finalEventType}`, {
-      eventId: envelope.eventId,
-      correlationId: envelope.metadata?.correlationId
-    });
-
-    // Run audit middleware
-    for (const middleware of this.auditMiddlewares) {
-      try {
-        middleware(envelope);
-      } catch (err) {
-        this.logger.error('[EventBus] Audit middleware error:', err);
-      }
-    }
-
-    if (this._shuttingDown) {
-      this.logger.warn(`[EventBus] Skipping publish during shutdown: ${finalEventType}`);
+    if (handlers.length === 0) {
       return;
     }
 
-    // Emit event asynchronously to decouple publisher from subscribers
-    this._inFlightCount++;
-    setImmediate(() => {
-      try {
-        this.emit(finalEventType, envelope);
-      } finally {
-        this._inFlightCount--;
-        if (this._inFlightCount === 0 && this._shuttingDown) {
-          this._shutdownResolvers.forEach(resolve => resolve());
-          this._shutdownResolvers = [];
+    const failures: string[] = [];
+    await Promise.all(
+      handlers.map(async ({ name, handler }) => {
+        try {
+          await handler(envelope);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          this.pushToDLQ(envelope, name, message);
+          failures.push(`${name}: ${message}`);
         }
-      }
-    });
+      })
+    );
+
+    if (failures.length > 0) {
+      throw new Error(
+        `Failed to process event "${eventType}" for ${failures.length} subscriber(s): ${failures.join('; ')}`
+      );
+    }
   }
 
-  async subscribe(eventType: string, handlerOrOptions: ((envelope: EventEnvelope) => Promise<void>) | { name: string; handler: (envelope: EventEnvelope) => Promise<void> }): Promise<void> {
-    const handler = typeof handlerOrOptions === 'function' ? handlerOrOptions : handlerOrOptions.handler;
-    const subscriberName = typeof handlerOrOptions === 'function' ? 'anonymous' : handlerOrOptions.name;
-
-    this.on(eventType, async (envelope: EventEnvelope) => {
-      try {
-        await this.handleWithRetry(eventType, envelope, handler, subscriberName);
-      } catch (error) {
-        this.logger.error(`[EventBus][${subscriberName}] Final failure for event ${eventType}:`, error);
-      }
-    });
-  }
-
-  private async handleWithRetry(
-    eventType: string,
-    envelope: EventEnvelope,
-    handler: (envelope: EventEnvelope) => Promise<void>,
-    subscriberName: string,
-    retries: number = 3
+  async emit(envelope: EventEnvelope): Promise<void>;
+  async emit(eventType: string, data: unknown, metadata?: Record<string, unknown>): Promise<void>;
+  async emit(
+    eventTypeOrEnvelope: string | EventEnvelope | LegacyEventLike,
+    data?: unknown,
+    metadata?: Record<string, unknown>
   ): Promise<void> {
-    let lastError: any;
-
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        await handler(envelope);
-        return;
-      } catch (error) {
-        lastError = error;
-        this.logger.warn(`[EventBus][${subscriberName}] Attempt ${attempt} failed for ${eventType}:`, error);
-        if (attempt < retries) {
-          // Exponential backoff: 100ms, 200ms, 400ms
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 50));
-        }
-      }
+    if (typeof eventTypeOrEnvelope === 'string') {
+      await this.publish(eventTypeOrEnvelope, data, metadata);
+      return;
     }
 
-    // DLQ: push to dead-letter queue instead of throwing
-    if (!this.dlq.has(eventType)) {
-      this.dlq.set(eventType, []);
+    await this.publish(this.normalizeEnvelope(eventTypeOrEnvelope, data, metadata));
+  }
+
+  async subscribe<T = EventEnvelope>(eventType: string, handler: EventHandler<T>): Promise<void>;
+  async subscribe<T = EventEnvelope>(eventType: string, options: SubscriptionOptions<T>): Promise<void>;
+  async subscribe<T = EventEnvelope>(
+    eventType: string,
+    handlerOrOptions: EventHandler<T> | SubscriptionOptions<T>
+  ): Promise<void> {
+    const current = this.handlers.get(eventType) || [];
+    const nextSubscriber =
+      typeof handlerOrOptions === 'function'
+        ? { name: `${eventType}-handler-${current.length + 1}`, handler: handlerOrOptions as EventHandler<EventEnvelope> }
+        : { name: handlerOrOptions.name, handler: handlerOrOptions.handler as EventHandler<EventEnvelope> };
+
+    this.handlers.set(eventType, [...current, nextSubscriber]);
+  }
+
+  async on<T = EventEnvelope>(eventType: string, handler: EventHandler<T>): Promise<void>;
+  async on<T = EventEnvelope>(eventType: string, options: SubscriptionOptions<T>): Promise<void>;
+  async on<T = EventEnvelope>(
+    eventType: string,
+    handlerOrOptions: EventHandler<T> | SubscriptionOptions<T>
+  ): Promise<void> {
+    if (typeof handlerOrOptions === 'function') {
+      await this.subscribe(eventType, handlerOrOptions);
+      return;
     }
-    this.dlq.get(eventType)!.push(envelope);
-    this.logger.error(`[EventBus][${subscriberName}] DLQ: ${eventType} after ${retries} retries`, lastError);
-    
-    // Emit dead-letter event with normalized EventEnvelope contract
-    const deadLetterEnvelope: EventEnvelope = {
-      eventType: 'dead-letter',
-      data: {
-        failedEventType: eventType,
-        originalEnvelope: envelope,
-        subscriberName,
-        error: lastError?.message || String(lastError)
-      },
-      metadata: {
-        eventId: uuidv4(),
-        timestamp: new Date().toISOString(),
-        correlationId: envelope.correlationId,
-        sagaId: envelope.sagaId
-      },
-      eventId: uuidv4(),
-      correlationId: envelope.correlationId,
-      sagaId: envelope.sagaId
-    };
-    super.emit('dead-letter', deadLetterEnvelope);
-  }
 
-  getDLQ(): Map<string, EventEnvelope[]> {
-    return new Map(this.dlq);
-  }
-
-  async replayDLQ(eventType: string): Promise<void> {
-    const envelopes = this.dlq.get(eventType);
-    if (!envelopes || envelopes.length === 0) return;
-    this.dlq.delete(eventType);
-    for (const envelope of envelopes) {
-      super.emit(eventType, envelope);
-    }
-  }
-
-  async shutdown(): Promise<void> {
-    this._shuttingDown = true;
-    if (this._inFlightCount === 0) return;
-    return new Promise<void>(resolve => {
-      this._shutdownResolvers.push(resolve);
-    });
+    await this.subscribe(eventType, handlerOrOptions);
   }
 
   getSubscriberCount(eventType: string): number {
-    return this.listenerCount(eventType);
+    return this.handlers.get(eventType)?.length || 0;
+  }
+
+  getSubscriberCounts(): Record<string, number> {
+    const result: Record<string, number> = {};
+    for (const [eventType, handlers] of Array.from(this.handlers.entries())) {
+      result[eventType] = handlers.length;
+    }
+    return result;
+  }
+
+  getSubscribers(eventType: string): string[];
+  getSubscribers(): Record<string, string[]>;
+  getSubscribers(eventType?: string): string[] | Record<string, string[]> {
+    if (eventType) {
+      return (this.handlers.get(eventType) || []).map(sub => sub.name);
+    }
+
+    const result: Record<string, string[]> = {};
+    for (const [type, handlers] of Array.from(this.handlers.entries())) {
+      result[type] = handlers.map(sub => sub.name);
+    }
+    return result;
+  }
+
+  getDLQ(): Map<string, EventEnvelope[]> {
+    const result = new Map<string, EventEnvelope[]>();
+    for (const [eventType, entries] of Array.from(this.deadLetterQueue.entries())) {
+      result.set(eventType, entries.map(entry => entry.envelope));
+    }
+    return result;
+  }
+
+  getDLQSize(eventType: string): number {
+    return this.deadLetterQueue.get(eventType)?.length || 0;
+  }
+
+  getDLQSizes(): Record<string, number> {
+    const result: Record<string, number> = {};
+    for (const [eventType, entries] of Array.from(this.deadLetterQueue.entries())) {
+      result[eventType] = entries.length;
+    }
+    return result;
+  }
+
+  clearDLQ(eventType?: string): void {
+    if (eventType) {
+      this.deadLetterQueue.delete(eventType);
+      return;
+    }
+    this.deadLetterQueue.clear();
+  }
+
+  removeAllSubscribers(eventType?: string): void {
+    if (eventType) {
+      this.handlers.delete(eventType);
+      return;
+    }
+    this.handlers.clear();
+  }
+
+  async shutdown(): Promise<void> {
+    this.handlers.clear();
+    this.deadLetterQueue.clear();
+  }
+
+  private pushToDLQ(envelope: EventEnvelope, subscriberName: string, error: string): void {
+    const eventType = envelope.eventType || 'unknown';
+    const current = this.deadLetterQueue.get(eventType) || [];
+    current.push({
+      envelope,
+      subscriberName,
+      error,
+      failedAt: new Date()
+    });
+    this.deadLetterQueue.set(eventType, current);
+  }
+
+  private normalizeEnvelope(
+    eventTypeOrEnvelope: string | EventEnvelope | LegacyEventLike,
+    data?: unknown,
+    metadata?: Record<string, unknown>
+  ): EventEnvelope {
+    if (typeof eventTypeOrEnvelope === 'string') {
+      return this.createEnvelope(eventTypeOrEnvelope, data, metadata);
+    }
+
+    const envelopeEvent = eventTypeOrEnvelope as EventEnvelope;
+    const legacyEvent = eventTypeOrEnvelope as LegacyEventLike;
+    const eventType = envelopeEvent.eventType || legacyEvent.type || legacyEvent.event;
+    if (!eventType) {
+      throw new Error('Event type is required for publish');
+    }
+
+    const eventData =
+      envelopeEvent.data !== undefined
+        ? envelopeEvent.data
+        : envelopeEvent.eventData !== undefined
+          ? envelopeEvent.eventData
+          : legacyEvent.data !== undefined
+            ? legacyEvent.data
+            : legacyEvent.payload !== undefined
+              ? legacyEvent.payload
+              : legacyEvent.eventData !== undefined
+                ? legacyEvent.eventData
+                : data;
+
+    return this.createEnvelope(
+      eventType,
+      eventData,
+      {
+        ...(envelopeEvent.metadata || {}),
+        ...(legacyEvent.metadata || {}),
+        ...(metadata || {})
+      },
+      envelopeEvent.eventId || legacyEvent.eventId,
+      envelopeEvent.timestamp || legacyEvent.timestamp,
+      envelopeEvent.correlationId || legacyEvent.correlationId
+    );
+  }
+
+  private createEnvelope(
+    eventType: string,
+    data: unknown,
+    metadata?: Record<string, unknown>,
+    eventId?: string,
+    timestamp?: Date | string,
+    correlationId?: string
+  ): EventEnvelope {
+    const resolvedTimestamp =
+      timestamp instanceof Date ? timestamp : timestamp ? new Date(timestamp) : new Date();
+    const resolvedCorrelationId =
+      correlationId || this.getStringMetadataField(metadata, 'correlationId');
+    const resolvedEventId = eventId || this.getStringMetadataField(metadata, 'eventId') || randomUUID();
+
+    return {
+      eventId: resolvedEventId,
+      eventType,
+      data,
+      metadata,
+      timestamp: resolvedTimestamp,
+      correlationId: resolvedCorrelationId
+    };
+  }
+
+  private getStringMetadataField(
+    metadata: Record<string, unknown> | undefined,
+    key: string
+  ): string | undefined {
+    const value = metadata?.[key];
+    return typeof value === 'string' ? value : undefined;
   }
 }
 
 export const eventBus = new EventBus();
 export const inMemoryEventBus = eventBus;
-export type EventHandler = (envelope: EventEnvelope) => Promise<void>;

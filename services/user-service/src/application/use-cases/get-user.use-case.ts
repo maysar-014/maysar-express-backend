@@ -33,7 +33,7 @@ export class GetUserUseCase {
    */
   async execute(input: GetUserInput): Promise<GetUserOutput> {
     try {
-      logger.logBusiness('Getting user', input.requestingUserId, { targetUserId: input.userId });
+      logger.info('Getting user', { targetUserId: input.userId, requestingUserId: input.requestingUserId });
 
       // Check if user exists
       const user = await this.userRepository.findById(input.userId);
@@ -58,8 +58,9 @@ export class GetUserUseCase {
       // Apply field selection if specified
       const filteredUser = input.fields ? this.filterUserFields(user, input.fields) : user;
 
-      logger.logBusiness('User retrieved successfully', input.requestingUserId, {
+      logger.info('User retrieved successfully', {
         targetUserId: input.userId,
+        requestingUserId: input.requestingUserId,
         fields: input.fields
       });
 

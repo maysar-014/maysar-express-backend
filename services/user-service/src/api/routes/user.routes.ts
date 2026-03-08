@@ -70,16 +70,27 @@ function initializeController(): void {
       emailService,
       notificationClient
     );
+    // TODO: Inject a concrete repository instead of null placeholders for these use cases.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const changePasswordUseCase = new ChangePasswordUseCase(null as any, emailService, notificationClient);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const deleteAccountUseCase = new DeleteAccountUseCase(null as any, emailService, notificationClient);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const suspendAccountUseCase = new SuspendAccountUseCase(null as any, emailService, notificationClient);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const changeRoleUseCase = new ChangeRoleUseCase(null as any, emailService, notificationClient);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const verifyPhoneUseCase = new VerifyPhoneUseCase(null as any, emailService, notificationClient);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const setupTwoFactorUseCase = new SetupTwoFactorUseCase(null as any, emailService, notificationClient);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const reportSecurityBreachUseCase = new ReportSecurityBreachUseCase(null as any, emailService, notificationClient);
-    const getUserUseCase = new GetUserUseCase(userRepository);
-    const updateUserUseCase = new UpdateUserUseCase(userRepository, eventPublisher);
-    const verifyEmailUseCase = new VerifyEmailUseCase(userRepository, eventPublisher);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const getUserUseCase = new GetUserUseCase(userRepository as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateUserUseCase = new UpdateUserUseCase(userRepository as any, eventPublisher);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const verifyEmailUseCase = new VerifyEmailUseCase(userRepository as any, eventPublisher);
 
     userController = new UserController(
       createUserUseCase,

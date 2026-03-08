@@ -8,7 +8,7 @@ export interface ShippingAddress {
 
 export type UUID = string;
 
-export interface EventEnvelope<T = any> {
+export interface EventEnvelope<T = unknown> {
   event: string;
   version: string;
   eventId: UUID;

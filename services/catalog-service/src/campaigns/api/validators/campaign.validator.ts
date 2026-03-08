@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { z } from 'zod';
 import { CampaignType, RuleType, ConditionType, OperatorType } from '../../domain/enums';
 

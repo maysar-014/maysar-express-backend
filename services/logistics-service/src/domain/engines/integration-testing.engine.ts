@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 export interface LoadTestResults {
   totalRequests: number;
   successfulRequests: number;
@@ -41,7 +42,7 @@ export class IntegrationTestingSuite {
   private testResults: any[] = [];
 
   async performLoadTesting(): Promise<LoadTestResults> {
-    console.log('🔄 Starting Load Testing...');
+    console.log('ðŸ”„ Starting Load Testing...');
     
     const endpoints = [
       '/api/courier/deliveries/active',
@@ -62,12 +63,12 @@ export class IntegrationTestingSuite {
     }
 
     const aggregated = this.aggregateLoadTestResults(results);
-    console.log('✅ Load Testing Complete');
+    console.log('âœ… Load Testing Complete');
     return aggregated;
   }
 
   async validateAPICompliance(): Promise<ComplianceResults> {
-    console.log('🔄 Starting API Compliance Testing...');
+    console.log('ðŸ”„ Starting API Compliance Testing...');
     
     const endpoints = [
       // Delivery Management
@@ -138,12 +139,12 @@ export class IntegrationTestingSuite {
       failedEndpoints
     };
 
-    console.log('✅ API Compliance Testing Complete');
+    console.log('âœ… API Compliance Testing Complete');
     return results;
   }
 
   async benchmarkPerformance(): Promise<BenchmarkResults[]> {
-    console.log('🔄 Starting Performance Benchmarking...');
+    console.log('ðŸ”„ Starting Performance Benchmarking...');
     
     const engines = [
       { name: 'logistics-engine', endpoint: '/api/courier/deliveries/active' },
@@ -161,12 +162,12 @@ export class IntegrationTestingSuite {
       results.push(benchmark);
     }
 
-    console.log('✅ Performance Benchmarking Complete');
+    console.log('âœ… Performance Benchmarking Complete');
     return results;
   }
 
   async verifyDataAccuracy(): Promise<AccuracyResults[]> {
-    console.log('🔄 Starting Data Accuracy Verification...');
+    console.log('ðŸ”„ Starting Data Accuracy Verification...');
     
     const accuracyTests = [
       { engine: 'route-optimization', expectedAccuracy: 88, testCases: 100 },
@@ -190,7 +191,7 @@ export class IntegrationTestingSuite {
       });
     }
 
-    console.log('✅ Data Accuracy Verification Complete');
+    console.log('âœ… Data Accuracy Verification Complete');
     return results;
   }
 
@@ -363,7 +364,7 @@ export class IntegrationTestingSuite {
 
   // Generate comprehensive test report
   async generateTestReport(): Promise<string> {
-    console.log('🔄 Generating Comprehensive Test Report...');
+    console.log('ðŸ”„ Generating Comprehensive Test Report...');
     
     const [loadTest, compliance, benchmarks, accuracy] = await Promise.all([
       this.performLoadTesting(),
@@ -376,29 +377,29 @@ export class IntegrationTestingSuite {
 MAYSAR EXPRESS BACKEND - COMPREHENSIVE TEST REPORT
 ================================================
 
-🚀 LOAD TESTING RESULTS:
+ðŸš€ LOAD TESTING RESULTS:
 - Total Requests: ${loadTest.totalRequests}
 - Success Rate: ${((loadTest.successfulRequests / loadTest.totalRequests) * 100).toFixed(1)}%
 - Average Response Time: ${loadTest.averageResponseTime}ms
 - Throughput: ${loadTest.requestsPerSecond} req/s
 - Error Rate: ${loadTest.errorRate}%
 
-📋 API COMPLIANCE RESULTS:
+ðŸ“‹ API COMPLIANCE RESULTS:
 - Total Endpoints: ${compliance.totalEndpoints}
 - Compliance Score: ${compliance.complianceScore.toFixed(1)}%
 - Passed Tests: ${compliance.passedTests}/${compliance.totalEndpoints}
 - Failed Endpoints: ${compliance.failedEndpoints.length}
 
-⚡ PERFORMANCE BENCHMARKS:
+âš¡ PERFORMANCE BENCHMARKS:
 ${benchmarks.map(b => `- ${b.engine}: ${b.score}/100 (${b.responseTime.toFixed(1)}ms avg)`).join('\n')}
 
-🎯 ACCURACY VERIFICATION:
+ðŸŽ¯ ACCURACY VERIFICATION:
 ${accuracy.map(a => `- ${a.engine}: ${a.actualAccuracy.toFixed(1)}% (${a.passedCases}/${a.testCases} passed)`).join('\n')}
 
-📊 OVERALL SYSTEM HEALTH: ${this.calculateOverallHealth(loadTest, compliance, benchmarks, accuracy)}%
+ðŸ“Š OVERALL SYSTEM HEALTH: ${this.calculateOverallHealth(loadTest, compliance, benchmarks, accuracy)}%
 `;
 
-    console.log('✅ Test Report Generated');
+    console.log('âœ… Test Report Generated');
     return report;
   }
 

@@ -5,14 +5,14 @@ import { authzConfigManager } from '../config/authorization.config';
 import { googleOAuthConfig } from '../config/google-oauth.config';
 
 export interface GoogleUserProfile {
-  id: string;
+  id?: string;
   email: string;
-  verified_email: boolean;
+  verified_email?: boolean;
   name: string;
-  given_name: string;
-  family_name: string;
-  picture: string;
-  locale: string;
+  given_name?: string;
+  family_name?: string;
+  picture?: string;
+  locale?: string;
 }
 
 export class GoogleOAuthService {
@@ -66,7 +66,7 @@ export class GoogleOAuthService {
     }
   }
 
-  private async getUserProfile(idToken: string): Promise<GoogleUserProfile> {
+  public async getUserProfile(idToken: string): Promise<GoogleUserProfile> {
     const ticket = await this.oauth2Client.verifyIdToken({
       idToken,
       audience: googleOAuthConfig.clientId,
@@ -80,22 +80,24 @@ export class GoogleOAuthService {
     return {
       id: payload.sub!,
       email: payload.email!,
-      verified_email: payload.email_verified!,
+      verified_email: payload.email_verified ?? true,
       name: payload.name!,
-      given_name: payload.given_name!,
-      family_name: payload.family_name!,
-      picture: payload.picture!,
-      locale: payload.locale!,
+      given_name: payload.given_name ?? payload.name?.split(' ')[0] ?? '',
+      family_name: payload.family_name ?? payload.name?.split(' ').slice(1).join(' ') ?? '',
+      picture: payload.picture ?? '',
+      locale: payload.locale ?? 'en',
     };
   }
 
-  private async createUserFromGoogleProfile(profile: GoogleUserProfile, role?: string): Promise<UserEntity> {
+  public async createUserFromGoogleProfile(profile: GoogleUserProfile, role?: string): Promise<UserEntity> {
+    const firstName = profile.given_name ?? profile.name.split(' ')[0] ?? '';
+    const lastName = profile.family_name ?? profile.name.split(' ').slice(1).join(' ') ?? '';
     const userData = {
       email: profile.email,
       password: this.generateRandomPassword(), // Generate temporary password for OAuth users
       role: role || 'buyer', // Default to buyer role if not specified
-      firstName: profile.given_name,
-      lastName: profile.family_name,
+      firstName,
+      lastName,
       // Note: other fields like phoneNumber, dateOfBirth are optional
     };
 
@@ -103,13 +105,14 @@ export class GoogleOAuthService {
     return this.mapUserServiceUserToAuthUser(userServiceUser);
   }
 
-  private async updateUserFromGoogleProfile(user: UserEntity, profile: GoogleUserProfile): Promise<void> {
+  public async updateUserFromGoogleProfile(user: UserEntity, profile: GoogleUserProfile): Promise<void> {
     // Update user profile with Google data
     const updates: any = {};
+    const fullName = `${profile.given_name ?? profile.name.split(' ')[0] ?? ''} ${profile.family_name ?? profile.name.split(' ').slice(1).join(' ') ?? ''}`.trim();
     
-    if (profile.given_name && user.name !== `${profile.given_name} ${profile.family_name}`) {
-      updates.firstName = profile.given_name;
-      updates.lastName = profile.family_name;
+    if (fullName && user.name !== fullName) {
+      updates.firstName = profile.given_name ?? profile.name.split(' ')[0] ?? '';
+      updates.lastName = profile.family_name ?? profile.name.split(' ').slice(1).join(' ') ?? '';
     }
     
     if (Object.keys(updates).length > 0) {
@@ -118,23 +121,23 @@ export class GoogleOAuthService {
   }
 
   private mapUserServiceUserToAuthUser(userServiceUser: any): UserEntity {
-    return new UserEntity({
+    return UserEntity.create({
       id: userServiceUser.id,
       email: userServiceUser.email,
       name: `${userServiceUser.firstName || ''} ${userServiceUser.lastName || ''}`.trim(),
       role: userServiceUser.role,
       status: userServiceUser.status,
-      isEmailVerified: userServiceUser.isEmailVerified,
-      isPhoneVerified: userServiceUser.isPhoneVerified,
+      avatar: userServiceUser.avatar,
+      metadata: userServiceUser.metadata,
+      profile: {
+        name: `${userServiceUser.firstName || ''} ${userServiceUser.lastName || ''}`.trim(),
+        avatar: userServiceUser.avatar,
+        metadata: userServiceUser.metadata,
+      },
       twoFactorEnabled: userServiceUser.twoFactorEnabled,
       twoFactorSecret: userServiceUser.twoFactorSecret,
       failedLoginAttempts: userServiceUser.failedLoginAttempts,
-      lockoutUntil: userServiceUser.lockoutUntil ? new Date(userServiceUser.lockoutUntil) : undefined,
-      lastLoginAt: userServiceUser.lastLoginAt ? new Date(userServiceUser.lastLoginAt) : undefined,
-      avatar: userServiceUser.avatar,
-      metadata: userServiceUser.metadata,
-      createdAt: new Date(userServiceUser.createdAt),
-      updatedAt: new Date(userServiceUser.updatedAt)
+      createdAt: userServiceUser.createdAt ? new Date(userServiceUser.createdAt) : undefined,
     });
   }
 

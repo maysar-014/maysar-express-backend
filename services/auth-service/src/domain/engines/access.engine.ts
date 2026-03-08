@@ -17,6 +17,23 @@ export interface AccessResult {
 export class AccessEngine {
   private readonly CACHE_TTL = 300; // 5 minutes
   private readonly ACCURACY_TARGET = 99.8;
+  private readonly redis: any;
+  private readonly db: any;
+
+  constructor(redisClient?: any, dbClient?: any) {
+    this.redis = redisClient || {
+      get: async () => null,
+      setex: async () => undefined,
+      pipeline: () => ({
+        get: () => undefined,
+        exec: async () => []
+      })
+    };
+
+    this.db = dbClient || {
+      getRolePermissions: async () => ({})
+    };
+  }
 
   async checkAccess(request: AccessRequest): Promise<AccessResult> {
     const cacheKey = `access:${request.userId}:${request.resource}:${request.action}`;

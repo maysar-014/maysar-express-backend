@@ -27,6 +27,7 @@ export class ProductionMetrics {
     get productionOrderId(): string { return this.props.productionOrderId; }
     get leadTime(): LeadTime | undefined { return this.props.leadTime; }
     get qualityScore(): QualityScore | undefined { return this.props.qualityScore; }
+    get efficiency(): number | null | undefined { return this.props.efficiency; }
 
     calculateEfficiency(targetTimeSeconds: number): void {
         if (!this.props.cycleTimeSeconds) return;

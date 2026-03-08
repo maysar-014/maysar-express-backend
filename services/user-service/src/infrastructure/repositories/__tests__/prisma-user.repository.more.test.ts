@@ -53,7 +53,7 @@ function makePrismaMock() {
 describe('PrismaUserRepository more methods', () => {
   test('search, queries, analytics, security and bulk operations', async () => {
     const { prisma, userData } = makePrismaMock();
-    const repo = new PrismaUserRepository(prisma as any);
+    const repo = new PrismaUserRepository(prisma as any, { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v) } as any);
 
     // search
     const found = await repo.search('u1', 10, 0);

@@ -34,7 +34,7 @@ describe('ProductionOrder Entity', () => {
             order.startProduction();
             expect(order.status).toBe(ProductionOrderStatus.IN_PROGRESS);
             expect(order.phase).toBe(ProductionPhase.PREPARATION);
-            expect(order.props.actualStart).toBeDefined();
+            expect(order.actualStart).toBeDefined();
         });
 
         it('should throw if order not ready', () => {
@@ -49,9 +49,9 @@ describe('ProductionOrder Entity', () => {
             order.completeProduction(98, 2);
             expect(order.status).toBe(ProductionOrderStatus.COMPLETED);
             expect(order.phase).toBe(ProductionPhase.COMPLETED);
-            expect(order.props.producedQty).toBe(98);
-            expect(order.props.defectedQty).toBe(2);
-            expect(order.props.actualEnd).toBeDefined();
+            expect(order.producedQty).toBe(98);
+            expect(order.defectedQty).toBe(2);
+            expect(order.actualEnd).toBeDefined();
         });
     });
 

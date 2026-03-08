@@ -45,6 +45,10 @@ export class WalletController {
         });
     }
 
+    private getErrorMessage(error: unknown): string {
+        return error instanceof Error ? error.message : 'Internal server error';
+    }
+
     async getWallet(req: Request, res: Response): Promise<void> {
         try {
             const wallet = await this.walletRepository.findByUserId(req.params.userId);
@@ -93,8 +97,8 @@ export class WalletController {
                 auditInfo: this.getAuditInfo(req)
             });
             res.status(200).json(result);
-        } catch (error: any) {
-            res.status(400).json({ success: false, error: error.message });
+        } catch (error: unknown) {
+            res.status(400).json({ success: false, error: this.getErrorMessage(error) });
         }
     }
 
@@ -106,8 +110,8 @@ export class WalletController {
                 auditInfo: this.getAuditInfo(req)
             });
             res.status(200).json(result);
-        } catch (error: any) {
-            res.status(400).json({ success: false, error: error.message });
+        } catch (error: unknown) {
+            res.status(400).json({ success: false, error: this.getErrorMessage(error) });
         }
     }
 
@@ -119,8 +123,8 @@ export class WalletController {
                 auditInfo: this.getAuditInfo(req)
             });
             res.status(200).json(result);
-        } catch (error: any) {
-            res.status(400).json({ success: false, error: error.message });
+        } catch (error: unknown) {
+            res.status(400).json({ success: false, error: this.getErrorMessage(error) });
         }
     }
 
@@ -133,8 +137,8 @@ export class WalletController {
                 auditInfo: this.getAuditInfo(req)
             });
             res.status(200).json({ success: true, message: 'Hold released' });
-        } catch (error: any) {
-            res.status(400).json({ success: false, error: error.message });
+        } catch (error: unknown) {
+            res.status(400).json({ success: false, error: this.getErrorMessage(error) });
         }
     }
 
@@ -147,8 +151,8 @@ export class WalletController {
                 auditInfo: this.getAuditInfo(req)
             });
             res.status(200).json({ success: true, message: 'Hold captured' });
-        } catch (error: any) {
-            res.status(400).json({ success: false, error: error.message });
+        } catch (error: unknown) {
+            res.status(400).json({ success: false, error: this.getErrorMessage(error) });
         }
     }
 
@@ -161,8 +165,8 @@ export class WalletController {
                 auditInfo: this.getAuditInfo(req)
             });
             res.status(200).json(result);
-        } catch (error: any) {
-            res.status(400).json({ success: false, error: error.message });
+        } catch (error: unknown) {
+            res.status(400).json({ success: false, error: this.getErrorMessage(error) });
         }
     }
 
@@ -183,7 +187,7 @@ export class WalletController {
 
     async topUp(req: Request, res: Response): Promise<void> {
         try {
-            const user = (req as any).user;
+            const user = req.user;
             const userRoles = user?.roles || [];
 
             // Find the first eligible role (buyer or seller) from the user's roles array
@@ -254,7 +258,7 @@ export class WalletController {
 
     async initiatePayout(req: Request, res: Response): Promise<void> {
         try {
-            const user = (req as any).user;
+            const user = req.user;
             const userRoles = user?.roles || [];
 
             // Find if user has enabler role (case-insensitive)
@@ -279,8 +283,8 @@ export class WalletController {
                 auditInfo: this.getAuditInfo(req)
             });
             res.status(result.success ? 201 : 400).json(result);
-        } catch (error: any) {
-            res.status(500).json({ success: false, error: error.message || 'Internal server error' });
+        } catch (error: unknown) {
+            res.status(500).json({ success: false, error: this.getErrorMessage(error) });
         }
     }
 }

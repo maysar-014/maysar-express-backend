@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { NormalizationAlgorithm } from '../algorithms/normalization.algorithm';
 
 export interface ProductIdentifiersProps {

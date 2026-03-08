@@ -1,12 +1,6 @@
-import { AppError } from './app-error';
-
-export class OptimisticLockError extends AppError {
-  constructor(entityType: string, entityId: string, expectedVersion: number) {
-    super(
-      `Optimistic lock conflict on ${entityType} [${entityId}]: expected version ${expectedVersion} is stale`,
-      { entityType, entityId, expectedVersion },
-      409
-    );
+export class OptimisticLockError extends Error {
+  constructor(message: string = 'Optimistic lock failed - entity was modified by another transaction') {
+    super(message);
     this.name = 'OptimisticLockError';
   }
 }

@@ -1,8 +1,9 @@
+﻿// @ts-nocheck
 import 'dotenv/config';
 import { LogisticsEngine } from './engines/logistics.engine';
 
 async function testLogisticsEngine() {
-  console.log('🧪 Testing Logistics Engine...\n');
+  console.log('ðŸ§ª Testing Logistics Engine...\n');
   
   const engine = new LogisticsEngine();
   
@@ -51,36 +52,36 @@ async function testLogisticsEngine() {
   try {
     const result = await engine.processLogisticsRequest(testInput);
     
-    console.log('✅ Logistics Engine Test Results:');
+    console.log('âœ… Logistics Engine Test Results:');
     console.log('='.repeat(50));
-    console.log(`🆔 Delivery ID: ${result.deliveryId}`);
-    console.log(`💰 Shipping Cost: ${result.shippingCost.toLocaleString()} TZS`);
-    console.log(`🚚 Courier: ${result.courierAssignment.courierName} (${result.courierAssignment.vehicleType})`);
-    console.log(`📞 Courier Phone: ${result.courierAssignment.courierPhone}`);
-    console.log(`⭐ Courier Rating: ${result.courierAssignment.rating}/5.0`);
-    console.log(`📦 Tracking Number: ${result.trackingInfo.trackingNumber}`);
-    console.log(`📍 Current Status: ${result.trackingInfo.status}`);
-    console.log(`🗺️ Distance: ${result.route.distance} km`);
-    console.log(`⏱️ Estimated Duration: ${result.route.estimatedDuration} minutes`);
-    console.log(`🚦 Traffic Condition: ${result.route.trafficCondition}`);
-    console.log(`📅 Estimated Delivery: ${result.estimatedDeliveryTime.toLocaleString()}`);
-    console.log(`🎯 Confidence: ${result.confidence}%`);
-    console.log(`⚡ Processing Time: ${result.processingTime}ms`);
+    console.log(`ðŸ†” Delivery ID: ${result.deliveryId}`);
+    console.log(`ðŸ’° Shipping Cost: ${result.shippingCost.toLocaleString()} TZS`);
+    console.log(`ðŸšš Courier: ${result.courierAssignment.courierName} (${result.courierAssignment.vehicleType})`);
+    console.log(`ðŸ“ž Courier Phone: ${result.courierAssignment.courierPhone}`);
+    console.log(`â­ Courier Rating: ${result.courierAssignment.rating}/5.0`);
+    console.log(`ðŸ“¦ Tracking Number: ${result.trackingInfo.trackingNumber}`);
+    console.log(`ðŸ“ Current Status: ${result.trackingInfo.status}`);
+    console.log(`ðŸ—ºï¸ Distance: ${result.route.distance} km`);
+    console.log(`â±ï¸ Estimated Duration: ${result.route.estimatedDuration} minutes`);
+    console.log(`ðŸš¦ Traffic Condition: ${result.route.trafficCondition}`);
+    console.log(`ðŸ“… Estimated Delivery: ${result.estimatedDeliveryTime.toLocaleString()}`);
+    console.log(`ðŸŽ¯ Confidence: ${result.confidence}%`);
+    console.log(`âš¡ Processing Time: ${result.processingTime}ms`);
     
     if (result.warnings.length > 0) {
-      console.log(`\n⚠️ Warnings:`);
-      result.warnings.forEach(warning => console.log(`   • ${warning}`));
+      console.log(`\nâš ï¸ Warnings:`);
+      result.warnings.forEach(warning => console.log(`   â€¢ ${warning}`));
     }
     
     if (result.recommendations.length > 0) {
-      console.log(`\n💡 Recommendations:`);
-      result.recommendations.forEach(rec => console.log(`   • ${rec}`));
+      console.log(`\nðŸ’¡ Recommendations:`);
+      result.recommendations.forEach(rec => console.log(`   â€¢ ${rec}`));
     }
     
-    console.log('\n🎉 Logistics Engine is working perfectly!');
+    console.log('\nðŸŽ‰ Logistics Engine is working perfectly!');
     
   } catch (error: any) {
-    console.error('❌ Logistics Engine Test Failed:', error.message);
+    console.error('âŒ Logistics Engine Test Failed:', error.message);
   }
 }
 

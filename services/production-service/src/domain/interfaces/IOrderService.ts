@@ -1,5 +1,4 @@
-
 export interface IOrderService {
-    updateOrderStatus(orderId: string, status: string): Promise<void>;
-    getOrderDetails(orderId: string): Promise<any>;
+  getOrder(id: string): Promise<any>;
+  updateOrderStatus(orderId: string, status: string): Promise<void>;
 }

@@ -1,6 +1,6 @@
-import { GenerateActionCenter } from '../../application/use-cases/GenerateActionCenter';
+import { GenerateActionCenter } from '../application/use-cases/GenerateActionCenter';
 import { SellerNotificationTrigger } from './SellerNotificationTrigger';
-import prisma from '../database/prisma';
+import prisma from './database/prisma';
 
 export class ActionCenterGenerationJob {
   async execute() {
@@ -17,7 +17,7 @@ export class ActionCenterGenerationJob {
         const actions = await useCase.execute(seller.id);
 
         // Trigger notifications for HIGH priority actions
-        const highPriorityActions = actions.filter(a => a.priority === 'HIGH');
+        const highPriorityActions = actions.filter((a: any) => a.priority === 'HIGH');
         if (highPriorityActions.length > 0) {
           for (const action of highPriorityActions) {
             if (action.type === 'RESTOCK') {

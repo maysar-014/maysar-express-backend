@@ -3,16 +3,17 @@ import { EventMetadata } from '../metadata';
 /**
  * Base interface for all event schemas
  */
-export interface EventSchema<T = any> {
+export interface EventSchema<T = unknown> {
     eventType: string;
     version: string;
-    validate(data: T): { valid: boolean; errors?: string[] };
+    payloadType?: T;
+    validate(data: unknown): { valid: boolean; errors?: string[] };
 }
 
 /**
  * Shared Event Envelope using standardized metadata
  */
-export interface SharedEventEnvelope<T = any> {
+export interface SharedEventEnvelope<T = unknown> {
     metadata: EventMetadata;
     payload: T;
 }
@@ -21,18 +22,18 @@ export interface SharedEventEnvelope<T = any> {
  * Simple Registry to manage schemas
  */
 export class EventSchemaRegistry {
-    private schemas: Map<string, EventSchema> = new Map();
+    private schemas: Map<string, EventSchema<unknown>> = new Map();
 
-    register(schema: EventSchema): void {
+    register<T>(schema: EventSchema<T>): void {
         const key = `${schema.eventType}:${schema.version}`;
-        this.schemas.set(key, schema);
+        this.schemas.set(key, schema as EventSchema<unknown>);
     }
 
-    getSchema(eventType: string, version: string = 'v1'): EventSchema | undefined {
+    getSchema(eventType: string, version: string = 'v1'): EventSchema<unknown> | undefined {
         return this.schemas.get(`${eventType}:${version}`);
     }
 
-    validate(eventType: string, data: any, version: string = 'v1'): { valid: boolean; errors?: string[] } {
+    validate(eventType: string, data: unknown, version: string = 'v1'): { valid: boolean; errors?: string[] } {
         const schema = this.getSchema(eventType, version);
         if (!schema) {
             return { valid: true }; // Opt-in validation: if no schema, assume valid for now

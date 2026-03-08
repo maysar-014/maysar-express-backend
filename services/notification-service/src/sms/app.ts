@@ -57,3 +57,7 @@ export class SmsServiceApplication {
         });
     }
 }
+
+export const createServer = (_container?: unknown): Express => {
+    return new SmsServiceApplication().getApp();
+};

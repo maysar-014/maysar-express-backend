@@ -4,9 +4,9 @@ import { AuthMiddlewareService } from '../../../application/services/auth-middle
 import { AuthMiddlewareConfig } from '../../../config/auth-middleware.config';
 
 // Mock the dependencies
-jest.mock('../../application/services/auth-middleware.service');
-jest.mock('../../config/auth-middleware.config');
-jest.mock('../../infrastructure/services/logger.service');
+jest.mock('../../../application/services/auth-middleware.service');
+jest.mock('../../../config/auth-middleware.config');
+jest.mock('../../../infrastructure/services/logger.service');
 
 describe('AuthMiddlewareController Integration Tests', () => {
   let controller: AuthMiddlewareController;

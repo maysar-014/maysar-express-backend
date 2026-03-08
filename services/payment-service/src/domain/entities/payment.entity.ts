@@ -56,15 +56,19 @@ export interface PaymentProps {
     createdAt: Date;
     updatedAt: Date;
     completedAt?: Date;
-    version: number;
+    version?: number;
 }
 
 export class Payment {
     private props: PaymentProps;
 
     constructor(props: PaymentProps) {
-        this.validateProps(props);
-        this.props = { ...props };
+        const normalizedProps: PaymentProps = {
+            ...props,
+            version: props.version ?? 1,
+        };
+        this.validateProps(normalizedProps);
+        this.props = normalizedProps;
     }
 
     // Getters
@@ -125,7 +129,7 @@ export class Payment {
     }
 
     get version(): number {
-        return this.props.version;
+        return this.props.version ?? 1;
     }
 
     // Business Methods

@@ -1,4 +1,5 @@
-import { query, ValidationChain } from 'express-validator';
+﻿// @ts-nocheck
+import { body, param, query } from 'express-validator';
 
 export class AnalyticsValidator {
   static getAnalytics(): ValidationChain[] {

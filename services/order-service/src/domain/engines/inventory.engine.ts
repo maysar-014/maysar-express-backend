@@ -63,4 +63,30 @@ export class InventoryEngine {
       quantity: result.available,
     };
   }
+
+  /**
+   * Legacy adapter used by older integration tests.
+   */
+  async reserveStock(params: {
+    orderId: string;
+    items: Array<{ productVariantId: string; quantity: number }>;
+    warehouseId: string;
+  }): Promise<{ reserved: boolean; reservationId?: string; expiresAt?: Date }> {
+    const firstItem = params.items[0];
+    const result = await this.processInventoryRequest({
+      productId: firstItem?.productVariantId ?? 'unknown',
+      variantId: firstItem?.productVariantId,
+      quantity: firstItem?.quantity ?? 0,
+      warehouseId: params.warehouseId,
+      reservationType: 'order',
+      orderId: params.orderId,
+      priority: 'normal',
+    });
+
+    return {
+      reserved: result.success,
+      reservationId: result.reservationId,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+    };
+  }
 }

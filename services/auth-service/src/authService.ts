@@ -2,6 +2,7 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { PrismaUserRepository } from './infrastructure/repositories/prisma-user.repository';
 import { RegisterUserUseCase } from './application/use-cases/register-user.use-case';
+import { AuthenticateUserUseCase } from './application/use-cases/authenticate-user.use-case';
 import { AuthController } from './api/controllers/auth.controller';
 import { AuthEventHandlers } from './infrastructure/events/auth.event-handlers';
 
@@ -12,7 +13,8 @@ app.use(express.json());
 // Wire Dependencies
 const userRepository = new PrismaUserRepository(prisma);
 const registerUserUseCase = new RegisterUserUseCase(userRepository);
-const authController = new AuthController(registerUserUseCase);
+const authenticateUserUseCase = new AuthenticateUserUseCase();
+const authController = new AuthController(registerUserUseCase, authenticateUserUseCase);
 const eventHandlers = new AuthEventHandlers(userRepository);
 
 // Initialize Event Handlers

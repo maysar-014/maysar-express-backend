@@ -1,4 +1,4 @@
-import { ServiceLogger, LogContext } from '../../../../../../shared/logger/logger';
+import { ServiceLogger, LogContext } from '@shared/logger/logger';
 
 export enum LogLevel {
     ERROR = 'error',

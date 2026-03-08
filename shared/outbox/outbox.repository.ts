@@ -1,86 +1,130 @@
 import { PrismaClient } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
+import { EventEnvelope } from '../events/eventBus';
+import type { PrismaTransaction } from '../types';
 
-export enum OutboxStatus {
-    PENDING = 'PENDING',
-    PROCESSING = 'PROCESSING',
-    SENT = 'SENT',
-    FAILED = 'FAILED'
+export interface OutboxEvent {
+  id: string;
+  eventId: string;
+  eventType: string;
+  eventData: unknown;
+  status: string;
+  createdAt: Date;
+  processedAt?: Date;
+  attempts: number;
+  lastError?: string;
+  nextRetryAt?: Date;
 }
 
-export interface OutboxEntry {
-    id: string;
-    eventId: string;
-    eventType: string;
-    eventData: any;
-    status: OutboxStatus;
-    createdAt: Date;
-    processedAt?: Date;
-    attempts: number;
-    lastError?: string;
-    nextRetryAt?: Date;
+export enum OutboxStatus {
+  PENDING = 'PENDING',
+  PROCESSED = 'PROCESSED',
+  FAILED = 'FAILED'
 }
 
 export interface IOutboxRepository {
-    save(entry: Partial<OutboxEntry>, transaction?: any): Promise<void>;
-    update(eventId: string, updates: Partial<OutboxEntry>): Promise<void>;
-    getPending(limit?: number): Promise<OutboxEntry[]>;
+  save(envelope: EventEnvelope, transaction?: PrismaClient | PrismaTransaction): Promise<void>;
+  getPending(limit?: number): Promise<OutboxEvent[]>;
+  markProcessed(eventId: string): Promise<void>;
 }
 
-export class PrismaOutboxRepository implements IOutboxRepository {
-    private model: any;
-
-    constructor(
-        private prisma: PrismaClient,
-        private modelName: string = 'outboxEvent'
-    ) {
-        this.model = (this.prisma as any)[this.modelName];
-        if (!this.model) {
-            throw new Error(`Prisma model ${this.modelName} not found in client`);
-        }
-    }
-
-    async save(entry: Partial<OutboxEntry>, transaction?: any): Promise<void> {
-        const client = transaction || this.prisma;
-        const model = (client as any)[this.modelName];
-
-        await model.create({
-            data: {
-                id: entry.id || uuidv4(),
-                eventId: entry.eventId!,
-                eventType: entry.eventType!,
-                eventData: entry.eventData,
-                status: entry.status || OutboxStatus.PENDING,
-                attempts: 0,
-                createdAt: new Date()
-            }
-        });
-    }
-
-    async update(eventId: string, updates: Partial<OutboxEntry>): Promise<void> {
-        await this.model.update({
-            where: { eventId },
-            data: {
-                status: updates.status,
-                processedAt: updates.processedAt,
-                attempts: updates.attempts !== undefined ? { increment: 1 } : undefined,
-                lastError: updates.lastError,
-                nextRetryAt: updates.nextRetryAt
-            }
-        });
-    }
-
-    async getPending(limit = 100): Promise<OutboxEntry[]> {
-        return this.model.findMany({
-            where: {
-                status: OutboxStatus.PENDING,
-                OR: [
-                    { nextRetryAt: null },
-                    { nextRetryAt: { lte: new Date() } }
-                ]
-            },
-            orderBy: { createdAt: 'asc' },
-            take: limit
-        }) as unknown as OutboxEntry[];
-    }
+interface OutboxModelDelegate {
+  create(args: { data: Record<string, unknown> }): Promise<OutboxRecord>;
+  findMany(args: {
+    where: Record<string, unknown>;
+    orderBy: Record<string, 'asc' | 'desc'>;
+    take: number;
+  }): Promise<OutboxRecord[]>;
+  update(args: { where: { eventId: string }; data: Record<string, unknown> }): Promise<OutboxRecord>;
 }
+
+interface OutboxRecord {
+  id: string;
+  eventId: string;
+  eventType: string;
+  eventData: unknown;
+  status: string;
+  createdAt: Date;
+  processedAt: Date | null;
+  attempts: number;
+  lastError: string | null;
+  nextRetryAt: Date | null;
+}
+
+export class OutboxRepository implements IOutboxRepository {
+  constructor(
+    private readonly prisma: PrismaClient,
+    private readonly modelName: string = 'sharedOutboxEvent'
+  ) {}
+
+  async save(envelope: EventEnvelope, transaction?: PrismaClient | PrismaTransaction): Promise<void> {
+    const model = this.getModel(transaction || this.prisma);
+    await model.create({
+      data: {
+        eventId: envelope.eventId,
+        eventType: envelope.eventType,
+        eventData: envelope,
+        status: OutboxStatus.PENDING,
+        createdAt: envelope.timestamp || new Date(),
+        attempts: 0
+      }
+    });
+  }
+
+  async getPending(limit: number = 100): Promise<OutboxEvent[]> {
+    const model = this.getModel();
+    const records = await model.findMany({
+      where: {
+        status: OutboxStatus.PENDING,
+        OR: [{ nextRetryAt: null }, { nextRetryAt: { lte: new Date() } }]
+      },
+      orderBy: { createdAt: 'asc' },
+      take: limit
+    });
+
+    return records.map(record => this.toOutboxEvent(record));
+  }
+
+  async markProcessed(eventId: string): Promise<void> {
+    const model = this.getModel();
+    await model.update({
+      where: { eventId },
+      data: {
+        status: OutboxStatus.PROCESSED,
+        processedAt: new Date()
+      }
+    });
+  }
+
+  private getModel(client: PrismaClient | PrismaTransaction = this.prisma): OutboxModelDelegate {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const dynamicClient = client as any;
+    // Dynamic Prisma model lookup is intentional; Prisma does not expose model delegates generically by runtime name.
+    const model = (dynamicClient[this.modelName] || dynamicClient.sharedOutboxEvent || dynamicClient.outboxEvent) as
+      | OutboxModelDelegate
+      | undefined;
+    if (!model) {
+      throw new Error(
+        `Prisma outbox model "${this.modelName}" was not found. Expected ${this.modelName}, sharedOutboxEvent, or outboxEvent.`
+      );
+    }
+
+    return model;
+  }
+
+  private toOutboxEvent(record: OutboxRecord): OutboxEvent {
+    return {
+      id: record.id,
+      eventId: record.eventId,
+      eventType: record.eventType,
+      eventData: record.eventData,
+      status: record.status,
+      createdAt: record.createdAt,
+      processedAt: record.processedAt || undefined,
+      attempts: record.attempts,
+      lastError: record.lastError || undefined,
+      nextRetryAt: record.nextRetryAt || undefined
+    };
+  }
+}
+
+export class PrismaOutboxRepository extends OutboxRepository {}

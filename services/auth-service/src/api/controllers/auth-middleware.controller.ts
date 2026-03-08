@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { logger } from '../../infrastructure/services/logger.service';
 import { AuthMiddlewareService } from '../../application/services/auth-middleware.service';
 import { AuthMiddlewareConfig } from '../../config/auth-middleware.config';
+import { AuthenticationFailureData } from '../../domain/types/auth-middleware.types';
 
 /**
  * Authentication Middleware Controller
@@ -130,7 +131,7 @@ export class AuthMiddlewareController {
 
       const result = await this.authMiddlewareService.generateApiKey(
         serviceId,
-        permissions,
+        Array.isArray(permissions) ? permissions : [],
         expiresAt ? new Date(expiresAt) : undefined
       );
 
@@ -184,7 +185,10 @@ export class AuthMiddlewareController {
     try {
       const { identifier, type } = req.body;
 
-      const result = await this.authMiddlewareService.checkBruteForce(identifier, type);
+      const result = await this.authMiddlewareService.checkBruteForce(
+        identifier,
+        this.normalizeFailureType(type)
+      );
 
       res.status(200).json({
         success: true,
@@ -212,7 +216,7 @@ export class AuthMiddlewareController {
 
       const result = await this.authMiddlewareService.recordFailure({
         identifier,
-        type,
+        type: this.normalizeFailureType(type),
         reason,
         ipAddress,
         userAgent
@@ -242,7 +246,11 @@ export class AuthMiddlewareController {
     try {
       const { identifier, type, adminReason } = req.body;
 
-      const result = await this.authMiddlewareService.resetBruteForce(identifier, type, adminReason);
+      const result = await this.authMiddlewareService.resetBruteForce(
+        identifier,
+        this.normalizeFailureType(type),
+        adminReason
+      );
 
       res.status(200).json({
         success: true,
@@ -473,5 +481,13 @@ export class AuthMiddlewareController {
         }
       });
     }
+  }
+
+  private normalizeFailureType(value: unknown): AuthenticationFailureData['type'] {
+    if (value === 'ip' || value === 'email' || value === 'user_id') {
+      return value;
+    }
+
+    return 'email';
   }
 }

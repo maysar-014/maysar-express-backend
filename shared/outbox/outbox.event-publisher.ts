@@ -1,4 +1,5 @@
-import { IOutboxRepository, OutboxStatus } from './outbox.repository';
+import { IOutboxRepository } from './outbox.repository';
+import { EventEnvelope } from '../events/eventBus';
 
 export interface DomainEvent {
     eventId: string;
@@ -6,23 +7,25 @@ export interface DomainEvent {
     aggregateId: string;
     version: number;
     timestamp: Date;
-    payload: any;
-    metadata?: Record<string, any>;
+    payload: unknown;
+    metadata?: Record<string, unknown>;
 }
 
 export class OutboxEventPublisher {
     constructor(private repository: IOutboxRepository) { }
 
-    async publish(event: DomainEvent, transaction?: any): Promise<void> {
-        await this.repository.save({
+    async publish(event: DomainEvent): Promise<void> {
+        const envelope: EventEnvelope = {
             eventId: event.eventId,
             eventType: event.eventType,
-            eventData: event,
-            status: OutboxStatus.PENDING
-        }, transaction);
+            data: event,
+            timestamp: event.timestamp,
+            metadata: event.metadata
+        };
+        await this.repository.save(envelope);
     }
 
-    async publishAll(events: DomainEvent[], transaction?: any): Promise<void> {
-        await Promise.all(events.map(event => this.publish(event, transaction)));
+    async publishAll(events: DomainEvent[]): Promise<void> {
+        await Promise.all(events.map(event => this.publish(event)));
     }
 }

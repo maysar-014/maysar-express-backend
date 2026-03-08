@@ -103,14 +103,6 @@ export const config = {
     tls: process.env.REDIS_TLS === 'true'
   },
 
-  // Kafka Messaging
-  kafka: {
-    brokers: (process.env.KAFKA_BROKERS || 'localhost:9092').split(','),
-    clientId: process.env.KAFKA_CLIENT_ID || 'auth-service',
-    groupId: process.env.KAFKA_GROUP_ID || 'auth-service-group',
-    ssl: process.env.KAFKA_SSL === 'true'
-  },
-
   // CORS
   cors: {
     origin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(','),
@@ -217,7 +209,6 @@ export function initializeConfiguration(): void {
     console.log(`   Port: ${config.port}`);
     console.log(`   Database: ${config.database.url ? 'configured' : 'missing'}`);
     console.log(`   Redis: ${config.redis.url ? 'configured' : 'missing'}`);
-    console.log(`   Kafka: ${config.kafka.brokers.length} broker(s)`);
     console.log(`   Features: 2FA=${config.features.twoFactor}, Email=${config.features.emailVerification}`);
   }
 }

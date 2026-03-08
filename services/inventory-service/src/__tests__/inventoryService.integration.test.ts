@@ -1,31 +1,43 @@
 import { InventoryService } from '../inventoryService';
-import { PrismaClient } from '@prisma/client';
-import { eventBus } from '../../../shared/events/eventBus';
+import { eventBus } from '@shared-events/eventBus';
 
-jest.mock('@prisma/client');
-jest.mock('../../../shared/events/eventBus');
+jest.mock('@shared-events/eventBus');
 jest.mock('../../../shared/outbox/outboxPattern');
+
+interface MockPrisma {
+  $transaction: jest.Mock;
+  inventory_StockItem: {
+    findFirst: jest.Mock;
+    update: jest.Mock;
+    updateMany: jest.Mock;
+  };
+  inventory_Reservation: {
+    create: jest.Mock;
+    findMany: jest.Mock;
+    update: jest.Mock;
+  };
+}
 
 describe('InventoryService Integration', () => {
   let service: InventoryService;
-  let mockPrisma: jest.Mocked<PrismaClient>;
+  let mockPrisma: MockPrisma;
 
   beforeEach(() => {
     mockPrisma = {
       $transaction: jest.fn((callback) => callback(mockPrisma)),
-      inventory: {
+      inventory_StockItem: {
         findFirst: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn()
       },
-      inventoryReservation: {
+      inventory_Reservation: {
         create: jest.fn(),
         findMany: jest.fn(),
         update: jest.fn()
       }
-    } as any;
+    };
 
-    service = new InventoryService(mockPrisma);
+    service = new InventoryService(mockPrisma as unknown as never);
   });
 
   describe('reserveInventory', () => {
@@ -37,7 +49,7 @@ describe('InventoryService Integration', () => {
         ]
       };
 
-      mockPrisma.inventory.findFirst.mockResolvedValue({
+      mockPrisma.inventory_StockItem.findFirst.mockResolvedValue({
         id: 'inv-1',
         productVariantId: 'var-1',
         warehouseId: 'wh-1',
@@ -45,7 +57,7 @@ describe('InventoryService Integration', () => {
         reservedQuantity: 0
       } as any);
 
-      mockPrisma.inventoryReservation.create.mockResolvedValue({
+      mockPrisma.inventory_Reservation.create.mockResolvedValue({
         id: 'res-1'
       } as any);
 
@@ -53,7 +65,7 @@ describe('InventoryService Integration', () => {
 
       expect(result.success).toBe(true);
       expect(result.reservationIds).toHaveLength(1);
-      expect(mockPrisma.inventory.update).toHaveBeenCalled();
+      expect(mockPrisma.inventory_StockItem.update).toHaveBeenCalled();
     });
 
     it('should throw error when insufficient stock', async () => {
@@ -64,7 +76,7 @@ describe('InventoryService Integration', () => {
         ]
       };
 
-      mockPrisma.inventory.findFirst.mockResolvedValue({
+      mockPrisma.inventory_StockItem.findFirst.mockResolvedValue({
         id: 'inv-1',
         availableQuantity: 10
       } as any);
@@ -81,7 +93,7 @@ describe('InventoryService Integration', () => {
         ]
       };
 
-      mockPrisma.inventory.findFirst.mockResolvedValue({
+      mockPrisma.inventory_StockItem.findFirst.mockResolvedValue({
         id: 'inv-1',
         availableQuantity: 100
       } as any);
@@ -94,7 +106,7 @@ describe('InventoryService Integration', () => {
 
   describe('releaseInventory', () => {
     it('should release inventory successfully', async () => {
-      mockPrisma.inventoryReservation.findMany.mockResolvedValue([
+      mockPrisma.inventory_Reservation.findMany.mockResolvedValue([
         {
           id: 'res-1',
           orderId: 'order-1',
@@ -107,24 +119,24 @@ describe('InventoryService Integration', () => {
 
       await service.releaseInventory('order-1', 'order_cancelled');
 
-      expect(mockPrisma.inventoryReservation.update).toHaveBeenCalled();
-      expect(mockPrisma.inventory.updateMany).toHaveBeenCalled();
+      expect(mockPrisma.inventory_Reservation.update).toHaveBeenCalled();
+      expect(mockPrisma.inventory_StockItem.updateMany).toHaveBeenCalled();
     });
 
     it('should handle multiple reservations', async () => {
-      mockPrisma.inventoryReservation.findMany.mockResolvedValue([
+      mockPrisma.inventory_Reservation.findMany.mockResolvedValue([
         { id: 'res-1', orderId: 'order-1', productVariantId: 'var-1', warehouseId: 'wh-1', quantity: 5, status: 'active' },
         { id: 'res-2', orderId: 'order-1', productVariantId: 'var-2', warehouseId: 'wh-1', quantity: 3, status: 'active' }
       ] as any);
 
       await service.releaseInventory('order-1', 'payment_failed');
 
-      expect(mockPrisma.inventoryReservation.update).toHaveBeenCalledTimes(2);
-      expect(mockPrisma.inventory.updateMany).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.inventory_Reservation.update).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.inventory_StockItem.updateMany).toHaveBeenCalledTimes(2);
     });
 
     it('should handle no active reservations', async () => {
-      mockPrisma.inventoryReservation.findMany.mockResolvedValue([]);
+      mockPrisma.inventory_Reservation.findMany.mockResolvedValue([]);
 
       await expect(service.releaseInventory('order-999', 'expired')).resolves.not.toThrow();
     });

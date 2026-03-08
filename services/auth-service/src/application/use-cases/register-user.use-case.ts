@@ -1,6 +1,6 @@
 import { IUserRepository } from '../../domain/repositories/user.repository';
 import { User } from '../../domain/entities/user.entity';
-import { IEventPublisher, eventBus } from '../../../../../shared/events/eventBus';
+import { eventBus, EventEnvelope } from '@shared/events/eventBus';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface RegisterUserRequest {
@@ -11,8 +11,7 @@ export interface RegisterUserRequest {
 
 export class RegisterUserUseCase {
     constructor(
-        private readonly userRepository: IUserRepository,
-        private readonly events: IEventPublisher = eventBus
+        private readonly userRepository: IUserRepository
     ) { }
 
     async execute(request: RegisterUserRequest): Promise<string> {
@@ -31,12 +30,18 @@ export class RegisterUserUseCase {
 
         await this.userRepository.save(user);
 
-        await this.events.publish('UserRegistered.v1', {
-            userId: user.id,
-            email: user.email,
-            role: user.role,
-            profile: user.profile
-        });
+        const envelope: EventEnvelope = {
+            eventId: uuidv4(),
+            eventType: 'UserRegistered.v1',
+            data: {
+                userId: user.id,
+                email: user.email,
+                role: user.role,
+                profile: user.profile
+            },
+            timestamp: new Date()
+        };
+        await eventBus.publish(envelope);
 
         return user.id;
     }

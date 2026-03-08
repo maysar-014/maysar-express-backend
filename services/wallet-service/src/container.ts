@@ -10,9 +10,9 @@ import { WalletEngine } from './domain/engines/wallet.engine';
 import { LimitPolicy } from './domain/policies/wallet-limit.policy';
 import { VelocityCheckPolicy } from './domain/policies/velocity-check.policy';
 import { OutboxRepository } from './infrastructure/messaging/outbox.repository';
-import { inMemoryEventBus } from '@shared-events/eventBus';
+import { EventBus } from '@shared-events/eventBus';
 import { OutboxProcessor } from './infrastructure/messaging/outbox-processor';
-import { IEventBus } from './infrastructure/messaging/event-bus.interface';
+import { IEventBus, EventEnvelope } from './infrastructure/messaging/event-bus.interface';
 import { IdempotencyRepository } from './infrastructure/repositories/idempotency.repository';
 import { HoldRepository } from './infrastructure/repositories/hold.repository';
 import { AuditLogRepository } from './infrastructure/repositories/audit-log.repository';
@@ -27,7 +27,6 @@ import { ExpireHoldUseCase } from './application/use-cases/expire-hold.use-case'
 import { HoldExpiryJob } from './application/jobs/hold-expiry.job';
 import { WalletEventPublisher } from './infrastructure/messaging/wallet-event-publisher';
 import { walletConfig } from './config/wallet.config';
-import { NotificationAdapter } from './infrastructure/adapters/notification.adapter';
 import { PaymentServiceClient } from './infrastructure/clients/payment-service.client';
 import { TopUpWalletUseCase } from './application/use-cases/top-up-wallet.use-case';
 import { PaymentCompletedHandler } from './infrastructure/messaging/payment-completed.handler';
@@ -35,9 +34,74 @@ import { EventIdempotency } from '@shared/middleware/idempotency';
 import { PayoutServiceClient } from './infrastructure/clients/payout-service.client';
 import { InitiatePayoutFromWalletUseCase } from './application/use-cases/initiate-payout-from-wallet.use-case';
 import { provideSagaLogRepository } from './infrastructure/repositories/saga.repository';
-import { WalletTransactionSaga } from './application/sagas/wallet-transaction.saga';
+import { WalletTransactionSaga, WalletSagaPayload } from './application/sagas/wallet-transaction.saga';
 import { CODSettlementSaga } from './application/sagas/cod-settlement.saga';
 import { SagaFactory } from '@shared/saga/saga-factory';
+import { DistributedSagaOrchestrator } from '@shared/saga/saga.orchestrator';
+import { RedisLock } from '../../../shared/locking/redis-lock';
+import { createClient } from 'redis';
+import { ActorType, AuditInfo } from './domain/value-objects/audit-info.value-object';
+
+interface PaymentInitiatedEventData {
+    paymentId: string;
+    userId: string;
+    amount: number;
+    currency: string;
+    method: string;
+}
+
+interface CODSettlementEventData {
+    orderId: string;
+    buyerId: string;
+    sellerId: string;
+    amount: number;
+    currency: string;
+    holdId: string;
+    courierId?: string;
+}
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+    typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+
+const getString = (value: unknown): string | undefined => (typeof value === 'string' ? value : undefined);
+const getNumber = (value: unknown): number | undefined => (typeof value === 'number' ? value : undefined);
+
+const getMetadataString = (metadata: Record<string, unknown> | undefined, key: string): string | undefined => {
+    const value = metadata?.[key];
+    return typeof value === 'string' ? value : undefined;
+};
+
+const parsePaymentInitiated = (value: unknown): PaymentInitiatedEventData | null => {
+    const payload = asRecord(value);
+    const paymentId = getString(payload.paymentId);
+    const userId = getString(payload.userId);
+    const amount = getNumber(payload.amount);
+    const currency = getString(payload.currency);
+    const method = getString(payload.method);
+
+    if (!paymentId || !userId || typeof amount !== 'number' || !currency || !method) {
+        return null;
+    }
+
+    return { paymentId, userId, amount, currency, method };
+};
+
+const parseCODSettlement = (value: unknown): CODSettlementEventData | null => {
+    const payload = asRecord(value);
+    const orderId = getString(payload.orderId);
+    const buyerId = getString(payload.buyerId);
+    const sellerId = getString(payload.sellerId);
+    const amount = getNumber(payload.amount);
+    const currency = getString(payload.currency);
+    const holdId = getString(payload.holdId);
+    const courierId = getString(payload.courierId);
+
+    if (!orderId || !buyerId || !sellerId || typeof amount !== 'number' || !currency || !holdId) {
+        return null;
+    }
+
+    return { orderId, buyerId, sellerId, amount, currency, holdId, courierId };
+};
 
 export class Container {
     private static instance: Container;
@@ -61,19 +125,29 @@ export class Container {
         const idempotencyService = new IdempotencyService(idempotencyRepository);
         const velocityCheckPolicy = new VelocityCheckPolicy(walletConfig.velocity);
         const velocityCheckService = new VelocityCheckService(velocityCheckPolicy, transactionRepository);
-        this.eventBus = inMemoryEventBus; // Unified with other services
+        this.eventBus = new EventBus(); // Unified with other services
         const eventPublisher = new WalletEventPublisher(this.eventBus);
-        const notificationAdapter = new NotificationAdapter();
 
         const paymentServiceClient = new PaymentServiceClient(process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3003');
 
         // Use Cases
+        const redisClient = createClient({ url: process.env.REDIS_URL });
+        const redisAdapter = {
+            set: async (key: string, value: string, ...args: (string | number)[]) => {
+                const result = await redisClient.set(key, value, { PX: args[1] as number, NX: true });
+                return result;
+            },
+            del: async (key: string) => redisClient.del(key)
+        };
+        const redisLock = new RedisLock(redisAdapter);
+
         const creditUseCase = new CreditWalletUseCase(
             walletRepository,
             transactionRepository,
             idempotencyService,
             eventPublisher,
-            auditLogRepository
+            auditLogRepository,
+            redisLock
         );
 
         const limitPolicy = new LimitPolicy(walletConfig.limits);
@@ -86,7 +160,8 @@ export class Container {
             velocityCheckService,
             idempotencyService,
             eventPublisher,
-            auditLogRepository
+            auditLogRepository,
+            redisLock
         );
 
         const freezeUseCase = new FreezeFundsUseCase(walletRepository, transactionRepository);
@@ -160,23 +235,31 @@ export class Container {
             reverseTransactionUseCase,
             eventPublisher
         );
-        SagaFactory.registerByType('WalletTransactionSaga', walletTransactionSaga);
+        SagaFactory.registerByType('WalletTransactionSaga', walletTransactionSaga as DistributedSagaOrchestrator);
 
         this.eventBus.subscribe('WalletTransaction.Command.v1', {
             name: 'wallet-transaction-saga',
-            handler: async (envelope) => {
-                await walletTransactionSaga.start(envelope.data, envelope.correlationId ?? envelope.metadata?.correlationId);
+            handler: async (envelope: EventEnvelope) => {
+                const payload = envelope.data as WalletSagaPayload;
+                const correlationId =
+                    envelope.correlationId ?? getMetadataString(envelope.metadata, 'correlationId');
+                await walletTransactionSaga.start(payload, correlationId);
             }
         });
 
         this.eventBus.subscribe('PaymentInitiated', {
             name: 'wallet-transaction-saga-payment',
-            handler: async (envelope) => {
-                const { paymentId, userId, amount, currency, method } = envelope.data;
+            handler: async (envelope: EventEnvelope) => {
+                const parsed = parsePaymentInitiated(envelope.data);
+                if (!parsed) {
+                    return;
+                }
+
+                const { paymentId, userId, amount, currency, method } = parsed;
                 if (method !== 'WALLET') return;
                 
-                const sagaId = envelope.metadata?.sagaId || envelope.correlationId;
-                const payload: any = {
+                const sagaId = getMetadataString(envelope.metadata, 'sagaId') || envelope.correlationId;
+                const payload: WalletSagaPayload = {
                     transactionId: paymentId,
                     userId,
                     amount,
@@ -184,8 +267,13 @@ export class Container {
                     type: 'DEBIT',
                     reason: `Payment debit for ${paymentId}`,
                     idempotencyKey: `payment_${paymentId}`,
-                    correlationId: envelope.correlationId ?? envelope.metadata?.correlationId ?? paymentId,
-                    auditInfo: { actor: 'payment-service', actorType: 'SYSTEM', action: 'PAYMENT_DEBIT', timestamp: new Date() },
+                    correlationId: envelope.correlationId ?? getMetadataString(envelope.metadata, 'correlationId') ?? paymentId,
+                    auditInfo: AuditInfo.create({
+                        actor: 'payment-service',
+                        actorType: ActorType.SYSTEM,
+                        action: 'PAYMENT_DEBIT',
+                        reason: `Payment debit for ${paymentId}`
+                    }),
                     paymentSagaId: sagaId
                 };
                 await walletTransactionSaga.start(payload, payload.correlationId);
@@ -200,12 +288,16 @@ export class Container {
             creditUseCase,
             freezeUseCase
         );
-        SagaFactory.registerByType('CODSettlementSaga', codSettlementSaga);
+        SagaFactory.registerByType('CODSettlementSaga', codSettlementSaga as DistributedSagaOrchestrator);
 
         this.eventBus.subscribe('SettleCODPayment', {
             name: 'cod-settlement-saga',
-            handler: async (envelope) => {
-                const { orderId, buyerId, sellerId, amount, currency, holdId } = envelope.data;
+            handler: async (envelope: EventEnvelope) => {
+                const parsed = parseCODSettlement(envelope.data);
+                if (!parsed) {
+                    return;
+                }
+                const { orderId, buyerId, sellerId, amount, currency, holdId, courierId } = parsed;
                 await codSettlementSaga.start({
                     orderId,
                     buyerId,
@@ -215,9 +307,9 @@ export class Container {
                     holdId,
                     deliveryStatus: 'SUCCESS',
                     sellerAmount: amount * 0.85,
-                    courierId: envelope.data.courierId || 'system',
+                    courierId: courierId || 'system',
                     courierAmount: amount * 0.15
-                }, envelope.correlationId ?? envelope.metadata?.correlationId ?? orderId);
+                }, envelope.correlationId ?? getMetadataString(envelope.metadata, 'correlationId') ?? orderId);
             }
         });
 

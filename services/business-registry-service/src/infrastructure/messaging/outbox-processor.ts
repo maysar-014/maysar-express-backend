@@ -1,7 +1,7 @@
 import { IOutboxRepository, OutboxEventRecord } from '../repositories/outbox.repository';
 import { SagaEventHandler } from '../../application/sagas/saga-event-handler';
 import { logger } from '../services/logger.service';
-import { eventBus } from '../../../../shared/events/eventBus';
+import { EventEnvelope, eventBus } from '@shared-events/eventBus';
 
 /**
  * Outbox Processor - Reads pending events from outbox, publishes to event bus,
@@ -37,15 +37,23 @@ export class OutboxProcessor {
   }
 
   private async processEvent(record: OutboxEventRecord): Promise<void> {
-    const { eventType } = record;
+    const eventData = record.eventData as Partial<EventEnvelope>;
+    const envelope: EventEnvelope = {
+      eventId: eventData.eventId || record.eventId,
+      eventType: eventData.eventType || record.eventType,
+      data: eventData.data !== undefined ? eventData.data : record.eventData,
+      metadata: {
+        ...(eventData.metadata || {}),
+        eventId: record.eventId,
+        source: 'business-registry-service'
+      },
+      timestamp: eventData.timestamp ? new Date(eventData.timestamp) : new Date(record.createdAt),
+      correlationId: eventData.correlationId || (eventData.metadata?.correlationId as string | undefined)
+    };
 
-    // Publish to Kafka event bus - saga handlers will be invoked via setupSubscriptions
-    await eventBus.publish(eventType, record.eventData, {
-      eventId: record.eventId,
-      source: 'business-registry-service'
-    });
+    await eventBus.publish(envelope);
 
-    logger.debug('Published event to Kafka', { eventType, eventId: record.eventId });
+    logger.debug('Published event to Kafka', { eventType: envelope.eventType, eventId: record.eventId });
   }
 
 

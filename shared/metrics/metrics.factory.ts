@@ -1,4 +1,4 @@
-import { Registry, collectDefaultMetrics, Gauge, Counter, Histogram, Summary } from 'prom-client';
+import { Registry, collectDefaultMetrics, Gauge, Counter, Histogram } from 'prom-client';
 
 export const metricsRegistry = new Registry();
 
@@ -142,17 +142,19 @@ export function createServiceMetrics(serviceName: string) {
     };
 }
 
+export type ServiceMetrics = ReturnType<typeof createServiceMetrics>;
+
 export class MetricsCollector {
     private static instance: MetricsCollector;
     private collectionInterval?: NodeJS.Timeout;
-    private metrics: any;
+    private metrics: ServiceMetrics;
 
-    private constructor(private serviceName: string, metrics: any) {
+    private constructor(private serviceName: string, metrics: ServiceMetrics) {
         this.metrics = metrics;
         this.startCollection();
     }
 
-    static getInstance(serviceName: string, metrics?: any): MetricsCollector {
+    static getInstance(serviceName: string, metrics?: ServiceMetrics): MetricsCollector {
         if (!MetricsCollector.instance) {
             if (!metrics) {
                 throw new Error('Metrics must be provided for the first initialization');
@@ -255,7 +257,7 @@ export class MetricsCollector {
     }
 }
 
-export function createMetricsCollector(serviceName: string, metrics: any): MetricsCollector {
+export function createMetricsCollector(serviceName: string, metrics: ServiceMetrics): MetricsCollector {
     return MetricsCollector.getInstance(serviceName, metrics);
 }
 

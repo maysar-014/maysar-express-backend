@@ -27,7 +27,7 @@ export class VerifyPhoneUseCase {
 
   async execute(input: VerifyPhoneInput): Promise<VerifyPhoneOutput> {
     try {
-      logger.logBusiness('Starting phone verification', input.userId, { phoneNumber: input.phoneNumber });
+      logger.info('Starting phone verification', { userId: input.userId, phoneNumber: input.phoneNumber });
 
       const user = await this.userRepository.findById(input.userId);
       if (!user) {
@@ -65,7 +65,7 @@ export class VerifyPhoneUseCase {
 
       await sagaEventHandler.handlePhoneVerificationEvent(event, this.emailService, this.notificationClient);
 
-      logger.logBusiness('Phone verified successfully', input.userId, { phoneNumber: input.phoneNumber });
+      logger.info('Phone verified successfully', { userId: input.userId, phoneNumber: input.phoneNumber });
 
       return {
         success: true,

@@ -1,5 +1,39 @@
 import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
 import { ISagaLogRepository } from '@shared/saga/saga.log';
+import { CreditWalletUseCase } from '../use-cases/credit-wallet.use-case';
+import { DebitWalletUseCase } from '../use-cases/debit-wallet.use-case';
+import { PlaceHoldUseCase } from '../use-cases/place-hold.use-case';
+import { ReleaseHoldUseCase } from '../use-cases/release-hold.use-case';
+import { ReverseTransactionUseCase } from '../use-cases/reverse-transaction.use-case';
+import { WalletEventPublisher } from '../../infrastructure/messaging/wallet-event-publisher';
+import { TransactionalOutbox } from '@shared/outbox/outboxPattern';
+import { AuditInfo } from '../../domain/value-objects/audit-info.value-object';
+import { EventEnvelope } from '@shared/events/eventBus';
+import { randomUUID } from 'crypto';
+
+const createSagaOutboxAdapter = (outbox?: TransactionalOutbox) => {
+    if (!outbox) {
+        return undefined;
+    }
+
+    return {
+        saveEvent: async (
+            event: { eventType: string; data: unknown; metadata: unknown },
+            _transaction?: unknown
+        ): Promise<void> => {
+            const envelope: EventEnvelope = {
+                eventId: randomUUID(),
+                eventType: event.eventType,
+                data: event.data,
+                metadata: (typeof event.metadata === 'object' && event.metadata !== null)
+                    ? (event.metadata as Record<string, unknown>)
+                    : undefined,
+                timestamp: new Date()
+            };
+            await outbox.saveEvent(envelope);
+        }
+    };
+};
 
 export interface WalletSagaPayload {
     transactionId: string;
@@ -8,10 +42,10 @@ export interface WalletSagaPayload {
     currency: string;
     type: 'CREDIT' | 'DEBIT' | 'HOLD' | 'RELEASE_HOLD';
     reason?: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
     idempotencyKey: string;
     correlationId: string;
-    auditInfo: any;
+    auditInfo: AuditInfo;
     holdId?: string;
     paymentSagaId?: string;
 }
@@ -29,15 +63,15 @@ export class WalletTransactionSaga extends DistributedSagaOrchestrator<WalletSag
     constructor(
         protected readonly sagaLogRepository: ISagaLogRepository,
         protected readonly serviceName: string,
-        private readonly creditWalletUseCase: any,
-        private readonly debitWalletUseCase: any,
-        private readonly placeHoldUseCase: any,
-        private readonly releaseHoldUseCase: any,
-        private readonly reverseTransactionUseCase: any,
-        private readonly eventPublisher: any,
-        protected readonly outbox?: any
+        private readonly creditWalletUseCase: CreditWalletUseCase,
+        private readonly debitWalletUseCase: DebitWalletUseCase,
+        private readonly placeHoldUseCase: PlaceHoldUseCase,
+        private readonly releaseHoldUseCase: ReleaseHoldUseCase,
+        private readonly reverseTransactionUseCase: ReverseTransactionUseCase,
+        private readonly eventPublisher: WalletEventPublisher,
+        outbox?: TransactionalOutbox
     ) {
-        super(sagaLogRepository, serviceName, outbox);
+        super(sagaLogRepository, serviceName, createSagaOutboxAdapter(outbox));
     }
 
     protected async onStart(sagaId: string, payload: WalletSagaPayload, correlationId?: string): Promise<void> {
@@ -56,6 +90,7 @@ export class WalletTransactionSaga extends DistributedSagaOrchestrator<WalletSag
                 execute: async (payload, sagaId) => {
                     const saga = await this.getSagaOrThrow(sagaId);
                     const context = saga.context as WalletSagaContext;
+                    const reason = context.reason || `Wallet ${context.type} transaction ${context.transactionId}`;
 
                     switch (context.type) {
                         case 'CREDIT': {
@@ -63,7 +98,7 @@ export class WalletTransactionSaga extends DistributedSagaOrchestrator<WalletSag
                                 userId: context.userId,
                                 amount: context.amount,
                                 currency: context.currency,
-                                description: context.reason,
+                                description: reason,
                                 idempotencyKey: context.idempotencyKey,
                                 correlationId: context.correlationId,
                                 auditInfo: context.auditInfo
@@ -77,7 +112,7 @@ export class WalletTransactionSaga extends DistributedSagaOrchestrator<WalletSag
                                     userId: context.userId,
                                     amount: context.amount,
                                     currency: context.currency,
-                                    description: context.reason,
+                                    description: reason,
                                     idempotencyKey: context.idempotencyKey,
                                     correlationId: context.correlationId,
                                     auditInfo: context.auditInfo
@@ -103,12 +138,12 @@ export class WalletTransactionSaga extends DistributedSagaOrchestrator<WalletSag
                                         metadata: { sagaId: context.paymentSagaId, correlationId: context.correlationId }
                                     });
                                 }
-                            } catch (error: any) {
+                            } catch (error: unknown) {
                                 if (context.paymentSagaId) {
                                     await this.eventPublisher.publishWalletPaymentFailed({
                                         userId: context.userId,
                                         amount: context.amount,
-                                        error: error.message,
+                                        error: error instanceof Error ? error.message : String(error),
                                         metadata: { sagaId: context.paymentSagaId, correlationId: context.correlationId }
                                     });
                                 }
@@ -121,7 +156,8 @@ export class WalletTransactionSaga extends DistributedSagaOrchestrator<WalletSag
                                 userId: context.userId,
                                 amount: context.amount,
                                 currency: context.currency,
-                                reason: context.reason,
+                                reason,
+                                expiresInSeconds: 24 * 60 * 60,
                                 idempotencyKey: context.idempotencyKey,
                                 auditInfo: context.auditInfo
                             });
@@ -133,7 +169,7 @@ export class WalletTransactionSaga extends DistributedSagaOrchestrator<WalletSag
                             await this.releaseHoldUseCase.execute({
                                 holdId: context.holdId,
                                 userId: context.userId,
-                                reason: context.reason,
+                                reason,
                                 idempotencyKey: context.idempotencyKey,
                                 auditInfo: context.auditInfo
                             });

@@ -36,23 +36,23 @@ export class SagaEventHandler {
 
   setupSubscriptions(eventBus: IEventBus): void {
     eventBus.subscribe('BusinessRegistered', async (envelope: EventEnvelope) => {
-      await this.handleBusinessRegisteredEvent(envelope.data);
+      await this.handleBusinessRegisteredEvent(envelope.data as BusinessRegisteredEvent);
     });
 
     eventBus.subscribe('BusinessVerified', async (envelope: EventEnvelope) => {
-      await this.handleBusinessVerifiedEvent(envelope.data);
+      await this.handleBusinessVerifiedEvent(envelope.data as BusinessVerifiedEvent);
     });
 
     eventBus.subscribe('BusinessSuspended', async (envelope: EventEnvelope) => {
-      await this.handleBusinessSuspendedEvent(envelope.data);
+      await this.handleBusinessSuspendedEvent(envelope.data as BusinessSuspendedEvent);
     });
 
     eventBus.subscribe('BusinessUpdated', async (envelope: EventEnvelope) => {
-      await this.handleBusinessUpdatedEvent(envelope.data);
+      await this.handleBusinessUpdatedEvent(envelope.data as BusinessUpdatedEvent);
     });
 
     eventBus.subscribe('BusinessReactivated', async (envelope: EventEnvelope) => {
-      await this.handleBusinessReactivatedEvent(envelope.data);
+      await this.handleBusinessReactivatedEvent(envelope.data as BusinessReactivatedEvent);
     });
   }
 

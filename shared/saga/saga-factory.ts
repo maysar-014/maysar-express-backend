@@ -1,10 +1,11 @@
 import { DistributedSagaOrchestrator } from './saga.orchestrator';
 import { ISagaLogRepository } from './saga.log';
+import { TransactionalOutbox } from '../outbox/outboxPattern';
 
 export interface SagaDependencies {
     sagaLogRepository: ISagaLogRepository;
     serviceName: string;
-    outbox?: any;
+    outbox?: TransactionalOutbox;
 }
 
 export class SagaFactory {

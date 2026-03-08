@@ -10,8 +10,8 @@ import { config } from '../../config';
 class ExtendedPrismaClient extends PrismaClient {
   constructor() {
     super({
-      log: config.database.prisma.log,
-      errorFormat: config.database.prisma.errorFormat,
+      log: config.database.prisma.log as any,
+      errorFormat: config.database.prisma.errorFormat as any,
     });
   }
 

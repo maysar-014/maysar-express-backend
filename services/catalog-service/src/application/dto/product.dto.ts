@@ -95,6 +95,7 @@ export interface UpdateProductDto {
   currency?: string;
   categoryId?: string;
   tags?: string[];
+  mediaUrls?: string[];
   attributes?: Record<string, any>;
   seoTitle?: string;
   seoDescription?: string;

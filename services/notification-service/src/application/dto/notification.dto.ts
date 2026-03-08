@@ -84,3 +84,5 @@ export interface NotificationListResponseDto {
   limit: number;
   hasMore: boolean;
 }
+export interface UpdatePreferenceDto { enabled?: boolean; channels?: string[]; quietHours?: any; } 
+export interface UpdatePreferenceDto { enabled?: boolean; channels?: string[]; quietHours?: any; } 

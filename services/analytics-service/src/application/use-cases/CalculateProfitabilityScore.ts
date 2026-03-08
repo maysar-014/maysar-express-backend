@@ -37,8 +37,10 @@ export class CalculateProfitabilityScore {
       _sum: { totalAmount: true }
     });
 
-    const growth = lastMonth._sum.totalAmount
-      ? ((thisMonth._sum.totalAmount || 0) - (lastMonth._sum.totalAmount || 0)) / (lastMonth._sum.totalAmount || 1)
+    const thisMonthTotal = Number(thisMonth._sum.totalAmount || 0);
+    const lastMonthTotal = Number(lastMonth._sum.totalAmount || 0);
+    const growth = lastMonthTotal
+      ? (thisMonthTotal - lastMonthTotal) / (lastMonthTotal || 1)
       : 0;
 
     breakdown.salesGrowth = Math.min(30, Math.max(0, growth * 150));

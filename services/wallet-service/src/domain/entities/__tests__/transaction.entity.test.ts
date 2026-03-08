@@ -20,6 +20,8 @@ describe('Transaction Entity', () => {
         initiatedByType: ActorType.USER,
         reason: 'TEST_CREDIT',
         isReversed: false,
+        isCODRelated: false,
+        codConfirmationRequired: false,
         ...overrides,
     });
 

@@ -177,26 +177,26 @@ describe('DatabaseConnection', () => {
     test('executes raw SQL query', async () => {
       const query = 'SELECT 1';
       await DatabaseConnection.executeRaw(query);
-      expect(logger.logDatabase).toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalled();
     });
 
     test('logs successful query execution', async () => {
       const query = 'SELECT 1';
       await DatabaseConnection.executeRaw(query);
-      expect(logger.logDatabase).toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalled();
     });
 
     test('accepts optional parameters', async () => {
       const query = 'SELECT * FROM users WHERE id = ?';
       const params = ['user-1'];
       await DatabaseConnection.executeRaw(query, params);
-      expect(logger.logDatabase).toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalled();
     });
 
     test('logs query duration', async () => {
       const query = 'SELECT 1';
       await DatabaseConnection.executeRaw(query);
-      expect(logger.logDatabase).toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalled();
     });
 
     test('throws error on query failure', async () => {
@@ -215,7 +215,7 @@ describe('DatabaseConnection', () => {
       } catch (e) {
         // Expected
       }
-      expect(logger.logDatabase).toHaveBeenCalled();
+      expect(logger.error).toHaveBeenCalled();
     });
   });
 
@@ -223,13 +223,13 @@ describe('DatabaseConnection', () => {
     test('logs successful transaction', async () => {
       const callback = jest.fn().mockResolvedValue('result');
       await DatabaseConnection.executeTransaction(callback);
-      expect(logger.logDatabase).toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalled();
     });
 
     test('logs transaction duration', async () => {
       const callback = jest.fn().mockResolvedValue('result');
       await DatabaseConnection.executeTransaction(callback);
-      expect(logger.logDatabase).toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalled();
     });
 
     test('throws error on transaction failure', async () => {
@@ -248,7 +248,7 @@ describe('DatabaseConnection', () => {
       } catch (e) {
         // Expected
       }
-      expect(logger.logDatabase).toHaveBeenCalled();
+      expect(logger.error).toHaveBeenCalled();
     });
   });
 
@@ -300,7 +300,7 @@ describe('DatabaseConnection', () => {
       } catch (e) {
         // Expected
       }
-      expect(logger.logDatabase).toHaveBeenCalled();
+      expect(logger.error).toHaveBeenCalled();
     });
   });
 

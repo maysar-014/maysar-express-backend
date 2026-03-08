@@ -1,36 +1,49 @@
-import { InventoryService } from '../inventoryService';
-import { PrismaClient } from '@prisma/client';
+import { InventoryService } from './inventoryService';
+
+interface MockPrisma {
+  $transaction: jest.Mock;
+  inventory_StockItem: {
+    findFirst: jest.Mock;
+    update: jest.Mock;
+    updateMany: jest.Mock;
+  };
+  inventory_Reservation: {
+    create: jest.Mock;
+    findMany: jest.Mock;
+    update: jest.Mock;
+  };
+}
 
 const mockPrisma = {
   $transaction: jest.fn((callback) => callback(mockPrisma)),
-  inventory: {
+  inventory_StockItem: {
     findFirst: jest.fn(),
     update: jest.fn(),
     updateMany: jest.fn()
   },
-  inventoryReservation: {
+  inventory_Reservation: {
     create: jest.fn(),
     findMany: jest.fn(),
     update: jest.fn()
   }
-} as unknown as PrismaClient;
+} as MockPrisma;
 
 describe('InventoryService', () => {
   let service: InventoryService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new InventoryService(mockPrisma);
+    service = new InventoryService(mockPrisma as unknown as never);
   });
 
   describe('reserveInventory', () => {
     it('should reserve inventory successfully', async () => {
-      (mockPrisma.inventory.findFirst as jest.Mock).mockResolvedValue({
+      mockPrisma.inventory_StockItem.findFirst.mockResolvedValue({
         id: 's1',
         availableQuantity: 100,
         reservedQuantity: 0
       });
-      (mockPrisma.inventoryReservation.create as jest.Mock).mockResolvedValue({
+      mockPrisma.inventory_Reservation.create.mockResolvedValue({
         id: 'r1'
       });
 
@@ -44,7 +57,7 @@ describe('InventoryService', () => {
     });
 
     it('should rollback on insufficient stock', async () => {
-      (mockPrisma.inventory.findFirst as jest.Mock).mockResolvedValue({
+      mockPrisma.inventory_StockItem.findFirst.mockResolvedValue({
         id: 's1',
         availableQuantity: 5,
         reservedQuantity: 0
@@ -59,14 +72,14 @@ describe('InventoryService', () => {
 
   describe('releaseInventory', () => {
     it('should release inventory successfully', async () => {
-      (mockPrisma.inventoryReservation.findMany as jest.Mock).mockResolvedValue([
+      mockPrisma.inventory_Reservation.findMany.mockResolvedValue([
         { id: 'r1', productVariantId: 'pv1', quantity: 10, warehouseId: 'w1' }
       ]);
 
       await service.releaseInventory('o1', 'order_cancelled');
 
-      expect(mockPrisma.inventoryReservation.update).toHaveBeenCalled();
-      expect(mockPrisma.inventory.updateMany).toHaveBeenCalled();
+      expect(mockPrisma.inventory_Reservation.update).toHaveBeenCalled();
+      expect(mockPrisma.inventory_StockItem.updateMany).toHaveBeenCalled();
     });
   });
 });

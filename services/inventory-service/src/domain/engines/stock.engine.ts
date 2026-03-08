@@ -18,7 +18,7 @@ export interface StockAvailability {
 }
 
 import Redis from 'ioredis';
-import { RedisLock } from '../../../../shared/locking/redis-lock';
+import { RedisLock } from '../../../../../shared/locking/redis-lock';
 
 export class StockEngine {
   private readonly RESERVATION_TTL = 900; // 15 minutes
@@ -48,7 +48,7 @@ export class StockEngine {
   }
 
   async reserveStock(productVariantId: string, quantity: number, orderId: string): Promise<StockReservation> {
-    return this.redisLock.withLock(`inventory:reserve:${productVariantId}`, 5000, async () => {
+    return this.redisLock.withLock(`inventory:reserve:${productVariantId}`, async () => {
       const availability = await this.checkAvailability(productVariantId, quantity);
       
       if (availability.availableStock < quantity) {
@@ -137,6 +137,9 @@ export class StockEngine {
     });
     
     const results = await pipeline.exec();
+    if (!results) {
+      return [];
+    }
     const availabilities: StockAvailability[] = [];
     
     for (let i = 0; i < requests.length; i++) {

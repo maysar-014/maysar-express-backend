@@ -10,7 +10,7 @@ export interface IdGenerator {
 }
 
 export abstract class BaseId {
-  protected constructor(protected readonly value: string) {
+  constructor(protected readonly value: string) {
     // Validation will be performed by IdGenerator implementation
     // This ensures domain purity while allowing infrastructure-specific validation
   }

@@ -35,7 +35,7 @@ export interface ProductionOrderProps {
     actualStart?: Date | null;
     actualEnd?: Date | null;
     allocationId?: string | null;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -55,8 +55,12 @@ export class ProductionOrder {
     get orderId(): string | undefined | null { return this.props.orderId; }
     get productId(): string { return this.props.productId; }
     get quantity(): number { return this.props.quantity; }
+    get producedQty(): number { return this.props.producedQty; }
+    get defectedQty(): number { return this.props.defectedQty; }
     get status(): ProductionOrderStatus { return this.props.status; }
     get phase(): ProductionPhase { return this.props.phase; }
+    get actualStart(): Date | null | undefined { return this.props.actualStart; }
+    get actualEnd(): Date | null | undefined { return this.props.actualEnd; }
 
     startProduction(): void {
         if (this.props.status !== ProductionOrderStatus.SCHEDULED && this.props.status !== ProductionOrderStatus.PENDING) {
@@ -79,7 +83,7 @@ export class ProductionOrder {
 
     failProduction(reason: string): void {
         this.props.status = ProductionOrderStatus.FAILED;
+        this.props.metadata = { ...this.props.metadata, failureReason: reason };
         this.props.updatedAt = new Date();
-        // In a real implementation, we might store the failure reason in metadata or a separate field
     }
 }

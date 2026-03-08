@@ -1,4 +1,5 @@
-import { ServiceLogger, LogContext } from '../../../../../shared/logger/logger';
+import { ServiceLogger, LogContext } from '@shared/logger/logger';
+import { Request, Response, NextFunction } from 'express';
 
 export class Logger {
   private delegate: ServiceLogger;
@@ -25,3 +26,17 @@ export class Logger {
 }
 
 export const logger = new Logger();
+
+export const requestLoggingMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    logger.info('HTTP Request', {
+      method: req.method,
+      url: req.url,
+      statusCode: res.statusCode,
+      duration: `${duration}ms`
+    });
+  });
+  next();
+};

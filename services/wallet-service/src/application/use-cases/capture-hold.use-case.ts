@@ -30,7 +30,7 @@ export class CaptureHoldUseCase {
     async execute(dto: CaptureHoldDTO): Promise<{ captured: boolean; transactionId: string }> {
         const idempotencyKey = IdempotencyKey.create(dto.idempotencyKey);
 
-        const cached = await this.idempotencyService.checkIdempotency(idempotencyKey);
+        const cached = await this.idempotencyService.checkIdempotency<{ captured: boolean; transactionId: string }>(idempotencyKey);
         if (cached) return cached;
 
         const hold = await this.holdRepository.findById(dto.holdId);
@@ -65,6 +65,8 @@ export class CaptureHoldUseCase {
             initiatedByType: dto.auditInfo.actorType,
             reason: dto.reason,
             isReversed: false,
+            isCODRelated: false,
+            codConfirmationRequired: false,
             metadata: {
                 holdId: hold.id,
                 ...dto.auditInfo.metadata

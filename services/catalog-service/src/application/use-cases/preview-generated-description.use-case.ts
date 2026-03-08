@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 /**
  * Preview Generated Description Use Case
  * Generates and returns preview of product description without saving

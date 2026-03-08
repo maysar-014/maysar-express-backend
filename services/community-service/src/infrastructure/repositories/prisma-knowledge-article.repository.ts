@@ -16,8 +16,8 @@ export class PrismaKnowledgeArticleRepository implements KnowledgeArticleReposit
             sections: article.sections as unknown as Prisma.InputJsonValue,
             category: article.category,
             industryTags: article.industryTags,
-            expertiseLevel: article.expertiseLevel,
-            reviewStatus: article.reviewStatus,
+            expertiseLevel: article.expertiseLevel as any,
+            reviewStatus: article.reviewStatus as any,
             qualityScore: article.qualityScore,
             version: article.version,
             trainingModuleId: article.trainingModuleId,
@@ -28,8 +28,8 @@ export class PrismaKnowledgeArticleRepository implements KnowledgeArticleReposit
 
         const saved = await this.prisma.community_KnowledgeArticle.upsert({
             where: { id: article.id },
-            create: data,
-            update: data,
+            create: data as any,
+            update: data as any,
         });
 
         return this.toDomain(saved);

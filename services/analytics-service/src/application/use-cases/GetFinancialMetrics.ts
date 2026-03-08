@@ -13,13 +13,13 @@ export class GetFinancialMetrics {
         const disputeData = await this.repository.getCommissionDisputeData();
         const totalOrders = await this.repository.getTotalOrderCount();
 
-        const payoutTimingData: PayoutTimingData[] = payoutData.map(payout => ({
+        const payoutTimingData: PayoutTimingData[] = payoutData.map((payout: any) => ({
             payoutId: payout.id,
             createdAt: payout.createdAt,
             completedAt: payout.completedAt!
         }));
 
-        const disputeDataFormatted: DisputeData[] = disputeData.map(dispute => ({
+        const disputeDataFormatted: DisputeData[] = disputeData.map((dispute: any) => ({
             ticketId: dispute.id,
             category: dispute.category,
             status: dispute.status

@@ -1,4 +1,4 @@
-import { PrismaClient, Wallet_Hold, Wallet_HoldStatus } from '@prisma/client';
+import { Prisma, PrismaClient, Wallet_Hold, Wallet_HoldStatus } from '@prisma/client';
 import { IHoldRepository } from '../../domain/repositories/hold.repository';
 import { Hold, HoldStatus } from '../../domain/entities/hold.entity';
 import { Money } from '../../domain/value-objects/money.value-object';
@@ -20,7 +20,7 @@ export class HoldRepository implements IHoldRepository {
             isReleased: hold.isReleased,
             createdAt: hold.createdAt,
             updatedAt: hold.updatedAt,
-            metadata: hold.metadata || {}
+            metadata: (hold.metadata || {}) as Prisma.InputJsonValue
         };
 
         // Upsert to handle both create and update

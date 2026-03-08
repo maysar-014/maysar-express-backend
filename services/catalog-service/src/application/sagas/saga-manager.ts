@@ -16,6 +16,8 @@ export interface SagaInstance {
   createdAt: Date;
   updatedAt: Date;
   currentStep: string;
+  correlationId?: string;
+  failedSteps?: string[];
 }
 
 export interface SagaCorrelation {
@@ -139,8 +141,28 @@ export class SagaManager {
   /**
    * Get saga statistics
    */
-  getSagaStatistics(): { total: number; running: number; completed: number; failed: number } {
-    return { total: 0, running: 0, completed: 0, failed: 0 };
+  getSagaStatistics(): {
+    total: number;
+    running: number;
+    completed: number;
+    failed: number;
+    totalSagas: number;
+    activeSagas: number;
+    completedSagas: number;
+    failedSagas: number;
+    compensatedSagas: number;
+  } {
+    return {
+      total: 0,
+      running: 0,
+      completed: 0,
+      failed: 0,
+      totalSagas: 0,
+      activeSagas: 0,
+      completedSagas: 0,
+      failedSagas: 0,
+      compensatedSagas: 0
+    };
   }
 
   /**

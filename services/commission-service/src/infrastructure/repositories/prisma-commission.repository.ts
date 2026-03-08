@@ -31,8 +31,8 @@ export class PrismaCommissionRepository implements ICommissionRepository {
 
     await this.prismaClient.commission.upsert({
       where: { id: commission.id.toString() },
-      update: data,
-      create: data
+      update: data as any,
+      create: data as any
     });
   }
 
@@ -47,8 +47,8 @@ export class PrismaCommissionRepository implements ICommissionRepository {
       CommissionId.fromString(data.id),
       OrderId.fromString(data.orderId),
       SellerId.fromString(data.sellerId),
-      CommissionAmount.fromNumber(data.amount),
-      CommissionRate.fromDecimal(data.rate),
+      CommissionAmount.fromNumber(Number(data.amount)),
+      CommissionRate.fromDecimal(Number(data.rate)),
       data.type as CommissionType,
       data.status as CommissionStatus,
       data.createdAt,
@@ -101,7 +101,7 @@ export class PrismaCommissionRepository implements ICommissionRepository {
 
   async findByStatus(status: CommissionStatus): Promise<Commission[]> {
     const commissions = await this.prismaClient.commission.findMany({
-      where: { status: status },
+      where: { status: status as any },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -132,7 +132,7 @@ export class PrismaCommissionRepository implements ICommissionRepository {
     await this.prismaClient.commission.update({
       where: { id: id.toString() },
       data: {
-        status,
+        status: status as any,
         paidAt: status === CommissionStatus.PAID ? new Date() : undefined
       }
     });
@@ -159,7 +159,7 @@ export class PrismaCommissionRepository implements ICommissionRepository {
       _sum: { amount: true }
     });
 
-    return result._sum.amount || 0;
+    return Number(result._sum.amount || 0);
   }
 
   async getCommissionSummary(sellerId: SellerId): Promise<{
@@ -200,10 +200,10 @@ export class PrismaCommissionRepository implements ICommissionRepository {
     ]);
 
     return {
-      totalEarned: totalEarnedResult._sum.amount || 0,
-      totalPaid: totalPaidResult._sum.amount || 0,
-      pendingAmount: pendingResult._sum.amount || 0,
-      averageRate: avgRateResult._avg.rate || 0
+      totalEarned: Number(totalEarnedResult._sum.amount || 0),
+      totalPaid: Number(totalPaidResult._sum.amount || 0),
+      pendingAmount: Number(pendingResult._sum.amount || 0),
+      averageRate: Number(avgRateResult._avg.rate || 0)
     };
   }
 }

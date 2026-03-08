@@ -1,5 +1,5 @@
 import { TransactionalOutbox, OutboxStatus } from './outboxPattern';
-import { inMemoryEventBus, IEventBus } from '../events/eventBus';
+import { eventBus as globalEventBus, EventEnvelope, IEventBus } from '../events/eventBus';
 import { PrismaClient } from '@prisma/client';
 
 export class OutboxPublisher {
@@ -8,7 +8,7 @@ export class OutboxPublisher {
 
   constructor(
     private outbox: TransactionalOutbox,
-    private eventBus: IEventBus = inMemoryEventBus,
+    private eventBus: IEventBus = globalEventBus,
     private config = {
       pollInterval: 5000,
       batchSize: 50,
@@ -45,8 +45,8 @@ export class OutboxPublisher {
     for (const event of events) {
       try {
         await this.outbox.markAsProcessing(event.eventId);
-        const { eventType, data, metadata } = event.eventData as any;
-        await this.eventBus.publish(eventType, data, metadata);
+        const eventData = this.toEventEnvelope(event.eventData, event.eventId);
+        await this.eventBus.publish(eventData);
         await this.outbox.markAsSent(event.eventId);
 
         console.log(`Published event ${event.eventId}`);
@@ -81,5 +81,13 @@ export class OutboxPublisher {
     ]);
 
     return { pending, processing, sent, failed };
+  }
+
+  private toEventEnvelope(eventData: unknown, eventId: string): EventEnvelope {
+    if (typeof eventData !== 'object' || eventData === null) {
+      throw new Error(`Outbox event ${eventId} has invalid payload`);
+    }
+
+    return eventData as EventEnvelope;
   }
 }

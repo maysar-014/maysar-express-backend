@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { BaseEventHandler } from './index';
 import { ICampaignRepository } from '../../domain/interfaces';
 

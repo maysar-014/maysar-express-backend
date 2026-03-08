@@ -1,4 +1,4 @@
-import { Saga, SagaStep, SagaContext } from '../../../../shared/sagaFramework';
+import { Saga, SagaStep, SagaContext } from '@shared/sagaFramework';
 
 /**
  * Step to send notification when 2FA is enabled
@@ -30,7 +30,7 @@ class RecordAuditLogStep extends SagaStep {
  */
 export class TwoFactorLifecycleSaga extends Saga {
     constructor() {
-        super('TwoFactorLifecycleSaga');
+        super();
         this.addStep(new SendEnabledNotificationStep());
         this.addStep(new RecordAuditLogStep());
     }

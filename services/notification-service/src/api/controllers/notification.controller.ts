@@ -68,11 +68,11 @@ export class NotificationController {
     try {
       const criteria = {
         userId: req.query.userId as string | undefined,
-        status: req.query.status as string | undefined,
+        status: req.query.status as any,
         channel: req.query.channel as string | undefined,
         page: req.query.page ? parseInt(String(req.query.page), 10) : undefined,
         limit: req.query.limit ? parseInt(String(req.query.limit), 10) : undefined
-      };
+      } as any;
       const result = await this.getHistoryUseCase.execute(criteria);
       res.status(200).json({
         success: true,

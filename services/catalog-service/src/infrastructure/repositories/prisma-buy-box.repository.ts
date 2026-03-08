@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { PrismaClient } from '@prisma/client';
 import { IBuyBoxRepository } from '../../domain/repositories/repository.interfaces';
 import { BuyBoxResult } from '../../domain/value-objects/buy-box-result.value-object';

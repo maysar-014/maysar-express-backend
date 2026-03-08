@@ -3,6 +3,17 @@
  * Type definitions for authentication middleware functionality
  */
 
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: {
+    code: string;
+    message: string;
+    details?: string;
+  };
+}
+
 export interface TokenValidationResult {
   valid: boolean;
   payload?: any;

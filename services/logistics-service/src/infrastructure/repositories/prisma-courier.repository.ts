@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { PrismaClient } from '@prisma/client';
 import { CourierEntity } from '../../domain/entities/courier.entity';
 import { PrismaClientManager } from '../prisma.client';

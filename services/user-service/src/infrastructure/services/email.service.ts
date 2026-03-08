@@ -8,7 +8,7 @@ export interface EmailService extends DomainService {
   sendVerificationEmail(userEmail: string, verificationToken: string): Promise<void>;
   sendPasswordResetEmail(userEmail: string, resetToken: string): Promise<void>;
   sendWelcomeEmail(userEmail: string, userName: string): Promise<void>;
-  sendSecurityAlert(userEmail: string, alertType: string, details: any): Promise<void>;
+  sendSecurityAlert(userEmail: string, alertType: string, details: Record<string, unknown>): Promise<void>;
 }
 
 /**
@@ -45,7 +45,7 @@ export class InMemoryEmailService implements EmailService {
       html,
       text,
       sentAt: new Date()
-    } as any);
+    });
   }
 
   async sendVerificationEmail(userEmail: string, verificationToken: string): Promise<void> {
@@ -120,7 +120,11 @@ export class InMemoryEmailService implements EmailService {
     await this.sendEmail(userEmail, `Welcome to Maysar, ${userName}!`, html);
   }
 
-  async sendSecurityAlert(userEmail: string, alertType: string, details: any): Promise<void> {
+  async sendSecurityAlert(
+    userEmail: string,
+    alertType: string,
+    details: Record<string, unknown>
+  ): Promise<void> {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #dc3545;">Security Alert</h2>
@@ -206,7 +210,11 @@ export class SMTPService implements EmailService {
     return this.fallbackService.sendWelcomeEmail(userEmail, userName);
   }
 
-  async sendSecurityAlert(userEmail: string, alertType: string, details: any): Promise<void> {
+  async sendSecurityAlert(
+    userEmail: string,
+    alertType: string,
+    details: Record<string, unknown>
+  ): Promise<void> {
     // TODO: Implement SMTP security alert
     return this.fallbackService.sendSecurityAlert(userEmail, alertType, details);
   }

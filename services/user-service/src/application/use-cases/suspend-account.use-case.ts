@@ -27,7 +27,7 @@ export class SuspendAccountUseCase {
 
   async execute(input: SuspendAccountInput): Promise<SuspendAccountOutput> {
     try {
-      logger.logBusiness('Starting account suspension', input.suspendedBy, { userId: input.userId });
+      logger.info('Starting account suspension', { userId: input.userId, suspendedBy: input.suspendedBy });
 
       const user = await this.userRepository.findById(input.userId);
       if (!user) {
@@ -60,8 +60,9 @@ export class SuspendAccountUseCase {
         ? new Date(Date.now() + input.duration)
         : undefined;
 
-      logger.logBusiness('Account suspended successfully', input.suspendedBy, {
+      logger.info('Account suspended successfully', {
         userId: input.userId,
+        suspendedBy: input.suspendedBy,
         reason: input.reason,
         duration: input.duration
       });

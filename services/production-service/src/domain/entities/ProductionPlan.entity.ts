@@ -30,7 +30,7 @@ export interface ProductionPlanProps {
     actualQuantity: number;
     version: number;
     capacity?: ProductionCapacity; // Snapshot of capacity at planning time
-    metadata?: any;
+    metadata?: Record<string, unknown>;
     createdAt: Date;
     updatedAt: Date;
 }

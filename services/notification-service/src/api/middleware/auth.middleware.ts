@@ -2,8 +2,17 @@ import { Request, Response, NextFunction } from 'express';
 import { createError } from './error.middleware';
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction): void => {
-  const token = req.get('Authorization')?.replace(/^Bearer\s+/i) || req.get('X-API-Key');
-  const userId = req.get('X-User-Id');
+  const authHeader = Array.isArray(req.headers.authorization)
+    ? req.headers.authorization[0]
+    : req.headers.authorization;
+  const apiKeyHeader = Array.isArray(req.headers['x-api-key'])
+    ? req.headers['x-api-key'][0]
+    : req.headers['x-api-key'];
+  const userIdHeader = Array.isArray(req.headers['x-user-id'])
+    ? req.headers['x-user-id'][0]
+    : req.headers['x-user-id'];
+  const token = authHeader?.replace(/^Bearer\s+/i, '') || apiKeyHeader;
+  const userId = userIdHeader;
   if (!token && !userId) {
     next(createError.unauthorized('Authentication required'));
     return;
@@ -14,7 +23,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction):
 };
 
 export const optionalAuth = (req: Request, _res: Response, next: NextFunction): void => {
-  const userId = req.get('X-User-Id');
+  const userId = Array.isArray(req.headers['x-user-id']) ? req.headers['x-user-id'][0] : req.headers['x-user-id'];
   (req as any).userId = userId || undefined;
   next();
 };

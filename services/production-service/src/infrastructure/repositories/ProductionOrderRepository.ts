@@ -4,6 +4,13 @@ import { IProductionOrderRepository } from '../../domain/interfaces/IProductionO
 import { ProductionOrder, ProductionOrderStatus, ProductionPhase } from '../../domain/entities/ProductionOrder.entity';
 import { ProductionSchedule } from '../../domain/value-objects/production-schedule.value-object';
 
+interface ProductionOrderDelegate {
+    upsert(args: Record<string, unknown>): Promise<unknown>;
+    findUnique(args: Record<string, unknown>): Promise<unknown | null>;
+    findMany(args: Record<string, unknown>): Promise<unknown[]>;
+    update(args: Record<string, unknown>): Promise<unknown>;
+}
+
 export class ProductionOrderRepository implements IProductionOrderRepository {
     constructor(private readonly prisma: PrismaClient) { }
 
@@ -12,7 +19,7 @@ export class ProductionOrderRepository implements IProductionOrderRepository {
         // Assuming create for simplicity as "save" in DDD usually means persist state
         // But prisma is specific. Let's assume create or update based on existence check or upsert
         // For now, let's use upsert
-        const data = await this.prisma.production_Order.upsert({
+        const data = await this.orderDelegate.upsert({
             where: { id: order.id },
             update: {
                 status: order.status as any,
@@ -34,18 +41,18 @@ export class ProductionOrderRepository implements IProductionOrderRepository {
     }
 
     async findById(id: string): Promise<ProductionOrder | null> {
-        const data = await this.prisma.production_Order.findUnique({ where: { id } });
+        const data = await this.orderDelegate.findUnique({ where: { id } });
         if (!data) return null;
         return this.toEntity(data);
     }
 
     async findByPlanId(planId: string): Promise<ProductionOrder[]> {
-        const data = await this.prisma.production_Order.findMany({ where: { planId } });
-        return data.map(d => this.toEntity(d));
+        const data = await this.orderDelegate.findMany({ where: { planId } });
+        return data.map((d: any) => this.toEntity(d));
     }
 
     async updateStatus(id: string, status: string): Promise<void> {
-        await this.prisma.production_Order.update({
+        await this.orderDelegate.update({
             where: { id },
             data: { status: status as any }
         });
@@ -68,5 +75,15 @@ export class ProductionOrderRepository implements IProductionOrderRepository {
             createdAt: data.createdAt,
             updatedAt: data.updatedAt
         });
+    }
+
+    private get orderDelegate(): ProductionOrderDelegate {
+        const client = this.prisma as unknown as Record<string, unknown>;
+        const delegate = (client.production_Order ??
+            client.productionOrder) as ProductionOrderDelegate | undefined;
+        if (!delegate) {
+            throw new Error('Production order delegate is not configured on prisma client');
+        }
+        return delegate;
     }
 }

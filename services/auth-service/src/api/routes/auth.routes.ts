@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { validateRequest } from '../middleware/validation.middleware';
 import { asyncHandler } from '../middleware/error-handler.middleware';
 import { rateLimit } from '../middleware/rate-limiting.middleware';
-import { csrfValidationMiddleware } from '../../../../../shared/middleware/csrf.middleware';
+import { csrfValidationMiddleware } from '@shared/middleware/csrf.middleware';
 
 // Export factory function instead of router instance directly
 export const createAuthRoutes = (authController: any): Router => { // Using any for controller to avoid type issues if imports vary, but ideally AuthController

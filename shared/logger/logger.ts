@@ -17,6 +17,8 @@ export interface LogContext {
     executionTime?: number;
 }
 
+type LoggerMeta = LogContext & Record<string, unknown>;
+
 // ============================================================================
 // WINSTON LOGGER FACTORY
 // ============================================================================
@@ -96,7 +98,7 @@ export class ServiceLogger {
         this.winstonLogger = createServiceLogger(serviceName);
     }
 
-    private formatMessage(message: string, meta?: LogContext & Record<string, any>): Record<string, any> {
+    private formatMessage(message: string, meta?: LoggerMeta): Record<string, unknown> {
         return {
             message,
             context: this.context,
@@ -111,55 +113,55 @@ export class ServiceLogger {
         };
     }
 
-    error(message: string, errorOrMeta?: any, meta?: LogContext & Record<string, any>): void {
-        let actualError: any = undefined;
-        let actualMeta: any = meta || {};
+    error(message: string, errorOrMeta?: Error | Record<string, unknown>, meta?: LoggerMeta): void {
+        let actualError: Error | undefined;
+        let actualMeta: LoggerMeta = meta || {};
 
         if (errorOrMeta instanceof Error) {
-            actualError = { name: errorOrMeta.name, message: errorOrMeta.message, stack: errorOrMeta.stack };
+            actualError = errorOrMeta;
         } else if (errorOrMeta && typeof errorOrMeta === 'object') {
             // If second arg is an object but not an Error, treat it as metadata
             actualMeta = { ...errorOrMeta, ...actualMeta };
-        } else {
-            actualError = errorOrMeta;
         }
 
         const logData = this.formatMessage(message, {
             ...actualMeta,
             error: actualError
+                ? { name: actualError.name, message: actualError.message, stack: actualError.stack }
+                : undefined
         });
         this.winstonLogger.error(message, logData);
     }
 
-    warn(message: string, meta?: LogContext & Record<string, any>): void {
+    warn(message: string, meta?: LoggerMeta): void {
         this.winstonLogger.warn(message, this.formatMessage(message, meta));
     }
 
-    info(message: string, meta?: LogContext & Record<string, any>): void {
+    info(message: string, meta?: LoggerMeta): void {
         this.winstonLogger.info(message, this.formatMessage(message, meta));
     }
 
-    debug(message: string, meta?: LogContext & Record<string, any>): void {
+    debug(message: string, meta?: LoggerMeta): void {
         this.winstonLogger.debug(message, this.formatMessage(message, meta));
     }
 
     // Business-specific logging methods
 
-    audit(action: string, userId: string, resource: string, details?: LogContext & Record<string, any>): void {
+    audit(action: string, userId: string, resource: string, details?: LoggerMeta): void {
         this.info(`AUDIT: ${action}`, {
             audit: { action, userId, resource, timestamp: new Date().toISOString(), ...details },
             ...details,
         });
     }
 
-    performance(operation: string, duration: number, meta?: LogContext & Record<string, any>): void {
+    performance(operation: string, duration: number, meta?: LoggerMeta): void {
         this.info(`PERFORMANCE: ${operation}`, {
             performance: { operation, duration, unit: 'ms', ...meta },
             ...meta,
         });
     }
 
-    security(event: string, severity: 'low' | 'medium' | 'high' | 'critical', details?: LogContext & Record<string, any>): void {
+    security(event: string, severity: 'low' | 'medium' | 'high' | 'critical', details?: LoggerMeta): void {
         const level: 'error' | 'warn' | 'info' =
             severity === 'critical' || severity === 'high' ? 'error' :
                 severity === 'medium' ? 'warn' : 'info';
@@ -177,11 +179,19 @@ export class ServiceLogger {
         });
     }
 
-    database(operation: string, table: string, duration: number, success: boolean, error?: any): void {
+    database(operation: string, table: string, duration: number, success: boolean, error?: Error): void {
         const level: 'debug' | 'error' = success ? 'debug' : 'error';
         this[level](`DATABASE: ${operation}`, {
             database: { operation, table, duration, success, error: error?.message, timestamp: new Date().toISOString() },
         });
+    }
+
+    logBusiness(message: string, meta?: LoggerMeta): void {
+        this.info(`BUSINESS: ${message}`, meta);
+    }
+
+    logDatabase(message: string, meta?: LoggerMeta): void {
+        this.debug(`DATABASE: ${message}`, meta);
     }
 }
 

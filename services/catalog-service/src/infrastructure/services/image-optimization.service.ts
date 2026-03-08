@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 /**
  * Image Optimization Service Implementation
  * Infrastructure layer image processing pipeline and optimization
@@ -751,8 +752,8 @@ export class ImageOptimizationService {
     
     return {
       fileName: `${baseSlug}-wholesale-tanzania-${imageIndex}.webp`,
-      altText: `${brand} ${productName}${keyAttribute ? ` ${keyAttribute}` : ''} – Wholesale Supplier Tanzania`,
-      imageTitle: `${brand} ${productName}${keyAttribute ? ` ${keyAttribute}` : ''} – Wholesale Supplier Tanzania`,
+      altText: `${brand} ${productName}${keyAttribute ? ` ${keyAttribute}` : ''} â€“ Wholesale Supplier Tanzania`,
+      imageTitle: `${brand} ${productName}${keyAttribute ? ` ${keyAttribute}` : ''} â€“ Wholesale Supplier Tanzania`,
     };
   }
 

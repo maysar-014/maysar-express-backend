@@ -27,7 +27,7 @@ export class SetupTwoFactorUseCase {
 
   async execute(input: SetupTwoFactorInput): Promise<SetupTwoFactorOutput> {
     try {
-      logger.logBusiness('Starting 2FA setup', input.userId, { method: input.method });
+      logger.info('Starting 2FA setup', { userId: input.userId, method: input.method });
 
       const user = await this.userRepository.findById(input.userId);
       if (!user) {
@@ -66,7 +66,7 @@ export class SetupTwoFactorUseCase {
 
       await sagaEventHandler.handleTwoFactorSetupEvent(event, this.emailService, this.notificationClient);
 
-      logger.logBusiness('2FA setup initiated', input.userId, { method: input.method });
+      logger.info('2FA setup initiated', { userId: input.userId, method: input.method });
 
       return {
         success: true,

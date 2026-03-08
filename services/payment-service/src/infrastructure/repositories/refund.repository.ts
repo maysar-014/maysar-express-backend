@@ -2,13 +2,20 @@ import { PrismaClient } from '@prisma/client';
 import { IRefundRepository } from '../../domain/repositories/refund.repository';
 import { Refund, RefundStatus, RefundReason } from '../../domain/entities/refund.entity';
 
+interface RefundDelegate {
+    create(args: Record<string, unknown>): Promise<unknown>;
+    findUnique(args: Record<string, unknown>): Promise<unknown | null>;
+    findMany(args: Record<string, unknown>): Promise<unknown[]>;
+    update(args: Record<string, unknown>): Promise<unknown>;
+}
+
 export class RefundRepository implements IRefundRepository {
     constructor(private readonly prisma: PrismaClient) { }
 
     async save(refund: Refund): Promise<void> {
         const data = refund.toObject();
 
-        await this.prisma.refund.create({
+        await this.refundDelegate.create({
             data: {
                 id: data.id,
                 paymentId: data.paymentId,
@@ -32,7 +39,7 @@ export class RefundRepository implements IRefundRepository {
     }
 
     async findById(id: string): Promise<Refund | null> {
-        const data = await this.prisma.refund.findUnique({
+        const data = await this.refundDelegate.findUnique({
             where: { id }
         });
 
@@ -42,7 +49,7 @@ export class RefundRepository implements IRefundRepository {
     }
 
     async findByPaymentId(paymentId: string): Promise<Refund[]> {
-        const data = await this.prisma.refund.findMany({
+        const data = await this.refundDelegate.findMany({
             where: { paymentId },
             orderBy: { createdAt: 'desc' }
         });
@@ -53,7 +60,7 @@ export class RefundRepository implements IRefundRepository {
     async update(refund: Refund): Promise<void> {
         const data = refund.toObject();
 
-        await this.prisma.refund.update({
+        await this.refundDelegate.update({
             where: { id: data.id },
             data: {
                 status: data.status as any,
@@ -88,5 +95,18 @@ export class RefundRepository implements IRefundRepository {
             createdAt: data.createdAt,
             updatedAt: data.updatedAt,
         });
+    }
+
+    private get refundDelegate(): RefundDelegate {
+        const client = this.prisma as unknown as Record<string, unknown>;
+        const delegate = (client.refund ??
+            client.payment_Refund ??
+            client.paymentRefund) as RefundDelegate | undefined;
+
+        if (!delegate) {
+            throw new Error('Refund delegate is not configured on prisma client');
+        }
+
+        return delegate;
     }
 }

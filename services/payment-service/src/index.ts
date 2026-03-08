@@ -48,7 +48,6 @@ async function startServer() {
 
         const shutdown = async () => {
             logger.info('🛑 Shutting down gracefully...');
-            await eventBus.shutdown();
             sagaRecoveryWorker.stop();
             container.outboxProcessor.stop();
             await container.prisma.$disconnect();

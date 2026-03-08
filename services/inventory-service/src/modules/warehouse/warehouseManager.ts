@@ -1,4 +1,26 @@
-import { PrismaClient, Warehouse } from '@prisma/client';
+interface WarehouseRecord {
+  id: string;
+  code: string;
+  name: string;
+  type: string;
+  status: string;
+  address: unknown;
+  capacity?: unknown;
+  operatingHours?: unknown;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+interface WarehouseDelegate {
+  findMany(args: Record<string, unknown>): Promise<WarehouseRecord[]>;
+  findUnique(args: Record<string, unknown>): Promise<WarehouseRecord | null>;
+  update(args: Record<string, unknown>): Promise<WarehouseRecord>;
+}
+
+interface WarehousePrisma {
+  warehouse?: WarehouseDelegate;
+  inventory_Warehouse?: WarehouseDelegate;
+}
 
 export interface WarehouseInfo {
   id: string;
@@ -12,13 +34,13 @@ export interface WarehouseInfo {
 }
 
 export class WarehouseManager {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: WarehousePrisma) {}
 
   /**
    * Get all active warehouses
    */
-  async getActiveWarehouses(): Promise<Warehouse[]> {
-    return await this.prisma.warehouse.findMany({
+  async getActiveWarehouses(): Promise<WarehouseRecord[]> {
+    return await this.warehouseDelegate.findMany({
       where: { status: 'active' },
       orderBy: { name: 'asc' }
     });
@@ -27,8 +49,8 @@ export class WarehouseManager {
   /**
    * Get warehouse by ID with full details
    */
-  async getWarehouseById(id: string): Promise<Warehouse | null> {
-    return await this.prisma.warehouse.findUnique({
+  async getWarehouseById(id: string): Promise<WarehouseRecord | null> {
+    return await this.warehouseDelegate.findUnique({
       where: { id }
     });
   }
@@ -36,7 +58,7 @@ export class WarehouseManager {
   /**
    * Find warehouses near a location
    */
-  async findNearbyWarehouses(latitude: number, longitude: number, radiusKm: number = 100): Promise<Warehouse[]> {
+  async findNearbyWarehouses(latitude: number, longitude: number, radiusKm: number = 100): Promise<WarehouseRecord[]> {
     // In a real implementation, this would use PostGIS or similar geospatial queries
     // For now, return all active warehouses
     return await this.getActiveWarehouses();
@@ -61,8 +83,8 @@ export class WarehouseManager {
   /**
    * Update warehouse status
    */
-  async updateWarehouseStatus(id: string, status: string, updatedBy: string): Promise<Warehouse> {
-    return await this.prisma.warehouse.update({
+  async updateWarehouseStatus(id: string, status: string, updatedBy: string): Promise<WarehouseRecord> {
+    return await this.warehouseDelegate.update({
       where: { id },
       data: {
         status: status as any,
@@ -91,5 +113,13 @@ export class WarehouseManager {
       totalStock: 1000,
       availableStock: 700
     }));
+  }
+
+  private get warehouseDelegate(): WarehouseDelegate {
+    const delegate = this.prisma.inventory_Warehouse ?? this.prisma.warehouse;
+    if (!delegate) {
+      throw new Error('Warehouse delegate is not configured on prisma client');
+    }
+    return delegate;
   }
 }

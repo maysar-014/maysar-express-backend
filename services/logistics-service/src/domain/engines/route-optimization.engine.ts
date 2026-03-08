@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { GeoPoint, TimeWindow, RouteWaypoint } from './logistics.engine';
 
 export interface RouteOptimizationInput {

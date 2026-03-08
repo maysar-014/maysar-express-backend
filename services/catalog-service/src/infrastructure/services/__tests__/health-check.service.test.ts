@@ -158,7 +158,7 @@ describe('HealthCheckService', () => {
       const timeoutService = new HealthCheckService(timeoutConfig);
 
       // Mock a slow provider response
-      mockProviderManager.getInstance().getHealthCheck.mockImplementation(
+      (mockProviderManager.getInstance().getHealthCheck as jest.Mock).mockImplementation(
         () => new Promise(resolve => setTimeout(() => resolve({
           providers: {
             search: { status: 'up', lastQueryTime: 150 },
@@ -269,7 +269,7 @@ describe('HealthCheckService', () => {
           }
         };
 
-        mockProviderManager.getInstance().getHealthCheck.mockResolvedValue(mockHealthCheck);
+        (mockProviderManager.getInstance().getHealthCheck as jest.Mock).mockResolvedValue(mockHealthCheck);
 
         const result: ComponentHealthResult = await (healthCheckService as any).checkSearch();
 
@@ -285,7 +285,7 @@ describe('HealthCheckService', () => {
           }
         };
 
-        mockProviderManager.getInstance().getHealthCheck.mockResolvedValue(mockHealthCheck);
+        (mockProviderManager.getInstance().getHealthCheck as jest.Mock).mockResolvedValue(mockHealthCheck);
 
         const result: ComponentHealthResult = await (healthCheckService as any).checkSearch();
 
@@ -294,7 +294,7 @@ describe('HealthCheckService', () => {
       });
 
       it('should handle provider manager errors', async () => {
-        mockProviderManager.getInstance().getHealthCheck.mockRejectedValue(new Error('Provider unavailable'));
+        (mockProviderManager.getInstance().getHealthCheck as jest.Mock).mockRejectedValue(new Error('Provider unavailable'));
 
         const result: ComponentHealthResult = await (healthCheckService as any).checkSearch();
 
@@ -314,7 +314,7 @@ describe('HealthCheckService', () => {
           }
         };
 
-        mockProviderManager.getInstance().getHealthCheck.mockResolvedValue(mockHealthCheck);
+        (mockProviderManager.getInstance().getHealthCheck as jest.Mock).mockResolvedValue(mockHealthCheck);
 
         const result: ComponentHealthResult = await (healthCheckService as any).checkExternalApis();
 
@@ -334,7 +334,7 @@ describe('HealthCheckService', () => {
           }
         };
 
-        mockProviderManager.getInstance().getHealthCheck.mockResolvedValue(mockHealthCheck);
+        (mockProviderManager.getInstance().getHealthCheck as jest.Mock).mockResolvedValue(mockHealthCheck);
 
         const result: ComponentHealthResult = await (healthCheckService as any).checkExternalApis();
 
@@ -353,7 +353,7 @@ describe('HealthCheckService', () => {
           }
         };
 
-        mockProviderManager.getInstance().getHealthCheck.mockResolvedValue(mockHealthCheck);
+        (mockProviderManager.getInstance().getHealthCheck as jest.Mock).mockResolvedValue(mockHealthCheck);
 
         const result: ComponentHealthResult = await (healthCheckService as any).checkExternalApis();
 
@@ -383,7 +383,7 @@ describe('HealthCheckService', () => {
         }
       };
 
-      mockProviderManager.getInstance().getHealthCheck.mockResolvedValue(mockHealthCheck);
+      (mockProviderManager.getInstance().getHealthCheck as jest.Mock).mockResolvedValue(mockHealthCheck);
 
       healthCheckService.startPeriodicChecks();
 
@@ -403,7 +403,7 @@ describe('HealthCheckService', () => {
         }
       };
 
-      mockProviderManager.getInstance().getHealthCheck.mockResolvedValue(mockHealthCheck);
+      (mockProviderManager.getInstance().getHealthCheck as jest.Mock).mockResolvedValue(mockHealthCheck);
 
       healthCheckService.startPeriodicChecks();
       healthCheckService.stopPeriodicChecks();

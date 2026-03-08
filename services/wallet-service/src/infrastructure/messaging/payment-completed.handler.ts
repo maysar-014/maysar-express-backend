@@ -1,6 +1,6 @@
 import { CreditWalletUseCase } from '../../application/use-cases/credit-wallet.use-case';
 import { AuditInfo, ActorType } from '../../domain/value-objects/audit-info.value-object';
-import { EventEnvelope } from '../../../../../shared/events/eventBus';
+import { EventEnvelope } from '@shared-events/eventBus';
 import { EventIdempotency } from '@shared/middleware/idempotency';
 
 interface PaymentCompletedEvent {
@@ -19,6 +19,9 @@ export class PaymentCompletedHandler {
 
     async handle(event: EventEnvelope): Promise<void> {
         const { data } = event;
+        if (!this.isPaymentCompletedEvent(data)) {
+            return;
+        }
 
         // Check if this payment is for a wallet top-up
         if (!data.orderId || !data.orderId.startsWith('TOPUP_')) {
@@ -26,7 +29,7 @@ export class PaymentCompletedHandler {
             return;
         }
 
-        return this.eventIdempotency.withIdempotency(
+        await this.eventIdempotency.withIdempotency(
             data.paymentId,
             'PaymentCompletedHandler',
             async () => {
@@ -54,6 +57,19 @@ export class PaymentCompletedHandler {
                     // In production, this would be retried or moved to a dead letter queue
                 }
             }
-        ) as any;
+        );
+    }
+
+    private isPaymentCompletedEvent(data: unknown): data is PaymentCompletedEvent {
+        if (typeof data !== 'object' || data === null) {
+            return false;
+        }
+
+        const eventData = data as Partial<PaymentCompletedEvent>;
+        return typeof eventData.orderId === 'string'
+            && typeof eventData.userId === 'string'
+            && typeof eventData.amount === 'number'
+            && typeof eventData.currency === 'string'
+            && typeof eventData.paymentId === 'string';
     }
 }

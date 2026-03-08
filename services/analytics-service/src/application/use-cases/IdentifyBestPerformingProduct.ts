@@ -29,10 +29,10 @@ export class IdentifyBestPerformingProduct {
       _avg: { price: true }
     });
 
-    const totalRevenue = (revenueData._sum.quantity || 0) * (revenueData._avg.price || 0);
+    const totalRevenue = Number(revenueData._sum.quantity || 0) * Number(revenueData._avg.price || 0);
 
     // Get product name
-    const product = await prisma.catalog_Product.findUnique({
+    const product = await prisma.product.findUnique({
       where: { id: productId },
       select: { title: true }
     });

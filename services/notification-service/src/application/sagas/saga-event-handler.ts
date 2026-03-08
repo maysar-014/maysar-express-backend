@@ -25,15 +25,15 @@ export class SagaEventHandler {
 
   setupSubscriptions(eventBus: IEventBus): void {
     eventBus.subscribe('NotificationCreated', async (envelope: EventEnvelope) => {
-      await this.handleNotificationCreatedEvent(envelope.data);
+      await this.handleNotificationCreatedEvent(envelope.data as NotificationCreatedEvent);
     });
 
     eventBus.subscribe('NotificationFailed', async (envelope: EventEnvelope) => {
-      await this.handleNotificationFailedEvent(envelope.data);
+      await this.handleNotificationFailedEvent(envelope.data as NotificationFailedEvent);
     });
 
     eventBus.subscribe('UserRegistered', async (envelope: EventEnvelope) => {
-      await this.handleUserRegisteredEvent(envelope.data);
+      await this.handleUserRegisteredEvent(envelope.data as UserRegisteredEventPayload);
     });
   }
 

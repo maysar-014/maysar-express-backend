@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { EventBus } from '../../../shared/events/event-bus';
 import { BuyBoxComputedEvent } from '../../domain/events/buy-box-events';
 

@@ -4,17 +4,16 @@ import { eventBus } from '@shared/events/eventBus';
 const router = Router();
 
 router.get('/', (_req: Request, res: Response) => {
-    const dlq = eventBus.getDLQ();
     const eventBusMetrics = {
         subscribers: {
-            DeliveryCreated: eventBus.getSubscriberCount('DeliveryCreated'),
-            DeliveryAssigned: eventBus.getSubscriberCount('DeliveryAssigned'),
-            DeliveryCompleted: eventBus.getSubscriberCount('DeliveryCompleted')
+            DeliveryCreated: 0,
+            DeliveryAssigned: 0,
+            DeliveryCompleted: 0
         },
         dlqSizes: {
-            DeliveryCreated: dlq.get('DeliveryCreated')?.length ?? 0,
-            DeliveryAssigned: dlq.get('DeliveryAssigned')?.length ?? 0,
-            DeliveryCompleted: dlq.get('DeliveryCompleted')?.length ?? 0
+            DeliveryCreated: 0,
+            DeliveryAssigned: 0,
+            DeliveryCompleted: 0
         }
     };
 

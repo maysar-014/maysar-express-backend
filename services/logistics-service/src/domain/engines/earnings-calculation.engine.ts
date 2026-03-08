@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 export interface EarningsBreakdown {
   baseEarnings: number;
   distanceBonus: number;

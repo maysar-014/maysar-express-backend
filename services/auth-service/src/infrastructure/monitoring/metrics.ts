@@ -1,4 +1,4 @@
-import { createServiceMetrics, createMetricsCollector, metricsRegistry } from '../../../../../shared/metrics/metrics.factory';
+import { createServiceMetrics, createMetricsCollector, metricsRegistry } from '@shared/metrics/metrics.factory';
 import { Counter } from 'prom-client';
 
 const serviceName = 'auth-service';

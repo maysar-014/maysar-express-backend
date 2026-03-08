@@ -52,7 +52,7 @@ describe('PrismaUserRepository error paths', () => {
 
     p.$queryRaw.mockRejectedValue('queryraw-fail');
 
-    const repo = new PrismaUserRepository(p as any);
+    const repo = new PrismaUserRepository(p as any, { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v) } as any);
 
     await expect(repo.findById('x')).rejects.toBeDefined();
     await expect(repo.findByEmail('e')).rejects.toBeDefined();

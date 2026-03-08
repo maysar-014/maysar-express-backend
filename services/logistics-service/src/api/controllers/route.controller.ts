@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { Request, Response } from 'express';
 import { DependencyContainer } from '../../infrastructure/container';
 import { RouteOptimizationPort } from '../../domain/engines/ports/route-optimization.port';

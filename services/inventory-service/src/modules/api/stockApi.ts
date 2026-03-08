@@ -2,11 +2,54 @@ import { Request, Response } from 'express';
 import { StockManager } from '../stock/stockManager';
 import { ReservationEngine } from '../reservation/reservationEngine';
 import { WarehouseManager } from '../warehouse/warehouseManager';
-import { PrismaClient } from '@prisma/client';
+import { eventBus } from '@shared-events/eventBus';
+
+interface InventoryCountRecord {
+  id: string;
+  warehouseId: string;
+  countType: string;
+  countedAt: Date;
+  discrepanciesFound: number;
+  completedAt: Date | null;
+}
+
+interface StockItemAnalyticsRecord {
+  productVariantId: string;
+  warehouseId: string;
+  quantityAvailable: number;
+  quantityReserved: number;
+  reorderPoint: number | null;
+  maxStock: number | null;
+  warehouse: {
+    name: string;
+  };
+}
+
+interface InventoryCountDelegate {
+  create(args: Record<string, unknown>): Promise<InventoryCountRecord>;
+  update(args: Record<string, unknown>): Promise<InventoryCountRecord>;
+}
+
+interface InventoryCountItemDelegate {
+  create(args: Record<string, unknown>): Promise<unknown>;
+}
+
+interface StockItemDelegate {
+  findMany(args: Record<string, unknown>): Promise<StockItemAnalyticsRecord[]>;
+}
+
+interface StockApiPrisma {
+  inventory_InventoryCount?: InventoryCountDelegate;
+  inventoryCount?: InventoryCountDelegate;
+  inventory_InventoryCountItem?: InventoryCountItemDelegate;
+  inventoryCountItem?: InventoryCountItemDelegate;
+  inventory_StockItem?: StockItemDelegate;
+  stockItem?: StockItemDelegate;
+}
 
 export class StockApi {
   constructor(
-    private prisma: PrismaClient,
+    private prisma: StockApiPrisma,
     private stockManager: StockManager,
     private reservationEngine: ReservationEngine,
     private warehouseManager: WarehouseManager
@@ -176,7 +219,7 @@ export class StockApi {
     try {
       const { variantId, warehouseId } = req.params;
       const { quantity, operation, reason } = req.body;
-      const performedBy = req.user?.id || 'system';
+      const performedBy = req.user?.userId || 'system';
 
       // Validate request
       if (!quantity || !operation || !reason) {
@@ -251,7 +294,7 @@ export class StockApi {
   async startInventoryCount(req: Request, res: Response): Promise<void> {
     try {
       const { warehouseId, type, notes } = req.body;
-      const countedBy = req.user?.id;
+      const countedBy = req.user?.userId;
 
       if (!warehouseId || !countedBy) {
         res.status(400).json({ error: 'Invalid request: warehouseId and countedBy required' });
@@ -259,7 +302,7 @@ export class StockApi {
       }
 
       // Create inventory count record
-      const inventoryCount = await this.prisma.inventoryCount.create({
+      const inventoryCount = await this.inventoryCountDelegate.create({
         data: {
           warehouseId,
           countedBy,
@@ -294,22 +337,29 @@ export class StockApi {
         res.status(400).json({ error: 'Invalid request: items array required' });
         return;
       }
+      const typedItems = items as Array<{
+        variantId: string;
+        systemQuantity: number;
+        countedQuantity: number;
+        discrepancy?: number;
+        unitCost?: number;
+      }>;
 
       // Update inventory count
-      const count = await this.prisma.inventoryCount.update({
+      const count = await this.inventoryCountDelegate.update({
         where: { id: countId },
         data: {
           status: 'completed',
           completedAt: new Date(),
           approvedBy,
-          itemsCounted: items.length,
-          discrepanciesFound: items.filter(item => item.discrepancy !== 0).length
+          itemsCounted: typedItems.length,
+          discrepanciesFound: typedItems.filter((item) => item.discrepancy !== 0).length
         }
       });
 
       // Create count items
-      for (const item of items) {
-        await this.prisma.inventoryCountItem.create({
+      for (const item of typedItems) {
+        await this.inventoryCountItemDelegate.create({
           data: {
             inventoryCountId: countId,
             productVariantId: item.variantId,
@@ -320,18 +370,18 @@ export class StockApi {
       }
 
       // Calculate total value (simplified)
-      const totalValue = items.reduce((sum, item) => sum + (item.countedQuantity * (item.unitCost || 0)), 0);
+      const totalValue = typedItems.reduce((sum, item) => sum + (item.countedQuantity * (item.unitCost || 0)), 0);
 
-      await this.prisma.inventoryCount.update({
+      await this.inventoryCountDelegate.update({
         where: { id: countId },
         data: { totalValue }
       });
 
       // Emit completion event
-      await this.eventBus.emit('InventoryCountCompleted.v1', {
+      await eventBus.emit('InventoryCountCompleted.v1', {
         inventoryCountId: countId,
         warehouseId: count.warehouseId,
-        itemsCounted: items.length,
+        itemsCounted: typedItems.length,
         discrepanciesFound: count.discrepanciesFound,
         totalValue
       });
@@ -339,7 +389,7 @@ export class StockApi {
       res.json({
         countId,
         status: 'completed',
-        itemsCounted: items.length,
+        itemsCounted: typedItems.length,
         discrepanciesFound: count.discrepanciesFound,
         totalValue,
         completedAt: count.completedAt
@@ -359,19 +409,16 @@ export class StockApi {
       const { warehouseId, lowStockOnly } = req.query;
 
       // Get stock items with warehouse info
-      const whereClause: any = {};
+      const whereClause: Record<string, unknown> = {};
       if (warehouseId) whereClause.warehouseId = warehouseId;
-      if (lowStockOnly === 'true') {
-        whereClause.quantityAvailable = { lte: this.prisma.stockItem.fields.reorderPoint };
-      }
 
-      const stockItems = await this.prisma.stockItem.findMany({
+      const stockItems = await this.stockItemDelegate.findMany({
         where: whereClause,
         include: { warehouse: true },
         orderBy: { quantityAvailable: 'asc' }
       });
 
-      const analytics = stockItems.map(item => ({
+      const analytics = stockItems.map((item) => ({
         variantId: item.productVariantId,
         warehouseId: item.warehouseId,
         warehouseName: item.warehouse.name,
@@ -381,12 +428,15 @@ export class StockApi {
         status: this.calculateStockStatus(item),
         utilizationRate: item.maxStock ? (item.quantityAvailable / item.maxStock) : null
       }));
+      const filteredAnalytics = lowStockOnly === 'true'
+        ? analytics.filter((analytic) => analytic.status !== 'in_stock')
+        : analytics;
 
       res.json({
-        analytics,
-        total: analytics.length,
-        lowStockCount: analytics.filter(a => a.status === 'low_stock').length,
-        outOfStockCount: analytics.filter(a => a.status === 'out_of_stock').length,
+        analytics: filteredAnalytics,
+        total: filteredAnalytics.length,
+        lowStockCount: filteredAnalytics.filter((analytic) => analytic.status === 'low_stock').length,
+        outOfStockCount: filteredAnalytics.filter((analytic) => analytic.status === 'out_of_stock').length,
         generatedAt: new Date().toISOString()
       });
     } catch (error) {
@@ -405,5 +455,29 @@ export class StockApi {
     if (available <= 0) return 'out_of_stock';
     if (available <= reorderPoint) return 'low_stock';
     return 'in_stock';
+  }
+
+  private get inventoryCountDelegate(): InventoryCountDelegate {
+    const delegate = this.prisma.inventory_InventoryCount ?? this.prisma.inventoryCount;
+    if (!delegate) {
+      throw new Error('Inventory count delegate is not configured on prisma client');
+    }
+    return delegate;
+  }
+
+  private get inventoryCountItemDelegate(): InventoryCountItemDelegate {
+    const delegate = this.prisma.inventory_InventoryCountItem ?? this.prisma.inventoryCountItem;
+    if (!delegate) {
+      throw new Error('Inventory count item delegate is not configured on prisma client');
+    }
+    return delegate;
+  }
+
+  private get stockItemDelegate(): StockItemDelegate {
+    const delegate = this.prisma.inventory_StockItem ?? this.prisma.stockItem;
+    if (!delegate) {
+      throw new Error('Stock item delegate is not configured on prisma client');
+    }
+    return delegate;
   }
 }

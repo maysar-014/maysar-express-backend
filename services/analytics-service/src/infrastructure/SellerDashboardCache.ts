@@ -1,18 +1,18 @@
 export class SellerDashboardCache {
-  private cache: Map<string, { value: any; expiresAt: number }> = new Map();
+  private cache: Map<string, { value: unknown; expiresAt: number }> = new Map();
   private defaultTTL = 300; // 5 minutes for money snapshot
 
   generateKey(sellerId: string, section: string): string {
     return `seller-dashboard:${sellerId}:${section}`;
   }
 
-  set(key: string, value: any, ttl?: number): void {
+  set(key: string, value: unknown, ttl?: number): void {
     const duration = ttl || this.defaultTTL;
     const expiresAt = Date.now() + duration * 1000;
     this.cache.set(key, { value, expiresAt });
   }
 
-  get(key: string): any | null {
+  get(key: string): unknown | null {
     const entry = this.cache.get(key);
     if (!entry) return null;
 
@@ -44,7 +44,7 @@ export class SellerDashboardCache {
   ): Promise<T> {
     const cached = this.get(key);
     if (cached !== null) {
-      return cached;
+      return cached as T;
     }
 
     const result = await computeFn();

@@ -245,7 +245,7 @@ export function generateIdempotencyKey(req: Request): string {
     method: req.method,
     path: req.path,
     body: req.body,
-    userId: (req.user as any)?.id || 'anonymous'
+    userId: req.user?.userId || 'anonymous'
   };
   
   return createHash('sha256')

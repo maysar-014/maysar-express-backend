@@ -45,7 +45,7 @@ export const createEventMetadata = (
 };
 
 /**
- * Kafka Headers mapping for Metadata
+ * Headers mapping for Metadata
  */
 export const metadataToHeaders = (metadata: EventMetadata): Record<string, string> => {
     const headers: Record<string, string> = {

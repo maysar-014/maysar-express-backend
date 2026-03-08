@@ -2,15 +2,16 @@ import { TransactionalOutbox } from './outboxPattern';
 import { CorrelatedEventEnvelope, EventCorrelationService } from '../events/correlatedEvents';
 import { tracingService, TraceContext } from '../tracing/openTelemetry';
 import { PrismaClient } from '@prisma/client';
+import type { PrismaTransaction } from '../types';
 
 export class CorrelatedOutbox extends TransactionalOutbox {
   constructor(prisma: PrismaClient) {
     super(prisma);
   }
 
-  async saveCorrelatedEvent<T>(
-    envelope: CorrelatedEventEnvelope<T>,
-    transaction?: any,
+  async saveCorrelatedEvent(
+    envelope: CorrelatedEventEnvelope,
+    transaction?: PrismaClient | PrismaTransaction,
     traceContext?: TraceContext
   ): Promise<void> {
     await tracingService.executeWithSpan(
@@ -32,13 +33,13 @@ export class CorrelatedOutbox extends TransactionalOutbox {
   async createAndSaveEvent<T>(
     eventType: string,
     payload: T,
-    transaction?: any,
+    transaction?: PrismaClient | PrismaTransaction,
     context?: {
       correlationId?: string;
       causationId?: string;
       traceContext?: TraceContext;
     }
-  ): Promise<CorrelatedEventEnvelope<T>> {
+  ): Promise<CorrelatedEventEnvelope> {
     return await tracingService.executeWithSpan(
       `create-event-${eventType}`,
       async (spanContext) => {

@@ -1,12 +1,14 @@
 import { EventPublisherPort } from '../../domain/engines/ports/event-publisher.port';
-import { IOutboxRepository, OutboxStatus } from '../../../../shared/outbox/outbox.repository';
+import { IOutboxRepository } from '../../../../../shared/outbox/outbox.repository';
+import { PrismaClient } from '@prisma/client';
+import type { PrismaTransaction } from '../../../../../shared/types';
 
 export interface DomainEvent {
   eventId: string;
   eventType: string;
   aggregateId: string;
   aggregateType: string;
-  eventData: any;
+  eventData: unknown;
   timestamp: Date;
   metadata?: {
     correlationId?: string;
@@ -37,7 +39,7 @@ export class EventPublisher implements EventPublisherPort {
     private eventStoreEnabled: boolean = true
   ) { }
 
-  async publish(event: DomainEvent, transaction?: any): Promise<void> {
+  async publish(event: DomainEvent, transaction?: PrismaClient | PrismaTransaction): Promise<void> {
     try {
       // Store event if persistence is enabled
       if (this.eventStoreEnabled) {
@@ -48,8 +50,11 @@ export class EventPublisher implements EventPublisherPort {
       await this.outboxRepository.save({
         eventId: event.eventId,
         eventType: event.eventType,
-        eventData: event.eventData,
-        status: OutboxStatus.PENDING
+        aggregateId: event.aggregateId,
+        aggregateType: event.aggregateType,
+        data: event.eventData,
+        timestamp: event.timestamp,
+        metadata: event.metadata,
       }, transaction);
 
       // Publish to local subscribers
@@ -68,7 +73,7 @@ export class EventPublisher implements EventPublisherPort {
     }
   }
 
-  async publishBatch(events: DomainEvent[], transaction?: any): Promise<void> {
+  async publishBatch(events: DomainEvent[], transaction?: PrismaClient | PrismaTransaction): Promise<void> {
     try {
       const publishPromises = events.map(event => this.publish(event, transaction));
       await Promise.allSettled(publishPromises);

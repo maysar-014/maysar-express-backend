@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { DomainEvent } from './domain-event.interface';
 
 export class BuyBoxComputedEvent implements DomainEvent {

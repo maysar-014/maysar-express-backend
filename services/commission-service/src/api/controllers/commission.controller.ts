@@ -66,8 +66,8 @@ export class CommissionController {
     try {
       const input: ApproveCommissionInput = {
         commissionId: CommissionId.fromString(req.params.id),
-        approverRole: req.user?.role || 'user', // Assuming auth middleware sets req.user
-        approverId: req.user?.id || 'system',
+        approverRole: req.user?.roles?.[0] || 'user',
+        approverId: req.user?.userId || 'system',
         autoSchedulePayout: req.body.autoSchedulePayout
       };
 

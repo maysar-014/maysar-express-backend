@@ -12,7 +12,7 @@ export interface AuditInfoProps {
     timestamp: Date;
     ipAddress?: string;
     userAgent?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
 }
 
 export class AuditInfo {
@@ -53,7 +53,7 @@ export class AuditInfo {
         return this.props.userAgent;
     }
 
-    get metadata(): Record<string, any> | undefined {
+    get metadata(): Record<string, unknown> | undefined {
         return this.props.metadata;
     }
 }

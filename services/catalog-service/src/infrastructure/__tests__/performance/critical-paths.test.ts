@@ -29,10 +29,53 @@ import { FileUploadService } from '../../services/file-upload.service';
 import { ImageOptimizationService } from '../../services/image-optimization.service';
 import { CacheService } from '../../services/cache.service';
 import { HealthCheckService } from '../../services/health-check.service';
-import { SearchProviderFactory, SearchProvider as SearchProviderEnum, ElasticsearchProvider } from '../../providers/search.provider';
+import { SearchProvider as SearchProviderEnum, ElasticsearchProvider } from '../../providers/search.provider';
 import { S3CDNProvider, CDNProvider } from '../../providers/cdn.provider';
-import { SharpImageProvider } from '../../providers/image-processing.provider';
-import { CacheProviderFactory } from '../../providers/cache-provider';
+import { ImageProcessingProvider, SharpImageProvider } from '../../providers/image-processing.provider';
+import { CacheProvider as CacheProviderEnum, CacheProviderFactory } from '../../providers/cache-provider';
+
+class SearchProvider {
+  constructor(
+    private readonly provider?: {
+      search: (query: unknown) => Promise<unknown>;
+    }
+  ) {}
+
+  async search(query: unknown): Promise<unknown> {
+    if (this.provider?.search) {
+      return this.provider.search(query);
+    }
+
+    return {
+      results: [],
+      total: 0,
+      page: 1,
+      limit: 10,
+      facets: { categories: [], priceRanges: [] }
+    };
+  }
+}
+
+class CacheProvider {
+  private store = new Map<string, unknown>();
+
+  async get(key: string): Promise<unknown | null> {
+    return this.store.has(key) ? this.store.get(key) ?? null : null;
+  }
+
+  async set(key: string, value: unknown): Promise<void> {
+    this.store.set(key, value);
+  }
+
+  async del(key: string): Promise<number> {
+    const deleted = this.store.delete(key);
+    return deleted ? 1 : 0;
+  }
+
+  async exists(key: string): Promise<number> {
+    return this.store.has(key) ? 1 : 0;
+  }
+}
 
 describe('Infrastructure Layer Performance Tests', () => {
   let repository: PrismaProductRepository;
@@ -53,8 +96,23 @@ describe('Infrastructure Layer Performance Tests', () => {
     cacheService = new CacheService();
     healthCheckService = new HealthCheckService();
     searchProvider = new SearchProvider();
-    cdnProvider = new S3CDNProvider();
-    imageProvider = new SharpImageProvider();
+    cdnProvider = new S3CDNProvider({
+      provider: CDNProvider.AWS_S3,
+      bucket: 'test-bucket',
+      region: 'us-east-1',
+      timeout: 1000,
+      maxFileSize: 50 * 1024 * 1024,
+      allowedMimeTypes: ['image/jpeg', 'image/png']
+    });
+    imageProvider = new SharpImageProvider({
+      provider: ImageProcessingProvider.SHARP,
+      maxFileSize: 50 * 1024 * 1024,
+      allowedFormats: ['jpeg', 'png', 'webp', 'avif'],
+      quality: 80,
+      timeout: 1000,
+      concurrency: 4,
+      cacheEnabled: false
+    });
     cacheProvider = new CacheProvider();
   });
 

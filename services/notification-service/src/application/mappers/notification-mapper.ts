@@ -147,9 +147,9 @@ export class NotificationMapper {
   ): NotificationPreference {
     return entity.updatePreference({
       enabled: dto.enabled,
-      categories: dto.categories,
+      categories: (dto as any).categories,
       quietHours: dto.quietHours,
-      frequency: dto.frequency
+      frequency: (dto as any).frequency
     });
   }
 

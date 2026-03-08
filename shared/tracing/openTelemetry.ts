@@ -3,8 +3,10 @@ import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import { trace, context, SpanStatusCode, SpanKind } from '@opentelemetry/api';
+import { trace, context, SpanStatusCode, SpanKind, Span } from '@opentelemetry/api';
 import { v4 as uuidv4 } from 'uuid';
+import { NextFunction, Request, Response } from 'express';
+import { createLogger } from '../logger/logger';
 
 export interface TraceContext {
   traceId: string;
@@ -32,7 +34,6 @@ export class TracingService {
   }
 
   start(): void {
-    const { createLogger } = require('../logger/logger');
     const logger = createLogger('TracingService', 'shared');
     this.sdk.start();
     logger.info(`Tracing initialized for ${this.sdk['_resource'].attributes[SemanticResourceAttributes.SERVICE_NAME]}`);
@@ -92,7 +93,7 @@ export class TracingService {
     }
   }
 
-  addEventAttributes(span: any, eventType: string, eventId: string, correlationId: string) {
+  addEventAttributes(span: Span, eventType: string, eventId: string, correlationId: string): void {
     span.setAttributes({
       'event.type': eventType,
       'event.id': eventId,
@@ -103,8 +104,11 @@ export class TracingService {
 
 // Correlation ID middleware for Express
 export function correlationMiddleware() {
-  return (req: any, res: any, next: any) => {
-    const correlationId = req.headers['x-correlation-id'] || uuidv4();
+  return (req: Request, res: Response, next: NextFunction) => {
+    const requestHeader = req.headers['x-correlation-id'];
+    const correlationId = Array.isArray(requestHeader)
+      ? requestHeader[0]
+      : requestHeader || uuidv4();
     req.correlationId = correlationId;
     res.setHeader('x-correlation-id', correlationId);
     next();

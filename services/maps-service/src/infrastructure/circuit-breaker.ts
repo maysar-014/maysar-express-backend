@@ -31,7 +31,15 @@ export interface CircuitBreakerMetrics {
     consecutiveSuccesses: number;
 }
 
+interface LegacyCircuitBreakerOptions {
+    failureThreshold: number;
+    successThreshold: number;
+    timeout: number;
+    monitoringPeriod?: number;
+}
+
 export class CircuitBreaker {
+    private config: CircuitBreakerConfig;
     private state: CircuitState = CircuitState.CLOSED;
     private failureCount = 0;
     private successCount = 0;
@@ -39,8 +47,27 @@ export class CircuitBreaker {
     private lastSuccessTime?: Date;
     private nextAttemptTime?: Date;
     private requestCount = 0;
+    private rejectedCount = 0;
 
-    constructor(private config: CircuitBreakerConfig) { }
+    constructor(config: CircuitBreakerConfig);
+    constructor(name: string, options?: Partial<LegacyCircuitBreakerOptions>);
+    constructor(
+        configOrName: CircuitBreakerConfig | string,
+        options: Partial<LegacyCircuitBreakerOptions> = {}
+    ) {
+        if (typeof configOrName === 'string') {
+            this.config = {
+                name: configOrName,
+                failureThreshold: options.failureThreshold ?? 5,
+                successThreshold: options.successThreshold ?? 3,
+                recoveryTimeout: options.timeout ?? 60_000,
+                monitoringPeriod: options.monitoringPeriod ?? 300_000,
+            };
+            return;
+        }
+
+        this.config = configOrName;
+    }
 
     async execute<T>(operation: () => Promise<T>): Promise<T> {
         this.requestCount++;
@@ -50,7 +77,8 @@ export class CircuitBreaker {
                 this.state = CircuitState.HALF_OPEN;
                 this.successCount = 0;
             } else {
-                throw new Error(`Circuit breaker '${this.config.name}' is OPEN`);
+                this.rejectedCount++;
+                throw new Error('Circuit breaker is OPEN');
             }
         }
 
@@ -114,6 +142,23 @@ export class CircuitBreaker {
             lastSuccessTime: this.lastSuccessTime,
             consecutiveFailures: this.failureCount,
             consecutiveSuccesses: this.successCount
+        };
+    }
+
+    // Legacy statistics adapter expected by older tests.
+    getStats(): {
+        state: CircuitState;
+        failureCount: number;
+        successCount: number;
+        totalCount: number;
+        rejectedCount: number;
+    } {
+        return {
+            state: this.state,
+            failureCount: this.failureCount,
+            successCount: this.successCount,
+            totalCount: this.requestCount,
+            rejectedCount: this.rejectedCount,
         };
     }
 

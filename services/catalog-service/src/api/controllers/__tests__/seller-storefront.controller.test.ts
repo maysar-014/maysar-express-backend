@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { SellerStorefrontController } from '../../../src/api/controllers/seller-storefront.controller';
+import { SellerStorefrontController } from '../seller-storefront.controller';
 
 describe('SellerStorefrontController', () => {
   let controller: SellerStorefrontController;

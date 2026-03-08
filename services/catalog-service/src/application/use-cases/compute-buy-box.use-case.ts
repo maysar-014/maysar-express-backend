@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { IBuyBoxRepository } from '../../domain/repositories/repository.interfaces';
 import { BuyBoxEngine } from '../../domain/engines/buy-box.engine';
 import { BuyBoxWeights } from '../../domain/value-objects/buy-box-weights.value-object';

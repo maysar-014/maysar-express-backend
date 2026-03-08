@@ -1,6 +1,7 @@
-import { PrismaClient, Wallet_Transaction } from '@prisma/client';
+import { Prisma, PrismaClient, Wallet_Transaction, Wallet_TransactionType } from '@prisma/client';
 import { ITransactionRepository } from '../../domain/repositories/transaction.repository';
 import { Transaction, TransactionType } from '../../domain/entities/transaction.entity';
+import { ActorType } from '../../domain/value-objects/audit-info.value-object';
 
 export class TransactionRepository implements ITransactionRepository {
     constructor(private readonly prisma: PrismaClient) { }
@@ -10,7 +11,7 @@ export class TransactionRepository implements ITransactionRepository {
             id: transaction.id,
             walletId: transaction.walletId,
             userId: transaction.userId,
-            type: transaction.type,
+            type: this.toPrismaTransactionType(transaction.type),
             amount: transaction.amount,
             currency: transaction.currency,
             balanceBefore: transaction.balanceBefore,
@@ -18,7 +19,7 @@ export class TransactionRepository implements ITransactionRepository {
             frozenAmountBefore: transaction.frozenAmountBefore,
             frozenAmountAfter: transaction.frozenAmountAfter,
             description: transaction.description,
-            metadata: transaction.metadata || {},
+            metadata: (transaction.metadata || {}) as Prisma.InputJsonValue,
             createdAt: transaction.createdAt,
             correlationId: transaction.correlationId,
             idempotencyKey: transaction.idempotencyKey,
@@ -106,23 +107,33 @@ export class TransactionRepository implements ITransactionRepository {
             balanceAfter: Number(record.balanceAfter),
             frozenAmountBefore: Number(record.frozenAmountBefore),
             frozenAmountAfter: Number(record.frozenAmountAfter),
-            description: record.description,
-            metadata: record.metadata,
+            description: record.description || '',
+            metadata: (record.metadata as Record<string, unknown>) || undefined,
             createdAt: record.createdAt,
-            correlationId: record.correlationId,
-            idempotencyKey: record.idempotencyKey,
-            initiatedBy: record.initiatedBy,
-            initiatedByType: record.initiatedByType,
-            reason: record.reason,
+            correlationId: record.correlationId || '',
+            idempotencyKey: record.idempotencyKey || undefined,
+            initiatedBy: record.initiatedBy || '',
+            initiatedByType: this.toActorType(record.initiatedByType),
+            reason: record.reason || '',
             isReversed: record.isReversed,
-            reversalTransactionId: record.reversalTransactionId,
-            expiresAt: record.expiresAt,
-            referenceType: record.referenceType,
-            referenceId: record.referenceId,
+            reversalTransactionId: record.reversalTransactionId || undefined,
+            expiresAt: record.expiresAt || undefined,
+            referenceType: record.referenceType || undefined,
+            referenceId: record.referenceId || undefined,
             isCODRelated: record.isCODRelated,
-            codOrderId: record.codOrderId,
+            codOrderId: record.codOrderId || undefined,
             codConfirmationRequired: record.codConfirmationRequired ?? false,
-            codConfirmedAt: record.codConfirmedAt
+            codConfirmedAt: record.codConfirmedAt || undefined
         });
+    }
+
+    private toActorType(value: string | null): ActorType {
+        return value && Object.values(ActorType).includes(value as ActorType)
+            ? (value as ActorType)
+            : ActorType.SYSTEM;
+    }
+
+    private toPrismaTransactionType(type: TransactionType): Wallet_TransactionType {
+        return type as Wallet_TransactionType;
     }
 }

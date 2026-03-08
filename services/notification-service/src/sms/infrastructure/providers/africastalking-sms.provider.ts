@@ -43,7 +43,7 @@ export class AfricasTalkingSmsProvider implements ISmsProvider {
                 body: urlencoded
             });
 
-            const data = await response.json();
+            const data: any = await response.json();
 
             if (!response.ok) {
                 return ProviderResponse.createFailure(

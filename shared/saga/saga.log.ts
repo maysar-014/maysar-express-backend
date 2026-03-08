@@ -1,3 +1,6 @@
+import { PrismaClient } from '@prisma/client';
+import type { PrismaTransaction } from '../types';
+
 export enum SagaStatus {
     STARTED = 'STARTED',
     IN_PROGRESS = 'IN_PROGRESS',
@@ -20,8 +23,8 @@ export interface SagaLogEntry {
     sagaType: string;
     status: SagaStatus;
     currentStep: string;
-    payload: any;
-    context: any;
+    payload: unknown;
+    context: unknown;
     createdAt: Date;
     updatedAt: Date;
     error?: string;
@@ -38,12 +41,12 @@ export interface SagaStepLog {
 }
 
 export interface ISagaLogRepository {
-    save(entry: SagaLogEntry, transaction?: any): Promise<void>;
-    update(sagaId: string, updates: Partial<SagaLogEntry>, transaction?: any): Promise<void>;
+    save(entry: SagaLogEntry, transaction?: PrismaClient | PrismaTransaction): Promise<void>;
+    update(sagaId: string, updates: Partial<SagaLogEntry>, transaction?: PrismaClient | PrismaTransaction): Promise<void>;
     getById(sagaId: string): Promise<SagaLogEntry | null>;
 
-    saveStep(step: SagaStepLog, transaction?: any): Promise<void>;
-    updateStep(stepId: string, updates: Partial<SagaStepLog>, transaction?: any): Promise<void>;
+    saveStep(step: SagaStepLog, transaction?: PrismaClient | PrismaTransaction): Promise<void>;
+    updateStep(stepId: string, updates: Partial<SagaStepLog>, transaction?: PrismaClient | PrismaTransaction): Promise<void>;
     getSteps(sagaId: string): Promise<SagaStepLog[]>;
 
     findStuck(statuses: SagaStatus[], olderThanMs: number): Promise<SagaLogEntry[]>;

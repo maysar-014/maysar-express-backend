@@ -7,7 +7,7 @@ import { TicketCreatedEvent } from '../../domain/events/ticket-events';
 import { TicketStatusHistory } from '../../domain/types';
 import { ITicketRepository, ITicketStatusHistoryRepository, ITicketAttachmentRepository } from '../../domain/repositories/interfaces';
 import { CreateTicketDto, TicketResponseDto } from '../dto/ticket.dto';
-import { EventBus } from '../../../../shared/events/eventBus';
+import { EventBus } from '@shared-events/eventBus';
 
 @injectable()
 export class CreateTicketUseCase {

@@ -4,12 +4,13 @@ import { logger } from '../../infrastructure/services/logger.service';
 export const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
     const startTime = Date.now();
     const requestId = req.get('X-Request-ID') || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    req.requestId = requestId;
 
     res.set('X-Request-ID', requestId);
 
     logger.info('Request Started', {
         requestId,
-        correlationId: (req as any).correlationId,
+        correlationId: req.correlationId,
         method: req.method,
         url: req.url,
         userAgent: req.get('User-Agent'),
@@ -19,13 +20,13 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
     res.on('finish', () => {
         const duration = Date.now() - startTime;
         const logData = {
-            requestId: (req as any).requestId || req.get('X-Request-ID'),
-            correlationId: (req as any).correlationId || req.get('X-Correlation-ID'),
+            requestId: req.requestId || req.get('X-Request-ID'),
+            correlationId: req.correlationId || req.get('X-Correlation-ID'),
             method: req.method,
             url: req.url,
             statusCode: res.statusCode,
             executionTime: duration,
-            userId: (req as any).user?.id
+            userId: req.user?.userId
         };
 
         if (res.statusCode >= 500) {

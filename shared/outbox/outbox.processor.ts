@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { EventEnvelope, IEventPublisher } from '../events/eventBus';
-import { OutboxEntry, OutboxStatus, TransactionalOutbox } from './outboxPattern';
+import { TransactionalOutbox } from './outboxPattern';
 import { Counter, Histogram } from 'prom-client';
 import { metricsRegistry } from '../metrics/metrics.factory';
 import { createLogger } from '../logger/logger';
@@ -11,26 +11,26 @@ export const outboxDelay = new Histogram({
     labelNames: ['service'],
     buckets: [1, 5, 10, 30, 60, 300],
     registers: [metricsRegistry]
-}) as any;
+});
 
 export const outboxPublished = new Counter({
     name: 'outbox_events_published_total',
     help: 'Total number of events published from outbox',
     labelNames: ['service'],
     registers: [metricsRegistry]
-}) as any;
+});
 
 export const outboxFailed = new Counter({
     name: 'outbox_events_failed_total',
     help: 'Total number of events that failed during outbox processing',
     labelNames: ['service', 'permanent'],
     registers: [metricsRegistry]
-}) as any;
+});
 
 export class OutboxProcessor {
     private isRunning = false;
     private intervalId?: NodeJS.Timeout;
-    private logger: any;
+    private logger: ReturnType<typeof createLogger>;
     private serviceName: string;
 
     constructor(
@@ -83,8 +83,8 @@ export class OutboxProcessor {
                 const delay = (Date.now() - createdAt) / 1000;
                 outboxDelay.labels(this.serviceName).observe(delay);
 
-                const envelope = event.eventData as EventEnvelope;
-                await this.eventPublisher.publish(envelope.eventType, envelope.data, envelope.metadata);
+                const envelope = this.toEventEnvelope(event.eventData, event.eventId);
+                await this.eventPublisher.publish(envelope);
 
                 await this.outbox.markAsSent(event.eventId);
                 outboxPublished.labels(this.serviceName).inc();
@@ -104,5 +104,13 @@ export class OutboxProcessor {
                 }
             }
         }
+    }
+
+    private toEventEnvelope(eventData: unknown, eventId: string): EventEnvelope {
+        if (typeof eventData !== 'object' || eventData === null) {
+            throw new Error(`Outbox event ${eventId} has invalid payload`);
+        }
+
+        return eventData as EventEnvelope;
     }
 }

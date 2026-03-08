@@ -27,7 +27,7 @@ export class ChangePasswordUseCase {
 
   async execute(input: ChangePasswordInput): Promise<ChangePasswordOutput> {
     try {
-      logger.logBusiness('Starting password change', input.changedBy, { userId: input.userId });
+      logger.info('Starting password change', { userId: input.userId, changedBy: input.changedBy });
 
       const user = await this.userRepository.findById(input.userId);
       if (!user) {
@@ -60,8 +60,9 @@ export class ChangePasswordUseCase {
 
       await sagaEventHandler.handleUserPasswordChangedEvent(event, this.emailService, this.notificationClient);
 
-      logger.logBusiness('Password changed successfully', input.changedBy, {
+      logger.info('Password changed successfully', {
         userId: input.userId,
+        changedBy: input.changedBy,
         reason
       });
 

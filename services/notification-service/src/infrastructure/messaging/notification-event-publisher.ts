@@ -1,6 +1,6 @@
 import { DomainEvent, IDomainEventPublisher } from '../../domain/events';
 import { logger } from '../services/logger.service';
-import { IOutboxRepository, OutboxStatus } from '../../../../shared/outbox/outbox.repository';
+import { IOutboxRepository, OutboxStatus } from '../../../../../shared/outbox/outbox.repository';
 
 /**
  * Notification event publisher - Outbox-based
@@ -13,8 +13,7 @@ export class NotificationEventPublisher implements IDomainEventPublisher {
       await this.outboxRepository.save({
         eventId: event.eventId,
         eventType: event.eventType,
-        eventData: event,
-        status: OutboxStatus.PENDING
+        eventData: event
       }, transaction);
       logger.info('Event saved to Outbox', { eventType: event.eventType, aggregateId: event.aggregateId });
     } catch (error) {

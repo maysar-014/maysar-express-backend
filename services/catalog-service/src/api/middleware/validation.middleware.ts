@@ -311,6 +311,30 @@ export function createValidationMiddleware(config: Partial<ValidationConfig> = {
   ];
 }
 
+interface LegacyFieldSchema {
+  required?: boolean;
+  // Allow widened string literals from legacy tests while still validating known values at runtime.
+  type?: 'string' | 'number' | 'boolean' | 'array' | string;
+  format?: 'email' | 'uuid' | string;
+  min?: number;
+  max?: number;
+  minLength?: number;
+  maxLength?: number;
+  custom?: (value: string) => string | null;
+}
+
+interface LegacyRequestSchema {
+  body?: Record<string, LegacyFieldSchema>;
+  query?: Record<string, LegacyFieldSchema>;
+  params?: Record<string, LegacyFieldSchema>;
+}
+
+interface LegacyValidatorOptions {
+  sanitize?: boolean;
+  allowUnknown?: boolean;
+  stripUnknown?: boolean;
+}
+
 // =====================================================================================
 // SCHEMA VALIDATION HELPERS
 // =====================================================================================
@@ -320,8 +344,19 @@ export function createValidationMiddleware(config: Partial<ValidationConfig> = {
  */
 export function validateRequest<T>(
   schema: z.ZodSchema<T>,
+  source?: 'body' | 'query' | 'params'
+): (req: Request, res: Response, next: NextFunction) => void;
+export function validateRequest(
+  schema: LegacyRequestSchema
+): (req: Request, res: Response, next: NextFunction) => void;
+export function validateRequest<T>(
+  schema: z.ZodSchema<T> | LegacyRequestSchema,
   source: 'body' | 'query' | 'params' = 'body'
 ) {
+  if (!(schema instanceof z.ZodType)) {
+    return validateLegacyRequest(schema, { sanitize: true, allowUnknown: true, stripUnknown: false });
+  }
+
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = req[source];
@@ -346,6 +381,126 @@ export function validateRequest<T>(
         });
       }
 
+      next(error);
+    }
+  };
+}
+
+function validateLegacyRequest(
+  schema: LegacyRequestSchema,
+  options: LegacyValidatorOptions
+): (req: Request, res: Response, next: NextFunction) => void {
+  return (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const details: string[] = [];
+      (['body', 'query', 'params'] as const).forEach((section) => {
+        const sectionSchema = schema[section];
+        if (!sectionSchema) return;
+
+        const sourceData = (req[section] ?? {}) as Record<string, unknown>;
+
+        if (options.stripUnknown && !options.allowUnknown) {
+          Object.keys(sourceData).forEach((key) => {
+            if (!sectionSchema[key]) {
+              delete sourceData[key];
+            }
+          });
+        }
+
+        Object.entries(sectionSchema).forEach(([field, fieldSchema]) => {
+          const rawValue = sourceData[field];
+          const hasValue = rawValue !== undefined && rawValue !== null && rawValue !== '';
+
+          if (fieldSchema.required && !hasValue) {
+            details.push(`${field} is required`);
+            return;
+          }
+
+          if (!hasValue) return;
+
+          let value = rawValue;
+          if (options.sanitize && typeof value === 'string') {
+            value = value.trim();
+            sourceData[field] = value;
+          }
+
+          if (fieldSchema.type === 'number') {
+            const numberValue = typeof value === 'number' ? value : Number(value);
+            if (Number.isNaN(numberValue)) {
+              details.push(`${field} must be a number`);
+              return;
+            }
+            value = numberValue;
+            sourceData[field] = numberValue;
+          }
+
+          if (fieldSchema.type === 'boolean') {
+            if (typeof value !== 'boolean' && value !== 'true' && value !== 'false') {
+              details.push(`${field} must be a boolean`);
+              return;
+            }
+            sourceData[field] = value === true || value === 'true';
+          }
+
+          if (fieldSchema.type === 'array' && !Array.isArray(value)) {
+            details.push(`${field} must be an array`);
+            return;
+          }
+
+          if (fieldSchema.type === 'string' && typeof value !== 'string') {
+            details.push(`${field} must be a string`);
+            return;
+          }
+
+          if (typeof value === 'string') {
+            if (fieldSchema.minLength !== undefined && value.length < fieldSchema.minLength) {
+              details.push(`${field} must be at least ${fieldSchema.minLength} characters`);
+            }
+            if (fieldSchema.maxLength !== undefined && value.length > fieldSchema.maxLength) {
+              details.push(`${field} must be at most ${fieldSchema.maxLength} characters`);
+            }
+            if (fieldSchema.format === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+              details.push(`${field} must be a valid email`);
+            }
+            if (fieldSchema.format === 'uuid' && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) {
+              details.push(`${field} must be a valid uuid`);
+            }
+            if (fieldSchema.custom) {
+              const customError = fieldSchema.custom(value);
+              if (customError) {
+                details.push(customError);
+              }
+            }
+          }
+
+          if (typeof value === 'number') {
+            if (fieldSchema.min !== undefined && value < fieldSchema.min) {
+              details.push(`${field} must be greater than or equal to ${fieldSchema.min}`);
+            }
+            if (fieldSchema.max !== undefined && value > fieldSchema.max) {
+              details.push(`${field} must be less than or equal to ${fieldSchema.max}`);
+            }
+          }
+        });
+      });
+
+      if (details.length > 0) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Request validation failed',
+            details
+          },
+          meta: {
+            timestamp: new Date()
+          }
+        });
+        return;
+      }
+
+      next();
+    } catch (error) {
       next(error);
     }
   };
@@ -452,4 +607,13 @@ export class ValidationMiddlewareFactory {
       maxRequestSize: 50 * 1024 * 1024 // 50MB for lenient mode
     });
   }
+}
+
+export function createValidator(options: LegacyValidatorOptions = {}) {
+  return (schema: LegacyRequestSchema) =>
+    validateLegacyRequest(schema, {
+      sanitize: options.sanitize ?? true,
+      allowUnknown: options.allowUnknown ?? true,
+      stripUnknown: options.stripUnknown ?? false
+    });
 }

@@ -36,7 +36,7 @@ export class OrderFacilitationPolicy {
     }
 
     static canCancelOrder(status: Enabler_OrderStatus): boolean {
-        const cancellableStatuses = [
+        const cancellableStatuses: Enabler_OrderStatus[] = [
             Enabler_OrderStatus.PENDING,
             Enabler_OrderStatus.CONFIRMED,
             Enabler_OrderStatus.PROCESSING // Depends on business rule, usually until shipped

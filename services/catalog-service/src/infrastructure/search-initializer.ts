@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { IndexManager } from './domain/indexes';
 import { InvertedIndex, FilterIndex, NGramIndex, FacetIndex } from './domain/indexes';
 import { OfflineRanker } from './domain/algorithms';

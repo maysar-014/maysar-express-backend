@@ -1,14 +1,45 @@
 import { InventoryService } from '../inventoryService';
 import { PrismaClient } from '@prisma/client';
-import { eventBus } from '../../../shared/events/eventBus';
+import { eventBus } from '@shared-events/eventBus';
 
 jest.mock('@prisma/client');
-jest.mock('../../../shared/events/eventBus');
+jest.mock('@shared-events/eventBus');
 jest.mock('../../../shared/outbox/outboxPattern');
 
 describe('InventoryService', () => {
+  type InventoryRecord = {
+    id: string;
+    productVariantId: string;
+    warehouseId: string;
+    availableQuantity: number;
+    reservedQuantity: number;
+  };
+
+  type InventoryReservationRecord = {
+    id: string;
+    orderId: string;
+    productVariantId: string;
+    warehouseId: string;
+    quantity: number;
+    status: string;
+  };
+
+  type InventoryServicePrismaMock = {
+    inventory: {
+      findFirst: jest.Mock<Promise<InventoryRecord | null>, [unknown]>;
+      update: jest.Mock<Promise<unknown>, [unknown]>;
+      updateMany: jest.Mock<Promise<unknown>, [unknown]>;
+    };
+    inventoryReservation: {
+      create: jest.Mock<Promise<unknown>, [unknown]>;
+      findMany: jest.Mock<Promise<InventoryReservationRecord[]>, [unknown]>;
+      update: jest.Mock<Promise<unknown>, [unknown]>;
+    };
+    $transaction: jest.Mock<Promise<unknown>, [(callback: (tx: InventoryServicePrismaMock) => Promise<unknown>) => Promise<unknown>]>;
+  };
+
   let inventoryService: InventoryService;
-  let mockPrisma: jest.Mocked<PrismaClient>;
+  let mockPrisma: InventoryServicePrismaMock;
 
   beforeEach(() => {
     mockPrisma = {
@@ -23,9 +54,9 @@ describe('InventoryService', () => {
         update: jest.fn(),
       },
       $transaction: jest.fn((callback) => callback(mockPrisma)),
-    } as any;
+    } as unknown as InventoryServicePrismaMock;
 
-    inventoryService = new InventoryService(mockPrisma);
+    inventoryService = new InventoryService(mockPrisma as unknown as PrismaClient);
   });
 
   afterEach(() => {

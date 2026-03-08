@@ -5,8 +5,8 @@
  */
 
 import { DomainEvent } from '../../domain/interfaces';
-import { EventSerializer, BaseEventPublisher } from './event-publisher';
-import { BaseEventSubscriber, EventSubscriptionConfig, EventHandler } from './event-subscriber';
+import { EventSerializer, BaseEventPublisher, InMemoryEventPublisher } from './event-publisher';
+import { BaseEventSubscriber, EventSubscriptionConfig, EventHandler, InMemoryEventSubscriber } from './event-subscriber';
 
 /**
  * Message Routing Rule
@@ -89,6 +89,12 @@ export interface MessageBusMetrics {
   timestamp: Date;
 }
 
+interface LegacyMessageBusAdapter {
+  publish?: (eventType: string, payload: unknown) => Promise<void>;
+  subscribe?: (eventType: string, handler: (...args: unknown[]) => unknown) => Promise<void>;
+  unsubscribe?: (eventType: string) => Promise<void>;
+}
+
 /**
  * Message Bus Implementation
  * Central hub for event routing and processing within the application
@@ -101,6 +107,7 @@ export class MessageBus {
   private eventSubscriber: BaseEventSubscriber;
   private config: MessageBusConfig;
   private isRunning = false;
+  private legacyAdapter?: LegacyMessageBusAdapter;
 
   // Metrics
   private metrics = {
@@ -114,12 +121,34 @@ export class MessageBus {
   };
 
   constructor(
-    eventPublisher: BaseEventPublisher,
-    eventSubscriber: BaseEventSubscriber,
+    eventPublisher?: BaseEventPublisher | LegacyMessageBusAdapter,
+    eventSubscriber?: BaseEventSubscriber,
     config: Partial<MessageBusConfig> = {}
   ) {
-    this.eventPublisher = eventPublisher;
-    this.eventSubscriber = eventSubscriber;
+    if (
+      eventPublisher
+      && typeof (eventPublisher as LegacyMessageBusAdapter).publish === 'function'
+      && !(eventPublisher instanceof BaseEventPublisher)
+    ) {
+      this.legacyAdapter = eventPublisher as LegacyMessageBusAdapter;
+    }
+
+    const defaultIdGenerator = {
+      generate: () => `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+      validate: (_id: string) => true
+    };
+    const defaultDateTimeService = {
+      now: () => new Date(),
+      timestamp: () => Date.now(),
+      add: (date: Date, amount: number, _unit: string) => new Date(date.getTime() + amount),
+      isPast: (date: Date) => date.getTime() < Date.now(),
+      format: (date: Date) => date.toISOString()
+    };
+
+    this.eventPublisher = eventPublisher instanceof BaseEventPublisher
+      ? eventPublisher
+      : new InMemoryEventPublisher({}, defaultIdGenerator, defaultDateTimeService);
+    this.eventSubscriber = eventSubscriber ?? new InMemoryEventSubscriber();
 
     this.config = {
       enableRouting: true,
@@ -133,6 +162,46 @@ export class MessageBus {
       deadLetterQueue: true,
       ...config
     };
+  }
+
+  // Legacy API compatibility.
+  async publish(eventType: string, payload: unknown): Promise<void> {
+    if (this.legacyAdapter?.publish) {
+      await this.legacyAdapter.publish(eventType, payload);
+      return;
+    }
+
+    const event: DomainEvent = {
+      eventId: `evt_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+      eventType,
+      aggregateId: 'message-bus',
+      version: 1,
+      timestamp: new Date(),
+      payload
+    };
+    await this.publishToChannel('domain', event);
+  }
+
+  // Legacy API compatibility.
+  async subscribe(eventType: string, handler: (...args: unknown[]) => unknown): Promise<void> {
+    if (this.legacyAdapter?.subscribe) {
+      await this.legacyAdapter.subscribe(eventType, handler);
+      return;
+    }
+
+    await this.eventSubscriber.subscribe({
+      eventType,
+      handler: async (event) => {
+        await Promise.resolve(handler(event));
+      }
+    });
+  }
+
+  // Legacy API compatibility.
+  async unsubscribe(eventType: string): Promise<void> {
+    if (this.legacyAdapter?.unsubscribe) {
+      await this.legacyAdapter.unsubscribe(eventType);
+    }
   }
 
   /**

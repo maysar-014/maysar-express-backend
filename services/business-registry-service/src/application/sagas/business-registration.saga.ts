@@ -76,9 +76,8 @@ export class BusinessRegistrationSaga extends DistributedSagaOrchestrator<Busine
       {
         name: 'CreateComplianceRecord',
         execute: async (context) => {
-          const recordId = await this.deps.compliance.createComplianceRecord({
+          const recordId = await this.deps.compliance.createKYCRecord({
             businessId: context.event.aggregateId,
-            complianceType: 'local_regulatory',
             status: 'UNDER_REVIEW',
             correlationId: context.metadata.correlationId
           });
@@ -87,7 +86,7 @@ export class BusinessRegistrationSaga extends DistributedSagaOrchestrator<Busine
         },
         compensate: async (context, sagaId) => {
           if (context.complianceRecordId) {
-            await this.deps.compliance.revokeComplianceRecord(
+            await this.deps.compliance.revokeKYCRecord(
               context.complianceRecordId,
               context.metadata.correlationId
             );

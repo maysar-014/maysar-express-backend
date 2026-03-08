@@ -3,21 +3,25 @@
 ## Quick Setup Steps:
 
 1. Copy .env.example to .env:
+
    ```bash
    cp .env.example .env
    ```
 
 2. Add your Sentry DSN to .env:
+
    ```
    SENTRY_DSN=https://your-key@your-org.ingest.sentry.io/your-project-id
    ```
 
 3. Install dependencies (if not already done):
+
    ```bash
    npm install
    ```
 
 4. Start your application:
+
    ```bash
    npm run dev
    ```
@@ -38,11 +42,13 @@
 6. Paste it into your .env file
 
 ### Your Project Details:
+
 - Project ID: `4510974607097936`
 - Platform: Express
 - Slug: `node-express`
 
 ### DSN Format:
+
 ```
 https://[public-key]@o4510974599888896.ingest.de.sentry.io/4510974607097936
 ```
@@ -64,6 +70,7 @@ and inject it as an environment variable.
 ## Sentry Dashboard:
 
 After setup, visit your Sentry dashboard to:
+
 - View errors in real-time
 - Set up alerts (email, Slack, PagerDuty)
 - Create custom filters and search

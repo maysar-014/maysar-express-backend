@@ -42,7 +42,7 @@ export class DeleteAccountUseCase {
 
   async execute(input: DeleteAccountInput): Promise<DeleteAccountOutput> {
     try {
-      logger.logBusiness('Starting account deletion', input.deletedBy, { targetUserId: input.userId });
+      logger.info('Starting account deletion', { targetUserId: input.userId, deletedBy: input.deletedBy });
 
       const user = await this.userRepository.findById(input.userId);
       if (!user) {
@@ -81,8 +81,9 @@ export class DeleteAccountUseCase {
 
       await sagaEventHandler.handleAccountDeletionEvent(event, this.emailService, this.notificationClient);
 
-      logger.logBusiness('Account deletion initiated', input.deletedBy, {
+      logger.info('Account deletion initiated', {
         userId: input.userId,
+        deletedBy: input.deletedBy,
         reason: input.reason
       });
 

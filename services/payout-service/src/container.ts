@@ -7,7 +7,7 @@ import { CompletePayoutUseCase } from './application/use-cases/complete-payout.u
 import { CancelPayoutUseCase } from './application/use-cases/cancel-payout.use-case';
 import { PayoutPolicy } from './domain/policies/payout.policy';
 import { OutboxRepository } from './infrastructure/messaging/outbox.repository';
-import { inMemoryEventBus } from '@shared-events/eventBus';
+import { EventBus } from '@shared-events/eventBus';
 import { OutboxProcessor } from './infrastructure/messaging/outbox-processor';
 import { IEventBus } from './infrastructure/messaging/event-bus.interface';
 import { provideSagaLogRepository } from './infrastructure/repositories/saga.repository';
@@ -29,7 +29,7 @@ export class Container {
         const payoutPolicy = new PayoutPolicy();
 
         const outboxRepository = new OutboxRepository(this.prisma);
-        this.eventBus = inMemoryEventBus;
+        this.eventBus = new EventBus();
         this.outboxProcessor = new OutboxProcessor(outboxRepository, this.eventBus);
 
         const sagaLogRepository = provideSagaLogRepository(this.prisma);

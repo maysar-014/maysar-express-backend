@@ -22,13 +22,14 @@ import { DistributedSagaOrchestrator } from '@shared/saga/saga.orchestrator';
 import { tracingService } from '../../../shared/tracing/openTelemetry';
 import { PrismaSagaLogRepository } from '@shared/saga/saga-log.repository';
 import { metricsRegistry } from './infrastructure/monitoring/metrics';
+import { requireAuth } from './middleware/auth';
 
 // Initialize dependencies
 tracingService.start();
 const prisma = new PrismaClient();
-const stockManager = new StockManager(prisma, eventBus);
-const warehouseManager = new WarehouseManager(prisma);
-const reservationEngine = new ReservationEngine(prisma, stockManager, warehouseManager, eventBus);
+const stockManager = new StockManager(prisma as any, eventBus);
+const warehouseManager = new WarehouseManager(prisma as any);
+const reservationEngine = new ReservationEngine(prisma as any, stockManager, warehouseManager, eventBus);
 
 // Initialize event handlers
 const eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, prisma);
@@ -44,7 +45,7 @@ const inventoryRecoveryWorker = new SagaRecoveryWorker(inventorySagaLogRepositor
 inventoryRecoveryWorker.start();
 
 // Initialize API
-const stockApi = new StockApi(prisma, stockManager, reservationEngine, warehouseManager);
+const stockApi = new StockApi(prisma as any, stockManager, reservationEngine, warehouseManager);
 
 // Create Express app
 const app = express();

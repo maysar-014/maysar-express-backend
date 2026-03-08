@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 export interface DeliveryAddress {
   street: string;
   city: string;

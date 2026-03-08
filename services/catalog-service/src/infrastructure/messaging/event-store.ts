@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 /**
  * Event Store Implementation
  * Infrastructure layer implementation of EventStore interface

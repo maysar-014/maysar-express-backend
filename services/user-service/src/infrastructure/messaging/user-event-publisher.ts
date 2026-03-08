@@ -1,13 +1,13 @@
 import { IDomainEventPublisher, DomainEvent, UserRegisteredEvent, UserProfileUpdatedEvent, UserEmailVerifiedEvent } from '../../domain/events';
 import { logger } from '../services/logger.service';
-import { IOutboxRepository, OutboxStatus } from '@shared/outbox/outbox.repository';
+import { OutboxRepository } from '../../../../../shared/outbox/outbox.repository';
 
 /**
  * User Event Publisher
  * Handles saving domain events for user-related operations using the Outbox pattern
  */
 export class UserEventPublisher implements IDomainEventPublisher {
-  constructor(private readonly outboxRepository: IOutboxRepository) { }
+  constructor(private readonly outboxRepository: OutboxRepository) { }
 
   /**
    * Save a single domain event to the outbox table
@@ -17,9 +17,9 @@ export class UserEventPublisher implements IDomainEventPublisher {
       await this.outboxRepository.save({
         eventId: event.eventId,
         eventType: event.eventType,
-        eventData: this.sanitizeEventData(event),
-        status: OutboxStatus.PENDING
-      }, transaction);
+        data: this.sanitizeEventData(event),
+        timestamp: new Date()
+      });
 
       logger.info('Domain Event Saved to Outbox', {
         eventType: event.constructor.name,

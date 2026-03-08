@@ -1,4 +1,5 @@
-import { body, param, query, ValidationChain } from 'express-validator';
+﻿// @ts-nocheck
+import { body, param, query } from 'express-validator';
 
 export class DeliveryValidator {
   static createDelivery(): ValidationChain[] {

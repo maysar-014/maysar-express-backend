@@ -1,5 +1,5 @@
 import { ITrainingRecordRepository } from '../../domain/repositories/training-record.repository';
-import { IEventPublisher, eventBus } from '../../../../../shared/events/eventBus';
+import { IEventPublisher, eventBus } from '@shared-events/eventBus';
 
 export class ExpireCertificationsUseCase {
     constructor(

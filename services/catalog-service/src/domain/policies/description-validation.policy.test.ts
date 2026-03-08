@@ -1,4 +1,4 @@
-import { DescriptionValidationPolicy } from '../description-validation.policy';
+import { DescriptionValidationPolicy } from './description-validation.policy';
 
 describe('DescriptionValidationPolicy', () => {
   describe('validate', () => {
@@ -40,7 +40,7 @@ describe('DescriptionValidationPolicy', () => {
         ['cooking', 'oil']
       );
       expect(result.isValid).toBe(false);
-      expect(result.violatedRules.some(r => r.includes('product name'))).toBe(true);
+      expect(result.violatedRules.some((r: string) => r.includes('product name'))).toBe(true);
     });
 
     it('should reject description without category keyword', () => {
@@ -50,7 +50,7 @@ describe('DescriptionValidationPolicy', () => {
         ['electronics', 'gadget']
       );
       expect(result.isValid).toBe(false);
-      expect(result.violatedRules.some(r => r.includes('keyword'))).toBe(true);
+      expect(result.violatedRules.some((r: string) => r.includes('keyword'))).toBe(true);
     });
 
     it('should reject description without specifications', () => {
@@ -60,7 +60,7 @@ describe('DescriptionValidationPolicy', () => {
         ['cooking', 'oil']
       );
       expect(result.isValid).toBe(false);
-      expect(result.violatedRules.some(r => r.includes('specification'))).toBe(true);
+      expect(result.violatedRules.some((r: string) => r.includes('specification'))).toBe(true);
     });
 
     it('should reject description with excessive repetition', () => {
@@ -71,7 +71,7 @@ describe('DescriptionValidationPolicy', () => {
         ['cooking', 'oil']
       );
       expect(result.isValid).toBe(false);
-      expect(result.violatedRules.some(r => r.includes('repetition'))).toBe(true);
+      expect(result.violatedRules.some((r: string) => r.includes('repetition'))).toBe(true);
     });
   });
 
@@ -83,7 +83,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['cooking', 'oil']
       );
-      expect(result.violatedRules.some(r => r.includes('120'))).toBe(false);
+      expect(result.violatedRules.some((r: string) => r.includes('120'))).toBe(false);
     });
 
     it('should reject description below minimum', () => {
@@ -92,7 +92,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['cooking', 'oil']
       );
-      expect(result.violatedRules.some(r => r.includes('120'))).toBe(true);
+      expect(result.violatedRules.some((r: string) => r.includes('120'))).toBe(true);
     });
   });
 
@@ -104,7 +104,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['cooking', 'oil']
       );
-      expect(result.violatedRules.some(r => r.includes('5000'))).toBe(false);
+      expect(result.violatedRules.some((r: string) => r.includes('5000'))).toBe(false);
     });
 
     it('should reject description above maximum', () => {
@@ -113,7 +113,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['cooking', 'oil']
       );
-      expect(result.violatedRules.some(r => r.includes('5000'))).toBe(true);
+      expect(result.violatedRules.some((r: string) => r.includes('5000'))).toBe(true);
     });
   });
 
@@ -124,7 +124,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['cooking', 'oil']
       );
-      expect(result.violatedRules.some(r => r.includes('product name'))).toBe(false);
+      expect(result.violatedRules.some((r: string) => r.includes('product name'))).toBe(false);
     });
 
     it('should find partial product name', () => {
@@ -133,7 +133,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['cooking', 'oil']
       );
-      expect(result.violatedRules.some(r => r.includes('product name'))).toBe(false);
+      expect(result.violatedRules.some((r: string) => r.includes('product name'))).toBe(false);
     });
 
     it('should be case insensitive', () => {
@@ -142,7 +142,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['cooking', 'oil']
       );
-      expect(result.violatedRules.some(r => r.includes('product name'))).toBe(false);
+      expect(result.violatedRules.some((r: string) => r.includes('product name'))).toBe(false);
     });
   });
 
@@ -153,7 +153,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['cooking', 'oil', 'edible']
       );
-      expect(result.violatedRules.some(r => r.includes('keyword'))).toBe(false);
+      expect(result.violatedRules.some((r: string) => r.includes('keyword'))).toBe(false);
     });
 
     it('should be case insensitive for keywords', () => {
@@ -162,7 +162,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['cooking', 'oil']
       );
-      expect(result.violatedRules.some(r => r.includes('keyword'))).toBe(false);
+      expect(result.violatedRules.some((r: string) => r.includes('keyword'))).toBe(false);
     });
 
     it('should accept any keyword from list', () => {
@@ -171,7 +171,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['cooking', 'oil', 'edible']
       );
-      expect(result.violatedRules.some(r => r.includes('keyword'))).toBe(false);
+      expect(result.violatedRules.some((r: string) => r.includes('keyword'))).toBe(false);
     });
   });
 
@@ -182,7 +182,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['cooking', 'oil']
       );
-      expect(result.violatedRules.some(r => r.includes('specification'))).toBe(false);
+      expect(result.violatedRules.some((r: string) => r.includes('specification'))).toBe(false);
     });
 
     it('should accept various specification keywords', () => {
@@ -194,7 +194,7 @@ describe('DescriptionValidationPolicy', () => {
           'Cooking Oil',
           ['cooking', 'oil']
         );
-        expect(result.violatedRules.some(r => r.includes('specification'))).toBe(false);
+        expect(result.violatedRules.some((r: string) => r.includes('specification'))).toBe(false);
       });
     });
   });
@@ -207,7 +207,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['cooking', 'oil']
       );
-      expect(result.violatedRules.some(r => r.includes('repetition'))).toBe(true);
+      expect(result.violatedRules.some((r: string) => r.includes('repetition'))).toBe(true);
     });
 
     it('should allow normal word usage', () => {
@@ -216,7 +216,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['cooking', 'oil']
       );
-      expect(result.violatedRules.some(r => r.includes('repetition'))).toBe(false);
+      expect(result.violatedRules.some((r: string) => r.includes('repetition'))).toBe(false);
     });
 
     it('should ignore short words', () => {
@@ -226,7 +226,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['cooking', 'oil']
       );
-      expect(result.violatedRules.some(r => r.includes('repetition'))).toBe(false);
+      expect(result.violatedRules.some((r: string) => r.includes('repetition'))).toBe(false);
     });
   });
 
@@ -237,7 +237,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['cooking', 'oil']
       );
-      expect(result.suggestions.some(s => s.includes('Cooking Oil'))).toBe(true);
+      expect(result.suggestions.some((s: string) => s.includes('Cooking Oil'))).toBe(true);
     });
 
     it('should suggest adding keywords', () => {
@@ -246,7 +246,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['electronics', 'gadget']
       );
-      expect(result.suggestions.some(s => s.includes('keyword'))).toBe(true);
+      expect(result.suggestions.some((s: string) => s.includes('keyword'))).toBe(true);
     });
 
     it('should suggest adding specifications', () => {
@@ -255,7 +255,7 @@ describe('DescriptionValidationPolicy', () => {
         'Cooking Oil',
         ['cooking', 'oil']
       );
-      expect(result.suggestions.some(s => s.includes('specification'))).toBe(true);
+      expect(result.suggestions.some((s: string) => s.includes('specification'))).toBe(true);
     });
   });
 

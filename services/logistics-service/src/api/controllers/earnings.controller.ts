@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { Request, Response } from 'express';
 import { DependencyContainer } from '../../infrastructure/container';
 import { IEarningsRepository, IDeliveryRepository } from '../../domain/repositories';

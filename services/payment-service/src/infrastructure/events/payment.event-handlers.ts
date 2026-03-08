@@ -1,11 +1,20 @@
-import { IEventSubscriber, eventBus, EventEnvelope } from '../../../../../shared/events/eventBus';
+import { EventEnvelope, eventBus } from '@shared-events/eventBus';
 import { IPaymentRepository } from '../../domain/repositories/payment.repository';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LegacyPayload = Record<string, any>;
 
 export class PaymentEventHandlers {
     constructor(
         private readonly paymentRepository: IPaymentRepository,
         // Add use cases here
     ) { }
+
+    private getEventData(envelope: EventEnvelope): LegacyPayload {
+        return typeof envelope.data === 'object' && envelope.data !== null
+            ? (envelope.data as LegacyPayload)
+            : {};
+    }
 
     public registerHandlers(): void {
         // ADMIN SAGA EVENT HANDLERS
@@ -34,7 +43,7 @@ export class PaymentEventHandlers {
 
     // Helper to delegate to specific use cases/methods
     private async handleTransactionDetailsRequested(envelope: EventEnvelope): Promise<void> {
-        const { transactionId, adminId, includeRelatedTransactions } = envelope.data;
+        const { transactionId, adminId, includeRelatedTransactions } = this.getEventData(envelope);
         try {
             const transaction = await this.paymentRepository.findById(transactionId);
             if (!transaction) throw new Error('Transaction not found');
@@ -55,7 +64,7 @@ export class PaymentEventHandlers {
     }
 
     private async handleFraudAnalysisRequested(envelope: EventEnvelope): Promise<void> {
-        const { transactionId, analysisType, adminId } = envelope.data;
+        const { transactionId, analysisType, adminId } = this.getEventData(envelope);
         try {
             // Logic mirroring paymentService.ts
             const fraudAnalysis = {
@@ -75,7 +84,7 @@ export class PaymentEventHandlers {
     }
 
     private async handleTransactionFlaggedSuspicious(envelope: EventEnvelope): Promise<void> {
-        const { transactionId, adminId, flagType, reason } = envelope.data;
+        const { transactionId, adminId, flagType, reason } = this.getEventData(envelope);
         try {
             // implementation delegates to FlagTransactionUseCase
         } catch (error: any) {
@@ -83,7 +92,7 @@ export class PaymentEventHandlers {
         }
     }
     private async handleTransactionBlocked(envelope: EventEnvelope): Promise<void> {
-        const { transactionId, adminId, reason } = envelope.data;
+        const { transactionId, adminId, reason } = this.getEventData(envelope);
         try {
             const payment = await this.paymentRepository.findById(transactionId);
             if (!payment) throw new Error('Transaction not found');
@@ -99,7 +108,7 @@ export class PaymentEventHandlers {
     }
 
     private async handleTransactionRefundRequested(envelope: EventEnvelope): Promise<void> {
-        const { transactionId, adminId, refundAmount, reason } = envelope.data;
+        const { transactionId, adminId, refundAmount, reason } = this.getEventData(envelope);
         try {
             // This would normally delegate to RefundPaymentUseCase
             await eventBus.publish('TransactionRefundProcessed', { transactionId, refundAmount, adminId }, { correlationId: envelope.metadata?.correlationId });
@@ -108,7 +117,7 @@ export class PaymentEventHandlers {
         }
     }
     private async handleDisputeEvidenceRequested(envelope: EventEnvelope): Promise<void> {
-        const { transactionId, disputeId } = envelope.data;
+        const { transactionId, disputeId } = this.getEventData(envelope);
         try {
             const transaction = await this.paymentRepository.findById(transactionId);
             if (!transaction) throw new Error('Transaction not found');
@@ -124,12 +133,12 @@ export class PaymentEventHandlers {
     }
 
     private async handleDisputeFinancialAdjustmentRequested(envelope: EventEnvelope): Promise<void> {
-        const { transactionId, disputeId, adjustmentAmount } = envelope.data;
+        const { transactionId, disputeId, adjustmentAmount } = this.getEventData(envelope);
         // implementation...
     }
 
     private async handleTrainingDeliveryStarted(envelope: EventEnvelope): Promise<void> {
-        const { userId, trainingId, amount } = envelope.data;
+        const { userId, trainingId, amount } = this.getEventData(envelope);
         // Logic to hold funds or verify payment for training...
     }
 
@@ -137,7 +146,7 @@ export class PaymentEventHandlers {
         // Finalize training payment...
     }
     private async handleSellerPayoutRequested(envelope: EventEnvelope): Promise<void> {
-        const { sellerId, amount, currency } = envelope.data;
+        const { sellerId, amount, currency } = this.getEventData(envelope);
         // implementation...
     }
 

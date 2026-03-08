@@ -8,14 +8,14 @@ export interface RetryOptions {
   baseDelay: number;
   maxDelay: number;
   backoffFactor: number;
-  retryCondition?: (error: any) => boolean;
-  onRetry?: (attempt: number, error: any, delay: number) => void;
+  retryCondition?: (error: unknown) => boolean;
+  onRetry?: (attempt: number, error: unknown, delay: number) => void;
 }
 
 export interface RetryResult<T> {
   success: boolean;
   data?: T;
-  error?: any;
+  error?: unknown;
   attempts: number;
   totalDuration: number;
 }
@@ -28,12 +28,16 @@ export const DEFAULT_RETRY_OPTIONS: RetryOptions = {
   baseDelay: 1000, // 1 second
   maxDelay: 30000, // 30 seconds
   backoffFactor: 2,
-  retryCondition: (error: any) => {
+  retryCondition: (error: unknown) => {
+    if (typeof error !== 'object' || error === null) {
+      return false;
+    }
+    const shapedError = error as { code?: string; status?: number };
     // Retry on network errors, timeouts, and 5xx status codes
-    if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT' || error.code === 'ENOTFOUND') {
+    if (shapedError.code === 'ECONNRESET' || shapedError.code === 'ETIMEDOUT' || shapedError.code === 'ENOTFOUND') {
       return true;
     }
-    if (error.status && error.status >= 500 && error.status < 600) {
+    if (shapedError.status && shapedError.status >= 500 && shapedError.status < 600) {
       return true;
     }
     return false;
@@ -70,7 +74,7 @@ export async function withRetry<T>(
 ): Promise<RetryResult<T>> {
   const config = { ...DEFAULT_RETRY_OPTIONS, ...options };
   const startTime = Date.now();
-  let lastError: any;
+  let lastError: unknown;
 
   for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
     try {
@@ -114,7 +118,7 @@ export async function withRetry<T>(
 /**
  * Retry wrapper for async functions with method binding
  */
-export function createRetryableFunction<T extends any[], R>(
+export function createRetryableFunction<T extends unknown[], R>(
   fn: (...args: T) => Promise<R>,
   options: Partial<RetryOptions> = {}
 ) {
@@ -163,7 +167,11 @@ export const RetryPresets = {
     baseDelay: 500,
     maxDelay: 15000,
     backoffFactor: 2,
-    retryCondition: (error: any) => {
+    retryCondition: (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      error: any
+    ) => {
+      // Error shape varies across network and transport clients; runtime checks are required.
       return error.code === 'ECONNRESET' ||
              error.code === 'ETIMEDOUT' ||
              error.code === 'ENOTFOUND' ||
@@ -178,7 +186,11 @@ export const RetryPresets = {
     baseDelay: 1000,
     maxDelay: 10000,
     backoffFactor: 2,
-    retryCondition: (error: any) => {
+    retryCondition: (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      error: any
+    ) => {
+      // Error shape varies by database driver and ORM; no single static type is reliable here.
       // Retry on connection errors, deadlocks, and serialization failures
       return error.code === 'CONNECTION_LOST' ||
              error.code === 'ER_LOCK_DEADLOCK' ||
@@ -193,7 +205,11 @@ export const RetryPresets = {
     baseDelay: 1000,
     maxDelay: 10000,
     backoffFactor: 2,
-    retryCondition: (error: any) => {
+    retryCondition: (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      error: any
+    ) => {
+      // API errors differ by provider (status/code/response nesting), so runtime property checks are intentional.
       return error.code === 'ECONNRESET' ||
              error.code === 'ETIMEDOUT' ||
              (error.status && (error.status === 429 || (error.status >= 500 && error.status < 600)));

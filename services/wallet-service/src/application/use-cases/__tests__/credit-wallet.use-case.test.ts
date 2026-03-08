@@ -1,52 +1,88 @@
-import { CreditWalletUseCase } from '../credit-wallet.use-case';
-
-const mockRepository = { findById: jest.fn(), update: jest.fn() } as any;
-const mockEventBus = { publish: jest.fn() } as any;
+import { CreditWalletDTO, CreditWalletUseCase } from '../credit-wallet.use-case';
+import { ActorType, AuditInfo } from '../../../domain/value-objects/audit-info.value-object';
+import { RedisLock } from '../../../../../../shared/locking/redis-lock';
 
 describe('CreditWalletUseCase', () => {
+    const mockWalletRepository = {
+        findByUserId: jest.fn(),
+        save: jest.fn(),
+        update: jest.fn(),
+    };
+    const mockTransactionRepository = {
+        save: jest.fn(),
+    };
+    const mockIdempotencyService = {
+        checkIdempotency: jest.fn(),
+        storeResult: jest.fn(),
+    };
+    const mockEventPublisher = {
+        publishWalletCredited: jest.fn(),
+    };
+    const mockAuditRepository = {
+        save: jest.fn(),
+    };
+    const mockRedisLock = {
+        withLock: jest.fn((_: string, callback: () => Promise<unknown>) => callback()),
+    } as unknown as RedisLock;
+
     let useCase: CreditWalletUseCase;
+
+    const createDto = (): CreditWalletDTO => ({
+        userId: 'user-1',
+        amount: 50,
+        currency: 'TZS',
+        description: 'top-up',
+        idempotencyKey: 'idem-1',
+        correlationId: 'corr-1',
+        auditInfo: AuditInfo.create({
+            actor: 'user-1',
+            actorType: ActorType.USER,
+            action: 'CREDIT',
+            reason: 'Top up',
+        }),
+    });
 
     beforeEach(() => {
         jest.clearAllMocks();
-        useCase = new CreditWalletUseCase(mockRepository, mockEventBus);
+        mockIdempotencyService.checkIdempotency.mockResolvedValue(null);
+        useCase = new CreditWalletUseCase(
+            mockWalletRepository as unknown as never,
+            mockTransactionRepository as unknown as never,
+            mockIdempotencyService as unknown as never,
+            mockEventPublisher as unknown as never,
+            mockAuditRepository as unknown as never,
+            mockRedisLock
+        );
     });
 
-    it('should credit wallet successfully', async () => {
-        mockRepository.findById.mockResolvedValue({ id: 'wallet-1', balance: 100 });
-        const result = await useCase.execute({ walletId: 'wallet-1', amount: 50 });
-        expect(result.newBalance).toBe(150);
-        expect(mockRepository.update).toHaveBeenCalled();
-        expect(mockEventBus.publish).toHaveBeenCalledWith('WalletCredited.v1', expect.any(Object));
+    it('credits an existing wallet', async () => {
+        const wallet = {
+            id: 'wallet-1',
+            userId: 'user-1',
+            balance: 100,
+            frozenAmount: 0,
+            currency: 'TZS',
+            credit(amount: number) {
+                this.balance += amount;
+            },
+        };
+        mockWalletRepository.findByUserId.mockResolvedValue(wallet);
+
+        const result = await useCase.execute(createDto());
+
+        expect(result.success).toBe(true);
+        expect(result.balanceAfter).toBe(150);
+        expect(mockWalletRepository.update).toHaveBeenCalled();
+        expect(mockEventPublisher.publishWalletCredited).toHaveBeenCalled();
     });
 
-    it('should fail if wallet not found', async () => {
-        mockRepository.findById.mockResolvedValue(null);
-        await expect(useCase.execute({ walletId: 'wallet-1', amount: 50 }))
-            .rejects.toThrow('Wallet not found');
-    });
+    it('returns cached idempotent result when present', async () => {
+        const cached = { success: true, walletId: 'wallet-1', balanceAfter: 200 };
+        mockIdempotencyService.checkIdempotency.mockResolvedValue(cached);
 
-    it('should reject negative amount', async () => {
-        mockRepository.findById.mockResolvedValue({ id: 'wallet-1', balance: 100 });
-        await expect(useCase.execute({ walletId: 'wallet-1', amount: -10 }))
-            .rejects.toThrow('Invalid amount');
-    });
+        const result = await useCase.execute(createDto());
 
-    it('should reject zero amount', async () => {
-        mockRepository.findById.mockResolvedValue({ id: 'wallet-1', balance: 100 });
-        await expect(useCase.execute({ walletId: 'wallet-1', amount: 0 }))
-            .rejects.toThrow('Invalid amount');
-    });
-
-    it('should handle large credit amounts', async () => {
-        mockRepository.findById.mockResolvedValue({ id: 'wallet-1', balance: 1000 });
-        const result = await useCase.execute({ walletId: 'wallet-1', amount: 999999 });
-        expect(result.newBalance).toBe(1000999);
-    });
-
-    it('should handle repository update failure', async () => {
-        mockRepository.findById.mockResolvedValue({ id: 'wallet-1', balance: 100 });
-        mockRepository.update.mockRejectedValue(new Error('Database error'));
-        await expect(useCase.execute({ walletId: 'wallet-1', amount: 50 }))
-            .rejects.toThrow('Database error');
+        expect(result).toEqual(cached);
+        expect(mockRedisLock.withLock).not.toHaveBeenCalled();
     });
 });

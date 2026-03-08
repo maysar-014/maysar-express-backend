@@ -8,35 +8,35 @@ This document defines how secrets are classified, stored, and injected across al
 
 ## 1. Secret Classification
 
-| Variable | Purpose | Classification | Usage Location |
-|----------|---------|----------------|----------------|
-| `POSTGRES_USER` | PostgreSQL username | `[SECRETS MANAGER]` | `docker-compose.prod.yml`, K8s |
-| `POSTGRES_PASSWORD` | PostgreSQL password | `[SECRETS MANAGER]` | `docker-compose.prod.yml`, K8s |
-| `POSTGRES_DB` | Database name | `[ENV VAR]` | `docker-compose.prod.yml`, K8s |
-| `REDIS_PASSWORD` | Redis AUTH password | `[SECRETS MANAGER]` | `docker-compose.prod.yml`, K8s |
-| `JWT_SECRET` | JWT signing key | `[SECRETS MANAGER]` | Application runtime |
-| `USER_SERVICE_JWT_SECRET` | User service JWT key | `[SECRETS MANAGER]` | Application runtime |
-| `AUTH_SERVICE_SESSION_SECRET` | Session encryption key | `[SECRETS MANAGER]` | Application runtime |
-| `PESAPAL_CONSUMER_KEY` | Pesapal API key | `[SECRETS MANAGER]` | Payment service |
-| `PESAPAL_CONSUMER_SECRET` | Pesapal API secret | `[SECRETS MANAGER]` | Payment service |
-| `PII_ENCRYPTION_KEY` | PII encryption key (32-byte hex) | `[SECRETS MANAGER]` | Application runtime |
-| `PII_HMAC_SECRET` | PII HMAC secret | `[SECRETS MANAGER]` | Application runtime |
-| `STRIPE_SECRET_KEY` | Stripe API secret | `[SECRETS MANAGER]` | Payment service |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature | `[SECRETS MANAGER]` | Payment service |
-| `AWS_ACCESS_KEY_ID` | AWS S3 backup credentials | `[SECRETS MANAGER]` | Backup containers |
-| `AWS_SECRET_ACCESS_KEY` | AWS S3 secret | `[SECRETS MANAGER]` | Backup containers |
-| `AWS_DEFAULT_REGION` | AWS region | `[ENV VAR]` | Backup containers |
-| `BACKUP_S3_BUCKET` | S3 bucket name | `[ENV VAR]` | Backup containers |
-| `JAEGER_ENDPOINT` | Jaeger trace collector URL | `[ENV VAR]` | Application runtime |
-| `METRICS_ENABLED` | Enable Prometheus metrics | `[ENV VAR]` | Application runtime |
-| `SERVICE_NAME` | Service identifier | `[ENV VAR]` | Application runtime |
-| `SERVICE_VERSION` | Application version | `[ENV VAR]` | Application runtime |
-| `DOCKER_USERNAME` | Docker Hub username | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml` |
-| `OCI_USER_OCID` | OCI user identifier | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml` |
-| `OCI_FINGERPRINT` | OCI API key fingerprint | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml` |
-| `OCI_TENANCY_OCID` | OCI tenancy identifier | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml` |
-| `OCI_PRIVATE_KEY` | OCI API private key | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml` |
-| `OKE_CLUSTER_OCID` | OKE cluster identifier | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml` |
+| Variable                      | Purpose                          | Classification                | Usage Location                 |
+| ----------------------------- | -------------------------------- | ----------------------------- | ------------------------------ |
+| `POSTGRES_USER`               | PostgreSQL username              | `[SECRETS MANAGER]`           | `docker-compose.prod.yml`, K8s |
+| `POSTGRES_PASSWORD`           | PostgreSQL password              | `[SECRETS MANAGER]`           | `docker-compose.prod.yml`, K8s |
+| `POSTGRES_DB`                 | Database name                    | `[ENV VAR]`                   | `docker-compose.prod.yml`, K8s |
+| `REDIS_PASSWORD`              | Redis AUTH password              | `[SECRETS MANAGER]`           | `docker-compose.prod.yml`, K8s |
+| `JWT_SECRET`                  | JWT signing key                  | `[SECRETS MANAGER]`           | Application runtime            |
+| `USER_SERVICE_JWT_SECRET`     | User service JWT key             | `[SECRETS MANAGER]`           | Application runtime            |
+| `AUTH_SERVICE_SESSION_SECRET` | Session encryption key           | `[SECRETS MANAGER]`           | Application runtime            |
+| `PESAPAL_CONSUMER_KEY`        | Pesapal API key                  | `[SECRETS MANAGER]`           | Payment service                |
+| `PESAPAL_CONSUMER_SECRET`     | Pesapal API secret               | `[SECRETS MANAGER]`           | Payment service                |
+| `PII_ENCRYPTION_KEY`          | PII encryption key (32-byte hex) | `[SECRETS MANAGER]`           | Application runtime            |
+| `PII_HMAC_SECRET`             | PII HMAC secret                  | `[SECRETS MANAGER]`           | Application runtime            |
+| `STRIPE_SECRET_KEY`           | Stripe API secret                | `[SECRETS MANAGER]`           | Payment service                |
+| `STRIPE_WEBHOOK_SECRET`       | Stripe webhook signature         | `[SECRETS MANAGER]`           | Payment service                |
+| `AWS_ACCESS_KEY_ID`           | AWS S3 backup credentials        | `[SECRETS MANAGER]`           | Backup containers              |
+| `AWS_SECRET_ACCESS_KEY`       | AWS S3 secret                    | `[SECRETS MANAGER]`           | Backup containers              |
+| `AWS_DEFAULT_REGION`          | AWS region                       | `[ENV VAR]`                   | Backup containers              |
+| `BACKUP_S3_BUCKET`            | S3 bucket name                   | `[ENV VAR]`                   | Backup containers              |
+| `JAEGER_ENDPOINT`             | Jaeger trace collector URL       | `[ENV VAR]`                   | Application runtime            |
+| `METRICS_ENABLED`             | Enable Prometheus metrics        | `[ENV VAR]`                   | Application runtime            |
+| `SERVICE_NAME`                | Service identifier               | `[ENV VAR]`                   | Application runtime            |
+| `SERVICE_VERSION`             | Application version              | `[ENV VAR]`                   | Application runtime            |
+| `DOCKER_USERNAME`             | Docker Hub username              | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml`     |
+| `OCI_USER_OCID`               | OCI user identifier              | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml`     |
+| `OCI_FINGERPRINT`             | OCI API key fingerprint          | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml`     |
+| `OCI_TENANCY_OCID`            | OCI tenancy identifier           | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml`     |
+| `OCI_PRIVATE_KEY`             | OCI API private key              | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml`     |
+| `OKE_CLUSTER_OCID`            | OKE cluster identifier           | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml`     |
 
 ---
 
@@ -45,6 +45,7 @@ This document defines how secrets are classified, stored, and injected across al
 ### Setup
 
 1. Copy the example environment file:
+
    ```bash
    cp .env.example .env
    ```
@@ -84,6 +85,7 @@ services:
 ### Deployment
 
 1. Create a `.env.production` file on the deployment host (never commit this file):
+
    ```bash
    POSTGRES_USER=prod_user
    POSTGRES_PASSWORD=<from OCI Vault>
@@ -95,6 +97,7 @@ services:
    ```
 
 2. Fetch secrets from OCI Vault in your deploy script:
+
    ```bash
    oci secrets secret-bundle get --secret-id <OCID> --query 'data."secret-bundle-content".content' --raw-output | base64 -d > .env.production
    ```
@@ -123,6 +126,7 @@ The file `infra/k8s/maysar-backend/configmap.yaml` contains a `Secret` manifest 
 2. Install the [OCI Secrets Store CSI Driver](https://github.com/oracle/oci-secrets-store-csi-driver-provider) or [External Secrets Operator](https://external-secrets.io/).
 
 3. Replace the `Secret` manifest in `configmap.yaml` with an `ExternalSecret` resource:
+
    ```yaml
    apiVersion: external-secrets.io/v1beta1
    kind: ExternalSecret
@@ -171,22 +175,23 @@ This keeps secrets out of the repository and injects them at deploy time.
 
 Add these in **GitHub → Settings → Secrets and Variables → Actions**:
 
-| Secret Name | Description | Used In |
-|-------------|-------------|---------|
-| `DOCKER_USERNAME` | Docker Hub username | `docker-build-monolith`, `docker-build-admin` |
-| `DOCKER_PASSWORD` | Docker Hub password | `docker-build-monolith`, `docker-build-admin` |
-| `OCI_USER_OCID` | OCI user OCID | `deploy-staging` |
-| `OCI_FINGERPRINT` | OCI API key fingerprint | `deploy-staging` |
-| `OCI_TENANCY_OCID` | OCI tenancy OCID | `deploy-staging` |
-| `OCI_PRIVATE_KEY` | OCI API private key (PEM format) | `deploy-staging` |
-| `OKE_CLUSTER_OCID` | OKE cluster OCID | `deploy-staging` |
-| `DATABASE_URL` | Production database URL | `deploy-staging` (for kubectl secret) |
-| `REDIS_URL` | Production Redis URL | `deploy-staging` (for kubectl secret) |
-| `JWT_SECRET` | Production JWT secret | `deploy-staging` (for kubectl secret) |
+| Secret Name        | Description                      | Used In                                       |
+| ------------------ | -------------------------------- | --------------------------------------------- |
+| `DOCKER_USERNAME`  | Docker Hub username              | `docker-build-monolith`, `docker-build-admin` |
+| `DOCKER_PASSWORD`  | Docker Hub password              | `docker-build-monolith`, `docker-build-admin` |
+| `OCI_USER_OCID`    | OCI user OCID                    | `deploy-staging`                              |
+| `OCI_FINGERPRINT`  | OCI API key fingerprint          | `deploy-staging`                              |
+| `OCI_TENANCY_OCID` | OCI tenancy OCID                 | `deploy-staging`                              |
+| `OCI_PRIVATE_KEY`  | OCI API private key (PEM format) | `deploy-staging`                              |
+| `OKE_CLUSTER_OCID` | OKE cluster OCID                 | `deploy-staging`                              |
+| `DATABASE_URL`     | Production database URL          | `deploy-staging` (for kubectl secret)         |
+| `REDIS_URL`        | Production Redis URL             | `deploy-staging` (for kubectl secret)         |
+| `JWT_SECRET`       | Production JWT secret            | `deploy-staging` (for kubectl secret)         |
 
 ### Workflow References
 
 See `.github/workflows/ci.yml`:
+
 - Lines 407–413: Docker Hub login
 - Lines 497–503: OCI credentials configuration
 - Line 511: OKE cluster kubeconfig setup

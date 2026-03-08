@@ -1,10 +1,10 @@
-import { GetSellerDashboardEnhanced } from '../../application/use-cases/GetSellerDashboardEnhanced';
-import { CalculateRepeatCustomers } from '../../application/use-cases/CalculateRepeatCustomers';
-import { IdentifyBestPerformingProduct } from '../../application/use-cases/IdentifyBestPerformingProduct';
-import { GenerateSalesTrend } from '../../application/use-cases/GenerateSalesTrend';
-import { CalculateInventoryHealth } from '../../application/use-cases/CalculateInventoryHealth';
-import { CalculateProfitabilityScore } from '../../application/use-cases/CalculateProfitabilityScore';
-import prisma from '../database/prisma';
+import { CalculateRepeatCustomers } from '../application/use-cases/CalculateRepeatCustomers';
+import { IdentifyBestPerformingProduct } from '../application/use-cases/IdentifyBestPerformingProduct';
+import { GenerateSalesTrend } from '../application/use-cases/GenerateSalesTrend';
+import { CalculateInventoryHealth } from '../application/use-cases/CalculateInventoryHealth';
+import { CalculateProfitabilityScore } from '../application/use-cases/CalculateProfitabilityScore';
+import prisma from './database/prisma';
+import { logger } from '@modules/auth-service/src/infrastructure/services/logger.service';
 
 export class SellerMetricsCalculationJob {
   async execute() {
@@ -18,9 +18,9 @@ export class SellerMetricsCalculationJob {
         await this.calculateMetricsForSeller(seller.id);
       }
 
-      console.log(`[SellerMetricsCalculationJob] Completed for ${activeSellers.length} sellers`);
+      logger.info(`[SellerMetricsCalculationJob] Completed for ${activeSellers.length} sellers`);
     } catch (error) {
-      console.error('[SellerMetricsCalculationJob] Error:', error);
+      logger.error('[SellerMetricsCalculationJob] Error:', error);
     }
   }
 
@@ -46,7 +46,7 @@ export class SellerMetricsCalculationJob {
         data: { lastUpdated: new Date() }
       });
     } catch (error) {
-      console.error(`[SellerMetricsCalculationJob] Error for seller ${sellerId}:`, error);
+      logger.error(`[SellerMetricsCalculationJob] Error for seller ${sellerId}:`, error);
     }
   }
 }

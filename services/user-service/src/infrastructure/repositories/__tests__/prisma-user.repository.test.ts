@@ -46,7 +46,8 @@ function makePrismaMock() {
 describe('PrismaUserRepository (partial)', () => {
   test('findById, findByEmail, findByPhoneNumber and create/update map to domain', async () => {
     const { prisma } = makePrismaMock();
-    const repo = new PrismaUserRepository(prisma as any);
+    const mockPiiService = { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v) } as any;
+    const repo = new PrismaUserRepository(prisma as any, mockPiiService);
 
     const byId = await repo.findById('u1');
     expect(byId).toBeDefined();
@@ -67,7 +68,8 @@ describe('PrismaUserRepository (partial)', () => {
 
   test('emailExists, phoneExists, search, findAll and count', async () => {
     const { prisma } = makePrismaMock();
-    const repo = new PrismaUserRepository(prisma as any);
+    const mockPiiService = { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v) } as any;
+    const repo = new PrismaUserRepository(prisma as any, mockPiiService);
 
     expect(await repo.emailExists('x')).toBe(true);
     expect(await repo.phoneExists('x')).toBe(true);
@@ -85,7 +87,8 @@ describe('PrismaUserRepository (partial)', () => {
     const { prisma } = makePrismaMock();
     // ensure findUnique returns a user for preferences
     prisma.user_User.findUnique.mockResolvedValueOnce({ language: 'sw', timezone: 'TZS' });
-    const repo = new PrismaUserRepository(prisma as any);
+    const mockPiiService = { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v) } as any;
+    const repo = new PrismaUserRepository(prisma as any, mockPiiService);
 
     const prefs = await repo.getUserPreferences('u1');
     expect(prefs.language).toBe('sw');

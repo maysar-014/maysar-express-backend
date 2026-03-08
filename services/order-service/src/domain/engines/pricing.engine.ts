@@ -9,6 +9,13 @@ export interface PriceCalculationParams {
     quantity: number;
     customerId: string;
     currency: string;
+    customerType?: string;
+    shippingAddress?: {
+        street?: string;
+        city?: string;
+        region?: string;
+        country?: string;
+    };
 }
 
 export interface PriceCalculationResult {
@@ -16,6 +23,7 @@ export interface PriceCalculationResult {
     finalPrice: number;
     currency: string;
     discountApplied: number;
+    shippingCost?: number;
 }
 
 export class PricingEngine {
@@ -33,11 +41,13 @@ export class PricingEngine {
             );
             const basePrice: number = response?.data?.basePrice ?? 50_000;
             const discount = params.quantity >= 10 ? 0.05 : 0;
+            const shippingCost: number = response?.data?.shippingCost ?? 0;
             return {
                 basePrice,
                 finalPrice: Math.round(basePrice * params.quantity * (1 - discount)),
                 currency: params.currency,
                 discountApplied: discount,
+                shippingCost,
             };
         }
 
@@ -48,6 +58,7 @@ export class PricingEngine {
             finalPrice: basePrice * params.quantity,
             currency: params.currency,
             discountApplied: 0,
+            shippingCost: 0,
         };
     }
 }

@@ -18,7 +18,7 @@ import { RefundPolicy } from './domain/policies/refund.policy';
 import { PaymentController } from './api/controllers/payment.controller';
 import { WebhookController } from './api/controllers/webhook.controller';
 import { HandlePesapalWebhookUseCase } from './application/use-cases/handle-pesapal-webhook.use-case';
-import { inMemoryEventBus } from '@shared-events/eventBus';
+import { EventBus } from '@shared-events/eventBus';
 import { IEventBus } from './infrastructure/messaging/event-bus.interface';
 import { OutboxRepository } from './infrastructure/messaging/outbox.repository';
 import { OutboxProcessor } from './infrastructure/messaging/outbox-processor';
@@ -93,13 +93,13 @@ export class Container {
         }
 
         // Repositories
-        this.paymentRepository = new PaymentRepository(this.prisma);
+        this.paymentRepository = new PaymentRepository(this.prisma as any);
         this.refundRepository = new RefundRepository(this.prisma);
-        this.fraudRepository = new FraudRepository(this.prisma);
+        this.fraudRepository = new FraudRepository(this.prisma as any);
         this.outboxRepository = new OutboxRepository(this.prisma);
 
         // Messaging - MUST be assigned before OutboxProcessor construction
-        this.eventBus = inMemoryEventBus;
+        this.eventBus = new EventBus();
         this.outboxProcessor = new OutboxProcessor(this.outboxRepository, this.eventBus);
 
         // Helper casting
@@ -182,7 +182,7 @@ export class Container {
             this.outboxRepository,
             eventIdempotency
         );
-        SagaFactory.registerByType('PaymentProcessingSaga', this.paymentProcessingSaga);
+        SagaFactory.registerByType('PaymentProcessingSaga', this.paymentProcessingSaga as any);
 
         this.sagaEventHandler = new SagaEventHandler(
             this.paymentProcessingSaga,

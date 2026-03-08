@@ -17,7 +17,7 @@ export class PrismaBusinessChallengeRepository implements BusinessChallengeRepos
             industryTags: challenge.industryTags,
             constraints: challenge.constraints,
             successCriteria: challenge.successCriteria as unknown as Prisma.InputJsonValue,
-            status: challenge.status,
+            status: challenge.status as any,
             deadline: challenge.deadline,
             acceptedSolutionId: challenge.acceptedSolutionId,
             collaborators: challenge.collaborators,
@@ -28,8 +28,8 @@ export class PrismaBusinessChallengeRepository implements BusinessChallengeRepos
 
         const saved = await this.prisma.community_BusinessChallenge.upsert({
             where: { id: challenge.id },
-            create: data,
-            update: data,
+            create: data as any,
+            update: data as any,
         });
 
         return this.toDomain(saved);

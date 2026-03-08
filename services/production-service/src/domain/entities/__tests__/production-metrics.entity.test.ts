@@ -20,7 +20,7 @@ describe('ProductionMetrics Entity', () => {
 
         // Target: 50s, Actual: 100s -> 50% efficiency
         metrics.calculateEfficiency(50);
-        expect(metrics.props.efficiency).toBe(50);
+        expect(metrics.efficiency).toBe(50);
     });
 
     it('should not calculate if cycle time missing', () => {
@@ -30,6 +30,6 @@ describe('ProductionMetrics Entity', () => {
             createdAt: new Date()
         });
         metrics.calculateEfficiency(50);
-        expect(metrics.props.efficiency).toBeUndefined();
+        expect(metrics.efficiency).toBeUndefined();
     });
 });

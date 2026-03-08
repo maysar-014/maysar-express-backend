@@ -1,7 +1,7 @@
 import { CompleteTrainingRequest, CompleteTrainingResponse } from '../dto/complete-training.dto';
 import { ITrainingRecordRepository } from '../../domain/repositories/training-record.repository';
 import { ICertificationRequirementRepository } from '../../domain/repositories/certification-requirement.repository';
-import { IEventPublisher, eventBus } from '../../../../../shared/events/eventBus';
+import { IEventPublisher, eventBus } from '@shared-events/eventBus';
 import { TrainingScore } from '../../domain/value-objects/training-score.value-object';
 import { EligibilityEngine } from '../../domain/engines/eligibility.engine';
 import { NotFoundError } from '../../domain/errors/domain.error';

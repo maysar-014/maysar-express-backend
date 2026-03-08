@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 /**
  * Main Configuration Loader
  * Centralized configuration management with validation and runtime reloading

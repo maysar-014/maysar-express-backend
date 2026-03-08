@@ -34,7 +34,7 @@ export class PhoneVerificationUseCase {
 
   async sendOTP(input: SendPhoneOTPInput): Promise<SendPhoneOTPOutput> {
     try {
-      logger.logBusiness('Sending phone OTP', input.userId, { phoneNumber: input.phoneNumber, method: input.method });
+      logger.info('Sending phone OTP', { userId: input.userId, phoneNumber: input.phoneNumber, method: input.method });
 
       const user = await this.userRepository.findById(input.userId);
       if (!user) {
@@ -54,7 +54,7 @@ export class PhoneVerificationUseCase {
       // Send OTP via SMS or call
       await this.sendOTPViaMethod(input.phoneNumber, input.method);
 
-      logger.logBusiness('Phone OTP sent successfully', input.userId, { method: input.method });
+      logger.info('Phone OTP sent successfully', { userId: input.userId, method: input.method });
 
       return {
         success: true,
@@ -70,7 +70,7 @@ export class PhoneVerificationUseCase {
 
   async verifyOTP(input: VerifyPhoneOTPInput): Promise<VerifyPhoneOTPOutput> {
     try {
-      logger.logBusiness('Verifying phone OTP', input.userId, { phoneNumber: input.phoneNumber });
+      logger.info('Verifying phone OTP', { userId: input.userId, phoneNumber: input.phoneNumber });
 
       const user = await this.userRepository.findById(input.userId);
       if (!user) {
@@ -97,7 +97,7 @@ export class PhoneVerificationUseCase {
       // Update user phone verification status
       await this.userRepository.updatePhoneVerification(input.userId, true);
 
-      logger.logBusiness('Phone OTP verified successfully', input.userId);
+      logger.info('Phone OTP verified successfully', { userId: input.userId });
 
       return {
         success: true,

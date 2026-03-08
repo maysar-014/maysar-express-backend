@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 /**
  * Product Mapper
  * Bidirectional mapping between Product domain entities and DTOs

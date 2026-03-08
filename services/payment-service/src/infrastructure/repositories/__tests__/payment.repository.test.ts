@@ -1,14 +1,33 @@
 import { PaymentRepository } from '../payment.repository';
-import { PrismaClient } from '@prisma/client';
+import { Payment } from '../../../domain/entities/payment.entity';
+
+interface MockPaymentDelegate {
+    create: jest.Mock;
+    findUnique: jest.Mock;
+    update: jest.Mock;
+    findMany: jest.Mock;
+    findFirst: jest.Mock;
+    updateMany: jest.Mock;
+    aggregate: jest.Mock;
+    count: jest.Mock;
+}
+
+interface MockPrisma {
+    payment: MockPaymentDelegate;
+}
 
 const mockPrisma = {
     payment: {
         create: jest.fn(),
         findUnique: jest.fn(),
         update: jest.fn(),
-        findMany: jest.fn()
+        findMany: jest.fn(),
+        findFirst: jest.fn(),
+        updateMany: jest.fn(),
+        aggregate: jest.fn(),
+        count: jest.fn()
     }
-} as unknown as PrismaClient;
+} as MockPrisma;
 
 describe('PaymentRepository', () => {
     let repository: PaymentRepository;
@@ -20,7 +39,7 @@ describe('PaymentRepository', () => {
 
     it('should create payment', async () => {
         (mockPrisma.payment.create as jest.Mock).mockResolvedValue({ id: 'p1', amount: 100 });
-        const result = await repository.create({} as any);
+        await repository.create({} as Payment);
         expect(mockPrisma.payment.create).toHaveBeenCalled();
     });
 

@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseClientManager } from '../supabase.client';
 

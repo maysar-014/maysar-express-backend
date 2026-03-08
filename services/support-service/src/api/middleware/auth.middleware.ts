@@ -10,14 +10,6 @@ export interface UserContext {
     permissions?: string[];
 }
 
-declare global {
-    namespace Express {
-        interface Request {
-            user?: UserContext;
-        }
-    }
-}
-
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -27,7 +19,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
     const token = authHeader.split(' ')[1];
     try {
         const decoded = jwt.verify(token, JWT_SECRET) as any;
-        req.user = {
+        (req as any).user = {
             userId: decoded.userId || decoded.sub,
             roles: decoded.roles || []
         };

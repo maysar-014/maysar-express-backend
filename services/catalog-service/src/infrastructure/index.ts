@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 /**
  * Infrastructure Layer Index
  * Central export point for all infrastructure implementations

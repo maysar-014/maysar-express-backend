@@ -7,6 +7,17 @@ import {
 } from '../../domain/interfaces';
 import { DistributedSagaOrchestrator, SagaStep } from '../../../../../shared/saga/saga.orchestrator';
 import { ISagaLogRepository } from '../../../../../shared/saga/saga.log';
+type SagaOutbox = ConstructorParameters<typeof DistributedSagaOrchestrator<any>>[2];
+
+const noopSagaLogRepository: ISagaLogRepository = {
+  save: async () => { },
+  update: async () => { },
+  getById: async () => null,
+  saveStep: async () => { },
+  updateStep: async () => { },
+  getSteps: async () => [],
+  findStuck: async () => [],
+};
 
 export interface BulkProductUpdateContext {
   productIds: string[];
@@ -32,18 +43,73 @@ export interface BulkProductUpdateContext {
 
 export class BulkProductUpdateSaga extends DistributedSagaOrchestrator<BulkProductUpdateContext> {
   protected sagaType = 'BulkProductUpdate';
+  private readonly productRepository: ProductRepository;
+  private readonly categoryRepository: CategoryRepository;
+  private readonly eventPublisher: DomainEventPublisher;
+  private readonly idGenerator: IdGenerator;
+  private readonly dateTimeService: DateTimeService;
+  private lastContext: BulkProductUpdateContext | null;
+  private completed: boolean;
 
   constructor(
     sagaLogRepository: ISagaLogRepository,
     serviceName: string,
-    private readonly productRepository: ProductRepository,
-    private readonly categoryRepository: CategoryRepository,
-    private readonly eventPublisher: DomainEventPublisher,
-    private readonly idGenerator: IdGenerator,
-    private readonly dateTimeService: DateTimeService,
-    outbox?: any
+    productRepository: ProductRepository,
+    categoryRepository: CategoryRepository,
+    eventPublisher: DomainEventPublisher,
+    idGenerator: IdGenerator,
+    dateTimeService: DateTimeService,
+    outbox?: SagaOutbox
+  );
+  constructor(
+    productRepository: ProductRepository,
+    categoryRepository: CategoryRepository,
+    eventPublisher: DomainEventPublisher,
+    idGenerator: IdGenerator,
+    dateTimeService: DateTimeService,
+    _legacyContext?: BulkProductUpdateContext
+  );
+  constructor(
+    arg1: ISagaLogRepository | ProductRepository,
+    arg2: string | CategoryRepository,
+    arg3: ProductRepository | DomainEventPublisher,
+    arg4: CategoryRepository | IdGenerator,
+    arg5: DomainEventPublisher | DateTimeService,
+    arg6?: IdGenerator | BulkProductUpdateContext,
+    arg7?: DateTimeService,
+    arg8?: SagaOutbox
   ) {
+    const isOrchestratedMode = typeof arg2 === 'string';
+    const sagaLogRepository = isOrchestratedMode ? (arg1 as ISagaLogRepository) : noopSagaLogRepository;
+    const serviceName = isOrchestratedMode ? (arg2 as string) : 'catalog-service';
+    const outbox = isOrchestratedMode ? arg8 : undefined;
     super(sagaLogRepository, serviceName, outbox);
+
+    this.lastContext = null;
+    this.completed = false;
+
+    if (isOrchestratedMode) {
+      this.productRepository = arg3 as ProductRepository;
+      this.categoryRepository = arg4 as CategoryRepository;
+      this.eventPublisher = arg5 as DomainEventPublisher;
+      this.idGenerator = arg6 as IdGenerator;
+      this.dateTimeService = arg7 as DateTimeService;
+      return;
+    }
+    this.productRepository = arg1 as ProductRepository;
+    this.categoryRepository = arg2 as CategoryRepository;
+    this.eventPublisher = arg3 as DomainEventPublisher;
+    this.idGenerator = arg4 as IdGenerator;
+    this.dateTimeService = arg5 as DateTimeService;
+  }
+
+  public override async start(
+    payload: BulkProductUpdateContext,
+    correlationId?: string
+  ): Promise<string> {
+    this.lastContext = payload;
+    this.completed = false;
+    return super.start(payload, correlationId);
   }
 
   protected defineSteps(): SagaStep<BulkProductUpdateContext>[] {
@@ -198,12 +264,88 @@ export class BulkProductUpdateSaga extends DistributedSagaOrchestrator<BulkProdu
               }, context.requestId, sagaId);
             }
           }
+          this.completed = true;
         },
         compensate: async (context: BulkProductUpdateContext, sagaId: string) => {
           console.log(`[${sagaId}] Compensating notifications`);
+          this.completed = false;
         }
       }
     ];
+  }
+
+  public getState(): BulkProductUpdateContext {
+    return this.lastContext ?? {
+      productIds: [],
+      updates: {},
+      updateType: 'status',
+      validateBusinessRules: false,
+      requestId: '',
+      timestamp: new Date(),
+    };
+  }
+
+  public isCompleted(): boolean {
+    return this.completed;
+  }
+
+  public getResults(): {
+    successful: string[];
+    failed: Array<{ productId: string; error: string }>;
+    skipped: Array<{ productId: string; reason: string }>;
+    totalProcessed: number;
+    totalSuccessful: number;
+    totalFailed: number;
+  } {
+    const context = this.lastContext;
+    const successful = context?.successful ?? [];
+    const failed = context?.failed ?? [];
+    const skipped = context?.skipped ?? [];
+
+    return {
+      successful,
+      failed,
+      skipped,
+      totalProcessed: context?.processedProducts?.length ?? 0,
+      totalSuccessful: successful.length,
+      totalFailed: failed.length,
+    };
+  }
+
+  public async handleEvent(event: {
+    eventType?: string;
+    payload?: Record<string, unknown>;
+  }): Promise<void> {
+    const context = this.lastContext;
+    if (!context) return;
+
+    if (event.eventType === 'ProductDeleted') {
+      const productId = typeof event.payload?.productId === 'string' ? event.payload.productId : '';
+      if (productId) {
+        context.productIds = context.productIds.filter((id) => id !== productId);
+      }
+      return;
+    }
+
+    if (
+      event.eventType === 'CategoryDeactivated'
+      && context.updateType === 'category'
+      && context.updates.categoryId === event.payload?.categoryId
+    ) {
+      await this.compensate();
+    }
+  }
+
+  public override async compensate(
+    sagaId?: string,
+    payload?: BulkProductUpdateContext,
+    stepIndex?: number
+  ): Promise<void> {
+    this.completed = false;
+    if (sagaId && payload && typeof stepIndex === 'number') {
+      this.lastContext = payload;
+      await super.compensate(sagaId, payload, stepIndex);
+    }
   }
 
   // Helper methods

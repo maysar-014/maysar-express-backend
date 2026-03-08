@@ -15,35 +15,35 @@ process.env.NODE_ENV = 'test';
 // Mock all external dependencies for pure domain testing
 jest.mock('redis', () => ({
   createClient: jest.fn(() => ({
-    connect: jest.fn().mockResolvedValue(undefined),
-    disconnect: jest.fn().mockResolvedValue(undefined),
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue('OK'),
-    del: jest.fn().mockResolvedValue(1),
-    expire: jest.fn().mockResolvedValue(1),
+    connect: jest.fn().mockImplementation(async () => undefined),
+    disconnect: jest.fn().mockImplementation(async () => undefined),
+    get: jest.fn().mockImplementation(async () => null),
+    set: jest.fn().mockImplementation(async () => 'OK'),
+    del: jest.fn().mockImplementation(async () => 1),
+    expire: jest.fn().mockImplementation(async () => 1),
   })),
 }));
 
 jest.mock('@elastic/elasticsearch', () => ({
   Client: jest.fn(() => ({
-    search: jest.fn().mockResolvedValue({ hits: { hits: [] } }),
-    index: jest.fn().mockResolvedValue({ _id: 'test-id' }),
-    delete: jest.fn().mockResolvedValue({ result: 'deleted' }),
+    search: jest.fn().mockImplementation(async () => ({ hits: { hits: [] } })),
+    index: jest.fn().mockImplementation(async () => ({ _id: 'test-id' })),
+    delete: jest.fn().mockImplementation(async () => ({ result: 'deleted' })),
   })),
 }));
 
 jest.mock('kafkajs', () => ({
   Kafka: jest.fn(() => ({
     producer: jest.fn(() => ({
-      connect: jest.fn().mockResolvedValue(undefined),
-      disconnect: jest.fn().mockResolvedValue(undefined),
-      send: jest.fn().mockResolvedValue(undefined),
+      connect: jest.fn().mockImplementation(async () => undefined),
+      disconnect: jest.fn().mockImplementation(async () => undefined),
+      send: jest.fn().mockImplementation(async () => undefined),
     })),
     consumer: jest.fn(() => ({
-      connect: jest.fn().mockResolvedValue(undefined),
-      disconnect: jest.fn().mockResolvedValue(undefined),
-      subscribe: jest.fn().mockResolvedValue(undefined),
-      run: jest.fn().mockResolvedValue(undefined),
+      connect: jest.fn().mockImplementation(async () => undefined),
+      disconnect: jest.fn().mockImplementation(async () => undefined),
+      subscribe: jest.fn().mockImplementation(async () => undefined),
+      run: jest.fn().mockImplementation(async () => undefined),
     })),
   })),
 }));
@@ -51,8 +51,8 @@ jest.mock('kafkajs', () => ({
 // Mock any database-related modules
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn(() => ({
-    $connect: jest.fn().mockResolvedValue(undefined),
-    $disconnect: jest.fn().mockResolvedValue(undefined),
+    $connect: jest.fn().mockImplementation(async () => undefined),
+    $disconnect: jest.fn().mockImplementation(async () => undefined),
     product: {
       findUnique: jest.fn(),
       findMany: jest.fn(),
