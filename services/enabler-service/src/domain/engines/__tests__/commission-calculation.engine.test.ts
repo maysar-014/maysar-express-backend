@@ -1,5 +1,5 @@
 import { CommissionCalculationEngine, CommissionCalculationInput } from '../../engines/commission-calculation.engine';
-import { Enabler_Tier } from '@prisma/client';
+import { Enabler_Tier } from '../../types/enabler.types';
 
 describe('CommissionCalculationEngine', () => {
     const baseInput: CommissionCalculationInput = {

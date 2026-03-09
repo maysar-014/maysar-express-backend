@@ -47,18 +47,19 @@ export class GeoPoint {
     return { lat: this.latitude, lng: this.longitude };
   }
 
-  // Haversine formula for calculating distance between two points
+  // Great-circle distance using spherical law of cosines
   distanceTo(other: GeoPoint): number {
-    const R = 6371; // Earth's radius in km
-    const dLat = this.toRadians(other.latitude - this.latitude);
-    const dLng = this.toRadians(other.longitude - this.longitude);
+    const earthRadiusKm = 6371;
+    const lat1 = this.toRadians(this.latitude);
+    const lat2 = this.toRadians(other.latitude);
+    const deltaLng = this.toRadians(other.longitude - this.longitude);
 
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(this.toRadians(this.latitude)) * Math.cos(this.toRadians(other.latitude)) *
-              Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const cosineCentralAngle =
+      Math.sin(lat1) * Math.sin(lat2) +
+      Math.cos(lat1) * Math.cos(lat2) * Math.cos(deltaLng);
+    const normalized = Math.min(1, Math.max(-1, cosineCentralAngle));
 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+    return earthRadiusKm * Math.acos(normalized);
   }
 
   // Check if point is within radius of another point

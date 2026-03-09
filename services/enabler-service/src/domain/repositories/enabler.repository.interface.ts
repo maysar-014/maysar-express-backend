@@ -1,5 +1,5 @@
 import { EnablerEntity } from '../entities/enabler.entity';
-import { Enabler_Status } from '@prisma/client';
+import { Enabler_Status } from '../types/enabler.types';
 
 export interface IEnablerRepository {
     findById(id: string): Promise<EnablerEntity | null>;

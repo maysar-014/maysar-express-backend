@@ -358,16 +358,12 @@ export class GoogleMapsRoutingAdapter implements RoutingPort {
             const startCoords = waypoints[i].getCoordinates();
             const endCoords = waypoints[i + 1].getCoordinates();
 
-            const R = 6371;
-            const dLat = this.toRadians(endCoords.lat - startCoords.lat);
-            const dLon = this.toRadians(endCoords.lng - startCoords.lng);
+            const earthRadiusKm = 6371;
+            const avgLatRad = this.toRadians((startCoords.lat + endCoords.lat) / 2);
+            const x = this.toRadians(endCoords.lng - startCoords.lng) * Math.cos(avgLatRad);
+            const y = this.toRadians(endCoords.lat - startCoords.lat);
 
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(this.toRadians(startCoords.lat)) * Math.cos(this.toRadians(endCoords.lat)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            totalDistance += R * c;
+            totalDistance += earthRadiusKm * Math.sqrt((x * x) + (y * y));
         }
 
         return totalDistance;

@@ -3,7 +3,6 @@ import { Email } from '../value-objects/email.value-object';
 import { PasswordHash } from '../value-objects/password-hash.value-object';
 import { PhoneNumber } from '../value-objects/phone-number.value-object';
 import { AuthenticationPolicy } from '../policies/authentication.policy';
-import { logger } from '../../infrastructure/services/logger.service';
 
 /**
  * Authentication Engine - Orchestrates authentication algorithms and policies
@@ -102,9 +101,6 @@ export class AuthenticationEngine {
     requiresPhoneVerification?: boolean;
     message: string;
   }> {
-    // Log deprecation warning
-    logger.warn('AuthenticationEngine.registerUser is deprecated. Use User Service instead.');
-
     // Check if creator can create users with this role
     if (creator && !AuthenticationPolicy.canCreateUserWithRole(creator, role)) {
       return {

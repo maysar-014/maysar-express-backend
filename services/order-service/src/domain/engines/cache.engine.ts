@@ -1,40 +1,54 @@
 /**
- * Cache Engine (order-service domain adapter)
- * Thin domain-layer wrapper around the infrastructure CacheManager.
- * Exposes a simple get / set / clear API designed for use by domain code and tests.
+ * Cache Engine (order-service domain utility)
+ * In-memory cache kept inside the domain boundary to avoid outward dependencies.
  */
-
-import { MemoryCache } from '../../infrastructure/cache/cache-manager';
 
 export interface CacheGetResult<T = any> {
     hit: boolean;
     value: T | null;
 }
 
-export class CacheEngine {
-    private readonly store: MemoryCache;
+interface CacheEntry<T = any> {
+    value: T;
+    expiresAt: number;
+}
 
-    constructor() {
-        this.store = new MemoryCache();
-    }
+export class CacheEngine {
+    private readonly store = new Map<string, CacheEntry>();
 
     /**
      * Retrieves a cached entry.
      * Returns `{ hit: true, value }` on cache hit and `{ hit: false, value: null }` on miss.
      */
     async get<T = any>(key: string): Promise<CacheGetResult<T>> {
-        const value = await this.store.get<T>(key);
-        if (value === null) {
+        const entry = this.store.get(key);
+        if (!entry) {
             return { hit: false, value: null };
         }
-        return { hit: true, value };
+
+        if (entry.expiresAt <= Date.now()) {
+            this.store.delete(key);
+            return { hit: false, value: null };
+        }
+
+        return { hit: true, value: entry.value as T };
     }
 
     /**
      * Stores a value with an optional TTL in seconds (default: 300 s).
      */
     async set<T = any>(key: string, value: T, ttlSeconds = 300): Promise<boolean> {
-        return this.store.set(key, value, { ttl: ttlSeconds });
+        if (ttlSeconds <= 0) {
+            this.store.delete(key);
+            return true;
+        }
+
+        this.store.set(key, {
+            value,
+            expiresAt: Date.now() + ttlSeconds * 1000,
+        });
+
+        return true;
     }
 
     /**
@@ -48,6 +62,6 @@ export class CacheEngine {
      * Clears all cached entries.
      */
     async clear(): Promise<void> {
-        return this.store.clear();
+        this.store.clear();
     }
 }

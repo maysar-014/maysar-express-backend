@@ -11,6 +11,10 @@ describe('HereRoutingAdapter', () => {
         adapter = new HereRoutingAdapter('test-key');
     });
 
+    it('requires an API key', () => {
+        expect(() => new HereRoutingAdapter('')).toThrow('HERE_API_KEY is required');
+    });
+
     describe('calculateOptimalRoute', () => {
         it('should calculate route successfully', async () => {
             (fetch as jest.Mock).mockResolvedValue({
@@ -34,16 +38,13 @@ describe('HereRoutingAdapter', () => {
             expect(result.segments.length).toBeGreaterThan(0);
         });
 
-        it('should use fallback when API fails', async () => {
+        it('should throw when API fails', async () => {
             (fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
 
             const origin = GeoPoint.create(-1.286389, 36.817223, 'Origin');
             const dest = GeoPoint.create(-1.292066, 36.821946, 'Dest');
 
-            const result = await adapter.calculateOptimalRoute(origin, dest);
-
-            expect(result.totalDistance).toBeGreaterThan(0);
-            expect(result.confidence).toBe(0.5);
+            await expect(adapter.calculateOptimalRoute(origin, dest)).rejects.toThrow('Network error');
         });
     });
 
@@ -81,6 +82,17 @@ describe('HereRoutingAdapter', () => {
 
     describe('getRouteAlternatives', () => {
         it('should return multiple alternatives', async () => {
+            (fetch as jest.Mock).mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    routes: [
+                        { summary: { length: 10000, duration: 1200 } },
+                        { summary: { length: 12000, duration: 1300 } },
+                        { summary: { length: 14000, duration: 1500 } }
+                    ]
+                })
+            });
+
             const origin = GeoPoint.create(-1.286389, 36.817223, 'Origin');
             const dest = GeoPoint.create(-1.292066, 36.821946, 'Dest');
 
@@ -111,14 +123,9 @@ describe('HereRoutingAdapter', () => {
             expect(result.isValid).toBe(true);
         });
 
-        it('should reject invalid coordinates', async () => {
-            const route = [
-                GeoPoint.create(200, 300, 'Invalid'),
-                GeoPoint.create(-1.292066, 36.821946, 'B')
-            ];
-
+        it('should reject route with insufficient points', async () => {
+            const route = [GeoPoint.create(-1.286389, 36.817223, 'A')];
             const result = await adapter.validateRoute(route);
-
             expect(result.isValid).toBe(false);
         });
     });

@@ -1,21 +1,13 @@
-import { Enabler_ListingStatus, Enabler_Tier } from '@prisma/client';
+import { Enabler_Status, Enabler_Tier } from '../types/enabler.types';
 
 export interface ProductListingContext {
     enablerTier: Enabler_Tier;
-    enablerStatus: string;
+    enablerStatus: Enabler_Status;
     productStatus: string; // From catalog
     sellerAllowsEnablers: boolean;
     sellerBlockedEnablers?: string[];
     maxListingsPerEnabler?: number;
     currentListingsCount: number;
-}
-
-enum Enabler_Status {
-    PENDING = 'PENDING',
-    APPROVED = 'APPROVED',
-    ACTIVE = 'ACTIVE',
-    SUSPENDED = 'SUSPENDED',
-    REJECTED = 'REJECTED'
 }
 
 export class ProductListingPolicy {

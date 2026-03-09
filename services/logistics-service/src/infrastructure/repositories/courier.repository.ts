@@ -1,5 +1,6 @@
 import { ICourierRepository, Courier } from '../../domain/repositories';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
+import { DistanceCalculationAlgorithm } from '../../domain/algorithms/distance-calculation.algorithm';
 
 export class CourierRepository implements ICourierRepository {
   constructor(private supabaseClient: any) { }
@@ -66,16 +67,19 @@ export class CourierRepository implements ICourierRepository {
         return [];
       }
 
-      // Filter by geographical distance (since PostGIS ST_DWithin is complex to set up)
-      const availableCouriers = couriers.filter((courier: any) => {
-        const courierLocation = GeoPoint.create(
-          courier.current_lat,
-          courier.current_lng,
-          courier.current_address || 'Unknown'
-        );
-        const distance = location.distanceTo(courierLocation);
-        return distance <= radius;
-      });
+      // Filter by route distance using configured routing provider (HERE)
+      const distanceChecks = await Promise.all(
+        couriers.map(async (courier: any) => {
+          const courierLocation = GeoPoint.create(
+            courier.current_lat,
+            courier.current_lng,
+            courier.current_address || 'Unknown'
+          );
+          const routeDistance = await DistanceCalculationAlgorithm.calculateDeliveryDistance(location, courierLocation);
+          return routeDistance.distance <= radius;
+        })
+      );
+      const availableCouriers = couriers.filter((_: any, index: number) => distanceChecks[index]);
 
       // Map to domain entities
       return availableCouriers.map((courier: any) => ({

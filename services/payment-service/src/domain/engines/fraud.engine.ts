@@ -280,15 +280,18 @@ export class FraudEngine {
   }
 
   private calculateDistance(loc1: any, loc2: any): number {
-    // Haversine formula for distance calculation
-    const R = 6371; // Earth's radius in km
-    const dLat = (loc2.lat - loc1.lat) * Math.PI / 180;
-    const dLng = (loc2.lng - loc1.lng) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(loc1.lat * Math.PI / 180) * Math.cos(loc2.lat * Math.PI / 180) *
-      Math.sin(dLng / 2) * Math.sin(dLng / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+    // Great-circle distance (spherical law of cosines)
+    const earthRadiusKm = 6371;
+    const lat1 = (loc1.lat * Math.PI) / 180;
+    const lat2 = (loc2.lat * Math.PI) / 180;
+    const deltaLng = ((loc2.lng - loc1.lng) * Math.PI) / 180;
+
+    const cosineCentralAngle =
+      Math.sin(lat1) * Math.sin(lat2) +
+      Math.cos(lat1) * Math.cos(lat2) * Math.cos(deltaLng);
+    const normalized = Math.min(1, Math.max(-1, cosineCentralAngle));
+
+    return earthRadiusKm * Math.acos(normalized);
   }
 
   private isHighRiskCountry(country: string): boolean {

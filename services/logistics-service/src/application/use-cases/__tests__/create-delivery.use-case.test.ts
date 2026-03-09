@@ -28,7 +28,10 @@ describe('CreateDeliveryUseCase', () => {
             courierRepository: { findAvailableCouriers: jest.fn().mockResolvedValue([{ id: 'c1', name: 'Courier 1', vehicle: 'bike', rating: 4.5, completionRate: 0.95, currentLocation: { lat: -6.7924, lng: 39.2083 }, isAvailable: true }]) },
             weatherPort: { getWeatherData: jest.fn().mockResolvedValue({ severity: 'low' }) },
             trafficPort: { getTrafficData: jest.fn().mockResolvedValue({ congestionLevel: 0 }) },
-            routePort: { getRouteAlternatives: jest.fn().mockResolvedValue([{ totalDistance: 10, totalDuration: 30, waypoints: [], segments: [], efficiency: 90, confidence: 0.9, alternatives: [] }]) },
+            routePort: {
+                getRouteAlternatives: jest.fn().mockResolvedValue([{ totalDistance: 10, totalDuration: 30, waypoints: [], segments: [], efficiency: 90, confidence: 0.9, alternatives: [] }]),
+                calculateOptimalRoute: jest.fn().mockResolvedValue({ totalDistance: 10, totalDuration: 30, waypoints: [], segments: [], efficiency: 90, confidence: 0.9, alternatives: [] })
+            },
             trackingPort: {},
             courierPolicy: { selectOptimalCourier: jest.fn().mockReturnValue({ id: 'c1', name: 'Courier 1' }) },
         };
@@ -65,9 +68,10 @@ describe('CreateDeliveryUseCase', () => {
         expect(mocks.logisticsEngine.calculateDeliveryCost).toHaveBeenCalledWith(10, 5, 'standard');
     });
 
-    it('should use fallback route when route service fails', async () => {
+    it('should request primary HERE route when alternatives are unavailable', async () => {
         mocks.routePort.getRouteAlternatives.mockResolvedValue([]);
         const result = await useCase.execute(validInput);
+        expect(mocks.routePort.calculateOptimalRoute).toHaveBeenCalled();
         expect(result).toBeDefined();
     });
 });
@@ -113,7 +117,7 @@ describe('UpdateDeliveryStatusUseCase', () => {
         for (const { from, to } of transitions) {
             jest.clearAllMocks();
             mockRepository.findById.mockResolvedValue({ ...mockDelivery, status: from });
-            await useCase.execute({ deliveryId: 'del-1', status: to });
+            await useCase.execute({ deliveryId: 'del-1', status: to as any });
             expect(mockRepository.updateStatus).toHaveBeenCalled();
         }
     });

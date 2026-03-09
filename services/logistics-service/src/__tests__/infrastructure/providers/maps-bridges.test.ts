@@ -7,9 +7,6 @@
 import { MapsRoutingBridge } from '../../../infrastructure/providers/maps-routing.bridge';
 import { GeoPoint } from '../../../domain/value-objects/geopoint.value-object';
 
-// Mock the Maps Registry
-jest.mock('../../../../../maps-service/src/infrastructure/registry');
-
 describe('Logistics Service - Maps Bridges', () => {
     describe('MapsRoutingBridge', () => {
         let bridge: MapsRoutingBridge;
@@ -22,13 +19,7 @@ describe('Logistics Service - Maps Bridges', () => {
                 getRouteAlternatives: jest.fn(),
                 validateRoute: jest.fn()
             };
-
-            const { MapsRegistry } = require('../../../../../maps-service/src/infrastructure/registry');
-            MapsRegistry.getInstance = jest.fn().mockReturnValue({
-                getRoutingProvider: () => mockRoutingProvider
-            });
-
-            bridge = new MapsRoutingBridge();
+            bridge = new MapsRoutingBridge(mockRoutingProvider);
         });
 
         it('should translate GeoPoint types when calculating routes', async () => {

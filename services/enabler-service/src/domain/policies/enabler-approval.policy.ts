@@ -1,4 +1,4 @@
-import { Enabler_Status } from '@prisma/client';
+import { Enabler_Status } from '../types/enabler.types';
 
 export interface EnablerApprovalContext {
     status: Enabler_Status;

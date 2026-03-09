@@ -1,161 +1,108 @@
+const mockPrisma = {
+  order_OrderItem: {
+    groupBy: jest.fn(),
+    aggregate: jest.fn()
+  },
+  product: {
+    findUnique: jest.fn()
+  },
+  analytics_SellerProductPerformance: {
+    upsert: jest.fn()
+  },
+  analytics_SellerMetrics: {
+    upsert: jest.fn()
+  }
+};
+
+jest.mock('../../../infrastructure/database/prisma', () => ({
+  __esModule: true,
+  default: mockPrisma
+}));
+
 import { IdentifyBestPerformingProduct } from '../IdentifyBestPerformingProduct';
-import prisma from '../../../infrastructure/database/prisma';
 
 describe('IdentifyBestPerformingProduct', () => {
-  const useCase = new IdentifyBestPerformingProduct();
-  const sellerId = 'test-seller-123';
-  const productId = 'test-product-456';
+  const sellerId = 'seller-1';
+  let useCase: IdentifyBestPerformingProduct;
 
-  beforeEach(async () => {
-    // Clean up test data
-    await prisma.analytics_SellerProductPerformance.deleteMany({
-      where: { sellerId }
-    });
-    await prisma.analytics_SellerMetrics.deleteMany({
-      where: { sellerId }
-    });
+  beforeEach(() => {
+    jest.clearAllMocks();
+    useCase = new IdentifyBestPerformingProduct();
   });
 
-  it('should return null when no orders exist', async () => {
+  it('returns null when no delivered order items exist', async () => {
+    mockPrisma.order_OrderItem.groupBy.mockResolvedValue([]);
     const result = await useCase.execute(sellerId);
+
     expect(result).toBeNull();
+    expect(mockPrisma.order_OrderItem.aggregate).not.toHaveBeenCalled();
   });
 
-  it('should identify best product when orders exist', async () => {
-    // Create test product
-    await prisma.catalog_Product.create({
-      data: {
-        id: productId,
-        sellerId,
-        title: 'Best Selling Product',
-        categoryId: 'test-category',
-        status: 'published'
-      }
+  it('returns best product summary and persists performance metrics', async () => {
+    mockPrisma.order_OrderItem.groupBy.mockResolvedValue([
+      { productId: 'prod-1', _sum: { quantity: 10 } }
+    ]);
+    mockPrisma.order_OrderItem.aggregate.mockResolvedValue({
+      _sum: { quantity: 10 },
+      _avg: { price: 100 }
     });
-
-    // Create test orders with items
-    const order = await prisma.order_Order.create({
-      data: {
-        id: 'test-order-1',
-        buyerId: 'test-buyer',
-        sellerId,
-        status: 'DELIVERED',
-        paymentMethod: 'COD',
-        totalAmount: 1000,
-        totalWeight: 5,
-        deliveryAddress: {}
-      }
-    });
-
-    await prisma.order_OrderItem.create({
-      data: {
-        id: 'test-item-1',
-        orderId: order.id,
-        productId,
-        quantity: 10,
-        price: 100,
-        weight: 5
-      }
-    });
+    mockPrisma.product.findUnique.mockResolvedValue({ title: 'Top Product' });
+    mockPrisma.analytics_SellerProductPerformance.upsert.mockResolvedValue(undefined);
+    mockPrisma.analytics_SellerMetrics.upsert.mockResolvedValue(undefined);
 
     const result = await useCase.execute(sellerId);
 
-    expect(result).not.toBeNull();
-    expect(result?.productId).toBe(productId);
-    expect(result?.productName).toBe('Best Selling Product');
-    expect(result?.unitsSold).toBe(10);
-    expect(result?.revenue).toBe(1000); // 10 * 100
+    expect(mockPrisma.order_OrderItem.groupBy).toHaveBeenCalledWith({
+      by: ['productId'],
+      where: { order: { sellerId, status: 'DELIVERED' } },
+      _sum: { quantity: true },
+      orderBy: { _sum: { quantity: 'desc' } },
+      take: 1
+    });
+    expect(mockPrisma.order_OrderItem.aggregate).toHaveBeenCalledWith({
+      where: { productId: 'prod-1', order: { sellerId, status: 'DELIVERED' } },
+      _sum: { quantity: true },
+      _avg: { price: true }
+    });
+    expect(mockPrisma.analytics_SellerProductPerformance.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { sellerId_productId: { sellerId, productId: 'prod-1' } },
+        update: { orders: 10, revenue: 1000 },
+        create: { sellerId, productId: 'prod-1', orders: 10, revenue: 1000 }
+      })
+    );
+    expect(mockPrisma.analytics_SellerMetrics.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { sellerId },
+        update: {
+          bestPerformingProductId: 'prod-1',
+          bestPerformingProductRevenue: 1000,
+          bestPerformingProductUnitsSold: 10
+        }
+      })
+    );
+    expect(result).toEqual({
+      productId: 'prod-1',
+      productName: 'Top Product',
+      revenue: 1000,
+      unitsSold: 10
+    });
   });
 
-  it('should populate Analytics_SellerProductPerformance', async () => {
-    await prisma.catalog_Product.create({
-      data: {
-        id: productId,
-        sellerId,
-        title: 'Test Product',
-        categoryId: 'test-category',
-        status: 'published'
-      }
+  it('falls back to Unknown product name when lookup misses', async () => {
+    mockPrisma.order_OrderItem.groupBy.mockResolvedValue([
+      { productId: 'prod-1', _sum: { quantity: 2 } }
+    ]);
+    mockPrisma.order_OrderItem.aggregate.mockResolvedValue({
+      _sum: { quantity: 2 },
+      _avg: { price: 25 }
     });
+    mockPrisma.product.findUnique.mockResolvedValue(null);
+    mockPrisma.analytics_SellerProductPerformance.upsert.mockResolvedValue(undefined);
+    mockPrisma.analytics_SellerMetrics.upsert.mockResolvedValue(undefined);
 
-    const order = await prisma.order_Order.create({
-      data: {
-        id: 'test-order-2',
-        buyerId: 'test-buyer',
-        sellerId,
-        status: 'DELIVERED',
-        paymentMethod: 'COD',
-        totalAmount: 500,
-        totalWeight: 2,
-        deliveryAddress: {}
-      }
-    });
-
-    await prisma.order_OrderItem.create({
-      data: {
-        id: 'test-item-2',
-        orderId: order.id,
-        productId,
-        quantity: 5,
-        price: 100,
-        weight: 2
-      }
-    });
-
-    await useCase.execute(sellerId);
-
-    const performance = await prisma.analytics_SellerProductPerformance.findFirst({
-      where: { sellerId, productId }
-    });
-
-    expect(performance).not.toBeNull();
-    expect(performance?.orders).toBe(5);
-    expect(performance?.revenue).toBe(500);
-  });
-
-  it('should update Analytics_SellerMetrics with best product', async () => {
-    await prisma.catalog_Product.create({
-      data: {
-        id: productId,
-        sellerId,
-        title: 'Top Product',
-        categoryId: 'test-category',
-        status: 'published'
-      }
-    });
-
-    const order = await prisma.order_Order.create({
-      data: {
-        id: 'test-order-3',
-        buyerId: 'test-buyer',
-        sellerId,
-        status: 'DELIVERED',
-        paymentMethod: 'COD',
-        totalAmount: 2000,
-        totalWeight: 10,
-        deliveryAddress: {}
-      }
-    });
-
-    await prisma.order_OrderItem.create({
-      data: {
-        id: 'test-item-3',
-        orderId: order.id,
-        productId,
-        quantity: 20,
-        price: 100,
-        weight: 10
-      }
-    });
-
-    await useCase.execute(sellerId);
-
-    const metrics = await prisma.analytics_SellerMetrics.findFirst({
-      where: { sellerId }
-    });
-
-    expect(metrics?.bestPerformingProductId).toBe(productId);
-    expect(metrics?.bestPerformingProductUnitsSold).toBe(20);
-    expect(metrics?.bestPerformingProductRevenue).toBe(2000);
+    const result = await useCase.execute(sellerId);
+    expect(result?.productName).toBe('Unknown');
+    expect(result?.revenue).toBe(50);
   });
 });

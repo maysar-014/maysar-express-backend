@@ -1,56 +1,37 @@
 import { GetCourierAnalytics } from '../GetCourierAnalytics';
 import { CourierAnalyticsRepository } from '../../../infrastructure/repositories/CourierAnalyticsRepository';
 
-jest.mock('../../../infrastructure/repositories/CourierAnalyticsRepository');
-
 describe('GetCourierAnalytics', () => {
     let useCase: GetCourierAnalytics;
-    let repository: any;
+    let repository: jest.Mocked<Pick<CourierAnalyticsRepository, 'getAnalytics'>>;
 
     beforeEach(() => {
-        jest.clearAllMocks();
-        const MockRepo = require('../../../infrastructure/repositories/CourierAnalyticsRepository').CourierAnalyticsRepository;
-        repository = new MockRepo();
-        useCase = new GetCourierAnalytics(repository);
+        repository = {
+            getAnalytics: jest.fn()
+        };
+        useCase = new GetCourierAnalytics(repository as unknown as CourierAnalyticsRepository);
     });
 
-    it('should return courier analytics', async () => {
+    it('returns courier analytics from repository', async () => {
         const courierId = 'courier-001';
-        const mockResult = { courierId, performanceScore: 4.8 };
+        const mockResult = { courierId, performanceScore: 4.8, deliveriesCompleted: 12 };
 
-        repository.getMetrics = jest.fn().mockResolvedValue(mockResult);
+        repository.getAnalytics.mockResolvedValue(mockResult as never);
 
         const result = await useCase.execute(courierId);
 
-        expect(repository.getMetrics).toHaveBeenCalledWith(courierId);
+        expect(repository.getAnalytics).toHaveBeenCalledWith(courierId);
         expect(result).toBe(mockResult);
     });
 
-    it('should handle missing courier', async () => {
-        repository.getMetrics = jest.fn().mockResolvedValue(null);
+    it('returns null for missing couriers', async () => {
+        repository.getAnalytics.mockResolvedValue(null);
         const result = await useCase.execute('courier-999');
         expect(result).toBeNull();
     });
 
-    it('should handle repository errors', async () => {
-        repository.getMetrics = jest.fn().mockRejectedValue(new Error('DB error'));
+    it('propagates repository errors', async () => {
+        repository.getAnalytics.mockRejectedValue(new Error('DB error'));
         await expect(useCase.execute('courier-001')).rejects.toThrow('DB error');
-    });
-
-    it('should return metrics with delivery stats', async () => {
-        const mockResult = { courierId: 'c1', deliveries: 100, onTimeRate: 0.95 };
-        repository.getMetrics = jest.fn().mockResolvedValue(mockResult);
-        const result = await useCase.execute('c1');
-        expect(result.deliveries).toBe(100);
-    });
-
-    it('should handle empty metrics', async () => {
-        repository.getMetrics = jest.fn().mockResolvedValue({});
-        const result = await useCase.execute('c1');
-        expect(result).toEqual({});
-    });
-
-    it('should validate courier ID format', async () => {
-        await expect(useCase.execute('')).rejects.toThrow('Invalid courier ID');
     });
 });

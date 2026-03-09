@@ -17,16 +17,42 @@ export interface StockAvailability {
   confidence: number;
 }
 
-import Redis from 'ioredis';
-import { RedisLock } from '../../../../../shared/locking/redis-lock';
+interface StockRedisPipeline {
+  hgetall(key: string): this;
+  get(key: string): this;
+  exec(): Promise<Array<[Error | null, unknown]> | null>;
+}
+
+interface StockRedisClient {
+  setex(key: string, seconds: number, value: string): Promise<unknown>;
+  zadd(key: string, score: number, member: string): Promise<unknown>;
+  incrby(key: string, increment: number): Promise<unknown>;
+  decrby(key: string, decrement: number): Promise<unknown>;
+  del(key: string): Promise<unknown>;
+  zrem(key: string, member: string): Promise<unknown>;
+  hgetall(key: string): Promise<Record<string, string>>;
+  get(key: string): Promise<string | null>;
+  pipeline(): StockRedisPipeline;
+  keys(pattern: string): Promise<string[]>;
+  zrangebyscore(key: string, min: number, max: number): Promise<string[]>;
+  zremrangebyscore(key: string, min: number, max: number): Promise<unknown>;
+  hincrby(key: string, field: string, increment: number): Promise<unknown>;
+  lrange(key: string, start: number, stop: number): Promise<string[]>;
+  lpush(key: string, value: string): Promise<unknown>;
+  ltrim(key: string, start: number, stop: number): Promise<unknown>;
+}
+
+interface StockLock {
+  withLock<T>(key: string, fn: () => Promise<T>): Promise<T>;
+}
 
 export class StockEngine {
   private readonly RESERVATION_TTL = 900; // 15 minutes
   private readonly ACCURACY_TARGET = 99.9;
 
   constructor(
-    private readonly redis: Redis,
-    private readonly redisLock: RedisLock
+    private readonly redis: StockRedisClient,
+    private readonly redisLock: StockLock
   ) {}
 
   async checkAvailability(productVariantId: string, quantity: number): Promise<StockAvailability> {

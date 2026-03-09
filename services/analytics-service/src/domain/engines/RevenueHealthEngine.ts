@@ -1,4 +1,4 @@
-import { Decimal } from '@prisma/client/runtime/library';
+type DecimalLike = { toNumber(): number };
 
 export interface RevenueHealthMetrics {
   arpsWeekly: number;
@@ -9,7 +9,7 @@ export interface RevenueHealthMetrics {
 
 export class RevenueHealthEngine {
   calculateARPS(
-    totalRevenue: Decimal | number,
+    totalRevenue: DecimalLike | number,
     activeSellersCount: number,
     timeWindow: 'weekly' | 'monthly'
   ): number {

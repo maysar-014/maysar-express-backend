@@ -114,6 +114,7 @@ export class DependencyContainer {
     this.routeOptimizationProvider = new MapsRoutingBridge();
     this.trackingProvider = new MapsTrackingBridge();
     this.eventPublisher = new EventPublisher(true); // Enable event store
+    DistanceCalculationAlgorithm.setRouteOptimizationService(this.routeOptimizationProvider);
   }
 
   // Method to initialize Supabase connections asynchronously
@@ -149,6 +150,7 @@ export class DependencyContainer {
     this.routeOptimizationProvider = new MapsRoutingBridge();
     this.trackingProvider = new MapsTrackingBridge();
     this.eventPublisher = new EventPublisher(true); // Enable event store
+    DistanceCalculationAlgorithm.setRouteOptimizationService(this.routeOptimizationProvider);
 
     // Initialize Saga Log Repository
     const prismaManager = PrismaClientManager.getInstance();
@@ -408,6 +410,7 @@ export class DependencyContainer {
 
   public setRouteOptimizationProvider(provider: RouteOptimizationPort): void {
     this.routeOptimizationProvider = provider;
+    DistanceCalculationAlgorithm.setRouteOptimizationService(provider);
     this.initializeDomain();
     this.initializeApplication();
   }

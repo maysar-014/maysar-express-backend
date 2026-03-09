@@ -1,5 +1,5 @@
 import { ProductListingEntity, ProductListingProps } from '../../entities/product-listing.entity';
-import { Enabler_ListingStatus } from '@prisma/client';
+import { Enabler_ListingStatus } from '../../types/enabler.types';
 
 describe('ProductListingEntity', () => {
     const validProps: ProductListingProps = {

@@ -40,7 +40,7 @@ describe('GeoPoint Value Object', () => {
     const darEsSalaam = GeoPoint.create(-6.7924, 39.2083, 'Dar es Salaam');
     const arusha = GeoPoint.create(-3.3869, 36.6828, 'Arusha');
 
-    it('should calculate distance between two points using Haversine formula', () => {
+    it('should calculate distance between two points using great-circle formula', () => {
       const distance = darEsSalaam.distanceTo(arusha);
 
       // Expected distance between Dar es Salaam and Arusha is approximately 460-480 km

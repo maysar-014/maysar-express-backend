@@ -1,5 +1,5 @@
 import { EnablerEligibilityEngine, EnablerEligibilityInput } from '../../engines/enabler-eligibility.engine';
-import { Enabler_Tier } from '@prisma/client';
+import { Enabler_Tier } from '../../types/enabler.types';
 
 describe('EnablerEligibilityEngine', () => {
     const validInput: EnablerEligibilityInput = {

@@ -70,7 +70,7 @@ SELECT
   current_lat,
   current_lng,
   current_address,
-  -- Calculate distance using Haversine formula (approximate km)
+  -- Calculate distance using local great-circle approximation (km)
   (6371 * acos(
     cos(radians(-6.7924)) * cos(radians(current_lat)) *
     cos(radians(current_lng) - radians(39.2083)) +

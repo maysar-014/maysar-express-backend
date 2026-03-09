@@ -1,9 +1,7 @@
 import { PasswordHash } from '../password-hash.value-object';
 
 describe('PasswordHash Value Object - extra branches', () => {
-  const origSalt = process.env.PASSWORD_SALT;
-  beforeAll(() => { process.env.PASSWORD_SALT = 'test_salt2'; });
-  afterAll(() => { process.env.PASSWORD_SALT = origSalt; });
+  beforeAll(() => { PasswordHash.setSaltForTesting('test_salt2'); });
 
   it('getPasswordStrength extremes and argon2 rehash logic', async () => {
     expect(PasswordHash.getPasswordStrength('short')).toBeGreaterThanOrEqual(0);

@@ -62,7 +62,7 @@ export class RouteCreationService {
     constraints: RouteCreationConstraints = {}
   ): Promise<RouteCreationResult> {
     // Apply business rules for route creation
-    const validDeliveries = this.validateDeliveriesForCourier(courier, deliveries, constraints);
+    const validDeliveries = await this.validateDeliveriesForCourier(courier, deliveries, constraints);
 
     if (validDeliveries.length === 0) {
       throw new Error('No deliveries can be assigned to this courier under current constraints');
@@ -104,7 +104,7 @@ export class RouteCreationService {
     });
 
     // Calculate optimization savings
-    const baselineMetrics = this.calculateBaselineMetrics(courier, validDeliveries);
+    const baselineMetrics = await this.calculateBaselineMetrics(courier, validDeliveries);
     const estimatedSavings = {
       timeMinutes: Math.max(0, baselineMetrics.estimatedDuration - routeMetrics.estimatedDuration),
       distanceKm: Math.max(0, baselineMetrics.totalDistance - routeMetrics.totalDistance),
@@ -134,11 +134,11 @@ export class RouteCreationService {
   /**
    * Validate which deliveries can be assigned to a courier
    */
-  private validateDeliveriesForCourier(
+  private async validateDeliveriesForCourier(
     courier: CourierEntity,
     deliveries: DeliveryForRoute[],
     constraints: RouteCreationConstraints
-  ): DeliveryForRoute[] {
+  ): Promise<DeliveryForRoute[]> {
     const maxDeliveries = constraints.maxDeliveriesPerRoute || 5;
     const maxWeightKg = constraints.maxTotalWeightKg || courier.vehicle.capacity.maxWeight;
     const maxDurationHours = constraints.maxRouteDurationHours || 6;
@@ -155,7 +155,7 @@ export class RouteCreationService {
       if (totalWeight + delivery.weight.getValue() > maxWeightKg) continue;
 
       // Check time constraints
-      const deliveryTimeEstimate = this.estimateDeliveryTime(courier, delivery);
+      const deliveryTimeEstimate = await this.estimateDeliveryTime(courier, delivery);
       if (totalEstimatedTime + deliveryTimeEstimate > maxDurationHours * 60) continue;
 
       // Check time windows if specified
@@ -218,17 +218,20 @@ export class RouteCreationService {
   /**
    * Fallback delivery sequencing when optimization service fails
    */
-  private fallbackDeliverySequencing(
+  private async fallbackDeliverySequencing(
     courier: CourierEntity,
     deliveries: DeliveryForRoute[]
-  ): DeliveryForRoute[] {
+  ): Promise<DeliveryForRoute[]> {
     const courierLocation = courier.currentLocation;
+    const scoredDeliveries = await Promise.all(
+      deliveries.map(async delivery => {
+        const segment = await this.getSegmentMetrics(courierLocation, delivery.pickupLocation);
+        return { delivery, distance: segment.distance };
+      })
+    );
 
-    return deliveries.sort((a, b) => {
-      const distanceA = courierLocation.distanceTo(a.pickupLocation);
-      const distanceB = courierLocation.distanceTo(b.pickupLocation);
-      return distanceA - distanceB;
-    });
+    scoredDeliveries.sort((a, b) => a.distance - b.distance);
+    return scoredDeliveries.map(item => item.delivery);
   }
 
   /**
@@ -275,23 +278,18 @@ export class RouteCreationService {
   /**
    * Approximate route metrics when optimization service unavailable
    */
-  private approximateRouteMetrics(
+  private async approximateRouteMetrics(
     courier: CourierEntity,
     deliveries: DeliveryForRoute[]
-  ): { totalDistance: number; estimatedDuration: number; waypoints: GeoPoint[] } {
+  ): Promise<{ totalDistance: number; estimatedDuration: number; waypoints: GeoPoint[] }> {
     const waypoints = this.buildWaypoints(courier, deliveries);
     let totalDistance = 0;
     let estimatedDuration = 0;
 
     for (let i = 0; i < waypoints.length - 1; i++) {
-      const segmentDistance = waypoints[i].distanceTo(waypoints[i + 1]);
-      totalDistance += segmentDistance;
-
-      // Estimate time based on distance and courier experience
-      const baseSpeed = 25; // km/h average urban speed
-      const experienceMultiplier = courier.trafficExperience > 0.8 ? 1.2 : 0.9;
-      const segmentTime = (segmentDistance / baseSpeed) * 60 * experienceMultiplier; // minutes
-      estimatedDuration += segmentTime;
+      const segment = await this.getSegmentMetrics(waypoints[i], waypoints[i + 1]);
+      totalDistance += segment.distance;
+      estimatedDuration += segment.duration;
 
       // Add stop time for each delivery
       if (i > 0) { // Skip courier starting point
@@ -324,10 +322,10 @@ export class RouteCreationService {
   /**
    * Calculate baseline metrics for comparison (unoptimized route)
    */
-  private calculateBaselineMetrics(
+  private async calculateBaselineMetrics(
     courier: CourierEntity,
     deliveries: DeliveryForRoute[]
-  ): { totalDistance: number; estimatedDuration: number } {
+  ): Promise<{ totalDistance: number; estimatedDuration: number }> {
     // Simple baseline: courier to each pickup then to each delivery
     const courierLocation = courier.currentLocation;
     let totalDistance = 0;
@@ -335,17 +333,17 @@ export class RouteCreationService {
 
     for (const delivery of deliveries) {
       // To pickup
-      const toPickupDistance = courierLocation.distanceTo(delivery.pickupLocation);
-      totalDistance += toPickupDistance;
-      estimatedDuration += (toPickupDistance / 25) * 60; // 25 km/h average
+      const toPickup = await this.getSegmentMetrics(courierLocation, delivery.pickupLocation);
+      totalDistance += toPickup.distance;
+      estimatedDuration += toPickup.duration;
 
       // At pickup (loading time)
       estimatedDuration += 3;
 
       // To delivery
-      const toDeliveryDistance = delivery.pickupLocation.distanceTo(delivery.deliveryLocation);
-      totalDistance += toDeliveryDistance;
-      estimatedDuration += (toDeliveryDistance / 25) * 60;
+      const toDelivery = await this.getSegmentMetrics(delivery.pickupLocation, delivery.deliveryLocation);
+      totalDistance += toDelivery.distance;
+      estimatedDuration += toDelivery.duration;
 
       // At delivery (unloading time)
       estimatedDuration += 5;
@@ -377,10 +375,9 @@ export class RouteCreationService {
   /**
    * Estimate time for single delivery
    */
-  private estimateDeliveryTime(courier: CourierEntity, delivery: DeliveryForRoute): number {
-    const pickupToDelivery = delivery.pickupLocation.distanceTo(delivery.deliveryLocation);
-    const speed = 25; // km/h average urban speed
-    const travelTime = (pickupToDelivery / speed) * 60; // minutes
+  private async estimateDeliveryTime(courier: CourierEntity, delivery: DeliveryForRoute): Promise<number> {
+    const pickupToDelivery = await this.getSegmentMetrics(delivery.pickupLocation, delivery.deliveryLocation);
+    const travelTime = pickupToDelivery.duration;
     const stopTime = 8; // loading + unloading
 
     // Adjust for courier experience and priority
@@ -388,6 +385,14 @@ export class RouteCreationService {
     const priorityMultiplier = delivery.priority === 'urgent' ? 1.2 : delivery.priority === 'express' ? 1.1 : 1.0;
 
     return Math.round((travelTime + stopTime) * experienceMultiplier * priorityMultiplier);
+  }
+
+  private async getSegmentMetrics(start: GeoPoint, end: GeoPoint): Promise<{ distance: number; duration: number }> {
+    const route = await this.routeOptimizationPort.calculateOptimalRoute(start, end, { priority: 'fastest' });
+    return {
+      distance: route.totalDistance,
+      duration: route.totalDuration
+    };
   }
 
   /**

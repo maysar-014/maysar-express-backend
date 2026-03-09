@@ -1,4 +1,4 @@
-import { Enabler_OrderStatus } from '@prisma/client';
+import { Enabler_OrderStatus } from '../types/enabler.types';
 
 export interface EnablerOrderProps {
     id: string;

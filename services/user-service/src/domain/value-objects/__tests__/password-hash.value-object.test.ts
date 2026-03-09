@@ -1,14 +1,8 @@
 import { PasswordHash } from '../password-hash.value-object';
 
 describe('PasswordHash Value Object', () => {
-  const origSalt = process.env.PASSWORD_SALT;
-
   beforeAll(() => {
-    process.env.PASSWORD_SALT = 'test_salt';
-  });
-
-  afterAll(() => {
-    process.env.PASSWORD_SALT = origSalt;
+    PasswordHash.setSaltForTesting('test_salt');
   });
 
   it('validates password strength and requirements', () => {

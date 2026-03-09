@@ -166,21 +166,19 @@ export class RealTimeTrackingEngine {
   }
 
   /**
-   * Pure function: Calculate distance between two points (Haversine formula)
+   * Pure function: Calculate great-circle distance between two points
    */
   calculateDistance(point1: LocationPoint, point2: LocationPoint): number {
-    const lat1Rad = (point1.lat * Math.PI) / 180;
-    const lat2Rad = (point2.lat * Math.PI) / 180;
-    const deltaLatRad = ((point2.lat - point1.lat) * Math.PI) / 180;
-    const deltaLngRad = ((point2.lng - point1.lng) * Math.PI) / 180;
+    const lat1 = (point1.lat * Math.PI) / 180;
+    const lat2 = (point2.lat * Math.PI) / 180;
+    const deltaLng = ((point2.lng - point1.lng) * Math.PI) / 180;
 
-    const a = Math.sin(deltaLatRad / 2) * Math.sin(deltaLatRad / 2) +
-              Math.cos(lat1Rad) * Math.cos(lat2Rad) *
-              Math.sin(deltaLngRad / 2) * Math.sin(deltaLngRad / 2);
+    const cosineCentralAngle =
+      Math.sin(lat1) * Math.sin(lat2) +
+      Math.cos(lat1) * Math.cos(lat2) * Math.cos(deltaLng);
+    const normalized = Math.min(1, Math.max(-1, cosineCentralAngle));
 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return this.EARTH_RADIUS_KM * c;
+    return this.EARTH_RADIUS_KM * Math.acos(normalized);
   }
 
   /**

@@ -4,6 +4,7 @@
  */
 export class PasswordHash {
   private constructor(private readonly _hash: string, private readonly _algorithm: string = 'bcrypt') {}
+  private static salt = 'default_salt';
 
   /**
    * Creates PasswordHash from a plain text password (during registration/login)
@@ -24,6 +25,10 @@ export class PasswordHash {
    */
   static fromHash(hash: string, algorithm: string = 'bcrypt'): PasswordHash {
     return new PasswordHash(hash, algorithm);
+  }
+
+  static setSaltForTesting(salt: string): void {
+    PasswordHash.salt = salt || 'default_salt';
   }
 
   /**
@@ -111,7 +116,7 @@ export class PasswordHash {
     // For now, use a simple hash for demonstration
     const crypto = await import('crypto');
     const hash = crypto.createHash('sha256');
-    hash.update(password + process.env.PASSWORD_SALT || 'default_salt');
+    hash.update(password + PasswordHash.salt);
     return hash.digest('hex');
   }
 
@@ -122,7 +127,7 @@ export class PasswordHash {
     // In production, use proper bcrypt/argon2 verification
     const crypto = await import('crypto');
     const expectedHash = crypto.createHash('sha256');
-    expectedHash.update(password + process.env.PASSWORD_SALT || 'default_salt');
+    expectedHash.update(password + PasswordHash.salt);
     return expectedHash.digest('hex') === hash;
   }
 

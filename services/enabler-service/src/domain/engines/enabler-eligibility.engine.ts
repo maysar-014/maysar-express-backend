@@ -1,4 +1,4 @@
-import { Enabler_Tier } from '@prisma/client';
+import { Enabler_Tier } from '../types/enabler.types';
 
 export interface EnablerEligibilityInput {
     businessName: string;

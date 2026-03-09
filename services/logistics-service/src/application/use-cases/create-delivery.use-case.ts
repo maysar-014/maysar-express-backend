@@ -117,23 +117,9 @@ export class CreateDeliveryUseCase {
     }
 
     if (routes.length === 0) {
-      console.warn('⚠️ No routes available from route optimization service, using fallback calculation');
-
-      // Create a basic fallback route with actual distance calculation
-      const straightLineDistance = pickupGeoPoint.distanceTo(deliveryGeoPoint);
-      const estimatedDuration = (straightLineDistance / 30) * 60; // 30 km/h average speed
-
-      const fallbackRoute = {
-        totalDistance: straightLineDistance,
-        totalDuration: estimatedDuration,
-        waypoints: [pickupGeoPoint, deliveryGeoPoint],
-        segments: [],
-        efficiency: 70,
-        confidence: 0.5,
-        alternatives: []
-      };
-
-      routes = [fallbackRoute];
+      console.warn('HERE route alternatives unavailable, requesting primary HERE route');
+      const primaryRoute = await this.routePort.calculateOptimalRoute(pickupGeoPoint, deliveryGeoPoint);
+      routes = [primaryRoute];
     }
 
     // Step 3: Apply domain business rules for courier selection
@@ -233,3 +219,4 @@ export class CreateDeliveryUseCase {
   // APPLICATION LAYER: Now contains ONLY orchestration logic
   // All business rules properly isolated in domain layer
 }
+

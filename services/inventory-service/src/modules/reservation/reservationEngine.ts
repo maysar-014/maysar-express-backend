@@ -318,17 +318,18 @@ export class ReservationEngine {
     warehouseCoords: { lat: number; lng: number },
     shippingCoords: { lat: number; lng: number }
   ): Promise<number> {
-    // Haversine formula for distance calculation
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = this.toRadians(shippingCoords.lat - warehouseCoords.lat);
-    const dLon = this.toRadians(shippingCoords.lng - warehouseCoords.lng);
+    // Great-circle distance (spherical law of cosines)
+    const earthRadiusKm = 6371;
+    const lat1 = this.toRadians(warehouseCoords.lat);
+    const lat2 = this.toRadians(shippingCoords.lat);
+    const deltaLon = this.toRadians(shippingCoords.lng - warehouseCoords.lng);
 
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(this.toRadians(warehouseCoords.lat)) * Math.cos(this.toRadians(shippingCoords.lat)) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const cosineCentralAngle =
+      Math.sin(lat1) * Math.sin(lat2) +
+      Math.cos(lat1) * Math.cos(lat2) * Math.cos(deltaLon);
+    const normalized = Math.min(1, Math.max(-1, cosineCentralAngle));
 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
+    return earthRadiusKm * Math.acos(normalized);
   }
 
   /**

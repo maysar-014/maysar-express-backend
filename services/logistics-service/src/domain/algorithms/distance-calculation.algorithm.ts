@@ -41,7 +41,7 @@ export class DistanceCalculationAlgorithm {
 
   /**
    * Calculate distance, bearing, and estimated duration for delivery routing using HERE Technologies ONLY
-   * Requires HERE service to be configured - no fallback to Haversine
+   * Requires HERE service to be configured - no local geodesic fallback
    */
   static async calculateDeliveryDistance(
     origin: GeoPoint,

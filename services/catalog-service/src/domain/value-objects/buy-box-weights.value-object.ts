@@ -9,10 +9,10 @@ export class BuyBoxWeights {
     }
   }
 
-  static fromEnv(): BuyBoxWeights {
-    const price = parseFloat(process.env.BUY_BOX_WEIGHT_PRICE || '0.5');
-    const rating = parseFloat(process.env.BUY_BOX_WEIGHT_RATING || '0.3');
-    const availability = parseFloat(process.env.BUY_BOX_WEIGHT_AVAILABILITY || '0.2');
+  static fromConfig(config?: Partial<{ price: number; rating: number; availability: number }>): BuyBoxWeights {
+    const price = config?.price ?? 0.5;
+    const rating = config?.rating ?? 0.3;
+    const availability = config?.availability ?? 0.2;
     return new BuyBoxWeights(price, rating, availability);
   }
 
@@ -20,19 +20,8 @@ export class BuyBoxWeights {
     return new BuyBoxWeights(0.5, 0.3, 0.2);
   }
 
-  static get MATCH_CONFIDENCE_THRESHOLD(): number {
-    return parseFloat(process.env.BUY_BOX_MATCH_CONFIDENCE_THRESHOLD || '0.75');
-  }
-
-  static get NEW_SELLER_BOOST(): number {
-    return parseFloat(process.env.BUY_BOX_NEW_SELLER_BOOST || '5');
-  }
-
-  static get RECENCY_BOOST(): number {
-    return parseFloat(process.env.BUY_BOX_RECENCY_BOOST || '5');
-  }
-
-  static get MAX_ALTERNATIVES(): number {
-    return parseInt(process.env.BUY_BOX_MAX_ALTERNATIVES || '5', 10);
-  }
+  static readonly MATCH_CONFIDENCE_THRESHOLD = 0.75;
+  static readonly NEW_SELLER_BOOST = 5;
+  static readonly RECENCY_BOOST = 5;
+  static readonly MAX_ALTERNATIVES = 5;
 }

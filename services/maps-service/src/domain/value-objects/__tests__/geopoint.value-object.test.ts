@@ -8,7 +8,7 @@
  * 
  * Test Categories:
  * - Creation and validation (coordinate boundaries)
- * - Business rule enforcement (Haversine distance calculation)
+ * - Business rule enforcement (great-circle distance calculation)
  * - Mathematical operations (bearing, proximity detection)
  * - Edge cases (polar coordinates, antipodal points, date line)
  * 
@@ -16,7 +16,7 @@
  * - Latitude must be between -90 and 90 degrees
  * - Longitude must be between -180 and 180 degrees
  * - Address cannot be empty
- * - Distance calculations use Haversine formula
+ * - Distance calculations use great-circle formula
  * - Bearing calculations follow compass directions
  */
 
@@ -81,14 +81,14 @@ describe('GeoPoint Value Object', () => {
         });
     });
 
-    describe('Distance Calculation - Haversine Formula', () => {
+    describe('Distance Calculation - Great-Circle Formula', () => {
         describe('when calculating distance between two points', () => {
             it('should calculate correct distance for known city pair (Dar es Salaam to Arusha)', () => {
                 // Given: Two major Tanzanian cities with known distance (~470 km)
                 const darEsSalaam = GeoPoint.create(-6.7924, 39.2083, 'Dar es Salaam');
                 const arusha = GeoPoint.create(-3.3869, 36.6828, 'Arusha');
 
-                // When: Calculating distance using Haversine formula
+                // When: Calculating distance using great-circle formula
                 const distance = darEsSalaam.distanceTo(arusha);
 
                 // Then: Distance should be approximately 460-480 km (real-world verified)

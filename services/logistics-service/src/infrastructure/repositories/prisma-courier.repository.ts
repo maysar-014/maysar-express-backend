@@ -2,6 +2,8 @@
 import { PrismaClient } from '@prisma/client';
 import { CourierEntity } from '../../domain/entities/courier.entity';
 import { PrismaClientManager } from '../prisma.client';
+import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
+import { DistanceCalculationAlgorithm } from '../../domain/algorithms/distance-calculation.algorithm';
 
 export interface CourierRepository {
   findById(id: string): Promise<CourierEntity | null>;
@@ -46,17 +48,19 @@ export class PrismaCourierRepository implements CourierRepository {
       }
     });
 
-    return couriers
-      .map(this.mapToEntity)
-      .filter(courier => {
+    const mappedCouriers = couriers.map(this.mapToEntity);
+    const searchLocation = GeoPoint.create(latitude, longitude, 'search-location');
+    const distanceChecks = await Promise.all(
+      mappedCouriers.map(async courier => {
         if (!courier.currentLocation) return false;
-        const distance = this.calculateDistance(
-          latitude, longitude,
-          courier.currentLocation.latitude,
-          courier.currentLocation.longitude
-        );
-        return distance <= radius;
-      });
+        const coords = courier.currentLocation.getCoordinates();
+        const courierLocation = GeoPoint.create(coords.lat, coords.lng, 'courier-location');
+        const distance = await DistanceCalculationAlgorithm.calculateDeliveryDistance(searchLocation, courierLocation);
+        return distance.distance <= radius;
+      })
+    );
+
+    return mappedCouriers.filter((_courier, index) => distanceChecks[index]);
   }
 
   async create(courier: CourierEntity): Promise<CourierEntity> {
@@ -143,20 +147,4 @@ export class PrismaCourierRepository implements CourierRepository {
     );
   }
 
-  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371; // Earth's radius in km
-    const dLat = this.toRad(lat2 - lat1);
-    const dLon = this.toRad(lon2 - lon1);
-    
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
-
-  private toRad(degrees: number): number {
-    return degrees * (Math.PI / 180);
-  }
 }

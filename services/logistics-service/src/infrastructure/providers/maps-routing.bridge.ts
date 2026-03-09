@@ -1,11 +1,22 @@
 import { RouteOptimizationPort, OptimizedRoute, RouteConstraints } from '../../domain/engines/ports/route-optimization.port';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
-import { MapsRegistry } from '../../../../maps-service/src/infrastructure/registry';
 import { GeoPoint as MapsGeoPoint } from '../../../../maps-service/src/domain/value-objects/geopoint.value-object';
+import { HereRoutingAdapter } from '../../../../maps-service/src/infrastructure/providers/here-maps.adapter';
+import { RoutingPort } from '../../../../maps-service/src/domain/engines/ports/routing.port';
 
 export class MapsRoutingBridge implements RouteOptimizationPort {
-    private get provider() {
-        return MapsRegistry.getInstance().getRoutingProvider();
+    private readonly provider: RoutingPort;
+
+    constructor(provider?: RoutingPort) {
+        this.provider = provider || new HereRoutingAdapter(this.getHereApiKey());
+    }
+
+    private getHereApiKey(): string {
+        const apiKey = process.env.HERE_API_KEY;
+        if (!apiKey) {
+            throw new Error('HERE_API_KEY is required. Local geodesic fallbacks are disabled by architecture policy.');
+        }
+        return apiKey;
     }
 
     async calculateOptimalRoute(origin: GeoPoint, destination: GeoPoint, constraints?: RouteConstraints): Promise<OptimizedRoute> {

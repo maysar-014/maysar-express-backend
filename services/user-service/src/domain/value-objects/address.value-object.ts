@@ -153,19 +153,20 @@ export class Address implements ValueObject<AddressType> {
   }
 
   /**
-   * Calculate distance between two coordinates using Haversine formula
+   * Calculate great-circle distance between two coordinates
    */
   private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = this.deg2rad(lat2 - lat1);
-    const dLon = this.deg2rad(lon2 - lon1);
-    const a = 
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * 
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c;
-    return distance;
+    const earthRadiusKm = 6371;
+    const lat1Rad = this.deg2rad(lat1);
+    const lat2Rad = this.deg2rad(lat2);
+    const deltaLon = this.deg2rad(lon2 - lon1);
+
+    const cosineCentralAngle =
+      Math.sin(lat1Rad) * Math.sin(lat2Rad) +
+      Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.cos(deltaLon);
+    const normalized = Math.min(1, Math.max(-1, cosineCentralAngle));
+
+    return earthRadiusKm * Math.acos(normalized);
   }
 
   /**

@@ -264,12 +264,12 @@ export class RouteController {
       });
 
       // Convert routes to detailed format for courier-specific view
-      const routeDetails = result.routes.map(route => {
+      const routeDetails = await Promise.all(result.routes.map(async route => {
         const routeData = route.toJSON();
 
         // Add optimization metrics if requested
         if (includeMetrics) {
-          const savings = this.calculateEstimatedSavings(route);
+          const savings = await this.calculateEstimatedSavings(route);
           return {
             ...routeData,
             metrics: {
@@ -286,7 +286,7 @@ export class RouteController {
         }
 
         return routeData;
-      });
+      }));
 
       res.json({
         success: true,
@@ -431,11 +431,11 @@ export class RouteController {
   /**
    * Calculate estimated savings for a route by comparing with baseline
    */
-  private calculateEstimatedSavings(route: any): {
+  private async calculateEstimatedSavings(route: any): Promise<{
     timeMinutes: number;
     distanceKm: number;
     fuelLiters: number;
-  } {
+  }> {
     const waypoints = route.getWaypoints();
 
     if (!waypoints || waypoints.length < 2) {
@@ -453,12 +453,11 @@ export class RouteController {
     for (let i = 1; i < waypoints.length; i++) {
       const stop = waypoints[i];
 
-      // Distance from current position to this stop
-      const segmentDistance = startLocation.distanceTo(stop);
-      baselineDistance += segmentDistance;
-
-      // Time estimation: 25 km/h average speed + 3 minutes per stop
-      const travelTime = (segmentDistance / 25) * 60; // minutes
+      const segment = await this.routeOptimizationAdapter.calculateOptimalRoute(startLocation, stop, {
+        priority: 'shortest'
+      });
+      baselineDistance += segment.totalDistance;
+      const travelTime = segment.totalDuration;
       const stopTime = 3; // minutes per stop
       baselineTime += travelTime + stopTime;
     }

@@ -1,4 +1,4 @@
-import { Enabler_Status, Enabler_Tier } from '@prisma/client';
+import { Enabler_Status, Enabler_Tier } from '../types/enabler.types';
 
 export interface EnablerProfileProps {
     id: string;

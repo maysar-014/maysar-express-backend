@@ -1,5 +1,5 @@
 import { EnablerEntity, EnablerProfileProps } from '../../entities/enabler.entity';
-import { Enabler_Status, Enabler_Tier } from '@prisma/client';
+import { Enabler_Status, Enabler_Tier } from '../../types/enabler.types';
 
 describe('EnablerEntity', () => {
     const validProps: EnablerProfileProps = {

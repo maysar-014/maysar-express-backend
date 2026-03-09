@@ -1,4 +1,4 @@
-import { Enabler_ListingStatus } from '@prisma/client';
+import { Enabler_ListingStatus } from '../types/enabler.types';
 
 export interface ProductListingProps {
     id: string;
