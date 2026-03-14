@@ -18,7 +18,7 @@ const VULNERABILITY_THRESHOLD = 'HIGH'; // CRITICAL, HIGH, MEDIUM, LOW
  * Run security scan on container image
  */
 async function runSecurityScan() {
-  console.log('🔒 Running Security Scan...\n');
+  console.log('ðŸ”’ Running Security Scan...\n');
   console.log(`Image: ${IMAGE_NAME}`);
   console.log(`Timeout: ${SCAN_TIMEOUT}ms`);
   console.log(`Vulnerability Threshold: ${VULNERABILITY_THRESHOLD}`);
@@ -40,19 +40,19 @@ async function runSecurityScan() {
 
   try {
     // 1. Container Image Vulnerability Scan
-    console.log('📦 Scanning container image for vulnerabilities...');
+    console.log('ðŸ“¦ Scanning container image for vulnerabilities...');
     results.imageScan = await scanContainerImage();
-    console.log('✅ Container image scan completed\n');
+    console.log('âœ… Container image scan completed\n');
 
     // 2. Dependency Vulnerability Scan
-    console.log('📋 Scanning dependencies for vulnerabilities...');
+    console.log('ðŸ“‹ Scanning dependencies for vulnerabilities...');
     results.dependencyScan = await scanDependencies();
-    console.log('✅ Dependency scan completed\n');
+    console.log('âœ… Dependency scan completed\n');
 
     // 3. Configuration Security Scan
-    console.log('⚙️  Scanning configuration for security issues...');
+    console.log('âš™ï¸  Scanning configuration for security issues...');
     results.configurationScan = await scanConfiguration();
-    console.log('✅ Configuration scan completed\n');
+    console.log('âœ… Configuration scan completed\n');
 
     // Generate comprehensive report
     const finalResults = generateSecurityReport(results);
@@ -65,21 +65,21 @@ async function runSecurityScan() {
     const hasHighIssues = finalResults.summary.highIssues > 0;
 
     if (hasCriticalIssues) {
-      console.log('❌ SECURITY SCAN FAILED: Critical vulnerabilities found!');
+      console.log('âŒ SECURITY SCAN FAILED: Critical vulnerabilities found!');
       console.log('   Immediate action required before deployment.');
       process.exit(1);
     } else if (hasHighIssues && VULNERABILITY_THRESHOLD === 'CRITICAL') {
-      console.log('❌ SECURITY SCAN FAILED: High severity issues found!');
+      console.log('âŒ SECURITY SCAN FAILED: High severity issues found!');
       console.log('   Review and fix high severity issues before deployment.');
       process.exit(1);
     } else {
-      console.log('✅ SECURITY SCAN PASSED: No blocking vulnerabilities found.');
+      console.log('âœ… SECURITY SCAN PASSED: No blocking vulnerabilities found.');
       console.log('   Review medium/low severity issues in the report.');
       process.exit(0);
     }
 
   } catch (error) {
-    console.error('❌ Security scan failed:', error.message);
+    console.error('âŒ Security scan failed:', error.message);
     process.exit(1);
   }
 }
@@ -116,7 +116,7 @@ async function scanContainerImage() {
     };
 
   } catch (error) {
-    console.warn('⚠️  Trivy scan failed, trying alternative method...');
+    console.warn('âš ï¸  Trivy scan failed, trying alternative method...');
 
     // Fallback to basic Docker image inspection
     return await fallbackImageScan();
@@ -299,22 +299,22 @@ async function scanConfiguration() {
       }
     }
 
-    // Check Kubernetes manifests
-    const k8sDir = path.join(__dirname, '..', 'k8s');
-    if (fs.existsSync(k8sDir)) {
-      const k8sFiles = fs.readdirSync(k8sDir).filter(file => file.endsWith('.yaml'));
+    // Check Orchestrator manifests
+    const orchestratorDir = path.join(__dirname, '..', 'orchestrator');
+    if (fs.existsSync(orchestratorDir)) {
+      const orchestratorFiles = fs.readdirSync(orchestratorDir).filter(file => file.endsWith('.yaml'));
 
-      for (const file of k8sFiles) {
-        const filePath = path.join(k8sDir, file);
+      for (const file of orchestratorFiles) {
+        const filePath = path.join(orchestratorDir, file);
         const content = fs.readFileSync(filePath, 'utf8');
 
         // Check for security context issues
         if (content.includes('runAsUser: 0') || content.includes('runAsUser:0')) {
           issues.push({
             severity: 'HIGH',
-            title: 'Kubernetes manifest allows root user',
-            description: 'Kubernetes deployment should not run as root',
-            file: `k8s/${file}`
+            title: 'Orchestrator manifest allows root user',
+            description: 'Orchestrator deployment should not run as root',
+            file: `deploy/${file}`
           });
         }
 
@@ -324,7 +324,7 @@ async function scanConfiguration() {
             severity: 'CRITICAL',
             title: 'Privileged container detected',
             description: 'Containers should not run in privileged mode',
-            file: `k8s/${file}`
+            file: `deploy/${file}`
           });
         }
       }
@@ -365,7 +365,7 @@ function countSeverity(vulnerabilities, severity) {
  */
 function generateSecurityReport(results) {
   console.log('\n' + '='.repeat(80));
-  console.log('🔒 SECURITY SCAN REPORT');
+  console.log('ðŸ”’ SECURITY SCAN REPORT');
   console.log('='.repeat(80));
   console.log(`Timestamp: ${new Date().toISOString()}`);
   console.log(`Image: ${IMAGE_NAME}`);
@@ -373,37 +373,37 @@ function generateSecurityReport(results) {
 
   // Image scan results
   if (results.imageScan) {
-    console.log('📦 CONTAINER IMAGE SCAN');
+    console.log('ðŸ“¦ CONTAINER IMAGE SCAN');
     console.log(`Tool: ${results.imageScan.tool}`);
     console.log(`Vulnerabilities: ${results.imageScan.summary.total}`);
-    console.log(`  • Critical: ${results.imageScan.summary.critical}`);
-    console.log(`  • High: ${results.imageScan.summary.high}`);
-    console.log(`  • Medium: ${results.imageScan.summary.medium}`);
-    console.log(`  • Low: ${results.imageScan.summary.low}`);
+    console.log(`  â€¢ Critical: ${results.imageScan.summary.critical}`);
+    console.log(`  â€¢ High: ${results.imageScan.summary.high}`);
+    console.log(`  â€¢ Medium: ${results.imageScan.summary.medium}`);
+    console.log(`  â€¢ Low: ${results.imageScan.summary.low}`);
     console.log('');
   }
 
   // Dependency scan results
   if (results.dependencyScan) {
-    console.log('📋 DEPENDENCY SCAN');
+    console.log('ðŸ“‹ DEPENDENCY SCAN');
     console.log(`Tool: ${results.dependencyScan.tool}`);
     console.log(`Vulnerabilities: ${results.dependencyScan.summary.total}`);
-    console.log(`  • Critical: ${results.dependencyScan.summary.critical}`);
-    console.log(`  • High: ${results.dependencyScan.summary.high}`);
-    console.log(`  • Medium: ${results.dependencyScan.summary.medium}`);
-    console.log(`  • Low: ${results.dependencyScan.summary.low}`);
+    console.log(`  â€¢ Critical: ${results.dependencyScan.summary.critical}`);
+    console.log(`  â€¢ High: ${results.dependencyScan.summary.high}`);
+    console.log(`  â€¢ Medium: ${results.dependencyScan.summary.medium}`);
+    console.log(`  â€¢ Low: ${results.dependencyScan.summary.low}`);
     console.log('');
   }
 
   // Configuration scan results
   if (results.configurationScan) {
-    console.log('⚙️  CONFIGURATION SCAN');
+    console.log('âš™ï¸  CONFIGURATION SCAN');
     console.log(`Tool: ${results.configurationScan.tool}`);
     console.log(`Issues: ${results.configurationScan.summary.total}`);
-    console.log(`  • Critical: ${results.configurationScan.summary.critical}`);
-    console.log(`  • High: ${results.configurationScan.summary.high}`);
-    console.log(`  • Medium: ${results.configurationScan.summary.medium}`);
-    console.log(`  • Low: ${results.configurationScan.summary.low}`);
+    console.log(`  â€¢ Critical: ${results.configurationScan.summary.critical}`);
+    console.log(`  â€¢ High: ${results.configurationScan.summary.high}`);
+    console.log(`  â€¢ Medium: ${results.configurationScan.summary.medium}`);
+    console.log(`  â€¢ Low: ${results.configurationScan.summary.low}`);
     console.log('');
   }
 
@@ -420,7 +420,7 @@ function generateSecurityReport(results) {
                     (results.dependencyScan?.summary.high || 0) +
                     (results.configurationScan?.summary.high || 0);
 
-  console.log('📊 OVERALL SUMMARY');
+  console.log('ðŸ“Š OVERALL SUMMARY');
   console.log(`Total Issues: ${totalIssues}`);
   console.log(`Critical: ${criticalIssues}`);
   console.log(`High: ${highIssues}`);
@@ -428,13 +428,13 @@ function generateSecurityReport(results) {
 
   // Assessment
   if (criticalIssues > 0) {
-    console.log('🚨 ASSESSMENT: CRITICAL ISSUES FOUND');
+    console.log('ðŸš¨ ASSESSMENT: CRITICAL ISSUES FOUND');
     console.log('   Immediate remediation required before deployment.');
   } else if (highIssues > 0) {
-    console.log('⚠️  ASSESSMENT: HIGH SEVERITY ISSUES FOUND');
+    console.log('âš ï¸  ASSESSMENT: HIGH SEVERITY ISSUES FOUND');
     console.log('   Review and fix high severity issues.');
   } else {
-    console.log('✅ ASSESSMENT: SECURITY SCAN PASSED');
+    console.log('âœ… ASSESSMENT: SECURITY SCAN PASSED');
     console.log('   No critical or high severity issues found.');
   }
 
@@ -477,13 +477,13 @@ function saveSecurityReport(results) {
   const filepath = path.join(reportsDir, filename);
 
   fs.writeFileSync(filepath, JSON.stringify(report, null, 2));
-  console.log(`📄 Security report saved to: ${filepath}`);
+  console.log(`ðŸ“„ Security report saved to: ${filepath}`);
 }
 
 // Main execution
 if (require.main === module) {
   runSecurityScan().catch(error => {
-    console.error('❌ Security scan execution failed:', error.message);
+    console.error('âŒ Security scan execution failed:', error.message);
     process.exit(1);
   });
 }

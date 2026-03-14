@@ -79,7 +79,7 @@
   ],
   "item": [
     {
-      "name": "🚀 END-TO-END: Complete Commission Saga Flow",
+      "name": "ðŸš€ END-TO-END: Complete Commission Saga Flow",
       "item": [
         {
           "name": "Step 1: Calculate Commission (Order Completion Triggers Saga)",
@@ -129,7 +129,7 @@
                   "    pm.expect(totalCommission).to.be.within(10, 25); // Expected range for $150 order",
                   "});",
                   "",
-                  "console.log('✅ SAGA STEP 1 COMPLETE: Commission calculated for order', pm.collectionVariables.get('orderId'), 'with ID', pm.collectionVariables.get('commissionId'));"
+                  "console.log('âœ… SAGA STEP 1 COMPLETE: Commission calculated for order', pm.collectionVariables.get('orderId'), 'with ID', pm.collectionVariables.get('commissionId'));"
                 ]
               }
             }
@@ -174,7 +174,7 @@
                   "    pm.expect(commission.rate).to.be.a('number');",
                   "});",
                   "",
-                  "console.log('✅ SAGA BUSINESS LOGIC: Commission details verified with pending status');"
+                  "console.log('âœ… SAGA BUSINESS LOGIC: Commission details verified with pending status');"
                 ]
               }
             }
@@ -218,7 +218,7 @@
                   "    pm.expect(jsonData.data.eventsGenerated).to.be.greaterThan(0);",
                   "});",
                   "",
-                  "console.log('✅ SAGA STEP 2 COMPLETE: Commission approved and payout auto-scheduled');"
+                  "console.log('âœ… SAGA STEP 2 COMPLETE: Commission approved and payout auto-scheduled');"
                 ]
               }
             }
@@ -251,7 +251,7 @@
                   "    pm.expect(jsonData.data).to.be.an('object');",
                   "});",
                   "",
-                  "console.log('✅ SAGA STATE: Commission status updated to approved');"
+                  "console.log('âœ… SAGA STATE: Commission status updated to approved');"
                 ]
               }
             }
@@ -295,7 +295,7 @@
                   "    pm.expect(summary.pendingAmount).to.be.a('number');",
                   "});",
                   "",
-                  "console.log('✅ SAGA BUSINESS LOGIC: Seller commission summary updated with approved commission');"
+                  "console.log('âœ… SAGA BUSINESS LOGIC: Seller commission summary updated with approved commission');"
                 ]
               }
             }
@@ -331,7 +331,7 @@
                   "    pm.expect(orderId).to.exist;",
                   "});",
                   "",
-                  "console.log('🎉 END-TO-END SAGA VALIDATION COMPLETE: Commission calculation, approval, and payout scheduling successful');",
+                  "console.log('ðŸŽ‰ END-TO-END SAGA VALIDATION COMPLETE: Commission calculation, approval, and payout scheduling successful');",
                   "console.log('Commission ID:', pm.collectionVariables.get('commissionId'));",
                   "console.log('Order ID:', pm.collectionVariables.get('orderId'));"
                 ]
@@ -342,7 +342,7 @@
       ]
     },
     {
-      "name": "🔄 PARALLEL: Multiple Commission Calculations",
+      "name": "ðŸ”„ PARALLEL: Multiple Commission Calculations",
       "item": [
         {
           "name": "Calculate First Parallel Commission",
@@ -377,7 +377,7 @@
                   "    pm.collectionVariables.set('parallelOrderId1', 'parallel_order_1_' + pm.collectionVariables.get('$timestamp'));",
                   "});",
                   "",
-                  "console.log('✅ PARALLEL COMMISSION 1: Calculated with ID', pm.collectionVariables.get('parallelCommissionId1'));"
+                  "console.log('âœ… PARALLEL COMMISSION 1: Calculated with ID', pm.collectionVariables.get('parallelCommissionId1'));"
                 ]
               }
             }
@@ -416,7 +416,7 @@
                   "    pm.collectionVariables.set('parallelOrderId2', 'parallel_order_2_' + pm.collectionVariables.get('$timestamp'));",
                   "});",
                   "",
-                  "console.log('✅ PARALLEL COMMISSION 2: Calculated with ID', pm.collectionVariables.get('parallelCommissionId2'));"
+                  "console.log('âœ… PARALLEL COMMISSION 2: Calculated with ID', pm.collectionVariables.get('parallelCommissionId2'));"
                 ]
               }
             }
@@ -470,7 +470,7 @@
                   "    });",
                   "});",
                   "",
-                  "console.log('✅ PARALLEL SAGAS: Multiple independent commission calculations processed successfully');"
+                  "console.log('âœ… PARALLEL SAGAS: Multiple independent commission calculations processed successfully');"
                 ]
               }
             }
@@ -479,7 +479,7 @@
       ]
     },
     {
-      "name": "📊 BUSINESS LOGIC: Commission Rate Calculations",
+      "name": "ðŸ“Š BUSINESS LOGIC: Commission Rate Calculations",
       "item": [
         {
           "name": "Test Seller Commission Rate (8%)",
@@ -520,7 +520,7 @@
                   "    pm.expect(breakdown.appliedRate).to.eql(0.08);",
                   "});",
                   "",
-                  "console.log('✅ BUSINESS LOGIC: Seller commission rate correctly applied at 8%');"
+                  "console.log('âœ… BUSINESS LOGIC: Seller commission rate correctly applied at 8%');"
                 ]
               }
             }
@@ -565,7 +565,7 @@
                   "    pm.expect(breakdown.appliedRate).to.eql(0.15);",
                   "});",
                   "",
-                  "console.log('✅ BUSINESS LOGIC: Enabler commission rate correctly applied at 15%');"
+                  "console.log('âœ… BUSINESS LOGIC: Enabler commission rate correctly applied at 15%');"
                 ]
               }
             }
@@ -610,7 +610,7 @@
                   "    pm.expect(breakdown.appliedRate).to.eql(0.03);",
                   "});",
                   "",
-                  "console.log('✅ BUSINESS LOGIC: Customer referral rate correctly applied at 3%');"
+                  "console.log('âœ… BUSINESS LOGIC: Customer referral rate correctly applied at 3%');"
                 ]
               }
             }
@@ -619,7 +619,7 @@
       ]
     },
     {
-      "name": "🎁 BONUS CALCULATIONS: Performance & Quality Bonuses",
+      "name": "ðŸŽ BONUS CALCULATIONS: Performance & Quality Bonuses",
       "item": [
         {
           "name": "Test Performance Bonus Calculation",
@@ -662,7 +662,7 @@
                   "    pm.expect(breakdown.totalCommission).to.eql(expectedTotal);",
                   "});",
                   "",
-                  "console.log('✅ BONUS CALCULATION: Performance bonus correctly applied at 10% of base commission');"
+                  "console.log('âœ… BONUS CALCULATION: Performance bonus correctly applied at 10% of base commission');"
                 ]
               }
             }
@@ -708,7 +708,7 @@
                   "    pm.expect(breakdown.bonus).to.be.greaterThan(0);",
                   "});",
                   "",
-                  "console.log('✅ QUALITY BONUS: Multiple quality metrics correctly applied for maximum bonus');"
+                  "console.log('âœ… QUALITY BONUS: Multiple quality metrics correctly applied for maximum bonus');"
                 ]
               }
             }
@@ -752,7 +752,7 @@
                   "    pm.expect(breakdown.specialBonus).to.eql(expectedSpecialBonus);",
                   "});",
                   "",
-                  "console.log('✅ SPECIAL BONUS: First order, bulk order, and promotional bonuses correctly applied');"
+                  "console.log('âœ… SPECIAL BONUS: First order, bulk order, and promotional bonuses correctly applied');"
                 ]
               }
             }
@@ -761,7 +761,7 @@
       ]
     },
     {
-      "name": "⚠️ VALIDATION: Business Rule Enforcement",
+      "name": "âš ï¸ VALIDATION: Business Rule Enforcement",
       "item": [
         {
           "name": "Test Minimum Commission Amount Validation",
@@ -795,7 +795,7 @@
                   "    pm.expect(jsonData.error).to.contain('Commission amount must be at least');",
                   "});",
                   "",
-                  "console.log('✅ VALIDATION: Minimum commission amount rule correctly enforced');"
+                  "console.log('âœ… VALIDATION: Minimum commission amount rule correctly enforced');"
                 ]
               }
             }
@@ -824,7 +824,7 @@
                   "    pm.expect(jsonData.error).to.contain('Validation error');",
                   "});",
                   "",
-                  "console.log('✅ VALIDATION: UUID format validation correctly enforced');"
+                  "console.log('âœ… VALIDATION: UUID format validation correctly enforced');"
                 ]
               }
             }
@@ -861,7 +861,7 @@
                   "    pm.expect([400, 401, 403]).to.include(statusCode);",
                   "});",
                   "",
-                  "console.log('✅ VALIDATION: Approval permission checks correctly enforced');"
+                  "console.log('âœ… VALIDATION: Approval permission checks correctly enforced');"
                 ]
               }
             }
@@ -870,7 +870,7 @@
       ]
     },
     {
-      "name": "🏥 HEALTH CHECKS: Service Monitoring",
+      "name": "ðŸ¥ HEALTH CHECKS: Service Monitoring",
       "item": [
         {
           "name": "Basic Health Check",
@@ -896,7 +896,7 @@
                   "    pm.expect(jsonData.uptime).to.be.a('number');",
                   "});",
                   "",
-                  "console.log('✅ HEALTH CHECK: Basic service health verified');"
+                  "console.log('âœ… HEALTH CHECK: Basic service health verified');"
                 ]
               }
             }
@@ -934,7 +934,7 @@
                   "    pm.expect(jsonData.uptime).to.be.a('number');",
                   "});",
                   "",
-                  "console.log('✅ HEALTH MONITORING: Detailed health check with dependency monitoring working');"
+                  "console.log('âœ… HEALTH MONITORING: Detailed health check with dependency monitoring working');"
                 ]
               }
             }
@@ -962,7 +962,7 @@
                   "    pm.expect(jsonData.status).to.eql('ready');",
                   "});",
                   "",
-                  "console.log('✅ KUBERNETES: Readiness probe configured and responding');"
+                  "console.log('âœ… ORCHESTRATOR: Readiness probe configured and responding');"
                 ]
               }
             }
@@ -990,7 +990,7 @@
                   "    pm.expect(jsonData.status).to.eql('alive');",
                   "});",
                   "",
-                  "console.log('✅ KUBERNETES: Liveness probe configured and responding');"
+                  "console.log('âœ… ORCHESTRATOR: Liveness probe configured and responding');"
                 ]
               }
             }

@@ -4,6 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import { createRateLimit } from '../api/middleware/rate-limit.middleware';
 
 export interface SecurityConfig {
   enableRateLimit: boolean;
@@ -29,32 +30,19 @@ export class SecurityMiddleware {
    * Rate limiting middleware
    */
   rateLimit(maxRequests: number = 100, windowMs: number = 15 * 60 * 1000) {
-    const requests = new Map<string, { count: number; resetTime: number }>();
+    const limiter = createRateLimit({
+      maxRequests,
+      windowMs,
+      enableDistributedCache: Boolean(process.env.REDIS_URL) && process.env.NODE_ENV !== 'test',
+      cachePrefix: 'ratelimit:catalog:security:'
+    });
 
     return (req: Request, res: Response, next: NextFunction) => {
       if (!this.config.enableRateLimit) {
         return next();
       }
 
-      const clientId = req.ip || 'unknown';
-      const now = Date.now();
-      const windowStart = now - windowMs;
-
-      const clientData = requests.get(clientId);
-      if (!clientData || clientData.resetTime < windowStart) {
-        requests.set(clientId, { count: 1, resetTime: now + windowMs });
-        return next();
-      }
-
-      if (clientData.count >= maxRequests) {
-        return res.status(429).json({
-          error: 'Too Many Requests',
-          message: 'Rate limit exceeded'
-        });
-      }
-
-      clientData.count++;
-      next();
+      return limiter(req, res, next);
     };
   }
 

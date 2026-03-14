@@ -3,7 +3,7 @@ import { DiscountService } from './discount.service';
 describe('DiscountService', () => {
   it('returns invalid when discount code does not exist', async () => {
     const findFirst = jest.fn().mockResolvedValue(null);
-    const service = new DiscountService({ appliedDiscount: { findFirst } });
+    const service = new DiscountService({ checkout_AppliedDiscount: { findFirst } });
 
     await expect(service.validateCode('NOPE')).resolves.toEqual({ valid: false });
     expect(findFirst).toHaveBeenCalledWith({
@@ -17,7 +17,7 @@ describe('DiscountService', () => {
       currentUses: 3,
       maxUses: 3
     });
-    const service = new DiscountService({ appliedDiscount: { findFirst } });
+    const service = new DiscountService({ checkout_AppliedDiscount: { findFirst } });
 
     await expect(service.validateCode('LIMITED')).resolves.toEqual({ valid: false });
   });
@@ -30,7 +30,7 @@ describe('DiscountService', () => {
       value: 10
     };
     const findFirst = jest.fn().mockResolvedValue(discount);
-    const service = new DiscountService({ appliedDiscount: { findFirst } });
+    const service = new DiscountService({ checkout_AppliedDiscount: { findFirst } });
 
     await expect(service.validateCode('SAVE10')).resolves.toEqual({
       valid: true,
@@ -40,7 +40,7 @@ describe('DiscountService', () => {
 
   it('persists applied discount data', async () => {
     const create = jest.fn().mockResolvedValue(undefined);
-    const service = new DiscountService({ appliedDiscount: { create } });
+    const service = new DiscountService({ checkout_AppliedDiscount: { create } });
 
     await service.applyDiscount('checkout-1', 'SAVE10', 10, 'percentage');
 
@@ -48,8 +48,8 @@ describe('DiscountService', () => {
       data: {
         checkoutId: 'checkout-1',
         discountCode: 'SAVE10',
-        value: 10,
-        type: 'percentage'
+        discountValue: 10,
+        discountType: 'percentage'
       }
     });
   });

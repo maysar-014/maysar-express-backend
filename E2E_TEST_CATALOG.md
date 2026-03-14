@@ -534,7 +534,7 @@
 
 ### External Services
 - Pesapal sandbox
-- Twilio test account
+- Africa's Talking test account
 - SMTP test server
 - Firebase test project
 - Railway volumes (file storage)
@@ -610,3 +610,4 @@ npm run test:performance
 ---
 
 **End of E2E Test Catalog**
+

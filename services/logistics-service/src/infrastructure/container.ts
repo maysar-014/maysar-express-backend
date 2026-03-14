@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import { CourierRepository } from './repositories/courier.repository';
 import { DeliveryRepository } from './repositories/delivery.repository';
 import { EarningsRepository } from './repositories/earnings.repository';
@@ -9,7 +9,6 @@ import { MapsTrafficBridge } from './providers/maps-traffic.bridge';
 import { MapsRoutingBridge } from './providers/maps-routing.bridge';
 import { MapsTrackingBridge } from './providers/maps-tracking.bridge';
 import { EventPublisher } from './messaging/event-publisher';
-import { SupabaseClientManager } from './database/supabase.client';
 import { PrismaClientManager } from './database/prisma.client';
 import { PrismaSagaLogRepository } from '../../../../shared/saga/saga-log.repository';
 import { ISagaLogRepository } from '../../../../shared/saga/saga.log';
@@ -101,14 +100,14 @@ export class DependencyContainer {
   }
 
   private initializeInfrastructureSync(): void {
-    // Initialize repositories with proper Supabase client
-    const supabaseClient = SupabaseClientManager.getInstance().getClient();
+    // Initialize repositories with proper database client
+    const databaseClient = PrismaClientManager.getInstance().getClient();
 
-    this.courierRepository = new CourierRepository(supabaseClient);
-    this.deliveryRepository = new DeliveryRepository(supabaseClient);
-    this.earningsRepository = new EarningsRepository(supabaseClient);
-    this.routeRepository = new RouteRepository(supabaseClient);
-    this.trackingRepository = new TrackingRepository(supabaseClient);
+    this.courierRepository = new CourierRepository(databaseClient);
+    this.deliveryRepository = new DeliveryRepository(databaseClient);
+    this.earningsRepository = new EarningsRepository(databaseClient);
+    this.routeRepository = new RouteRepository(databaseClient);
+    this.trackingRepository = new TrackingRepository(databaseClient);
     this.weatherProvider = new MapsWeatherBridge();
     this.trafficProvider = new MapsTrafficBridge();
     this.routeOptimizationProvider = new MapsRoutingBridge();
@@ -117,32 +116,33 @@ export class DependencyContainer {
     DistanceCalculationAlgorithm.setRouteOptimizationService(this.routeOptimizationProvider);
   }
 
-  // Method to initialize Supabase connections asynchronously
+  // Method to initialize database connections asynchronously
   public async initializeDatabaseConnections(): Promise<void> {
     try {
-      const supabaseClient = await SupabaseClientManager.getInstance().connect();
+      await PrismaClientManager.getInstance().connect();
+      const databaseClient = PrismaClientManager.getInstance().getClient();
 
       // Initialize all infrastructure with connected client
-      this.initializeInfrastructureWithClient(supabaseClient);
+      this.initializeInfrastructureWithClient(databaseClient);
 
       // Now that infrastructure is ready, initialize application layer
       this.initializeApplication();
 
-      console.log('âœ… Database connections initialized successfully');
-      console.log('âœ… Application layer initialized successfully');
+      console.log('✅ Database connections initialized successfully');
+      console.log('✅ Application layer initialized successfully');
     } catch (error) {
-      console.error('âŒ Failed to initialize database connections:', error);
+      console.error('❌ Failed to initialize database connections:', error);
       throw error; // Re-throw to prevent server startup
     }
   }
 
-  private initializeInfrastructureWithClient(supabaseClient: any): void {
-    // Initialize repositories with proper Supabase client
-    this.courierRepository = new CourierRepository(supabaseClient);
-    this.deliveryRepository = new DeliveryRepository(supabaseClient);
-    this.earningsRepository = new EarningsRepository(supabaseClient);
-    this.routeRepository = new RouteRepository(supabaseClient);
-    this.trackingRepository = new TrackingRepository(supabaseClient);
+  private initializeInfrastructureWithClient(databaseClient: any): void {
+    // Initialize repositories with proper database client
+    this.courierRepository = new CourierRepository(databaseClient);
+    this.deliveryRepository = new DeliveryRepository(databaseClient);
+    this.earningsRepository = new EarningsRepository(databaseClient);
+    this.routeRepository = new RouteRepository(databaseClient);
+    this.trackingRepository = new TrackingRepository(databaseClient);
 
     // Initialize other infrastructure components (now using Maps Service bridges)
     this.weatherProvider = new MapsWeatherBridge();
@@ -446,3 +446,5 @@ export class DependencyContainer {
 
 // Export singleton instance
 export const container = DependencyContainer.getInstance();
+
+

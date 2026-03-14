@@ -725,7 +725,7 @@ GET /health
 
 ### Liveness Probe
 
-Kubernetes liveness probe endpoint.
+Orchestrator liveness probe endpoint.
 
 ```
 GET /health/live
@@ -741,7 +741,7 @@ GET /health/live
 
 ### Readiness Probe
 
-Kubernetes readiness probe endpoint.
+Orchestrator readiness probe endpoint.
 
 ```
 GET /health/ready

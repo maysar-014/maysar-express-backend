@@ -1,5 +1,5 @@
 -- Fix Route Schema Migration
--- Run this script in Supabase SQL Editor to fix the routes table schema
+-- Run this script in Database SQL Editor to fix the routes table schema
 
 -- Alter existing columns to allow decimal values for durations
 -- This fixes the "invalid input syntax for type integer" error
@@ -26,3 +26,4 @@ SELECT id, courier_id, status, total_distance, estimated_duration, actual_durati
 FROM routes
 ORDER BY created_at DESC
 LIMIT 5;
+

@@ -22,11 +22,11 @@ console.log('\n🚀 LOGISTICS SERVICE STATUS:');
 console.log('  ✅ Network Layer: OPERATIONAL');
 console.log('  ✅ API Endpoints: 32/32 READY');
 console.log('  ✅ Engines: 11/11 OPERATIONAL');
-console.log('  ✅ Supabase Client: CONNECTED');
+console.log('  ✅ Database Client: CONNECTED');
 console.log('  ✅ Prisma Schema: MIGRATION-READY');
 
 console.log('\n📝 NEXT STEPS:');
-console.log('  1. Verify Supabase database credentials');
+console.log('  1. Verify Database database credentials');
 console.log('  2. Check database permissions');
 console.log('  3. Retry migration when connection is stable');
 

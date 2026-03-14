@@ -132,6 +132,12 @@ export class Container {
 
         // Use Cases
         const redisClient = createClient({ url: process.env.REDIS_URL });
+        redisClient.on('error', (error) => {
+            console.error('Redis client error (wallet-service):', error);
+        });
+        void redisClient.connect().catch((error) => {
+            console.error('Failed to connect Redis client (wallet-service):', error);
+        });
         const redisAdapter = {
             set: async (key: string, value: string, ...args: (string | number)[]) => {
                 const result = await redisClient.set(key, value, { PX: args[1] as number, NX: true });

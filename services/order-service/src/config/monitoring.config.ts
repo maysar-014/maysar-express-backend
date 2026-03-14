@@ -103,6 +103,22 @@ export interface AlertingConfig {
   };
 }
 
+function parseRedisUrl(redisUrl?: string): { host: string; port: number; password?: string; db?: number } | null {
+  if (!redisUrl) return null;
+  try {
+    const url = new URL(redisUrl);
+    const db = url.pathname ? parseInt(url.pathname.replace('/', ''), 10) : undefined;
+    return {
+      host: url.hostname,
+      port: url.port ? parseInt(url.port, 10) : 6379,
+      password: url.password || undefined,
+      db: Number.isNaN(db) ? undefined : db
+    };
+  } catch {
+    return null;
+  }
+}
+
 // Load logging configuration
 function loadLoggingConfig(): LoggingConfig {
   return {
@@ -169,15 +185,16 @@ function loadTracingConfig(): TracingConfig {
 
 // Load cache configuration
 function loadCacheConfig(): CacheConfig {
+  const redisFromUrl = parseRedisUrl(appConfig.env.REDIS_URL);
   return {
     enabled: appConfig.features.caching,
     defaultTTL: 3600, // 1 hour
     maxMemory: '512mb',
     redis: {
-      host: appConfig.env.REDIS_HOST || 'localhost',
-      port: parseInt(appConfig.env.REDIS_PORT || '6379'),
-      password: appConfig.env.REDIS_PASSWORD,
-      db: parseInt(appConfig.env.REDIS_DB || '0'),
+      host: redisFromUrl?.host || appConfig.env.REDIS_HOST || 'localhost',
+      port: redisFromUrl?.port || parseInt(appConfig.env.REDIS_PORT || '6379'),
+      password: redisFromUrl?.password || appConfig.env.REDIS_PASSWORD,
+      db: redisFromUrl?.db ?? parseInt(appConfig.env.REDIS_DB || '0'),
       keyPrefix: 'order_service:',
     },
     strategies: {
@@ -281,3 +298,4 @@ export function logMonitoringConfigSummary(): void {
     alerting: alertingConfig.enabled ? 'Enabled' : 'Disabled',
   });
 }
+

@@ -8,7 +8,8 @@ import { EventEnvelope } from '../../infrastructure/messaging/event-bus.adapter'
 export class CheckoutEventHandlers {
   constructor(
     private eventBus: any,
-    private checkoutRepository: any
+    private checkoutRepository: any,
+    private checkoutOrderRepository?: any
   ) {
     this.registerHandlers();
   }
@@ -34,6 +35,12 @@ export class CheckoutEventHandlers {
   private async handleOrderCreated(event: EventEnvelope): Promise<void> {
     const session = await this.checkoutRepository.getSession(event.payload.checkoutId);
     if (session) {
+      if (this.checkoutOrderRepository) {
+        const existing = await this.checkoutOrderRepository.findByCheckoutSessionId(session.id);
+        if (!existing) {
+          await this.checkoutOrderRepository.createFromSession(session);
+        }
+      }
       session.status = 'completed';
       await this.checkoutRepository.saveSession(session);
     }

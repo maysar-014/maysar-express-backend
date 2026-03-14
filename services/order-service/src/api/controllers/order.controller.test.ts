@@ -11,8 +11,8 @@ const mockOrderRepository = {
   count: jest.fn()
 };
 
-jest.mock('../../infrastructure/database/supabase-order.repository', () => ({
-  SupabaseOrderRepository: jest.fn().mockImplementation(() => mockOrderRepository)
+jest.mock('../../infrastructure/database/prisma-order.repository', () => ({
+  PrismaOrderRepository: jest.fn().mockImplementation(() => mockOrderRepository)
 }));
 
 const createResponse = (): Response => {

@@ -49,9 +49,12 @@ import { UpdateUserUseCase } from '../../application/use-cases/update-user.use-c
 import { VerifyEmailUseCase } from '../../application/use-cases/verify-email.use-case';
 import { GetCODReputationUseCase } from '../../application/use-cases/get-cod-reputation.use-case';
 import { CODReputationController } from '../controllers/cod-reputation.controller';
-import { DatabaseUserRepository } from '../../infrastructure/repositories/user.repository';
-import { UserEventPublisher } from '../../infrastructure/adapters/user-event-publisher';
+import { PrismaUserRepository } from '../../infrastructure/repositories/prisma-user.repository';
+import { UserEventPublisher } from '../../infrastructure/messaging/user-event-publisher';
 import { emailService, notificationClient } from '../../infrastructure/services/service-instances';
+import { prisma } from '../../infrastructure/database/prisma-client';
+import { PiiEncryptionService } from '@shared/encryption/pii-encryption.service';
+import { OutboxRepository } from '../../../../../shared/outbox/outbox.repository';
 
 let userController: UserController;
 let codReputationController: CODReputationController;
@@ -60,37 +63,29 @@ function initializeController(): void {
   if (!userController) {
     const userValidationService = new UserValidationService();
     const userSecurityPolicy = new UserSecurityPolicy();
-    const userRepository = new DatabaseUserRepository();
-    const eventPublisher = new UserEventPublisher();
+    const userRepository = new PrismaUserRepository(prisma, new PiiEncryptionService());
+    const outboxRepository = new OutboxRepository(prisma, 'user_OutboxEvent');
+    const eventPublisher = new UserEventPublisher(outboxRepository);
 
     // Instantiate all use cases with dependencies
     const createUserUseCase = new CreateUserUseCase(
+      userRepository,
       userValidationService,
       userSecurityPolicy,
+      eventPublisher,
       emailService,
       notificationClient
     );
-    // TODO: Inject a concrete repository instead of null placeholders for these use cases.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const changePasswordUseCase = new ChangePasswordUseCase(null as any, emailService, notificationClient);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const deleteAccountUseCase = new DeleteAccountUseCase(null as any, emailService, notificationClient);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const suspendAccountUseCase = new SuspendAccountUseCase(null as any, emailService, notificationClient);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const changeRoleUseCase = new ChangeRoleUseCase(null as any, emailService, notificationClient);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const verifyPhoneUseCase = new VerifyPhoneUseCase(null as any, emailService, notificationClient);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const setupTwoFactorUseCase = new SetupTwoFactorUseCase(null as any, emailService, notificationClient);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const reportSecurityBreachUseCase = new ReportSecurityBreachUseCase(null as any, emailService, notificationClient);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const getUserUseCase = new GetUserUseCase(userRepository as any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updateUserUseCase = new UpdateUserUseCase(userRepository as any, eventPublisher);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const verifyEmailUseCase = new VerifyEmailUseCase(userRepository as any, eventPublisher);
+    const changePasswordUseCase = new ChangePasswordUseCase(userRepository, emailService, notificationClient);
+    const deleteAccountUseCase = new DeleteAccountUseCase(userRepository, emailService, notificationClient);
+    const suspendAccountUseCase = new SuspendAccountUseCase(userRepository, eventPublisher, emailService, notificationClient);
+    const changeRoleUseCase = new ChangeRoleUseCase(userRepository, eventPublisher, emailService, notificationClient);
+    const verifyPhoneUseCase = new VerifyPhoneUseCase(userRepository, eventPublisher, emailService, notificationClient);
+    const setupTwoFactorUseCase = new SetupTwoFactorUseCase(userRepository, emailService, notificationClient);
+    const reportSecurityBreachUseCase = new ReportSecurityBreachUseCase(userRepository, emailService, notificationClient);
+    const getUserUseCase = new GetUserUseCase(userRepository);
+    const updateUserUseCase = new UpdateUserUseCase(userRepository, eventPublisher);
+    const verifyEmailUseCase = new VerifyEmailUseCase(userRepository, eventPublisher);
 
     userController = new UserController(
       createUserUseCase,

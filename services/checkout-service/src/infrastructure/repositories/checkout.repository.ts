@@ -10,10 +10,21 @@ export interface CheckoutSession {
   shippingAddressId: string;
   billingAddressId: string;
   shippingMethodId: string;
+  subtotal: number;
   shippingCost: number;
+  taxAmount: number;
+  discountAmount: number;
   totalAmount?: number;
   status?: string;
   paymentMethodId?: string;
+  paymentStatus?: string;
+  metadata?: Record<string, unknown>;
+  items?: Array<{
+    productId: string;
+    variantId?: string;
+    quantity: number;
+    priceAtTime: number;
+  }>;
   expiresAt: Date;
   createdAt: Date;
   updatedAt: Date;

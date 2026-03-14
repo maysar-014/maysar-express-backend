@@ -5,20 +5,27 @@ import { RegisterUserUseCase } from './application/use-cases/register-user.use-c
 import { AuthenticateUserUseCase } from './application/use-cases/authenticate-user.use-case';
 import { AuthController } from './api/controllers/auth.controller';
 import { AuthEventHandlers } from './infrastructure/events/auth.event-handlers';
+import { UserSyncEventHandlers } from './infrastructure/events/user-sync.event-handlers';
+import { AuthEventPublisher } from './infrastructure/messaging/auth-event-publisher';
+import { OutboxRepository } from '@shared/outbox/outbox.repository';
 
 const app = express();
 const prisma = new PrismaClient();
+const authOutboxRepository = new OutboxRepository(prisma, 'sharedOutboxEvent');
+const authEventPublisher = new AuthEventPublisher(authOutboxRepository);
 app.use(express.json());
 
 // Wire Dependencies
 const userRepository = new PrismaUserRepository(prisma);
 const registerUserUseCase = new RegisterUserUseCase(userRepository);
-const authenticateUserUseCase = new AuthenticateUserUseCase();
+const authenticateUserUseCase = new AuthenticateUserUseCase(undefined, authEventPublisher);
 const authController = new AuthController(registerUserUseCase, authenticateUserUseCase);
 const eventHandlers = new AuthEventHandlers(userRepository);
+const userSyncHandlers = new UserSyncEventHandlers(prisma);
 
 // Initialize Event Handlers
 eventHandlers.registerHandlers();
+userSyncHandlers.registerHandlers();
 
 // API Routes
 app.post('/api/auth/register', (req, res) => authController.register(req, res));

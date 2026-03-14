@@ -2,6 +2,7 @@ import { IUserRepository } from '../../domain/repositories';
 import { UserPolicies } from '../../domain/policies/user-policies';
 import { UserEmailVerifiedEvent, IDomainEventPublisher } from '../../domain/events';
 import { logger } from '../../infrastructure/services/logger.service';
+import { PrismaEmailVerificationTokenRepository } from '../../infrastructure/repositories/prisma-email-verification-token.repository';
 
 /**
  * Input for verifying user email
@@ -29,7 +30,8 @@ export interface VerifyEmailOutput {
 export class VerifyEmailUseCase {
   constructor(
     private userRepository: IUserRepository,
-    private eventPublisher: IDomainEventPublisher
+    private eventPublisher: IDomainEventPublisher,
+    private emailVerificationTokens: PrismaEmailVerificationTokenRepository
   ) {}
 
   /**
@@ -93,7 +95,7 @@ export class VerifyEmailUseCase {
         }
 
         // Mark token as used
-        await this.markTokenAsUsed(user.id, input.verificationToken);
+        await this.markTokenAsUsed(input.verificationToken);
       }
 
       // Update user email verification status
@@ -146,11 +148,24 @@ export class VerifyEmailUseCase {
    */
   private async validateVerificationToken(userId: string, token: string): Promise<boolean> {
     try {
-      // In a real implementation, this would be a repository method
-      // For now, we'll assume token validation logic
-      // This should be implemented in the repository with proper token management
-      logger.debug('Validating verification token', { userId, tokenLength: token.length });
-      return true; // Simplified for now
+      const record = await this.emailVerificationTokens.findByToken(token);
+      if (!record) {
+        return false;
+      }
+
+      if (record.userId !== userId) {
+        return false;
+      }
+
+      if (record.used) {
+        return false;
+      }
+
+      if (record.expiresAt && record.expiresAt < new Date()) {
+        return false;
+      }
+
+      return true;
     } catch (error) {
       logger.error('Error validating verification token', { userId, error });
       return false;
@@ -160,13 +175,13 @@ export class VerifyEmailUseCase {
   /**
    * Mark verification token as used
    */
-  private async markTokenAsUsed(userId: string, _token: string): Promise<void> {
+  private async markTokenAsUsed(token: string): Promise<void> {
     try {
-      // In a real implementation, this would be a repository method
-      logger.debug('Marking verification token as used', { userId });
-      // Token cleanup would happen here
+      const record = await this.emailVerificationTokens.findByToken(token);
+      if (!record) return;
+      await this.emailVerificationTokens.markAsUsed(record.id);
     } catch (error) {
-      logger.error('Error marking token as used', { userId, error });
+      logger.error('Error marking token as used', { token, error });
       // Don't throw - verification succeeded even if cleanup fails
     }
   }

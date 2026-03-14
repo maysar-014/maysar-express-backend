@@ -271,8 +271,9 @@ export class UserServiceClient {
  * Create User Service client with default configuration
  */
 export function createUserServiceClient(baseUrl?: string): UserServiceClient {
+  const monolithBaseUrl = (process.env.PLATFORM_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
   const config: UserServiceClientConfig = {
-    baseUrl: baseUrl || process.env.USER_SERVICE_URL || 'http://localhost:3001',
+    baseUrl: baseUrl || process.env.USER_SERVICE_URL || `${monolithBaseUrl}/api/user`,
     timeout: parseInt(process.env.USER_SERVICE_TIMEOUT || '10000'),
     retries: parseInt(process.env.USER_SERVICE_RETRIES || '3'),
     circuitBreaker: {

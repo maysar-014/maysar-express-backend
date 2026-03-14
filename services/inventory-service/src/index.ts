@@ -4,7 +4,6 @@ import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { RedisRateLimitStore } from '../../../shared/middleware/redis-rate-limit.store';
-import Redis from 'ioredis';
 import { StockManager } from './modules/stock/stockManager';
 import { ReservationEngine } from './modules/reservation/reservationEngine';
 import { WarehouseManager } from './modules/warehouse/warehouseManager';
@@ -23,13 +22,29 @@ import { tracingService } from '../../../shared/tracing/openTelemetry';
 import { PrismaSagaLogRepository } from '@shared/saga/saga-log.repository';
 import { metricsRegistry } from './infrastructure/monitoring/metrics';
 import { requireAuth } from './middleware/auth';
+import { getSharedRedisClient, resolveRedisUrl } from '@shared/redis/ioredis-client';
+import { createRedisStockEngine, resolveRedisReservationMode } from './infrastructure/redis/redis-stock-engine';
 
 // Initialize dependencies
 tracingService.start();
 const prisma = new PrismaClient();
 const stockManager = new StockManager(prisma as any, eventBus);
 const warehouseManager = new WarehouseManager(prisma as any);
-const reservationEngine = new ReservationEngine(prisma as any, stockManager, warehouseManager, eventBus);
+const redisReservationMode = resolveRedisReservationMode();
+const redisStockEngineBundle = redisReservationMode === 'off' ? null : createRedisStockEngine();
+const reservationEngine = new ReservationEngine(
+  prisma as any,
+  stockManager,
+  warehouseManager,
+  eventBus,
+  redisStockEngineBundle?.stockEngine,
+  redisStockEngineBundle?.redisClient,
+  redisReservationMode
+);
+
+if (redisReservationMode !== 'off') {
+  logger.info(`Redis reservation shadow mode enabled (${redisReservationMode})`);
+}
 
 // Initialize event handlers
 const eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, prisma);
@@ -59,13 +74,14 @@ app.use(express.json({ limit: process.env.BODY_LIMIT || '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Global rate limiter (configurable via env)
-const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+const redisClient = getSharedRedisClient(resolveRedisUrl(process.env.REDIS_URL));
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_WINDOW_MS || '900000', 10),
   max: parseInt(process.env.RATE_MAX || '100', 10),
   standardHeaders: true,
   legacyHeaders: false,
-  store: new RedisRateLimitStore(redisClient, 'rl:inventory:')
+  store: new RedisRateLimitStore(redisClient, 'rl:inventory:'),
+  passOnStoreError: true
 });
 app.use(limiter);
 

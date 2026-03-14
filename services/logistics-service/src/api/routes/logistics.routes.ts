@@ -23,7 +23,6 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import { RedisRateLimitStore } from '../../../../../shared/middleware/redis-rate-limit.store';
-import Redis from 'ioredis';
 import { DependencyContainer } from '../../infrastructure/container';
 import { DeliveryController } from '../controllers/delivery.controller';
 import { RouteController } from '../controllers/route.controller';
@@ -40,6 +39,7 @@ import { TrackingValidator } from '../validators/tracking.validator';
 import { AnalyticsValidator } from '../validators/analytics.validator';
 import { validationResult } from 'express-validator';
 import { IdempotencyMiddleware } from '@shared/middleware/idempotency';
+import { getSharedRedisClient, resolveRedisUrl } from '@shared/redis/ioredis-client';
 
 // Simple validation middleware
 const handleValidationErrors = (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -54,8 +54,13 @@ const createApiValidationChain = () => (req: express.Request, res: express.Respo
 
 const router = express.Router();
 const idempotencyMiddleware = new IdempotencyMiddleware(process.env.REDIS_URL!);
-const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-router.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100, store: new RedisRateLimitStore(redisClient, 'rl:logistics:') }));
+const redisClient = getSharedRedisClient(resolveRedisUrl(process.env.REDIS_URL));
+router.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  store: new RedisRateLimitStore(redisClient, 'rl:logistics:'),
+  passOnStoreError: true
+}));
 router.use(idempotencyMiddleware.middleware());
 
 // Initialize dependency container

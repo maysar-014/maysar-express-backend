@@ -169,11 +169,11 @@ docker build -t checkout-service:latest .
 docker run -p 3008:3008 --env-file .env checkout-service:latest
 ```
 
-### Kubernetes
+### Orchestrator
 
 ```bash
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
+deployctl apply -f deploy/deployment.yaml
+deployctl apply -f deploy/service.yaml
 ```
 
 ## Monitoring

@@ -33,7 +33,7 @@ groups:
           description: "Database errors exceeded 10 in the last 2 minutes (current: {{ $value }})"
 
       - alert: PodRestartSurge
-        expr: increase(kube_pod_container_status_restarts_total{namespace="maysar"}[15m]) > 3
+        expr: increase(container_status_restarts_total{namespace="maysar"}[15m]) > 3
         for: 0m
         labels:
           severity: warning

@@ -1,5 +1,7 @@
 import { execSync } from 'child_process';
 import { performance } from 'perf_hooks';
+import fs from 'fs';
+import path from 'path';
 import { logger } from '../../infrastructure/monitoring/logger';
 
 interface TestSuite {
@@ -102,7 +104,12 @@ class IntegrationTestRunner {
     const startTime = performance.now();
     
     try {
-      const command = `npx jest src/tests/integration/${suite.file} --coverage --verbose --testTimeout=${suite.timeout}`;
+      const integrationPath = path.join(process.cwd(), 'src', 'tests', 'integration', suite.file);
+      const qualityPath = path.join(process.cwd(), 'src', 'tests', 'quality', suite.file);
+      const relativeFilePath = fs.existsSync(integrationPath)
+        ? `src/tests/integration/${suite.file}`
+        : `src/tests/quality/${suite.file}`;
+      const command = `npx jest ${relativeFilePath} --coverage --verbose --testTimeout=${suite.timeout}`;
       const output = execSync(command, { 
         encoding: 'utf8',
         timeout: suite.timeout + 5000 // Add buffer

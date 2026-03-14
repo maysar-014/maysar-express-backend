@@ -182,3 +182,4 @@ describe('ProcessPaymentUseCase', () => {
         expect(mockRepository.update).toHaveBeenCalled();
     });
 });
+

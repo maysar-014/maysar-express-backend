@@ -58,16 +58,7 @@ module.exports = {
         '@order/(.*)': '<rootDir>/services/order-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
         '^uuid$': require.resolve('uuid'),
-      },
-      testTimeout: 60000,
-      reporters: [
-        'default',
-        ['jest-junit', {
-          outputDirectory: 'reports/integration',
-          outputName: 'junit.xml',
-          suiteName: 'Order Service Integration Tests'
-        }]
-      ]
+      }
     },
     {
       displayName: 'maps-service',
@@ -196,6 +187,7 @@ module.exports = {
       moduleNameMapper: {
         '@compliance/(.*)': '<rootDir>/services/compliance-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '@shared-events/(.*)': '<rootDir>/shared/events/$1',
         '^uuid$': require.resolve('uuid'),
       }
     },
@@ -256,6 +248,7 @@ module.exports = {
       moduleNameMapper: {
         '@payment/(.*)': '<rootDir>/services/payment-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '@shared-events/(.*)': '<rootDir>/shared/events/$1',
         '^uuid$': require.resolve('uuid'),
       }
     },

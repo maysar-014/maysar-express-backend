@@ -65,6 +65,41 @@ describe('complianceService', () => {
     });
 
     describe('POST /api/compliance/manual-review', () => {
+        it('should approve a pending record via admin manual review', async () => {
+            (mockPrisma.compliance_KYCRecord.findFirst as jest.Mock).mockResolvedValue({
+                id: 'kyc-record-1',
+                verificationStatus: 'pending'
+            });
+            (mockPrisma.compliance_KYCRecord.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+
+            const res = await request(app)
+                .post('/api/compliance/manual-review')
+                .send({
+                    userId: 'cltest123456789',
+                    decision: 'approved',
+                    reviewerId: 'clreview12345678',
+                    sagaId: 's-1'
+                });
+
+            expect(res.status).toBe(200);
+            expect(mockPrisma.compliance_KYCRecord.updateMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: { id: 'kyc-record-1' },
+                    data: expect.objectContaining({
+                        verificationStatus: 'approved',
+                        verifiedBy: 'clreview12345678'
+                    })
+                })
+            );
+            expect(mockEventBus.publish).toHaveBeenCalledWith(
+                'KYCStatusChanged.v1',
+                expect.objectContaining({
+                    previousStatus: 'pending',
+                    newStatus: 'approved'
+                })
+            );
+        });
+
         it('should complete manual review and emit KYCStatusChanged event', async () => {
             (mockPrisma.compliance_KYCRecord.findFirst as jest.Mock).mockResolvedValue({ verificationStatus: 'under_review' });
             (mockPrisma.compliance_KYCRecord.updateMany as jest.Mock).mockResolvedValue({ count: 1 });

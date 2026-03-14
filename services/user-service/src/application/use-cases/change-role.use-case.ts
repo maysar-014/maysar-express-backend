@@ -1,4 +1,5 @@
 import { IUserRepository } from '../../domain/repositories';
+import { IDomainEventPublisher, UserRoleChangedEvent } from '../../domain/events';
 import { RoleChangeEvent } from '../sagas/role-change.saga';
 import { sagaEventHandler } from '../sagas/saga-event-handler';
 import { logger } from '../../infrastructure/services/logger.service';
@@ -22,6 +23,7 @@ export interface ChangeRoleOutput {
 export class ChangeRoleUseCase {
   constructor(
     private userRepository: IUserRepository,
+    private eventPublisher: IDomainEventPublisher,
     private emailService: EmailService,
     private notificationClient: NotificationServiceClient
   ) { }
@@ -54,6 +56,16 @@ export class ChangeRoleUseCase {
 
       // Update user role
       await this.userRepository.updateRole(input.userId, input.newRole as any);
+
+      // Publish domain event for downstream syncs
+      const domainEvent = new UserRoleChangedEvent(
+        input.userId,
+        oldRole as any,
+        input.newRole as any,
+        input.changedBy,
+        input.promotionReason
+      );
+      await this.eventPublisher.publish(domainEvent);
 
       // Publish role change event to trigger saga
       const event: RoleChangeEvent = {

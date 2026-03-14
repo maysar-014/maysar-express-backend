@@ -31,7 +31,7 @@ export const metrics = {
   databaseConnectionsTotal: new Gauge({
     name: 'order_service_database_connections_total',
     help: 'Total number of database connections',
-    labelNames: ['type'], // prisma, supabase
+    labelNames: ['type'], // prisma
   }),
 
   databaseQueryDuration: new Histogram({
@@ -296,3 +296,4 @@ export function incrementErrors(type: string, severity: string, component: strin
 }
 
 export default metrics;
+

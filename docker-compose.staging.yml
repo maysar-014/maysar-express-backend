@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  maysar-backend:
+    image: maysar-backend:staging
+    environment:
+      NODE_ENV: staging
+      SERVICE_NAME: maysar-backend-staging
+      SERVICE_VERSION: 1.0.0-staging
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  postgres:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  redis:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+volumes:
+  postgres_data:
+    name: maysar_staging_postgres_data
+  redis_data:
+    name: maysar_staging_redis_data
+
+networks:
+  backend-network:
+    name: maysar-staging-backend-network
+  database-network:
+    name: maysar-staging-database-network

@@ -125,6 +125,7 @@ export class InitiateCheckoutUseCase {
       // Create checkout session
       const checkoutId = uuid();
       const expiresAt = new Date(Date.now() + 3600000); // 1 hour
+      const items = cart.getItems();
 
       const session = {
         id: checkoutId,
@@ -134,7 +135,13 @@ export class InitiateCheckoutUseCase {
         billingAddressId,
         shippingMethodId,
         status: 'initiated',
+        subtotal: pricingResult.pricing!.subtotal.getAmount(),
+        taxAmount: pricingResult.pricing!.taxAmount.getAmount(),
+        discountAmount: pricingResult.pricing!.discountAmount.getAmount(),
+        shippingCost: pricingResult.pricing!.shippingCost.getAmount(),
         totalAmount: pricingResult.pricing!.total.getAmount(),
+        items,
+        metadata: { items },
         expiresAt,
         createdAt: new Date()
       };

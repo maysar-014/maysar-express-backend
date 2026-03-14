@@ -1,9 +1,13 @@
 import { ITwoFactorRepository } from '../../domain/repositories/two-factor.repository';
 import { TotpEngine } from '../../domain/engines/totp.engine';
 import { BackupCodeEngine } from '../../domain/engines/backup-code.engine';
+import { AuthEventPublisher } from '../../../infrastructure/messaging/auth-event-publisher';
 
 export class DisableTwoFactorUseCase {
-    constructor(private readonly repository: ITwoFactorRepository) { }
+    constructor(
+        private readonly repository: ITwoFactorRepository,
+        private readonly eventPublisher?: AuthEventPublisher
+    ) { }
 
     /**
      * Disables 2FA for a user. 
@@ -40,7 +44,12 @@ export class DisableTwoFactorUseCase {
         config.disable();
         await this.repository.save(config);
 
-        // TODO: Publish TwoFactorDisabledEvent
+        if (this.eventPublisher) {
+            await this.eventPublisher.publish('AuthTwoFactorDisabled', {
+                userId,
+                enabled: false
+            });
+        }
 
         return true;
     }

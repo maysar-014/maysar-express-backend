@@ -18,6 +18,10 @@ interface ValidationResult {
   value?: any;
 }
 
+interface ValidationOptions {
+  allowUnknown?: boolean;
+}
+
 /**
  * Validate request data against schema
  */
@@ -57,7 +61,7 @@ export function validateRequest(schema: ValidationSchema) {
 
     // Validate headers
     if (schema.headers) {
-      const headersResult = validateData(req.headers, schema.headers);
+      const headersResult = validateData(req.headers, schema.headers, { allowUnknown: true });
       if (!headersResult.isValid) {
         errors.push(...(headersResult.errors || []));
       } else {
@@ -81,11 +85,14 @@ export function validateRequest(schema: ValidationSchema) {
 /**
  * Validate data against Joi schema
  */
-function validateData(data: any, schema: any): ValidationResult {
+function validateData(data: any, schema: any, options: ValidationOptions = {}): ValidationResult {
   try {
     // Convert custom schema to Joi schema
     const joiSchema = convertToJoiSchema(schema);
-    const { error, value } = joiSchema.validate(data, { abortEarly: false });
+    const { error, value } = joiSchema.validate(data, {
+      abortEarly: false,
+      allowUnknown: options.allowUnknown ?? false
+    });
 
     if (error) {
       const errors = error.details.map(detail => detail.message);

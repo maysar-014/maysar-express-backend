@@ -5,9 +5,12 @@ import { CreateUserDto } from '../dto/user.dto';
 import { UserMapper } from '../mappers/user-mapper';
 import { UserAlreadyExistsError, UserValidationError } from '../../domain/errors/user.errors';
 import { sagaEventHandler } from '../sagas/saga-event-handler';
-import { UserRegisteredEvent } from '../../domain/events';
+import { IDomainEventPublisher, UserRegisteredEvent } from '../../domain/events';
 import { EmailService } from '../../infrastructure/services/email.service';
 import { NotificationServiceClient } from '../sagas/service-clients';
+import { IUserRepository } from '../../domain/repositories';
+import { PrismaEmailVerificationTokenRepository } from '../../infrastructure/repositories/prisma-email-verification-token.repository';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Create User Use Case
@@ -15,8 +18,11 @@ import { NotificationServiceClient } from '../sagas/service-clients';
  */
 export class CreateUserUseCase {
   constructor(
+    private userRepository: IUserRepository,
     private userValidationService: UserValidationService,
     private userSecurityPolicy: UserSecurityPolicy,
+    private eventPublisher: IDomainEventPublisher,
+    private emailVerificationTokens: PrismaEmailVerificationTokenRepository,
     private emailService: EmailService,
     private notificationClient: NotificationServiceClient
   ) { }
@@ -44,11 +50,32 @@ export class CreateUserUseCase {
       // 6. Apply additional business rules
       this.applyBusinessRules(user);
 
-      // 7. Trigger registration saga
-      const event = new UserRegisteredEvent(user.id, user.email.getValue(), user.role, 'email');
+      // 7. Persist user
+      const persistedUser = await this.userRepository.create(user);
+
+      // 7. Publish registration event and trigger saga
+      const event = new UserRegisteredEvent(
+        persistedUser.id,
+        persistedUser.email.getValue(),
+        persistedUser.role,
+        'email'
+      );
+
+      await this.eventPublisher.publish(event);
       await sagaEventHandler.handleUserRegisteredEvent(event, this.emailService, this.notificationClient);
 
-      return user;
+      // Issue email verification token
+      const verificationToken = uuidv4();
+      await this.emailVerificationTokens.create({
+        id: uuidv4(),
+        userId: persistedUser.id,
+        token: verificationToken,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      });
+
+      await this.emailService.sendVerificationEmail(persistedUser.email.getValue(), verificationToken);
+
+      return persistedUser;
     } catch (error) {
       if (error instanceof UserValidationError || error instanceof UserAlreadyExistsError) {
         throw error;
@@ -92,11 +119,12 @@ export class CreateUserUseCase {
    * Check for existing user
    */
   private async checkExistingUser(email: string, phoneNumber: string): Promise<void> {
-    // This would typically call a repository to check for existing users
-    // For now, we'll simulate this check
-    const existingUser = await this.findUserByEmailOrPhone(email, phoneNumber);
+    const [emailExists, phoneExists] = await Promise.all([
+      this.userRepository.emailExists(email),
+      this.userRepository.phoneExists(phoneNumber)
+    ]);
 
-    if (existingUser) {
+    if (emailExists || phoneExists) {
       throw new UserAlreadyExistsError('User with this email or phone number already exists');
     }
   }
@@ -169,14 +197,6 @@ export class CreateUserUseCase {
     return businessIdRegex.test(businessId.toUpperCase());
   }
 
-  /**
-   * Simulate finding existing user (would be implemented with repository)
-   */
-  private async findUserByEmailOrPhone(_email: string, _phoneNumber: string): Promise<User | null> {
-    // TODO: Implement actual database lookup
-    // For now, return null as we don't have a real database connection
-    return null;
-  }
 }
 
 /**

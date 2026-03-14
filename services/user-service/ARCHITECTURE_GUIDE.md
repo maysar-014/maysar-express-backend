@@ -2,7 +2,7 @@
 
 ## Overview
 
-The User Service forms the foundational identity layer of the Maysar marketplace platform. It manages the complete user lifecycle—from initial registration through account management, security operations, and eventual account closure. This service operates as a critical system component, handling authentication, authorization, and user state management across all platform roles.
+The User Service forms the foundational identity layer of the Maysar marketplace platform. It manages the complete user lifecycleâ€”from initial registration through account management, security operations, and eventual account closure. This service operates as a critical system component, handling authentication, authorization, and user state management across all platform roles.
 
 Rather than serving as a simple CRUD interface, the User Service implements sophisticated business logic through a layered architecture that separates concerns, protects business rules, and enables reliable inter-service communication through event-driven patterns.
 
@@ -17,24 +17,24 @@ The User Service adheres to Clean Architecture principles, which organize code i
 **The Dependency Rule**: Code in outer layers can depend on inner layers, but inner layers must never depend on outer layers. This ensures that business logic remains independent of frameworks, databases, and delivery mechanisms.
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    API Layer                             │
-│         (Controllers, Routes, Middleware)                │
-├─────────────────────────────────────────────────────────┤
-│              Application Layer                           │
-│      (Use Cases, Sagas, DTOs, Mappers)                   │
-├─────────────────────────────────────────────────────────┤
-│                Domain Layer                              │
-│  (Entities, Value Objects, Policies, Services)           │
-├─────────────────────────────────────────────────────────┤
-│            Infrastructure Layer                          │
-│   (Repositories, Services, Adapters, Messaging)          │
-└─────────────────────────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                    API Layer                             â”‚
+â”‚         (Controllers, Routes, Middleware)                â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚              Application Layer                           â”‚
+â”‚      (Use Cases, Sagas, DTOs, Mappers)                   â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚                Domain Layer                              â”‚
+â”‚  (Entities, Value Objects, Policies, Services)           â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚            Infrastructure Layer                          â”‚
+â”‚   (Repositories, Services, Adapters, Messaging)          â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ### Business Logic Protection
 
-The domain layer contains the true business logic—the rules that define what a user is, how users behave, and what operations are valid. This layer is deliberately isolated from all framework concerns:
+The domain layer contains the true business logicâ€”the rules that define what a user is, how users behave, and what operations are valid. This layer is deliberately isolated from all framework concerns:
 
 - No HTTP frameworks
 - No database libraries
@@ -64,7 +64,7 @@ The `User` entity represents a user in the system with complete lifecycle manage
 - Account status management (active, suspended, deleted)
 - Security metadata tracking (last login, failed attempts, breach reports)
 
-The entity is immutable in its core state—changes occur through well-defined methods that validate preconditions and publish events.
+The entity is immutable in its core stateâ€”changes occur through well-defined methods that validate preconditions and publish events.
 
 ```typescript
 // Domain entity - pure business logic, no framework dependencies
@@ -786,10 +786,10 @@ docker build -t user-service:latest .
 docker run -p 3001:3001 --env-file .env user-service:latest
 ```
 
-**Kubernetes Deployment:**
+**Orchestrator Deployment:**
 ```bash
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
+deployctl apply -f deploy/deployment.yaml
+deployctl apply -f deploy/service.yaml
 ```
 
 ---

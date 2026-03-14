@@ -118,7 +118,11 @@ describe('User Controller Security', () => {
 
             expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
-                message: 'User authentication required'
+                error: expect.objectContaining({
+                    code: 'UNAUTHORIZED',
+                    message: 'Authentication required'
+                }),
+                success: false
             }));
         });
     });

@@ -35,7 +35,7 @@ describe('SagaEventHandler', () => {
   };
 
   beforeEach(() => {
-    handler = new SagaEventHandler();
+    handler = new SagaEventHandler(mockEmailService as any, mockNotificationClient as any);
     jest.clearAllMocks();
   });
 

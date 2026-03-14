@@ -109,15 +109,13 @@ const FileUploadConfigSchema = z.object({
  * Payment Configuration Schema
  */
 const PaymentConfigSchema = z.object({
-  provider: z.enum(['stripe', 'paypal']).optional(),
+  provider: z.enum(['pesapal']).optional(),
   enabled: z.coerce.boolean().default(false),
-  stripe: z.object({
+  pesapal: z.object({
     publishableKey: z.string().optional(),
     secretKey: z.string().optional(),
     webhookSecret: z.string().optional(),
     apiVersion: z.string().default('2023-10-16'),
-  }).optional(),
-  paypal: z.object({
     clientId: z.string().optional(),
     clientSecret: z.string().optional(),
     mode: z.enum(['sandbox', 'live']).default('sandbox'),
@@ -259,15 +257,13 @@ export interface ExternalServicesConfig {
 
   // Payment settings
   payment?: {
-    provider: 'stripe' | 'paypal';
+    provider: 'pesapal';
     enabled: boolean;
-    stripe?: {
+    pesapal?: {
       publishableKey?: string;
       secretKey?: string;
       webhookSecret?: string;
       apiVersion: string;
-    };
-    paypal?: {
       clientId?: string;
       clientSecret?: string;
       mode: 'sandbox' | 'live';
@@ -404,16 +400,14 @@ export class ExternalServicesConfigBuilder {
       payment: env.PAYMENT_PROVIDER ? {
         provider: env.PAYMENT_PROVIDER as any,
         enabled: env.PAYMENT_ENABLED !== 'false',
-        stripe: env.STRIPE_SECRET_KEY ? {
-          publishableKey: env.STRIPE_PUBLISHABLE_KEY,
-          secretKey: env.STRIPE_SECRET_KEY,
-          webhookSecret: env.STRIPE_WEBHOOK_SECRET,
-          apiVersion: env.STRIPE_API_VERSION || '2023-10-16'
-        } : undefined,
-        paypal: env.PAYPAL_CLIENT_ID ? {
-          clientId: env.PAYPAL_CLIENT_ID,
-          clientSecret: env.PAYPAL_CLIENT_SECRET,
-          mode: (env.PAYPAL_MODE as any) || 'sandbox'
+        pesapal: (env.PESAPAL_SECRET_KEY || env.PESAPAL_CLIENT_ID) ? {
+          publishableKey: env.PESAPAL_PUBLISHABLE_KEY,
+          secretKey: env.PESAPAL_SECRET_KEY,
+          webhookSecret: env.PESAPAL_WEBHOOK_SECRET,
+          apiVersion: env.PESAPAL_API_VERSION || '2023-10-16',
+          clientId: env.PESAPAL_CLIENT_ID,
+          clientSecret: env.PESAPAL_CLIENT_SECRET,
+          mode: (env.PESAPAL_MODE as any) || 'sandbox'
         } : undefined
       } : undefined,
       notification: env.NOTIFICATION_PROVIDER ? {
@@ -750,11 +744,19 @@ export function validateExternalServicesConfig(config?: ExternalServicesConfig):
 
     // Validate payment configuration
     if (extConfig.payment?.enabled) {
-      if (extConfig.payment.provider === 'stripe' && !extConfig.payment.stripe?.secretKey) {
-        errors.push('Stripe secret key is required when using Stripe payments');
+      if (
+        extConfig.payment.provider === 'pesapal' &&
+        !extConfig.payment.pesapal?.secretKey &&
+        !extConfig.payment.pesapal?.clientId
+      ) {
+        errors.push('Pesapal secret key or client ID is required when using Pesapal payments');
       }
-      if (extConfig.payment.provider === 'paypal' && !extConfig.payment.paypal?.clientId) {
-        errors.push('PayPal client ID is required when using PayPal payments');
+      if (
+        extConfig.payment.provider === 'pesapal' &&
+        extConfig.payment.pesapal?.clientId &&
+        !extConfig.payment.pesapal?.clientSecret
+      ) {
+        errors.push('Pesapal client secret is required when Pesapal client ID is configured');
       }
     }
 
@@ -787,3 +789,4 @@ export function validateExternalServicesConfig(config?: ExternalServicesConfig):
  * Default external services configuration
  */
 export const externalServicesConfig = getExternalServicesConfig();
+

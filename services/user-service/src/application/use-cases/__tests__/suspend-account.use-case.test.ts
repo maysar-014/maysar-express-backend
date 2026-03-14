@@ -5,11 +5,13 @@ import { UserFactory } from '../../../domain/entities/__tests__/user.factory';
 jest.mock('../../../application/sagas/saga-event-handler');
 
 describe('SuspendAccountUseCase', () => {
+  const makePublisher = () => ({ publish: jest.fn(), publishMany: jest.fn() });
+
   it('returns not found when user missing', async () => {
     const repo: any = { findById: jest.fn().mockResolvedValue(null) };
     const mockEmailService: any = { sendEmail: jest.fn() };
     const mockNotificationClient: any = { notify: jest.fn() };
-    const sut = new SuspendAccountUseCase(repo, mockEmailService, mockNotificationClient);
+    const sut = new SuspendAccountUseCase(repo, makePublisher(), mockEmailService, mockNotificationClient);
     const out = await sut.execute({ userId: 'x', suspendedBy: 'admin', reason: 'test' });
     expect(out.success).toBe(false);
     expect(out.message).toContain('User not found');
@@ -21,7 +23,7 @@ describe('SuspendAccountUseCase', () => {
     const repo: any = { findById: jest.fn((id) => Promise.resolve(id === 'u1' ? user : admin)) };
     const mockEmailService: any = { sendEmail: jest.fn().mockResolvedValue(undefined) };
     const mockNotificationClient: any = { notify: jest.fn().mockResolvedValue(undefined) };
-    const sut = new SuspendAccountUseCase(repo, mockEmailService, mockNotificationClient);
+    const sut = new SuspendAccountUseCase(repo, makePublisher(), mockEmailService, mockNotificationClient);
     const out = await sut.execute({ userId: 'u1', suspendedBy: 'admin', reason: 'test' });
     expect(out.success).toBe(false);
     expect(out.message).toContain('administrator');
@@ -36,7 +38,7 @@ describe('SuspendAccountUseCase', () => {
     };
     const mockEmailService: any = { sendEmail: jest.fn().mockResolvedValue(undefined) };
     const mockNotificationClient: any = { notify: jest.fn().mockResolvedValue(undefined) };
-    const sut = new SuspendAccountUseCase(repo, mockEmailService, mockNotificationClient);
+    const sut = new SuspendAccountUseCase(repo, makePublisher(), mockEmailService, mockNotificationClient);
     const out = await sut.execute({ userId: 'u1', suspendedBy: 'admin', reason: 'test' });
     expect(out.success).toBe(true);
     expect(repo.updateStatus).toHaveBeenCalledWith('u1', 'suspended');
@@ -51,7 +53,7 @@ describe('SuspendAccountUseCase', () => {
     };
     const mockEmailService: any = { sendEmail: jest.fn().mockResolvedValue(undefined) };
     const mockNotificationClient: any = { notify: jest.fn().mockResolvedValue(undefined) };
-    const sut = new SuspendAccountUseCase(repo, mockEmailService, mockNotificationClient);
+    const sut = new SuspendAccountUseCase(repo, makePublisher(), mockEmailService, mockNotificationClient);
     const duration = 86400000;
     const out = await sut.execute({ userId: 'u1', suspendedBy: 'admin', reason: 'test', duration });
     expect(out.success).toBe(true);
@@ -62,7 +64,7 @@ describe('SuspendAccountUseCase', () => {
     const repo: any = { findById: jest.fn().mockRejectedValue(new Error('DB error')) };
     const mockEmailService: any = { sendEmail: jest.fn() };
     const mockNotificationClient: any = { notify: jest.fn() };
-    const sut = new SuspendAccountUseCase(repo, mockEmailService, mockNotificationClient);
+    const sut = new SuspendAccountUseCase(repo, makePublisher(), mockEmailService, mockNotificationClient);
     const out = await sut.execute({ userId: 'u1', suspendedBy: 'admin', reason: 'test' });
     expect(out.success).toBe(false);
   });

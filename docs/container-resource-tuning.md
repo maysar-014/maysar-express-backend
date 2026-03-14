@@ -13,7 +13,7 @@ According to **Section 4.2 Resource Stewardship**:
 Use Prometheus and Grafana to monitor the following metrics:
 - `container_cpu_usage_seconds_total`: Rate of CPU usage.
 - `container_memory_working_set_bytes`: Active memory usage (triggers OOM kills if limit reached).
-- `kube_pod_container_resource_limits`: Configured limits.
+- `container_resource_limits`: Configured limits.
 
 ## Tuning Procedure
 
@@ -46,5 +46,5 @@ Set `limits` to handle spikes without compromising stability.
 | Worker Jobs | 500m | 2000m | 256Mi | 1Gi | 1:4 |
 
 ## Troubleshooting
-- **Pod Pending**: Use `kubectl describe pod` to check if nodes lack sufficient resources for the Requests.
-- **CrashLoopBackOff**: Check for OOM Kills (`kubectl get pod -o yaml | grep reason: OOMKilled`).
+- **Pod Pending**: Use `deployctl describe pod` to check if nodes lack sufficient resources for the Requests.
+- **CrashLoopBackOff**: Check for OOM Kills (`deployctl get pod -o yaml | grep reason: OOMKilled`).

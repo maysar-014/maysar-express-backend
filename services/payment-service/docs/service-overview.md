@@ -23,7 +23,7 @@ Owns payment processing lifecycle, fraud assessment, and COD pre-authorization i
 ## Primary Dependencies
 - **wallet-service**: COD wallet lock/unlock operations
 - **order-service**: Payment status updates trigger order state transitions
-- **External payment gateways**: Stripe, M-Pesa, Airtel Money
+- **External payment gateway**: Pesapal
 
 ## Entry Point
 `services/payment-service/src/index.ts`

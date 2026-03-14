@@ -1,0 +1,143 @@
+{
+  "generatedAt": "2026-03-09T10:16:43.125Z",
+  "summary": {
+    "servicesAudited": 21,
+    "integrationTests": 25,
+    "locationViolations": 0,
+    "internalMockViolations": 0,
+    "assertionViolations": 0,
+    "servicesMissingIntegrationTests": 0,
+    "priority1CoverageFailures": 0,
+    "ioSignalWarnings": 0
+  },
+  "serviceMatrix": [
+    {
+      "service": "analytics-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "auth-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "business-registry-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "catalog-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "checkout-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "commission-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "community-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "compliance-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "enabler-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "inventory-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "logistics-service",
+      "integrationTests": 2
+    },
+    {
+      "service": "maps-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "notification-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "order-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "payment-service",
+      "integrationTests": 3
+    },
+    {
+      "service": "payout-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "production-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "support-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "training-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "user-service",
+      "integrationTests": 1
+    },
+    {
+      "service": "wallet-service",
+      "integrationTests": 1
+    }
+  ],
+  "locationViolations": [],
+  "internalMockViolations": [],
+  "assertionViolations": [],
+  "servicesMissingIntegrationTests": [],
+  "priority1Checks": [
+    {
+      "id": "priority-1-order-payment-inventory-delivery",
+      "description": "Order -> Payment -> Inventory -> Delivery integration flow coverage exists",
+      "required": true,
+      "passed": true
+    },
+    {
+      "id": "priority-1-user-auth-verification",
+      "description": "User registration/auth verification flow has integration coverage",
+      "required": true,
+      "passed": true
+    },
+    {
+      "id": "priority-1-pesapal",
+      "description": "Pesapal payment gateway integration is covered",
+      "required": true,
+      "passed": true
+    },
+    {
+      "id": "priority-1-wallet-operations",
+      "description": "Wallet credit/debit/freeze integration is covered",
+      "required": true,
+      "passed": true
+    },
+    {
+      "id": "priority-1-outbox-pattern",
+      "description": "Outbox pattern integration is covered",
+      "required": true,
+      "passed": true
+    },
+    {
+      "id": "priority-1-order-fulfillment-saga",
+      "description": "Order fulfillment saga integration/compensation is covered",
+      "required": true,
+      "passed": true
+    }
+  ],
+  "priority1CoverageFailures": [],
+  "ioSignalWarnings": []
+}

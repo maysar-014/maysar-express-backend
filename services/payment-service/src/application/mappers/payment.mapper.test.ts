@@ -46,3 +46,4 @@ describe('PaymentMapper', () => {
     expect(dto.providerReference).toBeUndefined();
   });
 });
+

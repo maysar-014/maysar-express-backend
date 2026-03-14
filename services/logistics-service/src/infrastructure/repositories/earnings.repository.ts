@@ -1,7 +1,7 @@
 import { IEarningsRepository, Earnings } from '../../domain/repositories';
 
 export class EarningsRepository implements IEarningsRepository {
-  constructor(private supabaseClient: any) { }
+  constructor(private databaseClient: any) { }
 
   async save(earnings: Earnings): Promise<void> {
     try {
@@ -22,12 +22,12 @@ export class EarningsRepository implements IEarningsRepository {
         updated_at: earnings.updatedAt.toISOString()
       };
 
-      const { error } = await this.supabaseClient
+      const { error } = await this.databaseClient
         .from('earnings')
         .upsert(earningsData, { onConflict: 'id' });
 
       if (error) {
-        console.error('Supabase upsert error:', error);
+        console.error('Database upsert error:', error);
         throw new Error('Failed to save earnings to database');
       }
 
@@ -39,7 +39,7 @@ export class EarningsRepository implements IEarningsRepository {
 
   async findByCourierId(courierId: string, timeRange?: { start: Date; end: Date }): Promise<Earnings[]> {
     try {
-      let query = this.supabaseClient
+      let query = this.databaseClient
         .from('earnings')
         .select(`
           id,
@@ -103,7 +103,7 @@ export class EarningsRepository implements IEarningsRepository {
 
   async findByDeliveryId(deliveryId: string): Promise<Earnings | null> {
     try {
-      const { data: earning, error } = await this.supabaseClient
+      const { data: earning, error } = await this.databaseClient
         .from('earnings')
         .select(`
           id,
@@ -125,7 +125,7 @@ export class EarningsRepository implements IEarningsRepository {
         .single();
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         return null;
       }
 
@@ -159,7 +159,7 @@ export class EarningsRepository implements IEarningsRepository {
 
   async findAllEarnings(timeRange?: { start: Date; end: Date }): Promise<Earnings[]> {
     try {
-      let query = this.supabaseClient
+      let query = this.databaseClient
         .from('earnings')
         .select(`
           id,
@@ -189,7 +189,7 @@ export class EarningsRepository implements IEarningsRepository {
       const { data: earnings, error } = await query;
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         return [];
       }
 
@@ -233,13 +233,13 @@ export class EarningsRepository implements IEarningsRepository {
         updateData.payment_date = paymentDate.toISOString();
       }
 
-      const { error } = await this.supabaseClient
+      const { error } = await this.databaseClient
         .from('earnings')
         .update(updateData)
         .eq('id', id);
 
       if (error) {
-        console.error('Supabase update error:', error);
+        console.error('Database update error:', error);
         throw new Error('Failed to update payment status');
       }
 
@@ -258,7 +258,7 @@ export class EarningsRepository implements IEarningsRepository {
   }> {
     try {
       // Get earnings within the period
-      const { data: earnings, error } = await this.supabaseClient
+      const { data: earnings, error } = await this.databaseClient
         .from('earnings')
         .select('total_earnings, net_earnings, payment_status')
         .eq('courier_id', courierId)
@@ -266,7 +266,7 @@ export class EarningsRepository implements IEarningsRepository {
         .lte('created_at', period.end.toISOString());
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         return {
           totalEarnings: 0,
           totalDeliveries: 0,
@@ -328,14 +328,14 @@ export class EarningsRepository implements IEarningsRepository {
   }> {
     try {
       // Aggregate all earnings within the period
-      const { data: earnings, error } = await this.supabaseClient
+      const { data: earnings, error } = await this.databaseClient
         .from('earnings')
         .select('total_earnings, commission, net_earnings, payment_status')
         .gte('created_at', period.start.toISOString())
         .lte('created_at', period.end.toISOString());
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         return {
           totalRevenue: 0,
           totalCommissions: 0,
@@ -384,3 +384,4 @@ export class EarningsRepository implements IEarningsRepository {
     }
   }
 }
+

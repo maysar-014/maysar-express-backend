@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "event_logs" (
+CREATE TABLE IF NOT EXISTS "event_logs" (
     "id" TEXT NOT NULL,
     "eventId" TEXT NOT NULL,
     "consumerName" TEXT NOT NULL,
@@ -9,10 +9,10 @@ CREATE TABLE "event_logs" (
 );
 
 -- CreateIndex
-CREATE INDEX "event_logs_eventId_idx" ON "event_logs"("eventId");
+CREATE INDEX IF NOT EXISTS "event_logs_eventId_idx" ON "event_logs"("eventId");
 
 -- CreateIndex
-CREATE INDEX "event_logs_consumerName_idx" ON "event_logs"("consumerName");
+CREATE INDEX IF NOT EXISTS "event_logs_consumerName_idx" ON "event_logs"("consumerName");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "event_logs_eventId_consumerName_key" ON "event_logs"("eventId", "consumerName");
+CREATE UNIQUE INDEX IF NOT EXISTS "event_logs_eventId_consumerName_key" ON "event_logs"("eventId", "consumerName");

@@ -14,20 +14,28 @@ const parseOrRespond = (schema: z.ZodSchema, data: any, res: express.Response) =
   return result.data;
 };
 
+const isSupportedId = (value: string) =>
+  z.string().cuid().safeParse(value).success || z.string().uuid().safeParse(value).success;
+
+const supportedIdSchema = z
+  .string()
+  .trim()
+  .refine((value) => isSupportedId(value), { message: 'Expected CUID or UUID' });
+
 const verifyDocumentSchema = z.object({
-  userId: z.string().cuid(),
+  userId: supportedIdSchema,
   documentType: z.enum(['national_id', 'passport', 'drivers_license', 'proof_of_address']),
   documentUrl: z.string().url()
 });
 
 const manualReviewSchema = z.object({
-  userId: z.string().cuid(),
+  userId: supportedIdSchema,
   decision: z.enum(['approved', 'rejected', 'under_review']),
-  reviewerId: z.string().cuid()
+  reviewerId: supportedIdSchema
 });
 
 const riskAssessmentSchema = z.object({
-  userId: z.string().cuid(),
+  userId: supportedIdSchema,
   assessmentType: z.string()
 });
 
@@ -44,14 +52,14 @@ const generateReportSchema = z.object({
 });
 
 const auditLogSchema = z.object({
-  userId: z.string().cuid(),
+  userId: supportedIdSchema,
   action: z.string().min(1),
   resource: z.string().min(1),
   resourceId: z.string()
 });
 
 const kycStatusParamSchema = z.object({
-  userId: z.string().cuid()
+  userId: supportedIdSchema
 });
 
 export const createApp = (prisma: PrismaClient, eventBus: EventBus) => {
@@ -98,22 +106,31 @@ app.post('/api/compliance/manual-review', async (req, res) => {
   const { sagaId } = req.body;
 
   try {
+    const eligibleStatuses = ['pending', 'under_review'] as const;
     const currentRecord = await prisma.compliance_KYCRecord.findFirst({
-      where: { userId, verificationStatus: 'under_review' }
+      where: {
+        userId,
+        verificationStatus: { in: [...eligibleStatuses] }
+      },
+      orderBy: { submittedAt: 'desc' }
     });
 
+    if (!currentRecord) {
+      return res.status(404).json({ success: false, error: 'No pending/under_review record found for user' });
+    }
+
     const updateResult = await prisma.compliance_KYCRecord.updateMany({
-      where: { userId, verificationStatus: 'under_review' },
+      where: { id: currentRecord.id },
       data: { verificationStatus: decision, verifiedBy: reviewerId, verifiedAt: new Date() }
     });
 
     if (updateResult.count === 0) {
-      return res.status(404).json({ success: false, error: 'No under_review record found for user' });
+      return res.status(404).json({ success: false, error: 'No record updated for user' });
     }
 
     await eventBus.publish('KYCStatusChanged.v1', {
       userId,
-      previousStatus: currentRecord?.verificationStatus || 'under_review',
+      previousStatus: currentRecord.verificationStatus,
       newStatus: decision,
       changedBy: reviewerId,
       sagaId,

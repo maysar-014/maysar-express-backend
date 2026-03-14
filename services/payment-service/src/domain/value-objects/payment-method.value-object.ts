@@ -313,3 +313,4 @@ export class PaymentMethod {
         return new PaymentMethod(type, provider);
     }
 }
+

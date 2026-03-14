@@ -1,5 +1,5 @@
 -- Insert test couriers for development and testing
--- Run this script in Supabase SQL Editor to populate test data
+-- Run this script in Database SQL Editor to populate test data
 
 INSERT INTO couriers (
   id,
@@ -55,3 +55,4 @@ SELECT
 FROM couriers
 WHERE is_available = true
 ORDER BY id;
+

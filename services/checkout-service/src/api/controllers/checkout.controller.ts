@@ -20,7 +20,8 @@ export class CheckoutController {
 
   constructor(
     private checkoutRepository: any,
-    private eventBus: any
+    private eventBus: any,
+    private cartRepository?: any
   ) {
     const pricingPolicy = new PricingPolicy({
       taxRate: config.pricing.taxRate,
@@ -31,7 +32,7 @@ export class CheckoutController {
     this.initiateCheckoutUseCase = new InitiateCheckoutUseCase(
       pricingPolicy,
       checkoutRepository,
-      undefined,
+      cartRepository,
       eventBus
     );
   }

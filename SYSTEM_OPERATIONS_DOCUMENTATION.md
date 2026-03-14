@@ -321,7 +321,7 @@ service-name/
 
 **Key Operations**:
 - **Payment Processing**: Process payments via payment gateways
-  - Card payments (Stripe, Pesapal)
+  - Card payments (Pesapal)
   - Mobile money (M-Pesa, Airtel Money)
   - Bank transfers
   - Wallet payments

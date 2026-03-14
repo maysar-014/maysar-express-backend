@@ -5,7 +5,7 @@ dotenv.config();
 
 const envSchema = z.object({
     // Global
-    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
     DATABASE_URL: z.string().url(),
     REDIS_URL: z.string().url(),
 
@@ -23,9 +23,13 @@ const envSchema = z.object({
     CATALOG_SERVICE_DB_USER: z.string().min(1),
     CATALOG_SERVICE_DB_PASSWORD: z.string().min(1),
 
-    // SMS Service
+    // SMS Service (Africa's Talking)
     SMS_SERVICE_API_KEY: z.string().min(1),
-    SMS_SERVICE_PROVIDER: z.string().min(1),
+    SMS_SERVICE_PROVIDER: z.string().min(1).default('africastalking'),
+    SMS_PROVIDER: z.string().min(1).default('africastalking'),
+    AFRICASTALKING_USERNAME: z.string().min(1).optional(),
+    AFRICASTALKING_API_KEY: z.string().min(1).optional(),
+    AFRICASTALKING_SENDER_ID: z.string().optional(),
 
     // Add more as needed...
 });

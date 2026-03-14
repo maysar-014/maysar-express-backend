@@ -176,6 +176,21 @@ model Analytics_Metric {
   @@index([dimension, metricType])
 }
 
+model Analytics_Event {
+  id          String   @id
+  type        String
+  data        Json
+  timestamp   DateTime
+  status      String
+  processedAt DateTime?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, timestamp])
+  @@index([type, timestamp])
+}
+
 model User {
   id                      String                        @id @default(cuid())
   email                   String                        @unique

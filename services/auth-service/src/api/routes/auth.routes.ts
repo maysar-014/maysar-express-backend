@@ -4,6 +4,16 @@ import { asyncHandler } from '../middleware/error-handler.middleware';
 import { rateLimit } from '../middleware/rate-limiting.middleware';
 import { csrfValidationMiddleware } from '@shared/middleware/csrf.middleware';
 
+const parseLimit = (value: string | undefined, fallback: number): number => {
+  if (!value) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const isProduction = process.env.NODE_ENV === 'production';
+const registerLimitMax = parseLimit(process.env.AUTH_REGISTER_RATE_LIMIT_MAX, isProduction ? 10 : 60);
+const loginLimitMax = parseLimit(process.env.AUTH_LOGIN_RATE_LIMIT_MAX, isProduction ? 5 : 60);
+
 // Export factory function instead of router instance directly
 export const createAuthRoutes = (authController: any): Router => { // Using any for controller to avoid type issues if imports vary, but ideally AuthController
   const router = Router();
@@ -13,12 +23,40 @@ export const createAuthRoutes = (authController: any): Router => { // Using any 
   // ============================================================================
 
   /**
+   * User registration
+   * POST /api/v1/auth/register
+   */
+  router.post(
+    '/register',
+    rateLimit({ windowMs: 15 * 60 * 1000, max: registerLimitMax, prefix: 'rl:register:' }),
+    csrfValidationMiddleware,
+    validateRequest({
+      body: {
+        email: { type: 'string', required: true, format: 'email' },
+        role: {
+          type: 'string',
+          required: false,
+          enum: ['buyer', 'seller', 'courier', 'supplier', 'enabler', 'system', 'admin', 'user']
+        },
+        profile: { type: 'object', required: false },
+        password: { type: 'string', required: false, minLength: 8 }
+      }
+    }),
+    asyncHandler(authController.register.bind(authController))
+  );
+
+  /**
    * User login
    * POST /api/v1/auth/login
    */
   router.post(
     '/login',
-    rateLimit({ windowMs: 15 * 60 * 1000, max: 5, prefix: 'rl:login:' }), // Stricter limit for login
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: loginLimitMax,
+      skipSuccessfulRequests: true,
+      prefix: 'rl:login:'
+    }),
     csrfValidationMiddleware,
     validateRequest({
       body: {

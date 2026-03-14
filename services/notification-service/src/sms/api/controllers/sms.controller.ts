@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { inject, injectable } from 'inversify';
+import { inject } from 'inversify';
 import { controller, httpPost, httpGet } from 'inversify-express-utils';
 import { TYPES } from '../../infrastructure/types';
 import { SendSmsUseCase } from '../../application/use-cases/send-sms.use-case';
@@ -10,7 +10,6 @@ import { SendSmsDto, SendSmsDtoSchema } from '../../application/dto/sms.dto';
 import Joi from 'joi';
 
 @controller('/sms')
-@injectable()
 export class SmsController {
     constructor(
         @inject(TYPES.SendSmsUseCase) private sendSmsUseCase: SendSmsUseCase,

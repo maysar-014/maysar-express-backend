@@ -10,10 +10,10 @@ This document defines how secrets are classified, stored, and injected across al
 
 | Variable                      | Purpose                          | Classification                | Usage Location                 |
 | ----------------------------- | -------------------------------- | ----------------------------- | ------------------------------ |
-| `POSTGRES_USER`               | PostgreSQL username              | `[SECRETS MANAGER]`           | `docker-compose.prod.yml`, K8s |
-| `POSTGRES_PASSWORD`           | PostgreSQL password              | `[SECRETS MANAGER]`           | `docker-compose.prod.yml`, K8s |
-| `POSTGRES_DB`                 | Database name                    | `[ENV VAR]`                   | `docker-compose.prod.yml`, K8s |
-| `REDIS_PASSWORD`              | Redis AUTH password              | `[SECRETS MANAGER]`           | `docker-compose.prod.yml`, K8s |
+| `POSTGRES_USER`               | PostgreSQL username              | `[SECRETS MANAGER]`           | `docker-compose.prod.yml`, Orchestrator |
+| `POSTGRES_PASSWORD`           | PostgreSQL password              | `[SECRETS MANAGER]`           | `docker-compose.prod.yml`, Orchestrator |
+| `POSTGRES_DB`                 | Database name                    | `[ENV VAR]`                   | `docker-compose.prod.yml`, Orchestrator |
+| `REDIS_PASSWORD`              | Redis AUTH password              | `[SECRETS MANAGER]`           | `docker-compose.prod.yml`, Orchestrator |
 | `JWT_SECRET`                  | JWT signing key                  | `[SECRETS MANAGER]`           | Application runtime            |
 | `USER_SERVICE_JWT_SECRET`     | User service JWT key             | `[SECRETS MANAGER]`           | Application runtime            |
 | `AUTH_SERVICE_SESSION_SECRET` | Session encryption key           | `[SECRETS MANAGER]`           | Application runtime            |
@@ -21,8 +21,8 @@ This document defines how secrets are classified, stored, and injected across al
 | `PESAPAL_CONSUMER_SECRET`     | Pesapal API secret               | `[SECRETS MANAGER]`           | Payment service                |
 | `PII_ENCRYPTION_KEY`          | PII encryption key (32-byte hex) | `[SECRETS MANAGER]`           | Application runtime            |
 | `PII_HMAC_SECRET`             | PII HMAC secret                  | `[SECRETS MANAGER]`           | Application runtime            |
-| `STRIPE_SECRET_KEY`           | Stripe API secret                | `[SECRETS MANAGER]`           | Payment service                |
-| `STRIPE_WEBHOOK_SECRET`       | Stripe webhook signature         | `[SECRETS MANAGER]`           | Payment service                |
+| `PESAPAL_SECRET_KEY`           | Pesapal API secret                | `[SECRETS MANAGER]`           | Payment service                |
+| `PESAPAL_WEBHOOK_SECRET`       | Pesapal webhook signature         | `[SECRETS MANAGER]`           | Payment service                |
 | `AWS_ACCESS_KEY_ID`           | AWS S3 backup credentials        | `[SECRETS MANAGER]`           | Backup containers              |
 | `AWS_SECRET_ACCESS_KEY`       | AWS S3 secret                    | `[SECRETS MANAGER]`           | Backup containers              |
 | `AWS_DEFAULT_REGION`          | AWS region                       | `[ENV VAR]`                   | Backup containers              |
@@ -36,7 +36,6 @@ This document defines how secrets are classified, stored, and injected across al
 | `OCI_FINGERPRINT`             | OCI API key fingerprint          | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml`     |
 | `OCI_TENANCY_OCID`            | OCI tenancy identifier           | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml`     |
 | `OCI_PRIVATE_KEY`             | OCI API private key              | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml`     |
-| `OKE_CLUSTER_OCID`            | OKE cluster identifier           | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml`     |
 
 ---
 
@@ -71,7 +70,7 @@ The application loads `.env` via `dotenv` at startup.
 
 ### Secret Injection
 
-The `docker-compose.prod.yml` file (lines 8–16, 149–185) references secrets via environment variable substitution:
+The `docker-compose.prod.yml` file (lines 8â€“16, 149â€“185) references secrets via environment variable substitution:
 
 ```yaml
 services:
@@ -111,90 +110,23 @@ services:
 
 ---
 
-## 4. Kubernetes (OKE)
-
-### Current State
-
-The file `infra/k8s/maysar-backend/configmap.yaml` contains a `Secret` manifest with **placeholder values**. These are for local development only.
-
-### Production Secret Injection
-
-**Option A: OCI Vault + ExternalSecrets (Recommended)**
-
-1. Store secrets in OCI Vault and note the OCID for each secret.
-
-2. Install the [OCI Secrets Store CSI Driver](https://github.com/oracle/oci-secrets-store-csi-driver-provider) or [External Secrets Operator](https://external-secrets.io/).
-
-3. Replace the `Secret` manifest in `configmap.yaml` with an `ExternalSecret` resource:
-
-   ```yaml
-   apiVersion: external-secrets.io/v1beta1
-   kind: ExternalSecret
-   metadata:
-     name: maysar-backend-secrets
-     namespace: maysar-backend
-   spec:
-     secretStoreRef:
-       name: oci-vault-store
-       kind: SecretStore
-     target:
-       name: maysar-backend-secrets
-     data:
-       - secretKey: DATABASE_URL
-         remoteRef:
-           key: <OCI_VAULT_SECRET_OCID>
-       - secretKey: JWT_SECRET
-         remoteRef:
-           key: <OCI_VAULT_SECRET_OCID>
-   ```
-
-4. The ExternalSecrets controller fetches secrets at pod start and creates the Kubernetes `Secret` automatically.
-
-**Option B: kubectl create secret (CI/CD)**
-
-In `.github/workflows/ci.yml` deploy step, inject secrets from GitHub Actions secrets:
-
-```yaml
-- name: 🔐 Create Kubernetes secrets
-  run: |
-    kubectl create secret generic maysar-backend-secrets \
-      --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-      --from-literal=REDIS_URL="${{ secrets.REDIS_URL }}" \
-      --from-literal=JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-      --namespace maysar-backend \
-      --dry-run=client -o yaml | kubectl apply -f -
-```
-
-This keeps secrets out of the repository and injects them at deploy time.
-
----
-
 ## 5. CI/CD Secrets (GitHub Actions)
 
 ### Required Secrets
 
-Add these in **GitHub → Settings → Secrets and Variables → Actions**:
+Add these in **GitHub â†’ Settings â†’ Secrets and Variables â†’ Actions**:
 
 | Secret Name        | Description                      | Used In                                       |
 | ------------------ | -------------------------------- | --------------------------------------------- |
-| `DOCKER_USERNAME`  | Docker Hub username              | `docker-build-monolith`, `docker-build-admin` |
-| `DOCKER_PASSWORD`  | Docker Hub password              | `docker-build-monolith`, `docker-build-admin` |
-| `OCI_USER_OCID`    | OCI user OCID                    | `deploy-staging`                              |
-| `OCI_FINGERPRINT`  | OCI API key fingerprint          | `deploy-staging`                              |
-| `OCI_TENANCY_OCID` | OCI tenancy OCID                 | `deploy-staging`                              |
-| `OCI_PRIVATE_KEY`  | OCI API private key (PEM format) | `deploy-staging`                              |
-| `OKE_CLUSTER_OCID` | OKE cluster OCID                 | `deploy-staging`                              |
-| `DATABASE_URL`     | Production database URL          | `deploy-staging` (for kubectl secret)         |
-| `REDIS_URL`        | Production Redis URL             | `deploy-staging` (for kubectl secret)         |
-| `JWT_SECRET`       | Production JWT secret            | `deploy-staging` (for kubectl secret)         |
+| `DOCKER_USERNAME` | Docker Hub username | `docker-build-monolith`, `docker-build-admin` |
+| `DOCKER_PASSWORD` | Docker Hub password | `docker-build-monolith`, `docker-build-admin` |
 
 ### Workflow References
 
 See `.github/workflows/ci.yml`:
 
-- Lines 407–413: Docker Hub login
-- Lines 497–503: OCI credentials configuration
-- Line 511: OKE cluster kubeconfig setup
+- Lines 407â€“413: Docker Hub login
+- Docker image build/publish jobs under `.github/workflows/ci.yml`
 
 ---
 
@@ -203,7 +135,7 @@ See `.github/workflows/ci.yml`:
 ### Database Password
 
 1. Generate new password in OCI Vault.
-2. Update application secret (ExternalSecret or kubectl).
+2. Update application secret (ExternalSecret or deployctl).
 3. Update database user password:
    ```sql
    ALTER USER maysar_user WITH PASSWORD '<new_password>';
@@ -214,7 +146,7 @@ See `.github/workflows/ci.yml`:
 
 1. Generate new secret: `openssl rand -hex 32`
 2. Update OCI Vault secret.
-3. Deploy new secret to K8s.
+3. Deploy new secret to Orchestrator.
 4. Rolling restart application pods.
 5. **Note:** Existing tokens will be invalidated; users must re-authenticate.
 
@@ -222,7 +154,7 @@ See `.github/workflows/ci.yml`:
 
 1. Rotate keys in Pesapal dashboard.
 2. Update OCI Vault secrets.
-3. Deploy to K8s and restart payment service pods.
+3. Deploy to Orchestrator and restart payment service pods.
 
 ### Emergency Rotation
 
@@ -232,16 +164,16 @@ For compromised secrets, follow the incident playbook: `docs/incident-playbook.m
 
 ## 7. Verification
 
-### Check Secret Presence (K8s)
+### Check Secret Presence (Orchestrator)
 
 ```bash
-kubectl get secret maysar-backend-secrets -n maysar-backend -o yaml
+deployctl get secret maysar-backend-secrets -n maysar-backend -o yaml
 ```
 
 ### Verify Secret Injection (Pod)
 
 ```bash
-kubectl exec -it <pod-name> -n maysar-backend -- env | grep JWT_SECRET
+deployctl exec -it <pod-name> -n maysar-backend -- env | grep JWT_SECRET
 ```
 
 ### Audit Secret Access

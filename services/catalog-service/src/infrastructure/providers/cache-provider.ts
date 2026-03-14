@@ -5,6 +5,7 @@
  */
 
 import { CacheService } from '../../domain/interfaces';
+import { scanKeysIoredis } from '@shared/redis/scan-keys';
 
 /**
  * Cache Provider Types
@@ -313,10 +314,10 @@ export class RedisCacheProvider implements CacheService {
     try {
       // Clear all keys with our prefix
       const pattern = this.getFullKey('*');
-      const keys = await this.redisClient.keys(pattern);
+      const keys = await scanKeysIoredis(this.redisClient, pattern);
 
       if (keys.length > 0) {
-        await this.redisClient.del(keys);
+        await this.redisClient.del(...keys);
       }
     } catch (error) {
       console.error('Redis cache clear error:', error);

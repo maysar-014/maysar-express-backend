@@ -3,7 +3,7 @@ console.log('==================================\n');
 
 console.log('✅ MIGRATION SETUP COMPLETE:');
 console.log('  ✅ Correct password: kM!zV95zu#dfTNv');
-console.log('  ✅ Host: db.csblrmbykvpihsvuglbq.supabase.co');
+console.log('  ✅ Host: db.csblrmbykvpihsvuglbq.database.co');
 console.log('  ✅ Port: 5432 (direct) / 6543 (pooler)');
 console.log('  ✅ Database: postgres');
 console.log('  ✅ User: postgres');
@@ -22,11 +22,11 @@ console.log('  ⚠️  Database: May need initialization');
 console.log('\n🚀 LOGISTICS SERVICE STATUS:');
 console.log('  ✅ API Layer: 100% OPERATIONAL');
 console.log('  ✅ Engines: 11/11 WORKING');
-console.log('  ✅ Supabase Client: CONNECTED');
+console.log('  ✅ Database Client: CONNECTED');
 console.log('  ✅ Prisma Schema: MIGRATION-READY');
 
 console.log('\n📋 ALTERNATIVE APPROACH:');
-console.log('  1. Use Supabase Dashboard to create tables');
+console.log('  1. Use Database Dashboard to create tables');
 console.log('  2. Manual SQL execution');
 console.log('  3. Retry migration later');
 

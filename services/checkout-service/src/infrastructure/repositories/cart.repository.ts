@@ -20,6 +20,10 @@ export class CartRepository {
     return this.carts.get(cartId) || null;
   }
 
+  async getById(cartId: string): Promise<CartData | null> {
+    return this.getCart(cartId);
+  }
+
   async saveCart(cartId: string, userId: string, cart: Cart): Promise<void> {
     const now = new Date();
     const existing = this.carts.get(cartId);
@@ -33,8 +37,16 @@ export class CartRepository {
     });
   }
 
+  async save(cartId: string, userId: string, cart: Cart): Promise<void> {
+    return this.saveCart(cartId, userId, cart);
+  }
+
   async deleteCart(cartId: string): Promise<void> {
     this.carts.delete(cartId);
+  }
+
+  async delete(cartId: string): Promise<void> {
+    return this.deleteCart(cartId);
   }
 
   async clearExpiredCarts(expirationMs: number): Promise<void> {

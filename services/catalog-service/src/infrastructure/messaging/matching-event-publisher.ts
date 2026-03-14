@@ -1,5 +1,5 @@
 ﻿// @ts-nocheck
-import { EventBus } from '../../../shared/event-bus/event-bus';
+import { EventBus } from '@shared-events/eventBus';
 import {
     ProductMatchFoundEvent,
     ProductMatchConfirmationRequiredEvent,

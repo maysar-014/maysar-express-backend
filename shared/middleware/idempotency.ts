@@ -2,11 +2,14 @@ import { Request, Response, NextFunction } from 'express';
 import Redis from 'ioredis';
 import { createHash } from 'crypto';
 import { PrismaClient } from '@prisma/client';
+import { getSharedRedisClient, resolveRedisUrl } from '../redis/ioredis-client';
 
 interface IdempotencyConfig {
   ttlSeconds: number;
   keyPrefix: string;
   headerName: string;
+  lockTtlSeconds: number;
+  waitForResponseMs: number;
   generateKey?: (req: Request) => string;
 }
 
@@ -18,9 +21,11 @@ export class IdempotencyMiddleware {
     redisUrl: string,
     config: Partial<IdempotencyConfig> = {}
   ) {
-    this.redis = new Redis(redisUrl);
+    this.redis = getSharedRedisClient(resolveRedisUrl(redisUrl));
     this.config = {
       ttlSeconds: 24 * 60 * 60, // 24 hours
+      lockTtlSeconds: 30,
+      waitForResponseMs: 1200,
       keyPrefix: 'idempotency:',
       headerName: 'idempotency-key',
       ...config
@@ -44,6 +49,7 @@ export class IdempotencyMiddleware {
       }
 
       const cacheKey = `${this.config.keyPrefix}${idempotencyKey}`;
+      const lockKey = `${cacheKey}:lock`;
       
       try {
         // Check if request was already processed
@@ -54,20 +60,45 @@ export class IdempotencyMiddleware {
           return res.status(statusCode).json(body);
         }
 
+        const lockAcquired = await this.redis.set(
+          lockKey,
+          '1',
+          'EX',
+          this.config.lockTtlSeconds,
+          'NX'
+        );
+
+        if (!lockAcquired) {
+          const delayedResponse = await this.waitForCachedResponse(cacheKey);
+          if (delayedResponse) {
+            return res.status(delayedResponse.statusCode).json(delayedResponse.body);
+          }
+
+          return res.status(409).json({
+            error: 'Request already in progress',
+            message: 'A request with this idempotency key is currently being processed.'
+          });
+        }
+
         // Store original response methods
         const originalSend = res.send;
         const originalJson = res.json;
         
         // Intercept response
         res.json = (body: any) => {
-          this.cacheResponse(cacheKey, res.statusCode, body);
+          this.cacheResponse(cacheKey, lockKey, res.statusCode, body);
           return originalJson.call(res, body);
         };
 
         res.send = (body: any) => {
-          this.cacheResponse(cacheKey, res.statusCode, body);
+          this.cacheResponse(cacheKey, lockKey, res.statusCode, body);
           return originalSend.call(res, body);
         };
+
+        res.on('close', () => {
+          // Ensure abandoned requests don't leave a stale in-flight lock behind
+          void this.redis.del(lockKey);
+        });
 
         next();
       } catch (error) {
@@ -90,18 +121,45 @@ export class IdempotencyMiddleware {
     return null;
   }
 
-  private async cacheResponse(key: string, statusCode: number, body: any): Promise<void> {
+  private async cacheResponse(key: string, lockKey: string, statusCode: number, body: any): Promise<void> {
     try {
       const response = { statusCode, body };
-      await this.redis.setex(key, this.config.ttlSeconds, JSON.stringify(response));
+      await this.redis
+        .multi()
+        .setex(key, this.config.ttlSeconds, JSON.stringify(response))
+        .del(lockKey)
+        .exec();
     } catch (error) {
       console.error('Failed to cache idempotent response:', error);
+      await this.redis.del(lockKey);
     }
   }
 
   async clearKey(idempotencyKey: string): Promise<void> {
     const cacheKey = `${this.config.keyPrefix}${idempotencyKey}`;
-    await this.redis.del(cacheKey);
+    await this.redis.del(cacheKey, `${cacheKey}:lock`);
+  }
+
+  private async waitForCachedResponse(
+    cacheKey: string
+  ): Promise<{ statusCode: number; body: any } | null> {
+    const deadline = Date.now() + this.config.waitForResponseMs;
+
+    while (Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const cachedResponse = await this.redis.get(cacheKey);
+      if (!cachedResponse) {
+        continue;
+      }
+
+      try {
+        return JSON.parse(cachedResponse) as { statusCode: number; body: any };
+      } catch {
+        return null;
+      }
+    }
+
+    return null;
   }
 }
 
@@ -113,7 +171,7 @@ export class EventIdempotency {
   private ttlSeconds = 24 * 60 * 60; // 24 hours
 
   constructor(redisUrl: string, prisma?: PrismaClient) {
-    this.redis = new Redis(redisUrl);
+    this.redis = getSharedRedisClient(resolveRedisUrl(redisUrl));
     this.prisma = prisma;
   }
 
@@ -178,6 +236,20 @@ export class EventIdempotency {
     handler: () => Promise<T>
   ): Promise<T | null> {
     const key = `${this.keyPrefix}${consumerName}:${eventId}`;
+
+    if (!this.prisma) {
+      const claimed = await this.redis.set(key, '1', 'EX', this.ttlSeconds, 'NX');
+      if (!claimed) {
+        return null;
+      }
+
+      try {
+        return await handler();
+      } catch (error) {
+        await this.redis.del(key);
+        throw error;
+      }
+    }
 
     // Fast path: check Redis cache first
     try {

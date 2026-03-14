@@ -32,8 +32,8 @@ describe('diagnostic-runner script', () => {
         }))
       }
     }), { virtual: true });
-    jest.doMock('./infrastructure/database/supabase.client', () => ({
-      SupabaseClientManager: {
+    jest.doMock('./infrastructure/database/prisma.client', () => ({
+      PrismaClientManager: {
         getInstance: jest.fn(() => ({
           connect: jest.fn().mockResolvedValue(undefined),
           healthCheck: jest.fn().mockResolvedValue({ status: 'healthy', latency: 12 })
@@ -89,8 +89,8 @@ describe('diagnostic-runner script', () => {
         }))
       }
     }), { virtual: true });
-    jest.doMock('./infrastructure/database/supabase.client', () => ({
-      SupabaseClientManager: {
+    jest.doMock('./infrastructure/database/prisma.client', () => ({
+      PrismaClientManager: {
         getInstance: jest.fn(() => ({
           connect: jest.fn().mockRejectedValue(new Error('database unavailable')),
           healthCheck: jest.fn()
@@ -127,3 +127,4 @@ describe('diagnostic-runner script', () => {
     expect(logs.some(line => line.includes('database unavailable'))).toBe(true);
   });
 });
+

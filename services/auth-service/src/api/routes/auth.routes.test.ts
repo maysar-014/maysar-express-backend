@@ -34,6 +34,7 @@ const makeController = () => {
     });
 
   return {
+    register: respond('register'),
     login: respond('login'),
     logout: respond('logout'),
     refreshToken: respond('refreshToken'),
@@ -63,6 +64,7 @@ describe('auth.routes', () => {
 
     expect(endpoints).toEqual(
       expect.arrayContaining([
+        '/register',
         '/login',
         '/logout',
         '/refresh',

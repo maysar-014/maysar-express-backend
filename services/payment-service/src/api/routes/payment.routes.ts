@@ -7,18 +7,19 @@ import { Router } from 'express';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import { RedisRateLimitStore } from '../../../../../shared/middleware/redis-rate-limit.store';
-import Redis from 'ioredis';
 import { PaymentController } from '../controllers/payment.controller';
 import { IdempotencyMiddleware } from '@shared/middleware/idempotency';
 import { createHash } from 'crypto';
+import { getSharedRedisClient, resolveRedisUrl } from '@shared/redis/ioredis-client';
 
 const idempotencyMiddleware = new IdempotencyMiddleware(process.env.REDIS_URL!);
-const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+const redisClient = getSharedRedisClient(resolveRedisUrl(process.env.REDIS_URL));
 
 const paymentLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 20,
-    store: new RedisRateLimitStore(redisClient, 'rl:payment:')
+    store: new RedisRateLimitStore(redisClient, 'rl:payment:'),
+    passOnStoreError: true
 });
 
 const webhookIdempotencyMiddleware = new IdempotencyMiddleware(
@@ -27,10 +28,32 @@ const webhookIdempotencyMiddleware = new IdempotencyMiddleware(
         keyPrefix: 'webhook:idempotency:',
         headerName: 'x-webhook-idempotency-key',
         generateKey: (req) => {
-            const { OrderTrackingId, OrderMerchantReference } = req.query;
-            if (OrderTrackingId && OrderMerchantReference) {
+            const bodyPayload = (() => {
+                if (Buffer.isBuffer(req.body)) {
+                    try {
+                        return JSON.parse(req.body.toString('utf8') || '{}');
+                    } catch {
+                        return {};
+                    }
+                }
+                return req.body || {};
+            })();
+
+            const txRef =
+                bodyPayload.OrderTrackingId ||
+                bodyPayload.orderTrackingId ||
+                bodyPayload.merchant_reference ||
+                bodyPayload.merchantReference ||
+                bodyPayload.tx_ref ||
+                bodyPayload?.data?.tx_ref ||
+                bodyPayload?.data?.order_tracking_id ||
+                bodyPayload?.data?.merchant_reference ||
+                req.query.OrderTrackingId;
+            const eventStatus = bodyPayload.status || bodyPayload?.data?.status || req.query.Status || 'UNKNOWN';
+
+            if (txRef) {
                 return createHash('sha256')
-                    .update(`${OrderTrackingId}:${OrderMerchantReference}`)
+                    .update(`${txRef}:${eventStatus}`)
                     .digest('hex');
             }
             return '';
@@ -69,3 +92,4 @@ export function createPaymentRoutes(paymentController: PaymentController): Route
 
     return router;
 }
+

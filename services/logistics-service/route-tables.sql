@@ -1,5 +1,5 @@
 -- Maysar Logistics Service - Routes Table Schema
--- Run this script in Supabase SQL Editor to add routes functionality
+-- Run this script in Database SQL Editor to add routes functionality
 
 -- Create routes table
 CREATE TABLE IF NOT EXISTS routes (
@@ -131,3 +131,4 @@ ORDER BY ordinal_position;
 SELECT id, courier_id, status, total_distance, estimated_duration, created_at
 FROM routes
 ORDER BY created_at DESC;
+

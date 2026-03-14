@@ -1,5 +1,5 @@
 -- CreateTable CategoryAttribute
-CREATE TABLE "catalog_category_attributes" (
+CREATE TABLE IF NOT EXISTS "catalog_category_attributes" (
     "id" UUID NOT NULL,
     "categoryId" UUID NOT NULL,
     "name" VARCHAR(100) NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE "catalog_category_attributes" (
 );
 
 -- CreateTable ProductAttribute
-CREATE TABLE "catalog_product_attributes" (
+CREATE TABLE IF NOT EXISTS "catalog_product_attributes" (
     "id" UUID NOT NULL,
     "productId" UUID NOT NULL,
     "attributeId" UUID NOT NULL,
@@ -26,13 +26,13 @@ CREATE TABLE "catalog_product_attributes" (
 );
 
 -- Add slug column (nullable initially)
-ALTER TABLE "catalog_products" ADD COLUMN "slug" VARCHAR(300);
+ALTER TABLE "catalog_products" ADD COLUMN IF NOT EXISTS "slug" VARCHAR(300);
 
 -- Add SEO fields
-ALTER TABLE "catalog_products" ADD COLUMN "seoTitle" VARCHAR(160);
-ALTER TABLE "catalog_products" ADD COLUMN "shortSeoDescription" VARCHAR(160);
-ALTER TABLE "catalog_products" ADD COLUMN "generatedDescription" TEXT;
-ALTER TABLE "catalog_products" ADD COLUMN "qualityScore" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "catalog_products" ADD COLUMN IF NOT EXISTS "seoTitle" VARCHAR(160);
+ALTER TABLE "catalog_products" ADD COLUMN IF NOT EXISTS "shortSeoDescription" VARCHAR(160);
+ALTER TABLE "catalog_products" ADD COLUMN IF NOT EXISTS "generatedDescription" TEXT;
+ALTER TABLE "catalog_products" ADD COLUMN IF NOT EXISTS "qualityScore" INTEGER NOT NULL DEFAULT 0;
 
 -- Backfill slug with collision-safe deterministic suffix, reserving space for suffix before truncation
 WITH slug_data AS (
@@ -67,15 +67,31 @@ WHERE "slug" IS NULL;
 
 -- Make slug NOT NULL and add unique constraint
 ALTER TABLE "catalog_products" ALTER COLUMN "slug" SET NOT NULL;
-ALTER TABLE "catalog_products" ADD CONSTRAINT "catalog_products_slug_unique" UNIQUE ("slug");
+DO $$ BEGIN
+  ALTER TABLE "catalog_products" ADD CONSTRAINT "catalog_products_slug_unique" UNIQUE ("slug");
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateIndex
-CREATE INDEX "catalog_category_attributes_categoryId_idx" ON "catalog_category_attributes"("categoryId");
-CREATE INDEX "catalog_product_attributes_productId_idx" ON "catalog_product_attributes"("productId");
-CREATE INDEX "catalog_product_attributes_attributeId_idx" ON "catalog_product_attributes"("attributeId");
-CREATE INDEX "catalog_products_slug_idx" ON "catalog_products"("slug");
+CREATE INDEX IF NOT EXISTS "catalog_category_attributes_categoryId_idx" ON "catalog_category_attributes"("categoryId");
+CREATE INDEX IF NOT EXISTS "catalog_product_attributes_productId_idx" ON "catalog_product_attributes"("productId");
+CREATE INDEX IF NOT EXISTS "catalog_product_attributes_attributeId_idx" ON "catalog_product_attributes"("attributeId");
+CREATE INDEX IF NOT EXISTS "catalog_products_slug_idx" ON "catalog_products"("slug");
 
 -- AddForeignKey
-ALTER TABLE "catalog_category_attributes" ADD CONSTRAINT "catalog_category_attributes_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "catalog_categories"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "catalog_product_attributes" ADD CONSTRAINT "catalog_product_attributes_productId_fkey" FOREIGN KEY ("productId") REFERENCES "catalog_products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "catalog_product_attributes" ADD CONSTRAINT "catalog_product_attributes_attributeId_fkey" FOREIGN KEY ("attributeId") REFERENCES "catalog_category_attributes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "catalog_category_attributes" ADD CONSTRAINT "catalog_category_attributes_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "catalog_categories"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE "catalog_product_attributes" ADD CONSTRAINT "catalog_product_attributes_productId_fkey" FOREIGN KEY ("productId") REFERENCES "catalog_products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE "catalog_product_attributes" ADD CONSTRAINT "catalog_product_attributes_attributeId_fkey" FOREIGN KEY ("attributeId") REFERENCES "catalog_category_attributes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;

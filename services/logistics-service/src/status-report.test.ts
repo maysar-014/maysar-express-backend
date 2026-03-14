@@ -30,8 +30,8 @@ describe('status-report script', () => {
         });
       }
     }), { virtual: true });
-    jest.doMock('./infrastructure/database/supabase.client', () => ({
-      SupabaseClientManager: {
+    jest.doMock('./infrastructure/database/prisma.client', () => ({
+      PrismaClientManager: {
         getInstance: jest.fn(() => ({
           connect: jest.fn().mockResolvedValue(undefined),
           healthCheck: jest.fn().mockResolvedValue({ status: 'healthy', latency: 15 })
@@ -51,7 +51,7 @@ describe('status-report script', () => {
     await waitForAsyncWork();
 
     expect(logs.some(line => line.includes('LOGISTICS SERVICE STATUS REPORT'))).toBe(true);
-    expect(logs.some(line => line.includes('Supabase: healthy'))).toBe(true);
+    expect(logs.some(line => line.includes('Database: healthy'))).toBe(true);
     expect(logs.some(line => line.includes('Redis/Memurai: healthy'))).toBe(true);
     expect(logs.some(line => line.includes('LOGISTICS SERVICE IS FULLY OPERATIONAL'))).toBe(true);
   });
@@ -69,8 +69,8 @@ describe('status-report script', () => {
         processLogisticsRequest = jest.fn().mockRejectedValue(new Error('engine down'));
       }
     }), { virtual: true });
-    jest.doMock('./infrastructure/database/supabase.client', () => ({
-      SupabaseClientManager: {
+    jest.doMock('./infrastructure/database/prisma.client', () => ({
+      PrismaClientManager: {
         getInstance: jest.fn(() => ({
           connect: jest.fn().mockRejectedValue(new Error('db down')),
           healthCheck: jest.fn()
@@ -89,8 +89,9 @@ describe('status-report script', () => {
     require('./status-report');
     await waitForAsyncWork();
 
-    expect(logs.some(line => line.includes('Supabase: Error - db down'))).toBe(true);
+    expect(logs.some(line => line.includes('Database: Error - db down'))).toBe(true);
     expect(logs.some(line => line.includes('Redis/Memurai: Error - redis down'))).toBe(true);
     expect(logs.some(line => line.includes('Engine: Error - engine down'))).toBe(true);
   });
 });
+

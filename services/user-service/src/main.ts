@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import { DatabaseConnection } from './infrastructure/database/prisma-client';
+import { DatabaseConnection, prisma } from './infrastructure/database/prisma-client';
 import { logger } from './infrastructure/services/logger.service';
 import { createUserRoutes } from './api/routes/user.routes';
 import { healthRoutes } from './api/routes/health.routes';
@@ -13,6 +13,8 @@ import { correlationMiddleware, tracingService } from '../../../shared/tracing/o
 import { metricsRegistry } from './infrastructure/monitoring/metrics';
 import { eventBus } from '@shared/events/eventBus';
 import type { DistributedSagaOrchestrator } from '@shared/saga/saga.orchestrator';
+import { PrismaUserRepository } from './infrastructure/repositories/prisma-user.repository';
+import { PiiEncryptionService } from '@shared/encryption/pii-encryption.service';
 
 /**
  * User Service - Enterprise-grade user management microservice
@@ -187,9 +189,7 @@ class UserServiceApplication {
       const { CODReputationEngine } = await import('./domain/engines/cod-reputation.engine');
       const { UpdateCODReputationUseCase } = await import('./application/use-cases/update-cod-reputation.use-case');
       const { CODEventHandler } = await import('./infrastructure/messaging/cod-event-handlers');
-      const { DatabaseUserRepository } = await import('./infrastructure/repositories/user.repository');
-
-      const userRepository = new DatabaseUserRepository();
+      const userRepository = new PrismaUserRepository(prisma, new PiiEncryptionService());
       const reputationEngine = new CODReputationEngine();
       const updateCODReputationUseCase = new UpdateCODReputationUseCase(userRepository, reputationEngine);
 
@@ -212,6 +212,15 @@ class UserServiceApplication {
       logger.info('✅ Saga Event Handlers initialized');
     } catch (error) {
       logger.warn('⚠️ Failed to initialize Saga Event Handlers', { error });
+    }
+
+    try {
+      const { AuthEventHandlers } = await import('./infrastructure/messaging/auth-event-handlers');
+      const authEventHandlers = new AuthEventHandlers();
+      authEventHandlers.setupSubscriptions();
+      logger.info('✅ Auth Sync Event Handlers initialized');
+    } catch (error) {
+      logger.warn('⚠️ Failed to initialize Auth Sync Event Handlers', { error });
     }
 
     // Initialize Saga Recovery Worker

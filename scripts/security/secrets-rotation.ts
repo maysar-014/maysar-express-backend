@@ -137,7 +137,7 @@ class SecretsRotationManager {
       }
 
       fs.writeFileSync(this.configPath, JSON.stringify(config, null, 2));
-      console.log('✅ Rotation configuration saved');
+      console.log('âœ… Rotation configuration saved');
     } catch (error) {
       console.error('Failed to save rotation config:', error);
     }
@@ -160,8 +160,8 @@ class SecretsRotationManager {
       // 4. Validate connectivity
       // 5. Rollback on failure
 
-      console.log(`🔄 Rotating database password for ${service}`);
-      console.log(`📝 New password generated (length: ${newPassword.length})`);
+      console.log(`ðŸ”„ Rotating database password for ${service}`);
+      console.log(`ðŸ“ New password generated (length: ${newPassword.length})`);
 
       // Simulate database password update
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -169,7 +169,7 @@ class SecretsRotationManager {
       // Update environment variables or configuration
       this.updateServiceConfig(service, 'DATABASE_PASSWORD', newPassword);
 
-      console.log(`✅ Database password rotated for ${service}`);
+      console.log(`âœ… Database password rotated for ${service}`);
 
       return {
         success: true,
@@ -180,7 +180,7 @@ class SecretsRotationManager {
       };
 
     } catch (error) {
-      console.error(`❌ Failed to rotate database password for ${service}:`, error);
+      console.error(`âŒ Failed to rotate database password for ${service}:`, error);
 
       return {
         success: false,
@@ -201,7 +201,7 @@ class SecretsRotationManager {
     try {
       const newApiKey = this.generateApiKey();
 
-      console.log(`🔄 Rotating API key for ${service}`);
+      console.log(`ðŸ”„ Rotating API key for ${service}`);
 
       // Update API key in configuration
       this.updateServiceConfig(service, 'API_KEY', newApiKey);
@@ -209,7 +209,7 @@ class SecretsRotationManager {
       // In production, update external services that use this key
       await this.updateExternalServices(service, newApiKey);
 
-      console.log(`✅ API key rotated for ${service}`);
+      console.log(`âœ… API key rotated for ${service}`);
 
       return {
         success: true,
@@ -220,7 +220,7 @@ class SecretsRotationManager {
       };
 
     } catch (error) {
-      console.error(`❌ Failed to rotate API key for ${service}:`, error);
+      console.error(`âŒ Failed to rotate API key for ${service}:`, error);
 
       return {
         success: false,
@@ -241,7 +241,7 @@ class SecretsRotationManager {
     try {
       const newJwtSecret = this.generateJwtSecret();
 
-      console.log(`🔄 Rotating JWT secret for ${service}`);
+      console.log(`ðŸ”„ Rotating JWT secret for ${service}`);
 
       // Update JWT secret in configuration
       this.updateServiceConfig(service, 'JWT_SECRET', newJwtSecret);
@@ -249,7 +249,7 @@ class SecretsRotationManager {
       // Graceful token rotation - allow old tokens for a period
       await this.handleGracefulTokenRotation(service);
 
-      console.log(`✅ JWT secret rotated for ${service}`);
+      console.log(`âœ… JWT secret rotated for ${service}`);
 
       return {
         success: true,
@@ -260,7 +260,7 @@ class SecretsRotationManager {
       };
 
     } catch (error) {
-      console.error(`❌ Failed to rotate JWT secret for ${service}:`, error);
+      console.error(`âŒ Failed to rotate JWT secret for ${service}:`, error);
 
       return {
         success: false,
@@ -281,7 +281,7 @@ class SecretsRotationManager {
     try {
       const newEncryptionKey = this.generateEncryptionKey();
 
-      console.log(`🔄 Rotating encryption key for ${service}`);
+      console.log(`ðŸ”„ Rotating encryption key for ${service}`);
 
       // Update encryption key in configuration
       this.updateServiceConfig(service, 'ENCRYPTION_KEY', newEncryptionKey);
@@ -289,7 +289,7 @@ class SecretsRotationManager {
       // Handle encrypted data re-encryption if necessary
       await this.handleEncryptedDataRotation(service, newEncryptionKey);
 
-      console.log(`✅ Encryption key rotated for ${service}`);
+      console.log(`âœ… Encryption key rotated for ${service}`);
 
       return {
         success: true,
@@ -300,7 +300,7 @@ class SecretsRotationManager {
       };
 
     } catch (error) {
-      console.error(`❌ Failed to rotate encryption key for ${service}:`, error);
+      console.error(`âŒ Failed to rotate encryption key for ${service}:`, error);
 
       return {
         success: false,
@@ -317,13 +317,13 @@ class SecretsRotationManager {
    */
   private updateServiceConfig(service: string, key: string, value: string): void {
     // In production, this would update:
-    // - Kubernetes secrets
+    // - Orchestrator secrets
     // - AWS Secrets Manager
     // - HashiCorp Vault
     // - Environment variables
     // - Configuration files
 
-    console.log(`📝 Updated ${key} for ${service}`);
+    console.log(`ðŸ“ Updated ${key} for ${service}`);
   }
 
   /**
@@ -331,7 +331,7 @@ class SecretsRotationManager {
    */
   private async updateExternalServices(service: string, newSecret: string): Promise<void> {
     // Update external APIs, webhooks, integrations
-    console.log(`🔗 Updating external services for ${service}`);
+    console.log(`ðŸ”— Updating external services for ${service}`);
 
     // Simulate API calls to update external services
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -343,7 +343,7 @@ class SecretsRotationManager {
   private async handleGracefulTokenRotation(service: string): Promise<void> {
     // Allow old tokens for a grace period (e.g., 24 hours)
     // Update token validation logic to accept both old and new secrets
-    console.log(`⏰ Graceful token rotation enabled for ${service}`);
+    console.log(`â° Graceful token rotation enabled for ${service}`);
 
     // In production, implement dual-secret validation
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -354,7 +354,7 @@ class SecretsRotationManager {
    */
   private async handleEncryptedDataRotation(service: string, newKey: string): Promise<void> {
     // For services with encrypted data, re-encrypt with new key
-    console.log(`🔐 Handling encrypted data rotation for ${service}`);
+    console.log(`ðŸ” Handling encrypted data rotation for ${service}`);
 
     // In production, this would:
     // - Decrypt data with old key
@@ -391,7 +391,7 @@ class SecretsRotationManager {
    * Check and rotate secrets that are due for rotation
    */
   async checkAndRotateSecrets(): Promise<void> {
-    console.log('🔐 Starting secrets rotation check...');
+    console.log('ðŸ” Starting secrets rotation check...');
 
     const configs = await this.loadRotationConfig();
     const now = new Date();
@@ -399,7 +399,7 @@ class SecretsRotationManager {
 
     for (const config of configs) {
       if (config.nextRotation <= now && config.status === 'active') {
-        console.log(`🎯 Rotating ${config.secretType} for ${config.service}`);
+        console.log(`ðŸŽ¯ Rotating ${config.secretType} for ${config.service}`);
 
         const result = await this.rotateSecret(config);
 
@@ -410,10 +410,10 @@ class SecretsRotationManager {
           config.status = 'active';
           rotatedCount++;
 
-          console.log(`✅ Successfully rotated ${config.secretType} for ${config.service}`);
+          console.log(`âœ… Successfully rotated ${config.secretType} for ${config.service}`);
         } else {
           config.status = 'failed';
-          console.error(`❌ Failed to rotate ${config.secretType} for ${config.service}: ${result.error}`);
+          console.error(`âŒ Failed to rotate ${config.secretType} for ${config.service}: ${result.error}`);
         }
 
         this.rotationHistory.push(result);
@@ -426,7 +426,7 @@ class SecretsRotationManager {
     // Log rotation summary
     await this.logRotationSummary(rotatedCount);
 
-    console.log(`🎉 Secrets rotation completed. Rotated ${rotatedCount} secrets.`);
+    console.log(`ðŸŽ‰ Secrets rotation completed. Rotated ${rotatedCount} secrets.`);
   }
 
   /**
@@ -442,7 +442,7 @@ class SecretsRotationManager {
     };
 
     // In production, send to monitoring system
-    console.log('📊 Rotation Summary:', JSON.stringify(summary, null, 2));
+    console.log('ðŸ“Š Rotation Summary:', JSON.stringify(summary, null, 2));
   }
 
   /**
@@ -469,7 +469,7 @@ class SecretsRotationManager {
       };
     }
 
-    console.log(`🔄 Force rotating ${secretType} for ${service}`);
+    console.log(`ðŸ”„ Force rotating ${secretType} for ${service}`);
     return await this.rotateSecret(config);
   }
 
@@ -514,7 +514,7 @@ async function main() {
 
     case 'status':
       const status = await manager.getRotationStatus();
-      console.log('🔐 Secrets Rotation Status:');
+      console.log('ðŸ” Secrets Rotation Status:');
       console.table(status.map(s => ({
         Service: s.service,
         Type: s.secretType,
@@ -532,12 +532,12 @@ async function main() {
         process.exit(1);
       }
       const result = await manager.forceRotateSecret(service, secretType);
-      console.log(result.success ? '✅ Force rotation successful' : '❌ Force rotation failed:', result.error);
+      console.log(result.success ? 'âœ… Force rotation successful' : 'âŒ Force rotation failed:', result.error);
       break;
 
     case 'health':
       const health = await manager.validateRotationHealth();
-      console.log('🔍 Secrets Rotation Health:');
+      console.log('ðŸ” Secrets Rotation Health:');
       console.log(`Total Secrets: ${health.totalSecrets}`);
       console.log(`Due for Rotation: ${health.dueForRotation}`);
       console.log(`Failed Rotations: ${health.failedRotations}`);
@@ -545,7 +545,7 @@ async function main() {
       break;
 
     default:
-      console.log('🔐 Secrets Rotation Automation');
+      console.log('ðŸ” Secrets Rotation Automation');
       console.log('');
       console.log('Usage:');
       console.log('  tsx secrets-rotation.ts rotate    # Check and rotate due secrets');

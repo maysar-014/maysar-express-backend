@@ -1,5 +1,5 @@
 -- DIAGNOSTIC SCRIPT: Comprehensive Courier Availability Analysis
--- Run this in Supabase SQL Editor to diagnose why no couriers are found
+-- Run this in Database SQL Editor to diagnose why no couriers are found
 
 -- STEP 1: Check if couriers table exists and has data
 SELECT 'Couriers table info:' as info;
@@ -111,3 +111,4 @@ WHERE is_available = true
     sin(radians(-6.7924)) * sin(radians(current_lat))
   )) <= 50
 ORDER BY distance_km;
+

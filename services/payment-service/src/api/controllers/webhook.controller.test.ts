@@ -34,23 +34,20 @@ describe('WebhookController', () => {
       { execute: jest.fn() } as never
     );
     const req: any = {
-      query: {
-        OrderTrackingId: 'track-1',
-        OrderMerchantReference: 'merchant-1',
-        Status: 'COMPLETED'
-      },
+      body: { tx_ref: 'track-1', status: 'successful' },
+      query: {},
       headers: {}
     };
     const res = makeRes();
 
-    await controller.handlePesapalIpn(req, res);
+    await controller.handlePesapalWebhook(req, res);
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'Invalid signature' });
     expect(loggerWarnMock).toHaveBeenCalledWith('Invalid webhook signature', { signature: undefined });
   });
 
-  it('returns 400 when required query parameters are missing', async () => {
+  it('returns 400 when required payload parameters are missing', async () => {
     const controller = new WebhookController(
       {
         verifyWebhookSignature: jest.fn().mockReturnValue(true),
@@ -59,12 +56,13 @@ describe('WebhookController', () => {
       { execute: jest.fn() } as never
     );
     const req: any = {
-      query: { Status: 'COMPLETED' },
-      headers: { 'x-pesapal-signature': 'sig' }
+      body: { status: 'successful' },
+      query: {},
+      headers: { 'verif-hash': 'sig' }
     };
     const res = makeRes();
 
-    await controller.handlePesapalIpn(req, res);
+    await controller.handlePesapalWebhook(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ error: 'Missing required parameters' });
@@ -80,29 +78,32 @@ describe('WebhookController', () => {
     };
     const controller = new WebhookController(pesapalAdapter as never, handleWebhookUseCase as never);
     const req: any = {
-      query: {
-        OrderTrackingId: 'track-1',
-        OrderMerchantReference: 'merchant-1',
-        Status: 'COMPLETED'
+      body: {
+        tx_ref: 'track-1',
+        status: 'successful',
+        id: 777
       },
-      headers: { 'x-pesapal-signature': 'sig' }
+      query: {},
+      headers: { 'verif-hash': 'sig' }
     };
     const res = makeRes();
 
-    await controller.handlePesapalIpn(req, res);
+    await controller.handlePesapalWebhook(req, res);
 
-    expect(pesapalAdapter.verifyWebhookSignature).toHaveBeenCalledWith(expect.any(String), 'sig');
+    expect(pesapalAdapter.verifyWebhookSignature).toHaveBeenCalledWith(
+      JSON.stringify(req.body),
+      'sig'
+    );
     expect(pesapalAdapter.handleWebhook).toHaveBeenCalledWith(
       expect.objectContaining({
         providerReference: 'track-1',
-        status: 'COMPLETED',
-        metadata: expect.objectContaining({ merchantReference: 'merchant-1' })
+        status: 'successful'
       })
     );
     expect(handleWebhookUseCase.execute).toHaveBeenCalledWith(
       'track-1',
-      'merchant-1',
-      'COMPLETED',
+      '777',
+      'successful',
       expect.any(Object)
     );
     expect(res.status).toHaveBeenCalledWith(200);
@@ -121,16 +122,16 @@ describe('WebhookController', () => {
       { execute: jest.fn() } as never
     );
     const req: any = {
+      body: { tx_ref: 'track-1' },
       query: {},
-      headers: { 'x-pesapal-signature': 'sig' }
+      headers: { 'verif-hash': 'sig' }
     };
     const res = makeRes();
 
-    await controller.handlePesapalIpn(req, res);
+    await controller.handlePesapalWebhook(req, res);
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
     expect(loggerErrorMock).toHaveBeenCalledWith('Webhook processing failed', expect.any(Object));
   });
 });
-

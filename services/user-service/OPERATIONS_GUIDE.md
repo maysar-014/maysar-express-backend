@@ -22,7 +22,7 @@ Before deploying the User Service, ensure the following infrastructure is availa
 - **Node.js**: 18.0.0 or higher
 - **npm**: 8.0.0 or higher
 - **Docker**: 20.10+ (for containerized deployment)
-- **Kubernetes**: 1.24+ (for orchestrated deployment)
+- **Orchestrator**: 1.24+ (for orchestrated deployment)
 
 ### Network Requirements
 
@@ -166,30 +166,30 @@ docker-compose logs -f user-service
 docker-compose down
 ```
 
-### Kubernetes Deployment
+### Orchestrator Deployment
 
-Deploy to Kubernetes using provided manifests:
+Deploy to Orchestrator using provided manifests:
 
 ```bash
 # Create namespace
-kubectl create namespace maysar
+deployctl create namespace maysar
 
 # Create secrets
-kubectl create secret generic user-service-secrets \
+deployctl create secret generic user-service-secrets \
   --from-env-file=.env \
   -n maysar
 
 # Deploy service
-kubectl apply -f k8s/deployment.yaml -n maysar
-kubectl apply -f k8s/service.yaml -n maysar
-kubectl apply -f k8s/ingress.yaml -n maysar
+deployctl apply -f deploy/deployment.yaml -n maysar
+deployctl apply -f deploy/service.yaml -n maysar
+deployctl apply -f deploy/ingress.yaml -n maysar
 
 # Verify deployment
-kubectl get pods -n maysar -l app=user-service
-kubectl get svc -n maysar -l app=user-service
+deployctl get pods -n maysar -l app=user-service
+deployctl get svc -n maysar -l app=user-service
 
 # View logs
-kubectl logs -f deployment/user-service -n maysar
+deployctl logs -f deployment/user-service -n maysar
 ```
 
 ### Database Migrations
@@ -226,9 +226,9 @@ curl http://localhost:3001/health/live
 curl http://localhost:3001/health/ready
 ```
 
-### Kubernetes Health Probes
+### Orchestrator Health Probes
 
-Configure Kubernetes health probes in the deployment manifest:
+Configure Orchestrator health probes in the deployment manifest:
 
 ```yaml
 livenessProbe:
@@ -514,7 +514,7 @@ docker build -t maysar/user-service:latest .
 Deploy multiple instances of the User Service:
 
 ```yaml
-# Kubernetes deployment with multiple replicas
+# Orchestrator deployment with multiple replicas
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -541,7 +541,7 @@ spec:
 Configure load balancing across instances:
 
 ```yaml
-# Kubernetes service
+# Orchestrator service
 apiVersion: v1
 kind: Service
 metadata:
@@ -672,7 +672,7 @@ Optimize database queries:
 ### Network Security
 
 - Use VPN for inter-service communication
-- Implement network policies in Kubernetes
+- Implement network policies in Orchestrator
 - Use TLS for all external connections
 - Restrict inbound traffic to necessary ports
 

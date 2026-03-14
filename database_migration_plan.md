@@ -305,14 +305,14 @@ WHERE posts.authorId = cp.userId;
 #### 3.1 Gradual Service Cutover
 ```bash
 # Deploy user service
-kubectl apply -f user-service-deployment.yaml
+deployctl apply -f user-service-deployment.yaml
 
 # Update auth service to use user service
 # Deploy updated auth service
-kubectl apply -f auth-service-deployment-updated.yaml
+deployctl apply -f auth-service-deployment-updated.yaml
 
 # Update community service references
-kubectl apply -f community-service-deployment-updated.yaml
+deployctl apply -f community-service-deployment-updated.yaml
 ```
 
 #### 3.2 Data Consistency Validation
@@ -410,9 +410,9 @@ async handleUserStatusChanged(event: UserStatusChangedEvent) {
 #### Multi-Level Caching
 ```
 User Service (Source of Truth)
-    ↓ Events
+    â†“ Events
 Auth Service Cache (5 min TTL)
-    ↓ Cache Invalidation
+    â†“ Cache Invalidation
 Community Service Cache (10 min TTL)
 ```
 
@@ -442,29 +442,29 @@ async resolveUserUpdate(conflict: UserUpdateConflict) {
 ### Option 1: Separate Databases (Recommended)
 ```
 User Service DB: user_service (Primary)
-├── users
-├── user_addresses
-├── sessions
-├── audit_logs
-└── verification_tokens
+â”œâ”€â”€ users
+â”œâ”€â”€ user_addresses
+â”œâ”€â”€ sessions
+â”œâ”€â”€ audit_logs
+â””â”€â”€ verification_tokens
 
 Auth Service DB: auth_service
-├── auth_users (minimal cache)
-├── sessions (auth-specific)
-└── security_logs
+â”œâ”€â”€ auth_users (minimal cache)
+â”œâ”€â”€ sessions (auth-specific)
+â””â”€â”€ security_logs
 
 Community Service DB: community_service
-├── community_profiles
-├── posts, comments, likes
-└── social_features
+â”œâ”€â”€ community_profiles
+â”œâ”€â”€ posts, comments, likes
+â””â”€â”€ social_features
 ```
 
 ### Option 2: Shared Database with Schemas
 ```
 Database: maysar_main
-├── user_service schema
-├── auth_service schema
-└── community_service schema
+â”œâ”€â”€ user_service schema
+â”œâ”€â”€ auth_service schema
+â””â”€â”€ community_service schema
 ```
 
 ### Option 3: Micro-Database per Service
@@ -509,7 +509,7 @@ community-service-db (Social features)
 
 ### Service Downtime Minimization
 - **Blue-Green Deployment**: New services deployed alongside old
-- **Gradual Traffic Shifting**: 10% → 25% → 50% → 100% user traffic
+- **Gradual Traffic Shifting**: 10% â†’ 25% â†’ 50% â†’ 100% user traffic
 - **Circuit Breakers**: Automatic fallback to old services if issues detected
 
 ### Rollback Procedures
@@ -520,22 +520,22 @@ community-service-db (Social features)
 ## Success Metrics
 
 ### Functional Metrics
-- ✅ Zero data loss during migration
-- ✅ < 5% service degradation during cutover
-- ✅ All user authentication flows working
-- ✅ Cross-service user data consistency
+- âœ… Zero data loss during migration
+- âœ… < 5% service degradation during cutover
+- âœ… All user authentication flows working
+- âœ… Cross-service user data consistency
 
 ### Performance Metrics
-- ✅ User Service response time < 200ms
-- ✅ Auth Service response time < 500ms (with user service calls)
-- ✅ Cache hit rate > 95%
-- ✅ Event processing latency < 100ms
+- âœ… User Service response time < 200ms
+- âœ… Auth Service response time < 500ms (with user service calls)
+- âœ… Cache hit rate > 95%
+- âœ… Event processing latency < 100ms
 
 ### Operational Metrics
-- ✅ 99.9% uptime during migration
-- ✅ < 1 hour mean time to recovery
-- ✅ Comprehensive monitoring coverage
-- ✅ Automated alerting for anomalies
+- âœ… 99.9% uptime during migration
+- âœ… < 1 hour mean time to recovery
+- âœ… Comprehensive monitoring coverage
+- âœ… Automated alerting for anomalies
 
 ## Monitoring and Alerting
 

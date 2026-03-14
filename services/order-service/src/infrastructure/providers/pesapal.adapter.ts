@@ -32,56 +32,69 @@ export interface PayoutResponse {
   status: 'pending' | 'completed' | 'failed';
 }
 
+interface PesapalResponse<T = Record<string, unknown>> {
+  status?: string;
+  message?: string;
+  data?: T;
+}
+
 export class PesapalAdapter {
-  private readonly pesapalUrl = process.env.PESAPAL_URL || 'https://cybqa.pesapal.com/pesapalv3';
-  private readonly consumerKey = process.env.PESAPAL_CONSUMER_KEY;
-  private readonly consumerSecret = process.env.PESAPAL_CONSUMER_SECRET;
+  private readonly pesapalUrl = process.env.PESAPAL_URL || 'https://api.pesapal.com/v3';
+  private readonly secretKey = process.env.PESAPAL_SECRET_KEY || process.env.PESAPAL_API_KEY || process.env.PESAPAL_CONSUMER_SECRET;
 
   async processPayment(request: PaymentRequest): Promise<PaymentResponse> {
+    if (!this.secretKey) {
+      return {
+        success: false,
+        error: 'PESAPAL_SECRET_KEY is not configured',
+        status: 'failed'
+      };
+    }
+
     try {
-      const token = await this.getAccessToken();
-      
       const paymentData = {
-        id: request.orderId,
-        currency: request.currency,
+        tx_ref: request.orderId,
         amount: request.amount,
-        description: request.description,
-        callback_url: `${process.env.BASE_URL}/api/payments/callback`,
-        notification_id: await this.getNotificationId(token),
-        billing_address: {
-          email_address: request.buyerEmail,
-          phone_number: request.buyerPhone,
-          country_code: 'TZ',
-          first_name: 'Customer',
-          last_name: 'Name'
+        currency: request.currency,
+        redirect_url: `${process.env.BASE_URL || 'http://localhost:3000'}/api/payments/callback`,
+        payment_options: 'mobilemoney,card,banktransfer',
+        customer: {
+          email: request.buyerEmail,
+          phonenumber: request.buyerPhone,
+          name: request.buyerId
+        },
+        customizations: {
+          title: 'Maysar Order Payment',
+          description: request.description
         }
       };
 
-      const response = await fetch(`${this.pesapalUrl}/api/Transactions/SubmitOrderRequest`, {
+      const response = await fetch(`${this.pesapalUrl}/payments`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${this.secretKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(paymentData)
       });
 
-      const result = await response.json() as any;
+      const result = (await response.json()) as PesapalResponse<{ id?: number | string; tx_ref?: string; link?: string; status?: string }>;
 
-      if (result.status === '200') {
-        return {
-          success: true,
-          transactionId: result.order_tracking_id,
-          paymentUrl: result.redirect_url,
-          status: 'pending'
-        };
-      } else {
+      if (!response.ok || result.status?.toLowerCase() !== 'success') {
         return {
           success: false,
           error: result.message || 'Payment processing failed',
           status: 'failed'
         };
       }
+
+      const status = this.mapPesapalStatus(result.data?.status);
+      return {
+        success: true,
+        transactionId: result.data?.tx_ref || request.orderId,
+        paymentUrl: result.data?.link,
+        status
+      };
     } catch (error) {
       return {
         success: false,
@@ -92,61 +105,34 @@ export class PesapalAdapter {
   }
 
   async checkPaymentStatus(transactionId: string): Promise<PaymentResponse> {
-    try {
-      const token = await this.getAccessToken();
-      
-      const response = await fetch(`${this.pesapalUrl}/api/Transactions/GetTransactionStatus?orderTrackingId=${transactionId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const result = await response.json() as any;
-
+    if (!this.secretKey) {
       return {
-        success: result.payment_status_description === 'Completed',
+        success: false,
         transactionId,
-        status: this.mapPesapalStatus(result.payment_status_description)
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: (error as Error).message,
+        error: 'PESAPAL_SECRET_KEY is not configured',
         status: 'failed'
       };
     }
-  }
 
-  async processPayout(request: PayoutRequest): Promise<PayoutResponse> {
     try {
-      // Pesapal payout implementation
-      const token = await this.getAccessToken();
-      
-      const payoutData = {
-        amount: request.amount,
-        currency: request.currency,
-        account_number: request.accountNumber,
-        account_type: request.accountType,
-        reference: request.reference,
-        description: `Payout for seller ${request.sellerId}`
-      };
+      const response = await fetch(
+        `${this.pesapalUrl}/transactions/verify_by_reference?tx_ref=${encodeURIComponent(transactionId)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.secretKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
 
-      const response = await fetch(`${this.pesapalUrl}/api/Payouts/ProcessPayout`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payoutData)
-      });
-
-      const result = await response.json() as any;
+      const result = (await response.json()) as PesapalResponse<{ status?: string }>;
+      const status = this.mapPesapalStatus(result.data?.status);
 
       return {
-        success: result.status === 'success',
-        payoutId: result.payout_id,
-        status: result.status === 'success' ? 'completed' : 'failed',
-        error: result.status !== 'success' ? result.message : undefined
+        success: status === 'completed',
+        transactionId,
+        status,
+        error: response.ok ? undefined : result.message || 'Unable to verify transaction'
       };
     } catch (error) {
       return {
@@ -157,47 +143,25 @@ export class PesapalAdapter {
     }
   }
 
-  private async getAccessToken(): Promise<string> {
-    const response = await fetch(`${this.pesapalUrl}/api/Auth/RequestToken`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        consumer_key: this.consumerKey,
-        consumer_secret: this.consumerSecret
-      })
-    });
-
-    const result = await response.json() as any;
-    return result.token;
+  async processPayout(_request: PayoutRequest): Promise<PayoutResponse> {
+    return {
+      success: false,
+      error: 'Payouts are not implemented for Pesapal adapter in order-service',
+      status: 'failed'
+    };
   }
 
-  private async getNotificationId(token: string): Promise<string> {
-    const response = await fetch(`${this.pesapalUrl}/api/URLSetup/RegisterIPN`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        url: `${process.env.BASE_URL}/api/payments/ipn`,
-        ipn_notification_type: 'GET'
-      })
-    });
-
-    const result = await response.json() as any;
-    return result.ipn_id;
-  }
-
-  private mapPesapalStatus(pesapalStatus: string): 'pending' | 'completed' | 'failed' | 'cancelled' {
+  private mapPesapalStatus(pesapalStatus?: string): 'pending' | 'completed' | 'failed' | 'cancelled' {
     switch (pesapalStatus?.toLowerCase()) {
+      case 'successful':
       case 'completed':
+      case 'paid':
         return 'completed';
-      case 'failed':
-        return 'failed';
       case 'cancelled':
         return 'cancelled';
+      case 'failed':
+      case 'error':
+        return 'failed';
       default:
         return 'pending';
     }

@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
+import './tracing'; // MUST be first — before any other imports
 import './instrument';
 import 'dotenv/config';
 import 'reflect-metadata';
-import { tracingService } from '../shared/tracing/openTelemetry'; // Enable OpenTelemetry Tracing
 import { createApp } from './app';
 import { moduleRegistry } from './core/module-registry';
 import { validateEnv } from './config/env-validation';
@@ -15,9 +15,6 @@ const bootstrapLogger = createLogger('Bootstrap', 'core');
 
 async function bootstrap() {
     try {
-        // Initialize tracing
-        tracingService.start();
-
         validateEnv();
         bootstrapLogger.info('Starting Maysar Express Backend Monolith...');
 

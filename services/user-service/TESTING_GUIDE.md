@@ -121,12 +121,24 @@ Use case tests verify orchestration of domain logic:
 describe('Create User Use Case', () => {
   let useCase: CreateUserUseCase;
   let userRepository: MockUserRepository;
-  let eventPublisher: MockEventPublisher;
+  let validationService: MockUserValidationService;
+  let securityPolicy: MockUserSecurityPolicy;
+  let emailService: MockEmailService;
+  let notificationClient: MockNotificationClient;
 
   beforeEach(() => {
     userRepository = new MockUserRepository();
-    eventPublisher = new MockEventPublisher();
-    useCase = new CreateUserUseCase(userRepository, eventPublisher);
+    validationService = new MockUserValidationService();
+    securityPolicy = new MockUserSecurityPolicy();
+    emailService = new MockEmailService();
+    notificationClient = new MockNotificationClient();
+    useCase = new CreateUserUseCase(
+      userRepository,
+      validationService,
+      securityPolicy,
+      emailService,
+      notificationClient
+    );
   });
 
   it('should create user successfully', async () => {

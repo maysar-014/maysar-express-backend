@@ -1,34 +1,32 @@
-import { CODReputationController } from '../src/api/controllers/cod-reputation.controller';
+import { Request, Response } from 'express';
+import { CODReputationController } from '../../../src/api/controllers/cod-reputation.controller';
 
 describe('CODReputationController', () => {
-  let useCase: CODReputationController;
-  let mockRepo: any;
+  let controller: CODReputationController;
+  let mockUseCase: any;
+  let req: Partial<Request>;
+  let res: Partial<Response>;
 
   beforeEach(() => {
-    mockRepo = {
-      findById: jest.fn(),
-      save: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn()
-    };
-    useCase = new CODReputationController(mockRepo);
+    mockUseCase = { execute: jest.fn() };
+    controller = new CODReputationController(mockUseCase);
+    req = { params: {} };
+    res = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() };
   });
 
-  describe('execute', () => {
-    it('should execute successfully', async () => {
-      mockRepo.findById.mockResolvedValue({ id: '1' });
-      const result = await useCase.execute({ id: '1' });
-      expect(result).toBeDefined();
-    });
+  it('returns 200 when reputation is found', async () => {
+    req.params = { userId: 'user-1' };
+    mockUseCase.execute.mockResolvedValue({ userId: 'user-1', codEnabled: true });
 
-    it('should handle not found', async () => {
-      mockRepo.findById.mockResolvedValue(null);
-      await expect(useCase.execute({ id: '999' })).rejects.toThrow();
-    });
+    await controller.getReputation(req as Request, res as Response);
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
 
-    it('should handle repository errors', async () => {
-      mockRepo.findById.mockRejectedValue(new Error('DB error'));
-      await expect(useCase.execute({ id: '1' })).rejects.toThrow();
-    });
+  it('returns 404 when use case throws', async () => {
+    req.params = { userId: 'user-1' };
+    mockUseCase.execute.mockRejectedValue(new Error('not found'));
+
+    await controller.getReputation(req as Request, res as Response);
+    expect(res.status).toHaveBeenCalledWith(404);
   });
 });

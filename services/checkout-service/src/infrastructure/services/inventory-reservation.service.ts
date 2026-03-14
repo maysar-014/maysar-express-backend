@@ -18,12 +18,23 @@ export class InventoryReservationService {
     const expiresAt = new Date(Date.now() + 3600000); // 1 hour
 
     for (const item of items) {
-      await this.prisma.inventoryReservation.create({
-        data: {
-          id: `${checkoutId}-${item.productId}`,
+      await this.prisma.checkout_InventoryReservation.upsert({
+        where: {
+          checkoutId_productId_variantId: {
+            checkoutId,
+            productId: item.productId,
+            variantId: item.variantId ?? null
+          }
+        },
+        update: {
+          quantity: item.quantity,
+          status: 'reserved',
+          expiresAt
+        },
+        create: {
           checkoutId,
           productId: item.productId,
-          variantId: item.variantId,
+          variantId: item.variantId ?? null,
           quantity: item.quantity,
           status: 'reserved',
           expiresAt
@@ -33,14 +44,14 @@ export class InventoryReservationService {
   }
 
   async release(checkoutId: string): Promise<void> {
-    await this.prisma.inventoryReservation.updateMany({
+    await this.prisma.checkout_InventoryReservation.updateMany({
       where: { checkoutId },
       data: { status: 'released' }
     });
   }
 
   async confirm(checkoutId: string): Promise<void> {
-    await this.prisma.inventoryReservation.updateMany({
+    await this.prisma.checkout_InventoryReservation.updateMany({
       where: { checkoutId },
       data: { status: 'confirmed' }
     });

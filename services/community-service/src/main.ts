@@ -25,6 +25,7 @@ import { FeedEngine } from './domain/engines/feed-engine';
 
 import { tracingService, correlationMiddleware } from '../../../shared/tracing/openTelemetry';
 import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
+import { createRateLimitMiddleware } from './api/middleware/rate-limiting.middleware';
 
 /**
  * Community Service Main Application
@@ -42,6 +43,7 @@ class CommunityService {
     this.app = express();
     this.prisma = new PrismaClient();
     this.logger = this.setupLogger();
+    this.cache = new RedisCache();
 
     this.initializeInfrastructure();
     this.setupMiddleware();
@@ -59,7 +61,6 @@ class CommunityService {
       this.logger.info('Database connected successfully');
 
       // Initialize cache
-      this.cache = new RedisCache();
       await this.cache.connect();
       this.logger.info('Cache connected successfully');
 
@@ -111,6 +112,9 @@ class CommunityService {
     // Security middleware
     this.app.use(helmet());
     this.app.use(correlationMiddleware());
+
+    // Rate limiting (Redis-backed)
+    this.app.use(createRateLimitMiddleware(this.cache));
 
     // CORS configuration
     this.app.use(cors({

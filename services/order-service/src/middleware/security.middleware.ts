@@ -226,3 +226,4 @@ export const securityStack = [
   SecurityMiddleware.sanitizeInput(),
   ValidationMiddleware.sanitizeInput()
 ];
+

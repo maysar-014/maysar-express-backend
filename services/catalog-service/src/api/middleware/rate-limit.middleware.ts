@@ -5,6 +5,8 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import type Redis from 'ioredis';
+import { getSharedRedisClient, resolveRedisUrl } from '@shared/redis/ioredis-client';
 
 // =====================================================================================
 // RATE LIMITING CONFIGURATION
@@ -58,7 +60,7 @@ export const DEFAULT_RATE_LIMIT_CONFIG: RateLimitConfig = {
   adaptiveThrottling: false,
   whitelist: [],
   blacklist: [],
-  enableDistributedCache: false,
+  enableDistributedCache: Boolean(process.env.REDIS_URL) && process.env.NODE_ENV !== 'test',
   cachePrefix: 'ratelimit:'
 };
 
@@ -360,12 +362,15 @@ async function applyTokenBucketLimit(
  * Create rate limit store based on configuration
  */
 function createRateLimitStore(config: RateLimitConfig): RateLimitStore {
-  if (config.enableDistributedCache) {
-    // In a real app, use Redis or other distributed cache
-    return new DistributedRateLimitStore(config);
-  } else {
-    return new MemoryRateLimitStore();
+  if (config.enableDistributedCache && process.env.REDIS_URL) {
+    return new RedisRateLimitStore(config.cachePrefix);
   }
+
+  if (config.enableDistributedCache && !process.env.REDIS_URL) {
+    console.warn('[RATE LIMIT] Distributed cache enabled but REDIS_URL is missing; falling back to memory store.');
+  }
+
+  return new MemoryRateLimitStore();
 }
 
 /**
@@ -429,29 +434,84 @@ class MemoryRateLimitStore implements RateLimitStore {
   }
 }
 
+const REDIS_RATE_LIMIT_LUA = `
+local totalHits = redis.call("INCR", KEYS[1])
+local timeToExpire = redis.call("PTTL", KEYS[1])
+if timeToExpire == -1 or timeToExpire == -2 then
+  redis.call("PEXPIRE", KEYS[1], ARGV[1])
+  timeToExpire = ARGV[1]
+end
+return { totalHits, timeToExpire }
+`;
+
 /**
- * Distributed Rate Limit Store (Mock Implementation)
+ * Redis-backed Rate Limit Store
  */
-class DistributedRateLimitStore implements RateLimitStore {
-  constructor(private config: RateLimitConfig) {}
+class RedisRateLimitStore implements RateLimitStore {
+  private redis: Redis;
+  private readonly prefix: string;
+
+  constructor(prefix: string) {
+    this.redis = getSharedRedisClient(resolveRedisUrl(process.env.REDIS_URL));
+    this.prefix = prefix;
+  }
+
+  private resolveKey(key: string): string {
+    return `${this.prefix}${key}`;
+  }
 
   async increment(key: string, windowMs: number): Promise<{ count: number; resetTime: number }> {
-    // In a real implementation, use Redis, Memcached, etc.
-    console.log(`[DISTRIBUTED CACHE] Incrementing: ${key}`);
-    return { count: 1, resetTime: Date.now() + windowMs };
+    const redisKey = this.resolveKey(key);
+    const result = await this.redis.eval(
+      REDIS_RATE_LIMIT_LUA,
+      1,
+      redisKey,
+      windowMs
+    ) as [number, number];
+
+    const totalHits = Number(result[0]);
+    const pttl = Number(result[1]);
+    const resetTime = Date.now() + (pttl > 0 ? pttl : windowMs);
+
+    return { count: totalHits, resetTime };
   }
 
   async get(key: string): Promise<{ count: number; resetTime: number } | null> {
-    // Mock implementation
-    return null;
+    const redisKey = this.resolveKey(key);
+    const result = await this.redis
+      .multi()
+      .get(redisKey)
+      .pttl(redisKey)
+      .exec();
+
+    if (!result || result.length < 2) {
+      return null;
+    }
+
+    const count = result[0]?.[1];
+    const pttl = result[1]?.[1];
+
+    if (count === null || count === undefined || pttl === null || pttl === undefined) {
+      return null;
+    }
+
+    const ttlMs = Number(pttl);
+    if (Number.isNaN(ttlMs) || ttlMs < 0) {
+      return null;
+    }
+
+    return {
+      count: Number(count),
+      resetTime: Date.now() + ttlMs
+    };
   }
 
   async reset(key: string): Promise<void> {
-    // Mock implementation
+    await this.redis.del(this.resolveKey(key));
   }
 
   async cleanup(): Promise<void> {
-    // Mock implementation
+    // Redis handles TTL cleanup automatically.
   }
 }
 

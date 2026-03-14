@@ -1,5 +1,5 @@
 /**
- * SMS provider adapter - Twilio/Africa's Talking
+ * SMS provider adapter - Africa's Talking
  */
 
 export interface ISmsProvider {

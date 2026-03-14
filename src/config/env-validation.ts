@@ -1,7 +1,7 @@
 import Joi from 'joi';
 
 const envSchema = Joi.object({
-    NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
+    NODE_ENV: Joi.string().valid('development', 'staging', 'production', 'test').default('development'),
     PORT: Joi.number().default(3000),
 
     // Critical Infrastructure
@@ -11,13 +11,6 @@ const envSchema = Joi.object({
     // Security
     JWT_SECRET: Joi.string().required(),
     JWT_EXPIRES_IN: Joi.string().default('7d'),
-
-    // External Services (Optional in Dev, likely Required in Prod - adjusting as per strictness)
-    // We make them optional here to avoid breaking local dev if not strictly needed immediately
-    // In a strict production mode, these should be required.
-    SUPABASE_URL: Joi.string().optional(),
-    SUPABASE_ANON_KEY: Joi.string().optional(),
-    SUPABASE_SERVICE_ROLE_KEY: Joi.string().optional(),
 
     // Logging
     LOG_LEVEL: Joi.string().valid('error', 'warn', 'info', 'debug').default('info'),
@@ -36,3 +29,4 @@ export const validateEnv = () => {
 
     return value;
 };
+

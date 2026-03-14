@@ -23,23 +23,26 @@ const getRouteSignatures = (router: Router): string[] => {
 
 describe('createWebhookRoutes', () => {
   it('registers the pesapal webhook endpoint', () => {
-    const controller = { handlePesapalIpn: jest.fn() };
+    const controller = { handlePesapalWebhook: jest.fn() };
     const signatures = getRouteSignatures(createWebhookRoutes(controller as never));
 
-    expect(signatures).toEqual(expect.arrayContaining(['GET /pesapal']));
+    expect(signatures).toEqual(expect.arrayContaining(['POST /pesapal']));
   });
 
   it('delegates webhook requests to the controller handler', async () => {
-    const handlePesapalIpn = jest.fn(async (_req, res) => {
+    const handlePesapalWebhook = jest.fn(async (_req, res) => {
       res.status(200).json({ ok: true });
     });
     const app = express();
-    app.use('/webhooks', createWebhookRoutes({ handlePesapalIpn } as never));
+    app.use('/webhooks', createWebhookRoutes({ handlePesapalWebhook } as never));
 
-    const response = await request(app).get('/webhooks/pesapal');
+    const response = await request(app)
+      .post('/webhooks/pesapal')
+      .send({ tx_ref: 'tx-ref-1', status: 'successful' });
 
     expect(response.status).toBe(200);
     expect(response.body.ok).toBe(true);
-    expect(handlePesapalIpn).toHaveBeenCalledTimes(1);
+    expect(handlePesapalWebhook).toHaveBeenCalledTimes(1);
   });
 });
+

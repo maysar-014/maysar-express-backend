@@ -13,17 +13,17 @@ Changed the duration columns from `INTEGER` to `DECIMAL(8,2)` to allow fractiona
 ## How to Apply the Fix
 
 ### Option 1: For New Databases
-If you're setting up a new database, just run the updated `route-tables.sql` script in Supabase SQL Editor.
+If you're setting up a new database, just run the updated `route-tables.sql` script in Database SQL Editor.
 
 ### Option 2: For Existing Databases (with data)
 If you have existing route data, run the migration script:
 
-1. **Open Supabase Dashboard**
+1. **Open Database Dashboard**
 2. **Go to SQL Editor**
 3. **Run the migration script:**
 
 ```sql
--- Copy and paste this into Supabase SQL Editor
+-- Copy and paste this into Database SQL Editor
 ALTER TABLE routes
 ALTER COLUMN estimated_duration TYPE DECIMAL(8,2);
 
@@ -75,3 +75,4 @@ ALTER COLUMN actual_duration TYPE INTEGER;
 ```
 
 But note: This will fail if you have decimal values in the table.
+

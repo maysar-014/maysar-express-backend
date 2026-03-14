@@ -12,30 +12,30 @@ This service follows the **Clean Architecture** pattern with strict layer separa
 
 ```
 src/
- ├── domain/           # Business logic & rules
- │    ├── entities/    # User entity & domain models
- │    ├── value-objects/ # Email, PhoneNumber, etc.
- │    ├── engines/     # Business decision engines
- │    ├── policies/    # Business rules & constraints
- │    ├── algorithms/  # Pure computation logic
- │    └── events/      # Domain events
- │
- ├── application/      # Use cases & orchestration
- │    ├── use-cases/   # User CRUD operations
- │    ├── sagas/       # Multi-service coordination
- │    ├── dto/         # Data transfer objects
- │    └── mappers/     # Object mapping
- │
- ├── infrastructure/   # External system adapters
- │    ├── repositories/ # Database access
- │    ├── messaging/   # Event publishing
- │    ├── providers/   # External integrations
- │    └── cache/       # Caching layer
- │
- └── api/             # Transport & validation
-      ├── controllers/ # HTTP request handlers
-      ├── routes/      # Route definitions
-      └── validators/  # Input validation
+ â”œâ”€â”€ domain/           # Business logic & rules
+ â”‚    â”œâ”€â”€ entities/    # User entity & domain models
+ â”‚    â”œâ”€â”€ value-objects/ # Email, PhoneNumber, etc.
+ â”‚    â”œâ”€â”€ engines/     # Business decision engines
+ â”‚    â”œâ”€â”€ policies/    # Business rules & constraints
+ â”‚    â”œâ”€â”€ algorithms/  # Pure computation logic
+ â”‚    â””â”€â”€ events/      # Domain events
+ â”‚
+ â”œâ”€â”€ application/      # Use cases & orchestration
+ â”‚    â”œâ”€â”€ use-cases/   # User CRUD operations
+ â”‚    â”œâ”€â”€ sagas/       # Multi-service coordination
+ â”‚    â”œâ”€â”€ dto/         # Data transfer objects
+ â”‚    â””â”€â”€ mappers/     # Object mapping
+ â”‚
+ â”œâ”€â”€ infrastructure/   # External system adapters
+ â”‚    â”œâ”€â”€ repositories/ # Database access
+ â”‚    â”œâ”€â”€ messaging/   # Event publishing
+ â”‚    â”œâ”€â”€ providers/   # External integrations
+ â”‚    â””â”€â”€ cache/       # Caching layer
+ â”‚
+ â””â”€â”€ api/             # Transport & validation
+      â”œâ”€â”€ controllers/ # HTTP request handlers
+      â”œâ”€â”€ routes/      # Route definitions
+      â””â”€â”€ validators/  # Input validation
 ```
 
 ## Responsibilities
@@ -197,14 +197,14 @@ docker build -t maysar-backend:latest .
 docker run -p 3001:3001 -e PORT=3001 --env-file .env maysar-backend:latest
 ```
 
-### Kubernetes
+### Orchestrator
 ```bash
-# Deploy to Kubernetes
-kubectl apply -f k8s/
+# Deploy to Orchestrator
+deployctl apply -f deploy/
 
 # Check deployment status
-kubectl get pods -l app=user-service
-kubectl logs -f deployment/user-service
+deployctl get pods -l app=user-service
+deployctl logs -f deployment/user-service
 ```
 
 ## Monitoring & Observability
@@ -289,12 +289,12 @@ MIT License - see LICENSE file for details.
 
 ## Production Readiness
 
-✅ **Fully Production-Ready**
+âœ… **Fully Production-Ready**
 - Comprehensive test coverage (92.22% lines, 91.48% statements)
 - Enterprise-grade error handling and logging
 - Security hardening with CORS, Helmet, and input validation
 - Graceful shutdown and health checks
 - Event-driven architecture with saga orchestration
 - Multi-service integration support
-- Kubernetes-ready deployment
+- Orchestrator-ready deployment
 - Monitoring and observability built-in

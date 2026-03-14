@@ -223,7 +223,7 @@ async function analyzeFileStructure(srcDir) {
           }
 
           // Check for framework imports in domain
-          if (content.includes('express') || content.includes('http') || content.includes('supabase')) {
+          if (content.includes('express') || content.includes('http') || content.includes('database')) {
             analysis.layers.domain.violations.push({
               rule: 'framework-coupling',
               file: relativePath,
@@ -449,3 +449,4 @@ function displayOverallAssessment(architectural, security) {
 
 // Run the audit
 runConstitutionAudit().catch(console.error);
+

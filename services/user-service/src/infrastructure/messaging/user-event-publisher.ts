@@ -1,31 +1,52 @@
 import { IDomainEventPublisher, DomainEvent, UserRegisteredEvent, UserProfileUpdatedEvent, UserEmailVerifiedEvent } from '../../domain/events';
 import { logger } from '../services/logger.service';
 import { OutboxRepository } from '../../../../../shared/outbox/outbox.repository';
+import { eventBus, EventEnvelope, IEventPublisher } from '@shared/events/eventBus';
 
 /**
  * User Event Publisher
  * Handles saving domain events for user-related operations using the Outbox pattern
  */
 export class UserEventPublisher implements IDomainEventPublisher {
-  constructor(private readonly outboxRepository: OutboxRepository) { }
+  constructor(
+    private readonly outboxRepository: OutboxRepository,
+    private readonly events: IEventPublisher = eventBus
+  ) { }
 
   /**
    * Save a single domain event to the outbox table
    */
   async publish(event: DomainEvent, transaction?: any): Promise<void> {
     try {
-      await this.outboxRepository.save({
+      const envelope: EventEnvelope = {
         eventId: event.eventId,
         eventType: event.eventType,
+        aggregateId: event.aggregateId,
+        aggregateType: event.aggregateType,
+        version: String(event.eventVersion),
         data: this.sanitizeEventData(event),
-        timestamp: new Date()
-      });
+        timestamp: event.occurredAt || new Date(),
+        metadata: event.metadata || {}
+      };
+
+      await this.outboxRepository.save(envelope, transaction);
 
       logger.info('Domain Event Saved to Outbox', {
         eventType: event.constructor.name,
         eventId: event.eventId,
         aggregateId: event.aggregateId
       });
+
+      // Best-effort in-process publish; outbox remains the source of truth for retries.
+      try {
+        await this.events.publish(envelope);
+      } catch (publishError) {
+        logger.warn('EventBus publish failed after outbox save', {
+          eventType: event.eventType,
+          eventId: event.eventId,
+          error: publishError
+        });
+      }
 
     } catch (error) {
       logger.error('Failed to save domain event to Outbox', {

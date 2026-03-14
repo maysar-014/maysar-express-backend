@@ -312,7 +312,7 @@ const serviceRegistry = {
 
 ### DNS-Based Discovery
 ```
-# Kubernetes service discovery
+# Orchestrator service discovery
 user-service.default.svc.cluster.local:3001
 
 # Load balancer endpoints
@@ -436,11 +436,11 @@ async getPostWithFallback(postId: string): Promise<Post> {
 ### Distributed Cache Architecture
 ```
 Redis Cluster Configuration:
-├── Master-Replica Setup (3 nodes)
-├── User Data Partitioning (by userId hash)
-├── Cache Warming on Service Start
-├── Health Checks and Failover
-└── Metrics Collection (hit rates, latency)
+â”œâ”€â”€ Master-Replica Setup (3 nodes)
+â”œâ”€â”€ User Data Partitioning (by userId hash)
+â”œâ”€â”€ Cache Warming on Service Start
+â”œâ”€â”€ Health Checks and Failover
+â””â”€â”€ Metrics Collection (hit rates, latency)
 ```
 
 ## Migration Impact Assessment

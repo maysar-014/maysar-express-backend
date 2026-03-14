@@ -76,3 +76,4 @@ describe('PaymentProcessingSaga', () => {
         expect(saga.completeStep).not.toHaveBeenCalled();
     });
 });
+

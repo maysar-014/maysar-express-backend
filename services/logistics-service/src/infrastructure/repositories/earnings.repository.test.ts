@@ -3,7 +3,7 @@ import type { Earnings } from '../../domain/repositories';
 
 type QueryResult = { data: any; error: any; count?: number | null };
 
-const buildSupabaseClient = (params?: {
+const buildDatabaseClient = (params?: {
   selectResults?: QueryResult[];
   upsertResult?: QueryResult;
   updateResults?: QueryResult[];
@@ -120,7 +120,7 @@ describe('EarningsRepository', () => {
   });
 
   it('save upserts mapped data and throws wrapped errors', async () => {
-    const success = buildSupabaseClient();
+    const success = buildDatabaseClient();
     const repository = new EarningsRepository(success.client);
 
     await repository.save(createEarnings());
@@ -138,7 +138,7 @@ describe('EarningsRepository', () => {
       })
     );
 
-    const failed = buildSupabaseClient({
+    const failed = buildDatabaseClient({
       upsertResult: { data: null, error: { message: 'write failed' } }
     });
     await expect(new EarningsRepository(failed.client).save(createEarnings())).rejects.toThrow(
@@ -147,7 +147,7 @@ describe('EarningsRepository', () => {
   });
 
   it('findByCourierId applies optional time range, ordering, and maps rows', async () => {
-    const { client, calls } = buildSupabaseClient({
+    const { client, calls } = buildDatabaseClient({
       selectResults: [{ data: [earningsRow], error: null }]
     });
     const repository = new EarningsRepository(client);
@@ -178,7 +178,7 @@ describe('EarningsRepository', () => {
   });
 
   it('findByCourierId returns [] on query errors', async () => {
-    const { client } = buildSupabaseClient({
+    const { client } = buildDatabaseClient({
       selectResults: [{ data: null, error: { message: 'query failed' } }]
     });
     const repository = new EarningsRepository(client);
@@ -187,7 +187,7 @@ describe('EarningsRepository', () => {
   });
 
   it('findByDeliveryId returns mapped row and null for missing or errored lookups', async () => {
-    const success = buildSupabaseClient({
+    const success = buildDatabaseClient({
       selectResults: [{ data: earningsRow, error: null }]
     });
     const repository = new EarningsRepository(success.client);
@@ -195,19 +195,19 @@ describe('EarningsRepository', () => {
 
     expect(found?.id).toBe('earn-2');
 
-    const missing = buildSupabaseClient({
+    const missing = buildDatabaseClient({
       selectResults: [{ data: null, error: null }]
     });
     await expect(new EarningsRepository(missing.client).findByDeliveryId('del-missing')).resolves.toBeNull();
 
-    const errored = buildSupabaseClient({
+    const errored = buildDatabaseClient({
       selectResults: [{ data: null, error: { message: 'broken' } }]
     });
     await expect(new EarningsRepository(errored.client).findByDeliveryId('del-error')).resolves.toBeNull();
   });
 
   it('findAllEarnings handles time filters and returns [] for empty result sets', async () => {
-    const { client, calls } = buildSupabaseClient({
+    const { client, calls } = buildDatabaseClient({
       selectResults: [{ data: [earningsRow], error: null }]
     });
     const repository = new EarningsRepository(client);
@@ -221,14 +221,14 @@ describe('EarningsRepository', () => {
     expect(calls.gte.length).toBeGreaterThan(0);
     expect(calls.lte.length).toBeGreaterThan(0);
 
-    const empty = buildSupabaseClient({
+    const empty = buildDatabaseClient({
       selectResults: [{ data: [], error: null }]
     });
     await expect(new EarningsRepository(empty.client).findAllEarnings()).resolves.toEqual([]);
   });
 
   it('updatePaymentStatus updates base fields and optional paid timestamp', async () => {
-    const { client, calls } = buildSupabaseClient({
+    const { client, calls } = buildDatabaseClient({
       updateResults: [{ data: null, error: null }, { data: null, error: null }]
     });
     const repository = new EarningsRepository(client);
@@ -248,7 +248,7 @@ describe('EarningsRepository', () => {
   });
 
   it('updatePaymentStatus throws when update fails', async () => {
-    const { client } = buildSupabaseClient({
+    const { client } = buildDatabaseClient({
       updateResults: [{ data: null, error: { message: 'cannot update' } }]
     });
     const repository = new EarningsRepository(client);
@@ -259,7 +259,7 @@ describe('EarningsRepository', () => {
   });
 
   it('getCourierEarningsSummary computes totals and rounds average', async () => {
-    const { client } = buildSupabaseClient({
+    const { client } = buildDatabaseClient({
       selectResults: [
         {
           data: [
@@ -288,7 +288,7 @@ describe('EarningsRepository', () => {
   });
 
   it('getCourierEarningsSummary returns zeroed output for empty data or errors', async () => {
-    const empty = buildSupabaseClient({
+    const empty = buildDatabaseClient({
       selectResults: [{ data: [], error: null }]
     });
     await expect(
@@ -304,7 +304,7 @@ describe('EarningsRepository', () => {
       paidPayments: 0
     });
 
-    const errored = buildSupabaseClient({
+    const errored = buildDatabaseClient({
       selectResults: [{ data: null, error: { message: 'failed' } }]
     });
     await expect(
@@ -322,7 +322,7 @@ describe('EarningsRepository', () => {
   });
 
   it('getPlatformEarningsSummary computes aggregate totals and fallback output', async () => {
-    const success = buildSupabaseClient({
+    const success = buildDatabaseClient({
       selectResults: [
         {
           data: [
@@ -348,7 +348,7 @@ describe('EarningsRepository', () => {
       deliveryCount: 3
     });
 
-    const errored = buildSupabaseClient({
+    const errored = buildDatabaseClient({
       selectResults: [{ data: null, error: { message: 'failed' } }]
     });
     await expect(
@@ -365,3 +365,4 @@ describe('EarningsRepository', () => {
     });
   });
 });
+

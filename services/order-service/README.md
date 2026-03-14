@@ -5,30 +5,30 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7+-red)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://docker.com/)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-blue)](https://kubernetes.io/)
+[![Orchestrator](https://img.shields.io/badge/Orchestrator-Ready-blue)](https://example.com/orchestrator-docs/)
 
 > Enterprise-grade Order Service for the Maysar Digital Community Trade Network with comprehensive robustness features, monitoring, and production-ready deployment.
 
-## 🏗️ Architecture Overview
+## ðŸ—ï¸ Architecture Overview
 
 The Order Service is built with Clean Architecture principles and implements enterprise-grade features:
 
 ### Core Features
-- ✅ **Order Lifecycle Management**: Create, update, track, and cancel orders
-- ✅ **Multi-Payment Support**: COD, Card, and Mobile Money payments
-- ✅ **Real-time Tracking**: Order status and delivery tracking
-- ✅ **Inventory Integration**: Automatic stock management
-- ✅ **Event-Driven Architecture**: Saga orchestration for complex workflows
+- âœ… **Order Lifecycle Management**: Create, update, track, and cancel orders
+- âœ… **Multi-Payment Support**: COD, Card, and Mobile Money payments
+- âœ… **Real-time Tracking**: Order status and delivery tracking
+- âœ… **Inventory Integration**: Automatic stock management
+- âœ… **Event-Driven Architecture**: Saga orchestration for complex workflows
 
 ### Enterprise Features
-- ✅ **Database Integration**: Prisma ORM with PostgreSQL + Supabase failover
-- ✅ **Security**: Helmet, CORS, Rate Limiting, Input Validation, JWT
-- ✅ **Monitoring**: Winston logging, Prometheus metrics, Health checks
-- ✅ **Caching**: Redis multi-level caching with tag-based invalidation
-- ✅ **Resilience**: Circuit breaker, exponential backoff retry logic
-- ✅ **Testing**: 90%+ coverage with unit, integration, and API contract tests
+- âœ… **Database Integration**: Prisma ORM with PostgreSQL + Database failover
+- âœ… **Security**: Helmet, CORS, Rate Limiting, Input Validation, JWT
+- âœ… **Monitoring**: Winston logging, Prometheus metrics, Health checks
+- âœ… **Caching**: Redis multi-level caching with tag-based invalidation
+- âœ… **Resilience**: Circuit breaker, exponential backoff retry logic
+- âœ… **Testing**: 90%+ coverage with unit, integration, and API contract tests
 
-## 🚀 Quick Start
+## ðŸš€ Quick Start
 
 ### Prerequisites
 - Node.js 18+ and npm
@@ -52,7 +52,7 @@ nano .env
 ### 2. Local Development with Docker Compose
 
 ```bash
-# Start all services (PostgreSQL, Redis, Supabase, Order Service)
+# Start all services (PostgreSQL, Redis, Database, Order Service)
 docker-compose up -d
 
 # View logs
@@ -91,7 +91,7 @@ npm run test:integration
 npm run test:coverage
 ```
 
-## 📡 API Documentation
+## ðŸ“¡ API Documentation
 
 ### OpenAPI Specification
 The complete API documentation is available in OpenAPI 3.0 format:
@@ -108,8 +108,8 @@ Comprehensive API testing collection with automated validation:
 ```bash
 # Health Checks
 GET  /api/health           # Comprehensive health check
-GET  /api/health/live      # Kubernetes liveness probe
-GET  /api/health/ready     # Kubernetes readiness probe
+GET  /api/health/live      # Orchestrator liveness probe
+GET  /api/health/ready     # Orchestrator readiness probe
 
 # Order Management
 POST /api/orders           # Create new order
@@ -126,7 +126,7 @@ GET  /api/orders/{id}/payment  # Get payment status
 GET  /api/analytics/orders     # Order analytics
 ```
 
-## 🧪 Testing
+## ðŸ§ª Testing
 
 ### Test Commands
 
@@ -152,7 +152,7 @@ node performance-benchmarks.js  # Performance benchmarks
 - **Contract Tests**: API schema validation and response verification
 - **Performance Tests**: Load testing and benchmarking
 
-## 🐳 Docker Deployment
+## ðŸ³ Docker Deployment
 
 ### Build and Run
 
@@ -177,55 +177,55 @@ docker-compose up -d
 - **Production**: Minimal runtime with security hardening
 - **Testing**: Automated testing in build pipeline
 
-## ☸️ Kubernetes Deployment
+## â˜¸ï¸ Orchestrator Deployment
 
 ### Prerequisites
-- Kubernetes cluster (v1.19+)
-- kubectl configured
+- Orchestrator cluster (v1.19+)
+- deployctl configured
 - NGINX Ingress Controller (optional)
 
-### Deploy to Kubernetes
+### Deploy to Orchestrator
 
 ```bash
 # Create namespace
-kubectl apply -f k8s/namespace.yaml
+deployctl apply -f deploy/namespace.yaml
 
 # Deploy ConfigMap and Secrets
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/secret.yaml
+deployctl apply -f deploy/configmap.yaml
+deployctl apply -f deploy/secret.yaml
 
 # Deploy PostgreSQL and Redis (if not using managed services)
-kubectl apply -f k8s/postgres.yaml
-kubectl apply -f k8s/redis.yaml
+deployctl apply -f deploy/postgres.yaml
+deployctl apply -f deploy/redis.yaml
 
 # Deploy Order Service
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
-kubectl apply -f k8s/ingress.yaml
+deployctl apply -f deploy/deployment.yaml
+deployctl apply -f deploy/service.yaml
+deployctl apply -f deploy/ingress.yaml
 
 # Check deployment status
-kubectl get pods -n order-service
-kubectl logs -f deployment/order-service -n order-service
+deployctl get pods -n order-service
+deployctl logs -f deployment/order-service -n order-service
 ```
 
-### Kubernetes Features
-- ✅ **Rolling Updates**: Zero-downtime deployments
-- ✅ **Health Checks**: Liveness and readiness probes
-- ✅ **Resource Limits**: CPU and memory management
-- ✅ **Security Context**: Non-root user, read-only filesystem
-- ✅ **Network Policies**: Traffic isolation and security
-- ✅ **Service Mesh Ready**: Istio/Kong integration prepared
+### Orchestrator Features
+- âœ… **Rolling Updates**: Zero-downtime deployments
+- âœ… **Health Checks**: Liveness and readiness probes
+- âœ… **Resource Limits**: CPU and memory management
+- âœ… **Security Context**: Non-root user, read-only filesystem
+- âœ… **Network Policies**: Traffic isolation and security
+- âœ… **Service Mesh Ready**: Istio/Kong integration prepared
 
-## 🔒 Security
+## ðŸ”’ Security
 
 ### Implemented Security Features
-- ✅ **Helmet.js**: Security headers (CSP, HSTS, X-Frame-Options)
-- ✅ **CORS**: Configurable cross-origin resource sharing
-- ✅ **Rate Limiting**: Request throttling (100 req/15min per IP)
-- ✅ **Input Validation**: Express-validator with sanitization
-- ✅ **JWT Authentication**: Bearer token validation
-- ✅ **SQL Injection Prevention**: Prisma ORM with parameterized queries
-- ✅ **XSS Protection**: Input sanitization and content security policy
+- âœ… **Helmet.js**: Security headers (CSP, HSTS, X-Frame-Options)
+- âœ… **CORS**: Configurable cross-origin resource sharing
+- âœ… **Rate Limiting**: Request throttling (100 req/15min per IP)
+- âœ… **Input Validation**: Express-validator with sanitization
+- âœ… **JWT Authentication**: Bearer token validation
+- âœ… **SQL Injection Prevention**: Prisma ORM with parameterized queries
+- âœ… **XSS Protection**: Input sanitization and content security policy
 
 ### Security Scanning
 
@@ -240,32 +240,32 @@ npm audit
 trivy image maysar/order-service:latest
 ```
 
-## 📊 Monitoring & Observability
+## ðŸ“Š Monitoring & Observability
 
 ### Logging
-- ✅ **Structured Logging**: Winston with JSON format
-- ✅ **Log Levels**: error, warn, info, debug
-- ✅ **Request Correlation**: X-Request-ID tracing
-- ✅ **Business Events**: Domain event logging
+- âœ… **Structured Logging**: Winston with JSON format
+- âœ… **Log Levels**: error, warn, info, debug
+- âœ… **Request Correlation**: X-Request-ID tracing
+- âœ… **Business Events**: Domain event logging
 
 ### Metrics
-- ✅ **Prometheus Compatible**: HTTP `/metrics` endpoint
-- ✅ **Custom Metrics**: Order creation rate, payment success rate
-- ✅ **Performance Metrics**: Response times, error rates
-- ✅ **Business Metrics**: Order volume, revenue tracking
+- âœ… **Prometheus Compatible**: HTTP `/metrics` endpoint
+- âœ… **Custom Metrics**: Order creation rate, payment success rate
+- âœ… **Performance Metrics**: Response times, error rates
+- âœ… **Business Metrics**: Order volume, revenue tracking
 
 ### Health Checks
-- ✅ **Application Health**: Service availability
-- ✅ **Dependency Health**: Database, Redis, external services
-- ✅ **Business Health**: Payment gateway connectivity
-- ✅ **Kubernetes Integration**: Liveness and readiness probes
+- âœ… **Application Health**: Service availability
+- âœ… **Dependency Health**: Database, Redis, external services
+- âœ… **Business Health**: Payment gateway connectivity
+- âœ… **Orchestrator Integration**: Liveness and readiness probes
 
 ### Monitoring Dashboards
-- ✅ **Grafana**: Pre-configured dashboards
-- ✅ **Prometheus**: Metrics collection and alerting
-- ✅ **ELK Stack**: Log aggregation and analysis
+- âœ… **Grafana**: Pre-configured dashboards
+- âœ… **Prometheus**: Metrics collection and alerting
+- âœ… **ELK Stack**: Log aggregation and analysis
 
-## 🏗️ Development Workflow
+## ðŸ—ï¸ Development Workflow
 
 ### Code Quality
 ```bash
@@ -314,7 +314,7 @@ node scripts/api-coverage-verification.js
 node performance-benchmarks.js
 ```
 
-## 🔧 Configuration
+## ðŸ”§ Configuration
 
 ### Environment Variables
 
@@ -339,7 +339,7 @@ node performance-benchmarks.js
 | `ENABLE_COMPRESSION` | Enable response compression | `true` |
 | `ENABLE_CACHING` | Enable Redis caching | `true` |
 
-## 🚦 Troubleshooting
+## ðŸš¦ Troubleshooting
 
 ### Common Issues
 
@@ -394,15 +394,15 @@ curl http://localhost:3002/api/health/ready
 curl http://localhost:3002/api/health/live
 ```
 
-## 📚 Additional Resources
+## ðŸ“š Additional Resources
 
 - [OpenAPI Specification](openapi.yaml) - Complete API documentation
 - [Postman Collection](order-service-api.postman_collection.json) - API testing suite
 - [Docker Compose](docker-compose.yml) - Local development environment
-- [Kubernetes Manifests](k8s/) - Production deployment files
+- [Orchestrator Manifests](deploy/) - Production deployment files
 - [Security Documentation](docs/security.md) - Security implementation details
 
-## 🤝 Contributing
+## ðŸ¤ Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -411,17 +411,17 @@ curl http://localhost:3002/api/health/live
 5. Submit a pull request
 
 ### Development Standards
-- ✅ **TypeScript**: Strict mode enabled
-- ✅ **ESLint**: Code quality enforcement
-- ✅ **Pre-commit Hooks**: Automated quality checks
-- ✅ **Test Coverage**: Minimum 85% coverage required
-- ✅ **Documentation**: OpenAPI and README updates required
+- âœ… **TypeScript**: Strict mode enabled
+- âœ… **ESLint**: Code quality enforcement
+- âœ… **Pre-commit Hooks**: Automated quality checks
+- âœ… **Test Coverage**: Minimum 85% coverage required
+- âœ… **Documentation**: OpenAPI and README updates required
 
-## 📄 License
+## ðŸ“„ License
 
 Proprietary - Maysar Digital Community Trade Network
 
-## 🆘 Support
+## ðŸ†˜ Support
 
 For support and questions:
 - **Email**: devops@maysar.com
@@ -430,6 +430,7 @@ For support and questions:
 
 ---
 
-**Built with ❤️ by the Maysar Engineering Team**
+**Built with â¤ï¸ by the Maysar Engineering Team**
 
 *Enterprise-grade robustness with developer experience in mind.*
+

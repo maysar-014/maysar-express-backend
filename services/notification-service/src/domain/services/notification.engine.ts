@@ -199,7 +199,7 @@ export class NotificationEngine {
 
   private async getChannelConfigurations(channels: NotificationChannel[]): Promise<any> {
     return {
-      sms: { provider: 'Twilio', reliability: 0.98, avgDeliveryTime: 5 },
+      sms: { provider: 'Africa\'s Talking', reliability: 0.98, avgDeliveryTime: 5 },
       email: { provider: 'SendGrid', reliability: 0.99, avgDeliveryTime: 2 },
       push: { provider: 'Firebase', reliability: 0.95, avgDeliveryTime: 1 },
       whatsapp: { provider: 'WhatsApp Business', reliability: 0.97, avgDeliveryTime: 3 },

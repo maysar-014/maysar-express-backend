@@ -30,8 +30,8 @@ export class PrismaOrderRepository implements OrderRepository {
         id: order.id,
         buyerId: order.buyerId,
         sellerId: order.sellerId,
-        status: order.status as any, // Type assertion for enum compatibility
-        paymentMethod: order.paymentMethod as any,
+        status: this.toDbStatus(order.status),
+        paymentMethod: this.toDbPaymentMethod(order.paymentMethod),
         totalAmount: order.totalAmount.amount,
         currency: order.totalAmount.currency,
         totalWeight: order.totalWeight,
@@ -113,8 +113,8 @@ export class PrismaOrderRepository implements OrderRepository {
       const orderData = {
         buyerId: order.buyerId,
         sellerId: order.sellerId,
-        status: order.status as any,
-        paymentMethod: order.paymentMethod as any,
+        status: this.toDbStatus(order.status),
+        paymentMethod: this.toDbPaymentMethod(order.paymentMethod),
         totalAmount: order.totalAmount.amount,
         currency: order.totalAmount.currency,
         totalWeight: order.totalWeight,
@@ -166,7 +166,7 @@ export class PrismaOrderRepository implements OrderRepository {
       totalAmount: Number(prismaOrder.totalAmount),
       currency: prismaOrder.currency,
       totalWeight: prismaOrder.totalWeight,
-      paymentMethod: prismaOrder.paymentMethod as any,
+      paymentMethod: this.toDomainPaymentMethod(prismaOrder.paymentMethod),
       deliveryAddress: {
         street: deliveryAddress.street,
         city: deliveryAddress.city,
@@ -177,7 +177,7 @@ export class PrismaOrderRepository implements OrderRepository {
 
     const order = new Order(orderData);
     // Override the status and dates from database
-    (order as any).status = prismaOrder.status;
+    (order as any).status = this.toDomainStatus(prismaOrder.status);
     (order as any).createdAt = prismaOrder.createdAt;
     (order as any).updatedAt = prismaOrder.updatedAt;
 
@@ -209,7 +209,7 @@ export class PrismaOrderRepository implements OrderRepository {
   async findByStatus(status: OrderStatus): Promise<Order[]> {
     try {
       const prismaOrders = await this.orderDelegate.findMany({
-        where: { status: status as any },
+        where: { status: this.toDbStatus(status) },
         include: {
           items: true
         },
@@ -232,5 +232,55 @@ export class PrismaOrderRepository implements OrderRepository {
       throw new Error('Order delegate is not configured on prisma client');
     }
     return delegate;
+  }
+
+  private toDbStatus(status: string): string {
+    const normalized = String(status).toLowerCase();
+    const map: Record<string, string> = {
+      pending: 'PENDING',
+      confirmed: 'CONFIRMED',
+      processing: 'PENDING',
+      assigned: 'ASSIGNED',
+      shipped: 'IN_TRANSIT',
+      in_transit: 'IN_TRANSIT',
+      delivered: 'DELIVERED',
+      cancelled: 'CANCELLED',
+      pending_verification: 'PENDING'
+    };
+    return map[normalized] ?? String(status).toUpperCase();
+  }
+
+  private toDomainStatus(status: string): OrderStatus {
+    const map: Record<string, OrderStatus> = {
+      PENDING: OrderStatus.PENDING,
+      CONFIRMED: OrderStatus.CONFIRMED,
+      ASSIGNED: OrderStatus.ASSIGNED,
+      IN_TRANSIT: OrderStatus.IN_TRANSIT,
+      DELIVERED: OrderStatus.DELIVERED,
+      CANCELLED: OrderStatus.CANCELLED
+    };
+    return map[String(status)] ?? OrderStatus.PENDING;
+  }
+
+  private toDbPaymentMethod(method: string): string {
+    const normalized = String(method).toLowerCase();
+    const map: Record<string, string> = {
+      cod: 'COD',
+      wallet: 'WALLET',
+      card: 'CARD',
+      mobile_money: 'MOBILE_MONEY',
+      mobile_payment: 'MOBILE_MONEY'
+    };
+    return map[normalized] ?? String(method).toUpperCase();
+  }
+
+  private toDomainPaymentMethod(method: string): 'cod' | 'card' | 'mobile_money' {
+    const map: Record<string, 'cod' | 'card' | 'mobile_money'> = {
+      COD: 'cod',
+      CARD: 'card',
+      MOBILE_MONEY: 'mobile_money',
+      WALLET: 'card'
+    };
+    return map[String(method)] ?? 'cod';
   }
 }

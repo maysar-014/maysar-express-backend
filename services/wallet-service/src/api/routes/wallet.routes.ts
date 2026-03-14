@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { RedisRateLimitStore } from '../../../../../shared/middleware/redis-rate-limit.store';
-import Redis from 'ioredis';
 import { WalletController } from '../controllers/wallet.controller';
 import { validateRequest } from '../middleware/validation.middleware';
 import { WalletValidator } from '../validators/wallet.validator';
@@ -9,9 +8,10 @@ import { authenticate } from '../middleware/authentication.middleware';
 import { AuthorizationMiddleware } from '../middleware/authorization.middleware';
 import { correlationMiddleware } from '../middleware/correlation.middleware';
 import { IdempotencyMiddleware } from '@shared/middleware/idempotency';
+import { getSharedRedisClient, resolveRedisUrl } from '@shared/redis/ioredis-client';
 
 const idempotencyMiddleware = new IdempotencyMiddleware(process.env.REDIS_URL!);
-const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+const redisClient = getSharedRedisClient(resolveRedisUrl(process.env.REDIS_URL));
 
 export function createWalletRoutes(controller: WalletController): Router {
     const router = Router();
@@ -21,7 +21,8 @@ export function createWalletRoutes(controller: WalletController): Router {
     router.use(rateLimit({
         windowMs: 15 * 60 * 1000,
         max: 60,
-        store: new RedisRateLimitStore(redisClient, 'rl:wallet:')
+        store: new RedisRateLimitStore(redisClient, 'rl:wallet:'),
+        passOnStoreError: true
     }));
     router.use(correlationMiddleware);
     router.use(idempotencyMiddleware.middleware());

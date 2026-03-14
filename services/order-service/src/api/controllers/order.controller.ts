@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { PlaceOrderUseCase, PlaceOrderRequest } from '../../application/use-cases/place-order.use-case';
 import { CheckCODEligibilityUseCase, CheckCODEligibilityInput } from '../../application/use-cases/check-cod-eligibility.use-case';
 import { OrderRepository } from '../../domain/repositories/order.repository';
-import { SupabaseOrderRepository } from '../../infrastructure/database/supabase-order.repository';
+import { PrismaOrderRepository } from '../../infrastructure/database/prisma-order.repository';
 import { OrderStatus } from '../../domain/entities/order.entity';
 
 export class OrderController {
@@ -12,7 +12,7 @@ export class OrderController {
     private readonly placeOrderUseCase: PlaceOrderUseCase,
     private readonly checkCODEligibilityUseCase: CheckCODEligibilityUseCase
   ) {
-    this.orderRepository = new SupabaseOrderRepository();
+    this.orderRepository = new PrismaOrderRepository();
   }
 
   async placeOrder(req: Request, res: Response): Promise<void> {

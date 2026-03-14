@@ -1,8 +1,8 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import 'dotenv/config';
 import { Logger } from './utils/logger';
 import { AppConfiguration } from './config/app.config';
-import { SupabaseClientManager } from './infrastructure/database/supabase.client';
+import { PrismaClientManager } from './infrastructure/database/prisma.client';
 import { RedisClientManager } from './infrastructure/cache/redis.client';
 import { LogisticsEngine } from './engines/logistics.engine';
 
@@ -23,7 +23,7 @@ class LogisticsDiagnosticRunner {
   }
 
   async runFullDiagnostics(): Promise<void> {
-    console.log('ðŸ” Starting Logistics Service Diagnostics...\n');
+    console.log('🔍 Starting Logistics Service Diagnostics...\n');
     
     await this.checkConfiguration();
     await this.checkDatabaseConnection();
@@ -65,13 +65,13 @@ class LogisticsDiagnosticRunner {
   private async checkDatabaseConnection(): Promise<void> {
     const start = Date.now();
     try {
-      const supabase = SupabaseClientManager.getInstance();
-      await supabase.connect();
+      const prisma = PrismaClientManager.getInstance();
+      await prisma.connect();
       
-      const health = await supabase.healthCheck();
+      const health = await prisma.healthCheck();
       
       this.results.push({
-        component: 'Supabase Database',
+        component: 'Database',
         status: health.status === 'healthy' ? 'healthy' : 'error',
         message: health.status === 'healthy' ? 'Database connection successful' : 'Database connection failed',
         details: { latency: health.latency },
@@ -79,7 +79,7 @@ class LogisticsDiagnosticRunner {
       });
     } catch (error: any) {
       this.results.push({
-        component: 'Supabase Database',
+        component: 'Database',
         status: 'error',
         message: error.message,
         duration: Date.now() - start
@@ -253,7 +253,7 @@ class LogisticsDiagnosticRunner {
   }
 
   private displayResults(): void {
-    console.log('\nðŸ“Š Diagnostic Results:');
+    console.log('\n📊 Diagnostic Results:');
     console.log('='.repeat(80));
     
     let healthyCount = 0;
@@ -262,9 +262,9 @@ class LogisticsDiagnosticRunner {
     
     this.results.forEach((result, index) => {
       const statusIcon = {
-        healthy: 'âœ…',
-        warning: 'âš ï¸',
-        error: 'âŒ'
+        healthy: '✅',
+        warning: '⚠️',
+        error: '❌'
       }[result.status];
       
       console.log(`\n${index + 1}. ${statusIcon} ${result.component}`);
@@ -293,21 +293,21 @@ class LogisticsDiagnosticRunner {
     });
     
     console.log('\n' + '='.repeat(80));
-    console.log('ðŸ“ˆ Summary:');
-    console.log(`   âœ… Healthy: ${healthyCount}`);
-    console.log(`   âš ï¸  Warnings: ${warningCount}`);
-    console.log(`   âŒ Errors: ${errorCount}`);
-    console.log(`   ðŸ“Š Total Components: ${this.results.length}`);
+    console.log('📈 Summary:');
+    console.log(`   ✅ Healthy: ${healthyCount}`);
+    console.log(`   ⚠️  Warnings: ${warningCount}`);
+    console.log(`   ❌ Errors: ${errorCount}`);
+    console.log(`   📊 Total Components: ${this.results.length}`);
     
     const overallStatus = errorCount > 0 ? 'CRITICAL' : warningCount > 0 ? 'WARNING' : 'HEALTHY';
-    console.log(`\nðŸŽ¯ Overall Status: ${overallStatus}`);
+    console.log(`\n🎯 Overall Status: ${overallStatus}`);
     
     if (overallStatus === 'HEALTHY') {
-      console.log('\nðŸš€ Logistics Service is ready for operation!');
+      console.log('\n🚀 Logistics Service is ready for operation!');
     } else if (overallStatus === 'WARNING') {
-      console.log('\nâš ï¸  Logistics Service has warnings but can operate');
+      console.log('\n⚠️  Logistics Service has warnings but can operate');
     } else {
-      console.log('\nâŒ Logistics Service has critical issues that need attention');
+      console.log('\n❌ Logistics Service has critical issues that need attention');
     }
   }
 }
@@ -315,3 +315,4 @@ class LogisticsDiagnosticRunner {
 // Run diagnostics
 const runner = new LogisticsDiagnosticRunner();
 runner.runFullDiagnostics().catch(console.error);
+

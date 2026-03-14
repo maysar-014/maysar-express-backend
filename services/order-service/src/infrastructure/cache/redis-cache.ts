@@ -8,6 +8,7 @@ import { cacheConfig } from '../../config/monitoring.config';
 import { appLogger } from '../monitoring/logger';
 import { metricsCollector } from '../monitoring/metrics';
 import { circuitBreakerRegistry, CircuitBreakerPresets } from '../circuit-breaker';
+import { scanKeysIoredis } from '@shared/redis/scan-keys';
 
 export interface CacheOptions {
   ttl?: number;        // Time to live in seconds
@@ -334,7 +335,7 @@ export class RedisCache {
     const result = await this.circuitBreaker.execute(async () => {
       try {
         // Get all keys with our prefix
-        const keys = await this.redis.keys('order_service:*');
+        const keys = await scanKeysIoredis(this.redis, 'order_service:*');
 
         if (keys.length > 0) {
           await this.redis.del(...keys);

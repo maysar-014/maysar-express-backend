@@ -8,8 +8,8 @@ describe('SecurityAuditEngine', () => {
     jest.restoreAllMocks();
     jest.spyOn(console, 'log').mockImplementation(() => undefined);
     process.env = { ...originalEnv };
-    delete process.env.SUPABASE_URL;
-    delete process.env.SUPABASE_ANON_KEY;
+    delete process.env.DATABASE_URL;
+    delete process.env.DATABASE_ANON_KEY;
     delete process.env.GOOGLE_MAPS_API_KEY;
     delete process.env.OPENWEATHER_API_KEY;
   });
@@ -261,3 +261,4 @@ describe('SecurityAuditEngine', () => {
     expect(securityAuditEngine).toBeInstanceOf(SecurityAuditEngine);
   });
 });
+

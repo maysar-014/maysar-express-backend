@@ -65,6 +65,20 @@ describe('AuthenticateUserUseCase', () => {
             expect(result.message).toContain('Invalid email');
         });
 
+        it('should fail safely when repository lookup throws', async () => {
+            mockUserRepository.findByEmail.mockRejectedValue(new Error('user-service unavailable'));
+
+            const result = await useCase.execute({
+                email: 'test@example.com',
+                password: 'password',
+                ipAddress: '127.0.0.1',
+                userAgent: 'test-agent'
+            });
+
+            expect(result.success).toBe(false);
+            expect(result.message).toBe('Invalid email or password');
+        });
+
         it('should fail if password incorrect', async () => {
             mockUserRepository.findByEmail.mockResolvedValue(mockUser());
 

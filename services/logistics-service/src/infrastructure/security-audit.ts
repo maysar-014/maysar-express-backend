@@ -267,8 +267,8 @@ export class SecurityAuditEngine {
   private checkEnvironmentVariables(): void {
     // Check for proper environment variable usage
     const requiredEnvVars = [
-      'SUPABASE_URL',
-      'SUPABASE_ANON_KEY',
+      'DATABASE_URL',
+      'DATABASE_ANON_KEY',
       'GOOGLE_MAPS_API_KEY',
       'OPENWEATHER_API_KEY'
     ];
@@ -415,3 +415,4 @@ export class SecurityAuditEngine {
 
 // Global instance
 export const securityAuditEngine = new SecurityAuditEngine();
+

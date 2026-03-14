@@ -1,34 +1,30 @@
-import { ChangePasswordController } from '../src/api/controllers/change-password.controller';
+import { Request, Response } from 'express';
+import { ChangePasswordController } from '../../../src/api/controllers/change-password.controller';
 
 describe('ChangePasswordController', () => {
-  let useCase: ChangePasswordController;
-  let mockRepo: any;
+  let controller: ChangePasswordController;
+  let mockUseCase: any;
+  let req: Partial<Request>;
+  let res: Partial<Response>;
 
   beforeEach(() => {
-    mockRepo = {
-      findById: jest.fn(),
-      save: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn()
-    };
-    useCase = new ChangePasswordController(mockRepo);
+    mockUseCase = { execute: jest.fn() };
+    controller = new ChangePasswordController(mockUseCase);
+    req = { params: {}, body: {} };
+    res = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() };
   });
 
-  describe('execute', () => {
-    it('should execute successfully', async () => {
-      mockRepo.findById.mockResolvedValue({ id: '1' });
-      const result = await useCase.execute({ id: '1' });
-      expect(result).toBeDefined();
-    });
+  it('returns 400 when required fields are missing', async () => {
+    await controller.handle(req as Request, res as Response);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
 
-    it('should handle not found', async () => {
-      mockRepo.findById.mockResolvedValue(null);
-      await expect(useCase.execute({ id: '999' })).rejects.toThrow();
-    });
+  it('returns 200 when use case succeeds', async () => {
+    req.params = { id: 'user-1' };
+    req.body = { newPassword: 'NewPass123!', changedBy: 'user-1' };
+    mockUseCase.execute.mockResolvedValue({ success: true });
 
-    it('should handle repository errors', async () => {
-      mockRepo.findById.mockRejectedValue(new Error('DB error'));
-      await expect(useCase.execute({ id: '1' })).rejects.toThrow();
-    });
+    await controller.handle(req as Request, res as Response);
+    expect(res.status).toHaveBeenCalledWith(200);
   });
 });

@@ -241,7 +241,6 @@ function getHttpStatusCode(error: AppError): number {
     case ErrorType.EXTERNAL_SERVICE_ERROR:
     case ErrorType.NETWORK_ERROR:
     case ErrorType.PESAPAL_ERROR:
-    case ErrorType.SUPABASE_ERROR:
     case ErrorType.REDIS_ERROR:
       return 503;
 
@@ -440,3 +439,5 @@ export function errorLoggingHandler(
 
   next();
 }
+
+

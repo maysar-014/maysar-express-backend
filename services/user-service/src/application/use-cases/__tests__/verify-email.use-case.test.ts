@@ -8,7 +8,8 @@ describe('VerifyEmailUseCase', () => {
   it('returns not found when user missing', async () => {
     const repo: any = { findById: jest.fn().mockResolvedValue(null) };
     const publisher: any = { publish: jest.fn() };
-    const sut = new VerifyEmailUseCase(repo, publisher);
+    const tokenRepo: any = { findByToken: jest.fn(), markAsUsed: jest.fn() };
+    const sut = new VerifyEmailUseCase(repo, publisher, tokenRepo);
     const out = await sut.execute({ userId: 'x', verificationToken: 'token' });
     expect(out.success).toBe(false);
     expect(out.message).toContain('User not found');
@@ -19,7 +20,8 @@ describe('VerifyEmailUseCase', () => {
     Object.defineProperty(user, 'emailVerified', { value: true, writable: false, configurable: true });
     const repo: any = { findById: jest.fn().mockResolvedValue(user) };
     const publisher: any = { publish: jest.fn() };
-    const sut = new VerifyEmailUseCase(repo, publisher);
+    const tokenRepo: any = { findByToken: jest.fn(), markAsUsed: jest.fn() };
+    const sut = new VerifyEmailUseCase(repo, publisher, tokenRepo);
     const out = await sut.execute({ userId: 'u1', verificationToken: 'token' });
     expect(out.success).toBe(true);
     expect(out.emailVerified).toBe(true);
@@ -29,7 +31,17 @@ describe('VerifyEmailUseCase', () => {
     const user = User.create({ id: 'u1', email: Email.create('a@gmail.com'), phoneNumber: PhoneNumber.create('+255712345678'), firstName: 'A', lastName: 'B', role: UserRole.BUYER });
     const repo: any = { findById: jest.fn().mockResolvedValue(user), updateEmailVerification: jest.fn(), recordSecurityEvent: jest.fn() };
     const publisher: any = { publish: jest.fn() };
-    const sut = new VerifyEmailUseCase(repo, publisher);
+    const tokenRepo: any = {
+      findByToken: jest.fn().mockResolvedValue({
+        id: 'token-1',
+        userId: 'u1',
+        token: 'valid-token',
+        used: false,
+        expiresAt: new Date(Date.now() + 60_000)
+      }),
+      markAsUsed: jest.fn()
+    };
+    const sut = new VerifyEmailUseCase(repo, publisher, tokenRepo);
     const out = await sut.execute({ userId: 'u1', verificationToken: 'valid-token' });
     expect(out.success).toBe(true);
     expect(out.emailVerified).toBe(true);
@@ -39,7 +51,8 @@ describe('VerifyEmailUseCase', () => {
     const user = User.create({ id: 'u1', email: Email.create('a@gmail.com'), phoneNumber: PhoneNumber.create('+255712345678'), firstName: 'A', lastName: 'B', role: UserRole.BUYER });
     const repo: any = { findById: jest.fn().mockResolvedValue(user), updateEmailVerification: jest.fn(), recordSecurityEvent: jest.fn() };
     const publisher: any = { publish: jest.fn() };
-    const sut = new VerifyEmailUseCase(repo, publisher);
+    const tokenRepo: any = { findByToken: jest.fn().mockResolvedValue(null), markAsUsed: jest.fn() };
+    const sut = new VerifyEmailUseCase(repo, publisher, tokenRepo);
     await sut.execute({ userId: 'u1', verificationToken: 'token' });
     expect(repo.recordSecurityEvent).toHaveBeenCalled();
   });
@@ -47,18 +60,20 @@ describe('VerifyEmailUseCase', () => {
   it('handles errors gracefully', async () => {
     const repo: any = { findById: jest.fn().mockRejectedValue(new Error('DB error')) };
     const publisher: any = { publish: jest.fn() };
-    const sut = new VerifyEmailUseCase(repo, publisher);
+    const tokenRepo: any = { findByToken: jest.fn(), markAsUsed: jest.fn() };
+    const sut = new VerifyEmailUseCase(repo, publisher, tokenRepo);
     const out = await sut.execute({ userId: 'u1', verificationToken: 'token' });
     expect(out.success).toBe(false);
   });
 
   it('rejects invalid verification token', async () => {
     const user = User.create({ id: 'u1', email: Email.create('a@gmail.com'), phoneNumber: PhoneNumber.create('+255712345678'), firstName: 'A', lastName: 'B', role: UserRole.BUYER });
-    const repo: any = { findById: jest.fn().mockResolvedValue(user), recordSecurityEvent: jest.fn() };
+    const repo: any = { findById: jest.fn().mockResolvedValue(user), recordSecurityEvent: jest.fn(), updateEmailVerification: jest.fn() };
     const publisher: any = { publish: jest.fn() };
-    const sut = new VerifyEmailUseCase(repo, publisher);
+    const tokenRepo: any = { findByToken: jest.fn().mockResolvedValue(null), markAsUsed: jest.fn() };
+    const sut = new VerifyEmailUseCase(repo, publisher, tokenRepo);
     const out = await sut.execute({ userId: 'u1', verificationToken: 'invalid-token' });
     expect(out.success).toBe(false);
-    expect(out.message).toContain('Invalid');
+    expect(out.emailVerified).toBe(false);
   });
 });

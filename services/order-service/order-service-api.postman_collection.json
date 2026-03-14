@@ -41,7 +41,7 @@
   "item": [
 
     {
-      "name": "🏥 Health & Monitoring",
+      "name": "ðŸ¥ Health & Monitoring",
       "item": [
         {
           "name": "Service Health Check",
@@ -87,14 +87,14 @@
                   "        pm.expect(response.status).to.equal('healthy');",
                   "    });",
                   "    ",
-                  "    pm.test('Supabase database is healthy', function() {",
-                  "        pm.expect(response.database.supabase).to.be.true;",
+                  "    pm.test('Database database is healthy', function() {",
+                  "        pm.expect(response.database.database).to.be.true;",
                   "    });",
                   "    ",
-                  "    console.log('✅ Health check passed - Service is healthy');",
-                  "    console.log('🗄️  Database status - Supabase:', response.database.supabase ? '✅' : '❌');",
+                  "    console.log('âœ… Health check passed - Service is healthy');",
+                  "    console.log('ðŸ—„ï¸  Database status - Database:', response.database.database ? 'âœ…' : 'âŒ');",
                   "} else {",
-                  "    console.log('⚠️  Service is unhealthy - check database connectivity');",
+                  "    console.log('âš ï¸  Service is unhealthy - check database connectivity');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -117,7 +117,7 @@
                 "live"
               ]
             },
-            "description": "Kubernetes liveness probe - checks if service is running."
+            "description": "Orchestrator liveness probe - checks if service is running."
           },
           "event": [
             {
@@ -128,7 +128,7 @@
                   "    pm.expect(pm.response.code).to.be.oneOf([200, 500]);",
                   "});",
                   "",
-                  "console.log(pm.response.code === 200 ? '✅ Service is alive' : '❌ Service is not responding');"
+                  "console.log(pm.response.code === 200 ? 'âœ… Service is alive' : 'âŒ Service is not responding');"
                 ],
                 "type": "text/javascript"
               }
@@ -150,7 +150,7 @@
                 "ready"
               ]
             },
-            "description": "Kubernetes readiness probe - checks if service is ready to accept traffic."
+            "description": "Orchestrator readiness probe - checks if service is ready to accept traffic."
           },
           "event": [
             {
@@ -161,7 +161,7 @@
                   "    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
                   "});",
                   "",
-                  "console.log(pm.response.code === 200 ? '✅ Service is ready' : '⚠️  Service is not ready');"
+                  "console.log(pm.response.code === 200 ? 'âœ… Service is ready' : 'âš ï¸  Service is not ready');"
                 ],
                 "type": "text/javascript"
               }
@@ -201,9 +201,9 @@
                   "        pm.expect(response.checks).to.have.property('database');",
                   "        pm.expect(response.checks).to.have.property('circuitBreakers');",
                   "    });",
-                  "    console.log('✅ Detailed health check passed');",
+                  "    console.log('âœ… Detailed health check passed');",
                   "} else {",
-                  "    console.log('⚠️  Service has health issues - check detailed response');",
+                  "    console.log('âš ï¸  Service has health issues - check detailed response');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -214,7 +214,7 @@
       ]
     },
     {
-      "name": "📦 Order Management",
+      "name": "ðŸ“¦ Order Management",
       "item": [
         {
           "name": "Create Order - COD",
@@ -283,17 +283,17 @@
                   "    ",
                   "    // Save order ID for subsequent requests",
                   "    pm.collectionVariables.set('current_order_id', response.id);",
-                  "    console.log('✅ Order created successfully:', response.id);",
-                  "    console.log('💰 Total amount:', response.totalAmount.amount, response.totalAmount.currency);",
+                  "    console.log('âœ… Order created successfully:', response.id);",
+                  "    console.log('ðŸ’° Total amount:', response.totalAmount.amount, response.totalAmount.currency);",
                   "    ",
                   "} else if (pm.response.code === 400) {",
-                  "    console.log('❌ Validation error - check request data');",
+                  "    console.log('âŒ Validation error - check request data');",
                   "    const error = pm.response.json();",
                   "    console.log('Error details:', error.message);",
                   "} else if (pm.response.code === 401) {",
-                  "    console.log('❌ Authentication required');",
+                  "    console.log('âŒ Authentication required');",
                   "} else if (pm.response.code === 429) {",
-                  "    console.log('⚠️  Rate limit exceeded - try again later');",
+                  "    console.log('âš ï¸  Rate limit exceeded - try again later');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -337,10 +337,10 @@
                   "",
                   "if (pm.response.code === 201) {",
                   "    const response = pm.response.json();",
-                  "    console.log('✅ Card payment order created:', response.id);",
+                  "    console.log('âœ… Card payment order created:', response.id);",
                   "    pm.collectionVariables.set('card_order_id', response.id);",
                   "} else if (pm.response.code === 402) {",
-                  "    console.log('💳 Payment required - check payment token');",
+                  "    console.log('ðŸ’³ Payment required - check payment token');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -390,12 +390,12 @@
                   "        pm.expect(response.id).to.equal(pm.collectionVariables.get('current_order_id'));",
                   "    });",
                   "    ",
-                  "    console.log('✅ Order details retrieved for:', response.id);",
-                  "    console.log('📊 Status:', response.status);",
-                  "    console.log('📦 Items:', response.items.length);",
+                  "    console.log('âœ… Order details retrieved for:', response.id);",
+                  "    console.log('ðŸ“Š Status:', response.status);",
+                  "    console.log('ðŸ“¦ Items:', response.items.length);",
                   "    ",
                   "} else if (pm.response.code === 404) {",
-                  "    console.log('❌ Order not found - create an order first');",
+                  "    console.log('âŒ Order not found - create an order first');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -457,8 +457,8 @@
                   "        pm.expect(response.orders).to.be.an('array');",
                   "    });",
                   "    ",
-                  "    console.log('✅ Retrieved', response.orders.length, 'orders');",
-                  "    console.log('📄 Page', response.pagination.page, 'of', response.pagination.totalPages);",
+                  "    console.log('âœ… Retrieved', response.orders.length, 'orders');",
+                  "    console.log('ðŸ“„ Page', response.pagination.page, 'of', response.pagination.totalPages);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -502,11 +502,11 @@
                   "});",
                   "",
                   "if (pm.response.code === 200) {",
-                  "    console.log('✅ Order updated successfully');",
+                  "    console.log('âœ… Order updated successfully');",
                   "} else if (pm.response.code === 403) {",
-                  "    console.log('🚫 Update not allowed - order may be processing/shipped');",
+                  "    console.log('ðŸš« Update not allowed - order may be processing/shipped');",
                   "} else if (pm.response.code === 404) {",
-                  "    console.log('❌ Order not found');",
+                  "    console.log('âŒ Order not found');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -555,11 +555,11 @@
                   "    pm.test('Order status is cancelled', function() {",
                   "        pm.expect(response.status).to.equal('cancelled');",
                   "    });",
-                  "    console.log('✅ Order cancelled successfully');",
+                  "    console.log('âœ… Order cancelled successfully');",
                   "} else if (pm.response.code === 403) {",
-                  "    console.log('🚫 Cancellation not allowed - order may be shipped');",
+                  "    console.log('ðŸš« Cancellation not allowed - order may be shipped');",
                   "} else if (pm.response.code === 400) {",
-                  "    console.log('❌ Order cannot be cancelled - check cancellation rules');",
+                  "    console.log('âŒ Order cannot be cancelled - check cancellation rules');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -592,7 +592,7 @@
                 "status"
               ]
             },
-            "description": "Confirm order (pending → confirmed)"
+            "description": "Confirm order (pending â†’ confirmed)"
           },
           "event": [
             {
@@ -608,11 +608,11 @@
                   "    pm.test('Order status updated to confirmed', function() {",
                   "        pm.expect(response.status).to.equal('confirmed');",
                   "    });",
-                  "    console.log('✅ ORDER CONFIRMED: Status updated to confirmed');",
+                  "    console.log('âœ… ORDER CONFIRMED: Status updated to confirmed');",
                   "} else if (pm.response.code === 403) {",
-                  "    console.log('🚫 Cannot confirm order - invalid state transition');",
+                  "    console.log('ðŸš« Cannot confirm order - invalid state transition');",
                   "} else if (pm.response.code === 404) {",
-                  "    console.log('❌ Order not found for confirmation');",
+                  "    console.log('âŒ Order not found for confirmation');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -645,7 +645,7 @@
                 "status"
               ]
             },
-            "description": "Process order (confirmed → processing)"
+            "description": "Process order (confirmed â†’ processing)"
           },
           "event": [
             {
@@ -661,9 +661,9 @@
                   "    pm.test('Order status updated to processing', function() {",
                   "        pm.expect(response.status).to.equal('processing');",
                   "    });",
-                  "    console.log('⚙️  ORDER PROCESSING: Status updated to processing');",
+                  "    console.log('âš™ï¸  ORDER PROCESSING: Status updated to processing');",
                   "} else if (pm.response.code === 403) {",
-                  "    console.log('🚫 Cannot process order - invalid state transition');",
+                  "    console.log('ðŸš« Cannot process order - invalid state transition');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -696,7 +696,7 @@
                 "status"
               ]
             },
-            "description": "Ship order (processing → shipped)"
+            "description": "Ship order (processing â†’ shipped)"
           },
           "event": [
             {
@@ -716,9 +716,9 @@
                   "        pm.expect(response).to.have.property('trackingNumber');",
                   "        pm.expect(response).to.have.property('carrier');",
                   "    });",
-                  "    console.log('🚚 ORDER SHIPPED: Tracking #', response.trackingNumber);",
+                  "    console.log('ðŸšš ORDER SHIPPED: Tracking #', response.trackingNumber);",
                   "} else if (pm.response.code === 403) {",
-                  "    console.log('🚫 Cannot ship order - invalid state transition');",
+                  "    console.log('ðŸš« Cannot ship order - invalid state transition');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -751,7 +751,7 @@
                 "status"
               ]
             },
-            "description": "Complete order (shipped → delivered)"
+            "description": "Complete order (shipped â†’ delivered)"
           },
           "event": [
             {
@@ -767,9 +767,9 @@
                   "    pm.test('Order status updated to delivered', function() {",
                   "        pm.expect(response.status).to.equal('delivered');",
                   "    });",
-                  "    console.log('✅ ORDER COMPLETED: Successfully delivered');",
+                  "    console.log('âœ… ORDER COMPLETED: Successfully delivered');",
                   "} else if (pm.response.code === 403) {",
-                  "    console.log('🚫 Cannot complete order - invalid state transition');",
+                  "    console.log('ðŸš« Cannot complete order - invalid state transition');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -825,9 +825,9 @@
                   "            pm.expect(['pending', 'processing']).to.include(order.status);",
                   "        });",
                   "    });",
-                  "    console.log('🔍 Found', response.orders.length, 'orders');",
+                  "    console.log('ðŸ” Found', response.orders.length, 'orders');",
                   "} else {",
-                  "    console.log('🔍 No orders found matching criteria');",
+                  "    console.log('ðŸ” No orders found matching criteria');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -882,10 +882,10 @@
                   "        pm.expect(response).to.have.property('totalOrders');",
                   "        pm.expect(response).to.have.property('totalRevenue');",
                   "    });",
-                  "    console.log('📊 Total orders:', response.totalOrders);",
-                  "    console.log('💰 Total revenue:', response.totalRevenue);",
+                  "    console.log('ðŸ“Š Total orders:', response.totalOrders);",
+                  "    console.log('ðŸ’° Total revenue:', response.totalRevenue);",
                   "} else {",
-                  "    console.log('📊 No analytics data available');",
+                  "    console.log('ðŸ“Š No analytics data available');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -897,7 +897,7 @@
     },
 
     {
-      "name": "⚡ Performance Testing",
+      "name": "âš¡ Performance Testing",
       "item": [
         {
           "name": "Health Check Load Test",
@@ -934,7 +934,7 @@
                   "});",
                   "",
                   "if (pm.response.code === 200) {",
-                  "    console.log('⚡ Health check response time:', pm.response.responseTime, 'ms');",
+                  "    console.log('âš¡ Health check response time:', pm.response.responseTime, 'ms');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -982,11 +982,11 @@
                   "",
                   "if (pm.response.code === 201) {",
                   "    const response = pm.response.json();",
-                  "    console.log('⚡ Order created in', pm.response.responseTime, 'ms - ID:', response.id);",
+                  "    console.log('âš¡ Order created in', pm.response.responseTime, 'ms - ID:', response.id);",
                   "} else if (pm.response.code === 429) {",
-                  "    console.log('⏱️  Rate limited - slowing down requests');",
+                  "    console.log('â±ï¸  Rate limited - slowing down requests');",
                   "} else {",
-                  "    console.log('⚠️  Unexpected response:', pm.response.code, 'in', pm.response.responseTime, 'ms');",
+                  "    console.log('âš ï¸  Unexpected response:', pm.response.code, 'in', pm.response.responseTime, 'ms');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -997,7 +997,7 @@
       ]
     },
     {
-      "name": "🎭 SAGA ORCHESTRATION: Complete Order Workflow",
+      "name": "ðŸŽ­ SAGA ORCHESTRATION: Complete Order Workflow",
       "item": [
         {
           "name": "Step 1: Create Order (Saga Initiation)",
@@ -1026,7 +1026,7 @@
                 "orders"
               ]
             },
-            "description": "Create order to trigger saga orchestration (OrderCreated → PaymentSaga → SettlementSaga)"
+            "description": "Create order to trigger saga orchestration (OrderCreated â†’ PaymentSaga â†’ SettlementSaga)"
           },
           "event": [
             {
@@ -1046,10 +1046,10 @@
                   "        pm.expect(response.id).to.exist;",
                   "    });",
                   "    ",
-                  "    console.log('✅ SAGA INITIATED: Order created with ID', response.id);",
-                  "    console.log('🎭 Expecting: OrderCreated → PaymentProcessing → SettlementProcessing events');",
+                  "    console.log('âœ… SAGA INITIATED: Order created with ID', response.id);",
+                  "    console.log('ðŸŽ­ Expecting: OrderCreated â†’ PaymentProcessing â†’ SettlementProcessing events');",
                   "} else {",
-                  "    console.log('❌ Saga initiation failed - check order creation');",
+                  "    console.log('âŒ Saga initiation failed - check order creation');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -1086,9 +1086,9 @@
                   "});",
                   "",
                   "const response = pm.response.json();",
-                  "console.log('📊 SAGA PROGRESS: Order status is', response.status);",
-                  "console.log('💰 Payment status:', response.paymentStatus || 'not_started');",
-                  "console.log('✅ Saga orchestration progressing through workflow steps');"
+                  "console.log('ðŸ“Š SAGA PROGRESS: Order status is', response.status);",
+                  "console.log('ðŸ’° Payment status:', response.paymentStatus || 'not_started');",
+                  "console.log('âœ… Saga orchestration progressing through workflow steps');"
                 ],
                 "type": "text/javascript"
               }
@@ -1136,11 +1136,11 @@
                   "const response = pm.response.json();",
                   "const sagaOrder = response.orders.find(o => o.id === pm.collectionVariables.get('sagaOrderId'));",
                   "if (sagaOrder) {",
-                  "    console.log('🎉 SAGA COMPLETE: Order', sagaOrder.id, 'processed through full workflow');",
-                  "    console.log('📊 Final status:', sagaOrder.status);",
-                  "    console.log('💳 Payment processed:', sagaOrder.paymentStatus || 'completed');",
+                  "    console.log('ðŸŽ‰ SAGA COMPLETE: Order', sagaOrder.id, 'processed through full workflow');",
+                  "    console.log('ðŸ“Š Final status:', sagaOrder.status);",
+                  "    console.log('ðŸ’³ Payment processed:', sagaOrder.paymentStatus || 'completed');",
                   "} else {",
-                  "    console.log('⚠️  Saga order not found in results');",
+                  "    console.log('âš ï¸  Saga order not found in results');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -1151,7 +1151,7 @@
       ]
     },
     {
-      "name": "🔄 PARALLEL SAGAS: Multiple Order Processing",
+      "name": "ðŸ”„ PARALLEL SAGAS: Multiple Order Processing",
       "item": [
         {
           "name": "Create Parallel Order 1",
@@ -1193,7 +1193,7 @@
                   "    pm.collectionVariables.set('parallelOrderId1', response.id);",
                   "});",
                   "",
-                  "console.log('✅ PARALLEL SAGA 1: Order created with ID', pm.collectionVariables.get('parallelOrderId1'));"
+                  "console.log('âœ… PARALLEL SAGA 1: Order created with ID', pm.collectionVariables.get('parallelOrderId1'));"
                 ],
                 "type": "text/javascript"
               }
@@ -1240,7 +1240,7 @@
                   "    pm.collectionVariables.set('parallelOrderId2', response.id);",
                   "});",
                   "",
-                  "console.log('✅ PARALLEL SAGA 2: Order created with ID', pm.collectionVariables.get('parallelOrderId2'));"
+                  "console.log('âœ… PARALLEL SAGA 2: Order created with ID', pm.collectionVariables.get('parallelOrderId2'));"
                 ],
                 "type": "text/javascript"
               }
@@ -1294,9 +1294,9 @@
                   "    pm.expect(parallelOrders.length).to.equal(2);",
                   "});",
                   "",
-                  "console.log('🔄 PARALLEL SAGAS: Both orders processing independently');",
-                  "console.log('📊 Order 1 status:', parallelOrders.find(o => o.id === pm.collectionVariables.get('parallelOrderId1'))?.status);",
-                  "console.log('📊 Order 2 status:', parallelOrders.find(o => o.id === pm.collectionVariables.get('parallelOrderId2'))?.status);"
+                  "console.log('ðŸ”„ PARALLEL SAGAS: Both orders processing independently');",
+                  "console.log('ðŸ“Š Order 1 status:', parallelOrders.find(o => o.id === pm.collectionVariables.get('parallelOrderId1'))?.status);",
+                  "console.log('ðŸ“Š Order 2 status:', parallelOrders.find(o => o.id === pm.collectionVariables.get('parallelOrderId2'))?.status);"
                 ],
                 "type": "text/javascript"
               }
@@ -1306,7 +1306,7 @@
       ]
     },
     {
-      "name": "⚠️ COMPENSATION: Payment Failure Scenario",
+      "name": "âš ï¸ COMPENSATION: Payment Failure Scenario",
       "item": [
         {
           "name": "Create Order with Invalid Payment",
@@ -1349,11 +1349,11 @@
                   "if (pm.response.code === 201) {",
                   "    const response = pm.response.json();",
                   "    pm.collectionVariables.set('compensationOrderId', response.id);",
-                  "    console.log('⚠️  COMPENSATION TEST: Order created with invalid payment - saga should handle failure');",
+                  "    console.log('âš ï¸  COMPENSATION TEST: Order created with invalid payment - saga should handle failure');",
                   "} else if (pm.response.code === 402) {",
-                  "    console.log('💳 Payment validation working - invalid token rejected');",
+                  "    console.log('ðŸ’³ Payment validation working - invalid token rejected');",
                   "} else {",
-                  "    console.log('❌ Order creation failed for other reasons');",
+                  "    console.log('âŒ Order creation failed for other reasons');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -1393,11 +1393,11 @@
                   "        pm.expect(response.status).to.be.oneOf(['cancelled', 'failed', 'pending']);",
                   "    });",
                   "    ",
-                  "    console.log('⚠️  COMPENSATION RESULT: Order status is', response.status);",
-                  "    console.log('💳 Payment status:', response.paymentStatus || 'failed');",
-                  "    console.log('✅ Saga compensation handled payment failure appropriately');",
+                  "    console.log('âš ï¸  COMPENSATION RESULT: Order status is', response.status);",
+                  "    console.log('ðŸ’³ Payment status:', response.paymentStatus || 'failed');",
+                  "    console.log('âœ… Saga compensation handled payment failure appropriately');",
                   "} else {",
-                  "    console.log('❌ Order not found - compensation may have deleted it');",
+                  "    console.log('âŒ Order not found - compensation may have deleted it');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -1408,7 +1408,7 @@
       ]
     },
     {
-      "name": "🔧 Error Scenarios",
+      "name": "ðŸ”§ Error Scenarios",
       "item": [
         {
           "name": "Invalid Order Data",
@@ -1451,7 +1451,7 @@
                   "        pm.expect(error).to.have.property('message');",
                   "        pm.expect(error).to.have.property('requestId');",
                   "    });",
-                  "    console.log('✅ Validation working - Error:', error.message);",
+                  "    console.log('âœ… Validation working - Error:', error.message);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -1490,7 +1490,7 @@
                   "    pm.expect(pm.response.code).to.equal(401);",
                   "});",
                   "",
-                  "console.log('✅ Authentication validation working');"
+                  "console.log('âœ… Authentication validation working');"
                 ],
                 "type": "text/javascript"
               }
@@ -1525,7 +1525,7 @@
                   "",
                   "if (pm.response.code === 404) {",
                   "    const error = pm.response.json();",
-                  "    console.log('✅ 404 handling working - Error:', error.message);",
+                  "    console.log('âœ… 404 handling working - Error:', error.message);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -1569,14 +1569,14 @@
                   "});",
                   "",
                   "if (pm.response.code === 429) {",
-                  "    console.log('✅ Rate limiting active - request blocked');",
+                  "    console.log('âœ… Rate limiting active - request blocked');",
                   "    const headers = pm.response.headers;",
                   "    const retryAfter = headers.find(h => h.key.toLowerCase() === 'retry-after');",
                   "    if (retryAfter) {",
-                  "        console.log('⏱️  Retry after:', retryAfter.value, 'seconds');",
+                  "        console.log('â±ï¸  Retry after:', retryAfter.value, 'seconds');",
                   "    }",
                   "} else if (pm.response.code === 200) {",
-                  "    console.log('📊 Request allowed - rate limit not exceeded');",
+                  "    console.log('ðŸ“Š Request allowed - rate limit not exceeded');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -1594,12 +1594,12 @@
         "type": "text/javascript",
         "exec": [
           "// Global pre-request script",
-          "console.log('🚀 Executing:', pm.info.requestName);",
-          "console.log('📍 URL:', pm.request.url.toString());",
+          "console.log('ðŸš€ Executing:', pm.info.requestName);",
+          "console.log('ðŸ“ URL:', pm.request.url.toString());",
           "",
           "// Add timestamp to request for tracking",
           "const timestamp = new Date().toISOString();",
-          "console.log('🕒 Timestamp:', timestamp);",
+          "console.log('ðŸ•’ Timestamp:', timestamp);",
           "",
           "// Set common headers if not already set",
           "if (!pm.request.headers.has('X-Request-ID')) {",
@@ -1617,8 +1617,8 @@
         "type": "text/javascript",
         "exec": [
           "// Global test script",
-          "console.log('📊 Response Code:', pm.response.code);",
-          "console.log('⚡ Response Time:', pm.response.responseTime, 'ms');",
+          "console.log('ðŸ“Š Response Code:', pm.response.code);",
+          "console.log('âš¡ Response Time:', pm.response.responseTime, 'ms');",
           "",
           "// Global response validation",
           "pm.test('Response time is reasonable', function() {",
@@ -1634,16 +1634,16 @@
           "",
           "// Log response size",
           "if (pm.response.responseSize) {",
-          "    console.log('📏 Response Size:', pm.response.responseSize, 'bytes');",
+          "    console.log('ðŸ“ Response Size:', pm.response.responseSize, 'bytes');",
           "}",
           "",
           "// Global error handling",
           "if (pm.response.code >= 400) {",
           "    const response = pm.response.json();",
           "    if (response && response.error) {",
-          "        console.log('❌ Error:', response.error, '-', response.message);",
+          "        console.log('âŒ Error:', response.error, '-', response.message);",
           "        if (response.requestId) {",
-          "            console.log('🆔 Request ID:', response.requestId);",
+          "            console.log('ðŸ†” Request ID:', response.requestId);",
           "        }",
           "    }",
           "}"
@@ -1652,3 +1652,4 @@
     }
   ]
 }
+

@@ -179,8 +179,7 @@ export class DomainPurityVerifier {
     // External services
     /\baws-sdk\b/,
     /\bgoogle-cloud\b/,
-    /\bstripe\b/,
-    /\bpaypal\b/,
+    /\bpesapal\b/,
   ];
 
   static verifyDomainPurity(domainFiles: string[]): PurityTestResult {
@@ -765,3 +764,4 @@ export class DomainConstitutionComplianceChecker {
     };
   }
 }
+

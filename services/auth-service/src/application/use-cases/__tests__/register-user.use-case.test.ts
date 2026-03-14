@@ -1,51 +1,91 @@
 import { RegisterUserUseCase } from '../register-user.use-case';
+import { eventBus } from '@shared/events/eventBus';
+
+jest.mock('@shared/events/eventBus', () => ({
+  eventBus: {
+    publish: jest.fn()
+  }
+}));
 
 const mockUserRepository = {
-    findByEmail: jest.fn(),
-    save: jest.fn()
-};
-
-const mockEventBus = {
-    publish: jest.fn()
+  findByEmail: jest.fn(),
+  save: jest.fn()
 };
 
 describe('RegisterUserUseCase', () => {
-    let useCase: RegisterUserUseCase;
+  let useCase: RegisterUserUseCase;
 
-    beforeEach(() => {
-        jest.clearAllMocks();
-        useCase = new RegisterUserUseCase(
-            mockUserRepository as any,
-            mockEventBus as any
-        );
+  beforeEach(() => {
+    jest.clearAllMocks();
+    useCase = new RegisterUserUseCase(mockUserRepository as any);
+  });
+
+  it('registers with default buyer role and requested extra role when provided', async () => {
+    mockUserRepository.findByEmail.mockResolvedValue(null);
+
+    const userId = await useCase.execute({
+      email: 'new@example.com',
+      role: 'seller',
+      profile: { name: 'New User' }
     });
 
-    const request = {
+    expect(userId).toBeDefined();
+    expect(mockUserRepository.save).toHaveBeenCalledTimes(1);
+
+    const savedUser = mockUserRepository.save.mock.calls[0][0];
+    expect(savedUser.role).toBe('buyer');
+    expect(savedUser.profile).toEqual(
+      expect.objectContaining({
+        name: 'New User',
+        roles: ['buyer', 'seller'],
+        requestedRole: 'seller'
+      })
+    );
+
+    expect(eventBus.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'UserRegistered.v1',
+        data: expect.objectContaining({
+          role: 'buyer',
+          profile: expect.objectContaining({
+            roles: ['buyer', 'seller'],
+            requestedRole: 'seller'
+          })
+        })
+      })
+    );
+  });
+
+  it('registers with only buyer role when no additional role is requested', async () => {
+    mockUserRepository.findByEmail.mockResolvedValue(null);
+
+    await useCase.execute({
+      email: 'buyer@example.com',
+      profile: { name: 'Buyer User' }
+    });
+
+    const savedUser = mockUserRepository.save.mock.calls[0][0];
+    expect(savedUser.role).toBe('buyer');
+    expect(savedUser.profile).toEqual(
+      expect.objectContaining({
+        name: 'Buyer User',
+        roles: ['buyer']
+      })
+    );
+    expect(savedUser.profile.requestedRole).toBeUndefined();
+  });
+
+  it('throws when user already exists', async () => {
+    mockUserRepository.findByEmail.mockResolvedValue({ id: 'existing' });
+
+    await expect(
+      useCase.execute({
         email: 'new@example.com',
-        role: 'buyer',
+        role: 'seller',
         profile: { name: 'New User' }
-    };
+      })
+    ).rejects.toThrow('User already exists');
 
-    it('should register new user', async () => {
-        mockUserRepository.findByEmail.mockResolvedValue(null);
-
-        const userId = await useCase.execute(request);
-
-        expect(userId).toBeDefined();
-        expect(mockUserRepository.save).toHaveBeenCalled();
-        expect(mockEventBus.publish).toHaveBeenCalledWith('UserRegistered.v1', expect.objectContaining({
-            email: request.email,
-            role: request.role
-        }));
-    });
-
-    it('should throw if user already exists', async () => {
-        mockUserRepository.findByEmail.mockResolvedValue({ id: 'existing' });
-
-        await expect(useCase.execute(request))
-            .rejects
-            .toThrow('User already exists');
-
-        expect(mockUserRepository.save).not.toHaveBeenCalled();
-    });
+    expect(mockUserRepository.save).not.toHaveBeenCalled();
+  });
 });

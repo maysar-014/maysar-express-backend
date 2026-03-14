@@ -7,6 +7,11 @@ jest.mock('../../sagas/saga-event-handler');
 describe('CreateUserUseCase - edge cases', () => {
   const makeSut = (securityOverrides: Partial<any> = {}) => {
     const mockValidationService = { validateUser: jest.fn() };
+    const mockUserRepository = {
+      emailExists: jest.fn().mockResolvedValue(false),
+      phoneExists: jest.fn().mockResolvedValue(false),
+      create: jest.fn().mockImplementation(async (user: any) => user)
+    };
 
     const mockSecurityPolicy = {
       isSuspiciousEmail: jest.fn().mockReturnValue(false),
@@ -17,14 +22,19 @@ describe('CreateUserUseCase - edge cases', () => {
 
     const mockEmailService = { sendEmail: jest.fn(), sendVerificationEmail: jest.fn() };
     const mockNotificationClient = { notify: jest.fn() };
+    const mockEventPublisher = { publish: jest.fn(), publishMany: jest.fn() };
+    const mockEmailVerificationTokens = { create: jest.fn() };
 
     const sut = new CreateUserUseCase(
+      mockUserRepository as any,
       mockValidationService as any,
       mockSecurityPolicy as any,
+      mockEventPublisher as any,
+      mockEmailVerificationTokens as any,
       mockEmailService as any,
       mockNotificationClient as any
     );
-    return { sut, mockValidationService, mockSecurityPolicy, mockEmailService, mockNotificationClient };
+    return { sut, mockValidationService, mockSecurityPolicy, mockEmailService, mockNotificationClient, mockUserRepository };
   };
 
   it('creates user when data is valid', async () => {

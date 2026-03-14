@@ -5,7 +5,8 @@ import { WebhookController } from '../controllers/webhook.controller';
 export function createWebhookRoutes(webhookController: WebhookController): Router {
   const router = Router();
 
-  router.get('/pesapal', express.raw({ type: '*/*' }), (req, res) => webhookController.handlePesapalIpn(req, res));
+  router.post('/pesapal', express.raw({ type: '*/*' }), (req, res) => webhookController.handlePesapalWebhook(req, res));
 
   return router;
 }
+

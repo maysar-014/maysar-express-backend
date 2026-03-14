@@ -1,9 +1,13 @@
 import { ITwoFactorRepository } from '../../domain/repositories/two-factor.repository';
 import { TotpEngine } from '../../domain/engines/totp.engine';
 import { VerifyTwoFactorResponseDTO } from '../dto/two-factor.dto';
+import { AuthEventPublisher } from '../../../infrastructure/messaging/auth-event-publisher';
 
 export class VerifyTwoFactorSetupUseCase {
-    constructor(private readonly repository: ITwoFactorRepository) { }
+    constructor(
+        private readonly repository: ITwoFactorRepository,
+        private readonly eventPublisher?: AuthEventPublisher
+    ) { }
 
     /**
      * Verifies the initial setup code and completes 2FA activation.
@@ -37,7 +41,12 @@ export class VerifyTwoFactorSetupUseCase {
         // Persist changes
         await this.repository.save(config);
 
-        // TODO: Publish TwoFactorEnabledEvent
+        if (this.eventPublisher) {
+            await this.eventPublisher.publish('AuthTwoFactorEnabled', {
+                userId,
+                enabled: true
+            });
+        }
 
         return {
             success: true,

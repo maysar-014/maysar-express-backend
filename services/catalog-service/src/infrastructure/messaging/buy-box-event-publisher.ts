@@ -1,5 +1,5 @@
 ﻿// @ts-nocheck
-import { EventBus } from '../../../shared/events/event-bus';
+import { EventBus } from '@shared-events/eventBus';
 import { BuyBoxComputedEvent } from '../../domain/events/buy-box-events';
 
 export class BuyBoxEventPublisher {

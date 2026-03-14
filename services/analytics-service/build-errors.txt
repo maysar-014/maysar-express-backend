@@ -99,7 +99,7 @@ services/logistics-service/src/infrastructure-validator.ts(76,56): error TS2307:
 services/logistics-service/src/infrastructure/messaging/event-publisher.ts(2,49): error TS2307: Cannot find module '../../../../shared/outbox/outbox.repository' or its corresponding type declarations.
 services/logistics-service/src/infrastructure/monitoring.ts(8,63): error TS2307: Cannot find module './circuit-breaker' or its corresponding type declarations.
 services/logistics-service/src/infrastructure/repositories/prisma-courier.repository.ts(3,37): error TS2307: Cannot find module '../prisma.client' or its corresponding type declarations.
-services/logistics-service/src/infrastructure/repositories/supabase-courier.repository.ts(2,39): error TS2307: Cannot find module '../supabase.client' or its corresponding type declarations.
+services/logistics-service/src/infrastructure/repositories/database-courier.repository.ts(2,39): error TS2307: Cannot find module '../database.client' or its corresponding type declarations.
 services/logistics-service/src/logistics-api.ts(4,33): error TS2307: Cannot find module './engines/logistics.engine' or its corresponding type declarations.
 services/logistics-service/src/main.ts(13,40): error TS2307: Cannot find module './middleware/optimization.middleware' or its corresponding type declarations.
 services/logistics-service/src/main.ts(19,24): error TS2307: Cannot find module './utils/logger' or its corresponding type declarations.
@@ -152,3 +152,4 @@ services/wallet-service/src/application/use-cases/__tests__/top-up-wallet.use-ca
 services/wallet-service/src/infrastructure/messaging/event-bus.interface.ts(1,42): error TS2307: Cannot find module '../../../../shared/events/eventBus' or its corresponding type declarations.
 services/wallet-service/src/infrastructure/messaging/rabbitmq.event-bus.ts(3,31): error TS2307: Cannot find module '../../../shared-contracts/types' or its corresponding type declarations.
 services/wallet-service/src/infrastructure/repositories/wallet.repository.ts(9,37): error TS2307: Cannot find module '../../../../shared/errors/optimistic-lock.error' or its corresponding type declarations.
+

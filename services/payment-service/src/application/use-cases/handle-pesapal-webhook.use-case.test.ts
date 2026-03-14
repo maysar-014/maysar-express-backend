@@ -57,7 +57,7 @@ describe('HandlePesapalWebhookUseCase', () => {
     await expect(
       useCase.execute('track-1', 'merchant-1', 'PENDING', payload)
     ).rejects.toThrow('Payment not found: track-1');
-    expect(loggerWarnMock).toHaveBeenCalledWith('Payment not found for webhook', { orderTrackingId: 'track-1' });
+    expect(loggerWarnMock).toHaveBeenCalledWith('Payment not found for webhook', { providerReference: 'track-1' });
   });
 
   it('returns early when payment already has terminal status', async () => {
@@ -121,4 +121,5 @@ describe('HandlePesapalWebhookUseCase', () => {
     expect(result.status).toBe('FAILED');
   });
 });
+
 

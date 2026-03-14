@@ -1,9 +1,10 @@
 
-import { createApp } from '../../src/app';
+import { createApp } from '../../app';
+import type { Express } from 'express';
 import request from 'supertest';
 
 describe('Wallet Integration', () => {
-    let app: any;
+    let app: Express;
     const userId = '00000000-0000-0000-0000-000000000002';
 
     beforeAll(() => {
@@ -17,7 +18,7 @@ describe('Wallet Integration', () => {
         expect(response.status).toBe(404);
     });
 
-    it('should credit wallet', async () => {
+    it('should not expose wallet credit endpoint in payment-service', async () => {
         const response = await request(app)
             .post(`/api/wallets/${userId}/credit`)
             .send({
@@ -25,8 +26,6 @@ describe('Wallet Integration', () => {
                 description: 'Test credit'
             });
 
-        // This might fail if database isn't seeded/setup for this user
-        // But the endpoint should be reachable
-        expect([200, 400, 500]).toContain(response.status);
+        expect(response.status).toBe(404);
     });
 });

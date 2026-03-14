@@ -140,3 +140,4 @@ describe('CheckPaymentStatusUseCase', () => {
         expect(mockProvider.checkPaymentStatus).not.toHaveBeenCalled();
     });
 });
+

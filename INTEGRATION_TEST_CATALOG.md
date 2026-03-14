@@ -23,10 +23,9 @@
 **Service**: Payment Service  
 **Integration Type**: REST API  
 **Environment Variables**:
-- `PESAPAL_CONSUMER_KEY`
-- `PESAPAL_CONSUMER_SECRET`
+- `PESAPAL_SECRET_KEY`
+- `PESAPAL_WEBHOOK_SECRET`
 - `PESAPAL_URL`
-- `PESAPAL_IPN_ID`
 - `BASE_URL`
 
 **Test Scenarios**:
@@ -39,15 +38,15 @@
 
 ---
 
-### 2. SMS Gateway - Twilio
+### 2. SMS Gateway - Africa's Talking
 **Service**: SMS Service / Notification Service  
 **Integration Type**: REST API  
 **Environment Variables**:
-- `TWILIO_ACCOUNT_SID`
-- `TWILIO_AUTH_TOKEN`
-- `TWILIO_PHONE_NUMBER`
+- `AFRICASTALKING_USERNAME`
+- `AFRICASTALKING_API_KEY`
+- `AFRICASTALKING_SENDER_ID`
 - `SMS_SERVICE_API_KEY`
-- `SMS_SERVICE_PROVIDER`
+- `SMS_SERVICE_PROVIDER` (`africastalking`)
 
 **Test Scenarios**:
 - SMS sending
@@ -994,10 +993,22 @@ services:
 
 ### Mock Services
 - Payment gateway (Pesapal mock)
-- SMS gateway (Twilio mock)
+- SMS gateway (Africa's Talking mock)
 - Email service (SMTP mock)
 - Firebase (FCM mock)
 - S3 (localstack or mock)
+
+### Credential Safety Gate
+- Jest global setup auto-loads `.env.test` from repository root when present.
+- Test startup fails fast if production-like credentials/endpoints are detected for:
+  - Pesapal
+  - Africa's Talking
+  - SMTP
+  - Firebase
+  - Sentry
+  - AWS
+  - Database/Redis URLs
+- Use `.env.test.example` as the canonical template for test-only and sandbox values.
 
 ---
 
@@ -1080,6 +1091,41 @@ services:
 
 ---
 
+## Constitution Compliance Gate
+
+This catalog is enforced together with:
+- `architecture_constitution.md`
+- `testing-constitution.md`
+
+### Repository Commands
+- Audit mode (report only): `npm run test:integration:audit`
+- TypeScript guard (integration tests only): `npm run test:integration:typecheck`
+- Enforce mode (CI/PR blocking): `npm run test:integration:enforce`
+
+### Enforced Rules (Automated)
+1. Integration tests must live in constitutional locations:
+   - `src/infrastructure/**`
+   - `src/api/routes/**`
+   - `src/application/sagas/**`
+   - `**/__tests__/integration/**` or `**/tests/integration/**`
+2. Integration tests must not be placed in `domain/**`.
+3. Integration tests must not mock internal module implementations.
+4. Integration tests must contain explicit assertions.
+5. Every service in `services/*` must have at least one integration test.
+6. Priority 1 catalog flows must be covered:
+   - Order -> Payment -> Inventory -> Delivery
+   - User/Auth verification flow
+   - Pesapal integration
+   - Wallet operations
+   - Outbox pattern
+   - Order fulfillment saga
+
+### Generated Reports
+- JSON: `reports/testing/integration-constitution-report.json`
+- Markdown: `reports/testing/INTEGRATION_CONSTITUTION_GAP_REPORT.md`
+
+---
+
 ## Notes
 
 - All integration tests should be idempotent
@@ -1094,3 +1140,5 @@ services:
 ---
 
 **End of Integration Test Catalog**
+
+

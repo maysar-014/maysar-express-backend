@@ -4,41 +4,41 @@
 
 A production-ready microservice that powers social features, content creation, and community engagement in the Maysar marketplace ecosystem. Built with Clean Architecture principles and enterprise-grade infrastructure.
 
-## 🏗️ **Architecture Overview**
+## ðŸ—ï¸ **Architecture Overview**
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    PRESENTATION LAYER                       │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │   REST API      │  │   Controllers   │  │   Routes    │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                                 │
-┌─────────────────────────────────────────────────────────────┐
-│                   APPLICATION LAYER                         │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │   Use Cases     │  │   Sagas/Events  │  │ Validation  │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                                 │
-┌─────────────────────────────────────────────────────────────┐
-│                    DOMAIN LAYER                             │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │   Entities      │  │   Value Objects │  │  Policies   │ │
-│  │   Aggregates    │  │   Domain Events │  │   Engines   │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                                 │
-┌─────────────────────────────────────────────────────────────┐
-│                  INFRASTRUCTURE LAYER                       │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │  Repositories   │  │   Messaging     │  │   Cache     │ │
-│  │  External APIs  │  │   Event Bus     │  │   Storage   │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                    PRESENTATION LAYER                       â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚
+â”‚  â”‚   REST API      â”‚  â”‚   Controllers   â”‚  â”‚   Routes    â”‚ â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                                 â”‚
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                   APPLICATION LAYER                         â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚
+â”‚  â”‚   Use Cases     â”‚  â”‚   Sagas/Events  â”‚  â”‚ Validation  â”‚ â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                                 â”‚
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                    DOMAIN LAYER                             â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚
+â”‚  â”‚   Entities      â”‚  â”‚   Value Objects â”‚  â”‚  Policies   â”‚ â”‚
+â”‚  â”‚   Aggregates    â”‚  â”‚   Domain Events â”‚  â”‚   Engines   â”‚ â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                                 â”‚
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                  INFRASTRUCTURE LAYER                       â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚
+â”‚  â”‚  Repositories   â”‚  â”‚   Messaging     â”‚  â”‚   Cache     â”‚ â”‚
+â”‚  â”‚  External APIs  â”‚  â”‚   Event Bus     â”‚  â”‚   Storage   â”‚ â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
-## 🎯 **Core Features**
+## ðŸŽ¯ **Core Features**
 
 ### **Social Commerce Integration**
 - **12 Content Types**: Text, Image, Video, Events, Polls, Product Announcements, Promotions, Delivery Updates
@@ -58,7 +58,7 @@ A production-ready microservice that powers social features, content creation, a
 - **Database Optimization**: Prisma ORM with query optimization and connection pooling
 - **Scalable APIs**: RESTful endpoints with proper HTTP semantics
 
-## 🚀 **Quick Start**
+## ðŸš€ **Quick Start**
 
 ### **Prerequisites**
 - Node.js 18+
@@ -109,7 +109,7 @@ npm run test:cov
 npm run test:integration
 ```
 
-## 📡 **API Endpoints**
+## ðŸ“¡ **API Endpoints**
 
 ### **Posts Management**
 ```
@@ -131,7 +131,7 @@ GET    /api/users/:userId/feed # Get personalized feed
 GET    /health                 # Health check
 ```
 
-## 🔧 **Configuration**
+## ðŸ”§ **Configuration**
 
 ### **Environment Variables**
 ```env
@@ -159,7 +159,7 @@ ENABLE_EVENTS=true
 AUTO_MODERATION_ENABLED=true
 ```
 
-## 🏛️ **Architecture Principles**
+## ðŸ›ï¸ **Architecture Principles**
 
 ### **Clean Architecture Compliance**
 - **Dependency Inversion**: Infrastructure adapts to Domain, never reverse
@@ -179,7 +179,7 @@ AUTO_MODERATION_ENABLED=true
 - **Saga Pattern**: Complex business transactions
 - **CQRS**: Separate read/write models for performance
 
-## 📊 **Performance & Scalability**
+## ðŸ“Š **Performance & Scalability**
 
 ### **Caching Strategy**
 - **Multi-Level Caching**: Application + Redis + CDN
@@ -197,7 +197,7 @@ AUTO_MODERATION_ENABLED=true
 - **Message Persistence**: Guaranteed message delivery
 - **Consumer Groups**: Horizontal scaling of event processors
 
-## 🔒 **Security & Compliance**
+## ðŸ”’ **Security & Compliance**
 
 ### **Authentication & Authorization**
 - **JWT Tokens**: Stateless authentication
@@ -214,7 +214,7 @@ AUTO_MODERATION_ENABLED=true
 - **Audit Logging**: Comprehensive activity logging
 - **GDPR Compliance**: Data portability and deletion
 
-## 🧪 **Testing Strategy**
+## ðŸ§ª **Testing Strategy**
 
 ### **Unit Tests**
 - **Domain Logic**: Pure business rule testing
@@ -231,7 +231,7 @@ AUTO_MODERATION_ENABLED=true
 - **Business Workflows**: Complete user journeys
 - **Performance**: Load and stress testing
 
-## 📈 **Monitoring & Observability**
+## ðŸ“ˆ **Monitoring & Observability**
 
 ### **Application Metrics**
 - **Response Times**: API endpoint performance
@@ -248,7 +248,7 @@ AUTO_MODERATION_ENABLED=true
 - **Cache**: Hit rates, memory usage
 - **Message Queue**: Message throughput, consumer lag
 
-## 🔄 **Microservice Integration**
+## ðŸ”„ **Microservice Integration**
 
 ### **Event Contracts**
 - **PostCreated**: New content published
@@ -261,7 +261,7 @@ AUTO_MODERATION_ENABLED=true
 - **OpenAPI Spec**: Machine-readable API documentation
 - **Versioning**: Backward-compatible API evolution
 
-## 🚀 **Deployment**
+## ðŸš€ **Deployment**
 
 ### **Docker Containerization**
 ```dockerfile
@@ -274,8 +274,8 @@ EXPOSE 3002
 CMD ["npm", "start"]
 ```
 
-### **Kubernetes Deployment**
-- **Helm Charts**: Declarative deployment configuration
+### **Orchestrator Deployment**
+- **Template Engine Charts**: Declarative deployment configuration
 - **Horizontal Scaling**: Auto-scaling based on CPU/memory
 - **Rolling Updates**: Zero-downtime deployments
 - **Health Checks**: Readiness and liveness probes
@@ -286,7 +286,7 @@ CMD ["npm", "start"]
 - **Performance Testing**: Load testing in staging
 - **Blue-Green Deployment**: Safe production releases
 
-## 🤝 **Contributing**
+## ðŸ¤ **Contributing**
 
 ### **Development Workflow**
 1. **Branch**: Create feature branch from `main`
@@ -301,7 +301,7 @@ CMD ["npm", "start"]
 - **TypeScript**: Strict type checking
 - **Commit Messages**: Conventional commit format
 
-## 📚 **Documentation**
+## ðŸ“š **Documentation**
 
 ### **API Documentation**
 - **OpenAPI 3.0**: Interactive API documentation
@@ -313,17 +313,17 @@ CMD ["npm", "start"]
 - **Rationale**: Why decisions were made
 - **Consequences**: Impact and trade-offs
 
-## 🏆 **Key Achievements**
+## ðŸ† **Key Achievements**
 
-✅ **Clean Architecture**: Perfect separation of concerns with dependency inversion
-✅ **Domain-Driven Design**: Rich domain model with business logic encapsulation
-✅ **Event-Driven**: Asynchronous communication between microservices
-✅ **Performance**: Multi-layer caching and database optimization
-✅ **Scalability**: Horizontal scaling with Kubernetes and message queues
-✅ **Security**: Comprehensive security measures and compliance
-✅ **Testing**: Full test coverage with automated CI/CD
-✅ **Documentation**: Complete API and architecture documentation
-✅ **Production-Ready**: Enterprise-grade error handling and monitoring
+âœ… **Clean Architecture**: Perfect separation of concerns with dependency inversion
+âœ… **Domain-Driven Design**: Rich domain model with business logic encapsulation
+âœ… **Event-Driven**: Asynchronous communication between microservices
+âœ… **Performance**: Multi-layer caching and database optimization
+âœ… **Scalability**: Horizontal scaling with Orchestrator and message queues
+âœ… **Security**: Comprehensive security measures and compliance
+âœ… **Testing**: Full test coverage with automated CI/CD
+âœ… **Documentation**: Complete API and architecture documentation
+âœ… **Production-Ready**: Enterprise-grade error handling and monitoring
 
 ---
 

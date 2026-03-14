@@ -362,3 +362,4 @@ export class Payment {
         return { ...this.props };
     }
 }
+

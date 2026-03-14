@@ -147,19 +147,19 @@ curl -X POST http://localhost:3001/api/v1/users \
 ## Architecture at a Glance
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    API Layer                             │
-│         (Controllers, Routes, Middleware)                │
-├─────────────────────────────────────────────────────────┤
-│              Application Layer                           │
-│      (Use Cases, Sagas, DTOs, Mappers)                   │
-├─────────────────────────────────────────────────────────┤
-│                Domain Layer                              │
-│  (Entities, Value Objects, Policies, Services)           │
-├─────────────────────────────────────────────────────────┤
-│            Infrastructure Layer                          │
-│   (Repositories, Services, Adapters, Messaging)          │
-└─────────────────────────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                    API Layer                             â”‚
+â”‚         (Controllers, Routes, Middleware)                â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚              Application Layer                           â”‚
+â”‚      (Use Cases, Sagas, DTOs, Mappers)                   â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚                Domain Layer                              â”‚
+â”‚  (Entities, Value Objects, Policies, Services)           â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚            Infrastructure Layer                          â”‚
+â”‚   (Repositories, Services, Adapters, Messaging)          â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ---
@@ -168,15 +168,15 @@ curl -X POST http://localhost:3001/api/v1/users \
 
 ```
 user-service/
-├── src/
-│   ├── domain/              # Business logic
-│   ├── application/         # Use cases
-│   ├── infrastructure/      # Adapters
-│   └── api/                 # HTTP interface
-├── tests/                   # Test files
-├── prisma/                  # Database schema
-├── .env.example             # Environment template
-└── package.json             # Dependencies
+â”œâ”€â”€ src/
+â”‚   â”œâ”€â”€ domain/              # Business logic
+â”‚   â”œâ”€â”€ application/         # Use cases
+â”‚   â”œâ”€â”€ infrastructure/      # Adapters
+â”‚   â””â”€â”€ api/                 # HTTP interface
+â”œâ”€â”€ tests/                   # Test files
+â”œâ”€â”€ prisma/                  # Database schema
+â”œâ”€â”€ .env.example             # Environment template
+â””â”€â”€ package.json             # Dependencies
 ```
 
 ---
@@ -210,15 +210,15 @@ docker build -t user-service:latest .
 docker run -p 3001:3001 --env-file .env user-service:latest
 ```
 
-### Kubernetes
+### Orchestrator
 
 ```bash
-# Deploy to Kubernetes
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
+# Deploy to Orchestrator
+deployctl apply -f deploy/deployment.yaml
+deployctl apply -f deploy/service.yaml
 
 # Check status
-kubectl get pods -l app=user-service
+deployctl get pods -l app=user-service
 ```
 
 ---

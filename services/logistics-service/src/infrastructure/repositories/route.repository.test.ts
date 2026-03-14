@@ -6,7 +6,7 @@ import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 
 type QueryResult = { data: any; error: any; count?: number | null };
 
-const buildSupabaseClient = (params?: {
+const buildDatabaseClient = (params?: {
   selectResults?: QueryResult[];
   upsertResult?: QueryResult;
   deleteResults?: QueryResult[];
@@ -141,7 +141,7 @@ describe('RouteRepository', () => {
   });
 
   it('save upserts serialized route payload', async () => {
-    const { client, calls } = buildSupabaseClient();
+    const { client, calls } = buildDatabaseClient();
     const repository = new RouteRepository(client);
 
     await repository.save(createRoute());
@@ -170,7 +170,7 @@ describe('RouteRepository', () => {
   });
 
   it('save throws wrapped error on persistence failures', async () => {
-    const { client } = buildSupabaseClient({
+    const { client } = buildDatabaseClient({
       upsertResult: { data: null, error: { message: 'cannot save' } }
     });
     const repository = new RouteRepository(client);
@@ -179,7 +179,7 @@ describe('RouteRepository', () => {
   });
 
   it('findById maps database row into route entity', async () => {
-    const { client, calls } = buildSupabaseClient({
+    const { client, calls } = buildDatabaseClient({
       selectResults: [{ data: routeRow, error: null }]
     });
     const repository = new RouteRepository(client);
@@ -195,19 +195,19 @@ describe('RouteRepository', () => {
   });
 
   it('findById returns null for no-row codes and missing data', async () => {
-    const notFoundCode = buildSupabaseClient({
+    const notFoundCode = buildDatabaseClient({
       selectResults: [{ data: null, error: { code: 'PGRST116' } }]
     });
     await expect(new RouteRepository(notFoundCode.client).findById('missing')).resolves.toBeNull();
 
-    const missingData = buildSupabaseClient({
+    const missingData = buildDatabaseClient({
       selectResults: [{ data: null, error: null }]
     });
     await expect(new RouteRepository(missingData.client).findById('missing')).resolves.toBeNull();
   });
 
   it('findById throws wrapped error for non-116 query failures', async () => {
-    const { client } = buildSupabaseClient({
+    const { client } = buildDatabaseClient({
       selectResults: [{ data: null, error: { code: '500', message: 'query failed' } }]
     });
     const repository = new RouteRepository(client);
@@ -216,7 +216,7 @@ describe('RouteRepository', () => {
   });
 
   it('findByCourierId applies optional status filter and maps route list', async () => {
-    const { client, calls } = buildSupabaseClient({
+    const { client, calls } = buildDatabaseClient({
       selectResults: [{ data: [routeRow], error: null }]
     });
     const repository = new RouteRepository(client);
@@ -235,7 +235,7 @@ describe('RouteRepository', () => {
   });
 
   it('findAll applies filters and pagination and returns count', async () => {
-    const { client, calls } = buildSupabaseClient({
+    const { client, calls } = buildDatabaseClient({
       selectResults: [{ data: [routeRow], error: null, count: 11 }]
     });
     const repository = new RouteRepository(client);
@@ -260,7 +260,7 @@ describe('RouteRepository', () => {
   });
 
   it('findAll returns empty payload when no rows are returned', async () => {
-    const { client } = buildSupabaseClient({
+    const { client } = buildDatabaseClient({
       selectResults: [{ data: [], error: null, count: 0 }]
     });
     const repository = new RouteRepository(client);
@@ -269,7 +269,7 @@ describe('RouteRepository', () => {
   });
 
   it('updateRoute returns current route and throws when route does not exist', async () => {
-    const success = buildSupabaseClient({
+    const success = buildDatabaseClient({
       selectResults: [{ data: routeRow, error: null }]
     });
     const repository = new RouteRepository(success.client);
@@ -277,7 +277,7 @@ describe('RouteRepository', () => {
 
     expect(unchanged.getId()).toBe('route-1');
 
-    const missing = buildSupabaseClient({
+    const missing = buildDatabaseClient({
       selectResults: [{ data: null, error: { code: 'PGRST116' } }]
     });
     await expect(new RouteRepository(missing.client).updateRoute('none', {})).rejects.toThrow(
@@ -286,7 +286,7 @@ describe('RouteRepository', () => {
   });
 
   it('deleteRoute deletes by id and throws on errors', async () => {
-    const success = buildSupabaseClient({
+    const success = buildDatabaseClient({
       deleteResults: [{ data: null, error: null }]
     });
     const repository = new RouteRepository(success.client);
@@ -294,7 +294,7 @@ describe('RouteRepository', () => {
 
     expect(success.calls.deleteEq).toContainEqual({ table: 'routes', field: 'id', value: 'route-1' });
 
-    const failed = buildSupabaseClient({
+    const failed = buildDatabaseClient({
       deleteResults: [{ data: null, error: { message: 'cannot delete' } }]
     });
     await expect(new RouteRepository(failed.client).deleteRoute('route-2')).rejects.toThrow(
@@ -302,3 +302,4 @@ describe('RouteRepository', () => {
     );
   });
 });
+

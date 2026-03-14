@@ -18,23 +18,23 @@ export class HandlePesapalWebhookUseCase {
   ) {}
 
   async execute(
-    orderTrackingId: string,
-    merchantReference: string,
+    providerReference: string,
+    providerTransactionReference: string,
     paymentStatus: string,
     webhookPayload: WebhookPayload
   ): Promise<HandleWebhookResult> {
     logger.info('Processing Pesapal webhook', { 
-      orderTrackingId, 
-      merchantReference, 
+      providerReference, 
+      providerTransactionReference, 
       paymentStatus,
       eventType: webhookPayload.eventType,
       timestamp: webhookPayload.timestamp
     });
 
-    const payment = await this.paymentRepository.findByProviderReference(orderTrackingId);
+    const payment = await this.paymentRepository.findByProviderReference(providerReference);
     if (!payment) {
-      logger.warn('Payment not found for webhook', { orderTrackingId });
-      throw new Error(`Payment not found: ${orderTrackingId}`);
+      logger.warn('Payment not found for webhook', { providerReference });
+      throw new Error(`Payment not found: ${providerReference}`);
     }
 
     if (payment.status === PaymentStatus.COMPLETED || payment.status === PaymentStatus.FAILED) {
@@ -49,7 +49,7 @@ export class HandlePesapalWebhookUseCase {
       };
     }
 
-    const statusResponse = await this.paymentProvider.checkPaymentStatus(orderTrackingId);
+    const statusResponse = await this.paymentProvider.checkPaymentStatus(providerReference);
 
     if (statusResponse.status === 'COMPLETED') {
       payment.markAsCompleted();
@@ -59,7 +59,7 @@ export class HandlePesapalWebhookUseCase {
         orderId: payment.orderId,
         amount: payment.amount,
         currency: payment.currency,
-        providerReference: orderTrackingId,
+        providerReference,
         completedAt: new Date().toISOString()
       }, { source: 'payment-service', correlationId: payment.id });
       logger.info('Payment marked as completed', { paymentId: payment.id });
@@ -71,7 +71,7 @@ export class HandlePesapalWebhookUseCase {
         orderId: payment.orderId,
         amount: payment.amount,
         currency: payment.currency,
-        providerReference: orderTrackingId,
+        providerReference,
         failureReason: payment.failureReason,
         failedAt: new Date().toISOString()
       }, { source: 'payment-service', correlationId: payment.id });
@@ -85,3 +85,4 @@ export class HandlePesapalWebhookUseCase {
     };
   }
 }
+

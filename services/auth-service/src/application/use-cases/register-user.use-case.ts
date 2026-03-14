@@ -5,8 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 export interface RegisterUserRequest {
     email: string;
-    role: string;
-    profile: any;
+    role?: string;
+    profile?: any;
 }
 
 export class RegisterUserUseCase {
@@ -20,12 +20,27 @@ export class RegisterUserUseCase {
             throw new Error('User already exists');
         }
 
+        const primaryRole = 'buyer';
+        const requestedRole =
+            typeof request.role === 'string' ? request.role.trim().toLowerCase() : '';
+        const additionalRoles =
+            requestedRole && requestedRole !== primaryRole ? [requestedRole] : [];
+
+        const incomingProfile =
+            request.profile && typeof request.profile === 'object' ? request.profile : {};
+        const { roles: _ignoreRoles, requestedRole: _ignoreRequestedRole, ...safeProfile } = incomingProfile;
+        const normalizedProfile = {
+            ...safeProfile,
+            roles: [primaryRole, ...additionalRoles],
+            ...(additionalRoles.length > 0 ? { requestedRole } : {})
+        };
+
         const user = User.create({
             id: uuidv4(),
             email: request.email,
-            role: request.role,
+            role: primaryRole,
             status: 'PENDING_VERIFICATION',
-            profile: request.profile
+            profile: normalizedProfile
         });
 
         await this.userRepository.save(user);

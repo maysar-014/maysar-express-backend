@@ -6,9 +6,11 @@ tracingService.start();
 
 import { createApp } from '../app';
 import { logger } from '../infrastructure/services/logger.service';
+import { initializeCacheService } from '../../infrastructure/services/cache.bootstrap';
 
 const PORT = process.env.PORT || 3009;
 
+initializeCacheService();
 const app = createApp();
 
 const server = app.listen(PORT, () => {

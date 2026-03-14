@@ -1,4 +1,4 @@
-import { DatabaseConnection } from '../prisma-client';
+import { DatabaseConnection, prisma } from '../prisma-client';
 import { logger } from '../../services/logger.service';
 
 jest.mock('../../services/logger.service');
@@ -201,6 +201,7 @@ describe('DatabaseConnection', () => {
 
     test('throws error on query failure', async () => {
       const query = 'INVALID SQL';
+      (prisma as any).$queryRaw.mockRejectedValueOnce(new Error('Invalid SQL'));
       try {
         await DatabaseConnection.executeRaw(query);
       } catch (e) {
@@ -210,6 +211,7 @@ describe('DatabaseConnection', () => {
 
     test('logs failed query execution', async () => {
       const query = 'INVALID SQL';
+      (prisma as any).$queryRaw.mockRejectedValueOnce(new Error('Invalid SQL'));
       try {
         await DatabaseConnection.executeRaw(query);
       } catch (e) {
@@ -279,6 +281,7 @@ describe('DatabaseConnection', () => {
 
     test('handles query errors gracefully', async () => {
       try {
+        (prisma as any).$queryRaw.mockRejectedValueOnce(new Error('Invalid SQL'));
         await DatabaseConnection.executeRaw('INVALID');
       } catch (e) {
         expect(e).toBeDefined();
@@ -296,6 +299,7 @@ describe('DatabaseConnection', () => {
 
     test('logs all errors', async () => {
       try {
+        (prisma as any).$queryRaw.mockRejectedValueOnce(new Error('Invalid SQL'));
         await DatabaseConnection.executeRaw('INVALID');
       } catch (e) {
         // Expected

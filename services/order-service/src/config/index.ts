@@ -14,10 +14,6 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   DB_MAX_CONNECTIONS: z.string().transform(Number).default('10'),
 
-  // Supabase
-  SUPABASE_URL: z.string().url(),
-  SUPABASE_KEY: z.string().min(1),
-
   // Security
   CORS_ORIGIN: z.string().optional(),
   JWT_SECRET: z.string().min(32).optional(),
@@ -236,14 +232,6 @@ export function validateConfiguration(): { valid: boolean; errors: string[] } {
     errors.push('DATABASE_URL is required');
   }
 
-  if (!env.SUPABASE_URL) {
-    errors.push('SUPABASE_URL is required');
-  }
-
-  if (!env.SUPABASE_KEY) {
-    errors.push('SUPABASE_KEY is required');
-  }
-
   // Security validations
   if (env.JWT_SECRET && env.JWT_SECRET.length < 32) {
     errors.push('JWT_SECRET must be at least 32 characters long');
@@ -270,3 +258,5 @@ export function logConfigurationSummary(): void {
   console.log(`📊 Monitoring: ${appConfig.monitoring.metrics.enabled ? 'Metrics enabled' : 'Metrics disabled'}`);
   console.log(`✨ Features: ${Object.entries(appConfig.features).filter(([_, enabled]) => enabled).map(([key]) => key).join(', ')}`);
 }
+
+

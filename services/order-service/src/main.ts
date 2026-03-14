@@ -1,8 +1,7 @@
 // Order Service Entry Point
 import express from 'express';
 import dotenv from 'dotenv';
-import { SupabaseOrderRepository } from './infrastructure/database/supabase-order.repository';
-import { SupabaseClientManager } from './infrastructure/database/supabase.client';
+import { PrismaOrderRepository } from './infrastructure/database/prisma-order.repository';
 import { EventPublisherImpl } from './infrastructure/messaging/event-publisher';
 import { PlaceOrderUseCase } from './application/use-cases/place-order.use-case';
 import { OrderController } from './api/controllers/order.controller';
@@ -13,8 +12,8 @@ import { loggingMiddlewareStack } from './middleware/logging.middleware';
 import { errorHandler, gracefulDegradationHandler, recoveryHandler } from './middleware/error-handling.middleware';
 import { validateConfiguration, logConfigurationSummary } from './config/index';
 import { logSecurityConfigSummary } from './config/security.config';
-import { logMonitoringConfigSummary } from './config/monitoring.config';
-import { databaseManager } from './config/database.config';
+import { logMonitoringConfigSummary, cacheConfig } from './config/monitoring.config';
+import { databaseManager, loadDatabaseConfig } from './config/database.config';
 import { logger } from './infrastructure/monitoring/logger';
 import { RateLimitingMiddleware } from './middleware/rate-limiting.middleware';
 import { OrderFulfillmentSaga } from './application/sagas/order-fulfillment.saga';
@@ -25,6 +24,7 @@ import { TransactionalOutbox } from '../../../shared/outbox/outboxPattern';
 import { EventIdempotency } from '@shared/middleware/idempotency';
 import { SagaRecoveryWorker } from '@shared/saga/saga-recovery.worker';
 import { DistributedSagaOrchestrator } from '@shared/saga/saga.orchestrator';
+import { redisCache } from './infrastructure/cache/redis-cache';
 
 // Load environment variables
 dotenv.config();
@@ -64,10 +64,20 @@ async function initializeService() {
     RateLimitingMiddleware.initializeRateLimiters();
     logger.info('✅ Rate limiters initialized');
 
-    // Initialize Supabase connection
+    // Initialize database connection
     try {
-      await SupabaseClientManager.getInstance().connect();
+      await databaseManager.initialize(loadDatabaseConfig());
       logger.info('✅ Database connection established');
+      if (cacheConfig.enabled) {
+        try {
+          await redisCache.connect();
+          logger.info('Redis cache connected');
+        } catch (cacheError) {
+          logger.warn('Redis cache connection failed, continuing without cache', {
+            error: (cacheError as Error).message
+          });
+        }
+      }
     } catch (dbError) {
       const error = dbError as Error;
       logger.error('❌ Database initialization failed:', error.message);
@@ -75,8 +85,8 @@ async function initializeService() {
       // For development, provide helpful guidance instead of crashing
       if (process.env.NODE_ENV === 'development') {
         logger.info('\n💡 Development Setup Options:');
-        logger.info('   • Check SUPABASE_URL and SUPABASE_KEY in .env.local');
-        logger.info('   • Verify Supabase project is accessible');
+        logger.info('   � Check DATABASE_URL in .env.local');
+        logger.info('   � Verify PostgreSQL is accessible');
         logger.info('   • Run unit tests only: npm run test:unit');
         logger.info('\n📖 See README.md for detailed setup instructions');
       }
@@ -85,7 +95,7 @@ async function initializeService() {
     }
 
     // Dependency injection with database repository
-    const orderRepository = new SupabaseOrderRepository();
+    const orderRepository = new PrismaOrderRepository();
 
     // Initialize Outbox Repository for EventPublisher
     const { PrismaOutboxRepository } = await import('@shared/outbox/outbox.repository');
@@ -177,10 +187,10 @@ async function initializeService() {
     );
     const orderController = new OrderController(placeOrderUseCase, checkCODEligibilityUseCase);
 
-    const { SupabaseCODDisputeRepository } = await import('./infrastructure/database/supabase-cod-dispute.repository');
+    const { PrismaCODDisputeRepository } = await import('./infrastructure/database/prisma-cod-dispute.repository');
     const { ResolveCODDisputeUseCase } = await import('./application/use-cases/resolve-cod-dispute.use-case');
 
-    const codDisputeRepository = new SupabaseCODDisputeRepository();
+    const codDisputeRepository = new PrismaCODDisputeRepository();
     const resolveCODDisputeUseCase = new ResolveCODDisputeUseCase(codDisputeRepository, eventPublisher);
     const codDisputeController = new CODDisputeController(resolveCODDisputeUseCase);
 
@@ -198,9 +208,8 @@ async function initializeService() {
     // Health check endpoint (legacy - now handled by health routes)
     app.get('/health', async (req, res) => {
       try {
-        // Check Supabase connection
-        const supabaseHealth = await SupabaseClientManager.getInstance().healthCheck();
-        const isHealthy = supabaseHealth.status === 'healthy';
+        const dbHealth = await databaseManager.healthCheck();
+        const isHealthy = dbHealth.prisma;
 
         res.status(isHealthy ? 200 : 503).json({
           service: 'order-service',
@@ -210,11 +219,8 @@ async function initializeService() {
           environment: process.env.NODE_ENV || 'development',
           uptime: process.uptime(),
           database: {
-            supabase: isHealthy,
-            details: {
-              connection: supabaseHealth.status,
-              latency: supabaseHealth.latency
-            }
+            prisma: isHealthy,
+            details: dbHealth.details
           }
         });
       } catch (error) {
@@ -226,7 +232,7 @@ async function initializeService() {
           environment: process.env.NODE_ENV || 'development',
           uptime: process.uptime(),
           database: {
-            supabase: false,
+            prisma: false,
             details: {
               error: error instanceof Error ? error.message : 'Unknown error'
             }
@@ -272,3 +278,6 @@ process.on('SIGINT', async () => {
 
 // Start the service
 initializeService();
+
+
+

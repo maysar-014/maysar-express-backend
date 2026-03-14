@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 /**
  * Health Check Service Implementation
  * Infrastructure layer system health monitoring and diagnostics
@@ -660,7 +660,7 @@ export class HealthCheckMiddleware {
   }
 
   /**
-   * Readiness check (for Kubernetes)
+   * Readiness check (for Orchestrator)
    */
   async handleReadinessCheck(req: any, res: any): Promise<void> {
     try {
@@ -683,7 +683,7 @@ export class HealthCheckMiddleware {
   }
 
   /**
-   * Liveness check (for Kubernetes)
+   * Liveness check (for Orchestrator)
    */
   async handleLivenessCheck(req: any, res: any): Promise<void> {
     // Liveness is simpler - just check if the process is running

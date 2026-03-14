@@ -5,12 +5,23 @@ import { ReservationEngine } from './modules/reservation/reservationEngine';
 import { WarehouseManager } from './modules/warehouse/warehouseManager';
 import { InventoryEventHandlers } from './modules/events/eventHandlers';
 import { EventIdempotency } from '@shared/middleware/idempotency';
+import { createRedisStockEngine, resolveRedisReservationMode } from './infrastructure/redis/redis-stock-engine';
 
 async function startWorker() {
   const prisma = new PrismaClient();
   const stockManager = new StockManager(prisma as any, eventBus);
   const warehouseManager = new WarehouseManager(prisma as any);
-  const reservationEngine = new ReservationEngine(prisma as any, stockManager, warehouseManager, eventBus);
+  const redisReservationMode = resolveRedisReservationMode();
+  const redisStockEngineBundle = redisReservationMode === 'off' ? null : createRedisStockEngine();
+  const reservationEngine = new ReservationEngine(
+    prisma as any,
+    stockManager,
+    warehouseManager,
+    eventBus,
+    redisStockEngineBundle?.stockEngine,
+    redisStockEngineBundle?.redisClient,
+    redisReservationMode
+  );
   const eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, prisma);
   const eventHandlers = new InventoryEventHandlers(stockManager, reservationEngine, eventIdempotency);
 

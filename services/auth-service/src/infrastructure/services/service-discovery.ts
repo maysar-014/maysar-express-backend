@@ -12,6 +12,7 @@ interface ServiceDiscoveryConfig {
       timeout: number;
     };
   };
+  enableHealthChecks: boolean;
   healthCheckInterval: number;
   failureThreshold: number;
   recoveryTimeout: number;
@@ -38,14 +39,17 @@ export class ServiceDiscovery {
   private healthCheckTimer?: NodeJS.Timeout;
 
   constructor(config?: Partial<ServiceDiscoveryConfig>) {
+    const monolithUserBaseUrl = (process.env.PLATFORM_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
     this.config = {
       services: {
         userService: {
-          urls: [process.env.USER_SERVICE_URL || 'http://localhost:3001'],
+          urls: [process.env.USER_SERVICE_URL || `${monolithUserBaseUrl}/api/user`],
           healthCheckPath: '/health',
           timeout: 5000
         }
       },
+      // In monolith mode, disable background discovery probing unless explicitly enabled.
+      enableHealthChecks: process.env.ENABLE_SERVICE_DISCOVERY_HEALTH_CHECKS === 'true',
       healthCheckInterval: parseInt(process.env.HEALTH_CHECK_INTERVAL || '30000'),
       failureThreshold: parseInt(process.env.FAILURE_THRESHOLD || '3'),
       recoveryTimeout: parseInt(process.env.RECOVERY_TIMEOUT || '60000'),
@@ -53,7 +57,9 @@ export class ServiceDiscovery {
     };
 
     this.initializeServices();
-    this.startHealthChecks();
+    if (this.config.enableHealthChecks) {
+      this.startHealthChecks();
+    }
   }
 
   /**
@@ -118,8 +124,10 @@ export class ServiceDiscovery {
             instance.consecutiveFailures++;
             instance.healthy = false;
 
-            if (instance.consecutiveFailures >= this.config.failureThreshold) {
+            if (instance.consecutiveFailures === this.config.failureThreshold) {
               logger.warn(`Service instance marked unhealthy: ${instance.url} (${instance.consecutiveFailures} failures)`);
+              instance.nextHealthCheck = new Date(now + this.config.recoveryTimeout);
+            } else if (instance.consecutiveFailures > this.config.failureThreshold) {
               instance.nextHealthCheck = new Date(now + this.config.recoveryTimeout);
             } else {
               instance.nextHealthCheck = new Date(now + this.config.healthCheckInterval);
@@ -130,8 +138,10 @@ export class ServiceDiscovery {
           instance.healthy = false;
           instance.lastHealthCheck = new Date();
 
-          if (instance.consecutiveFailures >= this.config.failureThreshold) {
+          if (instance.consecutiveFailures === this.config.failureThreshold) {
             logger.error(`Service health check failed: ${instance.url}`, { error });
+            instance.nextHealthCheck = new Date(now + this.config.recoveryTimeout);
+          } else if (instance.consecutiveFailures > this.config.failureThreshold) {
             instance.nextHealthCheck = new Date(now + this.config.recoveryTimeout);
           } else {
             instance.nextHealthCheck = new Date(now + this.config.healthCheckInterval);

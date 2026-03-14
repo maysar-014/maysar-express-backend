@@ -5,6 +5,7 @@ import { AuthenticationPolicy } from '../../domain/policies/authentication.polic
 import { UserServiceRepository } from '../../infrastructure/repositories/user-service.repository';
 import { getUserServiceClient } from '../../infrastructure/services/service-discovery';
 import { logger } from '../../infrastructure/services/logger.service';
+import { AuthEventPublisher } from '../../infrastructure/messaging/auth-event-publisher';
 
 /**
  * Authenticate User Use Case
@@ -14,7 +15,10 @@ import { logger } from '../../infrastructure/services/logger.service';
 export class AuthenticateUserUseCase {
   private userRepository: IUserRepository;
 
-  constructor(userRepository?: IUserRepository) {
+  constructor(
+    userRepository?: IUserRepository,
+    private readonly eventPublisher?: AuthEventPublisher
+  ) {
     // Use provided repository or create UserServiceRepository with service discovery
     if (userRepository) {
       this.userRepository = userRepository;
@@ -57,8 +61,22 @@ export class AuthenticateUserUseCase {
         };
       }
 
-      // Find user by email
-      const user = await this.userRepository.findByEmail(input.email);
+      // Find user by email. Treat repository upstream failures as authentication failures
+      // to avoid leaking infrastructure errors through the login API.
+      let user: AuthUser | null = null;
+      try {
+        user = await this.userRepository.findByEmail(input.email);
+      } catch (error: any) {
+        logger.error('Authentication user lookup failed', {
+          email: input.email,
+          message: error?.message
+        });
+        return {
+          success: false,
+          message: 'Invalid email or password'
+        };
+      }
+
       if (!user) {
         logger.warn('Authentication failed: user not found', { email: input.email });
         return {
@@ -68,7 +86,11 @@ export class AuthenticateUserUseCase {
       }
 
       // Check if authentication is allowed
-      if (user.status !== UserStatus.ACTIVE) {
+      const allowedStatuses = new Set<UserStatus>([
+        UserStatus.ACTIVE,
+        UserStatus.PENDING_VERIFICATION
+      ]);
+      if (!allowedStatuses.has(user.status)) {
         logger.warn('Authentication denied by policy', { userId: user.id, status: user.status });
         return {
           success: false,
@@ -99,7 +121,8 @@ export class AuthenticateUserUseCase {
           user.lockoutUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
         }
 
-        await this.userRepository.save(user);
+        await this.persistUserState(user, 'invalid-password');
+        await this.publishAuthLoginFailed(user, 'invalid-password');
 
         logger.warn('Authentication failed: invalid password', {
           userId: user.id,
@@ -129,7 +152,8 @@ export class AuthenticateUserUseCase {
 
         if (!totpValid) {
           user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
-          await this.userRepository.save(user);
+          await this.persistUserState(user, 'invalid-2fa');
+          await this.publishAuthLoginFailed(user, 'invalid-2fa');
 
           logger.warn('Authentication failed: invalid 2FA code', { userId: user.id });
 
@@ -146,7 +170,8 @@ export class AuthenticateUserUseCase {
       user.failedLoginAttempts = 0;
       user.lockoutUntil = undefined;
 
-      await this.userRepository.save(user);
+      await this.persistUserState(user, 'successful-login');
+      await this.publishAuthLoginSuccess(user);
 
       // Generate tokens (infrastructure concern - simplified for now)
       const tokens = this.generateTokens(user);
@@ -168,9 +193,45 @@ export class AuthenticateUserUseCase {
       });
       return {
         success: false,
-        message: 'Authentication failed due to system error'
+        message: 'Invalid email or password'
       };
     }
+  }
+
+  /**
+   * Best-effort persistence of auth-related user state.
+   * Authentication should not fail solely because state sync failed.
+   */
+  private async persistUserState(user: AuthUser, stage: string): Promise<void> {
+    try {
+      await this.userRepository.save(user);
+    } catch (error: any) {
+      logger.error('Failed to persist auth user state', {
+        userId: user.id,
+        stage,
+        message: error?.message
+      });
+    }
+  }
+
+  private async publishAuthLoginFailed(user: AuthUser, reason: string): Promise<void> {
+    if (!this.eventPublisher) return;
+    await this.eventPublisher.publish('AuthLoginFailed', {
+      userId: user.id,
+      failedLoginAttempts: user.failedLoginAttempts ?? 0,
+      lockoutUntil: user.lockoutUntil ? user.lockoutUntil.toISOString() : null,
+      reason
+    });
+  }
+
+  private async publishAuthLoginSuccess(user: AuthUser): Promise<void> {
+    if (!this.eventPublisher) return;
+    await this.eventPublisher.publish('AuthLoginSuccess', {
+      userId: user.id,
+      lastLoginAt: user.lastLoginAt ? user.lastLoginAt.toISOString() : new Date().toISOString(),
+      failedLoginAttempts: 0,
+      lockoutUntil: null
+    });
   }
 
   /**

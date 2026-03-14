@@ -19,6 +19,12 @@ function makePrismaMock() {
   };
 
   const prisma: any = {
+    user_UserIndex: {
+      count: jest.fn().mockResolvedValue(1),
+      findFirst: jest.fn().mockResolvedValue({ userId: 'u1' }),
+      createMany: jest.fn().mockResolvedValue({ count: 1 }),
+      deleteMany: jest.fn().mockResolvedValue({ count: 1 })
+    },
     user_User: {
       findUnique: jest.fn().mockResolvedValue(userData),
       findFirst: jest.fn().mockResolvedValue(userData),
@@ -53,7 +59,11 @@ function makePrismaMock() {
 describe('PrismaUserRepository more methods', () => {
   test('search, queries, analytics, security and bulk operations', async () => {
     const { prisma, userData } = makePrismaMock();
-    const repo = new PrismaUserRepository(prisma as any, { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v) } as any);
+    const repo = new PrismaUserRepository(prisma as any, {
+      encrypt: jest.fn((v) => v),
+      decrypt: jest.fn((v) => v),
+      hash: jest.fn((v) => v)
+    } as any);
 
     // search
     const found = await repo.search('u1', 10, 0);

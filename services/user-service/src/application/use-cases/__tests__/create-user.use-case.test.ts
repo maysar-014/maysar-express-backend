@@ -15,18 +15,31 @@ describe('CreateUserUseCase', () => {
   let createUserUseCase: CreateUserUseCase;
   let mockUserValidationService: jest.Mocked<UserValidationService>;
   let mockUserSecurityPolicy: jest.Mocked<UserSecurityPolicy>;
+  let mockUserRepository: any;
   let mockEmailService: any;
   let mockNotificationClient: any;
+  let mockEventPublisher: any;
+  let mockEmailVerificationTokens: any;
 
   beforeEach(() => {
     mockUserValidationService = new UserValidationService() as jest.Mocked<UserValidationService>;
     mockUserSecurityPolicy = new UserSecurityPolicy() as jest.Mocked<UserSecurityPolicy>;
+    mockUserRepository = {
+      emailExists: jest.fn().mockResolvedValue(false),
+      phoneExists: jest.fn().mockResolvedValue(false),
+      create: jest.fn().mockImplementation(async (user: any) => user)
+    };
     mockEmailService = { sendEmail: jest.fn(), sendVerificationEmail: jest.fn() };
     mockNotificationClient = { notify: jest.fn() };
+    mockEventPublisher = { publish: jest.fn(), publishMany: jest.fn() };
+    mockEmailVerificationTokens = { create: jest.fn() };
 
     createUserUseCase = new CreateUserUseCase(
+      mockUserRepository,
       mockUserValidationService,
       mockUserSecurityPolicy,
+      mockEventPublisher,
+      mockEmailVerificationTokens,
       mockEmailService,
       mockNotificationClient
     );
@@ -57,6 +70,7 @@ describe('CreateUserUseCase', () => {
       expect(result.firstName).toBe(validCreateUserDto.firstName);
       expect(result.lastName).toBe(validCreateUserDto.lastName);
       expect(mockUserValidationService.validateUser).toHaveBeenCalled();
+      expect(mockUserRepository.create).toHaveBeenCalled();
     });
 
     it('should throw UserValidationError for invalid email', async () => {

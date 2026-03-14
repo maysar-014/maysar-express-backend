@@ -2,6 +2,9 @@ import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { Module } from '../../src/core/module.interface';
 import { EventIdempotency } from '../../shared/middleware/idempotency';
+import { healthRoutes } from './src/api/routes/health.routes';
+import { createWalletRoutes } from './src/api/routes/wallet.routes';
+import { Container } from './src/container';
 
 const prisma = new PrismaClient();
 const eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, prisma);
@@ -15,7 +18,28 @@ export const WalletModule: Module = {
         // eventIdempotency is available for injection into PaymentCompletedHandler
         // when it is instantiated by the service's internal wiring.
     },
-    routes: Router(),
+    routes: (() => {
+        const router = Router();
+        router.use('/health', healthRoutes);
+
+        try {
+            // Lazy load to avoid env-dependent side effects during module import
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const container = Container.getInstance();
+            router.use('/wallets', createWalletRoutes(container.walletController));
+        } catch (error) {
+            console.log('Failed to mount wallet routes, falling back to degraded handler', error);
+            router.all('/wallets/*', (_req, res) => {
+                res.status(503).json({
+                    success: false,
+                    error: 'Wallet routes unavailable',
+                    reason: 'Initialization failure'
+                });
+            });
+        }
+
+        return router;
+    })(),
     shutdown: async () => {
         console.log('Shutting down wallet-service module');
     }

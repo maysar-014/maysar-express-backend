@@ -49,7 +49,7 @@ class APIDocumentationGenerator {
     info: {
       title: 'Maysar Digital Community Trade Network Platform API',
       version: '1.0.0',
-      description: `Enterprise-grade REST API for the Maysar Digital Community Trade Network Platform - a sophisticated financial technology ecosystem designed for secure, compliant digital trade communities. This platform orchestrates complex business workflows through 13 specialized microservices implementing advanced distributed systems patterns including event sourcing, CQRS, and saga orchestration. Features include: AI-powered fraud detection with 99.9% accuracy, real-time inventory synchronization across multi-warehouse networks, comprehensive regulatory compliance automation (GDPR, PCI DSS, SOX), event-driven order lifecycle management with guaranteed delivery, automated revenue sharing with multi-tier commission calculations, enterprise observability with distributed tracing, and military-grade security with zero-trust architecture and automated threat response. The platform maintains 99.95% uptime SLA with sub-200ms P95 latency across all services, processing millions of transactions daily through a resilient, auto-scaling infrastructure deployed on Kubernetes with multi-region disaster recovery capabilities.`,
+      description: `Enterprise-grade REST API for the Maysar Digital Community Trade Network Platform - a sophisticated financial technology ecosystem designed for secure, compliant digital trade communities. This platform orchestrates complex business workflows through 13 specialized microservices implementing advanced distributed systems patterns including event sourcing, CQRS, and saga orchestration. Features include: AI-powered fraud detection with 99.9% accuracy, real-time inventory synchronization across multi-warehouse networks, comprehensive regulatory compliance automation (GDPR, PCI DSS, SOX), event-driven order lifecycle management with guaranteed delivery, automated revenue sharing with multi-tier commission calculations, enterprise observability with distributed tracing, and military-grade security with zero-trust architecture and automated threat response. The platform maintains 99.95% uptime SLA with sub-200ms P95 latency across all services, processing millions of transactions daily through a resilient, auto-scaling infrastructure deployed on Orchestrator with multi-region disaster recovery capabilities.`,
       contact: {
         name: 'Maysar Development Team',
         email: 'api@maysar.com',
@@ -1089,7 +1089,7 @@ class APIDocumentationGenerator {
                           type: 'object',
                           properties: {
                             id: { type: 'string' },
-                            type: { type: 'string', enum: ['card', 'paypal', 'bank'] },
+                            type: { type: 'string', enum: ['card', 'pesapal', 'bank'] },
                             last4: { type: 'string', example: '4242' },
                             brand: { type: 'string', example: 'visa' },
                             expiryMonth: { type: 'integer', example: 12 },
@@ -1118,7 +1118,7 @@ class APIDocumentationGenerator {
                   type: 'object',
                   required: ['type', 'token'],
                   properties: {
-                    type: { type: 'string', enum: ['card', 'paypal'] },
+                    type: { type: 'string', enum: ['card', 'pesapal'] },
                     token: { type: 'string', description: 'Payment processor token' },
                     setAsDefault: { type: 'boolean', default: false },
                   },
@@ -1437,25 +1437,25 @@ class APIDocumentationGenerator {
     // Save OpenAPI spec as JSON
     const jsonPath = path.join(outputPath, 'openapi.json');
     fs.writeFileSync(jsonPath, JSON.stringify(spec, null, 2));
-    console.log(`✅ OpenAPI JSON specification saved to: ${jsonPath}`);
+    console.log(`âœ… OpenAPI JSON specification saved to: ${jsonPath}`);
 
     // Save OpenAPI spec as YAML
     const yamlPath = path.join(outputPath, 'openapi.yaml');
     const yamlContent = this.convertToYaml(spec);
     fs.writeFileSync(yamlPath, yamlContent);
-    console.log(`✅ OpenAPI YAML specification saved to: ${yamlPath}`);
+    console.log(`âœ… OpenAPI YAML specification saved to: ${yamlPath}`);
 
     // Generate HTML documentation
     const htmlPath = path.join(outputPath, 'index.html');
     const htmlContent = this.generateHtmlDocs(spec);
     fs.writeFileSync(htmlPath, htmlContent);
-    console.log(`✅ HTML documentation generated at: ${htmlPath}`);
+    console.log(`âœ… HTML documentation generated at: ${htmlPath}`);
 
     // Generate Postman collection
     const postmanPath = path.join(outputPath, 'postman-collection.json');
     const postmanCollection = this.generatePostmanCollection(spec);
     fs.writeFileSync(postmanPath, JSON.stringify(postmanCollection, null, 2));
-    console.log(`✅ Postman collection generated at: ${postmanPath}`);
+    console.log(`âœ… Postman collection generated at: ${postmanPath}`);
   }
 
   private convertToYaml(spec: OpenAPISpec): string {
@@ -1572,8 +1572,8 @@ class APIDocumentationGenerator {
 if (require.main === module) {
   const generator = new APIDocumentationGenerator();
   generator.saveDocumentation('./api-docs');
-  console.log('\n🎉 API Documentation Generation Complete!');
-  console.log('📁 Files generated in ./api-docs/:');
+  console.log('\nðŸŽ‰ API Documentation Generation Complete!');
+  console.log('ðŸ“ Files generated in ./api-docs/:');
   console.log('  - openapi.json (OpenAPI 3.0 specification)');
   console.log('  - openapi.yaml (OpenAPI 3.0 specification in YAML)');
   console.log('  - index.html (Interactive HTML documentation)');

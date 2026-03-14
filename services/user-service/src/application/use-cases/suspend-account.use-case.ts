@@ -1,4 +1,5 @@
 import { IUserRepository } from '../../domain/repositories';
+import { IDomainEventPublisher, UserStatusChangedEvent } from '../../domain/events';
 import { AccountSuspensionEvent } from '../sagas/account-suspension.saga';
 import { sagaEventHandler } from '../sagas/saga-event-handler';
 import { logger } from '../../infrastructure/services/logger.service';
@@ -21,6 +22,7 @@ export interface SuspendAccountOutput {
 export class SuspendAccountUseCase {
   constructor(
     private userRepository: IUserRepository,
+    private eventPublisher: IDomainEventPublisher,
     private emailService: EmailService,
     private notificationClient: NotificationServiceClient
   ) { }
@@ -40,8 +42,21 @@ export class SuspendAccountUseCase {
         return { success: false, message: 'Only administrators can suspend accounts' };
       }
 
+      const oldStatus = user.status;
+      const newStatus = 'suspended';
+
       // Update user status to suspended
-      await this.userRepository.updateStatus(input.userId, 'suspended' as any);
+      await this.userRepository.updateStatus(input.userId, newStatus as any);
+
+      // Publish domain event for downstream syncs
+      const domainEvent = new UserStatusChangedEvent(
+        input.userId,
+        oldStatus as any,
+        newStatus as any,
+        input.suspendedBy,
+        input.reason
+      );
+      await this.eventPublisher.publish(domainEvent);
 
       // Publish suspension event to trigger saga
       const event: AccountSuspensionEvent = {

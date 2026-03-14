@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const envSchema = z.object({
-    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
     PORT: z.string().transform(Number).default('3003'),
     DATABASE_URL: z.string().url(),
     WALLET_SERVICE_URL: z.string().url().default('http://localhost:3002'),

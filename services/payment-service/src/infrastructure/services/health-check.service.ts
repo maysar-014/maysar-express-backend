@@ -87,32 +87,26 @@ export class HealthCheckService {
         }
 
         try {
-            // Attempt to get access token as a health check
-            // This validates credentials and API reachability
-            const pesapalUrl = process.env.PESAPAL_URL || 'https://cybqa.pesapal.com/pesapalv3';
-            const consumerKey = process.env.PESAPAL_CONSUMER_KEY;
-            const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET;
+            const pesapalUrl = process.env.PESAPAL_URL || 'https://api.pesapal.com/v3';
+            const secretKey = process.env.PESAPAL_SECRET_KEY || process.env.PESAPAL_CONSUMER_SECRET;
 
-            if (!consumerKey || !consumerSecret) {
+            if (!secretKey) {
                 return {
                     status: 'unhealthy',
                     timestamp: new Date(),
                     details: {
                         connection: 'not_configured',
-                        error: 'Pesapal credentials not configured'
+                        error: 'Pesapal secret key not configured'
                     }
                 };
             }
 
-            const response = await fetch(`${pesapalUrl}/api/Auth/RequestToken`, {
-                method: 'POST',
+            const response = await fetch(`${pesapalUrl}/transactions?limit=1`, {
+                method: 'GET',
                 headers: {
+                    Authorization: `Bearer ${secretKey}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    consumer_key: consumerKey,
-                    consumer_secret: consumerSecret,
-                }),
                 signal: AbortSignal.timeout(5000) // 5 second timeout
             });
 
@@ -130,20 +124,6 @@ export class HealthCheckService {
                 };
             }
 
-            const result: any = await response.json();
-
-            if (!result.token) {
-                return {
-                    status: 'unhealthy',
-                    timestamp: new Date(),
-                    latencyMs,
-                    details: {
-                        connection: 'failed',
-                        error: 'No token in response'
-                    }
-                };
-            }
-
             return {
                 status: 'healthy',
                 timestamp: new Date(),
@@ -151,7 +131,7 @@ export class HealthCheckService {
                 details: {
                     connection: 'successful',
                     provider: 'pesapal',
-                    environment: pesapalUrl.includes('cybqa') ? 'sandbox' : 'production'
+                    environment: pesapalUrl.toLowerCase().includes('sandbox') ? 'sandbox' : 'production'
                 }
             };
         } catch (error) {
@@ -326,3 +306,4 @@ export class HealthCheckService {
         };
     }
 }
+

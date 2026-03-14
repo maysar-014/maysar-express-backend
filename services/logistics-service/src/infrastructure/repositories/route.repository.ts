@@ -5,7 +5,7 @@ import { RouteProgress } from '../../domain/value-objects/route-progress.value-o
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 
 export class RouteRepository implements IRouteRepository {
-  constructor(private supabaseClient: any) { }
+  constructor(private databaseClient: any) { }
 
   async save(route: Route): Promise<void> {
     try {
@@ -36,12 +36,12 @@ export class RouteRepository implements IRouteRepository {
         completed_at: route.getCompletedAt()?.toISOString()
       };
 
-      const { error } = await this.supabaseClient
+      const { error } = await this.databaseClient
         .from('routes')
         .upsert(routeData, { onConflict: 'id' });
 
       if (error) {
-        console.error('Supabase upsert error:', error);
+        console.error('Database upsert error:', error);
         throw new Error('Failed to save route to database');
       }
 
@@ -53,7 +53,7 @@ export class RouteRepository implements IRouteRepository {
 
   async findById(id: string): Promise<Route | null> {
     try {
-      const { data: routeData, error } = await this.supabaseClient
+      const { data: routeData, error } = await this.databaseClient
         .from('routes')
         .select(`
           id,
@@ -76,7 +76,7 @@ export class RouteRepository implements IRouteRepository {
           // No rows returned
           return null;
         }
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         throw new Error('Failed to query route');
       }
 
@@ -111,7 +111,7 @@ export class RouteRepository implements IRouteRepository {
 
   async findByCourierId(courierId: string, status?: RouteStatus): Promise<Route[]> {
     try {
-      let query = this.supabaseClient
+      let query = this.databaseClient
         .from('routes')
         .select(`
           id,
@@ -137,7 +137,7 @@ export class RouteRepository implements IRouteRepository {
       const { data: routesData, error } = await query;
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         throw new Error('Failed to query routes by courier');
       }
 
@@ -185,7 +185,7 @@ export class RouteRepository implements IRouteRepository {
       const limit = options?.limit || 10;
       const offset = (page - 1) * limit;
 
-      let query = this.supabaseClient
+      let query = this.databaseClient
         .from('routes')
         .select(`
           id,
@@ -223,7 +223,7 @@ export class RouteRepository implements IRouteRepository {
       const { data: routesData, error, count } = await query;
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         throw new Error('Failed to query routes');
       }
 
@@ -286,13 +286,13 @@ export class RouteRepository implements IRouteRepository {
 
   async deleteRoute(id: string): Promise<void> {
     try {
-      const { error } = await this.supabaseClient
+      const { error } = await this.databaseClient
         .from('routes')
         .delete()
         .eq('id', id);
 
       if (error) {
-        console.error('Supabase delete error:', error);
+        console.error('Database delete error:', error);
         throw new Error('Failed to delete route');
       }
 
@@ -302,3 +302,4 @@ export class RouteRepository implements IRouteRepository {
     }
   }
 }
+

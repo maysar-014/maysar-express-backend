@@ -13,8 +13,8 @@ describe('InventoryReservationService', () => {
 
   beforeEach(() => {
     mockPrisma = {
-      inventoryReservation: {
-        create: jest.fn().mockResolvedValue({ id: 'res-1' }),
+      checkout_InventoryReservation: {
+        upsert: jest.fn().mockResolvedValue({ id: 'res-1' }),
         updateMany: jest.fn().mockResolvedValue({ count: 1 })
       }
     };
@@ -26,13 +26,13 @@ describe('InventoryReservationService', () => {
 
     await service.reserve('checkout-1', items);
 
-    expect(mockPrisma.inventoryReservation.create).toHaveBeenCalled();
+    expect(mockPrisma.checkout_InventoryReservation.upsert).toHaveBeenCalled();
   });
 
   it('should release inventory', async () => {
     await service.release('checkout-1');
 
-    expect(mockPrisma.inventoryReservation.updateMany).toHaveBeenCalledWith({
+    expect(mockPrisma.checkout_InventoryReservation.updateMany).toHaveBeenCalledWith({
       where: { checkoutId: 'checkout-1' },
       data: { status: 'released' }
     });
@@ -41,7 +41,7 @@ describe('InventoryReservationService', () => {
   it('should confirm inventory', async () => {
     await service.confirm('checkout-1');
 
-    expect(mockPrisma.inventoryReservation.updateMany).toHaveBeenCalledWith({
+    expect(mockPrisma.checkout_InventoryReservation.updateMany).toHaveBeenCalledWith({
       where: { checkoutId: 'checkout-1' },
       data: { status: 'confirmed' }
     });
@@ -54,7 +54,7 @@ describe('DiscountService', () => {
 
   beforeEach(() => {
     mockPrisma = {
-      appliedDiscount: {
+      checkout_AppliedDiscount: {
         findFirst: jest.fn().mockResolvedValue({
           discountCode: 'SAVE10',
           maxUses: 100,
@@ -74,7 +74,7 @@ describe('DiscountService', () => {
   });
 
   it('should reject expired discount', async () => {
-    mockPrisma.appliedDiscount.findFirst.mockResolvedValueOnce({
+    mockPrisma.checkout_AppliedDiscount.findFirst.mockResolvedValueOnce({
       discountCode: 'EXPIRED',
       maxUses: 10,
       currentUses: 10
@@ -88,7 +88,7 @@ describe('DiscountService', () => {
   it('should apply discount', async () => {
     await service.applyDiscount('checkout-1', 'SAVE10', 10, 'fixed');
 
-    expect(mockPrisma.appliedDiscount.create).toHaveBeenCalled();
+    expect(mockPrisma.checkout_AppliedDiscount.create).toHaveBeenCalled();
   });
 });
 

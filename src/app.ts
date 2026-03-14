@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import { setupExpressErrorHandler } from '@sentry/node';
 import { moduleRegistry } from './core/module-registry';
 import { prisma } from './config/prisma';
@@ -9,6 +10,8 @@ import { correlationMiddleware } from '../shared/tracing/openTelemetry';
 import { appLogger } from '../shared/logger/logger';
 import { requestLoggingMiddleware, performanceMonitoringMiddleware} from '../services/order-service/src/middleware/logging.middleware';
 import { i18next, i18nextMiddleware } from '../shared/i18n/i18n';
+import { csrfTokenMiddleware } from '../shared/middleware/csrf.middleware';
+import { pingSharedRedis } from '../shared/redis/ioredis-client';
 
 export const createApp = () => {
     const app = express();
@@ -24,6 +27,8 @@ export const createApp = () => {
     app.use(compression());
     app.use(requestLoggingMiddleware);
     app.use(performanceMonitoringMiddleware);
+    app.use(cookieParser());
+    app.use(csrfTokenMiddleware);
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
 
@@ -68,15 +73,10 @@ export const createApp = () => {
 
         // Check Redis
         try {
-            const Redis = await import('ioredis');
-            const redis = new Redis.default(process.env.REDIS_URL || 'redis://redis:6379', {
-                lazyConnect: true,
-                connectTimeout: 2000,
-                maxRetriesPerRequest: 1
-            });
-            await redis.connect();
-            await redis.ping();
-            await redis.quit();
+            const redisOk = await pingSharedRedis(process.env.REDIS_URL || 'redis://redis:6379');
+            if (!redisOk) {
+                throw new Error('redis ping failed');
+            }
             checks.redis = 'connected';
         } catch (error) {
             checks.redis = 'disconnected';

@@ -1,5 +1,5 @@
 -- Migration Script: Remove estimated_arrival_time column from couriers table
--- Run this script in Supabase SQL Editor after deploying the code changes
+-- Run this script in Database SQL Editor after deploying the code changes
 
 -- Step 1: Drop the estimated_arrival_time column from couriers table
 -- WARNING: This will permanently remove the column and all its data
@@ -28,3 +28,4 @@ FROM information_schema.columns
 WHERE table_schema = 'public'
   AND table_name = 'couriers'
 ORDER BY ordinal_position;
+

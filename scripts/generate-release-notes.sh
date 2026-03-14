@@ -128,7 +128,7 @@ cat >> "$RELEASE_NOTES_FILE" << EOF
 
 ## Rollback Information
 - **Rollback SHA**: $COMMIT_SHA
-- **Rollback Command**: \`./scripts/rollback-deployment.sh production $COMMIT_SHA\`
+- **Rollback Command**: \`git revert $COMMIT_SHA\`
 - **Estimated Downtime**: < 5 minutes
 
 ## Monitoring

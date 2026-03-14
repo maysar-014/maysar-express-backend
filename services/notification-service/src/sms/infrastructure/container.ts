@@ -36,10 +36,11 @@ container.bind<ISmsRepository>(TYPES.SmsRepository).to(PrismaSmsRepository).inSi
 container.bind<IEventPublisher>(TYPES.EventPublisher).to(EventPublisher).inSingletonScope();
 
 // Provider selection based on config
-const provider = process.env.SMS_PROVIDER === 'africastalking'
+const smsProviderName = (process.env.SMS_PROVIDER || process.env.SMS_SERVICE_PROVIDER || 'africastalking').toLowerCase();
+const provider = smsProviderName === 'africastalking'
     ? new AfricasTalkingSmsProvider({
-        username: process.env.AFRICASTALKING_USERNAME || 'sandbox',
-        apiKey: process.env.AFRICASTALKING_API_KEY || 'sandbox',
+        username: process.env.AFRICASTALKING_USERNAME || process.env.SMS_SERVICE_USERNAME || 'sandbox',
+        apiKey: process.env.AFRICASTALKING_API_KEY || process.env.SMS_SERVICE_API_KEY || 'sandbox',
         senderId: process.env.AFRICASTALKING_SENDER_ID
     })
     : new MockSmsProvider({ shouldFail: false });

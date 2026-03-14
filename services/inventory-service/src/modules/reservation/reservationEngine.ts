@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { StockManager } from '../stock/stockManager';
 import { WarehouseManager } from '../warehouse/warehouseManager';
 import { EventBus } from '@shared-events/eventBus';
+import { StockEngine } from '../../domain/engines/stock.engine';
 
 export interface OrderItem {
   id: string;
@@ -93,12 +94,25 @@ interface ReservationEnginePrisma {
   reservation?: ReservationDelegate;
 }
 
+type RedisReservationMode = 'off' | 'shadow';
+
+interface ReservationRedisClient {
+  get(key: string): Promise<string | null>;
+  setex(key: string, seconds: number, value: string): Promise<unknown>;
+  del(...keys: string[]): Promise<unknown>;
+}
+
 export class ReservationEngine {
+  private static readonly REDIS_RESERVATION_TTL_SECONDS = 30 * 60;
+
   constructor(
     private prisma: ReservationEnginePrisma,
     private stockManager: StockManager,
     private warehouseManager: WarehouseManager,
-    private eventBus: EventBus
+    private eventBus: EventBus,
+    private stockEngine?: StockEngine,
+    private redisClient?: ReservationRedisClient,
+    private redisReservationMode: RedisReservationMode = 'off'
   ) {}
 
   /**
@@ -167,6 +181,13 @@ export class ReservationEngine {
           warehouse.id,
           item.quantity
         );
+
+        const redisReservationId = await this.tryShadowReserveRedis(orderId, item.variantId, item.quantity);
+        if (redisReservationId) {
+          rollbackOperations.push(() =>
+            this.releaseRedisReservation(orderId, item.variantId, redisReservationId)
+          );
+        }
 
         reservations.push({
           itemId: item.id,
@@ -370,6 +391,9 @@ export class ReservationEngine {
 
     for (const reservation of expiredReservations) {
       await this.stockManager.releaseStock(reservation.orderId, 'expired');
+      await this.releaseRedisReservationByRecord(reservation).catch((error) => {
+        console.error('Failed to release Redis reservation (expired):', error);
+      });
     }
 
     return expiredReservations.length;
@@ -395,7 +419,11 @@ export class ReservationEngine {
    * Cancel reservations for an order
    */
   async cancelReservations(orderId: string): Promise<void> {
+    const activeReservations = await this.getActiveReservations(orderId);
     await this.stockManager.releaseStock(orderId, 'cancelled');
+    await this.releaseRedisReservations(orderId, activeReservations).catch((error) => {
+      console.error('Failed to release Redis reservations (cancelled):', error);
+    });
 
     // Emit cancellation event
     await this.eventBus.emit('StockReleased.v1', {
@@ -425,11 +453,73 @@ export class ReservationEngine {
     }));
 
     await this.stockManager.reduceStock(orderId, items);
+    await this.releaseRedisReservations(orderId, reservations).catch((error) => {
+      console.error('Failed to release Redis reservations (fulfilled):', error);
+    });
   }
 
   /**
    * Utility function to convert degrees to radians
    */
+  private shouldUseRedisReservations(): boolean {
+    return this.redisReservationMode !== 'off' && !!this.stockEngine && !!this.redisClient;
+  }
+
+  private buildRedisReservationKey(orderId: string, variantId: string): string {
+    return `inventory:reservation:order:${orderId}:variant:${variantId}`;
+  }
+
+  private async tryShadowReserveRedis(orderId: string, variantId: string, quantity: number): Promise<string | null> {
+    if (!this.shouldUseRedisReservations() || !this.stockEngine || !this.redisClient) {
+      return null;
+    }
+
+    try {
+      const reservation = await this.stockEngine.reserveStock(variantId, quantity, orderId);
+      const key = this.buildRedisReservationKey(orderId, variantId);
+      await this.redisClient.setex(key, ReservationEngine.REDIS_RESERVATION_TTL_SECONDS, reservation.reservationId);
+      return reservation.reservationId;
+    } catch (error) {
+      console.error('Redis reservation shadow write failed:', error);
+      return null;
+    }
+  }
+
+  private async releaseRedisReservation(orderId: string, variantId: string, reservationId?: string | null): Promise<void> {
+    if (!this.shouldUseRedisReservations() || !this.stockEngine || !this.redisClient) {
+      return;
+    }
+
+    const key = this.buildRedisReservationKey(orderId, variantId);
+    const id = reservationId || await this.redisClient.get(key);
+
+    try {
+      if (id) {
+        await this.stockEngine.releaseReservation(id);
+      }
+    } finally {
+      await this.redisClient.del(key);
+    }
+  }
+
+  private async releaseRedisReservations(orderId: string, reservations: ReservationRecord[]): Promise<void> {
+    if (!this.shouldUseRedisReservations()) {
+      return;
+    }
+
+    for (const reservation of reservations) {
+      await this.releaseRedisReservation(orderId, reservation.productVariantId);
+    }
+  }
+
+  private async releaseRedisReservationByRecord(reservation: ReservationRecord): Promise<void> {
+    if (!this.shouldUseRedisReservations()) {
+      return;
+    }
+
+    await this.releaseRedisReservation(reservation.orderId, reservation.productVariantId);
+  }
+
   private toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
   }

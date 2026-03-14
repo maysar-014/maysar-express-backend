@@ -46,8 +46,10 @@ describe('UserEventPublisher', () => {
         eventId: expect.any(String),
         eventType: 'UserRegistered',
         data: expect.objectContaining({
-          password: '[REDACTED]',
-          token: '[REDACTED]'
+          metadata: expect.objectContaining({
+            password: '[REDACTED]',
+            token: '[REDACTED]'
+          })
         }),
         timestamp: expect.any(Date)
       })

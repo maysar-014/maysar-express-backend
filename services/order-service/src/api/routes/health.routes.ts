@@ -4,29 +4,23 @@
  */
 
 import express, { Request, Response } from 'express';
-import { SupabaseClientManager } from '../../infrastructure/database/supabase.client';
+import { databaseManager } from '../../config/database.config';
 import { circuitBreakerRegistry } from '../../infrastructure/circuit-breaker';
 import { metricsCollector } from '../../infrastructure/monitoring/metrics';
 import { appLogger } from '../../infrastructure/monitoring/logger';
 
 const router = express.Router();
 
-/**
- * Basic health check endpoint
- * GET /health
- */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (_req: Request, res: Response) => {
   const startTime = Date.now();
 
   try {
-    // Check Supabase database connectivity (only concerned with Supabase, not Prisma)
-    const supabaseHealth = await SupabaseClientManager.getInstance().healthCheck();
-    const isHealthy = supabaseHealth.status === 'healthy';
+    const dbHealth = await databaseManager.healthCheck();
+    const isHealthy = dbHealth.prisma;
 
-    // Record health check metrics
     metricsCollector.recordHealthCheck('basic', isHealthy, Date.now() - startTime);
 
-    const response = {
+    res.status(isHealthy ? 200 : 503).json({
       service: 'order-service',
       status: isHealthy ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
@@ -34,19 +28,10 @@ router.get('/', async (req: Request, res: Response) => {
       environment: process.env.NODE_ENV || 'development',
       uptime: process.uptime(),
       database: {
-        prisma: false, // Not using Prisma
-        supabase: isHealthy,
-        details: {
-          supabase: {
-            status: supabaseHealth.status,
-            latency: supabaseHealth.latency
-          }
-        }
+        prisma: dbHealth.prisma,
+        details: dbHealth.details,
       },
-    };
-
-    res.status(isHealthy ? 200 : 503).json(response);
-
+    });
   } catch (error) {
     appLogger.error('Health check failed', error);
 
@@ -61,34 +46,14 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-/**
- * Detailed health check endpoint
- * GET /health/detailed
- */
-router.get('/detailed', async (req: Request, res: Response) => {
+router.get('/detailed', async (_req: Request, res: Response) => {
   const startTime = Date.now();
 
   try {
-    // Database health
-    const supabaseHealth = await SupabaseClientManager.getInstance().healthCheck();
-    const dbHealth = {
-      prisma: false, // Not using Prisma
-      supabase: supabaseHealth.status === 'healthy',
-      details: {
-        supabase: {
-          status: supabaseHealth.status,
-          latency: supabaseHealth.latency
-        }
-      }
-    };
-
-    // Circuit breaker status
+    const dbHealth = await databaseManager.healthCheck();
     const circuitBreakers = circuitBreakerRegistry.getAllStats();
-
-    // Memory usage
     const memUsage = process.memoryUsage();
 
-    // System information
     const systemInfo = {
       platform: process.platform,
       arch: process.arch,
@@ -97,7 +62,6 @@ router.get('/detailed', async (req: Request, res: Response) => {
       uptime: process.uptime(),
     };
 
-    // Application metrics
     const appMetrics = {
       memory: {
         rss: memUsage.rss,
@@ -109,7 +73,7 @@ router.get('/detailed', async (req: Request, res: Response) => {
     };
 
     const isHealthy =
-      dbHealth.supabase && // Only check Supabase
+      dbHealth.prisma &&
       Object.values(circuitBreakers).every(cb => cb.state === 'CLOSED');
 
     metricsCollector.recordHealthCheck('detailed', isHealthy, Date.now() - startTime);
@@ -125,7 +89,6 @@ router.get('/detailed', async (req: Request, res: Response) => {
         metrics: appMetrics,
       },
     });
-
   } catch (error) {
     appLogger.error('Detailed health check failed', error);
 
@@ -140,47 +103,21 @@ router.get('/detailed', async (req: Request, res: Response) => {
   }
 });
 
-/**
- * Readiness check endpoint
- * GET /health/ready
- */
-router.get('/ready', async (req: Request, res: Response) => {
+router.get('/ready', async (_req: Request, res: Response) => {
   const startTime = Date.now();
 
   try {
-    // Check if Supabase database is ready (only concerned with Supabase)
-    const supabaseHealth = await SupabaseClientManager.getInstance().healthCheck();
-    const isReady = supabaseHealth.status === 'healthy';
-
-    const dbHealth = {
-      prisma: false, // Not using Prisma
-      supabase: isReady,
-      details: {
-        supabase: {
-          status: supabaseHealth.status,
-          latency: supabaseHealth.latency
-        }
-      }
-    };
+    const dbHealth = await databaseManager.healthCheck();
+    const isReady = dbHealth.prisma;
 
     metricsCollector.recordHealthCheck('ready', isReady, Date.now() - startTime);
 
-    if (isReady) {
-      res.status(200).json({
-        service: 'order-service',
-        status: 'ready',
-        timestamp: new Date().toISOString(),
-        database: dbHealth,
-      });
-    } else {
-      res.status(503).json({
-        service: 'order-service',
-        status: 'not ready',
-        timestamp: new Date().toISOString(),
-        database: dbHealth,
-      });
-    }
-
+    res.status(isReady ? 200 : 503).json({
+      service: 'order-service',
+      status: isReady ? 'ready' : 'not ready',
+      timestamp: new Date().toISOString(),
+      database: dbHealth,
+    });
   } catch (error) {
     appLogger.error('Readiness check failed', error);
 
@@ -195,17 +132,9 @@ router.get('/ready', async (req: Request, res: Response) => {
   }
 });
 
-/**
- * Liveness check endpoint
- * GET /health/live
- */
-router.get('/live', (req: Request, res: Response) => {
+router.get('/live', (_req: Request, res: Response) => {
   const startTime = Date.now();
-
-  // Basic liveness check - if the process is running and responding
-  const isAlive = true;
-
-  metricsCollector.recordHealthCheck('live', isAlive, Date.now() - startTime);
+  metricsCollector.recordHealthCheck('live', true, Date.now() - startTime);
 
   res.status(200).json({
     service: 'order-service',
@@ -215,17 +144,12 @@ router.get('/live', (req: Request, res: Response) => {
   });
 });
 
-/**
- * Metrics endpoint (Prometheus format)
- * GET /health/metrics
- */
-router.get('/metrics', async (req: Request, res: Response) => {
+router.get('/metrics', async (_req: Request, res: Response) => {
   try {
     const metrics = await metricsCollector.getMetrics();
 
     res.set('Content-Type', 'text/plain; charset=utf-8');
     res.status(200).send(metrics);
-
   } catch (error) {
     appLogger.error('Metrics endpoint failed', error);
 
@@ -236,11 +160,7 @@ router.get('/metrics', async (req: Request, res: Response) => {
   }
 });
 
-/**
- * Ping endpoint for load balancer health checks
- * GET /health/ping
- */
-router.get('/ping', (req: Request, res: Response) => {
+router.get('/ping', (_req: Request, res: Response) => {
   res.status(200).json({
     service: 'order-service',
     status: 'pong',
@@ -248,11 +168,7 @@ router.get('/ping', (req: Request, res: Response) => {
   });
 });
 
-/**
- * Circuit breaker status endpoint
- * GET /health/circuit-breakers
- */
-router.get('/circuit-breakers', (req: Request, res: Response) => {
+router.get('/circuit-breakers', (_req: Request, res: Response) => {
   try {
     const circuitBreakers = circuitBreakerRegistry.getAllStats();
 
@@ -261,7 +177,6 @@ router.get('/circuit-breakers', (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
       circuitBreakers,
     });
-
   } catch (error) {
     appLogger.error('Circuit breaker status check failed', error);
 

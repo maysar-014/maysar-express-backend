@@ -82,7 +82,7 @@ class DomainVerifier {
     const prohibitedImports = [
       'fs', 'path', 'os', 'child_process', 'http', 'https', 'net',
       'prisma', 'mongoose', 'sequelize', 'typeorm', 'redis', 'memcached',
-      'aws-sdk', 'google-cloud', '@aws-sdk', 'stripe', 'paypal',
+      'aws-sdk', 'google-cloud', '@aws-sdk', 'pesapal',
       'axios', 'request', 'node-fetch', 'got'
     ];
 
@@ -155,7 +155,7 @@ class DomainVerifier {
       { pattern: /\bmongoose\b/g, type: 'database', description: 'Mongoose ODM' },
       { pattern: /\bredis\b/g, type: 'cache', description: 'Redis cache client' },
       { pattern: /\baws-sdk\b/g, type: 'external_service', description: 'AWS SDK' },
-      { pattern: /\bstripe\b/g, type: 'external_service', description: 'Stripe payment service' },
+      { pattern: /\bpesapal\b/g, type: 'external_service', description: 'Pesapal payment service' },
     ];
 
     for (const file of this.results.files) {
@@ -212,7 +212,7 @@ class DomainVerifier {
         // Check for infrastructure patterns
         const infraPatterns = [
           'database', 'prisma', 'mongoose', 'redis', 'cache', 'message', 'queue',
-          'aws', 'gcp', 'azure', 'stripe', 'paypal', 'twilio'
+          'aws', 'gcp', 'azure', 'pesapal', 'africastalking'
         ];
 
         let infraDependencies = [];
@@ -396,3 +396,4 @@ if (require.main === module) {
 }
 
 module.exports = DomainVerifier;
+

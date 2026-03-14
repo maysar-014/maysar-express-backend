@@ -3,7 +3,7 @@ import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 
 type QueryResult = { data: any; error: any; count?: number | null };
 
-const buildSupabaseClient = (params?: {
+const buildDatabaseClient = (params?: {
   selectResults?: QueryResult[];
   updateResults?: QueryResult[];
   insertResults?: QueryResult[];
@@ -102,7 +102,7 @@ describe('CourierRepository', () => {
   });
 
   it('findAvailableCouriers validates location and radius inputs', async () => {
-    const repository = new CourierRepository(buildSupabaseClient().client);
+    const repository = new CourierRepository(buildDatabaseClient().client);
 
     await expect(repository.findAvailableCouriers(null as any, 5)).rejects.toThrow('Location is required');
     await expect(
@@ -111,7 +111,7 @@ describe('CourierRepository', () => {
   });
 
   it('findAvailableCouriers filters by distance and maps matching couriers', async () => {
-    const { client, calls } = buildSupabaseClient({
+    const { client, calls } = buildDatabaseClient({
       selectResults: [
         {
           data: [
@@ -153,7 +153,7 @@ describe('CourierRepository', () => {
   });
 
   it('findAvailableCouriers throws wrapped error when query fails', async () => {
-    const { client } = buildSupabaseClient({
+    const { client } = buildDatabaseClient({
       selectResults: [{ data: null, error: { message: 'db query failed' } }]
     });
     const repository = new CourierRepository(client);
@@ -164,7 +164,7 @@ describe('CourierRepository', () => {
   });
 
   it('findAvailable returns mapped couriers and [] for errors', async () => {
-    const success = buildSupabaseClient({
+    const success = buildDatabaseClient({
       selectResults: [{ data: [courierRow], error: null }]
     });
     const repository = new CourierRepository(success.client);
@@ -173,7 +173,7 @@ describe('CourierRepository', () => {
     expect(mapped).toHaveLength(1);
     expect(mapped[0].id).toBe('cour-1');
 
-    const withError = buildSupabaseClient({
+    const withError = buildDatabaseClient({
       selectResults: [{ data: null, error: { message: 'failed' } }]
     });
     const errorRepository = new CourierRepository(withError.client);
@@ -181,7 +181,7 @@ describe('CourierRepository', () => {
   });
 
   it('findById maps courier and returns null for missing or errored lookups', async () => {
-    const success = buildSupabaseClient({
+    const success = buildDatabaseClient({
       selectResults: [{ data: courierRow, error: null }]
     });
     const repository = new CourierRepository(success.client);
@@ -189,19 +189,19 @@ describe('CourierRepository', () => {
 
     expect(found?.currentLocation.getAddress()).toBe('Kariakoo');
 
-    const missing = buildSupabaseClient({
+    const missing = buildDatabaseClient({
       selectResults: [{ data: null, error: null }]
     });
     await expect(new CourierRepository(missing.client).findById('cour-x')).resolves.toBeNull();
 
-    const errored = buildSupabaseClient({
+    const errored = buildDatabaseClient({
       selectResults: [{ data: null, error: { message: 'query failed' } }]
     });
     await expect(new CourierRepository(errored.client).findById('cour-y')).resolves.toBeNull();
   });
 
   it('assignCourier updates availability and creates assignment record', async () => {
-    const { client, calls } = buildSupabaseClient({
+    const { client, calls } = buildDatabaseClient({
       updateResults: [{ data: null, error: null }],
       insertResults: [{ data: null, error: null }]
     });
@@ -221,7 +221,7 @@ describe('CourierRepository', () => {
   });
 
   it('assignCourier rolls back courier update when assignment insert fails', async () => {
-    const { client, calls } = buildSupabaseClient({
+    const { client, calls } = buildDatabaseClient({
       updateResults: [
         { data: null, error: null },
         { data: null, error: null }
@@ -241,7 +241,7 @@ describe('CourierRepository', () => {
   });
 
   it('getCourierById returns mapped courier and throws for missing records', async () => {
-    const success = buildSupabaseClient({
+    const success = buildDatabaseClient({
       selectResults: [{ data: courierRow, error: null }]
     });
     const repository = new CourierRepository(success.client);
@@ -249,7 +249,7 @@ describe('CourierRepository', () => {
       expect.objectContaining({ id: 'cour-1', phone: '+255700000001' })
     );
 
-    const missing = buildSupabaseClient({
+    const missing = buildDatabaseClient({
       selectResults: [{ data: null, error: null }]
     });
     await expect(new CourierRepository(missing.client).getCourierById('none')).rejects.toThrow(
@@ -258,7 +258,7 @@ describe('CourierRepository', () => {
   });
 
   it('updateCourierLocation accepts raw location-like object and persists coordinates', async () => {
-    const { client, calls } = buildSupabaseClient({
+    const { client, calls } = buildDatabaseClient({
       updateResults: [{ data: null, error: null }]
     });
     const repository = new CourierRepository(client);
@@ -282,7 +282,7 @@ describe('CourierRepository', () => {
   });
 
   it('updateCourierAvailability clears current delivery when becoming available', async () => {
-    const { client, calls } = buildSupabaseClient({
+    const { client, calls } = buildDatabaseClient({
       updateResults: [{ data: null, error: null }]
     });
     const repository = new CourierRepository(client);
@@ -295,7 +295,7 @@ describe('CourierRepository', () => {
   });
 
   it('getCourierPerformance computes delivered metrics and falls back to zeros', async () => {
-    const periodClient = buildSupabaseClient({
+    const periodClient = buildDatabaseClient({
       selectResults: [
         {
           data: [
@@ -324,7 +324,7 @@ describe('CourierRepository', () => {
       averageRating: 4.7
     });
 
-    const zeroClient = buildSupabaseClient({
+    const zeroClient = buildDatabaseClient({
       selectResults: [{ data: [], error: null }]
     });
     await expect(new CourierRepository(zeroClient.client).getCourierPerformance('cour-x')).resolves.toEqual({
@@ -335,7 +335,7 @@ describe('CourierRepository', () => {
   });
 
   it('getCourierPerformance throws wrapped error when deliveries query fails', async () => {
-    const { client } = buildSupabaseClient({
+    const { client } = buildDatabaseClient({
       selectResults: [{ data: null, error: { message: 'stats query failed' } }]
     });
     const repository = new CourierRepository(client);
@@ -345,3 +345,4 @@ describe('CourierRepository', () => {
     );
   });
 });
+

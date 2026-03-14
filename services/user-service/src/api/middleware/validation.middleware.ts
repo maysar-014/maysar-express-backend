@@ -209,9 +209,9 @@ function sanitizeObject(obj: Record<string, unknown>): void {
   for (const key in obj) {
     const value = obj[key];
     if (typeof value === 'string') {
-      obj[key] = value.trim();
+      const trimmed = value.trim();
       // Remove potential XSS characters
-      obj[key] = value.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+      obj[key] = trimmed.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
     } else if (typeof value === 'object' && value !== null) {
       sanitizeObject(value as Record<string, unknown>);
     }

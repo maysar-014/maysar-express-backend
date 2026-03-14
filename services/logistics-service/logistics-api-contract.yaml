@@ -1028,7 +1028,7 @@ components:
     DependencyStatus:
       type: object
       properties:
-        supabase:
+        database:
           $ref: '#/components/schemas/ServiceStatus'
         redis:
           $ref: '#/components/schemas/ServiceStatus'
@@ -2621,3 +2621,4 @@ components:
                 timestamp:
                   type: string
                   format: date-time
+

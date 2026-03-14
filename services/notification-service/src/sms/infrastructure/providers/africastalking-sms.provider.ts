@@ -139,10 +139,26 @@ export class AfricasTalkingSmsProvider implements ISmsProvider {
         failureReason?: string;
     } | null {
         try {
+            if (!body || typeof body !== 'object') {
+                return null;
+            }
+
+            const providerMessageId = body.id;
+            const providerStatus = body.status;
+            const phoneNumber = body.phoneNumber;
+
+            if (
+                typeof providerMessageId !== 'string' || providerMessageId.length === 0 ||
+                typeof providerStatus !== 'string' || providerStatus.length === 0 ||
+                typeof phoneNumber !== 'string' || phoneNumber.length === 0
+            ) {
+                return null;
+            }
+
             return {
-                providerMessageId: body.id,
-                status: body.status === 'Success' ? 'delivered' : 'failed',
-                phoneNumber: body.phoneNumber,
+                providerMessageId,
+                status: providerStatus === 'Success' ? 'delivered' : 'failed',
+                phoneNumber,
                 failureReason: body.failureReason
             };
         } catch {

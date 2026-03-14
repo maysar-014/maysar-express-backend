@@ -14,7 +14,7 @@ export class DiscountService {
   constructor(private prisma: any) {}
 
   async validateCode(code: string): Promise<DiscountValidationResult> {
-    const discount = await this.prisma.appliedDiscount.findFirst({
+    const discount = await this.prisma.checkout_AppliedDiscount.findFirst({
       where: { discountCode: code }
     });
 
@@ -36,12 +36,12 @@ export class DiscountService {
     value: number,
     type: 'fixed' | 'percentage'
   ): Promise<void> {
-    await this.prisma.appliedDiscount.create({
+    await this.prisma.checkout_AppliedDiscount.create({
       data: {
         checkoutId,
         discountCode: code,
-        value,
-        type
+        discountValue: value,
+        discountType: type
       }
     });
   }

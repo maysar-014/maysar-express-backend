@@ -95,7 +95,7 @@ Logistics Service (Port 3007)
 │   ├── Validators: Input validation and sanitization
 │   └── Mappers: Data transformation between layers
 └── Infrastructure Layer (External Dependencies)
-    ├── Primary Repositories: CourierRepository, DeliveryRepository (Supabase/Prisma)
+    ├── Primary Repositories: CourierRepository, DeliveryRepository (Database/Prisma)
     ├── Providers: Google Maps, HERE Maps, Weather APIs
     ├── Services: Logger, Monitoring
     ├── Cache: Redis for performance optimization
@@ -514,3 +514,4 @@ The Logistics Service enables the Courier Console to provide:
 - ✅ **Complete Integration**: Full Courier Console support with 32 API endpoints
 - ✅ **Platform Architecture**: Seamless integration with Maysar microservices ecosystem
 - ✅ **Business Value**: 30% cost reduction through route optimization, 99% on-time delivery
+

@@ -5,11 +5,13 @@ import { UserFactory } from '../../../domain/entities/__tests__/user.factory';
 jest.mock('../../../application/sagas/saga-event-handler');
 
 describe('ChangeRoleUseCase', () => {
+  const makePublisher = () => ({ publish: jest.fn(), publishMany: jest.fn() });
+
   it('returns not found when user missing', async () => {
     const repo: any = { findById: jest.fn().mockResolvedValue(null) };
     const mockEmailService: any = { sendEmail: jest.fn() };
     const mockNotificationClient: any = { notify: jest.fn() };
-    const sut = new ChangeRoleUseCase(repo, mockEmailService, mockNotificationClient);
+    const sut = new ChangeRoleUseCase(repo, makePublisher(), mockEmailService, mockNotificationClient);
     const out = await sut.execute({ userId: 'x', newRole: 'seller', changedBy: 'admin' });
     expect(out.success).toBe(false);
     expect(out.message).toContain('User not found');
@@ -21,7 +23,7 @@ describe('ChangeRoleUseCase', () => {
     const repo: any = { findById: jest.fn((id) => Promise.resolve(id === 'u1' ? user : other)) };
     const mockEmailService: any = { sendEmail: jest.fn().mockResolvedValue(undefined) };
     const mockNotificationClient: any = { notify: jest.fn().mockResolvedValue(undefined) };
-    const sut = new ChangeRoleUseCase(repo, mockEmailService, mockNotificationClient);
+    const sut = new ChangeRoleUseCase(repo, makePublisher(), mockEmailService, mockNotificationClient);
     const out = await sut.execute({ userId: 'u1', newRole: 'seller', changedBy: 'other' });
     expect(out.success).toBe(false);
     expect(out.message).toContain('administrator');
@@ -33,7 +35,7 @@ describe('ChangeRoleUseCase', () => {
     const repo: any = { findById: jest.fn((id) => Promise.resolve(id === 'u1' ? user : admin)) };
     const mockEmailService: any = { sendEmail: jest.fn().mockResolvedValue(undefined) };
     const mockNotificationClient: any = { notify: jest.fn().mockResolvedValue(undefined) };
-    const sut = new ChangeRoleUseCase(repo, mockEmailService, mockNotificationClient);
+    const sut = new ChangeRoleUseCase(repo, makePublisher(), mockEmailService, mockNotificationClient);
     const out = await sut.execute({ userId: 'u1', newRole: 'invalid', changedBy: 'admin' });
     expect(out.success).toBe(false);
     expect(out.message).toContain('Invalid role');
@@ -48,7 +50,7 @@ describe('ChangeRoleUseCase', () => {
     };
     const mockEmailService: any = { sendEmail: jest.fn().mockResolvedValue(undefined) };
     const mockNotificationClient: any = { notify: jest.fn().mockResolvedValue(undefined) };
-    const sut = new ChangeRoleUseCase(repo, mockEmailService, mockNotificationClient);
+    const sut = new ChangeRoleUseCase(repo, makePublisher(), mockEmailService, mockNotificationClient);
     const out = await sut.execute({ userId: 'u1', newRole: 'buyer', changedBy: 'admin' });
     expect(out.success).toBe(false);
     expect(out.message).toContain('already has this role');
@@ -63,7 +65,7 @@ describe('ChangeRoleUseCase', () => {
     };
     const mockEmailService: any = { sendEmail: jest.fn().mockResolvedValue(undefined) };
     const mockNotificationClient: any = { notify: jest.fn().mockResolvedValue(undefined) };
-    const sut = new ChangeRoleUseCase(repo, mockEmailService, mockNotificationClient);
+    const sut = new ChangeRoleUseCase(repo, makePublisher(), mockEmailService, mockNotificationClient);
     const out = await sut.execute({ userId: 'u1', newRole: 'seller', changedBy: 'admin' });
     expect(out.success).toBe(true);
     expect(out.oldRole).toBe('buyer');
@@ -74,7 +76,7 @@ describe('ChangeRoleUseCase', () => {
     const repo: any = { findById: jest.fn().mockRejectedValue(new Error('DB error')) };
     const mockEmailService: any = { sendEmail: jest.fn() };
     const mockNotificationClient: any = { notify: jest.fn() };
-    const sut = new ChangeRoleUseCase(repo, mockEmailService, mockNotificationClient);
+    const sut = new ChangeRoleUseCase(repo, makePublisher(), mockEmailService, mockNotificationClient);
     const out = await sut.execute({ userId: 'u1', newRole: 'seller', changedBy: 'admin' });
     expect(out.success).toBe(false);
   });

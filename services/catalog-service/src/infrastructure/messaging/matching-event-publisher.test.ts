@@ -1,4 +1,4 @@
-jest.mock('../../../shared/event-bus/event-bus', () => ({}), { virtual: true });
+jest.mock('@shared-events/eventBus', () => ({}), { virtual: true });
 
 import { MatchingEventPublisher } from './matching-event-publisher';
 
@@ -29,4 +29,3 @@ describe('MatchingEventPublisher', () => {
     expect(eventBus.publish).toHaveBeenNthCalledWith(5, 'NewProductCreated', events[4]);
   });
 });
-

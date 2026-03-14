@@ -330,7 +330,7 @@ describe('ArchitecturalAnalysisEngine', () => {
     const sourceWithoutTest = `${srcPath}/application/service.ts`;
     const poorTestFile = `${srcPath}/application/service.test.ts`;
 
-    writeFile(domainLeakFile, `import { Request } from 'express'; const db = 'supabase prisma'; export default db;`);
+    writeFile(domainLeakFile, `import { Request } from 'express'; const db = 'database prisma'; export default db;`);
     writeFile(infraLogicFile, `for (let i = 0; i < 1; i++) { if (a && b) {} }`);
     writeFile(badEntityName, `export class User {}`);
     writeFile(badValueObjectName, `export class Price {}`);
@@ -490,3 +490,4 @@ describe('ArchitecturalAnalysisEngine', () => {
     expect(normalized.some(f => f.includes('/node_modules/'))).toBe(false);
   });
 });
+

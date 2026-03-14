@@ -1,4 +1,5 @@
 import { IUserRepository } from '../../domain/repositories';
+import { IDomainEventPublisher, UserPhoneVerifiedEvent } from '../../domain/events';
 import { PhoneVerificationEvent } from '../sagas/phone-verification.saga';
 import { sagaEventHandler } from '../sagas/saga-event-handler';
 import { logger } from '../../infrastructure/services/logger.service';
@@ -21,6 +22,7 @@ export interface VerifyPhoneOutput {
 export class VerifyPhoneUseCase {
   constructor(
     private userRepository: IUserRepository,
+    private eventPublisher: IDomainEventPublisher,
     private emailService: EmailService,
     private notificationClient: NotificationServiceClient
   ) { }
@@ -52,6 +54,15 @@ export class VerifyPhoneUseCase {
 
       // Update phone verification status
       await this.userRepository.updatePhoneVerification(input.userId, true);
+
+      // Publish domain event for downstream syncs
+      const domainEvent = new UserPhoneVerifiedEvent(
+        input.userId,
+        input.phoneNumber,
+        'unknown',
+        input.verificationMethod
+      );
+      await this.eventPublisher.publish(domainEvent);
 
       // Publish phone verification event to trigger saga
       const event: PhoneVerificationEvent = {

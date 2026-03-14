@@ -55,44 +55,123 @@ describe('UserController', () => {
   });
 
   describe('getUserById', () => {
-    test('returns 501 not implemented', async () => {
+    test('returns 404 when user is missing', async () => {
+      mockReq.params = { id: 'user-1' };
+      mockGetUserUseCase.execute.mockResolvedValue({ success: false, message: 'User not found', user: null });
+
       await controller.getUserById(mockReq as Request, mockRes as Response);
-      expect(mockRes.status).toHaveBeenCalledWith(501);
+      expect(mockRes.status).toHaveBeenCalledWith(404);
+    });
+
+    test('returns 200 when user is found', async () => {
+      mockReq.params = { id: 'user-1' };
+      mockGetUserUseCase.execute.mockResolvedValue({ success: true, message: 'ok', user: { id: 'user-1' } });
+
+      await controller.getUserById(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(200);
     });
   });
 
   describe('updateUser', () => {
-    test('returns 501 not implemented', async () => {
+    test('returns 400 when update fails', async () => {
+      mockReq.params = { id: 'user-1' };
+      mockReq.headers = { 'x-user-id': 'user-1' };
+      mockUpdateUserUseCase.execute.mockResolvedValue({ success: false, message: 'User not found', user: null });
+
       await controller.updateUser(mockReq as Request, mockRes as Response);
-      expect(mockRes.status).toHaveBeenCalledWith(501);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+    });
+
+    test('returns 200 when update succeeds', async () => {
+      mockReq.params = { id: 'user-1' };
+      mockReq.headers = { 'x-user-id': 'user-1' };
+      mockUpdateUserUseCase.execute.mockResolvedValue({ success: true, message: 'ok', user: { id: 'user-1' }, changes: [] });
+
+      await controller.updateUser(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(200);
     });
   });
 
   describe('deleteUser', () => {
-    test('returns 501 not implemented', async () => {
+    test('returns 200 when delete succeeds', async () => {
+      mockReq.params = { id: 'user-1' };
+      mockReq.headers = { 'x-user-id': 'user-1' };
+      mockDeleteAccountUseCase.execute.mockResolvedValue({ success: true });
+
       await controller.deleteUser(mockReq as Request, mockRes as Response);
-      expect(mockRes.status).toHaveBeenCalledWith(501);
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+    });
+
+    test('returns 400 when delete fails', async () => {
+      mockReq.params = { id: 'user-1' };
+      mockReq.headers = { 'x-user-id': 'user-1' };
+      mockDeleteAccountUseCase.execute.mockResolvedValue({ success: false });
+
+      await controller.deleteUser(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
     });
   });
 
   describe('verifyEmail', () => {
-    test('returns 501 not implemented', async () => {
+    test('returns 400 when userId is missing', async () => {
+      mockReq.params = { token: 't1' };
+
       await controller.verifyEmail(mockReq as Request, mockRes as Response);
-      expect(mockRes.status).toHaveBeenCalledWith(501);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+    });
+
+    test('returns 200 when verification succeeds', async () => {
+      mockReq.params = { token: 't1' };
+      mockReq.body = { userId: 'user-1' };
+      mockVerifyEmailUseCase.execute.mockResolvedValue({ success: true });
+
+      await controller.verifyEmail(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+    });
+
+    test('returns 400 when verification fails', async () => {
+      mockReq.params = { token: 't1' };
+      mockReq.body = { userId: 'user-1' };
+      mockVerifyEmailUseCase.execute.mockResolvedValue({ success: false });
+
+      await controller.verifyEmail(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
     });
   });
 
   describe('requestPasswordReset', () => {
-    test('returns 501 not implemented', async () => {
+    test('returns 400 when email is missing', async () => {
       await controller.requestPasswordReset(mockReq as Request, mockRes as Response);
-      expect(mockRes.status).toHaveBeenCalledWith(501);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+    });
+
+    test('returns 200 when request is accepted', async () => {
+      mockReq.body = { email: 'test@example.com' };
+      await controller.requestPasswordReset(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(200);
     });
   });
 
   describe('resetPassword', () => {
-    test('returns 501 not implemented', async () => {
+    test('returns 400 when required fields are missing', async () => {
       await controller.resetPassword(mockReq as Request, mockRes as Response);
-      expect(mockRes.status).toHaveBeenCalledWith(501);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+    });
+
+    test('returns 200 when reset succeeds', async () => {
+      mockReq.body = { userId: 'user-1', newPassword: 'newpass123' };
+      mockChangePasswordUseCase.execute.mockResolvedValue({ success: true });
+
+      await controller.resetPassword(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+    });
+
+    test('returns 400 when reset fails', async () => {
+      mockReq.body = { userId: 'user-1', newPassword: 'newpass123' };
+      mockChangePasswordUseCase.execute.mockResolvedValue({ success: false });
+
+      await controller.resetPassword(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
     });
   });
 
@@ -102,10 +181,18 @@ describe('UserController', () => {
       expect(mockRes.status).toHaveBeenCalledWith(401);
     });
 
-    test('returns 501 when x-user-id provided', async () => {
+    test('returns 404 when user not found', async () => {
       mockReq.headers = { 'x-user-id': 'user-1' };
+      mockGetUserUseCase.execute.mockResolvedValue({ success: false, message: 'User not found', user: null });
       await controller.getProfile(mockReq as Request, mockRes as Response);
-      expect(mockRes.status).toHaveBeenCalledWith(501);
+      expect(mockRes.status).toHaveBeenCalledWith(404);
+    });
+
+    test('returns 200 when user is found', async () => {
+      mockReq.headers = { 'x-user-id': 'user-1' };
+      mockGetUserUseCase.execute.mockResolvedValue({ success: true, message: 'ok', user: { id: 'user-1' } });
+      await controller.getProfile(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(200);
     });
   });
 
@@ -115,10 +202,18 @@ describe('UserController', () => {
       expect(mockRes.status).toHaveBeenCalledWith(401);
     });
 
-    test('returns 501 when x-user-id provided', async () => {
+    test('returns 400 when update fails', async () => {
       mockReq.headers = { 'x-user-id': 'user-1' };
+      mockUpdateUserUseCase.execute.mockResolvedValue({ success: false, message: 'User not found', user: null });
       await controller.updateProfile(mockReq as Request, mockRes as Response);
-      expect(mockRes.status).toHaveBeenCalledWith(501);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+    });
+
+    test('returns 200 when update succeeds', async () => {
+      mockReq.headers = { 'x-user-id': 'user-1' };
+      mockUpdateUserUseCase.execute.mockResolvedValue({ success: true, message: 'ok', user: { id: 'user-1' } });
+      await controller.updateProfile(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(200);
     });
   });
 

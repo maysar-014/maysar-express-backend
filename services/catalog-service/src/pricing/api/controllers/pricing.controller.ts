@@ -20,7 +20,7 @@ export class PricingController {
         try {
             const dto = validateCalculatePriceRequest(req.body);
             const useCase = container.get<CalculatePriceUseCase>(TYPES.CalculatePriceUseCase);
-            const result = useCase.execute(dto);
+            const result = await useCase.execute(dto);
 
             const response: ApiResponse<PricingResultDTO> = {
                 success: true,

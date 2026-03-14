@@ -30,7 +30,7 @@
         "policies/content-policies: depends on message",
         "policies/inventory-policies: depends on message",
         "services/index: depends on message",
-        "verification: depends on database, prisma, mongoose, redis, cache, message, queue, aws, stripe, paypal"
+        "verification: depends on database, prisma, mongoose, redis, cache, message, queue, aws, pesapal"
       ]
     }
   ],

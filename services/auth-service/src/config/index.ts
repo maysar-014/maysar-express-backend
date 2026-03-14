@@ -87,11 +87,11 @@ export const config = {
 
   // SMS Configuration
   sms: {
-    provider: process.env.SMS_PROVIDER || 'twilio',
-    twilio: {
-      accountSid: process.env.TWILIO_ACCOUNT_SID,
-      authToken: process.env.TWILIO_AUTH_TOKEN,
-      phoneNumber: process.env.TWILIO_PHONE_NUMBER
+    provider: process.env.SMS_PROVIDER || 'africastalking',
+    africastalking: {
+      username: process.env.AFRICASTALKING_USERNAME,
+      apiKey: process.env.AFRICASTALKING_API_KEY,
+      senderId: process.env.AFRICASTALKING_SENDER_ID
     }
   },
 
@@ -177,8 +177,8 @@ export function validateConfiguration(): { isValid: boolean; errors: string[] } 
   }
 
   // SMS configuration validation
-  if (config.features.phoneVerification && !config.sms.twilio.accountSid) {
-    errors.push('Twilio credentials are required when phone verification is enabled');
+  if (config.features.phoneVerification && !config.sms.africastalking.apiKey) {
+    errors.push('AfricasTalking credentials are required when phone verification is enabled');
   }
 
   return {

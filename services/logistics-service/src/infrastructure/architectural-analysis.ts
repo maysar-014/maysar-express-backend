@@ -189,7 +189,7 @@ export class ArchitecturalAnalysisEngine {
       const layer = this.getFileLayer(file);
 
       // Check for direct database access in domain layer
-      if (layer === 'domain' && content.includes('supabase') || content.includes('prisma')) {
+      if (layer === 'domain' && content.includes('database') || content.includes('prisma')) {
         this.addViolation({
           rule: 'infrastructure-leakage',
           severity: 'critical',
@@ -563,3 +563,4 @@ export class ArchitecturalAnalysisEngine {
     return this.violations.filter(v => v.constitutionSection);
   }
 }
+

@@ -184,7 +184,7 @@ class PenetrationTestingManager {
             'Infrastructure components',
             'Network perimeter',
             'Cloud security groups',
-            'Kubernetes cluster security'
+            'Orchestrator cluster security'
           ],
           exclusions: [
             'Production database direct access',
@@ -222,9 +222,9 @@ class PenetrationTestingManager {
    * Run penetration test
    */
   private async runPenetrationTest(testConfig: PenetrationTest): Promise<PenetrationTest> {
-    console.log(`🎯 Starting penetration test: ${testConfig.name}`);
-    console.log(`📋 Test Type: ${testConfig.testType}`);
-    console.log(`🎯 Targets: ${testConfig.scope.targets.join(', ')}`);
+    console.log(`ðŸŽ¯ Starting penetration test: ${testConfig.name}`);
+    console.log(`ðŸ“‹ Test Type: ${testConfig.testType}`);
+    console.log(`ðŸŽ¯ Targets: ${testConfig.scope.targets.join(', ')}`);
 
     const testResult: PenetrationTest = {
       ...testConfig,
@@ -255,11 +255,11 @@ class PenetrationTestingManager {
       testResult.status = 'completed';
       testResult.completedAt = new Date();
 
-      console.log(`✅ Penetration test completed: ${testResult.summary.totalFindings} findings`);
-      console.log(`🚨 Critical: ${testResult.summary.criticalFindings}, High: ${testResult.summary.highFindings}`);
+      console.log(`âœ… Penetration test completed: ${testResult.summary.totalFindings} findings`);
+      console.log(`ðŸš¨ Critical: ${testResult.summary.criticalFindings}, High: ${testResult.summary.highFindings}`);
 
     } catch (error) {
-      console.error(`❌ Penetration test failed:`, error);
+      console.error(`âŒ Penetration test failed:`, error);
       testResult.status = 'failed';
       testResult.completedAt = new Date();
     }
@@ -443,7 +443,7 @@ class PenetrationTestingManager {
         cvssScore: 8.6,
         cvssVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H',
         cweId: 'CWE-668',
-        affectedSystem: 'Kubernetes Dashboard',
+        affectedSystem: 'Orchestrator Dashboard',
         exploitSteps: [
           '1. Discover exposed administrative interface',
           '2. Attempt authentication bypass',
@@ -452,11 +452,11 @@ class PenetrationTestingManager {
         impact: 'Complete infrastructure compromise',
         remediation: 'Restrict administrative interfaces to internal networks',
         references: [
-          'https://kubernetes.io/docs/concepts/security/',
+          'https://example.com/orchestrator-docs/docs/concepts/security/',
           'https://cwe.mitre.org/data/definitions/668.html'
         ],
         evidence: {
-          interface: 'Kubernetes Dashboard',
+          interface: 'Orchestrator Dashboard',
           exposure: 'Publicly accessible',
           risk: 'Full cluster control possible'
         },
@@ -671,8 +671,8 @@ class PenetrationTestingManager {
     const reportFile = path.join(this.reportsPath, `${report.id}.json`);
     fs.writeFileSync(reportFile, JSON.stringify(report, null, 2));
 
-    console.log(`💾 Test results saved: ${testFile}`);
-    console.log(`📋 Report generated: ${reportFile}`);
+    console.log(`ðŸ’¾ Test results saved: ${testFile}`);
+    console.log(`ðŸ“‹ Report generated: ${reportFile}`);
   }
 
   /**
@@ -683,7 +683,7 @@ class PenetrationTestingManager {
     const highCount = testResult.summary.highFindings;
 
     if (criticalCount > 0 || highCount > 0) {
-      console.log(`🚨 CRITICAL SECURITY ALERT: Penetration test found ${criticalCount} critical and ${highCount} high-severity vulnerabilities`);
+      console.log(`ðŸš¨ CRITICAL SECURITY ALERT: Penetration test found ${criticalCount} critical and ${highCount} high-severity vulnerabilities`);
 
       // In production, this would:
       // - Send immediate alerts to security team
@@ -701,7 +701,7 @@ class PenetrationTestingManager {
         timestamp: new Date()
       };
 
-      console.log('🚨 SECURITY ALERT:', JSON.stringify(alert, null, 2));
+      console.log('ðŸš¨ SECURITY ALERT:', JSON.stringify(alert, null, 2));
     }
   }
 
@@ -709,14 +709,14 @@ class PenetrationTestingManager {
    * Run quarterly penetration tests
    */
   async runQuarterlyTests(): Promise<void> {
-    console.log('🎯 Starting quarterly penetration testing cycle...');
+    console.log('ðŸŽ¯ Starting quarterly penetration testing cycle...');
 
     const testSchedule = this.getPenetrationTestSchedule();
     const quarterlyTests = testSchedule.filter(t => t.schedule.frequency === 'quarterly');
 
     for (const testConfig of quarterlyTests) {
       try {
-        console.log(`\n🔍 Executing: ${testConfig.name}`);
+        console.log(`\nðŸ” Executing: ${testConfig.name}`);
         const testResult = await this.runPenetrationTest(testConfig);
         await this.saveTestResults(testResult);
         await this.sendSecurityAlerts(testResult);
@@ -725,11 +725,11 @@ class PenetrationTestingManager {
         await this.scheduleRemediation(testResult);
 
       } catch (error) {
-        console.error(`❌ Penetration test failed for ${testConfig.name}:`, error);
+        console.error(`âŒ Penetration test failed for ${testConfig.name}:`, error);
       }
     }
 
-    console.log('✅ Quarterly penetration testing cycle completed');
+    console.log('âœ… Quarterly penetration testing cycle completed');
   }
 
   /**
@@ -740,7 +740,7 @@ class PenetrationTestingManager {
     const highFindings = testResult.findings.filter(f => f.severity === 'high');
 
     if (criticalFindings.length > 0 || highFindings.length > 0) {
-      console.log(`🛠️ Scheduling remediation for ${criticalFindings.length + highFindings.length} high-priority findings`);
+      console.log(`ðŸ› ï¸ Scheduling remediation for ${criticalFindings.length + highFindings.length} high-priority findings`);
 
       // In production, this would create:
       // - JIRA tickets for remediation
@@ -820,7 +820,7 @@ async function main() {
 
     case 'history':
       const history = await ptm.getTestHistory();
-      console.log('🎯 Penetration Test History:');
+      console.log('ðŸŽ¯ Penetration Test History:');
       history.slice(0, 10).forEach((test, index) => {
         console.log(`${index + 1}. ${test.name} (${test.status})`);
         console.log(`   Type: ${test.testType}, Completed: ${test.completedAt?.toISOString().split('T')[0] || 'N/A'}`);
@@ -831,7 +831,7 @@ async function main() {
 
     case 'reports':
       const reports = await ptm.getComplianceReports();
-      console.log('📋 Penetration Test Reports:');
+      console.log('ðŸ“‹ Penetration Test Reports:');
       reports.slice(0, 10).forEach((report, index) => {
         console.log(`${index + 1}. ${report.id} - ${report.reportType.toUpperCase()}`);
         console.log(`   Generated: ${report.generatedAt.toISOString().split('T')[0]}`);
@@ -842,7 +842,7 @@ async function main() {
       break;
 
     default:
-      console.log('🎯 Penetration Testing Automation');
+      console.log('ðŸŽ¯ Penetration Testing Automation');
       console.log('');
       console.log('Usage:');
       console.log('  tsx penetration-testing.ts quarterly    # Run quarterly penetration tests');

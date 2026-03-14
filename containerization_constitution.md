@@ -23,7 +23,7 @@
 
 > **Images are built once, deployed everywhere**  
 > **Production containers never run as root**  
-> **Resource limits are not optional — they are mandatory**
+> **Resource limits are not optional â€” they are mandatory**
 
 ---
 
@@ -93,11 +93,11 @@ Docker Compose is the law for local development.
 - Must use environment variables for all configurations.
 - Must include health-aware dependency chains (`depends_on: { condition: service_healthy }`).
 
-### 5.2 Kubernetes (Production)
-Helm is the standard for Kubernetes orchestration.
+### 5.2 Orchestrator (Production)
+Template Engine is the standard for Orchestrator orchestration.
 - **HPA**: All services must have Horizontal Pod Autoscalers defined.
 - **PDB**: Pod Disruption Budgets must be set to ensure service availability during maintenance.
-- **Probes**: `livenessProbe`, `readinessProbe`, and `startupProbe` must be explicitly configured in Helm values.
+- **Probes**: `livenessProbe`, `readinessProbe`, and `startupProbe` must be explicitly configured in Template Engine values.
 
 ---
 
@@ -109,10 +109,10 @@ Helm is the standard for Kubernetes orchestration.
 - Images must be identical across Dev, Staging, and Production.
 - Secrets must be injected via:
     - Environment variables (Dev)
-    - K8s Secrets / Vault (Production)
+    - Orchestrator Secrets / Vault (Production)
 
 ### 6.2 Config Mapping
-- Non-sensitive configuration should be managed via K8s `ConfigMaps`.
+- Non-sensitive configuration should be managed via Orchestrator `ConfigMaps`.
 - Use `.env.example` as the single source of truth for required configuration keys.
 
 ---
@@ -128,7 +128,7 @@ This constitution is enforced via:
 
 ## 8. The Final Law
 
-> **A container that cannot survive a restart or scales with state is not a container — it is a liability.**
+> **A container that cannot survive a restart or scales with state is not a container â€” it is a liability.**
 
 ---
 

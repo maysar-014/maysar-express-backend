@@ -19,6 +19,12 @@ function makePrismaMock() {
   } as any;
 
   const prisma: any = {
+    user_UserIndex: {
+      count: jest.fn().mockResolvedValue(1),
+      findFirst: jest.fn().mockResolvedValue({ userId: 'u1' }),
+      createMany: jest.fn().mockResolvedValue({ count: 1 }),
+      deleteMany: jest.fn().mockResolvedValue({ count: 1 })
+    },
     user_User: {
       findUnique: jest.fn().mockResolvedValue(userData),
       findFirst: jest.fn().mockResolvedValue(userData),
@@ -46,7 +52,7 @@ function makePrismaMock() {
 describe('PrismaUserRepository (partial)', () => {
   test('findById, findByEmail, findByPhoneNumber and create/update map to domain', async () => {
     const { prisma } = makePrismaMock();
-    const mockPiiService = { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v) } as any;
+    const mockPiiService = { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v), hash: jest.fn((v) => v) } as any;
     const repo = new PrismaUserRepository(prisma as any, mockPiiService);
 
     const byId = await repo.findById('u1');
@@ -68,7 +74,7 @@ describe('PrismaUserRepository (partial)', () => {
 
   test('emailExists, phoneExists, search, findAll and count', async () => {
     const { prisma } = makePrismaMock();
-    const mockPiiService = { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v) } as any;
+    const mockPiiService = { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v), hash: jest.fn((v) => v) } as any;
     const repo = new PrismaUserRepository(prisma as any, mockPiiService);
 
     expect(await repo.emailExists('x')).toBe(true);
@@ -87,7 +93,7 @@ describe('PrismaUserRepository (partial)', () => {
     const { prisma } = makePrismaMock();
     // ensure findUnique returns a user for preferences
     prisma.user_User.findUnique.mockResolvedValueOnce({ language: 'sw', timezone: 'TZS' });
-    const mockPiiService = { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v) } as any;
+    const mockPiiService = { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v), hash: jest.fn((v) => v) } as any;
     const repo = new PrismaUserRepository(prisma as any, mockPiiService);
 
     const prefs = await repo.getUserPreferences('u1');

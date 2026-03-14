@@ -1,6 +1,7 @@
 import express from 'express';
-import { CartRepository } from './infrastructure/repositories/cart.repository';
-import { CheckoutRepository } from './infrastructure/repositories/checkout.repository';
+import { PrismaCartRepository } from './infrastructure/repositories/prisma-cart.repository';
+import { PrismaCheckoutRepository } from './infrastructure/repositories/prisma-checkout.repository';
+import { PrismaCheckoutOrderRepository } from './infrastructure/repositories/prisma-checkout-order.repository';
 import { EventBusAdapter } from './infrastructure/messaging/event-bus.adapter';
 import { CheckoutEventHandlers } from './application/handlers/checkout-event.handlers';
 import { createCheckoutRoutes } from './api/routes/checkout.routes';
@@ -12,6 +13,7 @@ import { requestLogger } from './api/middleware/request-logger.middleware';
 import { logger } from './infrastructure/services/logger.service';
 import { tracingService, correlationMiddleware } from '../../../shared/tracing/openTelemetry';
 import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
+import { prisma } from './infrastructure/database/prisma-client';
 
 // Initialize Tracing
 tracingService.start();
@@ -22,16 +24,17 @@ app.use(express.json());
 app.use(requestLogger);
 
 // Initialize repositories and services
-const cartRepository = new CartRepository();
-const checkoutRepository = new CheckoutRepository();
+const cartRepository = new PrismaCartRepository(prisma);
+const checkoutRepository = new PrismaCheckoutRepository(prisma);
+const checkoutOrderRepository = new PrismaCheckoutOrderRepository(prisma);
 const eventBus = new EventBusAdapter();
 
 // Initialize controllers
 const cartController = new CartController(cartRepository);
-const checkoutController = new CheckoutController(checkoutRepository, eventBus);
+const checkoutController = new CheckoutController(checkoutRepository, eventBus, cartRepository);
 
 // Initialize event handlers
-new CheckoutEventHandlers(eventBus, checkoutRepository);
+new CheckoutEventHandlers(eventBus, checkoutRepository, checkoutOrderRepository);
 
 // Health check routes
 app.use('/health', healthRoutes);

@@ -1,5 +1,5 @@
 graph TB
-    subgraph "Kubernetes Cluster - Production"
+    subgraph "Orchestrator Cluster - Production"
         subgraph "Ingress Layer"
             INGRESS[Nginx Ingress Controller<br/>SSL Termination<br/>Load Balancing]
         end
@@ -57,7 +57,7 @@ graph TB
     subgraph "External Integrations"
         PESAPAL_EXT[Pesapal API]
         SENDGRID_EXT[SendGrid API]
-        TWILIO_EXT[Twilio API]
+        AFRICASTALKING_EXT[Africa's Talking API]
     end
 
     %% Traffic flow
@@ -83,7 +83,7 @@ graph TB
     ORDER_PODS --> REDIS_CLUSTER
     CHECKOUT_PODS --> REDIS_CLUSTER
 
-    %% Kubernetes to AWS
+    %% Orchestrator to AWS
     POSTGRES_OPERATOR -.->|Manages| RDS
     KAFKA_CLUSTER -.->|Alternative| MSK
     REDIS_CLUSTER -.->|Alternative| ELASTICACHE
@@ -91,7 +91,7 @@ graph TB
     %% Services to external
     PAYMENT_PODS --> PESAPAL_EXT
     NOTIFICATION_PODS --> SENDGRID_EXT
-    NOTIFICATION_PODS --> TWILIO_EXT
+    NOTIFICATION_PODS --> AFRICASTALKING_EXT
 
     %% Monitoring
     PROMETHEUS --> AUTH_PODS

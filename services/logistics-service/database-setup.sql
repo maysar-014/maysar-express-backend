@@ -1,5 +1,5 @@
 -- Maysar Logistics Service Database Schema
--- Run this script in Supabase SQL Editor
+-- Run this script in Database SQL Editor
 
 -- Create couriers table
 CREATE TABLE IF NOT EXISTS couriers (
@@ -111,3 +111,4 @@ FROM information_schema.columns
 WHERE table_schema = 'public'
   AND table_name IN ('couriers', 'deliveries', 'tracking', 'earnings')
 ORDER BY table_name, ordinal_position;
+

@@ -7,8 +7,15 @@ import { AuthController } from './src/api/controllers/auth.controller';
 import { RegisterUserUseCase } from './src/application/use-cases/register-user.use-case';
 import { AuthenticateUserUseCase } from './src/application/use-cases/authenticate-user.use-case';
 import { createAuthRoutes } from './src/api/routes/auth.routes';
+import { adminRoutes } from './src/api/routes/admin.routes';
+import { authMiddlewareRoutes } from './src/api/routes/auth-middleware.routes';
+import { googleOAuthRoutes } from './src/api/routes/google-oauth.routes';
+import { healthRoutes as authHealthRoutes } from './src/api/routes/health.routes';
 import { UserServiceRepository } from './src/infrastructure/repositories/user-service.repository';
 import { getUserServiceClient } from './src/infrastructure/services/service-discovery';
+import { UserSyncEventHandlers } from './src/infrastructure/events/user-sync.event-handlers';
+import { AuthEventPublisher } from './src/infrastructure/messaging/auth-event-publisher';
+import { OutboxRepository } from '@shared/outbox/outbox.repository';
 
 // 2FA Imports
 import { EncryptionService } from './src/2fa/infrastructure/services/encryption.service';
@@ -26,10 +33,14 @@ import { QRCodeService } from './src/2fa/infrastructure/services/qr-code.service
 
 // Session Imports
 import { createSessionRouter } from './src/session/api/routes/session.routes';
+import { healthRoutes as sessionHealthRoutes } from './src/session/api/routes/health.routes';
 import { SessionEngine } from './src/domain/engines/session.engine';
 import { PrismaClient } from '@prisma/client';
+import { healthRoutes as twoFactorHealthRoutes } from './src/2fa/api/routes/health.routes';
 
 const authPrisma = new PrismaClient();
+const authOutboxRepository = new OutboxRepository(authPrisma, 'sharedOutboxEvent');
+const authEventPublisher = new AuthEventPublisher(authOutboxRepository);
 
 
 export const AuthModule: Module = {
@@ -43,9 +54,12 @@ export const AuthModule: Module = {
             const userRepository = new UserServiceRepository(userServiceClient!) as any;
 
             const registerUseCase = new RegisterUserUseCase(userRepository);
-            const authUseCase = new AuthenticateUserUseCase(userRepository);
+            const authUseCase = new AuthenticateUserUseCase(userRepository, authEventPublisher);
 
             const controller = new AuthController(registerUseCase, authUseCase);
+
+            const userSyncHandlers = new UserSyncEventHandlers(authPrisma);
+            userSyncHandlers.registerHandlers();
 
             // Create router
             AuthModule.routes = createAuthRoutes(controller) as any;
@@ -57,10 +71,10 @@ export const AuthModule: Module = {
             const qrCodeService = new QRCodeService();
 
             const setupTwoFactorUseCase = new SetupTwoFactorUseCase(twoFactorRepository, qrCodeService);
-            const verifyTwoFactorSetupUseCase = new VerifyTwoFactorSetupUseCase(twoFactorRepository);
+            const verifyTwoFactorSetupUseCase = new VerifyTwoFactorSetupUseCase(twoFactorRepository, authEventPublisher);
             const verifyTwoFactorLoginUseCase = new VerifyTwoFactorLoginUseCase(twoFactorRepository);
             const verifyBackupCodeUseCase = new VerifyBackupCodeUseCase(twoFactorRepository);
-            const disableTwoFactorUseCase = new DisableTwoFactorUseCase(twoFactorRepository);
+            const disableTwoFactorUseCase = new DisableTwoFactorUseCase(twoFactorRepository, authEventPublisher);
             const regenerateBackupCodesUseCase = new RegenerateBackupCodesUseCase(twoFactorRepository);
             const getTwoFactorStatusUseCase = new GetTwoFactorStatusUseCase(twoFactorRepository);
 
@@ -77,9 +91,17 @@ export const AuthModule: Module = {
             // Mount routers
             const mainRouter = AuthModule.routes as Router;
             mainRouter.use('/2fa', createTwoFactorRouter(twoFactorController));
+            mainRouter.use('/2fa/health', twoFactorHealthRoutes);
 
             const sessionEngine = new SessionEngine();
             mainRouter.use('/sessions', createSessionRouter(sessionEngine));
+            mainRouter.use('/sessions/health', sessionHealthRoutes);
+
+            // Additional auth route groups (previously unmounted)
+            mainRouter.use('/admin', adminRoutes);
+            mainRouter.use('/', authMiddlewareRoutes);
+            mainRouter.use('/oauth', googleOAuthRoutes);
+            mainRouter.use('/health', authHealthRoutes);
 
             console.log('Consolidated 2FA and Session routes mounted successfully');
 

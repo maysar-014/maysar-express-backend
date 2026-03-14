@@ -31,7 +31,6 @@ export enum ErrorType {
 
   // External Service Errors
   PESAPAL_ERROR = 'PESAPAL_ERROR',
-  SUPABASE_ERROR = 'SUPABASE_ERROR',
   REDIS_ERROR = 'REDIS_ERROR',
 }
 
@@ -219,12 +218,6 @@ export class PesapalError extends AppError {
   }
 }
 
-export class SupabaseError extends AppError {
-  constructor(message: string, context: Partial<ErrorContext> = {}) {
-    super(message, ErrorType.SUPABASE_ERROR, ErrorSeverity.HIGH, context, true, true);
-  }
-}
-
 export class RedisError extends AppError {
   constructor(message: string, context: Partial<ErrorContext> = {}) {
     super(message, ErrorType.REDIS_ERROR, ErrorSeverity.MEDIUM, context, true, true);
@@ -251,7 +244,6 @@ export const ErrorFactory = {
   serviceUnavailable: (message?: string, context?: Partial<ErrorContext>) => new ServiceUnavailableError(message, context),
   timeout: (message: string, operation: string, context?: Partial<ErrorContext>) => new TimeoutError(message, operation, context),
   pesapal: (message: string, context?: Partial<ErrorContext>) => new PesapalError(message, context),
-  supabase: (message: string, context?: Partial<ErrorContext>) => new SupabaseError(message, context),
   redis: (message: string, context?: Partial<ErrorContext>) => new RedisError(message, context),
 };
 
@@ -277,3 +269,5 @@ export function shouldAlert(error: AppError): boolean {
 export function getErrorType(error: AppError): ErrorType {
   return error.type;
 }
+
+

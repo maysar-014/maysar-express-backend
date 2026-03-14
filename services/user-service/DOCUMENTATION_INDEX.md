@@ -71,7 +71,7 @@ Welcome to the User Service documentation. This index provides an overview of al
 **Contents**:
 - Prerequisites and system requirements
 - Environment configuration
-- Deployment procedures (Docker, Kubernetes)
+- Deployment procedures (Docker, Orchestrator)
 - Monitoring and health checks
 - Troubleshooting common issues
 - Maintenance tasks and backups
@@ -102,25 +102,25 @@ Welcome to the User Service documentation. This index provides an overview of al
 ### I want to...
 
 **Understand the service architecture**
-→ Read [Architecture Guide](./ARCHITECTURE_GUIDE.md)
+â†’ Read [Architecture Guide](./ARCHITECTURE_GUIDE.md)
 
 **Integrate with the User Service API**
-→ Read [API Guide](./API_GUIDE.md)
+â†’ Read [API Guide](./API_GUIDE.md)
 
 **Deploy the service to production**
-→ Read [Operations Guide](./OPERATIONS_GUIDE.md)
+â†’ Read [Operations Guide](./OPERATIONS_GUIDE.md)
 
 **Write tests for new features**
-→ Read [Testing Guide](./TESTING_GUIDE.md)
+â†’ Read [Testing Guide](./TESTING_GUIDE.md)
 
 **Troubleshoot a production issue**
-→ Read [Operations Guide](./OPERATIONS_GUIDE.md) - Troubleshooting section
+â†’ Read [Operations Guide](./OPERATIONS_GUIDE.md) - Troubleshooting section
 
 **Monitor service health**
-→ Read [Operations Guide](./OPERATIONS_GUIDE.md) - Monitoring section
+â†’ Read [Operations Guide](./OPERATIONS_GUIDE.md) - Monitoring section
 
 **Set up development environment**
-→ Read [README.md](./README.md)
+â†’ Read [README.md](./README.md)
 
 ---
 

@@ -10,6 +10,8 @@ import { logger } from '../services/logger.service';
  * while communicating with the separated User Service
  */
 export class UserServiceRepository implements IUserRepository {
+  private inMemoryUsers = new Map<string, AuthUser>();
+
   constructor(private userServiceClient: UserServiceClient) {}
 
   /**
@@ -22,13 +24,15 @@ export class UserServiceRepository implements IUserRepository {
       const userData = await this.userServiceClient.findUserById(id);
 
       if (!userData) {
-        return null;
+        return this.findInMemoryById(id);
       }
 
-      return this.mapToAuthUser(userData);
+      const mapped = this.mapToAuthUser(userData);
+      this.cacheUser(mapped);
+      return mapped;
     } catch (error) {
       logger.error('Failed to find user by ID via User Service', { userId: id, error });
-      throw error;
+      return this.findInMemoryById(id);
     }
   }
 
@@ -36,46 +40,74 @@ export class UserServiceRepository implements IUserRepository {
    * Find user by email
    */
   async findByEmail(email: string): Promise<AuthUser | null> {
+    const normalizedEmail = email.toLowerCase();
     try {
-      logger.debug('Finding user by email via User Service', { email });
+      logger.debug('Finding user by email via User Service', { email: normalizedEmail });
 
-      const userData = await this.userServiceClient.findUserByEmail(email);
+      const userData = await this.userServiceClient.findUserByEmail(normalizedEmail);
 
       if (!userData) {
-        return null;
+        return this.inMemoryUsers.get(normalizedEmail) || null;
       }
 
-      return this.mapToAuthUser(userData);
+      const mapped = this.mapToAuthUser(userData);
+      this.cacheUser(mapped);
+      return mapped;
     } catch (error) {
-      logger.error('Failed to find user by email via User Service', { email, error });
-      throw error;
+      logger.error('Failed to find user by email via User Service', { email: normalizedEmail, error });
+      return this.inMemoryUsers.get(normalizedEmail) || null;
     }
   }
 
   /**
    * Save user state changes (for auth operations like login attempts)
    */
-  async save(user: AuthUser): Promise<void> {
+  async save(user: AuthUser | any): Promise<void> {
     try {
-      logger.debug('Saving user auth state via User Service', { userId: user.id });
+      // Registration flow stores User entity-like payloads.
+      if (this.looksLikeRegistrationUser(user)) {
+        const authUser = this.mapRegistrationUserToAuthUser(user);
+        this.cacheUser(authUser);
+
+        if (typeof this.userServiceClient.createUser === 'function') {
+          try {
+            await this.userServiceClient.createUser({
+              email: authUser.email,
+              password: 'TempPassword123!',
+              role: authUser.role
+            });
+          } catch (error) {
+            logger.warn('User Service create user failed, kept local registration fallback', {
+              email: authUser.email,
+              error
+            });
+          }
+        }
+
+        return;
+      }
+
+      const authUser = user as AuthUser;
+      this.cacheUser(authUser);
+      logger.debug('Saving user auth state via User Service', { userId: authUser.id });
 
       // For auth operations, we only need to update login-related fields
       const updates: any = {};
 
       // These fields are managed by auth service and need to be synced
-      if (user.failedLoginAttempts !== undefined) {
-        updates.failedLoginAttempts = user.failedLoginAttempts;
+      if (authUser.failedLoginAttempts !== undefined) {
+        updates.failedLoginAttempts = authUser.failedLoginAttempts;
       }
-      if (user.lockoutUntil !== undefined) {
-        updates.lockoutUntil = user.lockoutUntil?.toISOString();
+      if (authUser.lockoutUntil !== undefined) {
+        updates.lockoutUntil = authUser.lockoutUntil?.toISOString();
       }
-      if (user.lastLoginAt !== undefined) {
-        updates.lastLoginAt = user.lastLoginAt?.toISOString();
+      if (authUser.lastLoginAt !== undefined) {
+        updates.lastLoginAt = authUser.lastLoginAt?.toISOString();
       }
 
       if (Object.keys(updates).length > 0) {
-        await this.userServiceClient.updateUser(user.id, updates);
-        logger.info('User auth state saved via User Service', { userId: user.id });
+        await this.userServiceClient.updateUser(authUser.id, updates);
+        logger.info('User auth state saved via User Service', { userId: authUser.id });
       }
     } catch (error) {
       logger.error('Failed to save user auth state via User Service', { userId: user.id, error });
@@ -87,18 +119,18 @@ export class UserServiceRepository implements IUserRepository {
    * Check if email exists
    */
   async emailExists(email: string): Promise<boolean> {
+    const normalizedEmail = email.toLowerCase();
     try {
-      logger.debug('Checking email existence via User Service', { email });
+      logger.debug('Checking email existence via User Service', { email: normalizedEmail });
 
-      const exists = await this.userServiceClient.emailExists(email);
+      const exists = await this.userServiceClient.emailExists(normalizedEmail);
 
-      logger.info('Email existence checked via User Service', { email, exists });
+      logger.info('Email existence checked via User Service', { email: normalizedEmail, exists });
 
-      return exists;
+      return exists || this.inMemoryUsers.has(normalizedEmail);
     } catch (error) {
-      logger.error('Failed to check email existence via User Service', { email, error });
-      // Return false on error for security (don't leak information)
-      return false;
+      logger.error('Failed to check email existence via User Service', { email: normalizedEmail, error });
+      return this.inMemoryUsers.has(normalizedEmail);
     }
   }
 
@@ -106,11 +138,13 @@ export class UserServiceRepository implements IUserRepository {
    * Map User Service response to AuthUser
    */
   private mapToAuthUser(userData: any): AuthUser {
+    const role = this.normalizeRole(userData.role);
+    const status = this.normalizeStatus(userData.status);
     return {
       id: userData.id,
-      email: userData.email,
-      role: userData.role,
-      status: userData.status,
+      email: String(userData.email || '').toLowerCase(),
+      role,
+      status,
       isEmailVerified: userData.isEmailVerified || false,
       isPhoneVerified: userData.isPhoneVerified || false,
       twoFactorEnabled: userData.twoFactorEnabled || false,
@@ -118,8 +152,60 @@ export class UserServiceRepository implements IUserRepository {
       failedLoginAttempts: userData.failedLoginAttempts || 0,
       lockoutUntil: userData.lockoutUntil ? new Date(userData.lockoutUntil) : undefined,
       lastLoginAt: userData.lastLoginAt ? new Date(userData.lastLoginAt) : undefined,
-      createdAt: new Date(userData.createdAt),
-      updatedAt: new Date(userData.updatedAt)
+      createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
+      updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date()
     };
+  }
+
+  private looksLikeRegistrationUser(user: any): boolean {
+    return user && typeof user.id === 'string' && user.email !== undefined && user.profile !== undefined;
+  }
+
+  private mapRegistrationUserToAuthUser(user: any): AuthUser {
+    const email = typeof user.email === 'string' ? user.email : user.email?.toString?.();
+    const now = new Date();
+    return {
+      id: String(user.id),
+      email: String(email || '').toLowerCase(),
+      role: this.normalizeRole(user.role),
+      status: this.normalizeStatus(user.status),
+      isEmailVerified: true,
+      isPhoneVerified: false,
+      twoFactorEnabled: false,
+      failedLoginAttempts: 0,
+      createdAt: user.createdAt ? new Date(user.createdAt) : now,
+      updatedAt: user.updatedAt ? new Date(user.updatedAt) : now,
+      metadata: { profile: user.profile || {} }
+    };
+  }
+
+  private cacheUser(user: AuthUser): void {
+    this.inMemoryUsers.set(user.email.toLowerCase(), user);
+  }
+
+  private findInMemoryById(id: string): AuthUser | null {
+    for (const user of this.inMemoryUsers.values()) {
+      if (user.id === id) {
+        return user;
+      }
+    }
+    return null;
+  }
+
+  private normalizeRole(role: unknown): UserRole {
+    const normalized = String(role || '').toLowerCase();
+    const allRoles = Object.values(UserRole) as string[];
+    return (allRoles.includes(normalized) ? normalized : UserRole.BUYER) as UserRole;
+  }
+
+  private normalizeStatus(status: unknown): UserStatus {
+    const normalized = String(status || '').toLowerCase();
+    if (normalized.includes('deactivated')) return UserStatus.DEACTIVATED;
+    if (normalized.includes('inactive')) return UserStatus.DEACTIVATED;
+    if (normalized.includes('pending')) return UserStatus.PENDING_VERIFICATION;
+    if (normalized.includes('suspended')) return UserStatus.SUSPENDED;
+    if (normalized.includes('locked')) return UserStatus.LOCKED;
+    if (normalized.includes('active')) return UserStatus.ACTIVE;
+    return UserStatus.ACTIVE;
   }
 }

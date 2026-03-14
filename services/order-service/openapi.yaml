@@ -104,7 +104,7 @@ paths:
     get:
       summary: Liveness probe
       description: |
-        Kubernetes liveness probe endpoint. Returns 200 if the service is running
+        Orchestrator liveness probe endpoint. Returns 200 if the service is running
         and can handle requests, 500 if the service is not ready.
       tags:
         - Health
@@ -130,7 +130,7 @@ paths:
     get:
       summary: Readiness probe
       description: |
-        Kubernetes readiness probe endpoint. Returns 200 if the service is ready
+        Orchestrator readiness probe endpoint. Returns 200 if the service is ready
         to accept traffic, 503 if dependencies are not available.
       tags:
         - Health

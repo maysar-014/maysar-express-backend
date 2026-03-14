@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
@@ -15,7 +15,7 @@ import { OptimizationMiddleware } from './middleware/optimization.middleware';
 import { eventBus } from '@shared/events/eventBus';
 
 // Infrastructure components (still needed for health checks)
-import { SupabaseClientManager } from './infrastructure/database/supabase.client';
+import { PrismaClientManager } from './infrastructure/database/prisma.client';
 import { RedisClientManager } from './infrastructure/cache/redis.client';
 import { Logger } from './utils/logger';
 import { AppConfiguration } from './config/app.config';
@@ -112,26 +112,26 @@ class LogisticsService {
       // CRITICAL: Establish database connections BEFORE starting the server
       // This prevents the race condition where API requests arrive before DB is ready
 
-      this.logger.info('ðŸ”„ Initializing database connections...');
+      this.logger.info('🔄 Initializing database connections...');
 
       try {
-        await SupabaseClientManager.getInstance().connect();
-        this.logger.info('âœ… Supabase connected successfully');
+        await PrismaClientManager.getInstance().connect();
+        this.logger.info('✅ Database connected successfully');
 
         // Initialize database connections in the container with the connected client
         const { container } = await import('./infrastructure/container');
         await container.initializeDatabaseConnections();
-        this.logger.info('âœ… Database repositories initialized successfully');
+        this.logger.info('✅ Database repositories initialized successfully');
       } catch (error) {
-        this.logger.error('âŒ Database connection failed:', (error as Error).message);
+        this.logger.error('❌ Database connection failed:', (error as Error).message);
         throw new Error('Cannot start service without database connection');
       }
 
       try {
         await RedisClientManager.getInstance().connect();
-        this.logger.info('âœ… Redis connected successfully');
+        this.logger.info('✅ Redis connected successfully');
       } catch (error) {
-        console.warn('âš ï¸ Redis connection failed, continuing without caching:', (error as Error).message);
+        console.warn('⚠️ Redis connection failed, continuing without caching:', (error as Error).message);
       }
 
       // Saga Recovery Worker
@@ -144,13 +144,13 @@ class LogisticsService {
       });
       logisticsRecoveryWorker.start();
       (this as any)._sagaRecoveryWorker = logisticsRecoveryWorker;
-      this.logger.info('âœ… Saga recovery worker started');
+      this.logger.info('✅ Saga recovery worker started');
 
       // Now that all dependencies are ready, start the server
       const port = this.appConfig.getConfig().port;
 
       this.app.listen(port, () => {
-        this.logger.info(`ðŸš€ Logistics Service running on port ${port}`);
+        this.logger.info(`🚀 Logistics Service running on port ${port}`);
         this.logger.info(`Health check: http://localhost:${port}/health`);
         this.logger.info(`Readiness check: http://localhost:${port}/ready`);
         this.logger.info(`Performance stats: http://localhost:${port}/api/stats/performance`);
@@ -224,3 +224,4 @@ service.start().catch((error) => {
 });
 
 export default service;
+

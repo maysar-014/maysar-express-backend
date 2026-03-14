@@ -4,7 +4,7 @@ import type { Tracking } from '../../domain/repositories';
 
 type QueryResult = { data: any; error: any; count?: number | null };
 
-const buildSupabaseClient = (params?: {
+const buildDatabaseClient = (params?: {
   selectResults?: QueryResult[];
   upsertResult?: QueryResult;
   deleteResults?: QueryResult[];
@@ -117,7 +117,7 @@ describe('TrackingRepository', () => {
   });
 
   it('save upserts mapped tracking payload', async () => {
-    const { client, calls } = buildSupabaseClient();
+    const { client, calls } = buildDatabaseClient();
     const repository = new TrackingRepository(client);
 
     await repository.save(createTracking());
@@ -138,7 +138,7 @@ describe('TrackingRepository', () => {
   });
 
   it('save throws wrapped error when upsert fails', async () => {
-    const { client } = buildSupabaseClient({
+    const { client } = buildDatabaseClient({
       upsertResult: { data: null, error: { message: 'cannot persist' } }
     });
     const repository = new TrackingRepository(client);
@@ -147,7 +147,7 @@ describe('TrackingRepository', () => {
   });
 
   it('findByDeliveryId maps rows and returns [] when query errors', async () => {
-    const success = buildSupabaseClient({
+    const success = buildDatabaseClient({
       selectResults: [{ data: [trackingRow], error: null }]
     });
     const repository = new TrackingRepository(success.client);
@@ -169,14 +169,14 @@ describe('TrackingRepository', () => {
       options: { ascending: false }
     });
 
-    const errored = buildSupabaseClient({
+    const errored = buildDatabaseClient({
       selectResults: [{ data: null, error: { message: 'failed' } }]
     });
     await expect(new TrackingRepository(errored.client).findByDeliveryId('del-err')).resolves.toEqual([]);
   });
 
   it('findByCourierId applies optional time range and maps records', async () => {
-    const { client, calls } = buildSupabaseClient({
+    const { client, calls } = buildDatabaseClient({
       selectResults: [{ data: [trackingRow], error: null }]
     });
     const repository = new TrackingRepository(client);
@@ -193,7 +193,7 @@ describe('TrackingRepository', () => {
   });
 
   it('getLatestTracking returns latest mapped row and null fallback cases', async () => {
-    const success = buildSupabaseClient({
+    const success = buildDatabaseClient({
       selectResults: [{ data: trackingRow, error: null }]
     });
     const repository = new TrackingRepository(success.client);
@@ -202,12 +202,12 @@ describe('TrackingRepository', () => {
     expect(latest?.id).toBe('trk-2');
     expect(success.calls.limit).toContainEqual({ table: 'tracking', value: 1 });
 
-    const missing = buildSupabaseClient({
+    const missing = buildDatabaseClient({
       selectResults: [{ data: null, error: null }]
     });
     await expect(new TrackingRepository(missing.client).getLatestTracking('none')).resolves.toBeNull();
 
-    const errored = buildSupabaseClient({
+    const errored = buildDatabaseClient({
       selectResults: [{ data: null, error: { message: 'broken' } }]
     });
     await expect(new TrackingRepository(errored.client).getLatestTracking('err')).resolves.toBeNull();
@@ -218,7 +218,7 @@ describe('TrackingRepository', () => {
       .spyOn(Date, 'now')
       .mockReturnValue(new Date('2026-03-08T12:00:00.000Z').getTime());
 
-    const { client, calls } = buildSupabaseClient({
+    const { client, calls } = buildDatabaseClient({
       deleteResults: [{ data: [{ id: 'a' }, { id: 'b' }], error: null }]
     });
     const repository = new TrackingRepository(client);
@@ -236,7 +236,7 @@ describe('TrackingRepository', () => {
   });
 
   it('deleteOldTracking returns 0 on delete errors', async () => {
-    const { client } = buildSupabaseClient({
+    const { client } = buildDatabaseClient({
       deleteResults: [{ data: null, error: { message: 'cannot delete' } }]
     });
     const repository = new TrackingRepository(client);
@@ -244,3 +244,4 @@ describe('TrackingRepository', () => {
     await expect(repository.deleteOldTracking(3)).resolves.toBe(0);
   });
 });
+

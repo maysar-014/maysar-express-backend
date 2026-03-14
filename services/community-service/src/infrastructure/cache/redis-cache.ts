@@ -1,5 +1,6 @@
 import { logger } from '@modules/auth-service/src/infrastructure/services/logger.service';
 import { createClient, RedisClientType } from 'redis';
+import { scanKeysNodeRedis } from '@shared/redis/scan-keys';
 
 /**
  * Redis-based cache implementation
@@ -203,7 +204,7 @@ export class RedisCache {
    */
   async keys(pattern: string): Promise<string[]> {
     try {
-      return await this.client.keys(pattern);
+      return await scanKeysNodeRedis(this.client, pattern);
     } catch (error) {
       logger.error(`Redis KEYS error for pattern ${pattern}:`, error);
       return [];

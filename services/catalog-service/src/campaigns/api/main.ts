@@ -6,10 +6,12 @@ tracingService.start();
 
 import { container } from '../infrastructure/container';
 import { createServer } from '../app';
+import { initializeCacheService } from '../../infrastructure/services/cache.bootstrap';
 
 const PORT = process.env.PORT || 3000;
 
 async function bootstrap() {
+    initializeCacheService();
     const app = createServer(container);
 
     const server = app.listen(PORT, () => {

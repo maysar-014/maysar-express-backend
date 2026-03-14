@@ -3,7 +3,7 @@ import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 import { DistanceCalculationAlgorithm } from '../../domain/algorithms/distance-calculation.algorithm';
 
 export class CourierRepository implements ICourierRepository {
-  constructor(private supabaseClient: any) { }
+  constructor(private databaseClient: any) { }
 
   async findAvailableCouriers(location: GeoPoint, radius: number): Promise<Courier[]> {
     // Validate inputs
@@ -22,7 +22,7 @@ export class CourierRepository implements ICourierRepository {
       console.log('🔍 DEBUG - Search radius:', radius);
 
       // Query available couriers within radius using PostGIS
-      const query = this.supabaseClient
+      const query = this.databaseClient
         .from('couriers')
         .select(`
           id,
@@ -59,7 +59,7 @@ export class CourierRepository implements ICourierRepository {
       }
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         throw new Error('Failed to query available couriers');
       }
 
@@ -113,7 +113,7 @@ export class CourierRepository implements ICourierRepository {
 
   async findAvailable(): Promise<Courier[]> {
     try {
-      const { data: couriers, error } = await this.supabaseClient
+      const { data: couriers, error } = await this.databaseClient
         .from('couriers')
         .select(`
           id,
@@ -136,7 +136,7 @@ export class CourierRepository implements ICourierRepository {
         .eq('is_available', true);
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         return [];
       }
 
@@ -176,7 +176,7 @@ export class CourierRepository implements ICourierRepository {
 
   async findById(courierId: string): Promise<Courier | null> {
     try {
-      const { data: courier, error } = await this.supabaseClient
+      const { data: courier, error } = await this.databaseClient
         .from('couriers')
         .select(`
           id,
@@ -200,7 +200,7 @@ export class CourierRepository implements ICourierRepository {
         .single();
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         return null;
       }
 
@@ -241,7 +241,7 @@ export class CourierRepository implements ICourierRepository {
   async assignCourier(deliveryId: string, courierId: string): Promise<void> {
     try {
       // Update courier availability to false and link to delivery
-      const { error } = await this.supabaseClient
+      const { error } = await this.databaseClient
         .from('couriers')
         .update({
           is_available: false,
@@ -251,12 +251,12 @@ export class CourierRepository implements ICourierRepository {
         .eq('id', courierId);
 
       if (error) {
-        console.error('Supabase update error:', error);
+        console.error('Database update error:', error);
         throw new Error('Failed to assign courier to delivery');
       }
 
       // Create assignment record in delivery_assignments table
-      const { error: assignmentError } = await this.supabaseClient
+      const { error: assignmentError } = await this.databaseClient
         .from('delivery_assignments')
         .insert({
           delivery_id: deliveryId,
@@ -266,9 +266,9 @@ export class CourierRepository implements ICourierRepository {
         });
 
       if (assignmentError) {
-        console.error('Supabase assignment insert error:', assignmentError);
+        console.error('Database assignment insert error:', assignmentError);
         // Rollback courier update
-        await this.supabaseClient
+        await this.databaseClient
           .from('couriers')
           .update({
             is_available: true,
@@ -288,7 +288,7 @@ export class CourierRepository implements ICourierRepository {
 
   async getCourierById(courierId: string): Promise<Courier> {
     try {
-      const { data: courier, error } = await this.supabaseClient
+      const { data: courier, error } = await this.databaseClient
         .from('couriers')
         .select(`
           id,
@@ -312,7 +312,7 @@ export class CourierRepository implements ICourierRepository {
         .single();
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         throw new Error('Failed to query courier information');
       }
 
@@ -363,7 +363,7 @@ export class CourierRepository implements ICourierRepository {
 
       const coords = geoPoint.getCoordinates();
 
-      const { error } = await this.supabaseClient
+      const { error } = await this.databaseClient
         .from('couriers')
         .update({
           current_lat: coords.lat,
@@ -374,7 +374,7 @@ export class CourierRepository implements ICourierRepository {
         .eq('id', courierId);
 
       if (error) {
-        console.error('Supabase update error:', error);
+        console.error('Database update error:', error);
         throw new Error('Failed to update courier location');
       }
 
@@ -386,7 +386,7 @@ export class CourierRepository implements ICourierRepository {
 
   async updateCourierAvailability(courierId: string, isAvailable: boolean): Promise<void> {
     try {
-      const { error } = await this.supabaseClient
+      const { error } = await this.databaseClient
         .from('couriers')
         .update({
           is_available: isAvailable,
@@ -396,7 +396,7 @@ export class CourierRepository implements ICourierRepository {
         .eq('id', courierId);
 
       if (error) {
-        console.error('Supabase update error:', error);
+        console.error('Database update error:', error);
         throw new Error('Failed to update courier availability');
       }
 
@@ -413,14 +413,14 @@ export class CourierRepository implements ICourierRepository {
   }> {
     try {
       // Aggregate delivery statistics from deliveries table
-      const { data: deliveries, error } = await this.supabaseClient
+      const { data: deliveries, error } = await this.databaseClient
         .from('deliveries')
         .select('status, actual_delivery_time, estimated_delivery_time')
         .eq('courier_id', courierId)
         .eq('status', 'delivered');
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         throw new Error('Failed to query delivery statistics');
       }
 
@@ -443,7 +443,7 @@ export class CourierRepository implements ICourierRepository {
       const onTimeRate = totalDeliveries > 0 ? onTimeDeliveries / totalDeliveries : 0;
 
       // Get current rating from couriers table
-      const { data: courier } = await this.supabaseClient
+      const { data: courier } = await this.databaseClient
         .from('couriers')
         .select('rating')
         .eq('id', courierId)
@@ -461,3 +461,4 @@ export class CourierRepository implements ICourierRepository {
     }
   }
 }
+

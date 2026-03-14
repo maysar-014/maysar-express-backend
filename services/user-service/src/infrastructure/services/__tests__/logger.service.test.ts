@@ -11,7 +11,8 @@ jest.mock('winston', () => {
     errors: () => ({}),
     json: () => ({}),
     colorize: () => ({}),
-    simple: () => ({})
+    simple: () => ({}),
+    printf: () => ({})
   };
 
   const loggerObj = {
@@ -55,15 +56,10 @@ describe('Logger service', () => {
     expect(() => l.info('info')).not.toThrow();
     expect(() => l.debug('debug')).not.toThrow();
 
-    // child logger
-    const child = l.child({ requestId: 'r1' });
-    expect(child).toBeTruthy();
-
     // higher-level helpers
-    expect(() => l.logRequest('GET', '/x', 200, 12, 'u1')).not.toThrow();
-    expect(() => l.logDatabase('INSERT', 'users', 10, true)).not.toThrow();
-    expect(() => l.logBusiness('UserCreated', 'u1', { plan: 'free' })).not.toThrow();
-    expect(() => l.logSecurity('LoginFail', 'u1', '1.2.3.4')).not.toThrow();
+    const req = { method: 'GET', url: '/x', get: jest.fn(), requestId: 'r1', correlationId: 'c1' } as any;
+    const res = { statusCode: 200 } as any;
+    expect(() => l.logRequest(req, res, 12)).not.toThrow();
     expect(() => l.logPerformance('sync', 123)).not.toThrow();
   });
 

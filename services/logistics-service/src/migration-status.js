@@ -13,12 +13,12 @@ console.log('  ✅ location_history - GPS tracking');
 console.log('  ✅ earnings - Payment management');
 
 console.log('\n🔧 MIGRATION STATUS:');
-console.log('  ⚠️  Database connection needs Supabase configuration');
+console.log('  ⚠️  Database connection needs Database configuration');
 console.log('  ✅ Schema ready for deployment');
 console.log('  ✅ Prisma client operational');
 
 console.log('\n🎯 NEXT STEPS:');
-console.log('  1. Verify Supabase database URL');
+console.log('  1. Verify Database database URL');
 console.log('  2. Run: npx prisma db push');
 console.log('  3. Test with Prisma client');
 

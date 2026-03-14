@@ -4,7 +4,7 @@ import type { Delivery } from '../../domain/repositories';
 
 type QueryResult = { data: any; error: any };
 
-const buildSupabaseClient = (params?: {
+const buildDatabaseClient = (params?: {
   selectResults?: QueryResult[];
   upsertResult?: QueryResult;
   updateResult?: QueryResult;
@@ -160,7 +160,7 @@ describe('DeliveryRepository', () => {
   });
 
   it('save upserts mapped payload to deliveries table', async () => {
-    const { client, calls } = buildSupabaseClient();
+    const { client, calls } = buildDatabaseClient();
     const repository = new DeliveryRepository(client);
     const delivery = createDelivery();
 
@@ -184,7 +184,7 @@ describe('DeliveryRepository', () => {
   });
 
   it('save throws wrapped error when upsert fails', async () => {
-    const { client } = buildSupabaseClient({
+    const { client } = buildDatabaseClient({
       upsertResult: { data: null, error: { message: 'db write failed' } }
     });
     const repository = new DeliveryRepository(client);
@@ -195,7 +195,7 @@ describe('DeliveryRepository', () => {
   });
 
   it('findById maps row to domain entity including COD fields', async () => {
-    const { client, calls } = buildSupabaseClient({
+    const { client, calls } = buildDatabaseClient({
       selectResults: [{ data: deliveryRow, error: null }]
     });
     const repository = new DeliveryRepository(client);
@@ -219,13 +219,13 @@ describe('DeliveryRepository', () => {
   });
 
   it('findById returns null for query errors and missing rows', async () => {
-    const withError = buildSupabaseClient({
+    const withError = buildDatabaseClient({
       selectResults: [{ data: null, error: { message: 'select failed' } }]
     });
     const repoWithError = new DeliveryRepository(withError.client);
     await expect(repoWithError.findById('x')).resolves.toBeNull();
 
-    const missing = buildSupabaseClient({
+    const missing = buildDatabaseClient({
       selectResults: [{ data: null, error: null }]
     });
     const repoMissing = new DeliveryRepository(missing.client);
@@ -233,7 +233,7 @@ describe('DeliveryRepository', () => {
   });
 
   it('findByCourierId, findByStatus, findAll and findActiveDeliveries map result arrays', async () => {
-    const { client, calls } = buildSupabaseClient({
+    const { client, calls } = buildDatabaseClient({
       selectResults: [
         { data: [deliveryRow], error: null }, // findByCourierId
         { data: [deliveryRow], error: null }, // findByStatus
@@ -263,7 +263,7 @@ describe('DeliveryRepository', () => {
   });
 
   it('updateStatus applies metadata mappings and status timestamps', async () => {
-    const { client, calls } = buildSupabaseClient();
+    const { client, calls } = buildDatabaseClient();
     const repository = new DeliveryRepository(client);
 
     await repository.updateStatus('del-3', 'delivered', {
@@ -298,7 +298,7 @@ describe('DeliveryRepository', () => {
   });
 
   it('updateStatus throws when update fails', async () => {
-    const { client } = buildSupabaseClient({
+    const { client } = buildDatabaseClient({
       updateResult: { data: null, error: { message: 'update failed' } }
     });
     const repository = new DeliveryRepository(client);
@@ -309,7 +309,7 @@ describe('DeliveryRepository', () => {
   });
 
   it('getDeliveryStats computes totals, average delay and on-time rate', async () => {
-    const { client, calls } = buildSupabaseClient({
+    const { client, calls } = buildDatabaseClient({
       selectResults: [
         {
           data: [
@@ -339,7 +339,7 @@ describe('DeliveryRepository', () => {
   });
 
   it('getDeliveryStats returns zeroed metrics for errors or empty data', async () => {
-    const errorClient = buildSupabaseClient({
+    const errorClient = buildDatabaseClient({
       selectResults: [{ data: null, error: { message: 'stats failed' } }]
     });
     const repoError = new DeliveryRepository(errorClient.client);
@@ -350,7 +350,7 @@ describe('DeliveryRepository', () => {
       onTimeDeliveryRate: 0
     });
 
-    const emptyClient = buildSupabaseClient({
+    const emptyClient = buildDatabaseClient({
       selectResults: [{ data: [], error: null }]
     });
     const repoEmpty = new DeliveryRepository(emptyClient.client);
@@ -362,3 +362,4 @@ describe('DeliveryRepository', () => {
     });
   });
 });
+

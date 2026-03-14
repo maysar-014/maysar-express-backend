@@ -506,41 +506,6 @@ jobs:
           cache-to: type=gha,mode=max,scope=admin-console
           platforms: linux/amd64
 
-  # Deployment
-  deploy-staging:
-    name: 🚀 Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [docker-build-monolith, docker-build-admin]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: staging
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🔐 Configure OCI Credentials
-        uses: oracle-actions/configure-oci-credentials@v1
-        with:
-          user: ${{ secrets.OCI_USER_OCID }}
-          fingerprint: ${{ secrets.OCI_FINGERPRINT }}
-          tenancy: ${{ secrets.OCI_TENANCY_OCID }}
-          region: ${{ vars.OCI_REGION }}
-          private-key: ${{ secrets.OCI_PRIVATE_KEY }}
-
-      - name: ☸️ Setup kubectl
-        uses: azure/setup-kubectl@v3
-
-      - name: ⛵ Setup Helm
-        uses: azure/setup-helm@v3
-
-      - name: 🚀 Deploy Monolith to OKE
-        run: |
-          oci ce cluster create-kubeconfig --cluster-id ${{ secrets.OKE_CLUSTER_OCID }} --region ${{ vars.OCI_REGION }} --file $HOME/.kube/config
-          helm upgrade --install maysar-backend ./infra/k8s/helm-charts/maysar-backend \
-            --namespace maysar-backend \
-            --set image.tag=${{ github.sha }} \
-            --values ./infra/k8s/helm-charts/maysar-backend/values.yaml \
-            --wait --timeout 10m
-
   # Performance and Load Testing
   performance-test:
     name: ⚡ Performance Tests

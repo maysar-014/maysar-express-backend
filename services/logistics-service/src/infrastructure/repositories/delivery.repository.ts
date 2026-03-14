@@ -2,12 +2,12 @@ import { IDeliveryRepository, Delivery } from '../../domain/repositories';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 
 export class DeliveryRepository implements IDeliveryRepository {
-  constructor(private supabaseClient: any) { }
+  constructor(private databaseClient: any) { }
 
   async save(delivery: Delivery): Promise<void> {
     try {
       console.log('🔍 DEBUG - Saving delivery to database:', delivery.id);
-      console.log('🔍 DEBUG - Supabase client available:', !!this.supabaseClient);
+      console.log('🔍 DEBUG - Database client available:', !!this.databaseClient);
 
       const deliveryData = {
         id: delivery.id,
@@ -39,14 +39,14 @@ export class DeliveryRepository implements IDeliveryRepository {
 
       console.log('🔍 DEBUG - Delivery data to save:', JSON.stringify(deliveryData, null, 2));
 
-      const { data, error } = await this.supabaseClient
+      const { data, error } = await this.databaseClient
         .from('deliveries')
         .upsert(deliveryData, { onConflict: 'id' });
 
-      console.log('🔍 DEBUG - Supabase upsert result - data:', data, 'error:', error);
+      console.log('🔍 DEBUG - Database upsert result - data:', data, 'error:', error);
 
       if (error) {
-        console.error('❌ Supabase upsert error:', error);
+        console.error('❌ Database upsert error:', error);
         throw new Error(`Failed to save delivery to database: ${error.message}`);
       }
 
@@ -61,7 +61,7 @@ export class DeliveryRepository implements IDeliveryRepository {
 
   async findById(id: string): Promise<Delivery | null> {
     try {
-      const { data: delivery, error } = await this.supabaseClient
+      const { data: delivery, error } = await this.databaseClient
         .from('deliveries')
         .select(`
           id,
@@ -105,7 +105,7 @@ export class DeliveryRepository implements IDeliveryRepository {
         .single();
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         return null;
       }
 
@@ -165,7 +165,7 @@ export class DeliveryRepository implements IDeliveryRepository {
 
   async findByCourierId(courierId: string): Promise<Delivery[]> {
     try {
-      const { data: deliveries, error } = await this.supabaseClient
+      const { data: deliveries, error } = await this.databaseClient
         .from('deliveries')
         .select(`
           id,
@@ -209,7 +209,7 @@ export class DeliveryRepository implements IDeliveryRepository {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         return [];
       }
 
@@ -269,7 +269,7 @@ export class DeliveryRepository implements IDeliveryRepository {
 
   async findByStatus(status: string): Promise<Delivery[]> {
     try {
-      const { data: deliveries, error } = await this.supabaseClient
+      const { data: deliveries, error } = await this.databaseClient
         .from('deliveries')
         .select(`
           id,
@@ -313,7 +313,7 @@ export class DeliveryRepository implements IDeliveryRepository {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         return [];
       }
 
@@ -373,7 +373,7 @@ export class DeliveryRepository implements IDeliveryRepository {
 
   async findAll(timeRange?: { start: Date; end: Date }): Promise<Delivery[]> {
     try {
-      let query = this.supabaseClient
+      let query = this.databaseClient
         .from('deliveries')
         .select(`
           id,
@@ -425,7 +425,7 @@ export class DeliveryRepository implements IDeliveryRepository {
       const { data: deliveries, error } = await query;
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         return [];
       }
 
@@ -513,13 +513,13 @@ export class DeliveryRepository implements IDeliveryRepository {
         if (metadata.codCommitmentHoldId) updateData.cod_commitment_hold_id = metadata.codCommitmentHoldId;
       }
 
-      const { error } = await this.supabaseClient
+      const { error } = await this.databaseClient
         .from('deliveries')
         .update(updateData)
         .eq('id', id);
 
       if (error) {
-        console.error('Supabase update error:', error);
+        console.error('Database update error:', error);
         throw new Error('Failed to update delivery status');
       }
 
@@ -533,7 +533,7 @@ export class DeliveryRepository implements IDeliveryRepository {
     try {
       const activeStatuses = ['assigned', 'picked_up', 'in_transit'];
 
-      const { data: deliveries, error } = await this.supabaseClient
+      const { data: deliveries, error } = await this.databaseClient
         .from('deliveries')
         .select(`
           id,
@@ -577,7 +577,7 @@ export class DeliveryRepository implements IDeliveryRepository {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         return [];
       }
 
@@ -642,7 +642,7 @@ export class DeliveryRepository implements IDeliveryRepository {
     onTimeDeliveryRate: number;
   }> {
     try {
-      let query = this.supabaseClient.from('deliveries').select('status, actual_delivery_time, estimated_delivery_time');
+      let query = this.databaseClient.from('deliveries').select('status, actual_delivery_time, estimated_delivery_time');
 
       // Apply time range filter if provided
       if (timeRange) {
@@ -654,7 +654,7 @@ export class DeliveryRepository implements IDeliveryRepository {
       const { data: deliveries, error } = await query;
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         return {
           totalDeliveries: 0,
           completedDeliveries: 0,
@@ -718,3 +718,4 @@ export class DeliveryRepository implements IDeliveryRepository {
     }
   }
 }
+

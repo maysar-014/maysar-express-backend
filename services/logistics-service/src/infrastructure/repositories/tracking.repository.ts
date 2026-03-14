@@ -2,7 +2,7 @@ import { ITrackingRepository, Tracking } from '../../domain/repositories';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 
 export class TrackingRepository implements ITrackingRepository {
-  constructor(private supabaseClient: any) { }
+  constructor(private databaseClient: any) { }
 
   async save(tracking: Tracking): Promise<void> {
     try {
@@ -21,12 +21,12 @@ export class TrackingRepository implements ITrackingRepository {
         accuracy: tracking.accuracy
       };
 
-      const { error } = await this.supabaseClient
+      const { error } = await this.databaseClient
         .from('tracking')
         .upsert(trackingData, { onConflict: 'id' });
 
       if (error) {
-        console.error('Supabase upsert error:', error);
+        console.error('Database upsert error:', error);
         throw new Error('Failed to save tracking data to database');
       }
 
@@ -38,7 +38,7 @@ export class TrackingRepository implements ITrackingRepository {
 
   async findByDeliveryId(deliveryId: string): Promise<Tracking[]> {
     try {
-      const { data: tracking, error } = await this.supabaseClient
+      const { data: tracking, error } = await this.databaseClient
         .from('tracking')
         .select(`
           id,
@@ -58,7 +58,7 @@ export class TrackingRepository implements ITrackingRepository {
         .order('timestamp', { ascending: false });
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         return [];
       }
 
@@ -88,7 +88,7 @@ export class TrackingRepository implements ITrackingRepository {
 
   async findByCourierId(courierId: string, timeRange?: { start: Date; end: Date }): Promise<Tracking[]> {
     try {
-      let query = this.supabaseClient
+      let query = this.databaseClient
         .from('tracking')
         .select(`
           id,
@@ -116,7 +116,7 @@ export class TrackingRepository implements ITrackingRepository {
       const { data: tracking, error } = await query.order('timestamp', { ascending: false });
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         return [];
       }
 
@@ -146,7 +146,7 @@ export class TrackingRepository implements ITrackingRepository {
 
   async getLatestTracking(deliveryId: string): Promise<Tracking | null> {
     try {
-      const { data: track, error } = await this.supabaseClient
+      const { data: track, error } = await this.databaseClient
         .from('tracking')
         .select(`
           id,
@@ -168,7 +168,7 @@ export class TrackingRepository implements ITrackingRepository {
         .single();
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Database query error:', error);
         return null;
       }
 
@@ -200,13 +200,13 @@ export class TrackingRepository implements ITrackingRepository {
     try {
       const cutoffTime = new Date(Date.now() - olderThanHours * 60 * 60 * 1000);
 
-      const { data, error } = await this.supabaseClient
+      const { data, error } = await this.databaseClient
         .from('tracking')
         .delete()
         .lt('timestamp', cutoffTime.toISOString());
 
       if (error) {
-        console.error('Supabase delete error:', error);
+        console.error('Database delete error:', error);
         return 0;
       }
 
@@ -219,3 +219,4 @@ export class TrackingRepository implements ITrackingRepository {
     }
   }
 }
+

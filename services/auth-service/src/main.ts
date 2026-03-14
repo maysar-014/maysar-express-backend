@@ -26,6 +26,9 @@ import { RegisterUserUseCase } from './application/use-cases/register-user.use-c
 import { AuthenticateUserUseCase } from './application/use-cases/authenticate-user.use-case';
 import { PrismaClient } from '@prisma/client';
 import { PrismaUserRepository } from './infrastructure/repositories/prisma-user.repository';
+import { UserSyncEventHandlers } from './infrastructure/events/user-sync.event-handlers';
+import { AuthEventPublisher } from './infrastructure/messaging/auth-event-publisher';
+import { OutboxRepository } from '@shared/outbox/outbox.repository';
 import { healthRoutes } from './api/routes/health.routes';
 import { adminRoutes } from './api/routes/admin.routes';
 
@@ -117,11 +120,16 @@ app.use('/health', healthRoutes);
 
 // Wire up AuthController and routes
 const authPrisma = new PrismaClient();
+const authOutboxRepository = new OutboxRepository(authPrisma, 'sharedOutboxEvent');
+const authEventPublisher = new AuthEventPublisher(authOutboxRepository);
 const userRepository = new PrismaUserRepository(authPrisma);
 const registerUserUseCase = new RegisterUserUseCase(userRepository);
-const authenticateUserUseCase = new AuthenticateUserUseCase();
+const authenticateUserUseCase = new AuthenticateUserUseCase(undefined, authEventPublisher);
 const authController = new AuthController(registerUserUseCase, authenticateUserUseCase);
 const authRoutes = createAuthRoutes(authController);
+
+const userSyncHandlers = new UserSyncEventHandlers(authPrisma);
+userSyncHandlers.registerHandlers();
 
 // API routes
 app.use('/api/v1/auth', authRoutes);
@@ -134,10 +142,10 @@ const twoFactorRepository = new PrismaTwoFactorRepository(authPrisma, encryption
 const qrCodeService = new QRCodeService();
 
 const setupTwoFactorUseCase = new SetupTwoFactorUseCase(twoFactorRepository, qrCodeService);
-const verifyTwoFactorSetupUseCase = new VerifyTwoFactorSetupUseCase(twoFactorRepository);
+const verifyTwoFactorSetupUseCase = new VerifyTwoFactorSetupUseCase(twoFactorRepository, authEventPublisher);
 const verifyTwoFactorLoginUseCase = new VerifyTwoFactorLoginUseCase(twoFactorRepository);
 const verifyBackupCodeUseCase = new VerifyBackupCodeUseCase(twoFactorRepository);
-const disableTwoFactorUseCase = new DisableTwoFactorUseCase(twoFactorRepository);
+const disableTwoFactorUseCase = new DisableTwoFactorUseCase(twoFactorRepository, authEventPublisher);
 const regenerateBackupCodesUseCase = new RegenerateBackupCodesUseCase(twoFactorRepository);
 const getTwoFactorStatusUseCase = new GetTwoFactorStatusUseCase(twoFactorRepository);
 

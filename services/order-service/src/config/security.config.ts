@@ -280,3 +280,4 @@ export function logSecurityConfigSummary(): void {
   console.log(`  API Keys: ${apiKeyConfig.enabled ? 'Enabled' : 'Disabled'}`);
   console.log(`  Input Validation: ${inputValidationConfig.enabled ? 'Enabled' : 'Disabled'}`);
 }
+
