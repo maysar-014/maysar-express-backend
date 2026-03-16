@@ -37,6 +37,7 @@ export enum UserStatus {
  */
 export interface AuthUser {
   id: string;
+  publicCode?: string;
   email: string;
   name?: string; // Full name for display purposes
   role: UserRole;
@@ -59,6 +60,7 @@ export interface AuthUser {
  */
 export interface UserServiceUser {
   id: string;
+  publicCode?: string;
   email: string;
   role: UserRole;
   status: UserStatus;

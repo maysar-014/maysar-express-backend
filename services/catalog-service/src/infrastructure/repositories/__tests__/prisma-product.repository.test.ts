@@ -57,6 +57,8 @@ describe('PrismaProductRepository', () => {
       getStatus: () => ({ toString: () => 'published' }),
       getVisibility: () => ProductVisibility.PUBLIC,
       getTags: () => ['test', 'product'],
+      getEnablerEnabled: () => false,
+      getEnablerCommissionRate: () => undefined,
       getVariants: () => [
         {
           getId: () => 'variant-1',

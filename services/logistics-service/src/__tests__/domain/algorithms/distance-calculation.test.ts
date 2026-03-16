@@ -92,10 +92,14 @@ describe('DistanceCalculationAlgorithm - HERE Routing API v8', () => {
     it('should throw error when HERE service is not configured', async () => {
       // Clear any existing service
       DistanceCalculationAlgorithm['routeOptimizationService'] = undefined;
+      const previousConfig = DistanceCalculationAlgorithm.getFallbackConfigSnapshot();
+      DistanceCalculationAlgorithm.configureFallback({ enabled: false });
 
       await expect(DistanceCalculationAlgorithm.calculateDeliveryDistance(darEsSalaam, arusha))
         .rejects
         .toThrow('HERE Technologies service is required for distance calculations');
+
+      DistanceCalculationAlgorithm.configureFallback(previousConfig);
     });
 
     it('should calculate delivery distance with traffic awareness', async () => {
@@ -264,6 +268,22 @@ describe('DistanceCalculationAlgorithm - HERE Routing API v8', () => {
       expect(result.duration).toBe(528);
       expect(result.baseDuration).toBeUndefined();
       expect(result.trafficDelay).toBeUndefined();
+    });
+
+    it('should fall back to inflated straight-line distance when HERE fails', async () => {
+      mockHereService.calculateOptimalRoute.mockRejectedValue(new Error('HERE down'));
+      DistanceCalculationAlgorithm.setRouteOptimizationService(mockHereService as any);
+      const previousConfig = DistanceCalculationAlgorithm.getFallbackConfigSnapshot();
+      DistanceCalculationAlgorithm.configureFallback({ enabled: true, inflationFactor: 1.3 });
+
+      const directDistance = darEsSalaam.distanceTo(arusha);
+      const result = await DistanceCalculationAlgorithm.calculateDeliveryDistance(darEsSalaam, arusha);
+
+      expect(result.distance).toBeGreaterThan(directDistance);
+      expect(result.duration).toBeGreaterThan(0);
+      expect(result.trafficDelay).toBe(0);
+
+      DistanceCalculationAlgorithm.configureFallback(previousConfig);
     });
   });
 

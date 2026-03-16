@@ -39,7 +39,7 @@ describe('ProviderResponse Value Object', () => {
             expect(accepted.getStatusDescription()).toContain('accepted');
 
             const failed = ProviderResponse.createFailure('Error');
-            expect(failed.getStatusDescription()).toContain('Delivery failed');
+            expect(failed.getStatusDescription()).toContain('Message rejected');
         });
     });
 });

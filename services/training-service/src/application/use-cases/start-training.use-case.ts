@@ -5,7 +5,7 @@ import { ICertificationRequirementRepository } from '../../domain/repositories/c
 import { IEventPublisher, eventBus } from '@shared-events/eventBus';
 import { TrainingPolicy } from '../../domain/policies/training.policy';
 import { TrainingRecord } from '../../domain/entities/training-record.entity';
-import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 import { NotFoundError } from '../../domain/errors/domain.error';
 
 export class StartTrainingUseCase {
@@ -52,7 +52,7 @@ export class StartTrainingUseCase {
         if (record) {
             record.start();
         } else {
-            record = TrainingRecord.createNew(uuidv4(), learnerId, learnerRole, moduleId);
+            record = TrainingRecord.createNew(makeId(getModelPrefix('Training_TrainingRecord')), learnerId, learnerRole, moduleId);
             record.start();
         }
 

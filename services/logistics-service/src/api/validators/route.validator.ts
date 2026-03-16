@@ -1,5 +1,6 @@
 ﻿// @ts-nocheck
 import { body, param, query } from 'express-validator';
+import { isSystemId } from '@shared/validation/id';
 
 export class RouteValidator {
   static optimizeRoute(): ValidationChain[] {
@@ -10,8 +11,8 @@ export class RouteValidator {
         .withMessage('Deliveries must be an array with 1-50 items'),
 
       body('deliveries.*.deliveryId')
-        .isUUID()
-        .withMessage('Each delivery ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Each delivery ID must be a valid ID'),
 
       body('deliveries.*.address')
         .isObject()
@@ -165,8 +166,8 @@ export class RouteValidator {
   static updateRouteProgress(): ValidationChain[] {
     return [
       param('routeId')
-        .isUUID()
-        .withMessage('Route ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Route ID must be a valid ID'),
 
       body('currentLocation')
         .isObject()
@@ -202,8 +203,8 @@ export class RouteValidator {
 
       body('completedDeliveries.*')
         .optional()
-        .isUUID()
-        .withMessage('Each completed delivery ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Each completed delivery ID must be a valid ID'),
 
       body('estimatedArrival')
         .optional()
@@ -217,8 +218,8 @@ export class RouteValidator {
 
       body('remainingDeliveries.*')
         .optional()
-        .isUUID()
-        .withMessage('Each remaining delivery ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Each remaining delivery ID must be a valid ID'),
 
       body('routeStatus')
         .optional()
@@ -235,12 +236,12 @@ export class RouteValidator {
   static createRoute(): ValidationChain[] {
     return [
       body('deliveryId')
-        .isUUID()
-        .withMessage('Delivery ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Delivery ID must be a valid ID'),
 
       body('courierId')
-        .isUUID()
-        .withMessage('Courier ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Courier ID must be a valid ID'),
 
       body('waypoints')
         .isArray({ min: 2, max: 50 })

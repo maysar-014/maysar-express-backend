@@ -1,4 +1,7 @@
 import { NotificationValidationService } from '../notification-validation.service';
+import { Notification } from '../../entities/notification.entity';
+import { NotificationContent } from '../../value-objects/notification-content.value-object';
+import { DeliveryAddress } from '../../value-objects/delivery-address.value-object';
 
 describe('NotificationValidationService', () => {
     let service: NotificationValidationService;
@@ -8,30 +11,36 @@ describe('NotificationValidationService', () => {
     });
 
     it('should validate notification', () => {
-        const result = service.validate({
+        const notification = Notification.create({
+            id: 'n1',
             userId: 'u1',
             type: 'email',
+            channel: 'email',
             subject: 'Test',
-            body: 'Test body'
+            content: NotificationContent.create('Test body')
         });
 
+        const result = service.validateNotification(notification);
         expect(result.isValid).toBe(true);
     });
 
     it('should reject invalid notification', () => {
-        const result = service.validate({
-            userId: '',
+        const notification = Notification.create({
+            id: 'n1',
+            userId: 'u1',
             type: 'email',
+            channel: 'email',
             subject: '',
-            body: ''
+            content: NotificationContent.create('Test body')
         });
 
+        const result = service.validateNotification(notification);
         expect(result.isValid).toBe(false);
-        expect(result.errors.length).toBeGreaterThan(0);
     });
 
-    it('should validate email address', () => {
-        expect(service.validateEmail('test@example.com')).toBe(true);
-        expect(service.validateEmail('invalid')).toBe(false);
+    it('should validate delivery address by channel', () => {
+        const address = DeliveryAddress.create('test@example.com', 'email');
+        const result = service.validateDeliveryAddress(address, 'email');
+        expect(result.isValid).toBe(true);
     });
 });

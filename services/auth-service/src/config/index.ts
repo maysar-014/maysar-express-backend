@@ -141,13 +141,30 @@ export const config = {
   },
 
   // External Services
-  services: {
-    order: process.env.ORDER_SERVICE_URL || 'http://localhost:3002',
-    logistics: process.env.LOGISTICS_SERVICE_URL || 'http://localhost:3003',
-    payment: process.env.PAYMENT_SERVICE_URL || 'http://localhost:3004',
-    community: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3005'
+  // Standalone service URLs removed; all inter-module calls go through the monolith router.
+
+  serviceDiscovery: {
+    enabled: process.env.SERVICE_DISCOVERY_ENABLED !== 'false',
+    services: parseServiceDiscoveryServices()
   }
 };
+
+function parseServiceDiscoveryServices(): Array<{ name: string; url: string }> {
+  const baseUrl = (process.env.BASE_URL || process.env.PLATFORM_BASE_URL || '').trim();
+  const names = (process.env.SERVICE_DISCOVERY_SERVICE_NAMES || '').split(',').map(name => name.trim()).filter(Boolean);
+  if (!baseUrl || names.length === 0) {
+    const host = process.env.HOST || '0.0.0.0';
+    const port = parseInt(process.env.PORT || '3001', 10);
+    const fallbackUrl = `http://${host}:${port}`;
+    return [{ name: 'auth-service', url: fallbackUrl }];
+  }
+
+  return names.map(rawName => {
+    const name = rawName.includes('-service') ? rawName : `${rawName}-service`;
+    const slug = name.replace(/-service$/, '');
+    return { name, url: `${baseUrl.replace(/\/$/, '')}/api/${slug}` };
+  });
+}
 
 /**
  * Configuration Validation

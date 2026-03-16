@@ -10,7 +10,7 @@ export interface VerifyPhoneInput {
   userId: string;
   phoneNumber: string;
   otp: string;
-  verificationMethod: 'otp' | 'call';
+  verificationMethod: 'otp' | 'sms' | 'call';
 }
 
 export interface VerifyPhoneOutput {
@@ -56,11 +56,13 @@ export class VerifyPhoneUseCase {
       await this.userRepository.updatePhoneVerification(input.userId, true);
 
       // Publish domain event for downstream syncs
+      const verificationMethod = input.verificationMethod === 'otp' ? 'sms' : input.verificationMethod;
+      const sagaVerificationMethod = input.verificationMethod === 'sms' ? 'otp' : input.verificationMethod;
       const domainEvent = new UserPhoneVerifiedEvent(
         input.userId,
         input.phoneNumber,
         'unknown',
-        input.verificationMethod
+        verificationMethod
       );
       await this.eventPublisher.publish(domainEvent);
 
@@ -70,7 +72,7 @@ export class VerifyPhoneUseCase {
         aggregateId: input.userId,
         userId: input.userId,
         phoneNumber: input.phoneNumber,
-        verificationMethod: input.verificationMethod,
+        verificationMethod: sagaVerificationMethod,
         timestamp: new Date()
       };
 
@@ -91,8 +93,9 @@ export class VerifyPhoneUseCase {
   }
 
   private isValidPhoneNumber(phoneNumber: string): boolean {
-    const tanzanianPhoneRegex = /^(\+255|0)(7[0-9]|6[0-9]|2[0-9])\d{7}$/;
-    return tanzanianPhoneRegex.test(phoneNumber.replace(/\s+/g, ''));
+    const normalized = phoneNumber.replace(/[^\d+]/g, '');
+    const e164Like = /^\+?\d{7,15}$/;
+    return e164Like.test(normalized);
   }
 
   private async validateOTP(userId: string, phoneNumber: string, otp: string): Promise<boolean> {

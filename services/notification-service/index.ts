@@ -9,6 +9,7 @@ import { createNotificationRoutes } from './src/api/routes/notification.routes';
 import { createTemplateRoutes } from './src/api/routes/template.routes';
 import { createPreferenceRoutes } from './src/api/routes/preference.routes';
 import { healthRoutes as notificationHealthRoutes } from './src/api/routes/health.routes';
+import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { NotificationController } from './src/api/controllers/notification.controller';
 import { TemplateController } from './src/api/controllers/template.controller';
 import { PreferenceController } from './src/api/controllers/preference.controller';
@@ -25,6 +26,7 @@ import { PrismaPreferenceRepository } from './src/infrastructure/repositories/pr
 import { executeNotificationDeliverySaga } from './src/application/sagas/notification-delivery.saga';
 import { Notification } from './src/domain/entities/notification.entity';
 import { eventBus } from '../../shared/events/eventBus';
+import type { ISmsProvider } from './src/sms/infrastructure/providers/sms-provider.interface';
 
 const notificationRepository = new PrismaNotificationRepository();
 const templateRepository = new PrismaTemplateRepository();
@@ -40,9 +42,13 @@ async function sendViaChannel(notification: Notification): Promise<void> {
         const email = new EmailProviderAdapter();
         await email.send(notification.deliveryAddress.getValue(), subject, content);
     } else if (notification.channel === 'sms' && notification.deliveryAddress) {
-        const { SmsProviderAdapter } = await import('./src/infrastructure/adapters/sms-provider.adapter');
-        const sms = new SmsProviderAdapter();
-        await sms.send(notification.deliveryAddress.getValue(), content);
+        const { container } = await import('./src/sms/infrastructure/container');
+        const { TYPES } = await import('./src/sms/infrastructure/types');
+        const provider = container.get<ISmsProvider>(TYPES.SmsProvider);
+        const response = await provider.send(notification.deliveryAddress.getValue(), content);
+        if (!response.isSuccess()) {
+            throw new Error(`SMS send failed: ${response.getErrorMessage() || 'Unknown error'}`);
+        }
     } else if (notification.channel === 'push' && notification.deliveryAddress) {
         const { PushProviderAdapter } = await import('./src/infrastructure/adapters/push-provider.adapter');
         const push = new PushProviderAdapter();
@@ -175,6 +181,7 @@ export const NotificationModule: Module = {
         router.use('/templates', createTemplateRoutes(templateController));
         router.use('/preferences', createPreferenceRoutes(preferenceController));
         router.use('/health', notificationHealthRoutes);
+        router.use('/system/maintenance', createMaintenanceRoutes());
 
         // Fallback health summary (kept for compatibility)
         router.get('/health-summary', (req, res) => {

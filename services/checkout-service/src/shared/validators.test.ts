@@ -97,18 +97,19 @@ describe('Validator Class', () => {
     });
   });
 
-  describe('UUID Validation', () => {
-    it('should accept valid UUID', () => {
-      validator.uuid('id', '550e8400-e29b-41d4-a716-446655440000');
-      expect(() => validator.validate({ id: '550e8400-e29b-41d4-a716-446655440000' })).not.toThrow();
+  describe('ID Validation', () => {
+    it('should accept valid system ID', () => {
+      const systemId = 'chk_ses_01H00000000000000000000000';
+      validator.uuid('id', systemId);
+      expect(() => validator.validate({ id: systemId })).not.toThrow();
     });
 
-    it('should reject invalid UUID format', () => {
+    it('should reject invalid ID format', () => {
       validator.uuid('id', 'not-a-uuid');
       expect(() => validator.validate({ id: 'not-a-uuid' })).toThrow(ValidationError);
     });
 
-    it('should be case insensitive', () => {
+    it('should accept legacy UUIDs', () => {
       validator.uuid('id', '550E8400-E29B-41D4-A716-446655440000');
       expect(() => validator.validate({ id: '550E8400-E29B-41D4-A716-446655440000' })).not.toThrow();
     });

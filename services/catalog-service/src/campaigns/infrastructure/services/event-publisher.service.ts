@@ -1,7 +1,7 @@
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../types';
 import { PrismaClient } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 @injectable()
 export class EventPublisherService {
@@ -15,8 +15,8 @@ export class EventPublisherService {
 
         await prisma.campaign_OutboxEvent.create({
             data: {
-                id: uuidv4(),
-                eventId: uuidv4(),
+                id: makeId(getModelPrefix('Campaign_OutboxEvent')),
+                eventId: event.eventId || makeId('evt'),
                 eventType: event.eventType || event.constructor.name || 'UnknownEvent',
                 eventData: JSON.parse(JSON.stringify(event)),
                 status: 'PENDING',

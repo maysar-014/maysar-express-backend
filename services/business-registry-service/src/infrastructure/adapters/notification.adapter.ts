@@ -1,14 +1,10 @@
 import { INotificationAdapter } from '../../domain/ports';
 import { logger } from '../services/logger.service';
 
-const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3004';
-
 /**
- * Notification Adapter - Calls notification service HTTP API
+ * Notification Adapter - Calls notification service in-process API
  */
 export class NotificationAdapter implements INotificationAdapter {
-  constructor(private readonly baseUrl: string = NOTIFICATION_SERVICE_URL) {}
-
   async sendNotification(params: {
     userId: string;
     channel: 'email' | 'sms' | 'push' | 'in-app';
@@ -18,7 +14,6 @@ export class NotificationAdapter implements INotificationAdapter {
     deliveryAddress?: string;
     metadata?: Record<string, string | number | boolean>;
   }): Promise<void> {
-    const url = `${this.baseUrl}/api/v1/notifications`;
     const body = {
       userId: params.userId,
       type: params.channel,
@@ -32,16 +27,8 @@ export class NotificationAdapter implements INotificationAdapter {
     };
 
     try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Notification service error ${res.status}: ${errText}`);
-      }
+      const { sendNotificationInternal } = await import('../../../../notification-service/src/internal/notification.facade');
+      await sendNotificationInternal(body);
 
       logger.debug('Notification sent', { userId: params.userId, channel: params.channel });
     } catch (error) {

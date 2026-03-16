@@ -1,9 +1,10 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { eventBus, EventEnvelope } from '../../shared/events/eventBus';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 const app = express();
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 app.use(express.json());
 

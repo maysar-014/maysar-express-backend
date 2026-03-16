@@ -14,6 +14,7 @@ import { Price } from '../../domain/value-objects/monetary.value-object';
 import { ProductType, ProductVisibility, ProductCondition } from '../../domain/value-objects/product-types.value-object';
 import { ProductIdentifiers } from '../../domain/value-objects/product-identifiers.value-object';
 import { ProductFingerprint } from '../../domain/value-objects/product-fingerprint.value-object';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 // Prisma Enums (defined locally since Prisma client may not be generated)
 enum ProductStatus {
@@ -66,6 +67,8 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       status: this.mapProductStatus(productEntity.getStatus().toString()),
       visibility: this.mapProductVisibility(productEntity.getVisibility()),
       tags: productEntity.getTags(),
+      enablerEnabled: productEntity.getEnablerEnabled(),
+      enablerCommissionRate: productEntity.getEnablerCommissionRate(),
       updatedAt: new Date()
     };
 
@@ -93,6 +96,8 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
           status: productData.status,
           visibility: productData.visibility,
           tags: productData.tags,
+          enablerEnabled: productData.enablerEnabled,
+          enablerCommissionRate: productData.enablerCommissionRate,
           updatedAt: productData.updatedAt
         },
         create: {
@@ -150,6 +155,8 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
           status: persistenceDto.status,
           visibility: persistenceDto.visibility,
           tags: persistenceDto.tags,
+          enablerEnabled: persistenceDto.enablerEnabled ?? false,
+          enablerCommissionRate: persistenceDto.enablerCommissionRate ?? null,
           createdAt: persistenceDto.createdAt,
           updatedAt: persistenceDto.updatedAt
         }
@@ -159,7 +166,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       if (attributes.length > 0) {
         await tx.productAttribute.createMany({
           data: attributes.map((attr: any) => ({
-            id: require('uuid').v4(),
+            id: makeId(getModelPrefix('ProductAttribute')),
             productId,
             attributeId: attr.attributeId,
             value: attr.value,
@@ -453,21 +460,23 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
     const sellerId = SellerId.create(productData.sellerId);
     const categoryId = productData.categoryId ? CategoryId.create(productData.categoryId) : undefined;
 
-    return Product.create(
-      sellerId,
-      productData.title,
-      productData.description || '',
-      ProductType.PHYSICAL, // Default type
-      variants,
-      {
-        categoryId,
-        visibility: this.mapVisibilityToDomain(productData.visibility),
-        images: [], // Would be populated from MediaRef if needed
-        tags: productData.tags || [],
-        condition: ProductCondition.NEW
-      }
-    );
-  }
+      return Product.create(
+        sellerId,
+        productData.title,
+        productData.description || '',
+        ProductType.PHYSICAL, // Default type
+        variants,
+        {
+          categoryId,
+          visibility: this.mapVisibilityToDomain(productData.visibility),
+          images: [], // Would be populated from MediaRef if needed
+          tags: productData.tags || [],
+          condition: ProductCondition.NEW,
+          enablerEnabled: !!productData.enablerEnabled,
+          enablerCommissionRate: productData.enablerCommissionRate ? Number(productData.enablerCommissionRate) : undefined
+        }
+      );
+    }
 
   private mapVisibilityToDomain(visibility: Visibility): ProductVisibility {
     switch (visibility) {

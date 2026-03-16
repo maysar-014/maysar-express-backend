@@ -48,7 +48,17 @@ export class EmailVerificationSaga extends DistributedSagaOrchestrator<EmailVeri
         name: 'SendConfirmationEmail',
         execute: async (context, sagaId) => {
           logger.info('Sending confirmation email', { userId: context.metadata.userId, sagaId });
-          // In a real implementation, we would use this.emailService here
+          const subject = 'Your email has been verified';
+          const html = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2>Email Verified</h2>
+              <p>Hi,</p>
+              <p>Your email address has been successfully verified.</p>
+              <p>If you did not perform this action, please contact support immediately.</p>
+              <p>Best regards,<br/>The Maysar Team</p>
+            </div>
+          `;
+          await this.emailService.sendEmail(context.event.email, subject, html);
         },
         compensate: async (context, sagaId) => {
           logger.info('Compensating: Removing confirmation email', { userId: context.metadata.userId, sagaId });

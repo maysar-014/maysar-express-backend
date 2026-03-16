@@ -1,9 +1,13 @@
-import { v4 as uuidv4 } from 'uuid';
 import { EventPublisherService } from './event-publisher.service';
+import { makeId } from '@shared/ids/id';
 
-jest.mock('uuid', () => ({
-  v4: jest.fn()
-}));
+jest.mock('@shared/ids/id', () => {
+  const actual = jest.requireActual('@shared/ids/id');
+  return {
+    ...actual,
+    makeId: jest.fn()
+  };
+});
 
 describe('EventPublisherService', () => {
   afterEach(() => {
@@ -11,7 +15,9 @@ describe('EventPublisherService', () => {
   });
 
   it('publishes event to outbox using default prisma client', async () => {
-    (uuidv4 as jest.Mock).mockReturnValueOnce('outbox-1').mockReturnValueOnce('event-1');
+    (makeId as jest.Mock)
+      .mockReturnValueOnce('cmp_out_01H00000000000000000000000')
+      .mockReturnValueOnce('evt_01H00000000000000000000000');
     const prisma = {
       campaign_OutboxEvent: {
         create: jest.fn().mockResolvedValue(undefined)
@@ -24,8 +30,8 @@ describe('EventPublisherService', () => {
 
     expect(prisma.campaign_OutboxEvent.create).toHaveBeenCalledWith({
       data: {
-        id: 'outbox-1',
-        eventId: 'event-1',
+        id: 'cmp_out_01H00000000000000000000000',
+        eventId: 'evt_01H00000000000000000000000',
         eventType: 'CampaignCreated',
         eventData: event,
         status: 'PENDING'
@@ -34,7 +40,9 @@ describe('EventPublisherService', () => {
   });
 
   it('uses constructor name as fallback event type and supports transaction client', async () => {
-    (uuidv4 as jest.Mock).mockReturnValueOnce('outbox-2').mockReturnValueOnce('event-2');
+    (makeId as jest.Mock)
+      .mockReturnValueOnce('cmp_out_01H00000000000000000000000')
+      .mockReturnValueOnce('evt_01H00000000000000000000000');
     const prisma = {
       campaign_OutboxEvent: {
         create: jest.fn().mockResolvedValue(undefined)

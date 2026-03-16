@@ -22,6 +22,8 @@ export interface StructuredCreateProductDto {
   price: number;
   currency?: string;
   seoKeywordsOverride?: string[];
+  enablerEnabled?: boolean;
+  enablerCommissionRate?: number;
 }
 
 /**
@@ -81,6 +83,8 @@ export interface CreateProductDto {
   attributes: Record<string, any>;
   seoTitle?: string;
   seoDescription?: string;
+  enablerEnabled?: boolean;
+  enablerCommissionRate?: number;
 }
 
 /**
@@ -99,6 +103,8 @@ export interface UpdateProductDto {
   attributes?: Record<string, any>;
   seoTitle?: string;
   seoDescription?: string;
+  enablerEnabled?: boolean;
+  enablerCommissionRate?: number;
 }
 
 /**
@@ -179,6 +185,10 @@ export interface ProductDetailsDto {
     title?: string;
     description?: string;
     keywords?: string[];
+  };
+  enabler?: {
+    enabled: boolean;
+    commissionRate?: number;
   };
   analytics: {
     viewCount: number;

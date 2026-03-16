@@ -1,15 +1,23 @@
+import { getModelPrefix, makeId } from '@shared/ids/id';
+import { IdGeneratorService } from '../../infrastructure/services/id-generator.service';
+
 export class CreateOrderUseCase {
     constructor(
         private readonly repository: any,
         private readonly eventBus: any
     ) {}
 
-    async execute(dto: { userId: string; items: any[]; total: number }) {
+    async execute(dto: { userId: string; items: any[]; total: number; enablerId?: string; enablerCode?: string }) {
         if (!dto.items || dto.items.length === 0) {
             throw new Error('Order must have items');
         }
 
-        const order = { id: `order-${Date.now()}`, ...dto, status: 'PENDING' };
+        const order = {
+            id: makeId(getModelPrefix('Order_Order')),
+            trackingNumber: IdGeneratorService.generateOrderTrackingNumber(),
+            ...dto,
+            status: 'PENDING'
+        };
         await this.repository.save(order);
         await this.eventBus.publish('OrderCreated.v1', order);
         return order;

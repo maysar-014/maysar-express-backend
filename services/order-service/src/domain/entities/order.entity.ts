@@ -14,8 +14,11 @@ export enum OrderStatus {
 
 export class Order {
   public id: string;
+  public trackingNumber?: string;
   public buyerId: string;
   public sellerId: string;
+  public enablerId?: string;
+  public enablerCode?: string;
   public items: OrderItem[];
   public totalAmount: Money;
   public totalWeight: number;
@@ -47,8 +50,11 @@ export class Order {
     }
 
     this.id = data.id;
+    this.trackingNumber = data.trackingNumber;
     this.buyerId = data.buyerId;
     this.sellerId = data.sellerId;
+    this.enablerId = data.enablerId;
+    this.enablerCode = data.enablerCode;
     this.items = data.items || [];
     this.totalAmount = new Money(data.totalAmount, data.currency || 'TZS');
     this.totalWeight = data.totalWeight;

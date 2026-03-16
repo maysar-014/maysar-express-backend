@@ -36,6 +36,7 @@ export interface InitiateCheckoutRequest {
   billingAddressId: string;
   shippingMethodId: string;
   shippingCost: number;
+  enablerCode?: string;
   idempotencyKey?: string;
 }
 
@@ -82,6 +83,8 @@ export interface CheckoutSessionDTO {
   id: string;
   cartId: string;
   userId: string;
+  enablerId?: string;
+  enablerCode?: string;
   status: string;
   pricing: PricingDTO;
   expiresAt: Date;

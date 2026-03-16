@@ -2,20 +2,20 @@ import { DeliveryAddress } from '../delivery-address.value-object';
 
 describe('DeliveryAddress', () => {
     it('should create email address', () => {
-        const address = DeliveryAddress.createEmail('test@example.com');
+        const address = DeliveryAddress.create('test@example.com', 'email');
 
         expect(address.getValue()).toBe('test@example.com');
         expect(address.getType()).toBe('email');
     });
 
     it('should create phone address', () => {
-        const address = DeliveryAddress.createPhone('+254712345678');
+        const address = DeliveryAddress.create('+255712345678', 'phone');
 
-        expect(address.getValue()).toBe('+254712345678');
+        expect(address.getValue()).toBe('+255712345678');
         expect(address.getType()).toBe('phone');
     });
 
     it('should validate email format', () => {
-        expect(() => DeliveryAddress.createEmail('invalid')).toThrow();
+        expect(() => DeliveryAddress.create('invalid', 'email')).toThrow();
     });
 });

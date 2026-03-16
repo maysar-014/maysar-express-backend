@@ -1,5 +1,6 @@
 import { DeliveryEntity } from '../entities/delivery.entity';
 import { GeoPoint } from '../value-objects/geopoint.value-object';
+import { IDeliveryRepository } from '../repositories';
 
 export class DeliveryDomainService {
   /**
@@ -42,11 +43,11 @@ export class DeliveryDomainService {
     const violations: string[] = [];
 
     // Validate package dimensions and weight
-    if (delivery.package.weight <= 0) {
+    if (delivery.packageDetails.weight <= 0) {
       violations.push('Package weight must be greater than 0');
     }
 
-    if (delivery.package.weight > 500) {
+    if (delivery.packageDetails.weight > 500) {
       violations.push('Package weight exceeds maximum limit (500kg)');
     }
 
@@ -116,7 +117,8 @@ export class DeliveryDomainService {
    */
   public updateDeliveryStatus(
     delivery: DeliveryEntity,
-    newStatus: string
+    newStatus: string,
+    deliveryRepository?: IDeliveryRepository
   ): {
     success: boolean;
     error?: string;
@@ -130,8 +132,46 @@ export class DeliveryDomainService {
       };
     }
 
-    // Note: In a real implementation, this would use the delivery entity's methods
-    // to update status. For now, we just validate the transition.
+    try {
+      switch (newStatus) {
+        case 'assigned':
+          if (!delivery.courierId) {
+            return { success: false, error: 'Courier ID is required to assign delivery' };
+          }
+          delivery.assignCourier(delivery.courierId);
+          break;
+        case 'picked_up':
+          delivery.markAsPickedUp();
+          break;
+        case 'in_transit':
+          delivery.markAsInTransit();
+          break;
+        case 'out_for_delivery':
+          delivery.markAsOutForDelivery();
+          break;
+        case 'delivered':
+          delivery.markAsDelivered();
+          break;
+        case 'failed':
+          delivery.markAsFailed('status updated to failed');
+          break;
+        case 'cancelled':
+          delivery.cancel('status updated to cancelled');
+          break;
+        default:
+          return { success: false, error: `Unknown delivery status: ${newStatus}` };
+      }
+    } catch (error) {
+      return { success: false, error: (error as Error).message };
+    }
+
+    if (deliveryRepository) {
+      void deliveryRepository.updateStatus(delivery.id, delivery.status, {
+        updatedAt: delivery.updatedAt,
+        notes: delivery.notes
+      });
+    }
+
     return {
       success: true,
     };

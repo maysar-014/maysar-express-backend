@@ -3,6 +3,7 @@ type Chain = {
   withMessage: jest.Mock;
   isLength: jest.Mock;
   optional: jest.Mock;
+  custom: jest.Mock;
   isUUID: jest.Mock;
   isObject: jest.Mock;
   matches: jest.Mock;
@@ -24,6 +25,7 @@ const makeChain = (): Chain => {
   chain.withMessage = jest.fn(link);
   chain.isLength = jest.fn(link);
   chain.optional = jest.fn(link);
+  chain.custom = jest.fn(link);
   chain.isUUID = jest.fn(link);
   chain.isObject = jest.fn(link);
   chain.matches = jest.fn(link);

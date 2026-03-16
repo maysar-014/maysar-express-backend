@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { PrismaClient } from '@prisma/client';
 import winston from 'winston';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 // Use Cases
 import { RegisterEnablerUseCase } from './application/use-cases/register-enabler.use-case';
@@ -17,6 +18,8 @@ import { CalculateEnablerCommissionUseCase } from './application/use-cases/calcu
 import { PrismaEnablerRepository } from './infrastructure/repositories/prisma-enabler.repository';
 import { PrismaProductListingRepository } from './infrastructure/repositories/prisma-product-listing.repository';
 import { PrismaEnablerOrderRepository } from './infrastructure/repositories/prisma-enabler-order.repository';
+import { PrismaEnablerAnalyticsRepository } from './infrastructure/repositories/prisma-enabler-analytics.repository';
+import { PrismaEnablerPolicyRepository } from './infrastructure/repositories/prisma-enabler-policy.repository';
 import { EnablerEventPublisher } from './infrastructure/messaging/enabler-event-publisher';
 import { tracingService, correlationMiddleware } from '../../../shared/tracing/openTelemetry';
 import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
@@ -31,6 +34,7 @@ import { EnablerOrderController } from './api/controllers/enabler-order.controll
 import { authorizeEnabler } from './api/middleware/enabler-authorization.middleware';
 import enablerRoutes from './api/routes/enabler.routes';
 import hubRoutes from './api/routes/hub.routes';
+import { createMaintenanceRoutes } from './api/routes/maintenance.routes';
 
 /**
  * Enabler Service Main Application
@@ -44,7 +48,7 @@ class EnablerService {
 
     constructor() {
         this.app = express();
-        this.prisma = new PrismaClient();
+        this.prisma = createPrismaClient();
         this.logger = this.setupLogger();
 
         this.initializeInfrastructure();
@@ -122,14 +126,42 @@ class EnablerService {
         const enablerRepo = new PrismaEnablerRepository();
         const listingRepo = new PrismaProductListingRepository();
         const orderRepo = new PrismaEnablerOrderRepository();
+        const analyticsRepo = new PrismaEnablerAnalyticsRepository();
+        const policyRepo = new PrismaEnablerPolicyRepository();
 
-        // Services (Mocked for now as placeholders)
-        const catalogService = { getProduct: async () => ({ status: 'published', price: 100, sellerId: 's1', seller: { allowsEnablers: true } }) };
-        const inventoryService = { checkAvailability: async () => true, reserve: async () => { }, confirmReservation: async () => { }, releaseReservation: async () => { } };
-        const orderService = { createOrder: async () => ({ id: 'o1', totalAmount: 100 }) };
+        // Service clients (must be configured with real integrations)
+        const catalogService = {
+            getProduct: async () => {
+                throw new Error('Catalog service client is not configured.');
+            }
+        };
+        const inventoryService = {
+            checkAvailability: async () => {
+                throw new Error('Inventory service client is not configured.');
+            },
+            reserve: async () => {
+                throw new Error('Inventory service client is not configured.');
+            },
+            confirmReservation: async () => {
+                throw new Error('Inventory service client is not configured.');
+            },
+            releaseReservation: async () => {
+                throw new Error('Inventory service client is not configured.');
+            }
+        };
+        const orderService = {
+            createOrder: async () => {
+                throw new Error('Order service client is not configured.');
+            }
+        };
 
         // Use Cases
-        const registerUseCase = new RegisterEnablerUseCase(enablerRepo, this.eventPublisher);
+        const registerUseCase = new RegisterEnablerUseCase(
+            enablerRepo,
+            this.eventPublisher,
+            analyticsRepo,
+            policyRepo
+        );
         const approveUseCase = new ApproveEnablerUseCase(enablerRepo, this.eventPublisher);
         const listProductUseCase = new ListProductUseCase(enablerRepo, listingRepo, catalogService, this.eventPublisher);
         const facilitateOrderUseCase = new FacilitateOrderUseCase(enablerRepo, orderRepo, listingRepo, inventoryService, orderService, this.eventPublisher);
@@ -158,6 +190,9 @@ class EnablerService {
 
         // Hub Routes
         apiRouter.get('/hub/products', (req, res) => listingController.getHubProducts(req, res));
+
+        // Maintenance routes (service-key protected)
+        this.app.use('/api/v1/system/maintenance', createMaintenanceRoutes());
 
         this.app.use('/api/v1', apiRouter);
     }

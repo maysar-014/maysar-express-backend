@@ -1,3 +1,5 @@
+import { isSystemId } from '@shared/validation/id';
+
 /**
  * Value Object for Enabler ID
  */
@@ -14,9 +16,7 @@ export class EnablerId {
         if (!id || id.trim().length === 0) {
             throw new Error('Enabler ID cannot be empty');
         }
-        // UUID format validation
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(id)) {
+        if (!isSystemId(id)) {
             throw new Error('Invalid enabler ID format');
         }
     }

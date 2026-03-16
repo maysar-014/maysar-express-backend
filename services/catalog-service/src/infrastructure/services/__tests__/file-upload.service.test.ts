@@ -25,6 +25,14 @@ import {
   FileUploadUtils
 } from '../file-upload.service';
 
+jest.mock('@shared/ids/id', () => {
+  const actual = jest.requireActual('@shared/ids/id');
+  return {
+    ...actual,
+    makeId: jest.fn(() => 'med_01H00000000000000000000000')
+  };
+});
+
 // Mock external providers
 jest.mock('../../providers/cdn.provider', () => ({
   S3CDNProvider: jest.fn().mockImplementation(() => ({
@@ -46,10 +54,10 @@ import { S3CDNProvider } from '../../providers/cdn.provider';
 import { SharpImageProvider } from '../../providers/image-processing.provider';
 import { FileUploadResult as CdnFileUploadResult } from '../../providers/cdn.provider';
 import { ImageProcessingResult } from '../../providers/image-processing.provider';
+import { makeId } from '@shared/ids/id';
 
 // Mock crypto and fs
 jest.mock('crypto', () => ({
-  randomUUID: jest.fn(() => 'test-uuid'),
   createHash: jest.fn(() => ({
     update: jest.fn().mockReturnThis(),
     digest: jest.fn(() => 'test-hash')
@@ -65,6 +73,7 @@ jest.mock('fs', () => ({
 }));
 
 describe('FileUploadService', () => {
+  const mockFileId = 'med_01H00000000000000000000000';
   let uploadService: FileUploadService;
   let config: FileUploadConfig;
   let mockCDNProvider: jest.Mocked<S3CDNProvider>;
@@ -72,6 +81,7 @@ describe('FileUploadService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (makeId as jest.Mock).mockReturnValue(mockFileId);
 
     config = {
       maxFileSize: 5 * 1024 * 1024, // 5MB
@@ -127,7 +137,7 @@ describe('FileUploadService', () => {
       const result: FileUploadResult = await uploadService.uploadFile(mockFile);
 
       expect(result.success).toBe(true);
-      expect(result.fileId).toBe('test-uuid');
+      expect(result.fileId).toBe(mockFileId);
       expect(result.originalName).toBe('test-image.jpg');
       expect(result.mimeType).toBe('image/jpeg');
       expect(result.size).toBe(1024 * 1024);
@@ -173,9 +183,9 @@ describe('FileUploadService', () => {
       const cdnService = new FileUploadService(cdnConfig, mockCDNProvider);
 
       mockCDNProvider.uploadFile.mockResolvedValue({
-        url: 'https://cdn.example.com/test-uuid.jpg',
-        signedUrl: 'https://cdn.example.com/signed/test-uuid.jpg',
-        key: 'test-uuid.jpg',
+        url: `https://cdn.example.com/${mockFileId}.jpg`,
+        signedUrl: `https://cdn.example.com/signed/${mockFileId}.jpg`,
+        key: `${mockFileId}.jpg`,
         etag: '"test-etag"',
         size: 1024,
         uploadTime: 100,
@@ -187,11 +197,11 @@ describe('FileUploadService', () => {
       expect(mockCDNProvider.uploadFile).toHaveBeenCalledWith(
         mockFile.buffer,
         expect.objectContaining({
-          key: expect.stringContaining('test-uuid'),
+          key: expect.stringContaining(mockFileId),
           contentType: 'image/jpeg'
         })
       );
-      expect(result.cdnUrl).toBe('https://cdn.example.com/signed/test-uuid.jpg');
+      expect(result.cdnUrl).toBe(`https://cdn.example.com/signed/${mockFileId}.jpg`);
     });
 
     it('should handle file validation errors', async () => {

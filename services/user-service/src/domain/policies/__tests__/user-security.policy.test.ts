@@ -4,6 +4,30 @@ import { Email } from '../../value-objects/email.value-object';
 import { PhoneNumber } from '../../value-objects/phone-number.value-object';
 import { UserRole } from '../../types/user.types';
 
+const redisState = new Map<string, number>();
+const redisClient = {
+  incr: jest.fn(async (key: string) => {
+    const next = (redisState.get(key) || 0) + 1;
+    redisState.set(key, next);
+    return next;
+  }),
+  expire: jest.fn(async () => 1)
+};
+
+const prismaMock = {
+  user_TrustedDevice: {
+    findFirst: jest.fn()
+  }
+};
+
+jest.mock('@shared/redis/ioredis-client', () => ({
+  getSharedRedisClient: jest.fn(() => redisClient)
+}));
+
+jest.mock('../../infrastructure/database/prisma-client', () => ({
+  prisma: prismaMock
+}));
+
 describe('UserSecurityPolicy', () => {
   const policy = new UserSecurityPolicy();
 
@@ -237,49 +261,48 @@ describe('UserSecurityPolicy', () => {
   });
 
   describe('isSecureSession', () => {
-    test('returns false for suspicious IP 10.x.x.x', () => {
-      const user = makeUser();
-      expect(policy.isSecureSession(user, { ipAddress: '10.0.0.1', userAgent: 'x' })).toBe(false);
+    beforeEach(() => {
+      redisState.clear();
+      redisClient.incr.mockClear();
+      redisClient.expire.mockClear();
+      prismaMock.user_TrustedDevice.findFirst.mockReset();
     });
 
-    test('returns false for suspicious IP 192.168.x.x', () => {
+    test('returns false when IP exceeds attempt threshold', async () => {
       const user = makeUser();
-      expect(policy.isSecureSession(user, { ipAddress: '192.168.1.1', userAgent: 'x' })).toBe(false);
+      redisState.set('security:ip:8.8.8.8:attempts', 9);
+      await expect(policy.isSecureSession(user, { ipAddress: '8.8.8.8', userAgent: 'x' })).resolves.toBe(false);
     });
 
-    test('returns false for suspicious IP 127.x.x.x', () => {
-      const user = makeUser();
-      expect(policy.isSecureSession(user, { ipAddress: '127.0.0.1', userAgent: 'x' })).toBe(false);
-    });
-
-    test('returns false for unusual location with high risk score', () => {
+    test('returns false for unusual location with high risk score', async () => {
       const user = makeUser().updateMetadata({ riskScore: 50 });
-      expect(policy.isSecureSession(user, { ipAddress: '8.8.8.8', userAgent: 'x', location: 'Unknown' })).toBe(false);
+      await expect(policy.isSecureSession(user, { ipAddress: '8.8.8.8', userAgent: 'x', location: 'Unknown' })).resolves.toBe(false);
     });
 
-    test('returns true for safe IP and no location', () => {
+    test('returns true for safe IP and no location', async () => {
       const user = makeUser();
-      expect(policy.isSecureSession(user, { ipAddress: '8.8.8.8', userAgent: 'x' })).toBe(true);
+      await expect(policy.isSecureSession(user, { ipAddress: '8.8.8.8', userAgent: 'x' })).resolves.toBe(true);
     });
 
-    test('returns true for safe IP and location with low risk', () => {
+    test('returns true for safe IP and location with low risk', async () => {
       const user = makeUser().updateMetadata({ riskScore: 20 });
-      expect(policy.isSecureSession(user, { ipAddress: '8.8.8.8', userAgent: 'x', location: 'Dar es Salaam' })).toBe(true);
+      await expect(policy.isSecureSession(user, { ipAddress: '8.8.8.8', userAgent: 'x', location: 'Dar es Salaam' })).resolves.toBe(true);
     });
 
-    test('returns true when trustedDeviceCount is 1', () => {
+    test('returns true when trustedDeviceCount is 1 and device is known', async () => {
       const user = makeUser().updateMetadata({ trustedDeviceCount: 1 });
-      expect(policy.isSecureSession(user, { ipAddress: '8.8.8.8', userAgent: 'x' })).toBe(true);
+      prismaMock.user_TrustedDevice.findFirst.mockResolvedValueOnce({ id: 'device-1' });
+      await expect(policy.isSecureSession(user, { ipAddress: '8.8.8.8', userAgent: 'x' })).resolves.toBe(true);
     });
 
-    test('returns true for location with riskScore exactly 40', () => {
+    test('returns true for location with riskScore exactly 40', async () => {
       const user = makeUser().updateMetadata({ riskScore: 40 });
-      expect(policy.isSecureSession(user, { ipAddress: '8.8.8.8', userAgent: 'x', location: 'Dar es Salaam' })).toBe(true);
+      await expect(policy.isSecureSession(user, { ipAddress: '8.8.8.8', userAgent: 'x', location: 'Dar es Salaam' })).resolves.toBe(true);
     });
 
-    test('returns false for location with riskScore 41', () => {
+    test('returns false for location with riskScore 41', async () => {
       const user = makeUser().updateMetadata({ riskScore: 41 });
-      expect(policy.isSecureSession(user, { ipAddress: '8.8.8.8', userAgent: 'x', location: 'Dar es Salaam' })).toBe(false);
+      await expect(policy.isSecureSession(user, { ipAddress: '8.8.8.8', userAgent: 'x', location: 'Dar es Salaam' })).resolves.toBe(false);
     });
   });
 

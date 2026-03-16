@@ -1,4 +1,4 @@
-import { MockSmsProvider } from './mock-sms.provider';
+import { MockSmsProvider } from './__tests__/mock-sms.provider';
 
 describe('MockSmsProvider', () => {
   beforeEach(() => {

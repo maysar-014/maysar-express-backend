@@ -3,7 +3,7 @@
  * Persists checkout orders and items using Prisma ORM
  */
 
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { CartItemVO } from '../../domain/value-objects/cart.value-object';
 
 export interface CheckoutOrderSessionSnapshot {
@@ -35,6 +35,9 @@ export class PrismaCheckoutOrderRepository {
 
   async createFromSession(session: CheckoutOrderSessionSnapshot) {
     const items = session.items ?? [];
+    const metadata = session.metadata
+      ? (JSON.parse(JSON.stringify(session.metadata)) as Prisma.InputJsonValue)
+      : undefined;
 
     return this.prisma.$transaction(async (tx) => {
       const order = await tx.checkout_Order.create({
@@ -52,7 +55,7 @@ export class PrismaCheckoutOrderRepository {
           totalAmount: session.totalAmount,
           paymentMethodId: session.paymentMethodId ?? null,
           paymentStatus: session.paymentStatus ?? 'pending',
-          metadata: session.metadata ?? undefined
+          metadata
         }
       });
 

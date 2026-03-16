@@ -3,6 +3,7 @@ import { ITransactionRepository } from '../../domain/repositories/transaction.re
 import { Transaction, TransactionType } from '../../domain/entities/transaction.entity';
 
 import { AuditInfo } from '../../domain/value-objects/audit-info.value-object';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export interface FreezeFundsDTO {
     userId: string;
@@ -88,6 +89,6 @@ export class FreezeFundsUseCase {
     }
 
     private generateId(): string {
-        return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        return makeId(getModelPrefix('Wallet_Transaction'));
     }
 }

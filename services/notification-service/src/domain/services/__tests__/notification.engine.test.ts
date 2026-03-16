@@ -7,26 +7,19 @@ describe('NotificationEngine', () => {
         engine = new NotificationEngine();
     });
 
-    it('should select optimal channel', () => {
-        const channel = engine.selectChannel({ userId: 'u1', type: 'transactional' });
+    it('should process notification request', async () => {
+        const result = await engine.processNotificationRequest({
+            recipientId: 'u1',
+            recipientType: 'customer',
+            channels: [
+                { type: 'sms', address: '+255712345678', preferred: true, verified: true }
+            ],
+            templateId: 'order_confirmed',
+            data: { orderId: 'o1', totalAmount: '100', currency: 'TZS' },
+            priority: 'high'
+        });
 
-        expect(['email', 'sms', 'push']).toContain(channel);
-    });
-
-    it('should batch notifications', () => {
-        const notifications = [
-            { id: 'n1', userId: 'u1', type: 'email' },
-            { id: 'n2', userId: 'u1', type: 'email' }
-        ];
-
-        const batches = engine.batchNotifications(notifications as any);
-
-        expect(batches.length).toBeGreaterThan(0);
-    });
-
-    it('should calculate send time', () => {
-        const sendTime = engine.calculateOptimalSendTime('u1', 'marketing');
-
-        expect(sendTime).toBeInstanceOf(Date);
+        expect(result.success).toBe(true);
+        expect(result.notificationId).toBeTruthy();
     });
 });

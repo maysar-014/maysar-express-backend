@@ -32,15 +32,10 @@ export class SellerAnalyticsSaga {
     // --- Metrics Flow ---
 
     private async handleMetricsCollectionRequested(event: any) {
-        const { sellerId, dateRange, sagaId } = event.data || event;
-        // Simulating collection
-        const metrics = {
-            totalOrders: Math.floor(Math.random() * 1000),
-            totalRevenue: Math.floor(Math.random() * 50000),
-            averageOrderValue: Math.floor(Math.random() * 500),
-            customerCount: Math.floor(Math.random() * 200),
-            conversionRate: Math.random() * 0.1
-        };
+        const { sellerId, dateRange, sagaId, metrics } = event.data || event;
+        if (!metrics) {
+            throw new Error('Seller metrics payload is required for analytics.');
+        }
 
         await this.eventBus.publish({
             type: 'SellerMetricsCollected', // Bridging to the "Collected" event
@@ -59,14 +54,10 @@ export class SellerAnalyticsSaga {
     }
 
     private async handleSellerKPIsCalculated(event: any) {
-        const { sellerId, kpis, sagaId } = event.data || event;
-        const realTimeData = {
-            activeVisitors: 23,
-            cartAbandonment: 4,
-            liveOrders: 3,
-            inventoryAlerts: 2,
-            customerInquiries: 1
-        };
+        const { sellerId, kpis, sagaId, realTimeData } = event.data || event;
+        if (!realTimeData) {
+            throw new Error('Real-time data payload is required to update seller dashboard.');
+        }
 
         await this.eventBus.publish({
             type: 'RealTimeDataUpdated',
@@ -91,14 +82,10 @@ export class SellerAnalyticsSaga {
     // --- Sales Flow ---
 
     private async handleSalesDataCollectionRequested(event: any) {
-        const { sellerId, period, sagaId } = event.data || event;
-        // Simulate collection
-        const salesData = Array.from({ length: 30 }, (_, i) => ({
-            date: new Date(Date.now() - i * 24 * 60 * 60 * 1000),
-            revenue: Math.floor(Math.random() * 2000),
-            orders: Math.floor(Math.random() * 50),
-            customers: Math.floor(Math.random() * 30)
-        }));
+        const { sellerId, sagaId, salesData } = event.data || event;
+        if (!salesData) {
+            throw new Error('Sales data payload is required for trend analysis.');
+        }
 
         await this.eventBus.publish({
             type: 'SalesDataCollected',
@@ -117,19 +104,22 @@ export class SellerAnalyticsSaga {
     }
 
     private async handleTrendAnalysisCompleted(event: any) {
-        const { sellerId, trends, sagaId } = event.data || event;
-        const reportId = `report_${sellerId}_${Date.now()}`;
+        const { sellerId, trends, sagaId, reportUrl, reportId } = event.data || event;
+        if (!reportUrl || !reportId) {
+            throw new Error('Sales report generation requires reportUrl and reportId.');
+        }
 
         await this.eventBus.publish({
             type: 'SalesReportGenerated',
-            data: { sellerId, reportId, reportUrl: `https://reports.example.com/${reportId}.pdf`, generatedAt: new Date(), sagaId }
+            data: { sellerId, reportId, reportUrl, generatedAt: new Date(), sagaId }
         });
     }
 
     private async handleSalesReportGenerated(event: any) {
-        const { sellerId, sagaId } = event.data || event;
-        // Mocking report data availability for insights
-        const insights = this.engine.extractInsights({});
+        const { sellerId, sagaId, insights } = event.data || event;
+        if (!insights) {
+            throw new Error('Insights payload is required to update sales analytics.');
+        }
 
         await this.eventBus.publish({
             type: 'InsightsExtracted',
@@ -150,13 +140,10 @@ export class SellerAnalyticsSaga {
     // --- Performance Flow ---
 
     private async handlePerformanceDataCollectionRequested(event: any) {
-        const { sellerId, metrics, sagaId } = event.data || event;
-        const performanceData = {
-            responseTime: Math.random() * 1000,
-            uptime: 0.99 + Math.random() * 0.01,
-            errorRate: Math.random() * 0.01,
-            throughput: Math.floor(Math.random() * 1000)
-        };
+        const { sellerId, sagaId, performanceData } = event.data || event;
+        if (!performanceData) {
+            throw new Error('Performance data payload is required for benchmark analysis.');
+        }
 
         await this.eventBus.publish({
             type: 'PerformanceDataCollected',
@@ -185,20 +172,10 @@ export class SellerAnalyticsSaga {
     }
 
     private async handlePerformanceAlertsGenerated(event: any) {
-        const { sellerId, sagaId } = event.data || event;
-        // Using engine for recommendations? Or just hardcoded as per original
-        // Original used `PerformanceAnalysisCompleted` -> `RecommendationsGenerated`.
-        // I am following the `Benchmark` flow from `initializeSellerSagaHandlers`.
-        // Wait, `initializeSellerSagaHandlers` has `PerformanceAlertsGenerated` -> `RecommendationsGenerated`.
-
-        const recommendations = [
-            {
-                category: 'efficiency',
-                action: 'Consider automating order processing',
-                impact: 'medium',
-                effort: 'low'
-            }
-        ];
+        const { sellerId, sagaId, recommendations } = event.data || event;
+        if (!recommendations) {
+            throw new Error('Recommendations payload is required to complete performance workflow.');
+        }
 
         await this.eventBus.publish({
             type: 'RecommendationsGenerated',

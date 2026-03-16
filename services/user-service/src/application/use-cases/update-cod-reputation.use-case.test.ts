@@ -8,7 +8,7 @@ describe('UpdateCODReputationUseCase', () => {
 
   it('throws when user does not exist', async () => {
     const useCase = new UpdateCODReputationUseCase(
-      { findById: jest.fn().mockResolvedValue(null), update: jest.fn(), saveCODHistory: jest.fn() },
+      { findById: jest.fn().mockResolvedValue(null), updateCODStanding: jest.fn(), saveCODHistory: jest.fn() } as any,
       { calculateNewScore: jest.fn() } as never
     );
 
@@ -25,7 +25,7 @@ describe('UpdateCODReputationUseCase', () => {
         codSuccessfulOrders: 0,
         codTotalOrders: 3
       }),
-      update: jest.fn().mockResolvedValue(undefined),
+      updateCODStanding: jest.fn().mockResolvedValue(undefined),
       saveCODHistory: jest.fn().mockResolvedValue(undefined)
     };
     const reputationEngine = {
@@ -51,7 +51,7 @@ describe('UpdateCODReputationUseCase', () => {
       CODAction.DELIVERY_CONFIRMED,
       true
     );
-    expect(userRepository.update).toHaveBeenCalledWith(
+    expect(userRepository.updateCODStanding).toHaveBeenCalledWith(
       'user-1',
       expect.objectContaining({
         codReputationScore: 35,
@@ -82,7 +82,7 @@ describe('UpdateCODReputationUseCase', () => {
         codFailedOrders: 1,
         codTotalOrders: 6
       }),
-      update: jest.fn().mockResolvedValue(undefined),
+      updateCODStanding: jest.fn().mockResolvedValue(undefined),
       saveCODHistory: jest.fn().mockResolvedValue(undefined)
     };
     const reputationEngine = {
@@ -108,7 +108,7 @@ describe('UpdateCODReputationUseCase', () => {
       CODAction.DELIVERY_REFUSED,
       false
     );
-    expect(userRepository.update).toHaveBeenCalledWith(
+    expect(userRepository.updateCODStanding).toHaveBeenCalledWith(
       'user-2',
       expect.objectContaining({
         codReputationScore: 45,

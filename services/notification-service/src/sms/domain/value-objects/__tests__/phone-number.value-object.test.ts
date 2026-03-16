@@ -14,7 +14,7 @@ describe('PhoneNumber Value Object', () => {
 
         it('should throw on invalid format', () => {
             expect(() => PhoneNumber.create('invalid')).toThrow('Invalid phone number format');
-            expect(() => PhoneNumber.create('+1')).toThrow('Invalid phone number format'); // Too short
+            expect(() => PhoneNumber.create('+2551')).toThrow('Invalid phone number format'); // Too short
         });
     });
 
@@ -23,8 +23,8 @@ describe('PhoneNumber Value Object', () => {
             const tz = PhoneNumber.create('+255712345678');
             expect(tz.getCountryCode()).toBe('255');
 
-            const us = PhoneNumber.create('+14155552671');
-            expect(us.getCountryCode()).toBe('1');
+            const tzAlt = PhoneNumber.create('+255612834686');
+            expect(tzAlt.getCountryCode()).toBe('255');
         });
 
         it('should get local number', () => {
@@ -36,8 +36,8 @@ describe('PhoneNumber Value Object', () => {
             const tz = PhoneNumber.create('+255712345678');
             expect(tz.isTanzanian()).toBe(true);
 
-            const us = PhoneNumber.create('+14155552671');
-            expect(us.isTanzanian()).toBe(false);
+            const tzAlt = PhoneNumber.create('+255612834686');
+            expect(tzAlt.isTanzanian()).toBe(true);
         });
 
         it('should identify mobile numbers', () => {

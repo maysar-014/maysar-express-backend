@@ -19,6 +19,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      meilisearch:
+        condition: service_started
     ports:
       - "3000:3000"
     # No volume mounts or dev dependencies in production
@@ -89,6 +91,25 @@ services:
     networks:
       - maysar-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    restart: unless-stopped
+    environment:
+      MEILI_ENV: production
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+    volumes:
+      - meili_data:/meili_data
+    networks:
+      - maysar-network
     deploy:
       resources:
         limits:
@@ -198,6 +219,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  meili_data:
   backups:
 
 

@@ -4,6 +4,7 @@ import { CODDisputeController } from '../controllers/cod-dispute.controller';
 import { IdempotencyMiddleware } from '@shared/middleware/idempotency';
 import { cacheInvalidation, cacheResponse } from '../../middleware/caching.middleware';
 import { cacheConfig } from '../../config/monitoring.config';
+import { createMaintenanceRoutes } from './maintenance.routes';
 
 const router = Router();
 
@@ -22,6 +23,8 @@ const orderSearchCache = cacheConfig.enabled ? cacheResponse({ ttl: 60, tags: ['
 const orderAnalyticsCache = cacheConfig.enabled ? cacheResponse({ ttl: 30, tags: ['orders', 'orders:analytics'] }) : noCache;
 
 export const setupOrderRoutes = (orderController: OrderController, codDisputeController: CODDisputeController) => {
+  router.use('/system/maintenance', createMaintenanceRoutes());
+
   const redisUrl = process.env.REDIS_URL;
   if (redisUrl) {
     const idempotencyMiddleware = new IdempotencyMiddleware(redisUrl);
@@ -54,6 +57,9 @@ export const setupOrderRoutes = (orderController: OrderController, codDisputeCon
 
   // Order analytics
   router.get('/orders/analytics/stats', orderAnalyticsCache, (req, res) => orderController.getOrderAnalytics(req, res));
+
+  // Get single order by tracking number
+  router.get('/orders/tracking/:trackingNumber', orderDetailCache, (req, res) => orderController.getOrderByTrackingNumber(req, res));
 
   // Get single order by ID
   router.get('/orders/:id', orderDetailCache, (req, res) => orderController.getOrder(req, res));

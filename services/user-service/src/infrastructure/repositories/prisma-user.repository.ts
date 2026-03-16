@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, User_UserRole, User_UserStatus } from '@prisma/client';
 import { IUserRepository, UserAddress } from '../../domain/repositories';
 import { User, UserRole, UserStatus } from '../../domain/entities/user.entity';
 import { UserPreferences } from '../../domain/types/user.types';
@@ -224,12 +224,27 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   /**
+   * Check if public user code exists
+   */
+  async publicCodeExists(code: string): Promise<boolean> {
+    try {
+      const count = await this.prisma.user_User.count({
+        where: { publicCode: code }
+      });
+      return count > 0;
+    } catch (error) {
+      logger.error('Error checking public code existence', { code, error: this.formatError(error) });
+      throw error;
+    }
+  }
+
+  /**
    * Find multiple users by their status
    */
   async findByStatus(status: UserStatus): Promise<User[]> {
     try {
       const users = await this.prisma.user_User.findMany({
-        where: { status: status as any },
+        where: { status: this.mapStatusToPrisma(status) },
         include: { addresses: true },
         orderBy: { createdAt: 'desc' }
       });
@@ -247,7 +262,7 @@ export class PrismaUserRepository implements IUserRepository {
   async findByRole(role: UserRole): Promise<User[]> {
     try {
       const users = await this.prisma.user_User.findMany({
-        where: { role: role as any },
+        where: { role: this.mapRoleToPrisma(role) },
         include: { addresses: true },
         orderBy: { createdAt: 'desc' }
       });
@@ -314,7 +329,8 @@ export class PrismaUserRepository implements IUserRepository {
       };
 
       results.forEach(result => {
-        counts[result.status as UserStatus] = result._count.status;
+        const mappedStatus = this.mapStatusFromPrisma(result.status);
+        counts[mappedStatus] = result._count.status;
       });
 
       return counts;
@@ -358,7 +374,8 @@ export class PrismaUserRepository implements IUserRepository {
 
       const registrationsByRole: Record<UserRole, number> = {} as Record<UserRole, number>;
       roleResults.forEach((result: any) => {
-        registrationsByRole[result.role as UserRole] = result._count.role;
+        const mappedRole = this.mapRoleFromPrisma(result.role);
+        registrationsByRole[mappedRole] = result._count.role;
       });
 
       const registrationsByDay = await this.prisma.$queryRaw<Array<{ date: string; count: bigint }>>`
@@ -413,7 +430,7 @@ export class PrismaUserRepository implements IUserRepository {
     try {
       await this.prisma.user_User.update({
         where: { id: userId },
-        data: { status: status as any }
+        data: { status: this.mapStatusToPrisma(status) }
       });
 
       logger.info('User status updated', { userId, status });
@@ -502,7 +519,7 @@ export class PrismaUserRepository implements IUserRepository {
         data: {
           failedLoginAttempts: newAttempts,
           lockoutUntil: shouldLock ? new Date(Date.now() + 30 * 60 * 1000) : null,
-          status: (shouldLock ? UserStatus.LOCKED : user.status) as any
+          status: shouldLock ? User_UserStatus.LOCKED : user.status
         }
       });
 
@@ -520,7 +537,7 @@ export class PrismaUserRepository implements IUserRepository {
     try {
       await this.prisma.user_User.update({
         where: { id: userId },
-        data: { role: role as any }
+        data: { role: this.mapRoleToPrisma(role) }
       });
 
       logger.info('User role updated', { userId, role });
@@ -661,6 +678,37 @@ export class PrismaUserRepository implements IUserRepository {
       logger.error('Error setting default address', { userId, addressId, error: this.formatError(error) });
       throw error;
     }
+  }
+
+  // ============================================================================
+  // COD REPUTATION OPERATIONS
+  // ============================================================================
+
+  async updateCODStanding(userId: string, updates: Record<string, unknown>): Promise<void> {
+    await this.prisma.user_User.update({
+      where: { id: userId },
+      data: updates
+    });
+  }
+
+  async saveCODHistory(history: {
+    userId: string;
+    orderId: string;
+    action: string;
+    reputationChange: number;
+    reputationAfter: number;
+    reason?: string;
+  }): Promise<void> {
+    await this.prisma.user_CODHistory.create({
+      data: {
+        userId: history.userId,
+        orderId: history.orderId,
+        action: history.action,
+        reputationChange: history.reputationChange,
+        reputationAfter: history.reputationAfter,
+        reason: history.reason || null
+      }
+    });
   }
 
   // ============================================================================
@@ -957,34 +1005,58 @@ export class PrismaUserRepository implements IUserRepository {
     // Note: Addresses are returned separately through getUserAddresses()
     // For domain entity mapping, we don't include addresses here
     const addresses: Address[] = [];
+    const metadata = {
+      accountAge: 0,
+      loginAttempts: userData.failedLoginAttempts ?? 0,
+      lastFailedLoginAttempt: undefined,
+      accountLockedUntil: userData.lockoutUntil || undefined
+    };
 
-    return User.create({
+    return new User({
       id: userData.id,
+      publicCode: userData.publicCode ?? undefined,
       email: Email.create(this.piiService.decrypt(userData.email)),
       phoneNumber: userData.phoneNumber ? PhoneNumber.create(this.piiService.decrypt(userData.phoneNumber)) : PhoneNumber.create(''),
       firstName: userData.firstName || '',
       lastName: userData.lastName || '',
       dateOfBirth: userData.dateOfBirth || undefined,
-      role: userData.role,
+      role: this.mapRoleFromPrisma(userData.role),
+      status: this.mapStatusFromPrisma(userData.status),
+      metadata,
+      createdAt: userData.createdAt || new Date(),
+      updatedAt: userData.updatedAt || new Date(),
+      lastLoginAt: userData.lastLoginAt || undefined,
+      emailVerified: userData.isEmailVerified,
+      phoneVerified: userData.isPhoneVerified,
+      profilePicture: userData.avatar || undefined,
       preferredLanguage: userData.language,
       preferredCurrency: userData.timezone,
-      addresses
+      addresses,
+      codEnabled: userData.codEnabled,
+      codReputationScore: userData.codReputationScore,
+      codSuccessfulOrders: userData.codSuccessfulOrders,
+      codFailedOrders: userData.codFailedOrders,
+      codTotalOrders: userData.codTotalOrders,
+      codLastOrderAt: userData.codLastOrderAt || undefined,
+      codSuspendedUntil: userData.codSuspendedUntil || undefined,
+      codPermanentlyDisabled: userData.codPermanentlyDisabled
     });
   }
 
   /**
    * Map domain User entity to Prisma create input
    */
-  private mapToPrismaCreateData(user: User): any {
-    return {
-      id: user.id,
-      email: this.piiService.encrypt(user.email.value),
+    private mapToPrismaCreateData(user: User): any {
+      return {
+        id: user.id,
+        publicCode: user.publicCode ?? null,
+        email: this.piiService.encrypt(user.email.value),
       phoneNumber: user.phoneNumber?.value ? this.piiService.encrypt(user.phoneNumber.value) : null,
       firstName: user.firstName,
       lastName: user.lastName,
       dateOfBirth: user.dateOfBirth,
-      role: user.role,
-      status: user.status,
+      role: this.mapRoleToPrisma(user.role),
+      status: this.mapStatusToPrisma(user.status),
       language: user.preferredLanguage,
       timezone: user.preferredCurrency,
       isEmailVerified: user.emailVerified,
@@ -998,15 +1070,16 @@ export class PrismaUserRepository implements IUserRepository {
   /**
    * Map domain User entity to Prisma update input
    */
-  private mapToPrismaUpdateData(user: User): any {
-    return {
-      email: this.piiService.encrypt(user.email.value),
+    private mapToPrismaUpdateData(user: User): any {
+      return {
+        publicCode: user.publicCode ?? null,
+        email: this.piiService.encrypt(user.email.value),
       phoneNumber: user.phoneNumber?.value ? this.piiService.encrypt(user.phoneNumber.value) : null,
       firstName: user.firstName,
       lastName: user.lastName,
       dateOfBirth: user.dateOfBirth,
-      role: user.role,
-      status: user.status,
+      role: this.mapRoleToPrisma(user.role),
+      status: this.mapStatusToPrisma(user.status),
       language: user.preferredLanguage,
       timezone: user.preferredCurrency,
       isEmailVerified: user.emailVerified,
@@ -1042,5 +1115,83 @@ export class PrismaUserRepository implements IUserRepository {
       return error.message;
     }
     return String(error);
+  }
+
+  private mapRoleToPrisma(role: UserRole): User_UserRole {
+    const normalized = String(role).toLowerCase();
+    switch (normalized) {
+      case 'buyer':
+        return User_UserRole.BUYER;
+      case 'seller':
+        return User_UserRole.SELLER;
+      case 'supplier':
+        return User_UserRole.SUPPLIER;
+      case 'courier':
+        return User_UserRole.COURIER;
+      case 'enabler':
+        return User_UserRole.ENABLER;
+      case 'system':
+        return User_UserRole.SYSTEM;
+      default:
+        throw new Error(`Unsupported user role: ${role}`);
+    }
+  }
+
+  private mapRoleFromPrisma(role: User_UserRole | string): UserRole {
+    const normalized = String(role).toLowerCase();
+    switch (normalized) {
+      case 'buyer':
+        return UserRole.BUYER;
+      case 'seller':
+        return UserRole.SELLER;
+      case 'supplier':
+        return UserRole.SUPPLIER;
+      case 'courier':
+        return UserRole.COURIER;
+      case 'enabler':
+        return UserRole.ENABLER;
+      case 'system':
+        return UserRole.SYSTEM;
+      default:
+        throw new Error(`Unsupported prisma role: ${role}`);
+    }
+  }
+
+  private mapStatusToPrisma(status: UserStatus): User_UserStatus {
+    const normalized = String(status).toLowerCase();
+    switch (normalized) {
+      case 'pending_verification':
+        return User_UserStatus.PENDING_VERIFICATION;
+      case 'active':
+        return User_UserStatus.ACTIVE;
+      case 'suspended':
+        return User_UserStatus.SUSPENDED;
+      case 'deactivated':
+        return User_UserStatus.DEACTIVATED;
+      case 'locked':
+        return User_UserStatus.LOCKED;
+      case 'inactive':
+        return User_UserStatus.DEACTIVATED;
+      default:
+        throw new Error(`Unsupported user status: ${status}`);
+    }
+  }
+
+  private mapStatusFromPrisma(status: User_UserStatus | string): UserStatus {
+    const normalized = String(status).toLowerCase();
+    switch (normalized) {
+      case 'pending_verification':
+        return UserStatus.PENDING_VERIFICATION;
+      case 'active':
+        return UserStatus.ACTIVE;
+      case 'suspended':
+        return UserStatus.SUSPENDED;
+      case 'deactivated':
+        return UserStatus.DEACTIVATED;
+      case 'locked':
+        return UserStatus.LOCKED;
+      default:
+        throw new Error(`Unsupported prisma status: ${status}`);
+    }
   }
 }

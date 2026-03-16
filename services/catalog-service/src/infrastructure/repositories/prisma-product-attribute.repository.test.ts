@@ -1,8 +1,13 @@
-jest.mock('uuid', () => ({
-  v4: jest.fn(() => 'generated-id')
-}));
+jest.mock('@shared/ids/id', () => {
+  const actual = jest.requireActual('@shared/ids/id');
+  return {
+    ...actual,
+    makeId: jest.fn(() => 'cat_att_01H00000000000000000000000')
+  };
+});
 
 import { PrismaProductAttributeRepository } from './prisma-product-attribute.repository';
+import { makeId } from '@shared/ids/id';
 
 describe('PrismaProductAttributeRepository', () => {
   const makePrisma = () => ({
@@ -27,6 +32,7 @@ describe('PrismaProductAttributeRepository', () => {
   it('saveAll replaces existing attributes', async () => {
     const prisma = makePrisma();
     const repo = new PrismaProductAttributeRepository(prisma as never);
+    (makeId as jest.Mock).mockReturnValue('cat_att_01H00000000000000000000000');
 
     await repo.saveAll('p1', [
       { attributeId: 'a1', value: 'red' },
@@ -39,14 +45,14 @@ describe('PrismaProductAttributeRepository', () => {
     expect(prisma.productAttribute.createMany).toHaveBeenCalledWith({
       data: [
         {
-          id: 'generated-id',
+          id: 'cat_att_01H00000000000000000000000',
           productId: 'p1',
           attributeId: 'a1',
           value: 'red',
           createdAt: expect.any(Date)
         },
         {
-          id: 'generated-id',
+          id: 'cat_att_01H00000000000000000000000',
           productId: 'p1',
           attributeId: 'a2',
           value: 'xl',

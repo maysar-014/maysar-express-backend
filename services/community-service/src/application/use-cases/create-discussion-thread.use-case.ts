@@ -4,6 +4,7 @@ import { EngagementPolicy } from '../../domain/policies/engagement-policy';
 import { ContentModerationPolicy } from '../../domain/policies/content-moderation.policy';
 import { DiscussionMatchingEngine } from '../../domain/engines/discussion-matching-engine';
 import { ReputationTier } from '../../domain/entities/business-profile.entity';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export interface CreateDiscussionThreadRequest {
     authorId: string;
@@ -194,6 +195,6 @@ export class CreateDiscussionThreadUseCase {
     }
 
     private generateId(): string {
-        return `thread_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+        return makeId(getModelPrefix('Community_DiscussionThread'));
     }
 }

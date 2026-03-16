@@ -16,6 +16,9 @@ import {
 import { DistributedSagaOrchestrator, SagaStep } from '../../../../../shared/saga/saga.orchestrator';
 import { ISagaLogRepository } from '../../../../../shared/saga/saga.log';
 import { ProductId, SellerId } from '../../domain/value-objects/ids.value-object';
+import { SharpImageProvider, ImageProcessingProvider } from '../../infrastructure/providers/image-processing.provider';
+import { externalServicesConfig } from '../../config/external-services.config';
+import { eventBus } from '@shared/events/eventBus';
 type SagaOutbox = ConstructorParameters<typeof DistributedSagaOrchestrator<any>>[2];
 
 const noopSagaLogRepository: ISagaLogRepository = {
@@ -257,7 +260,7 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
           console.log(`[${sagaId}] Sending notifications for product ${context.productId}`);
 
           // Send notifications to followers/watchers
-          const notificationsSent = await this.sendProductPublishedNotifications();
+          const notificationsSent = await this.sendProductPublishedNotifications(context);
 
           context.notificationsSent = true;
           context.notificationsSentTo = notificationsSent;
@@ -403,23 +406,48 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
   }
 
   private async processMediaFiles(media: any[]): Promise<void> {
-    // In a real implementation, this would:
-    // 1. Resize images to multiple sizes
-    // 2. Generate thumbnails
-    // 3. Optimize file formats
-    // 4. Upload to CDN
-    // 5. Update media metadata
+    const imageConfig = {
+      provider: ImageProcessingProvider.SHARP,
+      maxFileSize: externalServicesConfig.image.maxSize,
+      allowedFormats: externalServicesConfig.image.allowedFormats,
+      quality: externalServicesConfig.image.quality,
+      timeout: 30000,
+      concurrency: 4,
+      cacheEnabled: true
+    };
+    const imageProvider = new SharpImageProvider(imageConfig);
 
-    // For now, we'll simulate processing
     for (const item of media) {
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Update processing status
-      await this.mediaRepository.updateMetadata(item.id, {
+      let processedMetadata: Record<string, any> = {
         ...item.metadata,
         processed: true,
         processedAt: this.dateTimeService.now()
+      };
+
+      if (item.type === 'image' && item.buffer) {
+        const thumbnail = await imageProvider.processImage(item.buffer, {
+          width: 300,
+          height: 300,
+          fit: 'cover'
+        });
+
+        const resized = await imageProvider.processImage(item.buffer, {
+          width: 1200,
+          fit: 'inside'
+        });
+
+        processedMetadata = {
+          ...processedMetadata,
+          thumbnails: {
+            small: { width: thumbnail.width, height: thumbnail.height, size: thumbnail.size }
+          },
+          resized: { width: resized.width, height: resized.height, size: resized.size }
+        };
+      }
+
+      // Update processing status
+      await this.mediaRepository.updateMetadata(item.id, {
+        ...processedMetadata
       });
     }
   }
@@ -450,17 +478,16 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
     };
   }
 
-  private async sendProductPublishedNotifications(): Promise<string[]> {
-    // In a real implementation, this would:
-    // 1. Find users following the seller
-    // 2. Find users watching similar products/categories
-    // 3. Send notifications via email/push/in-app
+  private async sendProductPublishedNotifications(context: ProductPublishingContext): Promise<string[]> {
+    await eventBus.publish('ProductPublished', {
+      productId: context.productId,
+      sellerId: context.sellerId,
+      publishedAt: this.dateTimeService.now(),
+      autoPublished: context.autoPublish
+    }, {
+      correlationId: context.requestId
+    });
 
-    // For now, return mock recipients
-    return [
-      'user1@example.com',
-      'user2@example.com',
-      'follower@example.com'
-    ];
+    throw new Error('Notification delivery is not configured for product publishing.');
   }
 }

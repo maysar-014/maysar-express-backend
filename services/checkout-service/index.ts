@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { Module } from '../../src/core/module.interface';
 import { createCheckoutRoutes } from './src/api/routes/checkout.routes';
 import { healthRoutes } from './src/api/routes/health.routes';
+import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { PrismaCartRepository } from './src/infrastructure/repositories/prisma-cart.repository';
 import { PrismaCheckoutRepository } from './src/infrastructure/repositories/prisma-checkout.repository';
 import { PrismaCheckoutOrderRepository } from './src/infrastructure/repositories/prisma-checkout-order.repository';
@@ -31,6 +32,7 @@ export const CheckoutModule: Module = {
 
         router.use('/health', healthRoutes);
         router.use('/', createCheckoutRoutes(cartController, checkoutController));
+        router.use('/system/maintenance', createMaintenanceRoutes());
 
         router.get('/metrics', async (_req, res) => {
             res.set('Content-Type', metricsRegistry.contentType);

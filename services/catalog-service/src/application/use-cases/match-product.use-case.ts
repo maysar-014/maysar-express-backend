@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import { ProductMatchRequestDto, ProductMatchResponseDto } from '../dto/matching-dto';
 import { IProductRepository, IProductMatchAuditRepository, IMatchConfirmationRepository } from '../../domain/repositories/repository.interfaces';
 import { CatalogMatchingEngine, ProductCandidate } from '../../domain/engines/catalog-matching.engine';
@@ -6,6 +5,7 @@ import { ProductIdentifiers } from '../../domain/value-objects/product-identifie
 import { ProductFingerprint } from '../../domain/value-objects/product-fingerprint.value-object';
 import { NormalizationAlgorithm } from '../../domain/algorithms/normalization.algorithm';
 import { MatchLevel } from '../../domain/value-objects/match-result.value-object';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export class MatchProductUseCase {
     constructor(
@@ -60,7 +60,7 @@ export class MatchProductUseCase {
         } else if (matchResult.isPossibleMatch()) {
             // Provisional decision - will be updated after seller confirmation
             decision = 'NEW_PRODUCT';
-            confirmationId = crypto.randomUUID();
+            confirmationId = makeId(getModelPrefix('Catalog_MatchConfirmation'));
             auditMetadata.pendingConfirmation = true;
             auditMetadata.confirmationId = confirmationId;
         } else {
@@ -68,7 +68,7 @@ export class MatchProductUseCase {
         }
 
         // 5. Create audit record
-        const auditId = crypto.randomUUID();
+        const auditId = makeId(getModelPrefix('Catalog_ProductMatchAudit'));
         await this.auditRepository.save({
             id: auditId,
             candidateProductId: '', // Not yet created

@@ -5,12 +5,13 @@
 
 import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
+import { joiId } from '@shared/validation/id';
 
 // Commission calculation validation schema
 export const validateCalculateCommission = (req: Request, res: Response, next: NextFunction): void => {
   const schema = Joi.object({
-    orderId: Joi.string().uuid().required(),
-    sellerId: Joi.string().uuid().required(),
+    orderId: joiId().required(),
+    sellerId: joiId().required(),
     orderAmount: Joi.number().positive().precision(2).required(),
     recipientType: Joi.string().valid('seller', 'courier', 'enabler', 'customer').required(),
     commissionType: Joi.string().valid(
@@ -62,7 +63,7 @@ export const validateApproveCommission = (req: Request, res: Response, next: Nex
 
   // Validate commission ID parameter
   const paramSchema = Joi.object({
-    id: Joi.string().uuid().required()
+    id: joiId().required()
   });
 
   const { error: paramError } = paramSchema.validate(req.params);
@@ -104,7 +105,7 @@ export const validateCommissionQuery = (req: Request, res: Response, next: NextF
 // Seller ID parameter validation
 export const validateSellerId = (req: Request, res: Response, next: NextFunction): void => {
   const schema = Joi.object({
-    sellerId: Joi.string().uuid().required()
+    sellerId: joiId().required()
   });
 
   const { error } = schema.validate(req.params);
@@ -123,7 +124,7 @@ export const validateSellerId = (req: Request, res: Response, next: NextFunction
 // Commission ID parameter validation
 export const validateCommissionId = (req: Request, res: Response, next: NextFunction): void => {
   const schema = Joi.object({
-    id: Joi.string().uuid().required()
+    id: joiId().required()
   });
 
   const { error } = schema.validate(req.params);

@@ -100,8 +100,6 @@ export class ArrivalTimeCalculationService {
     }
 
     try {
-      // In a real implementation, this would call the traffic provider
-      // For now, return a basic multiplier
       const trafficData = await this.trafficProvider.getTrafficData(from, to, currentTime);
       return trafficData.multiplier || 1.0;
     } catch (error) {
@@ -119,7 +117,6 @@ export class ArrivalTimeCalculationService {
     }
 
     try {
-      // In a real implementation, this would call the weather provider
       const weatherData = await this.weatherProvider.getWeatherData(location, currentTime);
 
       // Basic weather impact calculation

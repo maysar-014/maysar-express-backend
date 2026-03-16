@@ -1,4 +1,5 @@
 import { GeoPoint } from '../value-objects/geopoint.value-object';
+import { CourierStatus } from '../enums/courier-status.enum';
 import { Route } from '../entities/route.entity';
 import { RouteStatus } from '../enums/route-status.enum';
 
@@ -19,6 +20,7 @@ export interface Courier {
     rating: number;
     completionRate: number;
     currentLocation: GeoPoint;
+    status: CourierStatus;
     isAvailable: boolean;
     trafficExperience: number;
 }
@@ -102,6 +104,11 @@ export interface ICourierRepository {
     updateCourierAvailability(courierId: string, isAvailable: boolean): Promise<void>;
 
     /**
+     * Updates a courier's status using the state machine
+     */
+    updateCourierStatus(courierId: string, status: CourierStatus): Promise<void>;
+
+    /**
      * Gets performance metrics for a courier
      */
     getCourierPerformance(courierId: string): Promise<{
@@ -145,6 +152,16 @@ export interface IDeliveryRepository {
      * Updates the status of a delivery
      */
     updateStatus(id: string, status: string, metadata?: any): Promise<void>;
+
+    /**
+     * Updates estimated delivery timing and optional route metrics
+     */
+    updateEstimatedDeliveryTime(
+        id: string,
+        estimatedDeliveryTime: Date,
+        routeDistanceKm?: number,
+        routeDurationMinutes?: number
+    ): Promise<void>;
 
     /**
      * Finds all active (not completed/cancelled) deliveries

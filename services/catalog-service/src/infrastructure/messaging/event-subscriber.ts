@@ -6,6 +6,7 @@
 
 import { DomainEvent } from '../../domain/interfaces';
 import { EventSerializer, PublishingStrategy } from './event-publisher';
+import { getSharedRedisClient } from '@shared/redis/ioredis-client';
 
 /**
  * Event Subscription Configuration
@@ -142,11 +143,15 @@ export abstract class BaseEventSubscriber {
    * Check if event is a duplicate (basic implementation)
    */
   private async isDuplicate(event: DomainEvent): Promise<boolean> {
-    // In a real implementation, this would check a Redis set or database
-    // For now, we'll use a simple in-memory check (not suitable for production)
     const key = `processed:${event.eventId}`;
-    // This is a simplified implementation - in production you'd use Redis or a database
-    return false; // Placeholder
+    const redis = getSharedRedisClient();
+    const exists = await redis.get(key);
+    if (exists) {
+      return true;
+    }
+
+    await redis.setex(key, 86400, '1');
+    return false;
   }
 
   /**
@@ -161,8 +166,11 @@ export abstract class BaseEventSubscriber {
       subscriptionId: 'unknown' // Would be passed in real implementation
     };
 
+    const redis = getSharedRedisClient();
+    const dlqKey = 'dlq:events';
+    await redis.lpush(dlqKey, JSON.stringify(dlqMessage));
+    await redis.ltrim(dlqKey, 0, 9999);
     console.error('Sending event to dead letter queue:', dlqMessage);
-    // In a real implementation, this would send to a dead letter queue
   }
 
   /**

@@ -6,6 +6,8 @@ export class EnablerMapper {
         return {
             id: enabler.id,
             userId: enabler.userId,
+            enablerCode: enabler.enablerCode || undefined,
+            enablerCodeShort: enabler.enablerCodeShort || undefined,
             businessName: enabler.businessName,
             status: enabler.status,
             tier: enabler.tier,

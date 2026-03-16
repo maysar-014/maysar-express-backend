@@ -13,9 +13,9 @@ import { errorHandler } from './api/middleware/error.middleware';
 import { requestLogger } from './api/middleware/request-logger.middleware';
 import { OptimizationMiddleware } from './middleware/optimization.middleware';
 import { eventBus } from '@shared/events/eventBus';
+import { createMaintenanceRoutes } from './api/routes/maintenance.routes';
 
 // Infrastructure components (still needed for health checks)
-import { PrismaClientManager } from './infrastructure/database/prisma.client';
 import { RedisClientManager } from './infrastructure/cache/redis.client';
 import { Logger } from './utils/logger';
 import { AppConfiguration } from './config/app.config';
@@ -67,6 +67,9 @@ class LogisticsService {
   }
 
   private setupRoutes(): void {
+    // Maintenance routes (service-key protected)
+    this.app.use('/api/v1/system/maintenance', createMaintenanceRoutes());
+
     // Use the comprehensive logistics API
     this.app.use('/api/v1', logisticsRoutes);
 
@@ -115,9 +118,6 @@ class LogisticsService {
       this.logger.info('🔄 Initializing database connections...');
 
       try {
-        await PrismaClientManager.getInstance().connect();
-        this.logger.info('✅ Database connected successfully');
-
         // Initialize database connections in the container with the connected client
         const { container } = await import('./infrastructure/container');
         await container.initializeDatabaseConnections();
@@ -145,6 +145,16 @@ class LogisticsService {
       logisticsRecoveryWorker.start();
       (this as any)._sagaRecoveryWorker = logisticsRecoveryWorker;
       this.logger.info('✅ Saga recovery worker started');
+
+      const deliveryEventsSubscriber = logisticsContainer.getDeliveryEventsSubscriber();
+      await deliveryEventsSubscriber.start();
+      (this as any)._deliveryEventsSubscriber = deliveryEventsSubscriber;
+      this.logger.info('✅ Delivery event subscribers registered');
+
+      const trackingStreamWorker = logisticsContainer.getTrackingStreamWorker();
+      trackingStreamWorker.start();
+      (this as any)._trackingStreamWorker = trackingStreamWorker;
+      this.logger.info('✅ Tracking stream worker started');
 
       // Now that all dependencies are ready, start the server
       const port = this.appConfig.getConfig().port;
@@ -181,6 +191,14 @@ class LogisticsService {
     // Stop saga recovery worker
     if ((this as any)._sagaRecoveryWorker) {
       (this as any)._sagaRecoveryWorker.stop();
+    }
+
+    if ((this as any)._trackingStreamWorker) {
+      (this as any)._trackingStreamWorker.stop();
+    }
+
+    if ((this as any)._deliveryEventsSubscriber) {
+      (this as any)._deliveryEventsSubscriber.stop();
     }
 
     // Clean up all resources to prevent memory leaks

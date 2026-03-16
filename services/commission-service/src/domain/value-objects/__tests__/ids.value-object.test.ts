@@ -1,27 +1,27 @@
 import { CommissionId, OrderId, SellerId, RecipientId, PayoutId } from '../ids.value-object';
-import { v4 as uuidv4 } from 'uuid';
+import { isSystemId } from '@shared/ids/id';
 
 describe('ID Value Objects', () => {
-    const validUuid = uuidv4();
+    const validId = CommissionId.create().toString();
 
     describe('CommissionId', () => {
         it('should create a random ID', () => {
             const id = CommissionId.create();
-            expect(id.toString()).toMatch(/^[0-9a-f-]{36}$/);
+            expect(isSystemId(id.toString())).toBe(true);
         });
 
         it('should create from string', () => {
-            const id = CommissionId.fromString(validUuid);
-            expect(id.toString()).toBe(validUuid);
+            const id = CommissionId.fromString(validId);
+            expect(id.toString()).toBe(validId);
         });
 
-        it('should throw for invalid UUID', () => {
-            expect(() => CommissionId.fromString('invalid')).toThrow('Invalid UUID: invalid');
+        it('should throw for invalid ID', () => {
+            expect(() => CommissionId.fromString('invalid')).toThrow('Invalid ID: invalid');
         });
 
         it('should check equality', () => {
-            const id1 = CommissionId.fromString(validUuid);
-            const id2 = CommissionId.fromString(validUuid);
+            const id1 = CommissionId.fromString(validId);
+            const id2 = CommissionId.fromString(validId);
             const id3 = CommissionId.create();
 
             expect(id1.equals(id2)).toBe(true);

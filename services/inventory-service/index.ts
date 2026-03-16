@@ -5,6 +5,8 @@ import { TransactionalOutbox } from '../../shared/outbox/outboxPattern';
 import { OutboxProcessor } from '../../shared/outbox/outbox.processor';
 import { eventBus } from '../../shared/events/eventBus';
 import { healthRoutes } from './src/api/routes/health.routes';
+import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 let outboxProcessor: OutboxProcessor | null = null;
 
@@ -14,7 +16,7 @@ export const InventoryModule: Module = {
         console.log('Initializing inventory-service module');
 
         try {
-            const prisma = new PrismaClient();
+            const prisma = createPrismaClient();
             const outbox = new TransactionalOutbox(prisma, 'inventory_OutboxEvent');
             outboxProcessor = new OutboxProcessor(prisma, outbox, eventBus, 'inventory-service');
             outboxProcessor.start();
@@ -26,6 +28,7 @@ export const InventoryModule: Module = {
     routes: (() => {
         const router = Router();
         router.use('/health', healthRoutes);
+        router.use('/system/maintenance', createMaintenanceRoutes());
         return router;
     })(),
     shutdown: async () => {

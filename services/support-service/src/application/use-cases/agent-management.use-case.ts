@@ -1,5 +1,5 @@
 import { injectable, inject } from 'inversify';
-import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 import { TYPES } from '../../types';
 import { ISupportAgentRepository } from '../../domain/repositories/interfaces';
 import { CreateAgentDto, UpdateAgentDto, AgentResponseDto } from '../dto/agent.dto';
@@ -13,7 +13,7 @@ export class CreateAgentUseCase {
     ) { }
 
     public async execute(dto: CreateAgentDto): Promise<AgentResponseDto> {
-        const agentId = uuidv4();
+        const agentId = makeId(getModelPrefix('Support_SupportAgent'));
         const agent = SupportAgent.create({
             id: agentId,
             userId: dto.userId,

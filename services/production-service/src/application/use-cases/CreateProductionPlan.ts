@@ -6,6 +6,7 @@ import { ProductionPlan, ProductionStatus } from '../../domain/entities/Producti
 import { ProductionSchedule } from '../../domain/value-objects/production-schedule.value-object';
 import { ProductionCapacity } from '../../domain/value-objects/production-capacity.value-object';
 import { ProductionPlanMapper } from '../mappers/production-plan.mapper';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export class CreateProductionPlan {
     constructor(
@@ -20,7 +21,7 @@ export class CreateProductionPlan {
         });
 
         const plan = new ProductionPlan({
-            id: crypto.randomUUID(),
+            id: makeId(getModelPrefix('Production_Plan')),
             supplierId: dto.supplierId,
             name: dto.name,
             targetQuantity: dto.targetQuantity,
@@ -33,16 +34,16 @@ export class CreateProductionPlan {
             updatedAt: new Date()
         });
 
-        // Mock capacity check for now
         const capacity = new ProductionCapacity({
-            maxCapacity: 1000,
-            usedCapacity: 0,
-            reservedCapacity: 0,
-            unit: 'units'
+            maxCapacity: dto.maxCapacity ?? dto.targetQuantity,
+            usedCapacity: dto.usedCapacity ?? 0,
+            reservedCapacity: dto.reservedCapacity ?? 0,
+            unit: dto.capacityUnit ?? 'units'
         });
 
-        if (!this.planningEngine.validatePlan(plan, capacity)) {
-            throw new Error('Plan validation failed or insufficient capacity');
+        const isValid = this.planningEngine.validatePlan(plan, capacity);
+        if (!isValid) {
+            throw new Error('Production plan failed capacity validation');
         }
 
         const savedPlan = await this.repo.save(plan);

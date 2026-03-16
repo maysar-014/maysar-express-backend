@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { DependencyContainer } from '../../infrastructure/container';
 import { ITrackingRepository, IDeliveryRepository } from '../../domain/repositories';
+import { TrackingUpdateService } from '../../application/services/tracking-update.service';
 
 export class TrackingController {
   private get trackingRepository(): ITrackingRepository {
@@ -9,6 +10,10 @@ export class TrackingController {
 
   private get deliveryRepository(): IDeliveryRepository {
     return DependencyContainer.getInstance().getDeliveryRepository();
+  }
+
+  private get trackingUpdateService(): TrackingUpdateService {
+    return DependencyContainer.getInstance().getTrackingUpdateService();
   }
 
   async getTrackingHistory(req: Request, res: Response): Promise<void> {
@@ -88,36 +93,34 @@ export class TrackingController {
         status,
         deliveryId,
         timestamp,
-        deviceInfo
+        deviceInfo,
+        signalStrength
       } = req.body;
 
-      const trackingData = {
-        id: `${courierId}_${Date.now()}`,
-        deliveryId: deliveryId || null,
-        courierId,
-        location: {
-          latitude: location.latitude,
-          longitude: location.longitude,
-          address: location.address || 'Unknown'
-        },
-        speed: speed || 0,
-        heading: heading || 0,
-        timestamp: timestamp ? new Date(timestamp) : new Date(),
-        status: status || 'moving',
-        batteryLevel: batteryLevel || null,
-        accuracy: location.accuracy || 5,
-        deviceInfo
-      };
+      void deviceInfo; // reserved for future device metadata handling
 
-      // TODO: Use proper GeoPoint creation and save to repository
-      // await this.trackingRepository.save(trackingData);
+      const result = await this.trackingUpdateService.handleLocationUpdate({
+        courierId,
+        deliveryId,
+        location,
+        speed,
+        heading,
+        batteryLevel,
+        status,
+        signalStrength,
+        timestamp: timestamp ? new Date(timestamp) : undefined
+      });
 
       res.json({
         success: true,
         data: {
-          courierId,
-          locationStored: true,
-          timestamp: trackingData.timestamp
+          courierId: result.courierId,
+          deliveryId: result.deliveryId,
+          locationStored: result.stored,
+          estimatedArrival: result.estimatedArrival,
+          etaMinutes: result.etaMinutes,
+          anomalies: result.anomalies,
+          timestamp: timestamp ? new Date(timestamp) : new Date()
         }
       });
     } catch (error: any) {

@@ -6,6 +6,7 @@ import { SeoSlug } from '../../domain/value-objects/seo-slug.value-object';
 import { ProductQualityPolicy } from '../../domain/policies/product-quality.policy';
 import { DescriptionValidationPolicy } from '../../domain/policies/description-validation.policy';
 import { DomainError } from '../../domain/errors/domain.error';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export interface CreateProductResponse {
   productId: string;
@@ -29,6 +30,8 @@ export interface ProductPersistenceDto {
   status: string;
   visibility: string;
   tags: string[];
+  enablerEnabled?: boolean;
+  enablerCommissionRate?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -129,7 +132,7 @@ export class CreateProductUseCase {
         );
       }
 
-      const productId = this.idGenerator.generate();
+      const productId = makeId(getModelPrefix('Catalog_Product'));
       const now = this.dateTimeService.now();
 
       const persistenceDto: ProductPersistenceDto = {
@@ -147,6 +150,8 @@ export class CreateProductUseCase {
         status: 'published',
         visibility: 'public',
         tags: [],
+        enablerEnabled: dto.enablerEnabled ?? false,
+        enablerCommissionRate: dto.enablerCommissionRate,
         createdAt: now,
         updatedAt: now,
       };

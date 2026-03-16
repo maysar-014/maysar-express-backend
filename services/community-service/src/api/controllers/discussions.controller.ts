@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { CreateDiscussionThreadUseCase } from '../../application/use-cases/create-discussion-thread.use-case';
 import { AnswerQuestionUseCase } from '../../application/use-cases/answer-question.use-case';
 import { DiscussionThreadMapper } from '../../application/mappers/discussion-thread.mapper';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export class DiscussionsController {
     constructor(
@@ -64,7 +65,7 @@ export class DiscussionsController {
             }
 
             const { threadId } = req.params;
-            const answerId = `answer_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+            const answerId = makeId(getModelPrefix('Community_ThreadAnswer'));
 
             const result = await this.answerQuestionUseCase.execute({
                 threadId,

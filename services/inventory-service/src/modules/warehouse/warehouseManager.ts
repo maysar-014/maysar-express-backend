@@ -59,9 +59,31 @@ export class WarehouseManager {
    * Find warehouses near a location
    */
   async findNearbyWarehouses(latitude: number, longitude: number, radiusKm: number = 100): Promise<WarehouseRecord[]> {
-    // In a real implementation, this would use PostGIS or similar geospatial queries
-    // For now, return all active warehouses
-    return await this.getActiveWarehouses();
+    const warehouses = await this.getActiveWarehouses();
+    const toRadians = (deg: number) => (deg * Math.PI) / 180;
+    const earthRadiusKm = 6371;
+
+    const distanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+      const dLat = toRadians(lat2 - lat1);
+      const dLon = toRadians(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRadians(lat1)) *
+          Math.cos(toRadians(lat2)) *
+          Math.sin(dLon / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return earthRadiusKm * c;
+    };
+
+    return warehouses.filter((warehouse) => {
+      const address = warehouse.address as any;
+      const lat = address?.latitude ?? address?.lat;
+      const lon = address?.longitude ?? address?.lng ?? address?.lon;
+      if (typeof lat !== 'number' || typeof lon !== 'number') {
+        return false;
+      }
+      return distanceKm(latitude, longitude, lat, lon) <= radiusKm;
+    });
   }
 
   /**
@@ -72,12 +94,7 @@ export class WarehouseManager {
     currentUtilization: number;
     availableCapacity: number;
   }> {
-    // Simplified capacity check - in production would analyze actual capacity data
-    return {
-      hasCapacity: true,
-      currentUtilization: 0.7,
-      availableCapacity: 0.3
-    };
+    throw new Error('Warehouse capacity checks require real capacity data and are not implemented.');
   }
 
   /**
@@ -103,16 +120,7 @@ export class WarehouseManager {
     totalStock: number;
     availableStock: number;
   }>> {
-    // This would require complex aggregation queries in production
-    const warehouses = await this.getActiveWarehouses();
-
-    return warehouses.map(warehouse => ({
-      warehouseId: warehouse.id,
-      warehouseName: warehouse.name,
-      utilization: 0.7, // Mock data
-      totalStock: 1000,
-      availableStock: 700
-    }));
+    throw new Error('Warehouse utilization metrics require real inventory aggregation and are not implemented.');
   }
 
   private get warehouseDelegate(): WarehouseDelegate {

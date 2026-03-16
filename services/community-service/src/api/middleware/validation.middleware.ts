@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
+import { joiId } from '@shared/validation/id';
 
 /**
  * Validation middleware using Joi schemas
@@ -8,10 +9,10 @@ import Joi from 'joi';
 // Create Post Validation Schema
 export const createPostValidation = (req: Request, res: Response, next: NextFunction): void => {
   const schema = Joi.object({
-    authorId: Joi.string().uuid().required()
+    authorId: joiId().required()
       .messages({
         'string.empty': 'Author ID is required',
-        'string.uuid': 'Author ID must be a valid UUID',
+        'string.uuid': 'Author ID must be a valid ID',
         'any.required': 'Author ID is required'
       }),
 
@@ -58,9 +59,9 @@ export const createPostValidation = (req: Request, res: Response, next: NextFunc
         rsvpRequired: Joi.boolean().optional()
       }).optional(),
       pollOptions: Joi.array().items(Joi.string().min(1).max(100)).min(2).max(10).optional(),
-      relatedProductId: Joi.string().uuid().optional(),
-      relatedOrderId: Joi.string().uuid().optional(),
-      relatedShipmentId: Joi.string().uuid().optional()
+      relatedProductId: joiId().optional(),
+      relatedOrderId: joiId().optional(),
+      relatedShipmentId: joiId().optional()
     }).optional()
   });
 
@@ -226,9 +227,9 @@ export const reportContentValidation = (req: Request, res: Response, next: NextF
       }),
 
     entityType: Joi.string().valid('post', 'comment', 'user').optional().default('post'),
-    entityId: Joi.string().uuid().required()
+    entityId: joiId().required()
       .messages({
-        'string.uuid': 'Entity ID must be a valid UUID',
+        'string.uuid': 'Entity ID must be a valid ID',
         'any.required': 'Entity ID is required'
       })
   });
@@ -254,9 +255,9 @@ export const reportContentValidation = (req: Request, res: Response, next: NextF
 export const validateUuidParam = (paramName: string) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const schema = Joi.object({
-      [paramName]: Joi.string().uuid().required()
+      [paramName]: joiId().required()
         .messages({
-          'string.uuid': `${paramName} must be a valid UUID`,
+          'string.uuid': `${paramName} must be a valid ID`,
           'any.required': `${paramName} is required`
         })
     });

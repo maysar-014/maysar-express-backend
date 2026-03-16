@@ -14,6 +14,7 @@ const mockCourierRepository: jest.Mocked<ICourierRepository> = {
   getCourierById: jest.fn(),
   updateCourierLocation: jest.fn(),
   updateCourierAvailability: jest.fn(),
+  updateCourierStatus: jest.fn(),
   getCourierPerformance: jest.fn()
 };
 
@@ -32,7 +33,8 @@ const mockSagaLogRepository: jest.Mocked<ISagaLogRepository> = {
   getById: jest.fn(),
   saveStep: jest.fn(),
   updateStep: jest.fn(),
-  getSteps: jest.fn()
+  getSteps: jest.fn(),
+  findStuck: jest.fn()
 };
 
 const mockRouteRepository: jest.Mocked<IRouteRepository> = {
@@ -119,20 +121,16 @@ describe('DeliverySaga Compensation Integration Tests', () => {
     });
 
     it('should compensate when a step fails', async () => {
-      // Simulate failure in "wait_for_pickup" step
-      // Since defineSteps is called in constructor, we might need to mock a repository method 
-      // that is called within a step to trigger a failure.
-
-      // The "wait_for_pickup" step simulates a delay. 
-      // We can't easily mock the internal setTimeout without jest.useFakeTimers().
-      // Let's mock courierRepository.assignCourier to fail instead.
-
-      mockCourierRepository.assignCourier.mockRejectedValue(new Error('Assignment failed'));
+      jest.spyOn(deliverySaga as any, 'publishCommand').mockImplementation(async (...args: unknown[]) => {
+        const commandType = args[0] as string;
+        if (commandType === 'DeliveryPickedUp') {
+          throw new Error('Publish failed');
+        }
+      });
 
       const sagaId = await deliverySaga.start(deliveryData);
 
-      // Wait for it to fail
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 2200));
 
       expect(mockSagaLogRepository.update).toHaveBeenCalledWith(sagaId, expect.objectContaining({
         status: SagaStatus.COMPENSATING
@@ -143,20 +141,16 @@ describe('DeliverySaga Compensation Integration Tests', () => {
     });
 
     it('should reverse availability when compensating assign_courier', async () => {
-      // We want to trigger compensation of assign_courier.
-      // This means a *later* step must fail.
-
-      // Let's modify the defineSteps logic or just mock something that the later step uses.
-      // "wait_for_pickup" doesn't use any repository.
-      // "track_delivery" uses routeRepository.save().
-
-      mockRouteRepository.save.mockRejectedValue(new Error('Route save failed'));
+      jest.spyOn(deliverySaga as any, 'publishCommand').mockImplementation(async (...args: unknown[]) => {
+        const commandType = args[0] as string;
+        if (commandType === 'DeliveryPickedUp') {
+          throw new Error('Publish failed');
+        }
+      });
 
       const sagaId = await deliverySaga.start(deliveryData);
 
-      // Wait for it to reach track_delivery (which is after assign_courier and wait_for_pickup)
-      // wait_for_pickup takes 1s in my implementation.
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 2200));
 
       // Verify assign_courier compensation was called
       expect(mockCourierRepository.updateCourierAvailability).toHaveBeenCalledWith('courier_789', true);

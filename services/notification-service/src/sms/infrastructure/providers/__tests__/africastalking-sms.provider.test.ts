@@ -30,7 +30,7 @@ describe('AfricasTalkingSmsProvider', () => {
                 })
             });
 
-            const result = await provider.send('+254712345678', 'Test message');
+            const result = await provider.send('+255612834684', 'Test message');
 
             expect(result.isSuccess()).toBe(true);
             expect(result.getProviderMessageId()).toBe('at-msg-123');
@@ -43,7 +43,7 @@ describe('AfricasTalkingSmsProvider', () => {
                 json: async () => ({ message: 'Invalid request' })
             });
 
-            const result = await provider.send('+254712345678', 'Test');
+            const result = await provider.send('+255612834684', 'Test');
 
             expect(result.isSuccess()).toBe(false);
             expect(result.getErrorMessage()).toContain('Invalid request');
@@ -57,7 +57,7 @@ describe('AfricasTalkingSmsProvider', () => {
                 })
             });
 
-            const result = await provider.send('+254712345678', 'Test');
+            const result = await provider.send('+255612834684', 'Test');
 
             expect(result.isSuccess()).toBe(false);
             expect(result.getErrorMessage()).toContain('No recipients');
@@ -76,7 +76,7 @@ describe('AfricasTalkingSmsProvider', () => {
                 })
             });
 
-            const result = await provider.send('+254712345678', 'Test');
+            const result = await provider.send('+255612834684', 'Test');
 
             expect(result.isSuccess()).toBe(false);
         });
@@ -84,7 +84,7 @@ describe('AfricasTalkingSmsProvider', () => {
         it('should handle network errors', async () => {
             (fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
 
-            const result = await provider.send('+254712345678', 'Test');
+            const result = await provider.send('+255612834684', 'Test');
 
             expect(result.isSuccess()).toBe(false);
             expect(result.getErrorMessage()).toContain('Network error');
@@ -137,21 +137,21 @@ describe('AfricasTalkingSmsProvider', () => {
             const body = {
                 id: 'msg-123',
                 status: 'Success',
-                phoneNumber: '+254712345678'
+                phoneNumber: '+255612834684'
             };
 
             const result = provider.parseDeliveryReport(body);
 
             expect(result?.providerMessageId).toBe('msg-123');
             expect(result?.status).toBe('delivered');
-            expect(result?.phoneNumber).toBe('+254712345678');
+            expect(result?.phoneNumber).toBe('+255612834684');
         });
 
         it('should parse failed delivery', () => {
             const body = {
                 id: 'msg-123',
                 status: 'Failed',
-                phoneNumber: '+254712345678',
+                phoneNumber: '+255612834684',
                 failureReason: 'Invalid number'
             };
 

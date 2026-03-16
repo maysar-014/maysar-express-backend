@@ -6,7 +6,7 @@ import { ProductListingPolicy } from '../../domain/policies/product-listing.poli
 import { ProductListedEvent } from '../../domain/events/enabler-events';
 import { ProductListingMapper } from '../mappers/product-listing.mapper';
 import { Enabler_ListingStatus, Enabler_Status } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export class ListProductUseCase {
     constructor(
@@ -53,7 +53,7 @@ export class ListProductUseCase {
 
         // 5. Create Listing Entity
         const listing = ProductListingEntity.create({
-            id: uuidv4(),
+            id: makeId(getModelPrefix('Enabler_ProductListing')),
             enablerId,
             productId: dto.productId,
             sellerId: product.sellerId,

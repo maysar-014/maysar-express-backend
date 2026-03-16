@@ -4,16 +4,20 @@ const mockPrisma = {
   }
 };
 
-const uuidMock = jest.fn(() => 'fixed-event-id');
+const makeIdMock = jest.fn();
 
 jest.mock('../database/prisma-client', () => ({
   __esModule: true,
   default: mockPrisma
 }));
 
-jest.mock('uuid', () => ({
-  v4: () => uuidMock()
-}));
+jest.mock('@shared/ids/id', () => {
+  const actual = jest.requireActual('@shared/ids/id');
+  return {
+    ...actual,
+    makeId: (...args: string[]) => makeIdMock(...args)
+  };
+});
 
 import { EnablerEventPublisher } from './enabler-event-publisher';
 
@@ -28,6 +32,8 @@ describe('EnablerEventPublisher', () => {
 
   it('saves event into outbox with generated id and constructor type', async () => {
     mockPrisma.enabler_OutboxEvent.create.mockResolvedValue(undefined);
+    makeIdMock.mockReturnValueOnce('enb_out_01H00000000000000000000000');
+    makeIdMock.mockReturnValueOnce('evt_01H00000000000000000000000');
     const logSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
     const publisher = new EnablerEventPublisher();
     const event = new ProductListedEvent('listing-1');
@@ -36,7 +42,8 @@ describe('EnablerEventPublisher', () => {
 
     expect(mockPrisma.enabler_OutboxEvent.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        eventId: 'fixed-event-id',
+        id: 'enb_out_01H00000000000000000000000',
+        eventId: 'evt_01H00000000000000000000000',
         eventType: 'ProductListedEvent',
         eventData: JSON.stringify(event),
         status: 'PENDING',
@@ -46,4 +53,3 @@ describe('EnablerEventPublisher', () => {
     expect(logSpy).toHaveBeenCalledWith('[EnablerService] Published event ProductListedEvent to outbox');
   });
 });
-

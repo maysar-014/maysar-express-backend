@@ -1,7 +1,8 @@
 import { z } from 'zod';
+import { zodId } from '@shared/validation/id';
 
 export const MetricDtoSchema = z.object({
-    id: z.string().uuid().optional(),
+    id: zodId().optional(),
     type: z.string().min(1),
     value: z.number(),
     dimension: z.string().min(1),

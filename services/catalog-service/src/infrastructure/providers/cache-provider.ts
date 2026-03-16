@@ -626,8 +626,17 @@ export class CachedRepository {
    * Cache invalidation helper
    */
   async invalidate(pattern: string): Promise<void> {
-    // In a real implementation, you would need to handle pattern-based cache invalidation
-    // For now, we'll clear the entire cache
+    if (this.cache instanceof RedisCacheProvider) {
+      const redisClient = (this.cache as any).redisClient;
+      if (redisClient) {
+        const keys = await scanKeysIoredis(redisClient, pattern);
+        if (keys.length > 0) {
+          await redisClient.del(...keys);
+        }
+        return;
+      }
+    }
+
     await this.cache.clear();
   }
 

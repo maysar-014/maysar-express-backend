@@ -4,6 +4,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export interface IProductAttributeRepository {
   saveAll(productId: string, attributes: Array<{ attributeId: string; value: string }>): Promise<void>;
@@ -70,6 +71,6 @@ export class PrismaProductAttributeRepository implements IProductAttributeReposi
   }
 
   private generateId(): string {
-    return require('uuid').v4();
+    return makeId(getModelPrefix('ProductAttribute'));
   }
 }

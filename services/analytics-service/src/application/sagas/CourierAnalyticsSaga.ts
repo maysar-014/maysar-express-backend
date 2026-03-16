@@ -21,15 +21,10 @@ export class CourierAnalyticsSaga {
     }
 
     private async handleCourierMetricsCollected(event: any) {
-        const { courierId, period, sagaId } = event.data || event;
-
-        // Mock collection
-        const metrics = {
-            deliveriesCompleted: Math.floor(Math.random() * 50),
-            averageDeliveryTime: Math.floor(Math.random() * 30) + 15,
-            customerRating: 4.5 + Math.random() * 0.5,
-            efficiency: Math.random() * 0.3 + 0.7
-        };
+        const { courierId, sagaId, metrics } = event.data || event;
+        if (!metrics) {
+            throw new Error('Courier metrics payload is required for analytics.');
+        }
 
         await this.eventBus.publish({
             type: 'PerformanceAnalysisCompleted',

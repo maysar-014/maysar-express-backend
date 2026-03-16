@@ -1,5 +1,7 @@
+import { IUserRepository } from '../../domain/repositories';
+
 export class GetCODReputationUseCase {
-    constructor(private readonly userRepository: any) { }
+    constructor(private readonly userRepository: IUserRepository) { }
 
     async execute(userId: string) {
         // In a real implementation, userRepository would be typed and fetch from database

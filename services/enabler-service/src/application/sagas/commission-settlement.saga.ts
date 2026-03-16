@@ -1,8 +1,10 @@
 import { SettleEnablerPaymentUseCase } from '../use-cases/settle-enabler-payment.use-case';
+import { IEnablerOrderRepository } from '../../domain/repositories/enabler-order.repository.interface';
 
 export class CommissionSettlementSaga {
     constructor(
         private readonly settlePaymentUseCase: SettleEnablerPaymentUseCase,
+        private readonly orderRepository: IEnablerOrderRepository,
         private readonly notificationService: any
     ) { }
 
@@ -12,10 +14,13 @@ export class CommissionSettlementSaga {
             await this.settlePaymentUseCase.execute(orderId);
 
             // 2. Notify Enabler
-            const order = { enablerId: 'mock-id', commission: 100 }; // Fetch real order
+            const order = await this.orderRepository.findByOrderId(orderId);
+            if (!order) {
+                throw new Error('Order not found for commission notification');
+            }
             await this.notificationService.sendCommissionPaidNotification(
                 order.enablerId,
-                order.commission
+                order.enablerCommission
             );
 
         } catch (error) {

@@ -191,48 +191,11 @@ export class PostsController {
         return;
       }
 
-      // Get all available posts (in real implementation, this would be filtered by user's network)
-      const allPosts = await this.postRepository.findPublished({ limit: 1000 });
-
-      // Mock user for feed generation (in real implementation, get from user service)
-      // Simplified mock to avoid complex type issues
-      const mockUser = {
-        id: userId,
-        username: 'mockuser',
-        displayName: 'Mock User',
-        role: 'buyer',
-        trustMetadata: {
-          isVerified: false,
-          ratingScore: 4.0,
-          completedOrders: 10,
-          successfulCODCount: 8,
-          disputeRate: 0.2,
-          lastUpdated: new Date(),
-          getTrustLevel: () => 'medium',
-          getCODLimit: () => 2000,
-          isEligibleForCOD: () => true
-        },
-        status: 'active',
-        isVerified: false
-      } as any; // Type assertion for demo purposes
-
-      // Generate personalized feed
-      const feedItems = FeedEngine.generateFeed(mockUser, allPosts, {
-        limit: Number(limit),
-        includeFollowed: Boolean(includeFollowed)
+      res.status(501).json({
+        error: 'NOT_IMPLEMENTED',
+        message: 'User feed generation requires user profile integration.'
       });
-
-      res.json({
-        feed: feedItems.map(item => ({
-          post: item.post.toJSON(),
-          score: item.score,
-          reasons: item.reasons
-        })),
-        pagination: {
-          limit: Number(limit),
-          count: feedItems.length
-        }
-      });
+      return;
     } catch (error) {
       console.error('Error getting user feed:', error);
       res.status(500).json({

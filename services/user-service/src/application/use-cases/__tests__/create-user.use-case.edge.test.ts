@@ -10,6 +10,7 @@ describe('CreateUserUseCase - edge cases', () => {
     const mockUserRepository = {
       emailExists: jest.fn().mockResolvedValue(false),
       phoneExists: jest.fn().mockResolvedValue(false),
+      publicCodeExists: jest.fn().mockResolvedValue(false),
       create: jest.fn().mockImplementation(async (user: any) => user)
     };
 

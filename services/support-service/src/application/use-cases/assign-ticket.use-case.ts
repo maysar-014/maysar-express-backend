@@ -1,7 +1,7 @@
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../types';
 import { ITicketRepository, ISupportAgentRepository, ITicketStatusHistoryRepository } from '../../domain/repositories/interfaces';
-import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 import { TicketStatusHistory } from '../../domain/types';
 import { AssignTicketDto, TicketResponseDto } from '../dto/ticket.dto';
 import { TicketMapper } from '../mappers/ticket.mapper';
@@ -43,7 +43,7 @@ export class AssignTicketUseCase {
 
         // Record status history
         const statusHistory: TicketStatusHistory = {
-            id: uuidv4(),
+            id: makeId(getModelPrefix('Support_TicketStatusHistory')),
             fromStatus,
             toStatus: ticket.status,
             changedBy: dto.assignedBy,

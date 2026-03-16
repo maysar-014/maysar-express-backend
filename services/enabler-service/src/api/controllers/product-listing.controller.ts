@@ -30,9 +30,10 @@ export class ProductListingController {
 
     async getHubProducts(req: Request, res: Response): Promise<void> {
         try {
-            // Mock implementation for Browse Hub
-            // In real scenario, would use BrowseEnablerHubUseCase
-            res.status(200).json({ message: 'Hub products endpoint' });
+            res.status(501).json({
+                error: 'NOT_IMPLEMENTED',
+                message: 'Hub product browsing is not implemented.'
+            });
         } catch (error: any) {
             res.status(500).json({ error: error.message });
         }

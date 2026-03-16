@@ -6,6 +6,7 @@ type UserRegisteredPayload = {
   aggregateId?: string;
   email?: string;
   role?: string;
+  publicCode?: string;
 };
 
 type UserEmailVerifiedPayload = {
@@ -89,6 +90,7 @@ export class UserSyncEventHandlers {
     await this.updateAuthUser(payload.aggregateId, {
       ...(payload.email ? { email: String(payload.email).toLowerCase() } : {}),
       ...(payload.role ? { role: this.mapRole(payload.role) } : {}),
+      ...(payload.publicCode ? { publicCode: payload.publicCode } : {}),
       status: Auth_UserStatus.PENDING_VERIFICATION
     });
   }

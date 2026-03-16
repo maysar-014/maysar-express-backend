@@ -16,6 +16,9 @@ export * from './image-optimization.service';
 // Cache Service - Distributed caching and cache management
 export * from './cache.service';
 
+// Search Service - Meilisearch-backed search implementation
+export * from './search.service';
+
 /**
  * Infrastructure Services Overview
  *
@@ -37,7 +40,7 @@ export * from './cache.service';
  * - Single responsibility for each service
  * - Dependency injection friendly
  * - Observable and monitorable
- * - Testable with mocked providers
+ * - Testable with provider doubles
  */
 
 /**

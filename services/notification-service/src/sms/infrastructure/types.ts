@@ -14,6 +14,7 @@ export const TYPES = {
     // Use Cases
     SendSmsUseCase: Symbol.for('SendSmsUseCase'),
     TrackDeliveryUseCase: Symbol.for('TrackDeliveryUseCase'),
+    HandleDeliveryReportUseCase: Symbol.for('HandleDeliveryReportUseCase'),
     RetryFailedMessagesUseCase: Symbol.for('RetryFailedMessagesUseCase'),
     GetStatisticsUseCase: Symbol.for('GetStatisticsUseCase'),
 

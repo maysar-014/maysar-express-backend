@@ -24,11 +24,15 @@ import { metricsRegistry } from './infrastructure/monitoring/metrics';
 import { requireAuth } from './middleware/auth';
 import { getSharedRedisClient, resolveRedisUrl } from '@shared/redis/ioredis-client';
 import { createRedisStockEngine, resolveRedisReservationMode } from './infrastructure/redis/redis-stock-engine';
+import { InventoryOutboxRepository } from './infrastructure/messaging/inventory-outbox.repository';
+import { createMaintenanceRoutes } from './api/routes/maintenance.routes';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 // Initialize dependencies
 tracingService.start();
-const prisma = new PrismaClient();
-const stockManager = new StockManager(prisma as any, eventBus);
+const prisma = createPrismaClient();
+const outboxRepository = new InventoryOutboxRepository(prisma);
+const stockManager = new StockManager(prisma as any, eventBus, outboxRepository);
 const warehouseManager = new WarehouseManager(prisma as any);
 const redisReservationMode = resolveRedisReservationMode();
 const redisStockEngineBundle = redisReservationMode === 'off' ? null : createRedisStockEngine();
@@ -87,6 +91,9 @@ app.use(limiter);
 
 // Health check routes
 app.use('/health', healthRoutes);
+
+// Maintenance routes (service-key protected)
+app.use('/api/v1/system/maintenance', createMaintenanceRoutes(prisma));
 
 // API routes get a dedicated router with auth middleware applied
 const apiRouter = express.Router();

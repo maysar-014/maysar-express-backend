@@ -70,6 +70,7 @@ export interface ISessionRepository {
    */
   findByUserId(userId: string): Promise<Array<{
     id: string;
+    userId: string;
     token: string;
     ipAddress: string;
     userAgent: string;
@@ -86,6 +87,11 @@ export interface ISessionRepository {
    * Delete all sessions for user
    */
   deleteByUserId(userId: string): Promise<void>;
+
+  /**
+   * Update session expiration
+   */
+  updateExpiresAt(token: string, expiresAt: Date): Promise<void>;
 
   /**
    * Delete expired sessions

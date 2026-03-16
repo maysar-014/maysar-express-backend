@@ -1,9 +1,10 @@
 import { Delivery, DeliveryStatus } from '../delivery.entity';
+import { getModelPrefix, isSystemId, makeId } from '@shared/ids/id';
 
 describe('Delivery Entity', () => {
     const validData = {
-        id: 'del-123',
-        orderId: 'order-123',
+        id: makeId(getModelPrefix('Logistics_Delivery')),
+        orderId: makeId(getModelPrefix('Order_Order')),
         pickupAddress: {
             street: 'Store St',
             city: 'Dar',
@@ -19,7 +20,7 @@ describe('Delivery Entity', () => {
     describe('Creation', () => {
         it('should create valid delivery with PENDING status', () => {
             const delivery = new Delivery(validData);
-            expect(delivery.id).toBe('del-123');
+            expect(delivery.id).toBe(validData.id);
             expect(delivery.status).toBe(DeliveryStatus.PENDING);
             expect(delivery.trackingNumber).toBeDefined();
             expect(delivery.trackingNumber).toMatch(/^MYS/);
@@ -29,7 +30,7 @@ describe('Delivery Entity', () => {
         it('should auto-generate ID if missing', () => {
             const delivery = new Delivery({ ...validData, id: undefined });
             expect(delivery.id).toBeDefined();
-            expect(delivery.id).toMatch(/^delivery_/);
+            expect(isSystemId(delivery.id)).toBe(true);
         });
     });
 

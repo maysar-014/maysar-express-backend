@@ -25,10 +25,10 @@ console.log('  ✅ Engines: 11/11 WORKING');
 console.log('  ✅ Database Client: CONNECTED');
 console.log('  ✅ Prisma Schema: MIGRATION-READY');
 
-console.log('\n📋 ALTERNATIVE APPROACH:');
-console.log('  1. Use Database Dashboard to create tables');
-console.log('  2. Manual SQL execution');
-console.log('  3. Retry migration later');
+console.log('\n📋 RECOMMENDED APPROACH:');
+console.log('  1. Run: npx prisma migrate deploy --schema prisma/schema.prisma');
+console.log('  2. Run: npx prisma generate --schema prisma/schema.prisma');
+console.log('  3. Retry migration when connection is stable');
 
 console.log('\n🏆 FINAL STATUS:');
 console.log('✅ LOGISTICS SERVICE: FULLY OPERATIONAL');

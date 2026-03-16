@@ -1,12 +1,15 @@
 import { IEnablerOrderRepository } from '../../domain/repositories/enabler-order.repository.interface';
 import { SettlementEngine } from '../../domain/engines/settlement.engine';
 import { EnablerCommissionEntity } from '../../domain/entities/enabler-commission.entity';
+import { IEnablerCommissionRepository } from '../../domain/repositories/enabler-commission.repository.interface';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export class SettleEnablerPaymentUseCase {
     constructor(
         private readonly orderRepository: IEnablerOrderRepository,
         private readonly payoutService: any,
-        private readonly eventPublisher: any
+        private readonly eventPublisher: any,
+        private readonly commissionRepository?: IEnablerCommissionRepository
     ) { }
 
     async execute(orderId: string): Promise<void> {
@@ -48,6 +51,39 @@ export class SettleEnablerPaymentUseCase {
         order.markEnablerPaid();
         order.markSellerPaid();
         await this.orderRepository.update(order);
+
+        // 4b. Persist commission record
+        if (this.commissionRepository) {
+            const commission = EnablerCommissionEntity.create({
+                id: makeId(getModelPrefix('Enabler_Commission')),
+                enablerId: order.enablerId,
+                enablerOrderId: order.id,
+                commissionId: null,
+                baseCommission: order.enablerCommission,
+                tierBonus: 0,
+                performanceBonus: 0,
+                totalCommission: order.enablerCommission,
+                status: 'pending',
+                approvedBy: null,
+                approvedAt: null,
+                holdUntil: null,
+                protectionStatus: 'active',
+                fraudCheckStatus: 'pending',
+                payoutId: null,
+                paidAt: null,
+                paymentMethod: null,
+                calculationDetails: {
+                    orderAmount: order.orderAmount,
+                    commissionRate: order.toPlainObject().commissionRate
+                },
+                metadata: {
+                    settlement
+                },
+                createdAt: new Date(),
+                updatedAt: new Date()
+            });
+            await this.commissionRepository.upsert(commission);
+        }
 
         // 5. Emit Event
         // await this.eventPublisher.publish(new EnablerPaymentSettledEvent(...));

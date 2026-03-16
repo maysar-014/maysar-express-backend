@@ -2,6 +2,7 @@ import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchest
 import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
 import { Payment, PaymentStatus, PaymentMethod } from '../../domain/entities/payment.entity';
 import { PesapalAdapter } from '../../infrastructure/providers/pesapal.adapter';
+import { OrderPaymentRepository } from '../../infrastructure/repositories/order-payment.repository';
 
 export interface PaymentSagaPayload {
   payment: Payment;
@@ -10,12 +11,15 @@ export interface PaymentSagaPayload {
 export class PaymentSaga extends DistributedSagaOrchestrator<PaymentSagaPayload> {
   protected sagaType = 'PaymentSaga';
 
-  constructor(private pesapalAdapter: PesapalAdapter) {
+  constructor(
+    private pesapalAdapter: PesapalAdapter,
+    private paymentRepository?: OrderPaymentRepository
+  ) {
     super(sagaLogRepository, 'order-service');
   }
 
   protected async onStart(sagaId: string, payload: PaymentSagaPayload): Promise<void> {
-    // Initial state update if needed
+    await this.persistPayment(payload.payment);
   }
 
   protected defineSteps(): SagaStep<PaymentSagaPayload>[] {
@@ -33,6 +37,7 @@ export class PaymentSaga extends DistributedSagaOrchestrator<PaymentSagaPayload>
           const fraudResult = await this.performFraudCheck(payment);
           if (!fraudResult.approved) {
             payment.updateStatus(PaymentStatus.FAILED);
+            await this.persistPayment(payment);
             throw new Error(`Fraud check failed: ${fraudResult.reason}`);
           }
         },
@@ -47,10 +52,12 @@ export class PaymentSaga extends DistributedSagaOrchestrator<PaymentSagaPayload>
 
           if (payment.method === PaymentMethod.COD) {
             payment.updateStatus(PaymentStatus.COMPLETED);
+            await this.persistPayment(payment);
             return;
           }
 
           payment.updateStatus(PaymentStatus.PROCESSING);
+          await this.persistPayment(payment);
 
           let processingResult;
           switch (payment.method) {
@@ -67,8 +74,10 @@ export class PaymentSaga extends DistributedSagaOrchestrator<PaymentSagaPayload>
 
           if (processingResult.success) {
             payment.updateStatus(PaymentStatus.COMPLETED, processingResult.transactionId);
+            await this.persistPayment(payment);
           } else {
             payment.updateStatus(PaymentStatus.FAILED);
+            await this.persistPayment(payment);
             throw new Error(`Payment processing failed: ${processingResult.error}`);
           }
         },
@@ -110,6 +119,11 @@ export class PaymentSaga extends DistributedSagaOrchestrator<PaymentSagaPayload>
   private async processWalletPayment(payment: Payment): Promise<{ success: boolean; transactionId?: string; error?: string }> {
     // Implementation logic for wallet payment
     return { success: true, transactionId: `WLT_${Date.now()}` };
+  }
+
+  private async persistPayment(payment: Payment): Promise<void> {
+    if (!this.paymentRepository) return;
+    await this.paymentRepository.upsert(payment);
   }
 }
 

@@ -1,3 +1,5 @@
+import { getModelPrefix, makeId } from '@shared/ids/id';
+
 export enum VehicleType {
   BICYCLE = 'bicycle',
   MOTORCYCLE = 'motorcycle',
@@ -115,6 +117,6 @@ export class Vehicle {
   }
 
   private generateId(): string {
-    return `vehicle_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return makeId(getModelPrefix('Logistics_Vehicle'));
   }
 }

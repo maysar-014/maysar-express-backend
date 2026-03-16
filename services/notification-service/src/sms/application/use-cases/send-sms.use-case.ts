@@ -5,7 +5,7 @@ import { ProviderResponse } from '../../domain/value-objects/provider-response.v
 import { SendSmsDto, SendSmsResponseDto } from '../dto/sms.dto';
 import { SmsMapper } from '../mappers/sms.mapper';
 import { RateLimitExceededError } from '../../domain/errors/sms.errors';
-import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 /**
  * SMS Provider Interface (for use case)
@@ -43,7 +43,7 @@ export class SendSmsUseCase {
         await this.checkRateLimits(dto);
 
         // 3. Create domain entity
-        const messageId = uuidv4();
+        const messageId = makeId(getModelPrefix('Sms_Message'));
         const message = SmsMapper.toEntity(dto, messageId);
 
         // 4. Persist message in QUEUED state

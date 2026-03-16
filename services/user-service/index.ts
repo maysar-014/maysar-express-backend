@@ -4,6 +4,7 @@ import { logger } from './src/infrastructure/services/logger.service';
 import { initializeEventRegistry } from '../../shared/events/registry';
 import { createUserRoutes } from './src/api/routes/user.routes';
 import { healthRoutes } from './src/api/routes/health.routes';
+import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 
 export const UserModule: Module = {
     name: 'user-service',
@@ -14,6 +15,7 @@ export const UserModule: Module = {
     routes: (() => {
         const router = Router();
         router.use('/health', healthRoutes);
+        router.use('/system/maintenance', createMaintenanceRoutes());
         try {
             router.use('/', createUserRoutes());
         } catch (error) {

@@ -3,7 +3,7 @@
  * Persists checkout sessions using Prisma ORM
  */
 
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { CheckoutSession } from './checkout.repository';
 import { CartItemVO } from '../../domain/value-objects/cart.value-object';
 
@@ -24,6 +24,8 @@ export class PrismaCheckoutRepository {
       id: record.id,
       cartId: record.cartId,
       userId: record.userId,
+      enablerId: record.enablerId || undefined,
+      enablerCode: record.enablerCode || undefined,
       shippingAddressId: record.shippingAddressId || '',
       billingAddressId: record.billingAddressId || '',
       shippingMethodId: record.shippingMethodId || '',
@@ -49,12 +51,20 @@ export class PrismaCheckoutRepository {
 
   async saveCheckoutSession(session: CheckoutSession): Promise<void> {
     const metadata = session.metadata ?? (session.items ? { items: session.items } : undefined);
+    const totalAmount =
+      session.totalAmount ??
+      session.subtotal + session.shippingCost + session.taxAmount - session.discountAmount;
+    const metadataJson = metadata
+      ? (JSON.parse(JSON.stringify(metadata)) as Prisma.InputJsonValue)
+      : undefined;
 
     await this.prisma.checkout_CheckoutSession.upsert({
       where: { id: session.id },
       update: {
         cartId: session.cartId,
         userId: session.userId,
+        enablerId: session.enablerId || null,
+        enablerCode: session.enablerCode || null,
         status: session.status,
         shippingAddressId: session.shippingAddressId || null,
         billingAddressId: session.billingAddressId || null,
@@ -63,16 +73,18 @@ export class PrismaCheckoutRepository {
         shippingCost: session.shippingCost,
         taxAmount: session.taxAmount,
         discountAmount: session.discountAmount,
-        totalAmount: session.totalAmount,
+        totalAmount,
         paymentMethodId: session.paymentMethodId || null,
         paymentStatus: session.paymentStatus || null,
-        metadata: metadata ?? undefined,
+        metadata: metadataJson,
         expiresAt: session.expiresAt
       },
       create: {
         id: session.id,
         cartId: session.cartId,
         userId: session.userId,
+        enablerId: session.enablerId || null,
+        enablerCode: session.enablerCode || null,
         status: session.status,
         shippingAddressId: session.shippingAddressId || null,
         billingAddressId: session.billingAddressId || null,
@@ -81,10 +93,10 @@ export class PrismaCheckoutRepository {
         shippingCost: session.shippingCost,
         taxAmount: session.taxAmount,
         discountAmount: session.discountAmount,
-        totalAmount: session.totalAmount,
+        totalAmount,
         paymentMethodId: session.paymentMethodId || null,
         paymentStatus: session.paymentStatus || null,
-        metadata: metadata ?? undefined,
+        metadata: metadataJson,
         expiresAt: session.expiresAt
       }
     });

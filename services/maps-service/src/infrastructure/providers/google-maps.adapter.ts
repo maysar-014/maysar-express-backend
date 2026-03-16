@@ -47,8 +47,7 @@ export class GoogleMapsRoutingAdapter implements RoutingPort {
         private readonly timeout: number = 10000 // 10 seconds
     ) {
         if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
-            console.warn('⚠️  Google Maps API key not configured. Routing will use mock data.');
-            this.apiKey = 'DEVELOPMENT_MODE';
+            throw new Error('Google Maps API key is required for routing.');
         }
 
         this.circuitBreaker = createCircuitBreaker('google-maps-api', {
@@ -384,3 +383,4 @@ export class GoogleMapsRoutingAdapter implements RoutingPort {
         return this.circuitBreaker.getMetrics();
     }
 }
+

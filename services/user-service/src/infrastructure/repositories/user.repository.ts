@@ -11,6 +11,7 @@ export interface UserRepository extends Repository<User> {
   findByBusinessId(businessId: string): Promise<User | null>;
   findByRole(role: string): Promise<User[]>;
   findByStatus(status: string): Promise<User[]>;
+  publicCodeExists(code: string): Promise<boolean>;
   incrementLoginAttempts(userId: string): Promise<void>;
   resetLoginAttempts(userId: string): Promise<void>;
   lockAccount(userId: string, until: Date): Promise<void>;
@@ -31,11 +32,15 @@ export class InMemoryUserRepository implements UserRepository {
   private users: Map<string, User> = new Map();
   private emailIndex: Map<string, string> = new Map();
   private phoneIndex: Map<string, string> = new Map();
+  private publicCodeIndex: Map<string, string> = new Map();
 
   async save(user: User): Promise<void> {
     this.users.set(user.id, user);
     this.emailIndex.set(user.email.toString(), user.id);
     this.phoneIndex.set(user.phoneNumber.toString(), user.id);
+    if (user.publicCode) {
+      this.publicCodeIndex.set(user.publicCode, user.id);
+    }
   }
 
   async findById(id: string): Promise<User | null> {
@@ -54,11 +59,17 @@ export class InMemoryUserRepository implements UserRepository {
     this.users.set(entity.id, entity);
     this.emailIndex.set(entity.email.toString(), entity.id);
     this.phoneIndex.set(entity.phoneNumber.toString(), entity.id);
+    if (entity.publicCode) {
+      this.publicCodeIndex.set(entity.publicCode, entity.id);
+    }
     return entity;
   }
 
   async update(entity: User): Promise<User> {
     this.users.set(entity.id, entity);
+    if (entity.publicCode) {
+      this.publicCodeIndex.set(entity.publicCode, entity.id);
+    }
     return entity;
   }
 
@@ -68,6 +79,9 @@ export class InMemoryUserRepository implements UserRepository {
       this.users.delete(id);
       this.emailIndex.delete(user.email.toString());
       this.phoneIndex.delete(user.phoneNumber.toString());
+      if (user.publicCode) {
+        this.publicCodeIndex.delete(user.publicCode);
+      }
     }
   }
 
@@ -101,6 +115,10 @@ export class InMemoryUserRepository implements UserRepository {
 
   async findByStatus(status: string): Promise<User[]> {
     return Array.from(this.users.values()).filter(user => user.status === status);
+  }
+
+  async publicCodeExists(code: string): Promise<boolean> {
+    return this.publicCodeIndex.has(code);
   }
 
   async incrementLoginAttempts(userId: string): Promise<void> {
@@ -178,113 +196,91 @@ export class InMemoryUserRepository implements UserRepository {
  * For production use with Prisma ORM
  */
 export class DatabaseUserRepository implements UserRepository {
-  // TODO: Implement with Prisma ORM
-  // This would require setting up Prisma schema and client
-  // For now, we'll use the in-memory implementation
-
-  private fallbackRepository: InMemoryUserRepository;
-
-  constructor() {
-    this.fallbackRepository = new InMemoryUserRepository();
-  }
-
   async save(user: User): Promise<void> {
-    // TODO: Implement database save with Prisma
-    return this.fallbackRepository.save(user);
+    return this.fail();
   }
 
   async findById(id: string): Promise<User | null> {
-    // TODO: Implement database find with Prisma
-    return this.fallbackRepository.findById(id);
+    return this.fail();
   }
 
   async findByCriteria(criteria: Partial<User>): Promise<User[]> {
-    // TODO: Implement database find with Prisma
-    return this.fallbackRepository.findByCriteria(criteria);
+    return this.fail();
   }
 
   async create(entity: User): Promise<User> {
-    // TODO: Implement database create with Prisma
-    return this.fallbackRepository.create(entity);
+    return this.fail();
   }
 
   async update(entity: User): Promise<User> {
-    // TODO: Implement database update with Prisma
-    return this.fallbackRepository.update(entity);
+    return this.fail();
   }
 
   async delete(id: string): Promise<void> {
-    // TODO: Implement database delete with Prisma
-    return this.fallbackRepository.delete(id);
+    return this.fail();
   }
 
   async count(criteria?: Partial<User>): Promise<number> {
-    // TODO: Implement database count with Prisma
-    return this.fallbackRepository.count(criteria);
+    return this.fail();
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    // TODO: Implement database find with Prisma
-    return this.fallbackRepository.findByEmail(email);
+    return this.fail();
   }
 
   async findByPhoneNumber(phoneNumber: string): Promise<User | null> {
-    // TODO: Implement database find with Prisma
-    return this.fallbackRepository.findByPhoneNumber(phoneNumber);
+    return this.fail();
   }
 
   async findByBusinessId(businessId: string): Promise<User | null> {
-    // TODO: Implement database find with Prisma
-    return this.fallbackRepository.findByBusinessId(businessId);
+    return this.fail();
   }
 
   async findByRole(role: string): Promise<User[]> {
-    // TODO: Implement database find with Prisma
-    return this.fallbackRepository.findByRole(role);
+    return this.fail();
   }
 
   async findByStatus(status: string): Promise<User[]> {
-    // TODO: Implement database find with Prisma
-    return this.fallbackRepository.findByStatus(status);
+    return this.fail();
+  }
+
+  async publicCodeExists(code: string): Promise<boolean> {
+    return this.fail();
   }
 
   async incrementLoginAttempts(userId: string): Promise<void> {
-    // TODO: Implement database update with Prisma
-    return this.fallbackRepository.incrementLoginAttempts(userId);
+    return this.fail();
   }
 
   async resetLoginAttempts(userId: string): Promise<void> {
-    // TODO: Implement database update with Prisma
-    return this.fallbackRepository.resetLoginAttempts(userId);
+    return this.fail();
   }
 
   async lockAccount(userId: string, until: Date): Promise<void> {
-    // TODO: Implement database update with Prisma
-    return this.fallbackRepository.lockAccount(userId, until);
+    return this.fail();
   }
 
   async unlockAccount(userId: string): Promise<void> {
-    // TODO: Implement database update with Prisma
-    return this.fallbackRepository.unlockAccount(userId);
+    return this.fail();
   }
 
   async updateLastLogin(userId: string): Promise<void> {
-    // TODO: Implement database update with Prisma
-    return this.fallbackRepository.updateLastLogin(userId);
+    return this.fail();
   }
 
   async updateMetadata(userId: string, metadata: any): Promise<void> {
-    // TODO: Implement database update with Prisma
-    return this.fallbackRepository.updateMetadata(userId, metadata);
+    return this.fail();
   }
 
   async updateCODStanding(userId: string, updates: any): Promise<void> {
-    // TODO: Implement database update with Prisma
-    return this.fallbackRepository.updateCODStanding(userId, updates);
+    return this.fail();
   }
 
   async saveCODHistory(history: any): Promise<void> {
-    // TODO: Implement database write with Prisma
-    return this.fallbackRepository.saveCODHistory(history);
+    return this.fail();
+  }
+
+  private fail(): never {
+    throw new Error('DatabaseUserRepository is not implemented. Use PrismaUserRepository instead.');
   }
 }

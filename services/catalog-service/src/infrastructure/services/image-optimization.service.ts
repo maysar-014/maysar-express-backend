@@ -8,6 +8,7 @@
 import { Readable } from 'stream';
 import { SharpImageProvider, ImageProcessingOptions, ImageProcessingResult } from '../providers/image-processing.provider';
 import { S3CDNProvider } from '../providers/cdn.provider';
+import sharp from 'sharp';
 
 /**
  * Image Optimization Configuration
@@ -321,26 +322,44 @@ export class ImageOptimizationService {
     buffer: Buffer,
     metadata: any
   ): Promise<ImageQualityAssessment> {
-    // In a real implementation, this would use image analysis libraries
-    // For now, simulate quality assessment
-    const baseScore = 85; // Assume good quality by default
-    const formatBonus = metadata.format === 'webp' ? 5 : metadata.format === 'avif' ? 10 : 0;
-    const sizePenalty = metadata.size > 1024 * 1024 ? -10 : 0; // Penalty for large files
+    const [stats, realMetadata] = await Promise.all([
+      sharp(buffer).stats(),
+      sharp(buffer).metadata()
+    ]);
 
-    const score = Math.max(0, Math.min(100, baseScore + formatBonus + sizePenalty));
+    const channelStats = stats.channels || [];
+    const avgMean = channelStats.length
+      ? channelStats.reduce((sum, c) => sum + (c.mean || 0), 0) / channelStats.length
+      : 0;
+    const avgStdev = channelStats.length
+      ? channelStats.reduce((sum, c) => sum + (c.stdev || 0), 0) / channelStats.length
+      : 0;
+
+    const brightness = Math.min(100, Math.max(0, (avgMean / 255) * 100));
+    const contrast = Math.min(100, Math.max(0, (avgStdev / 128) * 100));
+    const sharpness = Math.min(100, Math.max(0, (avgStdev / 64) * 100));
+    const colorAccuracy = Math.min(100, Math.max(0, (stats.entropy || 0) * 10));
+
+    const baseScore = 70;
+    const formatBonus = realMetadata.format === 'webp' ? 5 : realMetadata.format === 'avif' ? 10 : 0;
+    const sizePenalty = buffer.length > 1024 * 1024 ? -10 : 0;
+    const score = Math.max(0, Math.min(100, baseScore + formatBonus + sizePenalty + (contrast * 0.2)));
 
     return {
       score,
-      sharpness: 80 + Math.random() * 20,
-      contrast: 75 + Math.random() * 25,
-      brightness: 70 + Math.random() * 30,
-      colorAccuracy: 85 + Math.random() * 15,
-      compressionRatio: 1.0, // Would be calculated in real implementation
-      fileSize: metadata.size,
-      format: metadata.format,
-      dimensions: { width: metadata.width, height: metadata.height },
-      hasTransparency: metadata.hasAlpha || false,
-      colorSpace: metadata.colorspace || 'srgb'
+      sharpness,
+      contrast,
+      brightness,
+      colorAccuracy,
+      compressionRatio: 1.0,
+      fileSize: buffer.length,
+      format: realMetadata.format || metadata.format || 'unknown',
+      dimensions: {
+        width: realMetadata.width || metadata.width || 0,
+        height: realMetadata.height || metadata.height || 0
+      },
+      hasTransparency: realMetadata.hasAlpha || metadata.hasAlpha || false,
+      colorSpace: realMetadata.space || metadata.colorspace || 'srgb'
     };
   }
 
@@ -607,18 +626,14 @@ export class ImageOptimizationService {
    * Pipeline step: Strip metadata
    */
   private async stripMetadata(buffer: Buffer, context: any): Promise<Buffer> {
-    // In a real implementation, this would strip EXIF and other metadata
-    // For now, return buffer as-is
-    return buffer;
+    return sharp(buffer).withMetadata({ keepExif: false }).toBuffer();
   }
 
   /**
    * Pipeline step: Optimize colors
    */
   private async optimizeColors(buffer: Buffer, context: any): Promise<Buffer> {
-    // In a real implementation, this would optimize color palette and reduce colors
-    // For now, return buffer as-is
-    return buffer;
+    return sharp(buffer).normalize().toBuffer();
   }
 
   /**

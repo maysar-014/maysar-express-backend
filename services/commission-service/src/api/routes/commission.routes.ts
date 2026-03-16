@@ -15,17 +15,15 @@ import {
   validateSellerId,
   validateCommissionId
 } from '../middleware/validation.middleware';
-// Import infrastructure implementations when available
-// import { PrismaCommissionRepository } from '../../infrastructure/repositories/prisma-commission.repository';
-// import { KafkaEventStore } from '../../infrastructure/messaging/kafka-event-store';
+import { PrismaCommissionRepository } from '../../infrastructure/repositories/prisma-commission.repository';
+import { PrismaEventStoreRepository } from '../../infrastructure/repositories/prisma-event-store.repository';
 
 const router = Router();
 
-// TODO: Initialize dependencies (repositories, use cases) - these would come from dependency injection container
-// For now, creating placeholder instances
-const commissionRepository: ICommissionRepository = {} as ICommissionRepository;
+// TODO: Wire payout repository once available (CommissionPayout persistence).
+const commissionRepository: ICommissionRepository = new PrismaCommissionRepository();
 const payoutRepository: IPayoutRepository = {} as IPayoutRepository;
-const eventStore: IEventStoreRepository = {} as IEventStoreRepository;
+const eventStore: IEventStoreRepository = new PrismaEventStoreRepository();
 
 const calculateCommissionUseCase = new CalculateCommissionUseCase(
   commissionRepository,

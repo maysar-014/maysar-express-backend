@@ -98,9 +98,16 @@ describe('RateLimitPolicy', () => {
             const current = new Date('2024-01-01T10:30:45Z');
             const windows = policy.getTimeWindows(current);
 
-            expect(windows.minute.windowStart).toEqual(new Date('2024-01-01T10:30:00Z'));
-            expect(windows.hour.windowStart).toEqual(new Date('2024-01-01T10:00:00Z'));
-            expect(windows.day.windowStart).toEqual(new Date('2024-01-01T00:00:00Z'));
+            const expectedMinuteStart = new Date(current);
+            expectedMinuteStart.setSeconds(0, 0);
+            const expectedHourStart = new Date(current);
+            expectedHourStart.setMinutes(0, 0, 0);
+            const expectedDayStart = new Date(current);
+            expectedDayStart.setHours(0, 0, 0, 0);
+
+            expect(windows.minute.windowStart).toEqual(expectedMinuteStart);
+            expect(windows.hour.windowStart).toEqual(expectedHourStart);
+            expect(windows.day.windowStart).toEqual(expectedDayStart);
         });
     });
 

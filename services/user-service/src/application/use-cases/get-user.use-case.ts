@@ -97,23 +97,18 @@ export class GetUserUseCase {
   /**
    * Filter user fields based on requested fields
    */
-  private filterUserFields(user: User, _requestedFields: string[]): User {
-    // Create a filtered version of the user
-    // In a real implementation, this would create a User DTO or filtered entity
-    // For now, we'll return the full user (in production, implement proper field filtering)
+  private filterUserFields(user: User, requestedFields: string[]): User {
+    const pick = <T extends Record<string, any>>(source: T, fields: string[]) => {
+      const result: Partial<T> = {};
+      for (const field of fields) {
+        if (field in source) {
+          (result as any)[field] = source[field];
+        }
+      }
+      return result;
+    };
 
-    // Basic field filtering logic (simplified)
-    // const allowedFields = [
-    //   'id', 'email', 'firstName', 'lastName', 'phoneNumber',
-    //   'dateOfBirth', 'avatar', 'role', 'status', 'isEmailVerified',
-    //   'isPhoneVerified', 'createdAt', 'updatedAt'
-    // ];
-
-    // Filter requested fields to allowed fields (currently unused in this implementation)
-    // const filteredFields = requestedFields.filter(field => allowedFields.includes(field));
-
-    // In a real implementation, you'd return a UserDTO with only the requested fields
-    // For now, return the full user
-    return user;
+    const filtered = pick(user as any, requestedFields);
+    return filtered as User;
   }
 }

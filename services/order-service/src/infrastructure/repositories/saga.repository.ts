@@ -1,12 +1,12 @@
-import { PrismaSagaLogRepository } from '@shared/saga/saga-log.repository';
 import { ISagaLogRepository } from '@shared/saga/saga.log';
 import { databaseManager } from '../../config/database.config';
+import { PrismaOrderSagaLogRepository } from './prisma-order-saga-log.repository';
 
-let sagaLogRepositoryInstance: PrismaSagaLogRepository | null = null;
+let sagaLogRepositoryInstance: PrismaOrderSagaLogRepository | null = null;
 
-function getSagaLogRepositoryInstance(): PrismaSagaLogRepository {
+function getSagaLogRepositoryInstance(): PrismaOrderSagaLogRepository {
   if (!sagaLogRepositoryInstance) {
-    sagaLogRepositoryInstance = new PrismaSagaLogRepository(databaseManager.getPrisma());
+    sagaLogRepositoryInstance = new PrismaOrderSagaLogRepository(databaseManager.getPrisma());
   }
 
   return sagaLogRepositoryInstance;

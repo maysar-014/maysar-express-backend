@@ -1,3 +1,5 @@
+import { getModelPrefix, makeId } from '@shared/ids/id';
+
 export enum DeliveryStatus {
   PENDING = 'pending',
   ASSIGNED = 'assigned',
@@ -83,7 +85,7 @@ export class Delivery {
   }
 
   private generateId(): string {
-    return `delivery_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return makeId(getModelPrefix('Logistics_Delivery'));
   }
 
   private generateTrackingNumber(): string {

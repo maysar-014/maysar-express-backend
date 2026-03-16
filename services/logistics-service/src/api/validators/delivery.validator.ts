@@ -1,10 +1,11 @@
 ﻿// @ts-nocheck
 import { body, param, query } from 'express-validator';
+import { isSystemId } from '@shared/validation/id';
 
 export class DeliveryValidator {
   static createDelivery(): ValidationChain[] {
     return [
-      // Order validation - allow both UUID and string formats for testing flexibility
+      // Order validation - allow both ID and string formats for testing flexibility
       body('orderId')
         .notEmpty()
         .withMessage('Order ID is required')
@@ -14,8 +15,8 @@ export class DeliveryValidator {
       // Courier validation (optional for creation)
       body('courierId')
         .optional()
-        .isUUID()
-        .withMessage('Courier ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Courier ID must be a valid ID'),
 
       // Pickup address validation
       body('pickupAddress')
@@ -157,7 +158,7 @@ export class DeliveryValidator {
 
   static updateDeliveryStatus(): ValidationChain[] {
     return [
-      param('deliveryId').isUUID().withMessage('Delivery ID must be a valid UUID'),
+      param('deliveryId').custom(isSystemId).withMessage('Delivery ID must be a valid ID'),
       body('status').isIn(['assigned', 'picked_up', 'in_transit', 'delivered', 'cancelled'])
         .withMessage('Invalid delivery status'),
       body('location').optional().isObject().withMessage('Location must be an object'),
@@ -180,7 +181,7 @@ export class DeliveryValidator {
     return [
       query('status').optional().isIn(['assigned', 'picked_up', 'in_transit', 'delivered', 'cancelled'])
         .withMessage('Invalid status filter'),
-      query('courierId').optional().isUUID().withMessage('Courier ID must be a valid UUID'),
+      query('courierId').optional().custom(isSystemId).withMessage('Courier ID must be a valid ID'),
       query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
       query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
     ];
@@ -203,7 +204,7 @@ export class CourierValidator {
 
   static updateCourierLocation(): ValidationChain[] {
     return [
-      param('courierId').isUUID().withMessage('Courier ID must be a valid UUID'),
+      param('courierId').custom(isSystemId).withMessage('Courier ID must be a valid ID'),
       body('latitude').isFloat({ min: -90, max: 90 }).withMessage('Invalid latitude'),
       body('longitude').isFloat({ min: -180, max: 180 }).withMessage('Invalid longitude'),
       body('heading').optional().isFloat({ min: 0, max: 360 }).withMessage('Invalid heading'),

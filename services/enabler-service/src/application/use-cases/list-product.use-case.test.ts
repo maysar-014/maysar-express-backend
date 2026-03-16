@@ -1,8 +1,13 @@
-jest.mock('uuid', () => ({
-  v4: jest.fn(() => 'listing-uuid')
-}));
+jest.mock('@shared/ids/id', () => {
+  const actual = jest.requireActual('@shared/ids/id');
+  return {
+    ...actual,
+    makeId: jest.fn(() => 'enb_prolis_01H00000000000000000000000')
+  };
+});
 
 import { ListProductUseCase } from './list-product.use-case';
+import { makeId } from '@shared/ids/id';
 
 describe('ListProductUseCase', () => {
   const baseDto = {
@@ -129,6 +134,7 @@ describe('ListProductUseCase', () => {
 
   it('creates listing, persists entity, and publishes ProductListedEvent', async () => {
     const deps = makeDeps();
+    (makeId as jest.Mock).mockReturnValue('enb_prolis_01H00000000000000000000000');
     deps.enablerRepository.findById.mockResolvedValue(baseEnabler);
     deps.catalogService.getProduct.mockResolvedValue(baseProduct);
     deps.listingRepository.findByEnablerId.mockResolvedValue([]);
@@ -148,19 +154,19 @@ describe('ListProductUseCase', () => {
 
     expect(deps.listingRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: 'listing-uuid',
+        id: 'enb_prolis_01H00000000000000000000000',
         enablerId: 'enabler-1',
         productId: 'product-1'
       })
     );
     expect(deps.eventPublisher.publish).toHaveBeenCalledWith(
       expect.objectContaining({
-        listingId: 'listing-uuid',
+        listingId: 'enb_prolis_01H00000000000000000000000',
         enablerId: 'enabler-1',
         productId: 'product-1'
       })
     );
-    expect(result.id).toBe('listing-uuid');
+    expect(result.id).toBe('enb_prolis_01H00000000000000000000000');
     expect(result.sellerId).toBe('seller-1');
     expect(result.customPrice).toBe(120);
   });

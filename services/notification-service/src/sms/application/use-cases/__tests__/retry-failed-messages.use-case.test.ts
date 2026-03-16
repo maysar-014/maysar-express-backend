@@ -36,9 +36,10 @@ describe('RetryFailedMessagesUseCase', () => {
 
     describe('execute', () => {
         it('should retry eligible failed messages', async () => {
+            jest.spyOn(retryPolicy, 'isRetryDue').mockReturnValue(true);
             const failedMessage = SmsMessage.reconstitute({
                 id: 'msg-1',
-                phoneNumber: '+254712345678',
+                phoneNumber: '+255612834684',
                 content: 'Test',
                 status: SmsStatus.FAILED,
                 retryCount: 1,
@@ -50,7 +51,7 @@ describe('RetryFailedMessagesUseCase', () => {
 
             mockRepository.findFailedMessagesForRetry.mockResolvedValue([failedMessage]);
             mockProvider.send.mockResolvedValue(
-                ProviderResponse.success('prov-123', 'msg-123')
+                ProviderResponse.createSuccess('msg-123')
             );
 
             const result = await useCase.execute();
@@ -62,9 +63,10 @@ describe('RetryFailedMessagesUseCase', () => {
         });
 
         it('should handle provider failures', async () => {
+            jest.spyOn(retryPolicy, 'isRetryDue').mockReturnValue(true);
             const failedMessage = SmsMessage.reconstitute({
                 id: 'msg-1',
-                phoneNumber: '+254712345678',
+                phoneNumber: '+255612834684',
                 content: 'Test',
                 status: SmsStatus.FAILED,
                 retryCount: 1,
@@ -76,7 +78,7 @@ describe('RetryFailedMessagesUseCase', () => {
 
             mockRepository.findFailedMessagesForRetry.mockResolvedValue([failedMessage]);
             mockProvider.send.mockResolvedValue(
-                ProviderResponse.failure('Provider error')
+                ProviderResponse.createFailure('Provider error')
             );
 
             const result = await useCase.execute();
@@ -86,10 +88,11 @@ describe('RetryFailedMessagesUseCase', () => {
         });
 
         it('should respect limit option', async () => {
+            jest.spyOn(retryPolicy, 'isRetryDue').mockReturnValue(true);
             const messages = Array.from({ length: 10 }, (_, i) =>
                 SmsMessage.reconstitute({
                     id: `msg-${i}`,
-                    phoneNumber: '+254712345678',
+                    phoneNumber: '+255612834684',
                     content: 'Test',
                     status: SmsStatus.FAILED,
                     retryCount: 0,
@@ -102,7 +105,7 @@ describe('RetryFailedMessagesUseCase', () => {
 
             mockRepository.findFailedMessagesForRetry.mockResolvedValue(messages);
             mockProvider.send.mockResolvedValue(
-                ProviderResponse.success('prov-123', 'msg-123')
+                ProviderResponse.createSuccess('msg-123')
             );
 
             const result = await useCase.execute({ limit: 5 });
@@ -115,7 +118,7 @@ describe('RetryFailedMessagesUseCase', () => {
         it('should retry message by ID', async () => {
             const message = SmsMessage.reconstitute({
                 id: 'msg-1',
-                phoneNumber: '+254712345678',
+                phoneNumber: '+255612834684',
                 content: 'Test',
                 status: SmsStatus.FAILED,
                 retryCount: 1,
@@ -127,7 +130,7 @@ describe('RetryFailedMessagesUseCase', () => {
 
             mockRepository.findById.mockResolvedValue(message);
             mockProvider.send.mockResolvedValue(
-                ProviderResponse.success('prov-123', 'msg-123')
+                ProviderResponse.createSuccess('msg-123')
             );
 
             const result = await useCase.executeById('msg-1');
@@ -148,7 +151,7 @@ describe('RetryFailedMessagesUseCase', () => {
         it('should return error when message not eligible for retry', async () => {
             const message = SmsMessage.reconstitute({
                 id: 'msg-1',
-                phoneNumber: '+254712345678',
+                phoneNumber: '+255612834684',
                 content: 'Test',
                 status: SmsStatus.FAILED,
                 retryCount: 3,

@@ -30,6 +30,7 @@ import { TicketEscalationPolicy } from '../domain/policies/ticket-escalation.pol
 // Messaging
 import { SupportEventPublisher } from './messaging/support-event-publisher';
 import { SupportEventSubscriber } from './messaging/support-event-subscriber';
+import { SupportOutboxRepository } from './messaging/support-outbox.repository';
 
 // Controllers
 import { TicketController } from '../api/controllers/ticket.controller';
@@ -68,6 +69,7 @@ container.bind<CreateAgentUseCase>(TYPES.CreateAgentUseCase).to(CreateAgentUseCa
 container.bind<UpdateAgentUseCase>(TYPES.UpdateAgentUseCase).to(UpdateAgentUseCase).inSingletonScope();
 
 // Messaging
+container.bind<SupportOutboxRepository>(TYPES.SupportOutboxRepository).to(SupportOutboxRepository).inSingletonScope();
 container.bind<SupportEventPublisher>(TYPES.SupportEventPublisher).to(SupportEventPublisher).inSingletonScope();
 container.bind<SupportEventSubscriber>(TYPES.SupportEventSubscriber).to(SupportEventSubscriber).inSingletonScope();
 

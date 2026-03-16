@@ -5,6 +5,8 @@
 
 export class IdGeneratorService {
   private static readonly MAYSAR_PREFIX = 'MSR';
+  private static readonly PUBLIC_PREFIX = 'MYS';
+  private static readonly COUNTRY_CODE = 'TZ';
   private static readonly ORDER_PREFIX = 'ORD';
   private static readonly SEPARATOR = '-';
 
@@ -79,6 +81,24 @@ export class IdGeneratorService {
   }
 
   /**
+   * Generates a public order tracking number
+   * Format: MYS-TZ-ORD-YYYYMMDD-XLXL
+   * Example: MYS-TZ-ORD-20260316-3A7B
+   */
+  static generateOrderTrackingNumber(date: Date = new Date(), countryCode: string = IdGeneratorService.COUNTRY_CODE): string {
+    const dateStamp = this.formatDate(date);
+    const randomSequence = this.generateNumberLetterSequence();
+
+    return [
+      this.PUBLIC_PREFIX,
+      countryCode.toUpperCase(),
+      this.ORDER_PREFIX,
+      dateStamp,
+      randomSequence
+    ].join(this.SEPARATOR);
+  }
+
+  /**
    * Validates if a string is a valid Maysar Order ID
    */
   static isValidOrderId(id: string): boolean {
@@ -100,6 +120,14 @@ export class IdGeneratorService {
   static isValidTrackingId(id: string): boolean {
     const pattern = /^MSR-TRK-\d{8}-\d{6}-[A-F0-9]{4}$/;
     return pattern.test(id);
+  }
+
+  /**
+   * Validates if a string is a valid public order tracking number
+   */
+  static isValidOrderTrackingNumber(value: string): boolean {
+    const pattern = /^MYS-TZ-ORD-\d{8}-\d[A-Z]\d[A-Z]$/;
+    return pattern.test(value);
   }
 
   /**
@@ -136,6 +164,26 @@ export class IdGeneratorService {
     const seconds = String(date.getSeconds()).padStart(2, '0');
 
     return `${year}${month}${day}-${hours}${minutes}${seconds}`;
+  }
+
+  private static formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
+  }
+
+  private static generateNumberLetterSequence(): string {
+    return `${this.randomDigit()}${this.randomLetter()}${this.randomDigit()}${this.randomLetter()}`;
+  }
+
+  private static randomDigit(): string {
+    return Math.floor(Math.random() * 10).toString();
+  }
+
+  private static randomLetter(): string {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    return letters.charAt(Math.floor(Math.random() * letters.length));
   }
 
   private static generateRandomSuffix(length: number): string {

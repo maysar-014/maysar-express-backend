@@ -37,8 +37,8 @@ export class ValidationMiddleware {
       body('customerId')
         .notEmpty()
         .withMessage('Customer ID is required')
-        .isUUID()
-        .withMessage('Customer ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Customer ID must be a valid ID'),
 
       body('items')
         .isArray({ min: 1 })
@@ -47,8 +47,8 @@ export class ValidationMiddleware {
       body('items.*.productId')
         .notEmpty()
         .withMessage('Product ID is required for each item')
-        .isUUID()
-        .withMessage('Product ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Product ID must be a valid ID'),
 
       body('items.*.quantity')
         .isInt({ min: 1, max: 1000 })
@@ -105,8 +105,8 @@ export class ValidationMiddleware {
   static validateOrderUpdate() {
     return [
       param('orderId')
-        .isUUID()
-        .withMessage('Order ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Order ID must be a valid ID'),
 
       body('status')
         .optional()
@@ -146,8 +146,8 @@ export class ValidationMiddleware {
   static validatePayment() {
     return [
       param('orderId')
-        .isUUID()
-        .withMessage('Order ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Order ID must be a valid ID'),
 
       body('amount')
         .isFloat({ min: 0.01 })
@@ -192,8 +192,8 @@ export class ValidationMiddleware {
 
       query('customerId')
         .optional()
-        .isUUID()
-        .withMessage('Customer ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Customer ID must be a valid ID'),
 
       query('startDate')
         .optional()
@@ -263,13 +263,13 @@ export class ValidationMiddleware {
   }
 
   /**
-   * Validation rules for UUID parameters
+   * Validation rules for ID parameters
    */
-  static validateUUID(paramName: string = 'id') {
+  static validateID(paramName: string = 'id') {
     return [
       param(paramName)
-        .isUUID()
-        .withMessage(`${paramName} must be a valid UUID`),
+        .custom(isSystemId)
+        .withMessage(`${paramName} must be a valid ID`),
 
       ValidationMiddleware.handleValidationErrors()
     ];

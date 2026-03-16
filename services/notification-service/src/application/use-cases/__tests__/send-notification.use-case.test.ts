@@ -141,7 +141,7 @@ describe('SendNotificationUseCase', () => {
       expect(mockDeliveryPolicy.canSendNotification).toHaveBeenCalledWith(
         { id: 'user-1' },
         expect.any(Object),
-        undefined,
+        null,
         5
       );
     });

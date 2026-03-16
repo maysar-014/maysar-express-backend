@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { DependencyContainer } from '../../infrastructure/container';
 import { ICourierRepository } from '../../domain/repositories';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
+import { COURIER_STATUSES, normalizeCourierStatus } from '../../domain/enums/courier-status.enum';
+import { CourierStatusPolicy } from '../../domain/policies/courier-status.policy';
 
 export class CourierController {
   private get courierRepository(): ICourierRepository {
@@ -21,7 +23,7 @@ export class CourierController {
         phone: courier.phone,
         vehicle: courier.vehicle.type,
         rating: courier.rating,
-        status: courier.isAvailable ? 'active' : 'inactive',
+        status: courier.status,
         currentLocation: {
           lat: courier.currentLocation?.getCoordinates().lat,
           lng: courier.currentLocation?.getCoordinates().lng
@@ -71,7 +73,7 @@ export class CourierController {
           phone: courier.phone,
           vehicle: courier.vehicle.type,
           rating: courier.rating,
-          status: courier.isAvailable ? 'active' : 'inactive',
+          status: courier.status,
           currentLocation: {
             lat: courier.currentLocation?.getCoordinates().lat,
             lng: courier.currentLocation?.getCoordinates().lng
@@ -96,6 +98,23 @@ export class CourierController {
     try {
       const { courierId } = req.params;
       const { status } = req.body;
+      const rawStatus = String(status ?? '').toLowerCase();
+      const allowedStatuses = new Set<string>([
+        ...COURIER_STATUSES,
+        'active',
+        'inactive',
+        'available',
+        'assigned',
+        'in_transit'
+      ]);
+
+      if (!allowedStatuses.has(rawStatus)) {
+        res.status(400).json({
+          success: false,
+          error: 'Invalid courier status'
+        });
+        return;
+      }
 
       // Find the courier first
       const courier = await this.courierRepository.getCourierById(courierId);
@@ -108,23 +127,34 @@ export class CourierController {
         return;
       }
 
-      // Update availability status
-      const isAvailable = status === 'active';
-      await this.courierRepository.updateCourierAvailability(courierId, isAvailable);
+      const currentStatus = normalizeCourierStatus(courier.status ?? 'offline');
+      const nextStatus = normalizeCourierStatus(rawStatus);
+      const policy = new CourierStatusPolicy();
+      policy.assertTransition(currentStatus, nextStatus);
+
+      await this.courierRepository.updateCourierStatus(courierId, nextStatus);
 
       res.json({
         success: true,
         data: {
           courierId,
-          status,
+          status: nextStatus,
           updatedAt: new Date()
         }
       });
     } catch (error: any) {
       console.error('Error updating courier status:', error);
+      const message = error?.message || 'Failed to update courier status';
+      if (message.includes('Invalid courier status transition')) {
+        res.status(400).json({
+          success: false,
+          error: message
+        });
+        return;
+      }
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to update courier status'
+        error: message
       });
     }
   }

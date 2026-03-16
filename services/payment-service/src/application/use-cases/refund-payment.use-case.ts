@@ -7,6 +7,7 @@ import { Payment } from '../../domain/entities/payment.entity';
 import { Refund, RefundStatus, RefundReason } from '../../domain/entities/refund.entity';
 import { IPaymentRepository } from '../../domain/repositories/payment.repository';
 import { RefundPolicy } from '../../domain/policies/refund.policy';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export interface RefundPaymentDTO {
     paymentId: string;
@@ -112,6 +113,6 @@ export class RefundPaymentUseCase {
     }
 
     private generateId(): string {
-        return `ref_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        return makeId(getModelPrefix('Payment_Refund'));
     }
 }

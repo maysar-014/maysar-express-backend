@@ -2,6 +2,7 @@ import express from 'express';
 import { PrismaCartRepository } from './infrastructure/repositories/prisma-cart.repository';
 import { PrismaCheckoutRepository } from './infrastructure/repositories/prisma-checkout.repository';
 import { PrismaCheckoutOrderRepository } from './infrastructure/repositories/prisma-checkout-order.repository';
+import { PrismaEnablerLookupRepository } from './infrastructure/repositories/enabler-lookup.repository';
 import { EventBusAdapter } from './infrastructure/messaging/event-bus.adapter';
 import { CheckoutEventHandlers } from './application/handlers/checkout-event.handlers';
 import { createCheckoutRoutes } from './api/routes/checkout.routes';
@@ -14,6 +15,7 @@ import { logger } from './infrastructure/services/logger.service';
 import { tracingService, correlationMiddleware } from '../../../shared/tracing/openTelemetry';
 import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
 import { prisma } from './infrastructure/database/prisma-client';
+import { createMaintenanceRoutes } from './api/routes/maintenance.routes';
 
 // Initialize Tracing
 tracingService.start();
@@ -27,11 +29,12 @@ app.use(requestLogger);
 const cartRepository = new PrismaCartRepository(prisma);
 const checkoutRepository = new PrismaCheckoutRepository(prisma);
 const checkoutOrderRepository = new PrismaCheckoutOrderRepository(prisma);
+const enablerLookupRepository = new PrismaEnablerLookupRepository(prisma);
 const eventBus = new EventBusAdapter();
 
 // Initialize controllers
 const cartController = new CartController(cartRepository);
-const checkoutController = new CheckoutController(checkoutRepository, eventBus, cartRepository);
+const checkoutController = new CheckoutController(checkoutRepository, eventBus, cartRepository, enablerLookupRepository);
 
 // Initialize event handlers
 new CheckoutEventHandlers(eventBus, checkoutRepository, checkoutOrderRepository);
@@ -49,6 +52,7 @@ app.get('/metrics', async (req, res) => {
 
 // Register routes
 app.use('/api/checkout', createCheckoutRoutes(cartController, checkoutController));
+app.use('/api/v1/system/maintenance', createMaintenanceRoutes());
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

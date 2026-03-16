@@ -13,6 +13,7 @@ export { UserStatus, UserRole, UserMetadata } from '../types/user.types';
  */
 export class User implements Entity {
   public readonly id: string;
+  public readonly publicCode?: string | undefined;
   public readonly email: Email;
   public readonly phoneNumber: PhoneNumber;
   public readonly firstName: string;
@@ -31,9 +32,18 @@ export class User implements Entity {
   public readonly preferredCurrency: string;
   public readonly addresses: Address[];
   public readonly businessId?: string | undefined;
+  public readonly codEnabled: boolean;
+  public readonly codReputationScore: number;
+  public readonly codSuccessfulOrders: number;
+  public readonly codFailedOrders: number;
+  public readonly codTotalOrders: number;
+  public readonly codLastOrderAt?: Date | undefined;
+  public readonly codSuspendedUntil?: Date | undefined;
+  public readonly codPermanentlyDisabled: boolean;
 
   constructor(props: {
     id: string;
+    publicCode?: string | undefined;
     email: Email;
     phoneNumber: PhoneNumber;
     firstName: string;
@@ -52,8 +62,17 @@ export class User implements Entity {
     preferredCurrency: string;
     addresses: Address[];
     businessId?: string | undefined;
+    codEnabled?: boolean;
+    codReputationScore?: number;
+    codSuccessfulOrders?: number;
+    codFailedOrders?: number;
+    codTotalOrders?: number;
+    codLastOrderAt?: Date | undefined;
+    codSuspendedUntil?: Date | undefined;
+    codPermanentlyDisabled?: boolean;
   }) {
     this.id = props.id;
+    this.publicCode = props.publicCode;
     this.email = props.email;
     this.phoneNumber = props.phoneNumber;
     this.firstName = props.firstName;
@@ -72,6 +91,14 @@ export class User implements Entity {
     this.preferredCurrency = props.preferredCurrency;
     this.addresses = props.addresses;
     this.businessId = props.businessId;
+    this.codEnabled = props.codEnabled ?? false;
+    this.codReputationScore = props.codReputationScore ?? 0;
+    this.codSuccessfulOrders = props.codSuccessfulOrders ?? 0;
+    this.codFailedOrders = props.codFailedOrders ?? 0;
+    this.codTotalOrders = props.codTotalOrders ?? 0;
+    this.codLastOrderAt = props.codLastOrderAt;
+    this.codSuspendedUntil = props.codSuspendedUntil;
+    this.codPermanentlyDisabled = props.codPermanentlyDisabled ?? false;
   }
 
   /**
@@ -79,6 +106,7 @@ export class User implements Entity {
    */
   static create(props: {
     id: string;
+    publicCode?: string;
     email: Email;
     phoneNumber: PhoneNumber;
     firstName: string;
@@ -90,9 +118,18 @@ export class User implements Entity {
     preferredCurrency?: string;
     addresses?: Address[];
     businessId?: string;
+    codEnabled?: boolean;
+    codReputationScore?: number;
+    codSuccessfulOrders?: number;
+    codFailedOrders?: number;
+    codTotalOrders?: number;
+    codLastOrderAt?: Date;
+    codSuspendedUntil?: Date;
+    codPermanentlyDisabled?: boolean;
   }): User {
     return new User({
       id: props.id,
+      publicCode: props.publicCode,
       email: props.email,
       phoneNumber: props.phoneNumber,
       firstName: props.firstName,
@@ -114,7 +151,15 @@ export class User implements Entity {
       preferredLanguage: props.preferredLanguage || 'sw',
       preferredCurrency: props.preferredCurrency || 'TZS',
       addresses: props.addresses || [],
-      businessId: props.businessId
+      businessId: props.businessId,
+      codEnabled: props.codEnabled ?? false,
+      codReputationScore: props.codReputationScore ?? 0,
+      codSuccessfulOrders: props.codSuccessfulOrders ?? 0,
+      codFailedOrders: props.codFailedOrders ?? 0,
+      codTotalOrders: props.codTotalOrders ?? 0,
+      codLastOrderAt: props.codLastOrderAt,
+      codSuspendedUntil: props.codSuspendedUntil,
+      codPermanentlyDisabled: props.codPermanentlyDisabled ?? false
     });
   }
 
@@ -335,6 +380,10 @@ export class User implements Entity {
 
     if (!this.id || this.id.trim().length === 0) {
       errors.push('User ID is required');
+    }
+
+    if (this.publicCode && !/^MYS-[A-Z0-9]{6}$/i.test(this.publicCode)) {
+      errors.push('Invalid public user code format');
     }
 
     if (!this.email) {

@@ -117,6 +117,12 @@ const ExternalServicesConfigSchema = z.object({
   ELASTICSEARCH_NODE: z.string().url().optional(),
   ELASTICSEARCH_API_KEY: z.string().optional(),
   ELASTICSEARCH_INDEX_PREFIX: z.string().default('catalog'),
+  MEILISEARCH_HOST: z.string().optional(),
+  MEILISEARCH_PORT: z.coerce.number().optional(),
+  MEILISEARCH_PROTOCOL: z.enum(['http', 'https']).optional(),
+  MEILISEARCH_API_KEY: z.string().optional(),
+  MEILISEARCH_INDEX_NAME: z.string().optional(),
+  MEILISEARCH_REQUEST_TIMEOUT: z.coerce.number().optional(),
 
   // Cache Configuration
   CACHE_PROVIDER: z.enum(['redis', 'memcached', 'memory']).default('redis'),
@@ -253,6 +259,14 @@ export interface AppConfig {
         node: string;
         apiKey: string;
         indexPrefix: string;
+      };
+      meilisearch?: {
+        host: string;
+        port: number;
+        protocol: 'http' | 'https';
+        apiKey?: string;
+        indexName: string;
+        requestTimeout: number;
       };
     };
     cache: {
@@ -475,6 +489,14 @@ export class ConfigurationManager {
             node: externalServicesConfig.ELASTICSEARCH_NODE,
             apiKey: externalServicesConfig.ELASTICSEARCH_API_KEY || '',
             indexPrefix: externalServicesConfig.ELASTICSEARCH_INDEX_PREFIX
+          } : undefined,
+          meilisearch: externalServicesConfig.MEILISEARCH_HOST ? {
+            host: externalServicesConfig.MEILISEARCH_HOST,
+            port: externalServicesConfig.MEILISEARCH_PORT || 7700,
+            protocol: externalServicesConfig.MEILISEARCH_PROTOCOL || 'http',
+            apiKey: externalServicesConfig.MEILISEARCH_API_KEY,
+            indexName: externalServicesConfig.MEILISEARCH_INDEX_NAME || 'catalog',
+            requestTimeout: externalServicesConfig.MEILISEARCH_REQUEST_TIMEOUT || 30000
           } : undefined
         },
         cache: {

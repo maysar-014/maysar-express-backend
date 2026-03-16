@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { Module } from '../../src/core/module.interface';
 import { logger } from './src/infrastructure/services/logger.service';
 import { healthRoutes } from './src/api/routes/health.routes';
+import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 
 export const LogisticsModule: Module = {
     name: 'logistics-service',
@@ -11,6 +12,7 @@ export const LogisticsModule: Module = {
     routes: (() => {
         const router = Router();
         router.use('/health', healthRoutes);
+        router.use('/system/maintenance', createMaintenanceRoutes());
 
         try {
             // Lazy load to avoid env-dependent side effects during module import

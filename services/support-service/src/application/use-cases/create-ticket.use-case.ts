@@ -1,5 +1,5 @@
 import { injectable, inject } from 'inversify';
-import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 import { TYPES } from '../../types';
 import { Ticket } from '../../domain/entities/ticket.entity';
 import { TicketMapper } from '../mappers/ticket.mapper';
@@ -19,7 +19,7 @@ export class CreateTicketUseCase {
     ) { }
 
     public async execute(dto: CreateTicketDto): Promise<TicketResponseDto> {
-        const ticketId = uuidv4();
+        const ticketId = makeId(getModelPrefix('Support_Ticket'));
         const ticket = Ticket.create({
             id: ticketId,
             userId: dto.userId,
@@ -38,7 +38,7 @@ export class CreateTicketUseCase {
 
         // Record initial status history
         const statusHistory: TicketStatusHistory = {
-            id: uuidv4(),
+            id: makeId(getModelPrefix('Support_TicketStatusHistory')),
             fromStatus: undefined as any,
             toStatus: savedTicket.status,
             changedBy: savedTicket.userId,
@@ -51,7 +51,7 @@ export class CreateTicketUseCase {
         if (dto.attachments && dto.attachments.length > 0) {
             for (const attDto of dto.attachments) {
                 await this.attachmentRepository.create({
-                    id: attDto.id || uuidv4(),
+                    id: attDto.id || makeId(getModelPrefix('Support_TicketAttachment')),
                     fileName: attDto.fileName,
                     fileUrl: attDto.fileUrl,
                     fileSize: attDto.fileSize,

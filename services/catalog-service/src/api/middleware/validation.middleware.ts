@@ -7,6 +7,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { createHash } from 'crypto';
+import { isSystemId } from '@shared/ids/id';
 
 // =====================================================================================
 // VALIDATION CONFIGURATION
@@ -49,9 +50,9 @@ export const DEFAULT_VALIDATION_CONFIG: ValidationConfig = {
  */
 export const SecuritySchemas = {
   /**
-   * UUID Validation
+   * ID Validation
    */
-  uuid: z.string().uuid({ message: 'Invalid UUID format' }),
+  uuid: z.string().refine(isSystemId, 'Invalid ID format'),
 
   /**
    * Email Validation with Security Checks
@@ -462,8 +463,8 @@ function validateLegacyRequest(
             if (fieldSchema.format === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
               details.push(`${field} must be a valid email`);
             }
-            if (fieldSchema.format === 'uuid' && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) {
-              details.push(`${field} must be a valid uuid`);
+            if (fieldSchema.format === 'uuid' && !isSystemId(value)) {
+              details.push(`${field} must be a valid ID`);
             }
             if (fieldSchema.custom) {
               const customError = fieldSchema.custom(value);

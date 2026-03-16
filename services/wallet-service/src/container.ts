@@ -41,6 +41,7 @@ import { DistributedSagaOrchestrator } from '@shared/saga/saga.orchestrator';
 import { RedisLock } from '../../../shared/locking/redis-lock';
 import { createClient } from 'redis';
 import { ActorType, AuditInfo } from './domain/value-objects/audit-info.value-object';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 interface PaymentInitiatedEventData {
     paymentId: string;
@@ -110,9 +111,15 @@ export class Container {
     public readonly eventBus: IEventBus;
     public readonly outboxProcessor: OutboxProcessor;
     public readonly holdExpiryJob: HoldExpiryJob;
+    public readonly walletRepository: WalletRepository;
+    public readonly transactionRepository: TransactionRepository;
+    public readonly creditUseCase: CreditWalletUseCase;
+    public readonly debitUseCase: DebitWalletUseCase;
+    public readonly freezeUseCase: FreezeFundsUseCase;
+    public readonly unfreezeUseCase: UnfreezeFundsUseCase;
 
     private constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = createPrismaClient();
         const walletRepository = new WalletRepository(this.prisma);
         const transactionRepository = new TransactionRepository(this.prisma);
         const idempotencyRepository = new IdempotencyRepository(this.prisma);
@@ -128,7 +135,7 @@ export class Container {
         this.eventBus = new EventBus(); // Unified with other services
         const eventPublisher = new WalletEventPublisher(this.eventBus);
 
-        const paymentServiceClient = new PaymentServiceClient(process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3003');
+        const paymentServiceClient = new PaymentServiceClient();
 
         // Use Cases
         const redisClient = createClient({ url: process.env.REDIS_URL });
@@ -207,7 +214,7 @@ export class Container {
         const expireHoldUseCase = new ExpireHoldUseCase(walletRepository, holdRepository, eventPublisher);
         const topUpUseCase = new TopUpWalletUseCase(paymentServiceClient);
 
-        const payoutServiceClient = new PayoutServiceClient(process.env.PAYOUT_SERVICE_URL || 'http://payout-service:3005');
+        const payoutServiceClient = new PayoutServiceClient();
         const initiatePayoutFromWalletUseCase = new InitiatePayoutFromWalletUseCase(
             debitUseCase,
             creditUseCase,
@@ -333,6 +340,13 @@ export class Container {
             walletRepository,
             initiatePayoutFromWalletUseCase
         );
+
+        this.walletRepository = walletRepository;
+        this.transactionRepository = transactionRepository;
+        this.creditUseCase = creditUseCase;
+        this.debitUseCase = debitUseCase;
+        this.freezeUseCase = freezeUseCase;
+        this.unfreezeUseCase = unfreezeUseCase;
     }
 
     public static getInstance(): Container {

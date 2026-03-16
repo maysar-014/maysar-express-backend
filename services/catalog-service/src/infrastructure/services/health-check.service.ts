@@ -7,6 +7,12 @@
 
 import { ProviderManager, ProviderHealthCheck, ProviderMetrics } from '../providers';
 import { CacheService } from '../../domain/interfaces';
+import { CacheProviderFactory } from '../providers/cache-provider';
+import { CacheServiceFactory } from './cache.service';
+import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '@shared/database/prisma-client';
+import { getSharedRedisClient } from '@shared/redis/ioredis-client';
+import { Kafka } from 'kafkajs';
 
 /**
  * Health Status Types
@@ -99,11 +105,15 @@ export class HealthCheckService {
     lastCheckTime: new Date(),
     averageResponseTime: 0
   };
+  private lastHealthStatus: SystemHealthResult | null = null;
 
   constructor(config: Partial<HealthCheckConfig> = {}) {
     this.config = { ...DEFAULT_HEALTH_CHECK_CONFIG, ...config };
     this.startTime = new Date();
+    this.prisma = createPrismaClient();
   }
+
+  private prisma: PrismaClient;
 
   static create(config: Partial<HealthCheckConfig> = {}): HealthCheckService {
     return new HealthCheckService(config);
@@ -231,6 +241,7 @@ export class HealthCheckService {
       }
     };
 
+    this.lastHealthStatus = result;
     return result;
   }
 
@@ -271,9 +282,7 @@ export class HealthCheckService {
    * Get cached health status
    */
   getCachedHealthStatus(): SystemHealthResult | null {
-    // Return last known health status if available
-    // In a real implementation, this would return cached results
-    return null;
+    return this.lastHealthStatus;
   }
 
   /**
@@ -283,9 +292,15 @@ export class HealthCheckService {
     const startTime = Date.now();
 
     try {
-      // In a real implementation, this would check database connectivity
-      // For now, simulate a database check
-      await new Promise(resolve => setTimeout(resolve, 50)); // Simulate DB query
+      await this.prisma.$queryRaw`SELECT 1`;
+      let poolMetrics: any = undefined;
+      if ((this.prisma as any).$metrics) {
+        try {
+          poolMetrics = await (this.prisma as any).$metrics();
+        } catch {
+          poolMetrics = undefined;
+        }
+      }
 
       return {
         name: 'database',
@@ -293,8 +308,7 @@ export class HealthCheckService {
         responseTime: Date.now() - startTime,
         message: 'Database connection healthy',
         details: {
-          connectionPoolSize: 10,
-          activeConnections: 5
+          metrics: poolMetrics
         },
         timestamp: new Date()
       };
@@ -316,7 +330,8 @@ export class HealthCheckService {
     const startTime = Date.now();
 
     try {
-      // In a real implementation, this would check cache connectivity
+      const redis = getSharedRedisClient();
+      await redis.ping();
       const cache = await this.getCacheInstance();
       if (cache) {
         await cache.set('health-check', 'ok', 10);
@@ -386,8 +401,19 @@ export class HealthCheckService {
     const startTime = Date.now();
 
     try {
-      // In a real implementation, this would check messaging connectivity
-      await new Promise(resolve => setTimeout(resolve, 30)); // Simulate messaging check
+      if (process.env.KAFKA_BROKERS) {
+        const kafka = new Kafka({
+          clientId: 'catalog-service-healthcheck',
+          brokers: process.env.KAFKA_BROKERS.split(',')
+        });
+        const admin = kafka.admin();
+        await admin.connect();
+        await admin.listTopics();
+        await admin.disconnect();
+      } else {
+        const redis = getSharedRedisClient();
+        await redis.ping();
+      }
 
       return {
         name: 'messaging',
@@ -395,8 +421,8 @@ export class HealthCheckService {
         responseTime: Date.now() - startTime,
         message: 'Messaging system healthy',
         details: {
-          connections: 5,
-          pendingMessages: 0
+          type: process.env.KAFKA_BROKERS ? 'kafka' : 'redis',
+          connected: true
         },
         timestamp: new Date()
       };
@@ -528,7 +554,16 @@ export class HealthCheckService {
    * Get cache instance (helper method)
    */
   private async getCacheInstance(): Promise<CacheService | null> {
-    // In a real implementation, this would get the cache instance from a service locator
+    const serviceInstance = CacheServiceFactory.getInstance();
+    if (serviceInstance) {
+      return serviceInstance;
+    }
+
+    const providerInstance = CacheProviderFactory.getInstance();
+    if (providerInstance) {
+      return providerInstance as CacheService;
+    }
+
     return null;
   }
 

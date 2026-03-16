@@ -6,13 +6,18 @@ jest.mock(
   { virtual: true }
 );
 
-jest.mock('uuid', () => ({
-  v4: () => 'record-fixed-id'
-}));
+jest.mock('@shared/ids/id', () => {
+  const actual = jest.requireActual('@shared/ids/id');
+  return {
+    ...actual,
+    makeId: jest.fn(() => 'trn_rec_01H00000000000000000000000')
+  };
+});
 
 import { ContentType, DifficultyLevel, TrainingModule } from '../../domain/entities/training-module.entity';
 import { CertificationRequirement } from '../../domain/entities/certification-requirement.entity';
 import { TrainingRecord } from '../../domain/entities/training-record.entity';
+import { makeId } from '@shared/ids/id';
 
 describe('StartTrainingUseCase', () => {
   it('creates new record, starts training, saves and publishes event', async () => {
@@ -62,6 +67,7 @@ describe('StartTrainingUseCase', () => {
       trainingPolicy as never,
       events as never
     );
+    (makeId as jest.Mock).mockReturnValue('trn_rec_01H00000000000000000000000');
 
     const result = await useCase.execute({
       learnerId: 'learner-1',
@@ -71,17 +77,17 @@ describe('StartTrainingUseCase', () => {
 
     expect(trainingRecordRepo.save).toHaveBeenCalledTimes(1);
     const savedRecord = trainingRecordRepo.save.mock.calls[0][0] as TrainingRecord;
-    expect(savedRecord.id).toBe('record-fixed-id');
+    expect(savedRecord.id).toBe('trn_rec_01H00000000000000000000000');
     expect(savedRecord.status).toBe('IN_PROGRESS');
     expect(events.publish).toHaveBeenCalledWith(
       'TrainingStarted.v1',
       expect.objectContaining({
-        trainingRecordId: 'record-fixed-id',
+        trainingRecordId: 'trn_rec_01H00000000000000000000000',
         learnerId: 'learner-1',
         moduleId: 'module-1'
       })
     );
-    expect(result.trainingRecordId).toBe('record-fixed-id');
+    expect(result.trainingRecordId).toBe('trn_rec_01H00000000000000000000000');
     expect(result.warnings).toEqual(['w1']);
     expect(result.recommendations).toEqual(['r1']);
   });

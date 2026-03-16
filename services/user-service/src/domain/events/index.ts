@@ -35,12 +35,18 @@ export class UserRegisteredEvent implements DomainEvent {
     public readonly email: string,
     public readonly role: UserRole,
     public readonly registrationMethod: 'email' | 'phone' | 'social',
+    publicCodeOrMetadata?: string | Record<string, any>,
     metadata?: Record<string, any>
   ) {
     this.eventId = `user-registered-${aggregateId}-${Date.now()}`;
     this.occurredAt = new Date();
-    this.metadata = metadata;
+    const isMetadataObject =
+      publicCodeOrMetadata !== undefined && typeof publicCodeOrMetadata === 'object';
+    this.metadata = isMetadataObject ? (publicCodeOrMetadata as Record<string, any>) : metadata;
+    this.publicCode = isMetadataObject ? undefined : (publicCodeOrMetadata as string | undefined);
   }
+
+  public readonly publicCode?: string;
 }
 
 /**

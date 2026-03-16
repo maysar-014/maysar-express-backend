@@ -1,32 +1,59 @@
-jest.mock('axios', () => ({
-  __esModule: true,
-  default: {
-    get: jest.fn(),
-    post: jest.fn()
+const mockWalletRepository = {
+  findByUserId: jest.fn(),
+  update: jest.fn()
+};
+const mockTransactionRepository = {
+  save: jest.fn()
+};
+const mockFreezeUseCase = {
+  execute: jest.fn()
+};
+const mockUnfreezeUseCase = {
+  execute: jest.fn()
+};
+const mockCreditUseCase = {
+  execute: jest.fn()
+};
+
+jest.mock('../../../../wallet-service/src/container', () => ({
+  Container: {
+    getInstance: () => ({
+      walletRepository: mockWalletRepository,
+      transactionRepository: mockTransactionRepository,
+      freezeUseCase: mockFreezeUseCase,
+      unfreezeUseCase: mockUnfreezeUseCase,
+      creditUseCase: mockCreditUseCase
+    })
   }
 }));
 
-import axios from 'axios';
 import { WalletServiceClient as PaymentWalletServiceClient } from './wallet-service.client';
 
 describe('wallet-service client contracts', () => {
-  const previousEnv = { ...process.env };
-
   afterEach(() => {
-    process.env = { ...previousEnv };
     jest.clearAllMocks();
     jest.restoreAllMocks();
     jest.resetModules();
   });
 
-  it('calls payment wallet-service endpoints through axios', async () => {
-    process.env.WALLET_SERVICE_URL = 'http://wallet.local';
-    (axios.get as jest.Mock)
-      .mockResolvedValueOnce({ data: { balance: 100, availableBalance: 80 } })
-      .mockResolvedValueOnce({ data: { canPayout: true } });
-    (axios.post as jest.Mock).mockResolvedValue({ data: {} });
+  it('calls payment wallet-service adapter in-process', async () => {
+    const wallet = {
+      id: 'w1',
+      balance: 100,
+      frozenAmount: 20,
+      status: 'ACTIVE',
+      currency: 'TZS',
+      debitFrozen: jest.fn(function (amount: number) {
+        this.frozenAmount -= amount;
+        this.balance -= amount;
+      })
+    };
+    mockWalletRepository.findByUserId.mockResolvedValue(wallet);
+    mockFreezeUseCase.execute.mockResolvedValue({ success: true });
+    mockUnfreezeUseCase.execute.mockResolvedValue({ success: true });
+    mockCreditUseCase.execute.mockResolvedValue({ success: true });
 
-    const client = new PaymentWalletServiceClient('');
+    const client = new PaymentWalletServiceClient();
 
     await expect(client.getBalance('user-1')).resolves.toEqual({ balance: 100, availableBalance: 80 });
     await expect(client.checkEligibility('user-1', 25)).resolves.toEqual({ canPayout: true });
@@ -34,13 +61,9 @@ describe('wallet-service client contracts', () => {
     await client.unfreezeFunds({ userId: 'user-1', amount: 10, description: 'unfreeze' });
     await client.debitFrozenFunds({ userId: 'user-1', amount: 10, description: 'debit' });
 
-    expect(axios.get).toHaveBeenNthCalledWith(1, 'http://wallet.local/api/wallets/user-1/balance');
-    expect(axios.get).toHaveBeenNthCalledWith(
-      2,
-      'http://wallet.local/api/wallets/user-1/eligibility',
-      { params: { amount: 25 } }
-    );
-    expect(axios.post).toHaveBeenCalledTimes(3);
+    expect(mockFreezeUseCase.execute).toHaveBeenCalled();
+    expect(mockUnfreezeUseCase.execute).toHaveBeenCalled();
+    expect(mockTransactionRepository.save).toHaveBeenCalled();
   });
 
   it('loads order-service wallet client and executes hold lifecycle methods', async () => {

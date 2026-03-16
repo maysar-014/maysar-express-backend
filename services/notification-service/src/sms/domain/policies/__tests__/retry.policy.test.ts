@@ -4,7 +4,7 @@ import { SmsMessage, SmsStatus } from '../../entities/sms-message.entity';
 const createFailedMessage = (retryCount: number, failedAt?: Date): SmsMessage => {
     const message = SmsMessage.reconstitute({
         id: 'msg-1',
-        phoneNumber: '+254712345678',
+        phoneNumber: '+255612834684',
         content: 'Test',
         status: SmsStatus.FAILED,
         retryCount,
@@ -22,6 +22,9 @@ describe('RetryPolicy', () => {
     beforeEach(() => {
         policy = new RetryPolicy();
     });
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
 
     describe('canRetry', () => {
         it('should allow retry for failed message below max retries', () => {
@@ -37,7 +40,7 @@ describe('RetryPolicy', () => {
         it('should not allow retry for non-failed message', () => {
             const message = SmsMessage.reconstitute({
                 id: 'msg-1',
-                phoneNumber: '+254712345678',
+                phoneNumber: '+255612834684',
                 content: 'Test',
                 status: SmsStatus.SENT,
                 retryCount: 0,
@@ -85,17 +88,21 @@ describe('RetryPolicy', () => {
 
     describe('isRetryDue', () => {
         it('should return true when retry time has passed', () => {
-            const pastTime = new Date(Date.now() - 10000);
+            const baseNow = new Date('2024-01-01T00:00:00Z');
+            jest.spyOn(Date, 'now').mockReturnValue(baseNow.getTime());
+            const pastTime = new Date(baseNow.getTime() - 10000);
             const message = createFailedMessage(0, pastTime);
-            const currentTime = new Date();
-            
+            const currentTime = new Date(baseNow.getTime() + 2000);
+
             expect(policy.isRetryDue(message, currentTime)).toBe(true);
         });
 
         it('should return false when retry time has not passed', () => {
-            const message = createFailedMessage(0, new Date());
-            const currentTime = new Date(Date.now() + 100);
-            
+            const baseNow = new Date('2024-01-01T00:00:00Z');
+            jest.spyOn(Date, 'now').mockReturnValue(baseNow.getTime());
+            const message = createFailedMessage(0, new Date(baseNow.getTime() - 10000));
+            const currentTime = new Date(baseNow.getTime() + 500);
+
             expect(policy.isRetryDue(message, currentTime)).toBe(false);
         });
 

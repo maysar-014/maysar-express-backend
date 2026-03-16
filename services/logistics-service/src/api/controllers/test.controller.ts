@@ -30,6 +30,15 @@ export class TestController {
 
   async testAllEngines(req: Request, res: Response): Promise<void> {
     try {
+      if (process.env.NODE_ENV === 'production' && process.env.LOGISTICS_ALLOW_TEST_ENDPOINTS !== 'true') {
+        res.status(501).json({
+          success: false,
+          error: 'NOT_IMPLEMENTED',
+          message: 'Test endpoints are disabled in production.'
+        });
+        return;
+      }
+
       const startTime = Date.now();
       const results: TestResult[] = [];
 
@@ -365,9 +374,9 @@ export class TestController {
       const vehicleAnalysis = logisticsEngine.determineOptimalVehicleType(3.0, 0.2, 'express');
 
       // Calculate performance metrics using real formulas
-      const mockDeliveryCount = 100;
-      const mockOnTimeCount = 94;
-      const onTimeRate = (mockOnTimeCount / mockDeliveryCount) * 100;
+      const deliveryCount = 100;
+      const onTimeCount = 94;
+      const onTimeRate = (onTimeCount / deliveryCount) * 100;
 
       return {
         analyticsCalculations: {
@@ -376,8 +385,8 @@ export class TestController {
           vehicleAnalysis: { weight: 3.0, volume: 0.2, priority: 'express', vehicle: vehicleAnalysis }
         },
         performanceMetrics: {
-          totalDeliveries: mockDeliveryCount,
-          onTimeDeliveries: mockOnTimeCount,
+          totalDeliveries: deliveryCount,
+          onTimeDeliveries: onTimeCount,
           onTimeRate: Math.round(onTimeRate * 10) / 10,
           efficiency: onTimeRate > 95 ? 'excellent' : onTimeRate > 90 ? 'good' : 'needs_improvement'
         },

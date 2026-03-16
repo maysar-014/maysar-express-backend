@@ -7,6 +7,8 @@ import { ReactivateBusinessUseCase } from '../../application/use-cases/reactivat
 import { BusinessMapper } from '../../application/mappers/business-mapper';
 import { IBusinessRepository } from '../../domain/repositories';
 import { BusinessNotFoundError, UnauthorizedBusinessOperationError } from '../../domain/errors/business.errors';
+import { PrismaBusinessDocumentRepository } from '../../infrastructure/repositories/prisma-business-document.repository';
+import { PrismaBusinessComplianceRepository } from '../../infrastructure/repositories/prisma-business-compliance.repository';
 
 export class BusinessController {
   constructor(
@@ -15,7 +17,9 @@ export class BusinessController {
     private readonly updateBusinessUseCase: UpdateBusinessUseCase,
     private readonly suspendBusinessUseCase: SuspendBusinessUseCase,
     private readonly reactivateBusinessUseCase: ReactivateBusinessUseCase,
-    private readonly businessRepository: IBusinessRepository
+    private readonly businessRepository: IBusinessRepository,
+    private readonly businessDocumentRepository: PrismaBusinessDocumentRepository,
+    private readonly businessComplianceRepository: PrismaBusinessComplianceRepository
   ) {}
 
   async registerBusiness(req: Request, res: Response): Promise<void> {
@@ -159,6 +163,97 @@ export class BusinessController {
       res.status(200).json({
         success: true,
         data: businesses.map(b => BusinessMapper.toResponseDto(b))
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async addDocument(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const business = await this.businessRepository.findById(id);
+      if (!business) {
+        throw new BusinessNotFoundError('Business not found');
+      }
+
+      const { type, fileName, fileUrl, status } = req.body;
+      const document = await this.businessDocumentRepository.createDocument({
+        businessId: id,
+        type,
+        fileName,
+        fileUrl,
+        status
+      });
+
+      res.status(201).json({
+        success: true,
+        data: document,
+        message: 'Business document uploaded successfully'
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async listDocuments(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const business = await this.businessRepository.findById(id);
+      if (!business) {
+        throw new BusinessNotFoundError('Business not found');
+      }
+
+      const documents = await this.businessDocumentRepository.findByBusinessId(id);
+      res.status(200).json({
+        success: true,
+        data: documents
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async addComplianceRecord(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const business = await this.businessRepository.findById(id);
+      if (!business) {
+        throw new BusinessNotFoundError('Business not found');
+      }
+
+      const { type, status, expiresAt, notes } = req.body;
+      const parsedExpiry = expiresAt ? new Date(expiresAt) : undefined;
+      const record = await this.businessComplianceRepository.createRecord({
+        businessId: id,
+        type,
+        status,
+        expiresAt: parsedExpiry,
+        notes
+      });
+
+      res.status(201).json({
+        success: true,
+        data: record,
+        message: 'Compliance record created successfully'
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async listComplianceRecords(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const business = await this.businessRepository.findById(id);
+      if (!business) {
+        throw new BusinessNotFoundError('Business not found');
+      }
+
+      const records = await this.businessComplianceRepository.findByBusinessId(id);
+      res.status(200).json({
+        success: true,
+        data: records
       });
     } catch (error) {
       throw error;

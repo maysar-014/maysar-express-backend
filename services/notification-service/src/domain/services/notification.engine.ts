@@ -1,3 +1,5 @@
+import { getModelPrefix, makeId } from '@shared/ids/id';
+
 export interface NotificationInput {
   recipientId: string;
   recipientType: 'customer' | 'seller' | 'courier' | 'admin' | 'enabler';
@@ -70,7 +72,7 @@ export class NotificationEngine {
 
   async processNotificationRequest(input: NotificationInput): Promise<NotificationOutput> {
     const startTime = Date.now();
-    const notificationId = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const notificationId = makeId(getModelPrefix('Notification'));
     
     try {
       const validationResult = await this.validateInput(input);
@@ -166,10 +168,10 @@ export class NotificationEngine {
         name: 'Order Confirmation',
         category: 'order',
         channels: [
-          { type: 'sms', content: 'Order {{orderId}} confirmed! Total: {{totalAmount}} {{currency}}', format: 'text', maxLength: 160 },
-          { type: 'email', subject: 'Order Confirmation - {{orderId}}', content: '<h1>Order Confirmed</h1><p>Your order {{orderId}} has been confirmed.</p>', format: 'html' }
+          { type: 'sms', content: 'Order {{orderId}} confirmed! Tracking: {{trackingNumber}}. Total: {{totalAmount}} {{currency}}', format: 'text', maxLength: 160 },
+          { type: 'email', subject: 'Order Confirmation - {{orderId}}', content: '<h1>Order Confirmed</h1><p>Your order {{orderId}} has been confirmed.</p><p>Tracking number: <strong>{{trackingNumber}}</strong></p>', format: 'html' }
         ],
-        variables: ['orderId', 'totalAmount', 'currency'],
+        variables: ['orderId', 'trackingNumber', 'totalAmount', 'currency'],
         priority: 'high',
         expiryMinutes: 60
       }

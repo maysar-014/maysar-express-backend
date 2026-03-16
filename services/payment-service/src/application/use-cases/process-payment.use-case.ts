@@ -11,6 +11,7 @@ import { PaymentProcessingEngine } from '../../domain/engines/payment-processing
 import { PaymentLimitsPolicy } from '../../domain/policies/payment-limits.policy';
 import { FraudPreventionPolicy } from '../../domain/policies/fraud-prevention.policy';
 import { businessMetrics } from '../../infrastructure/monitoring/metrics';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export interface ProcessPaymentDTO {
     orderId: string;
@@ -111,7 +112,7 @@ export class ProcessPaymentUseCase {
 
         // Step 3: Fraud assessment
         const fraudAssessment = await this.fraudEngine.assessTransaction({
-            transactionId: this.generateId(),
+            transactionId: this.generateId('Payment_FraudAssessment'),
             userId: dto.userId,
             amount: dto.amount,
             currency: dto.currency,
@@ -129,7 +130,7 @@ export class ProcessPaymentUseCase {
         );
 
         // Step 4: Create payment entity
-        const paymentId = this.generateId();
+        const paymentId = this.generateId('Payment_Payment');
         // Cast PaymentMethod to PaymentMethodType as they share the same string values
         const paymentMethodType = dto.method as unknown as any;
 
@@ -277,8 +278,8 @@ export class ProcessPaymentUseCase {
         }
     }
 
-    private generateId(): string {
-        return `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    private generateId(modelName: string): string {
+        return makeId(getModelPrefix(modelName));
     }
 
     private getStartOfDay(): Date {

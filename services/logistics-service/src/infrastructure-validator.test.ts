@@ -25,11 +25,11 @@ const runInfrastructureValidator = async (options: RunOptions = {}) => {
     getConfig: () => ({ nodeEnv: 'test', port: 3015 })
   }));
 
-  const prismaHealthCheck = jest.fn();
+  const prismaStatus = jest.fn();
   if (options.prismaHealthError) {
-    prismaHealthCheck.mockRejectedValue(options.prismaHealthError);
+    prismaStatus.mockResolvedValue({ connected: false, error: options.prismaHealthError.message });
   } else {
-    prismaHealthCheck.mockResolvedValue({ ok: true });
+    prismaStatus.mockResolvedValue({ connected: true, responseTime: '1ms' });
   }
 
   const redisHealthCheck = jest.fn().mockResolvedValue({ ok: true });
@@ -47,8 +47,8 @@ const runInfrastructureValidator = async (options: RunOptions = {}) => {
     EnvironmentConfiguration: { getInstance: envGetInstance }
   }), { virtual: true });
 
-  jest.doMock('../infrastructure/database/prisma.client', () => ({
-    PrismaClientManager: { getInstance: jest.fn(() => ({ healthCheck: prismaHealthCheck })) }
+  jest.doMock('../infrastructure/database/prisma-client', () => ({
+    DatabaseConnection: { getConnectionStatus: prismaStatus }
   }), { virtual: true });
   jest.doMock('../infrastructure/cache/redis.client', () => ({
     RedisClientManager: { getInstance: jest.fn(() => ({ healthCheck: redisHealthCheck })) }
@@ -89,7 +89,7 @@ const runInfrastructureValidator = async (options: RunOptions = {}) => {
     redisGetInstance,
     kafkaGetInstance,
     envGetInstance,
-    prismaHealthCheck,
+    prismaStatus,
     redisHealthCheck
   };
 };
@@ -144,7 +144,7 @@ describe('infrastructure-validator script', () => {
       redisGetInstance,
       kafkaGetInstance,
       envGetInstance,
-      prismaHealthCheck,
+      prismaStatus,
       redisHealthCheck
     } = await runInfrastructureValidator();
 
@@ -152,7 +152,7 @@ describe('infrastructure-validator script', () => {
     expect(redisGetInstance).toHaveBeenCalledTimes(1);
     expect(kafkaGetInstance).toHaveBeenCalledTimes(1);
     expect(envGetInstance).toHaveBeenCalledTimes(1);
-    expect(prismaHealthCheck).toHaveBeenCalledTimes(1);
+    expect(prismaStatus).toHaveBeenCalledTimes(1);
     expect(redisHealthCheck).toHaveBeenCalledTimes(1);
   });
 });

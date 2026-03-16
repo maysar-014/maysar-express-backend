@@ -46,3 +46,26 @@ export interface INotificationPreferenceRepository {
   update(preference: NotificationPreference): Promise<NotificationPreference>;
   delete(id: string): Promise<void>;
 }
+
+export interface PushTokenRecord {
+  id: string;
+  userId: string;
+  token: string;
+  platform?: string | null;
+  deviceId?: string | null;
+  isActive: boolean;
+  lastSeenAt?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IPushTokenRepository {
+  upsertToken(params: {
+    userId: string;
+    token: string;
+    platform?: string;
+    deviceId?: string;
+  }): Promise<PushTokenRecord>;
+  listActiveTokensByUserId(userId: string): Promise<PushTokenRecord[]>;
+  deactivateToken(userId: string, token: string): Promise<boolean>;
+}

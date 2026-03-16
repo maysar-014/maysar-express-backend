@@ -44,7 +44,7 @@ export function createProductRoutes(
 ): Router {
   const router = Router();
   const routesConfig = { ...DEFAULT_PRODUCT_ROUTES_CONFIG, ...config };
-  const apiPrefix = `/api/${routesConfig.apiVersion}`;
+  const apiPrefix = `/${routesConfig.apiVersion}`;
 
   // Middleware implementations
   const authenticate = async (req: any, res: any, next: any) => {
@@ -196,7 +196,7 @@ export function createProductRoutes(
 
   /**
    * Create Product
-   * POST /api/v1/products
+   * POST /v1/products
    */
   router.post(`${apiPrefix}/products`,
     ...sellerMiddleware,
@@ -208,7 +208,7 @@ export function createProductRoutes(
 
   /**
    * Get Product by ID
-   * GET /api/v1/products/:id
+   * GET /v1/products/:id
    */
   router.get(`${apiPrefix}/products/:id`,
     ...commonMiddleware,
@@ -220,7 +220,7 @@ export function createProductRoutes(
 
   /**
    * Update Product
-   * PUT /api/v1/products/:id
+   * PUT /v1/products/:id
    */
   router.put(`${apiPrefix}/products/:id`,
     ...sellerMiddleware,
@@ -232,7 +232,7 @@ export function createProductRoutes(
 
   /**
    * Delete Product
-   * DELETE /api/v1/products/:id
+   * DELETE /v1/products/:id
    */
   router.delete(`${apiPrefix}/products/:id`,
     ...sellerMiddleware,
@@ -247,7 +247,7 @@ export function createProductRoutes(
 
   /**
    * Search Products
-   * GET /api/v1/products/search
+   * GET /v1/products/search
    */
   router.get(`${apiPrefix}/products/search`,
     ...commonMiddleware,
@@ -260,7 +260,7 @@ export function createProductRoutes(
 
   /**
    * Get Products by Seller
-   * GET /api/v1/sellers/:sellerId/products
+   * GET /v1/sellers/:sellerId/products
    */
   router.get(`${apiPrefix}/sellers/:sellerId/products`,
     ...commonMiddleware,
@@ -272,7 +272,7 @@ export function createProductRoutes(
 
   /**
    * Load Category Attributes
-   * GET /api/v1/categories/:categoryId/attributes
+   * GET /v1/categories/:categoryId/attributes
    */
   router.get(`${apiPrefix}/categories/:categoryId/attributes`,
     ...commonMiddleware,
@@ -284,7 +284,7 @@ export function createProductRoutes(
 
   /**
    * Preview Generated Description
-   * POST /api/v1/products/preview-description
+   * POST /v1/products/preview-description
    */
   router.post(`${apiPrefix}/products/preview-description`,
     ...sellerMiddleware,
@@ -300,7 +300,7 @@ export function createProductRoutes(
 
   /**
    * Publish Product
-   * POST /api/v1/products/:id/publish
+   * POST /v1/products/:id/publish
    */
   router.post(`${apiPrefix}/products/:id/publish`,
     ...sellerMiddleware,
@@ -311,7 +311,7 @@ export function createProductRoutes(
 
   /**
    * Unpublish Product
-   * POST /api/v1/products/:id/unpublish
+   * POST /v1/products/:id/unpublish
    */
   router.post(`${apiPrefix}/products/:id/unpublish`,
     ...sellerMiddleware,
@@ -330,7 +330,7 @@ export function createProductRoutes(
 
   /**
    * Get Product Analytics
-   * GET /api/v1/products/:id/analytics
+   * GET /v1/products/:id/analytics
    */
   router.get(`${apiPrefix}/products/:id/analytics`,
     ...sellerMiddleware, // Only seller or admin can view analytics
@@ -341,7 +341,7 @@ export function createProductRoutes(
 
   /**
    * Get Product Performance Metrics
-   * GET /api/v1/products/:id/metrics
+   * GET /v1/products/:id/metrics
    */
   router.get(`${apiPrefix}/products/:id/metrics`,
     ...sellerMiddleware,
@@ -361,7 +361,7 @@ export function createProductRoutes(
 
   /**
    * Bulk Create Products
-   * POST /api/v1/products/bulk
+   * POST /v1/products/bulk
    */
   router.post(`${apiPrefix}/products/bulk`,
     ...adminMiddleware, // Only admins can do bulk operations
@@ -376,7 +376,7 @@ export function createProductRoutes(
 
   /**
    * Bulk Update Products
-   * PUT /api/v1/products/bulk
+   * PUT /v1/products/bulk
    */
   router.put(`${apiPrefix}/products/bulk`,
     ...adminMiddleware,
@@ -390,7 +390,7 @@ export function createProductRoutes(
 
   /**
    * Bulk Delete Products
-   * DELETE /api/v1/products/bulk
+   * DELETE /v1/products/bulk
    */
   router.delete(`${apiPrefix}/products/bulk`,
     ...adminMiddleware,
@@ -407,7 +407,7 @@ export function createProductRoutes(
 
   /**
    * Update Product Category
-   * PUT /api/v1/products/:id/category
+   * PUT /v1/products/:id/category
    */
   router.put(`${apiPrefix}/products/:id/category`,
     ...sellerMiddleware,
@@ -427,7 +427,7 @@ export function createProductRoutes(
 
   /**
    * Upload Product Media
-   * POST /api/v1/products/:id/media
+   * POST /v1/products/:id/media
    */
   router.post(`${apiPrefix}/products/:id/media`,
     ...sellerMiddleware,
@@ -442,7 +442,7 @@ export function createProductRoutes(
 
   /**
    * Get Product Media
-   * GET /api/v1/products/:id/media
+   * GET /v1/products/:id/media
    */
   router.get(`${apiPrefix}/products/:id/media`,
     ...commonMiddleware,
@@ -462,7 +462,7 @@ export function createProductRoutes(
 
   /**
    * Legacy Product Search (deprecated)
-   * GET /api/v1/search/products
+   * GET /v1/search/products
    */
   router.get(`${apiPrefix}/search/products`,
     ...commonMiddleware,
@@ -504,7 +504,7 @@ export class ProductRoutesFactory {
  */
 export const PRODUCT_ROUTES_METADATA = {
   version: 'v1',
-  prefix: '/api/v1',
+  prefix: '/v1',
   routes: [
     // CRUD Operations
     { method: 'POST', path: '/products', description: 'Create new product', auth: 'seller' },

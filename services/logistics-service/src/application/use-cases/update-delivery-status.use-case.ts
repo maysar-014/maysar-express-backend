@@ -88,9 +88,9 @@ export class UpdateDeliveryStatusUseCase {
 
   private validateStatusTransition(currentStatus: DeliveryStatus, newStatus: DeliveryStatus): void {
     const validTransitions: Record<DeliveryStatus, DeliveryStatus[]> = {
-      'assigned': ['picked_up', 'cancelled'],
-      'picked_up': ['in_transit', 'cancelled'],
-      'in_transit': ['delivered', 'cancelled'],
+      'assigned': ['picked_up', 'cancelled', 'failed'],
+      'picked_up': ['in_transit', 'cancelled', 'failed'],
+      'in_transit': ['delivered', 'cancelled', 'failed'],
       'delivered': [], // Terminal state
       'cancelled': [], // Terminal state
       'failed': [] // Terminal state

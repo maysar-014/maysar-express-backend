@@ -91,9 +91,9 @@ export class CourierDomainService {
 
     // Check vehicle capacity
     const maxWeight = this.getMaxWeightForVehicle(courier.vehicle.type);
-    if (delivery.package.weight > maxWeight) {
+    if (delivery.packageDetails.weight > maxWeight) {
       canHandle = false;
-      reasons.push(`Package weight (${delivery.package.weight}kg) exceeds vehicle capacity (${maxWeight}kg)`);
+      reasons.push(`Package weight (${delivery.packageDetails.weight}kg) exceeds vehicle capacity (${maxWeight}kg)`);
     }
 
     // Check service area

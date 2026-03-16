@@ -51,7 +51,8 @@ export class OrderFulfillmentSaga {
         checkoutId,
         userId: session.userId,
         items: session.items,
-        totalAmount: session.totalAmount
+        totalAmount: session.totalAmount,
+        ...(session.enablerId ? { enablerId: session.enablerId, enablerCode: session.enablerCode } : {})
       });
 
       // Step 4: Clear cart

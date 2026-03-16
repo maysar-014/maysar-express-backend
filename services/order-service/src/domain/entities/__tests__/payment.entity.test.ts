@@ -1,10 +1,11 @@
 import { Payment, PaymentStatus, PaymentMethod } from '../payment.entity';
+import { getModelPrefix, isSystemId, makeId } from '@shared/ids/id';
 
 describe('Payment Entity', () => {
     const validData = {
-        id: 'pay-123',
-        orderId: 'order-123',
-        buyerId: 'user-001',
+        id: makeId(getModelPrefix('Order_Payment')),
+        orderId: makeId(getModelPrefix('Order_Order')),
+        buyerId: makeId(getModelPrefix('User_User')),
         amount: 5000,
         currency: 'TZS',
         method: PaymentMethod.MOBILE_MONEY
@@ -22,7 +23,7 @@ describe('Payment Entity', () => {
         it('should auto-generate ID if missing', () => {
             const payment = new Payment({ ...validData, id: undefined });
             expect(payment.id).toBeDefined();
-            expect(payment.id).toMatch(/^payment_/);
+            expect(isSystemId(payment.id)).toBe(true);
         });
     });
 

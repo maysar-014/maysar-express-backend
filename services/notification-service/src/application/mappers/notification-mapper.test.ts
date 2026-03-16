@@ -1,5 +1,6 @@
 import { NotificationMapper } from './notification-mapper';
 import { NotificationPreference } from '../../domain/entities/notification-preference.entity';
+import { isSystemId } from '@shared/ids/id';
 
 describe('NotificationMapper', () => {
   beforeEach(() => {
@@ -20,7 +21,7 @@ describe('NotificationMapper', () => {
       deliveryAddressType: 'email'
     });
 
-    expect(entity.id).toMatch(/^notif_/);
+    expect(isSystemId(entity.id)).toBe(true);
     expect(entity.userId).toBe('user-1');
     expect(entity.content.getValue()).toBe('Welcome to Maysar');
     expect(entity.deliveryAddress?.getValue()).toBe('user@example.com');

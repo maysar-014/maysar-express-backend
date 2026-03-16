@@ -5,6 +5,8 @@
  */
 
 import { CircuitBreaker, RetryPolicy, ProviderManager } from './index';
+import sharp from 'sharp';
+import { getSharedRedisClient } from '@shared/redis/ioredis-client';
 
 /**
  * Image Processing Provider Types
@@ -105,6 +107,7 @@ export class SharpImageProvider {
     reject: (error: Error) => void;
   }> = [];
   private isProcessing = false;
+  private readonly redis = getSharedRedisClient();
 
   constructor(config: ImageProcessingConfig) {
     this.config = config;
@@ -228,18 +231,16 @@ export class SharpImageProvider {
     hasAlpha?: boolean;
   }> {
     return await this.executeWithResilience(async () => {
-      // In a real implementation, this would use Sharp to get metadata
-      // const metadata = await sharp(buffer).metadata();
+      const metadata = await sharp(buffer).metadata();
 
-      // Simulate metadata
       return {
-        width: 1920,
-        height: 1080,
-        format: 'jpeg',
+        width: metadata.width || 0,
+        height: metadata.height || 0,
+        format: metadata.format || 'unknown',
         size: buffer.length,
-        colorspace: 'srgb',
-        density: 72,
-        hasAlpha: false
+        colorspace: metadata.space,
+        density: metadata.density,
+        hasAlpha: metadata.hasAlpha
       };
     });
   }
@@ -325,76 +326,91 @@ export class SharpImageProvider {
     buffer: Buffer,
     options: ImageProcessingOptions
   ): Promise<Omit<ImageProcessingResult, 'processingTime' | 'originalSize'>> {
-    // In a real implementation, this would use the Sharp library
-    // let pipeline = sharp(buffer);
+    let pipeline = sharp(buffer);
 
-    // Apply transformations
-    // if (options.width || options.height) {
-    //   pipeline = pipeline.resize({
-    //     width: options.width,
-    //     height: options.height,
-    //     fit: options.fit || 'cover',
-    //     position: options.position || 'center',
-    //     background: options.background
-    //   });
-    // }
+    if (options.width || options.height) {
+      pipeline = pipeline.resize({
+        width: options.width,
+        height: options.height,
+        fit: options.fit || 'cover',
+        position: options.position || 'center',
+        background: options.background
+      });
+    }
 
-    // if (options.rotate) {
-    //   pipeline = pipeline.rotate(options.rotate);
-    // }
+    if (options.rotate) {
+      pipeline = pipeline.rotate(options.rotate);
+    }
 
-    // if (options.blur) {
-    //   pipeline = pipeline.blur(options.blur);
-    // }
+    if (options.blur) {
+      pipeline = pipeline.blur(options.blur);
+    }
 
-    // if (options.sharpen) {
-    //   pipeline = pipeline.sharpen();
-    // }
+    if (options.sharpen) {
+      pipeline = pipeline.sharpen();
+    }
 
-    // if (options.grayscale) {
-    //   pipeline = pipeline.grayscale();
-    // }
+    if (options.grayscale) {
+      pipeline = pipeline.grayscale();
+    }
 
-    // if (options.negate) {
-    //   pipeline = pipeline.negate();
-    // }
+    if (options.negate) {
+      pipeline = pipeline.negate();
+    }
 
-    // if (options.normalize) {
-    //   pipeline = pipeline.normalize();
-    // }
+    if (options.normalize) {
+      pipeline = pipeline.normalize();
+    }
 
-    // if (options.tint) {
-    //   pipeline = pipeline.tint(options.tint);
-    // }
+    if (options.tint) {
+      pipeline = pipeline.tint(options.tint);
+    }
 
-    // Apply format and quality
-    // if (options.format) {
-    //   pipeline = pipeline.toFormat(options.format, {
-    //     quality: options.quality || this.config.quality
-    //   });
-    // }
+    if (options.watermark) {
+      const gravityMap: Record<string, string> = {
+        'top-left': 'northwest',
+        'top-right': 'northeast',
+        'bottom-left': 'southwest',
+        'bottom-right': 'southeast',
+        'center': 'center'
+      };
 
-    // Add watermark if specified
-    // if (options.watermark) {
-    //   // Apply watermark logic
-    // }
+      if (options.watermark.image) {
+        pipeline = pipeline.composite([{
+          input: options.watermark.image,
+          gravity: gravityMap[options.watermark.position] || 'southeast',
+          opacity: options.watermark.opacity
+        }]);
+      } else if (options.watermark.text) {
+        const svg = Buffer.from(
+          `<svg width="500" height="200">
+            <style>
+              .title { fill: rgba(255,255,255,${options.watermark.opacity}); font-size: 32px; font-family: Arial, sans-serif; }
+            </style>
+            <text x="0" y="32" class="title">${options.watermark.text}</text>
+          </svg>`
+        );
+        pipeline = pipeline.composite([{
+          input: svg,
+          gravity: gravityMap[options.watermark.position] || 'southeast'
+        }]);
+      }
+    }
 
-    // const outputBuffer = await pipeline.toBuffer();
-    // const metadata = await pipeline.metadata();
+    if (options.format) {
+      pipeline = pipeline.toFormat(options.format, {
+        quality: options.quality || this.config.quality
+      });
+    }
 
-    // Simulate processing result
-    const outputBuffer = buffer; // In reality, this would be the processed buffer
-    const metadata = {
-      width: options.width || 1920,
-      height: options.height || 1080,
-      format: options.format || 'jpeg'
-    };
+    const outputBuffer = await pipeline.toBuffer();
+    const metadata = await sharp(outputBuffer).metadata();
 
     return {
       buffer: outputBuffer,
-      format: metadata.format,
-      width: metadata.width,
-      height: metadata.height,
+      format: metadata.format || options.format || 'unknown',
+      width: metadata.width || options.width || 0,
+      height: metadata.height || options.height || 0,
       size: outputBuffer.length
     };
   }
@@ -444,17 +460,25 @@ export class SharpImageProvider {
    * Get processed image from cache
    */
   private async getFromCache(cacheKey: string): Promise<ImageProcessingResult | null> {
-    // In a real implementation, this would check a cache store
-    // For now, return null (no caching)
-    return null;
+    const cached = await this.redis.get(`image:processed:${cacheKey}`);
+    if (!cached) return null;
+
+    const parsed = JSON.parse(cached);
+    return {
+      ...parsed,
+      buffer: Buffer.from(parsed.buffer, 'base64')
+    } as ImageProcessingResult;
   }
 
   /**
    * Save processed image to cache
    */
   private async saveToCache(cacheKey: string, result: ImageProcessingResult): Promise<void> {
-    // In a real implementation, this would save to cache store
-    // For now, do nothing
+    const payload = {
+      ...result,
+      buffer: result.buffer.toString('base64')
+    };
+    await this.redis.setex(`image:processed:${cacheKey}`, 3600, JSON.stringify(payload));
   }
 
   /**
@@ -572,36 +596,73 @@ export class ImageProcessingPipeline {
 export class ImageOperations {
   static resize(width: number, height?: number, options?: { fit?: string; position?: string }): (buffer: Buffer) => Promise<Buffer> {
     return async (buffer: Buffer) => {
-      // In real implementation, would use Sharp to resize
-      return buffer; // Placeholder
+      return sharp(buffer)
+        .resize({
+          width,
+          height,
+          fit: (options?.fit as any) || 'cover',
+          position: (options?.position as any) || 'center'
+        })
+        .toBuffer();
     };
   }
 
   static compress(quality: number): (buffer: Buffer) => Promise<Buffer> {
     return async (buffer: Buffer) => {
-      // In real implementation, would compress image
-      return buffer; // Placeholder
+      return sharp(buffer)
+        .jpeg({ quality })
+        .toBuffer();
     };
   }
 
   static convert(format: string): (buffer: Buffer) => Promise<Buffer> {
     return async (buffer: Buffer) => {
-      // In real implementation, would convert format
-      return buffer; // Placeholder
+      return sharp(buffer)
+        .toFormat(format as any)
+        .toBuffer();
     };
   }
 
   static watermark(text: string, options?: { position?: string; opacity?: number }): (buffer: Buffer) => Promise<Buffer> {
     return async (buffer: Buffer) => {
-      // In real implementation, would add watermark
-      return buffer; // Placeholder
+      const opacity = options?.opacity ?? 0.5;
+      const svg = Buffer.from(
+        `<svg width="500" height="200">
+          <style>
+            .title { fill: rgba(255,255,255,${opacity}); font-size: 32px; font-family: Arial, sans-serif; }
+          </style>
+          <text x="0" y="32" class="title">${text}</text>
+        </svg>`
+      );
+
+      const gravityMap: Record<string, string> = {
+        'top-left': 'northwest',
+        'top-right': 'northeast',
+        'bottom-left': 'southwest',
+        'bottom-right': 'southeast',
+        'center': 'center'
+      };
+
+      return sharp(buffer)
+        .composite([{
+          input: svg,
+          gravity: gravityMap[options?.position || 'bottom-right'] || 'southeast'
+        }])
+        .toBuffer();
     };
   }
 
   static optimize(): (buffer: Buffer) => Promise<Buffer> {
     return async (buffer: Buffer) => {
-      // In real implementation, would optimize for web
-      return buffer; // Placeholder
+      const metadata = await sharp(buffer).metadata();
+      const format = metadata.hasAlpha ? 'webp' : 'jpeg';
+      let pipeline = sharp(buffer).toFormat(format as any, { quality: 80 });
+
+      if (metadata.width && metadata.width > 1920) {
+        pipeline = pipeline.resize({ width: 1920, fit: 'inside' });
+      }
+
+      return pipeline.toBuffer();
     };
   }
 }

@@ -7,6 +7,8 @@ export interface CheckoutSession {
   id: string;
   cartId: string;
   userId: string;
+  enablerId?: string;
+  enablerCode?: string;
   shippingAddressId: string;
   billingAddressId: string;
   shippingMethodId: string;

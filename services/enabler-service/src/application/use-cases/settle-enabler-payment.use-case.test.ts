@@ -25,9 +25,10 @@ describe('SettleEnablerPaymentUseCase', () => {
       id: 'row-1',
       orderAmount: 1000,
       enablerCommission: 200,
+      commissionRate: 0.2,
       sellerId: 'seller-1',
       enablerId: 'enabler-1',
-      toPlainObject: jest.fn().mockReturnValue({ status: 'COMPLETED' }),
+      toPlainObject: jest.fn().mockReturnValue({ status: 'COMPLETED', commissionRate: 0.2 }),
       markEnablerPaid: jest.fn(),
       markSellerPaid: jest.fn()
     };
@@ -39,10 +40,12 @@ describe('SettleEnablerPaymentUseCase', () => {
       initiatePayout: jest.fn().mockResolvedValue(undefined)
     };
     const eventPublisher = { publish: jest.fn() };
+    const commissionRepository = { upsert: jest.fn().mockResolvedValue(undefined) };
     const useCase = new SettleEnablerPaymentUseCase(
       orderRepository as never,
       payoutService,
-      eventPublisher
+      eventPublisher,
+      commissionRepository as never
     );
 
     await useCase.execute('order-1');
@@ -72,13 +75,15 @@ describe('SettleEnablerPaymentUseCase', () => {
     expect(order.markEnablerPaid).toHaveBeenCalledTimes(1);
     expect(order.markSellerPaid).toHaveBeenCalledTimes(1);
     expect(orderRepository.update).toHaveBeenCalledWith(order);
+    expect(commissionRepository.upsert).toHaveBeenCalledTimes(1);
   });
 
   it('throws when order is not found', async () => {
     const useCase = new SettleEnablerPaymentUseCase(
       { findByOrderId: jest.fn().mockResolvedValue(null), update: jest.fn() } as never,
       { initiatePayout: jest.fn() },
-      { publish: jest.fn() }
+      { publish: jest.fn() },
+      { upsert: jest.fn() } as never
     );
 
     await expect(useCase.execute('missing')).rejects.toThrow('Order not found');
@@ -94,7 +99,8 @@ describe('SettleEnablerPaymentUseCase', () => {
     const useCase = new SettleEnablerPaymentUseCase(
       orderRepository as never,
       payoutService,
-      { publish: jest.fn() }
+      { publish: jest.fn() },
+      { upsert: jest.fn() } as never
     );
 
     await expect(useCase.execute('order-1')).rejects.toThrow(

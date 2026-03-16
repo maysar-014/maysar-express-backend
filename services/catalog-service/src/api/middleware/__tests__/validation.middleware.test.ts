@@ -7,6 +7,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { validateRequest, createValidator } from '../validation.middleware';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 const mockRequest = (body = {}, params = {}, query = {}): Partial<Request> => ({
   body,
@@ -109,7 +110,7 @@ describe('Validation Middleware', () => {
       };
 
       const req = mockRequest({}, {
-        id: '123e4567-e89b-12d3-a456-426614174000'
+        id: makeId(getModelPrefix('Catalog_Product'))
       }) as Request;
       const res = mockResponse() as Response;
       const next = mockNext();

@@ -10,8 +10,6 @@ import { logger } from '../services/logger.service';
  * while communicating with the separated User Service
  */
 export class UserServiceRepository implements IUserRepository {
-  private inMemoryUsers = new Map<string, AuthUser>();
-
   constructor(private userServiceClient: UserServiceClient) {}
 
   /**
@@ -23,16 +21,13 @@ export class UserServiceRepository implements IUserRepository {
 
       const userData = await this.userServiceClient.findUserById(id);
 
-      if (!userData) {
-        return this.findInMemoryById(id);
-      }
+      if (!userData) return null;
 
       const mapped = this.mapToAuthUser(userData);
-      this.cacheUser(mapped);
       return mapped;
     } catch (error) {
       logger.error('Failed to find user by ID via User Service', { userId: id, error });
-      return this.findInMemoryById(id);
+      throw error;
     }
   }
 
@@ -46,16 +41,13 @@ export class UserServiceRepository implements IUserRepository {
 
       const userData = await this.userServiceClient.findUserByEmail(normalizedEmail);
 
-      if (!userData) {
-        return this.inMemoryUsers.get(normalizedEmail) || null;
-      }
+      if (!userData) return null;
 
       const mapped = this.mapToAuthUser(userData);
-      this.cacheUser(mapped);
       return mapped;
     } catch (error) {
       logger.error('Failed to find user by email via User Service', { email: normalizedEmail, error });
-      return this.inMemoryUsers.get(normalizedEmail) || null;
+      throw error;
     }
   }
 
@@ -67,28 +59,40 @@ export class UserServiceRepository implements IUserRepository {
       // Registration flow stores User entity-like payloads.
       if (this.looksLikeRegistrationUser(user)) {
         const authUser = this.mapRegistrationUserToAuthUser(user);
-        this.cacheUser(authUser);
+        const profile = user.profile && typeof user.profile === 'object' ? user.profile : {};
+        const phoneNumber = profile.phoneNumber || profile.phone || profile.mobile;
+        let firstName = profile.firstName;
+        let lastName = profile.lastName;
 
-        if (typeof this.userServiceClient.createUser === 'function') {
-          try {
-            await this.userServiceClient.createUser({
-              email: authUser.email,
-              password: 'TempPassword123!',
-              role: authUser.role
-            });
-          } catch (error) {
-            logger.warn('User Service create user failed, kept local registration fallback', {
-              email: authUser.email,
-              error
-            });
-          }
+        if ((!firstName || !lastName) && typeof profile.name === 'string') {
+          const parts = profile.name.trim().split(/\s+/);
+          if (!firstName && parts[0]) firstName = parts[0];
+          if (!lastName && parts.length > 1) lastName = parts.slice(1).join(' ');
         }
 
-        return;
+        if (!phoneNumber) {
+          throw new Error('Phone number is required for registration');
+        }
+        if (!firstName || !lastName) {
+          throw new Error('First and last name are required for registration');
+        }
+
+        if (typeof this.userServiceClient.createUser === 'function') {
+          await this.userServiceClient.createUser({
+            email: authUser.email,
+            password: 'TempPassword123!',
+            role: authUser.role,
+            phoneNumber,
+            firstName,
+            lastName
+          });
+          return;
+        }
+
+        throw new Error('User Service client does not support createUser');
       }
 
       const authUser = user as AuthUser;
-      this.cacheUser(authUser);
       logger.debug('Saving user auth state via User Service', { userId: authUser.id });
 
       // For auth operations, we only need to update login-related fields
@@ -127,10 +131,10 @@ export class UserServiceRepository implements IUserRepository {
 
       logger.info('Email existence checked via User Service', { email: normalizedEmail, exists });
 
-      return exists || this.inMemoryUsers.has(normalizedEmail);
+      return exists;
     } catch (error) {
       logger.error('Failed to check email existence via User Service', { email: normalizedEmail, error });
-      return this.inMemoryUsers.has(normalizedEmail);
+      throw error;
     }
   }
 
@@ -142,6 +146,7 @@ export class UserServiceRepository implements IUserRepository {
     const status = this.normalizeStatus(userData.status);
     return {
       id: userData.id,
+      publicCode: userData.publicCode,
       email: String(userData.email || '').toLowerCase(),
       role,
       status,
@@ -166,6 +171,7 @@ export class UserServiceRepository implements IUserRepository {
     const now = new Date();
     return {
       id: String(user.id),
+      publicCode: user.publicCode,
       email: String(email || '').toLowerCase(),
       role: this.normalizeRole(user.role),
       status: this.normalizeStatus(user.status),
@@ -177,19 +183,6 @@ export class UserServiceRepository implements IUserRepository {
       updatedAt: user.updatedAt ? new Date(user.updatedAt) : now,
       metadata: { profile: user.profile || {} }
     };
-  }
-
-  private cacheUser(user: AuthUser): void {
-    this.inMemoryUsers.set(user.email.toLowerCase(), user);
-  }
-
-  private findInMemoryById(id: string): AuthUser | null {
-    for (const user of this.inMemoryUsers.values()) {
-      if (user.id === id) {
-        return user;
-      }
-    }
-    return null;
   }
 
   private normalizeRole(role: unknown): UserRole {

@@ -47,6 +47,14 @@ const SearchConfigSchema = z.object({
     searchOnlyApiKey: z.string().optional(),
     indexName: z.string().default('catalog'),
   }).optional(),
+  meilisearch: z.object({
+    host: z.string().optional(),
+    port: z.coerce.number().default(7700),
+    protocol: z.enum(['http', 'https']).default('http'),
+    apiKey: z.string().optional(),
+    indexName: z.string().default('catalog'),
+    requestTimeout: z.coerce.number().default(30000),
+  }).optional(),
 });
 
 /**
@@ -203,6 +211,14 @@ export interface ExternalServicesConfig {
       searchOnlyApiKey?: string;
       indexName: string;
     };
+    meilisearch?: {
+      host?: string;
+      port?: number;
+      protocol?: 'http' | 'https';
+      apiKey?: string;
+      indexName: string;
+      requestTimeout: number;
+    };
   };
 
   // Cache settings
@@ -351,6 +367,14 @@ export class ExternalServicesConfigBuilder {
           apiKey: env.ALGOLIA_API_KEY,
           searchOnlyApiKey: env.ALGOLIA_SEARCH_ONLY_API_KEY,
           indexName: env.ALGOLIA_INDEX_NAME || 'catalog'
+        } : undefined,
+        meilisearch: env.MEILISEARCH_HOST ? {
+          host: env.MEILISEARCH_HOST,
+          port: parseInt(env.MEILISEARCH_PORT || '7700'),
+          protocol: (env.MEILISEARCH_PROTOCOL as any) || 'http',
+          apiKey: env.MEILISEARCH_API_KEY,
+          indexName: env.MEILISEARCH_INDEX_NAME || 'catalog',
+          requestTimeout: parseInt(env.MEILISEARCH_REQUEST_TIMEOUT || '30000')
         } : undefined
       },
       cache: {
@@ -732,6 +756,9 @@ export function validateExternalServicesConfig(config?: ExternalServicesConfig):
       }
       if (extConfig.search.provider === 'algolia' && !extConfig.search.algolia?.appId) {
         errors.push('Algolia App ID is required when using Algolia');
+      }
+      if (extConfig.search.provider === 'meilisearch' && !extConfig.search.meilisearch?.host) {
+        errors.push('Meilisearch host is required when using Meilisearch');
       }
     }
 

@@ -4,6 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 import { createRateLimit } from '../api/middleware/rate-limit.middleware';
 
 export interface SecurityConfig {
@@ -63,7 +64,14 @@ export class SecurityMiddleware {
         });
       }
 
-      // In a real implementation, validate the token
+      try {
+        const decoded = jwt.verify(String(token), process.env.JWT_SECRET!);
+        (req as any).user = decoded;
+      } catch {
+        return res.status(403).json({
+          error: 'Invalid CSRF token'
+        });
+      }
       next();
     };
   }

@@ -71,7 +71,7 @@ describe('Product Routes', () => {
 
     it('should have correct route metadata', () => {
       expect(PRODUCT_ROUTES_METADATA.version).toBe('v1');
-      expect(PRODUCT_ROUTES_METADATA.prefix).toBe('/api/v1');
+      expect(PRODUCT_ROUTES_METADATA.prefix).toBe('/v1');
       expect(PRODUCT_ROUTES_METADATA.routes).toHaveLength(16);
       expect(PRODUCT_ROUTES_METADATA.middleware).toEqual([
         'authentication',
@@ -85,14 +85,14 @@ describe('Product Routes', () => {
   });
 
   describe('CRUD Operations', () => {
-    describe('POST /api/v1/products - Create Product', () => {
+    describe('POST /v1/products - Create Product', () => {
       it('should delegate to controller createProduct method', async () => {
         mockProductController.createProduct.mockImplementation(async (req, res) => {
           res.status(201).json({ success: true, data: { productId: 'prod-123' } });
         });
 
         const response = await request(app)
-          .post('/api/v1/products')
+          .post('/v1/products')
           .set('Authorization', 'Bearer valid-token-123')
           .send({
             sellerId: 'seller-123',
@@ -117,7 +117,7 @@ describe('Product Routes', () => {
         });
 
         const response = await request(app)
-          .post('/api/v1/products')
+          .post('/v1/products')
           .set('Authorization', 'Bearer valid-token-123')
           .send({ invalid: 'data' });
 
@@ -126,7 +126,7 @@ describe('Product Routes', () => {
       });
     });
 
-    describe('GET /api/v1/products/:id - Get Product', () => {
+    describe('GET /v1/products/:id - Get Product', () => {
       it('should delegate to controller getProduct method', async () => {
         mockProductController.getProduct.mockImplementation(async (req, res) => {
           res.status(200).json({
@@ -136,7 +136,7 @@ describe('Product Routes', () => {
         });
 
         const response = await request(app)
-          .get('/api/v1/products/prod-123')
+          .get('/v1/products/prod-123')
           .set('Authorization', 'Bearer valid-token-123');
 
         expect(mockProductController.getProduct).toHaveBeenCalled();
@@ -152,14 +152,14 @@ describe('Product Routes', () => {
         });
 
         await request(app)
-          .get('/api/v1/products/prod-456')
+          .get('/v1/products/prod-456')
           .set('Authorization', 'Bearer valid-token-123');
 
         expect(mockProductController.getProduct).toHaveBeenCalled();
       });
     });
 
-    describe('PUT /api/v1/products/:id - Update Product', () => {
+    describe('PUT /v1/products/:id - Update Product', () => {
       it('should delegate to controller updateProduct method', async () => {
         mockProductController.updateProduct.mockImplementation(async (req, res) => {
           res.status(200).json({
@@ -169,7 +169,7 @@ describe('Product Routes', () => {
         });
 
         const response = await request(app)
-          .put('/api/v1/products/prod-123')
+          .put('/v1/products/prod-123')
           .set('Authorization', 'Bearer valid-token-123')
           .send({ name: 'Updated Name' });
 
@@ -179,7 +179,7 @@ describe('Product Routes', () => {
       });
     });
 
-    describe('DELETE /api/v1/products/:id - Delete Product', () => {
+    describe('DELETE /v1/products/:id - Delete Product', () => {
       it('should delegate to controller deleteProduct method', async () => {
         mockProductController.deleteProduct.mockImplementation(async (req, res) => {
           res.status(200).json({
@@ -189,7 +189,7 @@ describe('Product Routes', () => {
         });
 
         const response = await request(app)
-          .delete('/api/v1/products/prod-123')
+          .delete('/v1/products/prod-123')
           .set('Authorization', 'Bearer valid-token-123');
 
         expect(mockProductController.deleteProduct).toHaveBeenCalled();
@@ -200,7 +200,7 @@ describe('Product Routes', () => {
   });
 
   describe('Search and Discovery', () => {
-    describe('GET /api/v1/products/search - Search Products', () => {
+    describe('GET /v1/products/search - Search Products', () => {
       it('should delegate to controller searchProducts method', async () => {
         mockProductController.searchProducts.mockImplementation((req, res) => {
           res.status(200).json({
@@ -211,7 +211,7 @@ describe('Product Routes', () => {
         });
 
         const response = await request(app)
-          .get('/api/v1/products/search?q=laptop&category=electronics')
+          .get('/v1/products/search?q=laptop&category=electronics')
           .set('Authorization', 'Bearer valid-token-123');
 
         expect(mockProductController.searchProducts).toHaveBeenCalled();
@@ -228,14 +228,14 @@ describe('Product Routes', () => {
         });
 
         await request(app)
-          .get('/api/v1/products/search?q=laptop&category=electronics&page=1')
+          .get('/v1/products/search?q=laptop&category=electronics&page=1')
           .set('Authorization', 'Bearer valid-token-123');
 
         expect(mockProductController.searchProducts).toHaveBeenCalled();
       });
     });
 
-    describe('GET /api/v1/sellers/:sellerId/products - Get Seller Products', () => {
+    describe('GET /v1/sellers/:sellerId/products - Get Seller Products', () => {
       it('should delegate to controller getProductsBySeller method', async () => {
         mockProductController.getProductsBySeller.mockImplementation(async (req, res) => {
           res.status(200).json({
@@ -246,7 +246,7 @@ describe('Product Routes', () => {
         });
 
         const response = await request(app)
-          .get('/api/v1/sellers/seller-123/products?page=1&limit=10')
+          .get('/v1/sellers/seller-123/products?page=1&limit=10')
           .set('Authorization', 'Bearer valid-token-123');
 
         expect(mockProductController.getProductsBySeller).toHaveBeenCalled();
@@ -261,7 +261,7 @@ describe('Product Routes', () => {
         });
 
         await request(app)
-          .get('/api/v1/sellers/seller-456/products')
+          .get('/v1/sellers/seller-456/products')
           .set('Authorization', 'Bearer valid-token-123');
 
         expect(mockProductController.getProductsBySeller).toHaveBeenCalled();
@@ -270,7 +270,7 @@ describe('Product Routes', () => {
   });
 
   describe('Lifecycle Management', () => {
-    describe('POST /api/v1/products/:id/publish - Publish Product', () => {
+    describe('POST /v1/products/:id/publish - Publish Product', () => {
       it('should delegate to controller publishProduct method', async () => {
         mockProductController.publishProduct.mockImplementation(async (req, res) => {
           res.status(200).json({
@@ -280,7 +280,7 @@ describe('Product Routes', () => {
         });
 
         const response = await request(app)
-          .post('/api/v1/products/prod-123/publish')
+          .post('/v1/products/prod-123/publish')
           .set('Authorization', 'Bearer valid-token-123');
 
         expect(mockProductController.publishProduct).toHaveBeenCalled();
@@ -289,10 +289,10 @@ describe('Product Routes', () => {
       });
     });
 
-    describe('POST /api/v1/products/:id/unpublish - Unpublish Product', () => {
+    describe('POST /v1/products/:id/unpublish - Unpublish Product', () => {
       it('should return not implemented status', async () => {
         const response = await request(app)
-          .post('/api/v1/products/prod-123/unpublish')
+          .post('/v1/products/prod-123/unpublish')
           .set('Authorization', 'Bearer valid-token-123');
 
         expect(response.status).toBe(501);
@@ -303,7 +303,7 @@ describe('Product Routes', () => {
   });
 
   describe('Analytics and Insights', () => {
-    describe('GET /api/v1/products/:id/analytics - Get Product Analytics', () => {
+    describe('GET /v1/products/:id/analytics - Get Product Analytics', () => {
       it('should delegate to controller getProductAnalytics method', async () => {
         mockProductController.getProductAnalytics.mockImplementation(async (req, res) => {
           res.status(200).json({
@@ -317,7 +317,7 @@ describe('Product Routes', () => {
         });
 
         const response = await request(app)
-          .get('/api/v1/products/prod-123/analytics?period=30d')
+          .get('/v1/products/prod-123/analytics?period=30d')
           .set('Authorization', 'Bearer valid-token-123');
 
         expect(mockProductController.getProductAnalytics).toHaveBeenCalled();
@@ -327,10 +327,10 @@ describe('Product Routes', () => {
       });
     });
 
-    describe('GET /api/v1/products/:id/metrics - Get Product Metrics', () => {
+    describe('GET /v1/products/:id/metrics - Get Product Metrics', () => {
       it('should return not implemented status', async () => {
         const response = await request(app)
-          .get('/api/v1/products/prod-123/metrics')
+          .get('/v1/products/prod-123/metrics')
           .set('Authorization', 'Bearer valid-token-123');
 
         expect(response.status).toBe(501);
@@ -341,10 +341,10 @@ describe('Product Routes', () => {
   });
 
   describe('Bulk Operations', () => {
-    describe('POST /api/v1/products/bulk - Bulk Create Products', () => {
+    describe('POST /v1/products/bulk - Bulk Create Products', () => {
       it('should handle bulk create request', async () => {
         const response = await request(app)
-          .post('/api/v1/products/bulk')
+          .post('/v1/products/bulk')
           .set('Authorization', 'Bearer valid-token-123')
           .send({ products: [] });
 
@@ -355,10 +355,10 @@ describe('Product Routes', () => {
       });
     });
 
-    describe('PUT /api/v1/products/bulk - Bulk Update Products', () => {
+    describe('PUT /v1/products/bulk - Bulk Update Products', () => {
       it('should handle bulk update request', async () => {
         const response = await request(app)
-          .put('/api/v1/products/bulk')
+          .put('/v1/products/bulk')
           .set('Authorization', 'Bearer valid-token-123')
           .send({ productIds: ['prod-123'], updates: { name: 'Updated Product' } });
 
@@ -367,10 +367,10 @@ describe('Product Routes', () => {
       });
     });
 
-    describe('DELETE /api/v1/products/bulk - Bulk Delete Products', () => {
+    describe('DELETE /v1/products/bulk - Bulk Delete Products', () => {
       it('should handle bulk delete request', async () => {
         const response = await request(app)
-          .delete('/api/v1/products/bulk')
+          .delete('/v1/products/bulk')
           .set('Authorization', 'Bearer valid-token-123')
           .send({ productIds: ['prod-123'] });
 
@@ -381,10 +381,10 @@ describe('Product Routes', () => {
   });
 
   describe('Media Management', () => {
-    describe('POST /api/v1/products/:id/media - Upload Product Media', () => {
+    describe('POST /v1/products/:id/media - Upload Product Media', () => {
       it('should return not implemented status', async () => {
         const response = await request(app)
-          .post('/api/v1/products/prod-123/media')
+          .post('/v1/products/prod-123/media')
           .set('Authorization', 'Bearer valid-token-123');
 
         expect(response.status).toBe(501);
@@ -393,10 +393,10 @@ describe('Product Routes', () => {
       });
     });
 
-    describe('GET /api/v1/products/:id/media - Get Product Media', () => {
+    describe('GET /v1/products/:id/media - Get Product Media', () => {
       it('should return not implemented status', async () => {
         const response = await request(app)
-          .get('/api/v1/products/prod-123/media')
+          .get('/v1/products/prod-123/media')
           .set('Authorization', 'Bearer valid-token-123');
 
         expect(response.status).toBe(501);
@@ -407,10 +407,10 @@ describe('Product Routes', () => {
   });
 
   describe('Category Management', () => {
-    describe('PUT /api/v1/products/:id/category - Update Product Category', () => {
+    describe('PUT /v1/products/:id/category - Update Product Category', () => {
       it('should return not implemented status', async () => {
         const response = await request(app)
-          .put('/api/v1/products/prod-123/category')
+          .put('/v1/products/prod-123/category')
           .set('Authorization', 'Bearer valid-token-123')
           .send({ categoryId: 'new-cat-123' });
 
@@ -422,25 +422,25 @@ describe('Product Routes', () => {
   });
 
   describe('Legacy Routes', () => {
-    describe('GET /api/v1/search/products - Legacy Search Redirect', () => {
+    describe('GET /v1/search/products - Legacy Search Redirect', () => {
       it('should redirect to new search endpoint', async () => {
         const response = await request(app)
-          .get('/api/v1/search/products?q=laptop&category=electronics')
+          .get('/v1/search/products?q=laptop&category=electronics')
           .set('Authorization', 'Bearer valid-token-123')
           .redirects(0); // Don't follow redirects
 
         expect(response.status).toBe(301);
-        expect(response.headers.location).toBe('/api/v1/products/search?q=laptop&category=electronics');
+        expect(response.headers.location).toBe('/v1/products/search?q=laptop&category=electronics');
       });
 
       it('should handle search without query parameters', async () => {
         const response = await request(app)
-          .get('/api/v1/search/products')
+          .get('/v1/search/products')
           .set('Authorization', 'Bearer valid-token-123')
           .redirects(0);
 
         expect(response.status).toBe(301);
-        expect(response.headers.location).toBe('/api/v1/products/search');
+        expect(response.headers.location).toBe('/v1/products/search');
       });
     });
   });
@@ -492,7 +492,7 @@ describe('Product Routes', () => {
     it('should export comprehensive route metadata', () => {
       expect(PRODUCT_ROUTES_METADATA).toBeDefined();
       expect(PRODUCT_ROUTES_METADATA.version).toBe('v1');
-      expect(PRODUCT_ROUTES_METADATA.prefix).toBe('/api/v1');
+      expect(PRODUCT_ROUTES_METADATA.prefix).toBe('/v1');
       expect(PRODUCT_ROUTES_METADATA.routes).toBeInstanceOf(Array);
       expect(PRODUCT_ROUTES_METADATA.middleware).toBeInstanceOf(Array);
     });
@@ -583,7 +583,7 @@ describe('Product Routes', () => {
       const invalidApp = createTestApp(invalidRoutes);
 
       const response = await request(invalidApp)
-        .get('/api/v1/non-existent-route');
+        .get('/v1/non-existent-route');
 
       expect(response.status).toBe(404);
     });
@@ -597,7 +597,7 @@ describe('Product Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/products/prod-123')
+        .get('/v1/products/prod-123')
         .set('Authorization', 'Bearer valid-token-123');
 
       expect(response.status).toBe(500);

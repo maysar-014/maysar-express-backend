@@ -28,6 +28,7 @@ export interface PlaceOrderRequest {
 export interface PlaceOrderResponse {
   orderId: string;
   status: string;
+  trackingNumber?: string;
 }
 
 export class PlaceOrderUseCase {
@@ -42,6 +43,7 @@ export class PlaceOrderUseCase {
   async execute(request: PlaceOrderRequest): Promise<PlaceOrderResponse> {
     // ... (rest of logic)
     const orderId = IdGeneratorService.generateOrderId();
+    const trackingNumber = await this.generateTrackingNumber();
     const currency = request.currency || 'TZS';
     const totalAmount = request.items.reduce((sum, item) => {
       const price = typeof item.price === 'number' ? item.price : item.price.amount;
@@ -82,6 +84,7 @@ export class PlaceOrderUseCase {
     // Create order data
     const orderData = {
       id: orderId,
+      trackingNumber,
       ...request,
       currency,
       totalAmount,
@@ -118,8 +121,24 @@ export class PlaceOrderUseCase {
 
     return {
       orderId: order.id,
-      status: order.status
+      status: order.status,
+      trackingNumber: order.trackingNumber
     };
+  }
+
+  private async generateTrackingNumber(): Promise<string> {
+    const maxAttempts = 5;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const candidate = IdGeneratorService.generateOrderTrackingNumber();
+      if (!this.orderRepository.findByTrackingNumber) {
+        return candidate;
+      }
+      const existing = await this.orderRepository.findByTrackingNumber(candidate);
+      if (!existing) {
+        return candidate;
+      }
+    }
+    throw new Error('Unable to generate unique tracking number');
   }
 }
 

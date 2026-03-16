@@ -1,6 +1,7 @@
 import { SmsController } from '../sms.controller';
 import { SendSmsUseCase } from '../../../application/use-cases/send-sms.use-case';
 import { TrackDeliveryUseCase } from '../../../application/use-cases/track-delivery.use-case';
+import { HandleDeliveryReportUseCase } from '../../../application/use-cases/handle-delivery-report.use-case';
 import { RetryFailedMessagesUseCase } from '../../../application/use-cases/retry-failed-messages.use-case';
 import { GetStatisticsUseCase } from '../../../application/use-cases/get-statistics.use-case';
 import { Request, Response, NextFunction } from 'express';
@@ -12,6 +13,10 @@ const mockSendSmsUseCase = {
 const mockTrackDeliveryUseCase = {
     execute: jest.fn()
 } as unknown as TrackDeliveryUseCase;
+
+const mockHandleDeliveryReportUseCase = {
+    execute: jest.fn()
+} as unknown as HandleDeliveryReportUseCase;
 
 const mockRetryFailedMessagesUseCase = {
     execute: jest.fn(),
@@ -33,6 +38,7 @@ describe('SmsController', () => {
         controller = new SmsController(
             mockSendSmsUseCase,
             mockTrackDeliveryUseCase,
+            mockHandleDeliveryReportUseCase,
             mockRetryFailedMessagesUseCase,
             mockGetStatisticsUseCase
         );
@@ -48,7 +54,7 @@ describe('SmsController', () => {
     describe('send', () => {
         it('should send SMS successfully', async () => {
             req.body = {
-                phoneNumber: '+254712345678',
+                phoneNumber: '+255612834684',
                 message: 'Test message'
             };
 
@@ -80,7 +86,7 @@ describe('SmsController', () => {
 
         it('should return 400 when use case fails', async () => {
             req.body = {
-                phoneNumber: '+254712345678',
+                phoneNumber: '+255612834684',
                 message: 'Test'
             };
 
@@ -187,11 +193,37 @@ describe('SmsController', () => {
     });
 
     describe('webhookAfricastalking', () => {
-        it('should acknowledge webhook', async () => {
+        it('should process delivery report', async () => {
+            (mockHandleDeliveryReportUseCase.execute as jest.Mock).mockResolvedValue({
+                parsed: true,
+                accepted: true,
+                status: 'DELIVERED',
+                messageId: 'msg-1',
+                providerMessageId: 'at-123'
+            });
+
             await controller.webhookAfricastalking(req as Request, res as Response, next);
 
             expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.send).toHaveBeenCalledWith('OK');
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+                success: true,
+                messageId: 'msg-1'
+            }));
+        });
+
+        it('should return 400 for invalid payload', async () => {
+            (mockHandleDeliveryReportUseCase.execute as jest.Mock).mockResolvedValue({
+                parsed: false,
+                accepted: false,
+                reason: 'Invalid delivery report payload'
+            });
+
+            await controller.webhookAfricastalking(req as Request, res as Response, next);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+                success: false
+            }));
         });
     });
 });

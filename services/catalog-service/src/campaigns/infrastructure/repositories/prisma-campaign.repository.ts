@@ -63,6 +63,16 @@ export class PrismaCampaignRepository implements ICampaignRepository {
                 },
             });
 
+            await tx.campaign_Metrics.upsert({
+                where: { campaignId },
+                update: {
+                    updatedAt: new Date()
+                },
+                create: {
+                    campaignId
+                }
+            });
+
             // Handle pricing rules
             await tx.campaign_PricingRule.deleteMany({ where: { campaignId } });
             if (data.pricingRules.create.length > 0) {

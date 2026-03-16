@@ -20,12 +20,15 @@ describe('CreateDeliveryUseCase', () => {
         mocks = {
             logisticsEngine: {
                 validateDeliveryInput: jest.fn().mockReturnValue({ isValid: true }),
-                getDefaultTimeWindowForPriority: jest.fn().mockReturnValue({ earliest: new Date(), latest: new Date() }),
+                getDefaultTimeWindowForPriority: jest.fn().mockReturnValue({
+                    earliest: new Date(),
+                    latest: new Date(Date.now() + 60 * 60 * 1000)
+                }),
                 calculateTimeEstimates: jest.fn().mockReturnValue({ pickupBufferMinutes: 30, totalDurationMinutes: 60 }),
                 calculateDeliveryCost: jest.fn().mockReturnValue(5000),
                 generateDeliveryId: jest.fn().mockReturnValue('del-123'),
             },
-            courierRepository: { findAvailableCouriers: jest.fn().mockResolvedValue([{ id: 'c1', name: 'Courier 1', vehicle: 'bike', rating: 4.5, completionRate: 0.95, currentLocation: { lat: -6.7924, lng: 39.2083 }, isAvailable: true }]) },
+            courierRepository: { findAvailableCouriers: jest.fn().mockResolvedValue([{ id: 'c1', name: 'Courier 1', vehicle: 'bike', rating: 4.5, completionRate: 0.95, currentLocation: { lat: -6.7924, lng: 39.2083 }, status: 'online', isAvailable: true }]) },
             weatherPort: { getWeatherData: jest.fn().mockResolvedValue({ severity: 'low' }) },
             trafficPort: { getTrafficData: jest.fn().mockResolvedValue({ congestionLevel: 0 }) },
             routePort: {
@@ -93,6 +96,9 @@ describe('UpdateDeliveryStatusUseCase', () => {
 
     it('should update status successfully', async () => {
         const input: UpdateDeliveryStatusInput = { deliveryId: 'del-1', status: 'picked_up' };
+        mockRepository.findById
+            .mockResolvedValueOnce(mockDelivery)
+            .mockResolvedValueOnce({ ...mockDelivery, status: 'picked_up' });
         const result = await useCase.execute(input);
         expect(result.status).toBe('picked_up');
         expect(result.previousStatus).toBe('assigned');
@@ -116,13 +122,18 @@ describe('UpdateDeliveryStatusUseCase', () => {
         ];
         for (const { from, to } of transitions) {
             jest.clearAllMocks();
-            mockRepository.findById.mockResolvedValue({ ...mockDelivery, status: from });
+            mockRepository.findById
+                .mockResolvedValueOnce({ ...mockDelivery, status: from })
+                .mockResolvedValueOnce({ ...mockDelivery, status: to });
             await useCase.execute({ deliveryId: 'del-1', status: to as any });
             expect(mockRepository.updateStatus).toHaveBeenCalled();
         }
     });
 
     it('should include notes in metadata', async () => {
+        mockRepository.findById
+            .mockResolvedValueOnce(mockDelivery)
+            .mockResolvedValueOnce({ ...mockDelivery, status: 'picked_up' });
         await useCase.execute({ deliveryId: 'del-1', status: 'picked_up', notes: 'Package collected' });
         expect(mockRepository.updateStatus).toHaveBeenCalledWith('del-1', 'picked_up', expect.objectContaining({ notes: 'Package collected' }));
     });

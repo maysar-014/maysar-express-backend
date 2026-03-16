@@ -33,6 +33,9 @@ export const createAuthRoutes = (authController: any): Router => { // Using any 
     validateRequest({
       body: {
         email: { type: 'string', required: true, format: 'email' },
+        phoneNumber: { type: 'string', required: false, pattern: /^[+]?[\d\s().-]{7,20}$/ },
+        firstName: { type: 'string', required: false, minLength: 2 },
+        lastName: { type: 'string', required: false, minLength: 2 },
         role: {
           type: 'string',
           required: false,

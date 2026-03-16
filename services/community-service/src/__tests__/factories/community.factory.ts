@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
 import { KnowledgeArticle, KnowledgeArticleProps, ReviewStatus } from '../../domain/entities/knowledge-article.entity';
 import { ContributionScore, ContributionScoreProps } from '../../domain/value-objects/contribution-score.value-object';
 import { ExpertiseBadge, ExpertiseBadgeProps, ExpertiseLevel } from '../../domain/value-objects/expertise-badge.value-object';
@@ -6,12 +5,13 @@ import { EngagementQuota, EngagementQuotaProps, QuotaType } from '../../domain/v
 import { User, UserRole, UserStatus } from '../../domain/entities/user.entity';
 import { Post, PostType, PostVisibility, PostStatus } from '../../domain/entities/post.entity';
 import { TrustMetadata } from '../../domain/value-objects/trust-metadata.value-object';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export class CommunityFactory {
     static createKnowledgeArticle(overrides: Partial<KnowledgeArticleProps> = {}): KnowledgeArticle {
         return new KnowledgeArticle({
-            id: uuidv4(),
-            authorId: uuidv4(),
+            id: makeId(getModelPrefix('Community_KnowledgeArticle')),
+            authorId: makeId(getModelPrefix('User_User')),
             title: 'How to Improve Supply Chain Efficiency',
             summary: 'This article provides actionable steps for small businesses to optimize their supply chain and reduce costs through better inventory management.',
             sections: [
@@ -54,7 +54,7 @@ export class CommunityFactory {
 
     static createEngagementQuota(overrides: Partial<EngagementQuotaProps> = {}): EngagementQuota {
         return new EngagementQuota({
-            userId: uuidv4(),
+            userId: makeId(getModelPrefix('User_User')),
             quotaType: 'POST' as QuotaType,
             dailyRemaining: 5,
             weeklyRemaining: 20,
@@ -68,7 +68,7 @@ export class CommunityFactory {
     }
 
     static createUser(overrides: any = {}): User {
-        const id = overrides.id || uuidv4();
+        const id = overrides.id || makeId(getModelPrefix('User_User'));
         const username = overrides.username || `user_${id.substring(0, 8)}`;
         const displayName = overrides.displayName || `User ${id.substring(0, 4)}`;
         const role = overrides.role || UserRole.BUYER;
@@ -84,8 +84,8 @@ export class CommunityFactory {
     }
 
     static createPost(overrides: any = {}): Post {
-        const id = overrides.id || uuidv4();
-        const authorId = overrides.authorId || uuidv4();
+        const id = overrides.id || makeId(getModelPrefix('Post'));
+        const authorId = overrides.authorId || makeId(getModelPrefix('User_User'));
         const content = overrides.content || 'Sample post content';
         const type = overrides.type || PostType.TEXT;
 

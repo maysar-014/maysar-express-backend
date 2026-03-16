@@ -20,7 +20,7 @@
 └── Complete integration   ✅ All configs working
 
 ✅ Infrastructure Layer (3/3 files)
-├── prisma.client.ts       ✅ Database client with health monitoring
+├── prisma-client.ts       ✅ Database client with health monitoring
 ├── redis.client.ts        ✅ Cache client with connection pooling
 └── Health checks          ✅ Comprehensive monitoring
 ```

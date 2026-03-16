@@ -6,6 +6,7 @@ import { Container } from './container';
 import { createPayoutRoutes } from './api/routes/payout.routes';
 import { correlationMiddleware } from '../../../shared/tracing/openTelemetry';
 import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
+import { createMaintenanceRoutes } from './api/routes/maintenance.routes';
 
 export function createApp() {
     const app = express();
@@ -24,6 +25,7 @@ export function createApp() {
     });
 
     app.use('/api/payouts', createPayoutRoutes(container.payoutController));
+    app.use('/api/v1/system/maintenance', createMaintenanceRoutes());
 
     return app;
 }

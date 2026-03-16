@@ -4,6 +4,7 @@ import { controller, httpPost, httpGet } from 'inversify-express-utils';
 import { TYPES } from '../../infrastructure/types';
 import { SendSmsUseCase } from '../../application/use-cases/send-sms.use-case';
 import { TrackDeliveryUseCase } from '../../application/use-cases/track-delivery.use-case';
+import { HandleDeliveryReportUseCase } from '../../application/use-cases/handle-delivery-report.use-case';
 import { RetryFailedMessagesUseCase } from '../../application/use-cases/retry-failed-messages.use-case';
 import { GetStatisticsUseCase } from '../../application/use-cases/get-statistics.use-case';
 import { SendSmsDto, SendSmsDtoSchema } from '../../application/dto/sms.dto';
@@ -14,6 +15,7 @@ export class SmsController {
     constructor(
         @inject(TYPES.SendSmsUseCase) private sendSmsUseCase: SendSmsUseCase,
         @inject(TYPES.TrackDeliveryUseCase) private trackDeliveryUseCase: TrackDeliveryUseCase,
+        @inject(TYPES.HandleDeliveryReportUseCase) private handleDeliveryReportUseCase: HandleDeliveryReportUseCase,
         @inject(TYPES.RetryFailedMessagesUseCase) private retryFailedMessagesUseCase: RetryFailedMessagesUseCase,
         @inject(TYPES.GetStatisticsUseCase) private getStatisticsUseCase: GetStatisticsUseCase
     ) { }
@@ -117,11 +119,25 @@ export class SmsController {
 
     @httpPost('/webhook/africastalking')
     async webhookAfricastalking(req: Request, res: Response, next: NextFunction) {
-        // This would handle delivery reports from Africa's Talking
-        // Implementation would go here, parsing the body and updating message status
-        // via a new Use Case or method on TrackDeliveryUseCase
+        try {
+            const result = await this.handleDeliveryReportUseCase.execute(req.body);
 
-        // For now, just acknowledge receipt
-        return res.status(200).send('OK');
+            if (!result.parsed) {
+                return res.status(400).json({
+                    success: false,
+                    error: result.reason || 'Invalid delivery report'
+                });
+            }
+
+            return res.status(200).json({
+                success: result.accepted,
+                messageId: result.messageId,
+                providerMessageId: result.providerMessageId,
+                status: result.status,
+                reason: result.reason
+            });
+        } catch (error) {
+            next(error);
+        }
     }
 }

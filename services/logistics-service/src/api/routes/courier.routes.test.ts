@@ -65,7 +65,7 @@ describe('courier.routes', () => {
 
     const listRes = await request(app).get('/couriers');
     const detailRes = await request(app).get('/couriers/courier-1');
-    const updateRes = await request(app).put('/couriers/courier-1/status').send({ status: 'active' });
+    const updateRes = await request(app).put('/couriers/courier-1/status').send({ status: 'online' });
 
     expect(listRes.status).toBe(200);
     expect(detailRes.status).toBe(200);

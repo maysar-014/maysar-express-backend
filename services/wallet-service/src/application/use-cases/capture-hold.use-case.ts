@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto';
 import { IWalletRepository } from '../../domain/repositories/wallet.repository';
 import { IHoldRepository } from '../../domain/repositories/hold.repository';
 import { ITransactionRepository } from '../../domain/repositories/transaction.repository';
@@ -7,6 +6,7 @@ import { IdempotencyKey } from '../../domain/value-objects/idempotency-key.value
 import { AuditInfo } from '../../domain/value-objects/audit-info.value-object';
 import { WalletEventPublisher } from '../../infrastructure/messaging/wallet-event-publisher';
 import { Transaction, TransactionType } from '../../domain/entities/transaction.entity';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export interface CaptureHoldDTO {
     holdId: string;
@@ -48,7 +48,7 @@ export class CaptureHoldUseCase {
 
         // Create Transaction Record
         const transaction = new Transaction({
-            id: randomUUID(),
+            id: makeId(getModelPrefix('Wallet_Transaction')),
             walletId: wallet.id,
             userId: wallet.userId,
             type: TransactionType.DEBIT_FROZEN,

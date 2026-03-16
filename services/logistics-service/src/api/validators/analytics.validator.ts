@@ -1,5 +1,6 @@
 ﻿// @ts-nocheck
 import { body, param, query } from 'express-validator';
+import { isSystemId } from '@shared/validation/id';
 
 export class AnalyticsValidator {
   static getAnalytics(): ValidationChain[] {
@@ -57,8 +58,8 @@ export class AnalyticsValidator {
 
       query('courierId')
         .optional()
-        .isUUID()
-        .withMessage('Courier ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Courier ID must be a valid ID'),
 
       query('format')
         .optional()
@@ -86,8 +87,8 @@ export class AnalyticsValidator {
 
       query('courierId')
         .optional()
-        .isUUID()
-        .withMessage('Courier ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Courier ID must be a valid ID'),
 
       query('region')
         .optional()
@@ -125,8 +126,8 @@ export class AnalyticsValidator {
     return [
       query('courierId')
         .optional()
-        .isUUID()
-        .withMessage('Courier ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Courier ID must be a valid ID'),
 
       query('period')
         .optional()

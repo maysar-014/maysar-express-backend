@@ -529,6 +529,40 @@ export class DeliveryRepository implements IDeliveryRepository {
     }
   }
 
+  async updateEstimatedDeliveryTime(
+    id: string,
+    estimatedDeliveryTime: Date,
+    routeDistanceKm?: number,
+    routeDurationMinutes?: number
+  ): Promise<void> {
+    try {
+      const updateData: any = {
+        estimated_delivery_time: estimatedDeliveryTime.toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      if (routeDistanceKm !== undefined) {
+        updateData.route_distance = routeDistanceKm;
+      }
+      if (routeDurationMinutes !== undefined) {
+        updateData.route_duration = Math.round(routeDurationMinutes);
+      }
+
+      const { error } = await this.databaseClient
+        .from('deliveries')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) {
+        console.error('Database update error:', error);
+        throw new Error('Failed to update estimated delivery time');
+      }
+    } catch (error) {
+      console.error('Error updating estimated delivery time:', error);
+      throw new Error('Failed to update estimated delivery time');
+    }
+  }
+
   async findActiveDeliveries(): Promise<Delivery[]> {
     try {
       const activeStatuses = ['assigned', 'picked_up', 'in_transit'];

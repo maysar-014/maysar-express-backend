@@ -3,8 +3,8 @@ export class Money {
     private readonly amount: number,
     private readonly currency: string = 'TZS' // Tanzanian Shilling as default
   ) {
-    if (amount <= 0) {
-      throw new Error('Amount must be positive');
+    if (amount < 0) {
+      throw new Error('Amount must be non-negative');
     }
     if (!currency || currency.trim().length === 0) {
       throw new Error('Currency cannot be empty');
@@ -12,6 +12,12 @@ export class Money {
   }
 
   static create(amount: number, currency: string = 'TZS'): Money {
+    if (amount < 0) {
+      throw new Error('Amount must be non-negative');
+    }
+    if (amount === 0) {
+      throw new Error('Amount must be positive');
+    }
     return new Money(amount, currency);
   }
 
@@ -119,12 +125,13 @@ export class Money {
 
   format(locale: string = 'en-US'): string {
     try {
-      return new Intl.NumberFormat(locale, {
+      const formatted = new Intl.NumberFormat(locale, {
         style: 'currency',
         currency: this.currency,
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
       }).format(this.amount);
+      return formatted.replace(/\u00A0/g, ' ');
     } catch (error) {
       // Fallback to simple formatting if locale is not supported
       return `${this.currency} ${this.amount.toLocaleString()}`;
@@ -154,7 +161,7 @@ export class Money {
   // Business rule: Validate delivery fee ranges
   isValidDeliveryFee(): boolean {
     // Delivery fee should be between 500 TZS and 50,000 TZS
-    return this.amount >= 500 && this.amount <= 50000 && this.currency === 'TZS';
+    return this.amount >= 500 && this.amount < 50000 && this.currency === 'TZS';
   }
 
   // Business rule: Calculate courier earnings based on percentage

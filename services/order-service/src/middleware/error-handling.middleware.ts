@@ -8,6 +8,8 @@ import { AppError, ErrorType, ErrorSeverity, shouldAlert } from '../domain/error
 import { handleCriticalError } from '../infrastructure/monitoring/alerting';
 import { logSecurityConfigSummary } from '../config/security.config';
 import { logMonitoringConfigSummary } from '../config/monitoring.config';
+import { databaseManager } from '../config/database.config';
+import { getSharedRedisClient } from '@shared/redis/ioredis-client';
 
 /**
  * Global error handling middleware
@@ -290,13 +292,13 @@ export function asyncErrorHandler(
 /**
  * Error recovery middleware for graceful degradation
  */
-export function gracefulDegradationHandler(
+export async function gracefulDegradationHandler(
   req: Request,
   res: Response,
   next: NextFunction
-): void {
+): Promise<void> {
   // Check if critical services are available
-  const servicesStatus = checkServiceAvailability();
+  const servicesStatus = await checkServiceAvailability();
 
   // Add service status to request for use in route handlers
   (req as any).serviceStatus = servicesStatus;
@@ -313,16 +315,33 @@ export function gracefulDegradationHandler(
 /**
  * Check availability of external services
  */
-function checkServiceAvailability(): {
+async function checkServiceAvailability(): Promise<{
   database: boolean;
   cache: boolean;
   externalAPIs: boolean;
-} {
-  // In a real implementation, this would check actual service health
-  // For now, return optimistic status
+}> {
+  let database = false;
+  let cache = false;
+
+  try {
+    const prisma = databaseManager.getPrisma();
+    await prisma.$queryRaw`SELECT 1`;
+    database = true;
+  } catch {
+    database = false;
+  }
+
+  try {
+    const redis = getSharedRedisClient();
+    await redis.ping();
+    cache = true;
+  } catch {
+    cache = false;
+  }
+
   return {
-    database: true,
-    cache: true,
+    database,
+    cache,
     externalAPIs: true,
   };
 }

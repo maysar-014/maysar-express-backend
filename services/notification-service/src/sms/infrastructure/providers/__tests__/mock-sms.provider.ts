@@ -1,9 +1,9 @@
-import { ISmsProvider } from './sms-provider.interface';
-import { ProviderResponse } from '../../domain/value-objects/provider-response.value-object';
+import { ISmsProvider } from '../sms-provider.interface';
+import { ProviderResponse } from '../../../domain/value-objects/provider-response.value-object';
 
 /**
- * Mock SMS Provider
- * For testing and development - simulates SMS sending without external API calls
+ * Test SMS Provider
+ * Simulates SMS sending for tests without external API calls.
  */
 export class MockSmsProvider implements ISmsProvider {
     private readonly name = 'mock';
@@ -17,21 +17,17 @@ export class MockSmsProvider implements ISmsProvider {
     }
 
     async send(phoneNumber: string, message: string): Promise<ProviderResponse> {
-        // Simulate network delay
         await this.delay(100);
 
-        // Simulate random failures based on failure rate
         if (this.shouldFail || Math.random() < this.failureRate) {
             return ProviderResponse.createFailure(
-                'Mock provider: Simulated failure',
+                'Test provider: Simulated failure',
                 '500'
             );
         }
 
-        // Generate mock provider message ID
         const providerMessageId = `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-        // Store message (for testing purposes)
         this.sentMessages.set(providerMessageId, {
             phoneNumber,
             message,
@@ -39,7 +35,6 @@ export class MockSmsProvider implements ISmsProvider {
             status: 'sent'
         });
 
-        // Log for debugging
         if (process.env.NODE_ENV !== 'test') {
             console.log(`[MockSmsProvider] Sent SMS to ${phoneNumber}: ${message.substring(0, 50)}...`);
         }
@@ -60,7 +55,6 @@ export class MockSmsProvider implements ISmsProvider {
             return ProviderResponse.createFailure(`Message not found: ${providerMessageId}`, '404');
         }
 
-        // Simulate delivery after 1 second
         const sentAt = message.sentAt.getTime();
         const now = Date.now();
         const delivered = now - sentAt > 1000;
@@ -90,39 +84,22 @@ export class MockSmsProvider implements ISmsProvider {
         };
     }
 
-    // ==================== Testing Utilities ====================
-
-    /**
-     * Get all sent messages (for testing)
-     */
     getSentMessages(): Map<string, any> {
         return new Map(this.sentMessages);
     }
 
-    /**
-     * Clear sent messages (for testing)
-     */
     clearSentMessages(): void {
         this.sentMessages.clear();
     }
 
-    /**
-     * Set failure mode (for testing)
-     */
     setShouldFail(shouldFail: boolean): void {
         this.shouldFail = shouldFail;
     }
 
-    /**
-     * Set failure rate (for testing)
-     */
     setFailureRate(rate: number): void {
         this.failureRate = Math.max(0, Math.min(1, rate));
     }
 
-    /**
-     * Simulate message delivery (for testing)
-     */
     simulateDelivery(providerMessageId: string): void {
         const message = this.sentMessages.get(providerMessageId);
         if (message) {

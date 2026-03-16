@@ -15,7 +15,11 @@ const mockControllerHandlers = {
   deleteBusiness: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'deleteBusiness' })),
   verifyBusiness: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'verifyBusiness' })),
   suspendBusiness: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'suspendBusiness' })),
-  reactivateBusiness: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'reactivateBusiness' }))
+  reactivateBusiness: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'reactivateBusiness' })),
+  addDocument: jest.fn(async (_req: express.Request, res: express.Response) => res.status(201).json({ action: 'addDocument' })),
+  listDocuments: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'listDocuments' })),
+  addComplianceRecord: jest.fn(async (_req: express.Request, res: express.Response) => res.status(201).json({ action: 'addComplianceRecord' })),
+  listComplianceRecords: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'listComplianceRecords' }))
 };
 
 jest.mock('../controllers/business.controller', () => ({
@@ -28,6 +32,12 @@ jest.mock('../../infrastructure/database/prisma-client', () => ({
 
 jest.mock('../../infrastructure/repositories/prisma-business.repository', () => ({
   PrismaBusinessRepository: jest.fn().mockImplementation(() => ({}))
+}));
+jest.mock('../../infrastructure/repositories/prisma-business-document.repository', () => ({
+  PrismaBusinessDocumentRepository: jest.fn().mockImplementation(() => ({}))
+}));
+jest.mock('../../infrastructure/repositories/prisma-business-compliance.repository', () => ({
+  PrismaBusinessComplianceRepository: jest.fn().mockImplementation(() => ({}))
 }));
 
 jest.mock('../../domain/services/business-validation.service', () => ({
@@ -54,7 +64,9 @@ jest.mock('../middleware/validation.middleware', () => ({
   validateCreateBusiness: noOpMiddleware,
   validateUpdateBusiness: noOpMiddleware,
   validateVerifyBusiness: noOpMiddleware,
-  validateSuspendBusiness: noOpMiddleware
+  validateSuspendBusiness: noOpMiddleware,
+  validateCreateBusinessDocument: noOpMiddleware,
+  validateCreateComplianceRecord: noOpMiddleware
 }));
 
 jest.mock('../../application/sagas/saga-event-handler', () => ({

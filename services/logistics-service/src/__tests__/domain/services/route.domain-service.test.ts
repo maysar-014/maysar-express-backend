@@ -208,12 +208,6 @@ function createMockDelivery(
     deliveryFee: 1000,
     priority: 'standard',
     // Add missing required properties with default values
-    package: {
-      id: `package-${id}`,
-      weight: 5,
-      dimensions: { length: 30, width: 20, height: 10 },
-      description: `Package ${id}`
-    },
     timestamps: {
       createdAt: new Date(),
       updatedAt: new Date(),

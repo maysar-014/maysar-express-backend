@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import logger from '../infrastructure/monitoring/logger';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 export interface DatabaseConfig {
   prisma: {
@@ -29,7 +30,7 @@ export class DatabaseManager {
 
     try {
       logger.info('Connecting to database...');
-      this.prismaClient = new PrismaClient({
+      this.prismaClient = createPrismaClient({
         datasourceUrl: config.prisma.url,
         log: config.prisma.logQueries ? ['query', 'info', 'warn', 'error'] : undefined,
       });

@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import { Request, Response } from 'express';
 import { MatchProductUseCase } from '../../application/use-cases/match-product.use-case';
 import { ConfirmProductMatchUseCase } from '../../application/use-cases/confirm-product-match.use-case';

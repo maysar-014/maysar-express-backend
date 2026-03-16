@@ -2,6 +2,7 @@
 import './tracing'; // MUST be first — before any other imports
 import './instrument';
 import 'dotenv/config';
+import './config/normalize-database-url';
 import 'reflect-metadata';
 import { createApp } from './app';
 import { moduleRegistry } from './core/module-registry';

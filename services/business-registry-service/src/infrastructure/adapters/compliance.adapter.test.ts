@@ -1,5 +1,6 @@
 const mockLoggerDebug = jest.fn();
 const mockLoggerWarn = jest.fn();
+const mockPublish = jest.fn();
 
 jest.mock('../services/logger.service', () => ({
   logger: {
@@ -10,23 +11,25 @@ jest.mock('../services/logger.service', () => ({
   }
 }));
 
+jest.mock('@shared/events/eventBus', () => ({
+  eventBus: {
+    publish: (...args: unknown[]) => mockPublish(...args)
+  }
+}));
+
 import { ComplianceAdapter } from './compliance.adapter';
 
 describe('ComplianceAdapter', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (global as unknown as { fetch: jest.Mock }).fetch = jest.fn();
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  it('notifyNewBusiness posts to compliance monitor endpoint', async () => {
-    (global as unknown as { fetch: jest.Mock }).fetch.mockResolvedValue({
-      ok: true
-    });
-    const adapter = new ComplianceAdapter('http://compliance');
+  it('notifyNewBusiness publishes compliance events', async () => {
+    const adapter = new ComplianceAdapter();
 
     await adapter.notifyNewBusiness({
       businessId: 'biz-1',
@@ -36,34 +39,29 @@ describe('ComplianceAdapter', () => {
       correlationId: 'corr-1'
     });
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      'http://compliance/api/compliance/monitor',
+    expect(mockPublish).toHaveBeenCalledWith(
+      'ComplianceCheckCompleted.v1',
       expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          complianceType: 'kyc',
-          entityId: 'biz-1',
-          operation: 'business_registered',
-          sagaId: 'corr-1',
-          metadata: {
-            ownerId: 'owner-1',
-            businessType: 'SOLE_PROPRIETORSHIP',
-            registrationNumber: 'TZ-DAR-12345'
-          }
-        })
+        complianceType: 'kyc',
+        entityId: 'biz-1',
+        sagaId: 'corr-1'
+      })
+    );
+    expect(mockPublish).toHaveBeenCalledWith(
+      'ComplianceRecorded.v1',
+      expect.objectContaining({
+        complianceType: 'kyc',
+        entityId: 'biz-1',
+        operation: 'business_registered',
+        sagaId: 'corr-1'
       })
     );
     expect(mockLoggerDebug).toHaveBeenCalledWith('KYC compliance notified for new business', { businessId: 'biz-1' });
   });
 
-  it('notifyNewBusiness throws and logs warning for non-OK responses', async () => {
-    (global as unknown as { fetch: jest.Mock }).fetch.mockResolvedValue({
-      ok: false,
-      status: 500,
-      text: jest.fn().mockResolvedValue('internal error')
-    });
-    const adapter = new ComplianceAdapter('http://compliance');
+  it('notifyNewBusiness throws and logs warning when publish fails', async () => {
+    mockPublish.mockRejectedValueOnce(new Error('bus down'));
+    const adapter = new ComplianceAdapter();
 
     await expect(
       adapter.notifyNewBusiness({
@@ -73,23 +71,20 @@ describe('ComplianceAdapter', () => {
         registrationNumber: 'TZ-DAR-99999',
         correlationId: 'corr-2'
       })
-    ).rejects.toThrow('KYC compliance service error 500: internal error');
+    ).rejects.toThrow('bus down');
 
     expect(mockLoggerWarn).toHaveBeenCalledWith(
       'ComplianceAdapter: notifyNewBusiness failed',
       expect.objectContaining({
         businessId: 'biz-2',
-        error: 'KYC compliance service error 500: internal error'
+        error: 'bus down'
       })
     );
   });
 
-  it('createKYCRecord returns API recordId and logs debug', async () => {
-    (global as unknown as { fetch: jest.Mock }).fetch.mockResolvedValue({
-      ok: true,
-      json: jest.fn().mockResolvedValue({ recordId: 'kyc-123' })
-    });
-    const adapter = new ComplianceAdapter('http://compliance');
+  it('createKYCRecord returns generated recordId and logs debug', async () => {
+    jest.spyOn(Date, 'now').mockReturnValue(1234567890);
+    const adapter = new ComplianceAdapter();
 
     const recordId = await adapter.createKYCRecord({
       businessId: 'biz-3',
@@ -97,47 +92,23 @@ describe('ComplianceAdapter', () => {
       correlationId: 'corr-3'
     });
 
-    expect(recordId).toBe('kyc-123');
-    expect(mockLoggerDebug).toHaveBeenCalledWith('KYC record created', { businessId: 'biz-3', recordId: 'kyc-123' });
+    expect(recordId).toBe('kyc_biz-3_1234567890');
+    expect(mockLoggerDebug).toHaveBeenCalledWith('KYC record created', { businessId: 'biz-3', recordId: 'kyc_biz-3_1234567890' });
   });
 
-  it('createKYCRecord falls back to generated ID when API omits recordId', async () => {
-    jest.spyOn(Date, 'now').mockReturnValue(1234567890);
-    (global as unknown as { fetch: jest.Mock }).fetch.mockResolvedValue({
-      ok: true,
-      json: jest.fn().mockResolvedValue({})
-    });
-    const adapter = new ComplianceAdapter('http://compliance');
+  it('revokeKYCRecord publishes revoke operation and handles failures', async () => {
+    const adapter = new ComplianceAdapter();
 
-    const recordId = await adapter.createKYCRecord({
-      businessId: 'biz-4',
-      status: 'pending',
-      correlationId: 'corr-4'
-    });
-
-    expect(recordId).toBe('kyc_biz-4_1234567890');
-  });
-
-  it('revokeKYCRecord posts revoke operation and handles failures', async () => {
-    const adapter = new ComplianceAdapter('http://compliance');
-
-    (global as unknown as { fetch: jest.Mock }).fetch.mockResolvedValueOnce({ ok: true });
     await adapter.revokeKYCRecord('kyc-1', 'corr-5');
     expect(mockLoggerDebug).toHaveBeenCalledWith('KYC record revoked', { recordId: 'kyc-1' });
 
-    (global as unknown as { fetch: jest.Mock }).fetch.mockResolvedValueOnce({
-      ok: false,
-      status: 400,
-      text: jest.fn().mockResolvedValue('bad request')
-    });
-    await expect(adapter.revokeKYCRecord('kyc-2', 'corr-6')).rejects.toThrow(
-      'KYC compliance service error 400: bad request'
-    );
+    mockPublish.mockRejectedValueOnce(new Error('publish failed'));
+    await expect(adapter.revokeKYCRecord('kyc-2', 'corr-6')).rejects.toThrow('publish failed');
     expect(mockLoggerWarn).toHaveBeenCalledWith(
       'ComplianceAdapter: revokeKYCRecord failed',
       expect.objectContaining({
         recordId: 'kyc-2',
-        error: 'KYC compliance service error 400: bad request'
+        error: 'publish failed'
       })
     );
   });

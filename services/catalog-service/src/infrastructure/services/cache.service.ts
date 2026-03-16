@@ -14,6 +14,7 @@ import {
   CacheKeyGenerator,
   CachedRepository
 } from '../providers/cache-provider';
+import { scanKeysIoredis } from '@shared/redis/scan-keys';
 
 /**
  * Cache Service Configuration
@@ -327,9 +328,24 @@ export class DistributedCacheService implements ICacheService {
    * Invalidate cache by pattern
    */
   async invalidateByPattern(pattern: string): Promise<number> {
-    // In a real implementation with Redis, this would use SCAN or KEYS
-    // For now, we'll iterate through known keys
     let totalDeleted = 0;
+
+    if (this.cache instanceof RedisCacheProvider) {
+      const redisClient = (this.cache as any).redisClient;
+      if (redisClient) {
+        const fullPattern = this.getFullKey(pattern);
+        const keys = await scanKeysIoredis(redisClient, fullPattern);
+        if (keys.length > 0) {
+          await redisClient.del(...keys);
+          totalDeleted = keys.length;
+          keys.forEach((key: string) => {
+            this.removeKeyFromTags(key);
+            this.keyTags.delete(key);
+          });
+        }
+        return totalDeleted;
+      }
+    }
 
     for (const [key] of this.keyTags) {
       if (this.matchesPattern(key, pattern)) {

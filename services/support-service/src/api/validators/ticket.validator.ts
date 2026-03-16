@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { zodId } from '@shared/validation/id';
 import { TicketPriority, TicketStatus } from '../../domain/types';
 
 export const createTicketSchema = z.object({
@@ -14,7 +15,7 @@ export const addMessageSchema = z.object({
 });
 
 export const assignTicketSchema = z.object({
-    agentId: z.string().uuid()
+    agentId: zodId()
 });
 
 export const resolveTicketSchema = z.object({

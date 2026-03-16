@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto';
 import { IWalletRepository } from '../../domain/repositories/wallet.repository';
 import { ITransactionRepository } from '../../domain/repositories/transaction.repository';
 import { Transaction, TransactionType } from '../../domain/entities/transaction.entity';
@@ -12,6 +11,7 @@ import { Money } from '../../domain/value-objects/money.value-object';
 import { WalletEventPublisher } from '../../infrastructure/messaging/wallet-event-publisher';
 import { IAuditLogRepository } from '../../infrastructure/repositories/audit-log.repository';
 import { RedisLock } from '../../../../../shared/locking/redis-lock';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export interface DebitWalletDTO {
     userId: string;
@@ -123,7 +123,7 @@ export class DebitWalletUseCase {
 
             // Record transaction
             const transaction = new Transaction({
-                id: randomUUID(),
+                id: makeId(getModelPrefix('Wallet_Transaction')),
                 walletId: wallet.id,
                 userId: dto.userId,
                 type: TransactionType.DEBIT,

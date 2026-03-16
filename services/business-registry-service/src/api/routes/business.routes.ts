@@ -7,12 +7,16 @@ import { SuspendBusinessUseCase } from '../../application/use-cases/suspend-busi
 import { ReactivateBusinessUseCase } from '../../application/use-cases/reactivate-business.use-case';
 import { BusinessValidationService } from '../../domain/services/business-validation.service';
 import { PrismaBusinessRepository } from '../../infrastructure/repositories/prisma-business.repository';
+import { PrismaBusinessDocumentRepository } from '../../infrastructure/repositories/prisma-business-document.repository';
+import { PrismaBusinessComplianceRepository } from '../../infrastructure/repositories/prisma-business-compliance.repository';
 import { getPrismaClient } from '../../infrastructure/database/prisma-client';
 import {
   validateCreateBusiness,
   validateUpdateBusiness,
   validateVerifyBusiness,
-  validateSuspendBusiness
+  validateSuspendBusiness,
+  validateCreateBusinessDocument,
+  validateCreateComplianceRecord
 } from '../middleware/validation.middleware';
 import { SagaEventHandler } from '../../application/sagas/saga-event-handler';
 import { MailerAdapter, ComplianceAdapter, CapabilityAdapter } from '../../infrastructure/adapters';
@@ -21,12 +25,16 @@ import { logger } from '../../infrastructure/services/logger.service';
 
 let businessController: BusinessController;
 let businessRepository: PrismaBusinessRepository;
+let businessDocumentRepository: PrismaBusinessDocumentRepository;
+let businessComplianceRepository: PrismaBusinessComplianceRepository;
 let sagaEventHandler: SagaEventHandler;
 
 function initializeController(): BusinessController {
   if (!businessController) {
     const prisma = getPrismaClient();
     businessRepository = new PrismaBusinessRepository(prisma);
+    businessDocumentRepository = new PrismaBusinessDocumentRepository(prisma);
+    businessComplianceRepository = new PrismaBusinessComplianceRepository(prisma);
     const businessValidationService = new BusinessValidationService();
     
     const mailerAdapter = new MailerAdapter();
@@ -55,7 +63,9 @@ function initializeController(): BusinessController {
       updateBusinessUseCase,
       suspendBusinessUseCase,
       reactivateBusinessUseCase,
-      businessRepository
+      businessRepository,
+      businessDocumentRepository,
+      businessComplianceRepository
     );
   }
   return businessController;
@@ -80,6 +90,16 @@ export function createBusinessRoutes(): Router {
     controller.suspendBusiness(req, res).catch(next)
   );
   router.post('/:id/reactivate', (req, res, next) => controller.reactivateBusiness(req, res).catch(next));
+
+  router.post('/:id/documents', validateCreateBusinessDocument, (req, res, next) =>
+    controller.addDocument(req, res).catch(next)
+  );
+  router.get('/:id/documents', (req, res, next) => controller.listDocuments(req, res).catch(next));
+
+  router.post('/:id/compliance-records', validateCreateComplianceRecord, (req, res, next) =>
+    controller.addComplianceRecord(req, res).catch(next)
+  );
+  router.get('/:id/compliance-records', (req, res, next) => controller.listComplianceRecords(req, res).catch(next));
 
   return router;
 }

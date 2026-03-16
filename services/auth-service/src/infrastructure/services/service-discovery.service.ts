@@ -1,11 +1,54 @@
 import { logger } from './logger.service';
+import http from 'http';
+import https from 'https';
+
+type HealthCheckResult = { ok: boolean; responseTimeMs: number };
+type HealthChecker = (url: string) => Promise<HealthCheckResult>;
+
+const defaultHealthChecker: HealthChecker = async (url: string) => {
+  const startTime = Date.now();
+  const target = new URL(url);
+  const client = target.protocol === 'https:' ? https : http;
+
+  return new Promise<HealthCheckResult>((resolve) => {
+    const req = client.request(
+      {
+        method: 'GET',
+        hostname: target.hostname,
+        port: target.port || (target.protocol === 'https:' ? 443 : 80),
+        path: `${target.pathname}${target.search}`,
+        timeout: 5000
+      },
+      (res) => {
+        res.resume();
+        const responseTimeMs = Date.now() - startTime;
+        resolve({ ok: (res.statusCode || 500) < 500, responseTimeMs });
+      }
+    );
+
+    req.on('timeout', () => {
+      req.destroy();
+      const responseTimeMs = Date.now() - startTime;
+      resolve({ ok: false, responseTimeMs });
+    });
+
+    req.on('error', () => {
+      const responseTimeMs = Date.now() - startTime;
+      resolve({ ok: false, responseTimeMs });
+    });
+
+    req.end();
+  });
+};
 
 /**
  * Service Discovery Service
  * Handles service discovery and health monitoring
  */
 export class ServiceDiscoveryService {
-  private services: Map<string, { url: string; health: boolean; lastCheck: Date }> = new Map();
+  private services: Map<string, { url: string; health: boolean; lastCheck: Date; responseTimeMs?: number }> = new Map();
+
+  constructor(private readonly healthChecker: HealthChecker = defaultHealthChecker) {}
 
   /**
    * Register a service
@@ -51,16 +94,16 @@ export class ServiceDiscoveryService {
         return false;
       }
 
-      // In a real implementation, this would make an HTTP request to check health
-      // For now, we'll simulate health checks
-      const isHealthy = Math.random() > 0.1; // 90% chance of being healthy
+      const healthUrl = service.url.replace(/\/$/, '') + '/health';
+      const result = await this.healthChecker(healthUrl);
 
-      service.health = isHealthy;
+      service.health = result.ok;
       service.lastCheck = new Date();
+      service.responseTimeMs = result.responseTimeMs;
 
-      logger.info('Service health check', { service: name, healthy: isHealthy });
+      logger.info('Service health check', { service: name, healthy: service.health, responseTimeMs: result.responseTimeMs });
 
-      return isHealthy;
+      return service.health;
     } catch (error) {
       logger.error('ServiceDiscoveryService.checkServiceHealth error', { error, name });
       throw error;
@@ -70,13 +113,14 @@ export class ServiceDiscoveryService {
   /**
    * Get all services
    */
-  getAllServices(): Array<{ name: string; url: string; health: boolean; lastCheck: Date }> {
+  getAllServices(): Array<{ name: string; url: string; health: boolean; lastCheck: Date; responseTimeMs?: number }> {
     try {
       return Array.from(this.services.entries()).map(([name, service]) => ({
         name,
         url: service.url,
         health: service.health,
-        lastCheck: service.lastCheck
+        lastCheck: service.lastCheck,
+        responseTimeMs: service.responseTimeMs
       }));
     } catch (error) {
       logger.error('ServiceDiscoveryService.getAllServices error', { error });

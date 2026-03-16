@@ -11,6 +11,8 @@ import { NotificationServiceClient } from '../sagas/service-clients';
 import { IUserRepository } from '../../domain/repositories';
 import { PrismaEmailVerificationTokenRepository } from '../../infrastructure/repositories/prisma-email-verification-token.repository';
 import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
+import { generatePublicUserCode } from '@shared/ids/public-codes';
 
 /**
  * Create User Use Case
@@ -42,7 +44,8 @@ export class CreateUserUseCase {
       this.applySecurityPolicies(createUserDto);
 
       // 4. Create user entity
-      const user = UserMapper.toEntity(createUserDto);
+      const publicCode = await this.generateUniquePublicCode();
+      const user = UserMapper.toEntity(createUserDto, { publicCode });
 
       // 5. Validate user entity
       this.userValidationService.validateUser(user);
@@ -58,7 +61,8 @@ export class CreateUserUseCase {
         persistedUser.id,
         persistedUser.email.getValue(),
         persistedUser.role,
-        'email'
+        'email',
+        persistedUser.publicCode
       );
 
       await this.eventPublisher.publish(event);
@@ -67,7 +71,7 @@ export class CreateUserUseCase {
       // Issue email verification token
       const verificationToken = uuidv4();
       await this.emailVerificationTokens.create({
-        id: uuidv4(),
+        id: makeId(getModelPrefix('Auth_EmailVerificationToken')),
         userId: persistedUser.id,
         token: verificationToken,
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
@@ -175,9 +179,24 @@ export class CreateUserUseCase {
    * Helper method to validate phone number format
    */
   private isValidPhoneNumber(phoneNumber: string): boolean {
-    // Tanzanian phone number format validation
-    const tanzanianPhoneRegex = /^(\+255|0)(7[0-9]|6[0-9]|2[0-9])\d{7}$/;
-    return tanzanianPhoneRegex.test(phoneNumber.replace(/\s+/g, ''));
+    // Broad E.164-style validation (7-15 digits, optional leading +)
+    const normalized = phoneNumber.replace(/[^\d+]/g, '');
+    const e164Like = /^\+?\d{7,15}$/;
+    return e164Like.test(normalized);
+  }
+
+  /**
+   * Generate a unique public user code
+   */
+  private async generateUniquePublicCode(): Promise<string> {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const code = generatePublicUserCode();
+      const exists = await this.userRepository.publicCodeExists(code);
+      if (!exists) {
+        return code;
+      }
+    }
+    throw new UserValidationError('Unable to generate a unique public user code');
   }
 
   /**

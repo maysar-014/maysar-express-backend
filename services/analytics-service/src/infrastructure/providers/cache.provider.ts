@@ -1,26 +1,30 @@
-export class CacheProvider {
-    private cache: Map<string, any> = new Map();
+import { getSharedRedisClient } from '@shared/redis/ioredis-client';
 
-    constructor() {
-        // In a real implementation, this would connect to Redis
-    }
+export class CacheProvider {
+    private readonly redis = getSharedRedisClient();
 
     async get<T>(key: string): Promise<T | null> {
-        const value = this.cache.get(key);
-        return value ? (value as T) : null;
+        const value = await this.redis.get(key);
+        if (!value) return null;
+
+        try {
+            return JSON.parse(value) as T;
+        } catch {
+            return value as unknown as T;
+        }
     }
 
     async set(key: string, value: any, ttlSeconds: number = 3600): Promise<void> {
-        this.cache.set(key, value);
-        // Real Redis: client.set(key, JSON.stringify(value), 'EX', ttlSeconds)
+        const serialized = JSON.stringify(value);
+        await this.redis.setex(key, ttlSeconds, serialized);
     }
 
     async invalidate(pattern: string): Promise<void> {
-        // Real Redis: client.del(...)
-        this.cache.delete(pattern);
+        await this.redis.del(pattern);
     }
 
     async has(key: string): Promise<boolean> {
-        return this.cache.has(key);
+        const exists = await this.redis.exists(key);
+        return exists === 1;
     }
 }

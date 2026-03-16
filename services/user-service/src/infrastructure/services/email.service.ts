@@ -1,8 +1,8 @@
 import { DomainService } from '@domain/interfaces';
+import nodemailer, { Transporter } from 'nodemailer';
 
-/**
- * Email Service Interface
- */
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
 export interface EmailService extends DomainService {
   sendEmail(to: string, subject: string, html: string, text?: string): Promise<void>;
   sendVerificationEmail(userEmail: string, verificationToken: string): Promise<void>;
@@ -11,46 +11,46 @@ export interface EmailService extends DomainService {
   sendSecurityAlert(userEmail: string, alertType: string, details: Record<string, unknown>): Promise<void>;
 }
 
-/**
- * Email Templates
- */
 export interface EmailTemplate {
   subject: string;
   html: string;
   text: string;
 }
 
-/**
- * In-Memory Email Service Implementation
- * For development and testing purposes
- */
-export class InMemoryEmailService implements EmailService {
-  public readonly name = 'InMemoryEmailService';
-  private sentEmails: Array<{
-    to: string;
-    subject: string;
-    html: string;
-    text?: string;
-    sentAt: Date;
-  }> = [];
+export class SMTPService implements EmailService {
+  public readonly name = 'SMTPService';
+  private readonly transporter?: Transporter;
+  private readonly fromAddress: string;
+
+  constructor() {
+    const smtpHost = process.env.SMTP_HOST;
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS;
+    const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+    const smtpSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465;
+
+    const fromAddress = process.env.SMTP_FROM || smtpUser || 'no-reply@maysar.local';
+    const fromName = process.env.SMTP_FROM_NAME;
+    this.fromAddress = fromName ? `${fromName} <${fromAddress}>` : fromAddress;
+
+    if (smtpHost && smtpUser && smtpPass) {
+      this.transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpSecure,
+        auth: { user: smtpUser, pass: smtpPass }
+      });
+    }
+  }
 
   async sendEmail(to: string, subject: string, html: string, text?: string): Promise<void> {
-    // In development, we'll just log the email
-    console.log(`📧 Email sent to ${to}: ${subject}`);
-    console.log(`Content: ${html.substring(0, 100)}...`);
-    
-    this.sentEmails.push({
-      to,
-      subject,
-      html,
-      text,
-      sentAt: new Date()
-    });
+    const transporter = this.getTransporter();
+    await transporter.sendMail({ from: this.fromAddress, to, subject, html, text });
   }
 
   async sendVerificationEmail(userEmail: string, verificationToken: string): Promise<void> {
-    const verificationUrl = `http://localhost:3000/verify-email?token=${verificationToken}`;
-    
+    const verificationUrl = `${FRONTEND_URL}/verify-email?token=${verificationToken}`;
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Verify Your Email Address</h2>
@@ -67,12 +67,12 @@ export class InMemoryEmailService implements EmailService {
       </div>
     `;
 
-    await this.sendEmail(userEmail, 'Verify Your Email Address', html);
+    return this.sendEmail(userEmail, 'Verify Your Email Address', html);
   }
 
   async sendPasswordResetEmail(userEmail: string, resetToken: string): Promise<void> {
-    const resetUrl = `http://localhost:3000/reset-password?token=${resetToken}`;
-    
+    const resetUrl = `${FRONTEND_URL}/reset-password?token=${resetToken}`;
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Password Reset Request</h2>
@@ -90,7 +90,7 @@ export class InMemoryEmailService implements EmailService {
       </div>
     `;
 
-    await this.sendEmail(userEmail, 'Reset Your Password', html);
+    return this.sendEmail(userEmail, 'Reset Your Password', html);
   }
 
   async sendWelcomeEmail(userEmail: string, userName: string): Promise<void> {
@@ -99,7 +99,7 @@ export class InMemoryEmailService implements EmailService {
         <h2>Welcome to Maysar Marketplace, ${userName}!</h2>
         <p>Dear ${userName},</p>
         <p>Welcome to Maysar, Tanzania's premier online marketplace! We're excited to have you on board.</p>
-        
+
         <h3>What's Next?</h3>
         <ul>
           <li><strong>Complete your profile:</strong> Add a profile picture and bio to get started</li>
@@ -110,14 +110,14 @@ export class InMemoryEmailService implements EmailService {
 
         <h3>Need Help?</h3>
         <p>Our support team is here to help you every step of the way. Visit our Help Center or contact us directly.</p>
-        
+
         <p>Thank you for choosing Maysar. We're committed to making your shopping and selling experience exceptional.</p>
-        
+
         <p>Best regards,<br>The Maysar Team</p>
       </div>
     `;
 
-    await this.sendEmail(userEmail, `Welcome to Maysar, ${userName}!`, html);
+    return this.sendEmail(userEmail, `Welcome to Maysar, ${userName}!`, html);
   }
 
   async sendSecurityAlert(
@@ -130,7 +130,7 @@ export class InMemoryEmailService implements EmailService {
         <h2 style="color: #dc3545;">Security Alert</h2>
         <p>Dear User,</p>
         <p>We've detected unusual activity on your Maysar account:</p>
-        
+
         <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 4px; margin: 20px 0;">
           <strong>Alert Type:</strong> ${alertType}<br>
           <strong>Time:</strong> ${new Date().toLocaleString()}<br>
@@ -146,76 +146,18 @@ export class InMemoryEmailService implements EmailService {
         </ul>
 
         <p>Your account security is our top priority. If you need assistance, please contact our security team immediately.</p>
-        
+
         <p>Best regards,<br>The Maysar Security Team</p>
       </div>
     `;
 
-    await this.sendEmail(userEmail, 'Security Alert - Unusual Activity Detected', html);
+    return this.sendEmail(userEmail, 'Security Alert - Unusual Activity Detected', html);
   }
 
-  /**
-   * Get sent emails for testing purposes
-   */
-  getSentEmails(): Array<{ to: string; subject: string; sentAt: Date }> {
-    return this.sentEmails.map(email => ({
-      to: email.to,
-      subject: email.subject,
-      sentAt: email.sentAt
-    }));
-  }
-
-  /**
-   * Clear sent emails for testing
-   */
-  clearSentEmails(): void {
-    this.sentEmails = [];
-  }
-}
-
-/**
- * SMTP Email Service Implementation
- * For production use with SMTP providers
- */
-export class SMTPService implements EmailService {
-  public readonly name = 'SMTPService';
-  
-  // TODO: Implement SMTP integration
-  // This would require setting up SMTP client and credentials
-  // For now, we'll use the in-memory implementation as fallback
-
-  private fallbackService: InMemoryEmailService;
-
-  constructor() {
-    this.fallbackService = new InMemoryEmailService();
-  }
-
-  async sendEmail(to: string, subject: string, html: string, text?: string): Promise<void> {
-    // TODO: Implement SMTP send
-    return this.fallbackService.sendEmail(to, subject, html, text);
-  }
-
-  async sendVerificationEmail(userEmail: string, verificationToken: string): Promise<void> {
-    // TODO: Implement SMTP verification email
-    return this.fallbackService.sendVerificationEmail(userEmail, verificationToken);
-  }
-
-  async sendPasswordResetEmail(userEmail: string, resetToken: string): Promise<void> {
-    // TODO: Implement SMTP password reset email
-    return this.fallbackService.sendPasswordResetEmail(userEmail, resetToken);
-  }
-
-  async sendWelcomeEmail(userEmail: string, userName: string): Promise<void> {
-    // TODO: Implement SMTP welcome email
-    return this.fallbackService.sendWelcomeEmail(userEmail, userName);
-  }
-
-  async sendSecurityAlert(
-    userEmail: string,
-    alertType: string,
-    details: Record<string, unknown>
-  ): Promise<void> {
-    // TODO: Implement SMTP security alert
-    return this.fallbackService.sendSecurityAlert(userEmail, alertType, details);
+  private getTransporter(): Transporter {
+    if (!this.transporter) {
+      throw new Error('SMTP is not configured for email delivery');
+    }
+    return this.transporter;
   }
 }

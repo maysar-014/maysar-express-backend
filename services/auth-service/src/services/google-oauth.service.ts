@@ -1,4 +1,5 @@
 import { OAuth2Client } from 'google-auth-library';
+import jwt from 'jsonwebtoken';
 import { UserEntity } from '../domain/entities/user.entity';
 import { UserServiceClient, createUserServiceClient } from '../infrastructure/clients/user-service.client';
 import { authzConfigManager } from '../config/authorization.config';
@@ -123,6 +124,7 @@ export class GoogleOAuthService {
   private mapUserServiceUserToAuthUser(userServiceUser: any): UserEntity {
     return UserEntity.create({
       id: userServiceUser.id,
+      publicCode: userServiceUser.publicCode,
       email: userServiceUser.email,
       name: `${userServiceUser.firstName || ''} ${userServiceUser.lastName || ''}`.trim(),
       role: userServiceUser.role,
@@ -167,13 +169,9 @@ export class GoogleOAuthService {
   }
 
   private createJWTToken(payload: any): string {
-    // In a real implementation, you would use a proper JWT library like jsonwebtoken
-    // For now, this is a placeholder that would need to be implemented properly
-    // Example with jsonwebtoken library:
-    // const jwt = require('jsonwebtoken');
-    // return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-    
-    throw new Error('JWT implementation required - use jsonwebtoken library');
+    return jwt.sign(payload, process.env.JWT_SECRET!, {
+      expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+    });
   }
 
   private getUserPermissions(user: UserEntity): string[] {

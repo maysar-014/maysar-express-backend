@@ -5,6 +5,18 @@
  */
 
 import { CircuitBreaker, RetryPolicy, ProviderManager } from './index';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+  CopyObjectCommand,
+  HeadObjectCommand
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
+import { Readable } from 'stream';
 
 /**
  * CDN Provider Types
@@ -151,33 +163,30 @@ export class S3CDNProvider {
       const startTime = Date.now();
 
       try {
-        // In a real implementation, this would use AWS SDK
-        // const result = await this.s3Client.upload({
-        //   Bucket: this.config.bucket,
-        //   Key: options.key,
-        //   Body: buffer,
-        //   ContentType: options.contentType,
-        //   CacheControl: options.cacheControl || this.config.cacheControl,
-        //   Metadata: { ...this.config.metadata, ...options.metadata },
-        //   ACL: options.acl || (this.config.publicRead ? 'public-read' : 'private'),
-        //   Tagging: options.tags ? this.encodeTags(options.tags) : undefined,
-        //   Expires: options.expires
-        // }).promise();
-
-        // Simulate upload result
-        const uploadTime = Date.now() - startTime;
-        const result = {
+        const result = await this.s3Client.send(new PutObjectCommand({
+          Bucket: this.config.bucket,
           Key: options.key,
-          ETag: `"${this.generateETag(buffer)}"`,
-          Location: `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${options.key}`
-        };
+          Body: buffer,
+          ContentType: options.contentType,
+          CacheControl: options.cacheControl || this.config.cacheControl,
+          Metadata: { ...this.config.metadata, ...options.metadata },
+          ACL: options.acl || (this.config.publicRead ? 'public-read' : 'private'),
+          Tagging: options.tags ? this.encodeTags(options.tags) : undefined,
+          Expires: options.expires
+        }));
+
+        const uploadTime = Date.now() - startTime;
+        const location = this.config.cdnDomain
+          ? `https://${this.config.cdnDomain}/${options.key}`
+          : `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${options.key}`;
+        const etag = result.ETag || `"${this.generateETag(buffer)}"`;
 
         this.recordMetrics('upload', uploadTime);
 
         const fileResult: FileUploadResult = {
-          key: result.Key,
-          url: result.Location,
-          etag: result.ETag,
+          key: options.key,
+          url: location,
+          etag,
           size: buffer.length,
           uploadTime,
           timestamp: new Date()
@@ -204,31 +213,29 @@ export class S3CDNProvider {
       const startTime = Date.now();
 
       try {
-        // In a real implementation, this would use AWS SDK
-        // const result = await this.s3Client.getObject({
-        //   Bucket: this.config.bucket,
-        //   Key: options.key,
-        //   Range: options.range ? `bytes=${options.range.start}-${options.range.end}` : undefined
-        // }).promise();
+        const result = await this.s3Client.send(new GetObjectCommand({
+          Bucket: this.config.bucket,
+          Key: options.key,
+          Range: options.range ? `bytes=${options.range.start}-${options.range.end}` : undefined
+        }));
 
-        // Simulate download result
+        const bodyStream = result.Body as Readable;
+        const chunks: Buffer[] = [];
+        for await (const chunk of bodyStream) {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
+        const buffer = Buffer.concat(chunks);
+
         const downloadTime = Date.now() - startTime;
-        const result = {
-          Body: Buffer.from('simulated file content'),
-          ContentType: 'application/octet-stream',
-          ContentLength: 1000,
-          LastModified: new Date(),
-          ETag: `"${this.generateETag(Buffer.from('simulated'))}"`
-        };
 
         this.recordMetrics('download', downloadTime);
 
         return {
-          buffer: result.Body,
-          contentType: result.ContentType,
-          size: result.ContentLength,
-          lastModified: result.LastModified,
-          etag: result.ETag,
+          buffer,
+          contentType: result.ContentType || 'application/octet-stream',
+          size: Number(result.ContentLength || buffer.length),
+          lastModified: result.LastModified || new Date(),
+          etag: result.ETag || `"${this.generateETag(buffer)}"`,
           downloadTime
         };
       } catch (error) {
@@ -244,13 +251,10 @@ export class S3CDNProvider {
   async deleteFile(key: string): Promise<void> {
     return await this.executeWithResilience(async () => {
       try {
-        // In a real implementation, this would use AWS SDK
-        // await this.s3Client.deleteObject({
-        //   Bucket: this.config.bucket,
-        //   Key: key
-        // }).promise();
-
-        // Simulate deletion
+        await this.s3Client.send(new DeleteObjectCommand({
+          Bucket: this.config.bucket,
+          Key: key
+        }));
         this.recordMetrics('delete', 0);
       } catch (error) {
         this.metrics.errors++;
@@ -267,29 +271,15 @@ export class S3CDNProvider {
       const startTime = Date.now();
 
       try {
-        // In a real implementation, this would use AWS SDK
-        // const result = await this.s3Client.listObjectsV2({
-        //   Bucket: this.config.bucket,
-        //   Prefix: options.prefix,
-        //   Delimiter: options.delimiter,
-        //   MaxKeys: options.maxKeys || 1000,
-        //   ContinuationToken: options.continuationToken
-        // }).promise();
+        const result = await this.s3Client.send(new ListObjectsV2Command({
+          Bucket: this.config.bucket,
+          Prefix: options.prefix,
+          Delimiter: options.delimiter,
+          MaxKeys: options.maxKeys || 1000,
+          ContinuationToken: options.continuationToken
+        }));
 
-        // Simulate list result
         const listTime = Date.now() - startTime;
-        const result = {
-          Contents: [
-            {
-              Key: 'example-file.jpg',
-              Size: 1024,
-              LastModified: new Date(),
-              ETag: '"example-etag"'
-            }
-          ],
-          CommonPrefixes: [],
-          IsTruncated: false
-        };
 
         this.recordMetrics('list', listTime);
 
@@ -302,6 +292,7 @@ export class S3CDNProvider {
           })) || [],
           commonPrefixes: result.CommonPrefixes?.map((cp: any) => cp.Prefix || cp) || [],
           isTruncated: result.IsTruncated || false,
+          nextContinuationToken: result.NextContinuationToken,
           listTime
         };
       } catch (error) {
@@ -315,19 +306,14 @@ export class S3CDNProvider {
    * Generate signed URL for private file access
    */
   async generateSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
-    // In a real implementation, this would use AWS SDK to generate signed URLs
-    // const signedUrl = await this.s3Client.getSignedUrlPromise('getObject', {
-    //   Bucket: this.config.bucket,
-    //   Key: key,
-    //   Expires: expiresIn
-    // });
-
-    // Simulate signed URL
-    const baseUrl = this.config.cdnDomain
-      ? `https://${this.config.cdnDomain}/${key}`
-      : `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${key}`;
-
-    return `${baseUrl}?signature=simulated&expires=${Date.now() + expiresIn * 1000}`;
+    return await getSignedUrl(
+      this.s3Client,
+      new GetObjectCommand({
+        Bucket: this.config.bucket,
+        Key: key
+      }),
+      { expiresIn }
+    );
   }
 
   /**
@@ -336,11 +322,13 @@ export class S3CDNProvider {
   async fileExists(key: string): Promise<boolean> {
     return await this.executeWithResilience(async () => {
       try {
-        // In a real implementation, this would use AWS SDK headObject
-        // await this.s3Client.headObject({ Bucket: this.config.bucket, Key: key }).promise();
+        await this.s3Client.send(new HeadObjectCommand({
+          Bucket: this.config.bucket,
+          Key: key
+        }));
         return true; // Simulate file exists
       } catch (error) {
-        if ((error as any).code === 'NotFound') {
+        if ((error as any)?.name === 'NotFound' || (error as any)?.$metadata?.httpStatusCode === 404) {
           return false;
         }
         throw error;
@@ -359,16 +347,17 @@ export class S3CDNProvider {
     metadata: Record<string, string>;
   }> {
     return await this.executeWithResilience(async () => {
-      // In a real implementation, this would use AWS SDK headObject
-      // const result = await this.s3Client.headObject({ Bucket: this.config.bucket, Key: key }).promise();
+      const result = await this.s3Client.send(new HeadObjectCommand({
+        Bucket: this.config.bucket,
+        Key: key
+      }));
 
-      // Simulate metadata
       return {
-        size: 1024,
-        contentType: 'image/jpeg',
-        lastModified: new Date(),
-        etag: '"simulated-etag"',
-        metadata: {}
+        size: Number(result.ContentLength || 0),
+        contentType: result.ContentType || 'application/octet-stream',
+        lastModified: result.LastModified || new Date(),
+        etag: result.ETag || '',
+        metadata: (result.Metadata || {}) as Record<string, string>
       };
     });
   }
@@ -379,14 +368,11 @@ export class S3CDNProvider {
   async copyFile(sourceKey: string, destinationKey: string): Promise<void> {
     return await this.executeWithResilience(async () => {
       try {
-        // In a real implementation:
-        // await this.s3Client.copyObject({
-        //   Bucket: this.config.bucket,
-        //   CopySource: `${this.config.bucket}/${sourceKey}`,
-        //   Key: destinationKey
-        // }).promise();
-
-        // Simulate copy
+        await this.s3Client.send(new CopyObjectCommand({
+          Bucket: this.config.bucket,
+          CopySource: `${this.config.bucket}/${sourceKey}`,
+          Key: destinationKey
+        }));
       } catch (error) {
         this.metrics.errors++;
         throw error;
@@ -470,14 +456,14 @@ export class S3CDNProvider {
    */
   private initializeS3Client(): void {
     try {
-      // In a real implementation, you would initialize AWS S3 client here
-      // this.s3Client = new AWS.S3({
-      //   region: this.config.region,
-      //   accessKeyId: this.config.accessKeyId,
-      //   secretAccessKey: this.config.secretAccessKey,
-      //   endpoint: this.config.endpoint
-      // });
-
+      this.s3Client = new S3Client({
+        region: this.config.region,
+        credentials: {
+          accessKeyId: this.config.accessKeyId!,
+          secretAccessKey: this.config.secretAccessKey!
+        },
+        endpoint: this.config.endpoint
+      });
       console.log('S3 CDN client initialized');
     } catch (error) {
       console.error('Failed to initialize S3 CDN client:', error);
@@ -699,8 +685,45 @@ export class CDNCacheManager {
    * Invalidate CDN cache (CloudFlare integration)
    */
   async invalidateCache(urls: string[]): Promise<void> {
-    // In a real implementation, this would call CloudFlare API to purge cache
-    console.log(`Invalidating cache for ${urls.length} URLs`);
+    const config = (this.cdnProvider as any).config as CDNConfig;
+    if (!config || !config.accessKeyId || !config.secretAccessKey) {
+      console.log(`Invalidating cache for ${urls.length} URLs`);
+      return;
+    }
+
+    const distributionId = process.env.CLOUDFRONT_DISTRIBUTION_ID;
+    if (!distributionId) {
+      console.log(`Invalidating cache for ${urls.length} URLs`);
+      return;
+    }
+
+    const client = new CloudFrontClient({
+      region: config.region,
+      credentials: {
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey
+      }
+    });
+
+    const paths = urls.map((url) => {
+      try {
+        const parsed = new URL(url);
+        return parsed.pathname.startsWith('/') ? parsed.pathname : `/${parsed.pathname}`;
+      } catch {
+        return url.startsWith('/') ? url : `/${url}`;
+      }
+    });
+
+    await client.send(new CreateInvalidationCommand({
+      DistributionId: distributionId,
+      InvalidationBatch: {
+        CallerReference: `${Date.now()}`,
+        Paths: {
+          Quantity: paths.length,
+          Items: paths
+        }
+      }
+    }));
   }
 
   /**

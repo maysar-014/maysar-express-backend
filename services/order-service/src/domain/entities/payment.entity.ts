@@ -1,3 +1,5 @@
+import { getModelPrefix, makeId } from '@shared/ids/id';
+
 export enum PaymentStatus {
   PENDING = 'pending',
   PROCESSING = 'processing',
@@ -53,6 +55,6 @@ export class Payment {
   }
 
   private generateId(): string {
-    return `payment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return makeId(getModelPrefix('Order_Payment'));
   }
 }

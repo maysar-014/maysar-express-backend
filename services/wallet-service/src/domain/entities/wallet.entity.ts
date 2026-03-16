@@ -4,9 +4,9 @@
  * Enforces balance constraints and frozen amount handling
  */
 
-import { randomUUID } from 'crypto';
 import { Money } from '../value-objects/money.value-object';
 import { Hold, HoldStatus } from './hold.entity';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 
 export enum WalletStatus {
@@ -202,9 +202,7 @@ export class Wallet {
         this.freeze(amount.amount);
 
         return new Hold({
-            id: randomUUID(), // Or passed in, typically entity generation happens in factory. Using randomUUID for now or we should pass it.
-            // Better to let caller/factory handle ID if we want pure deterministic. 
-            // But for convenience here:
+            id: makeId(getModelPrefix('Wallet_Hold')),
             walletId: this.id,
             userId: this.userId,
             amount: amount,

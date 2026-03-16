@@ -1,7 +1,8 @@
 import { z } from 'zod';
+import { zodId } from '@shared/validation/id';
 
 export const createAgentSchema = z.object({
-    userId: z.string().uuid(),
+    userId: zodId(),
     specializations: z.array(z.string()).optional(),
     maxConcurrentTickets: z.number().min(1).max(50).optional()
 });

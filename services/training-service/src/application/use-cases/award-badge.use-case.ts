@@ -2,7 +2,7 @@ import { AwardBadgeRequest, AwardBadgeResponse } from '../dto/award-badge.dto';
 import { IBadgeRepository } from '../../domain/repositories/badge.repository';
 import { ILeaderboardRepository } from '../../domain/repositories/leaderboard.repository';
 import { IEventPublisher, eventBus } from '@shared-events/eventBus';
-import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export class AwardBadgeUseCase {
     constructor(
@@ -15,7 +15,7 @@ export class AwardBadgeUseCase {
         const { learnerId, badgeType, reason, metadata } = request;
 
         const badge = {
-            id: uuidv4(),
+            id: makeId(getModelPrefix('Training_Badge')),
             learnerId,
             type: badgeType,
             reason,

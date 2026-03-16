@@ -27,7 +27,7 @@ export class EarningsController {
         earnings = await this.earningsRepository.findByCourierId(courierId as string, timeRange);
       } else {
         // For platform-wide summary, we'd need to aggregate all earnings
-        // For now, return mock data until we implement platform-wide queries
+        // Until implemented, return empty aggregates.
         earnings = [];
       }
 

@@ -1,9 +1,10 @@
 import { Vehicle, VehicleType, VehicleStatus } from '../vehicle.entity';
+import { getModelPrefix, isSystemId, makeId } from '@shared/ids/id';
 
 describe('Vehicle Entity', () => {
     const validData = {
-        id: 'veh-123',
-        courierId: 'courier-001',
+        id: makeId(getModelPrefix('Logistics_Vehicle')),
+        courierId: makeId(getModelPrefix('User_User')),
         type: VehicleType.MOTORCYCLE,
         licensePlate: 'MC 123 ABC'
     };
@@ -11,7 +12,7 @@ describe('Vehicle Entity', () => {
     describe('Creation', () => {
         it('should create valid vehicle with defaults', () => {
             const vehicle = new Vehicle(validData);
-            expect(vehicle.id).toBe('veh-123');
+            expect(vehicle.id).toBe(validData.id);
             expect(vehicle.status).toBe(VehicleStatus.ACTIVE);
             expect(vehicle.totalDeliveries).toBe(0);
             expect(vehicle.capacity).toBeDefined();
@@ -21,7 +22,7 @@ describe('Vehicle Entity', () => {
 
         it('should generate ID if missing', () => {
             const vehicle = new Vehicle({ ...validData, id: undefined });
-            expect(vehicle.id).toMatch(/^vehicle_/);
+            expect(isSystemId(vehicle.id)).toBe(true);
         });
 
         it('should set correct capacity for Car', () => {

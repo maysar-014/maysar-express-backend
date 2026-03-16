@@ -1,10 +1,11 @@
 
 import { z } from 'zod';
+import { zodId } from '@shared/validation/id';
 
 export const createPaymentSchema = z.object({
     body: z.object({
-        orderId: z.string().uuid(),
-        userId: z.string().uuid().optional(),
+        orderId: zodId(),
+        userId: zodId().optional(),
         amount: z.number().positive(),
         currency: z.string().length(3).default('TZS'),
         method: z.enum(['MOBILE_MONEY', 'CARD', 'BANK_TRANSFER']),
@@ -18,7 +19,7 @@ export const createPaymentSchema = z.object({
 
 export const refundPaymentSchema = z.object({
     params: z.object({
-        id: z.string().uuid(),
+        id: zodId(),
     }),
     body: z.object({
         amount: z.number().positive().optional(),
@@ -29,6 +30,6 @@ export const refundPaymentSchema = z.object({
 
 export const getPaymentSchema = z.object({
     params: z.object({
-        id: z.string().uuid(),
+        id: zodId(),
     })
 });

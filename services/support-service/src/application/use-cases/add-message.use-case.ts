@@ -1,5 +1,5 @@
 import { injectable, inject } from 'inversify';
-import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 import { TYPES } from '../../types';
 import { ITicketRepository, ITicketMessageRepository, ITicketAttachmentRepository } from '../../domain/repositories/interfaces';
 import { AddMessageDto, MessageResponseDto } from '../dto/message.dto';
@@ -22,7 +22,7 @@ export class AddMessageUseCase {
             throw new Error(`Ticket not found: ${dto.ticketId}`);
         }
 
-        const messageId = uuidv4();
+        const messageId = makeId(getModelPrefix('Support_TicketMessage'));
         const message = TicketMessage.create({
             id: messageId,
             ticketId: dto.ticketId,

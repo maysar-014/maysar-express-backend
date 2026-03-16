@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 /**
  * Authentication Middleware
  * JWT token validation and user authentication with security hardening
@@ -7,6 +7,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { createHash, timingSafeEqual } from 'crypto';
+import jwt from 'jsonwebtoken';
 
 // =====================================================================================
 // AUTHENTICATION CONFIGURATION
@@ -39,9 +40,9 @@ export const DEFAULT_AUTH_CONFIG: AuthConfig = {
   jwtAlgorithm: 'HS256',
   tokenExpirationTime: 15 * 60 * 1000, // 15 minutes
   refreshTokenExpirationTime: 7 * 24 * 60 * 60 * 1000, // 7 days
-  enableTokenBlacklisting: true,
-  maxConcurrentSessions: 5,
-  enableBruteForceProtection: true,
+  enableTokenBlacklisting: false,
+  maxConcurrentSessions: 0,
+  enableBruteForceProtection: false,
   bruteForceMaxAttempts: 5,
   bruteForceLockoutTime: 15 * 60 * 1000, // 15 minutes
   enableDeviceTracking: true,
@@ -378,43 +379,11 @@ function extractTokenFromHeader(authHeader: string | undefined): string | null {
  */
 async function verifyJWTToken(token: string, config: AuthConfig): Promise<any> {
   try {
-    // In a real implementation, use a proper JWT library like jsonwebtoken
-    // For now, simulate token verification for test tokens
-    if (!token) {
-      return null;
-    }
-
-    // Accept test tokens for testing purposes
-    if (token === 'valid-token-123' || token === 'Bearer valid-token-123') {
-      // Mock token payload for test tokens
-      const mockPayload = {
-        userId: 'test-user-123',
-        email: 'test@example.com',
-        roles: ['user', 'seller'],
-        permissions: ['read:products', 'write:products', 'delete:products'],
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + (15 * 60)
-      };
-
-      return mockPayload;
-    }
-
-    // For other tokens, check minimum length
-    if (token.length < 10) {
-      return null;
-    }
-
-    // Mock token payload for other valid tokens
-    const mockPayload = {
-      userId: 'user-123',
-      email: 'user@example.com',
-      roles: ['user'],
-      permissions: ['read:products'],
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + (15 * 60)
-    };
-
-    return mockPayload;
+    if (!token) return null;
+    const decoded = jwt.verify(token, config.jwtSecret, {
+      algorithms: [config.jwtAlgorithm]
+    });
+    return decoded;
   } catch (error) {
     console.error('[AUTH] Token verification error:', error);
     return null;
@@ -477,17 +446,21 @@ async function validateUserSession(userContext: UserContext, config: AuthConfig)
  * Check Token Blacklist
  */
 async function checkTokenBlacklist(token: string): Promise<boolean> {
-  // Mock implementation - in real app, check against Redis/database
-  return false;
+  throw new Error('Token blacklist store is not configured.');
 }
 
 /**
  * Verify API Key
  */
 async function verifyApiKey(apiKey: string): Promise<boolean> {
-  // Mock implementation - in real app, check against database
-  const validKeys = ['valid-api-key-123', 'service-key-456'];
-  return validKeys.includes(apiKey);
+  const configuredKeys = (process.env.CATALOG_API_KEYS || process.env.API_KEYS || '')
+    .split(',')
+    .map(key => key.trim())
+    .filter(Boolean);
+  if (configuredKeys.length === 0) {
+    throw new Error('No API keys configured. Set CATALOG_API_KEYS to enable API key auth.');
+  }
+  return configuredKeys.includes(apiKey);
 }
 
 /**
@@ -521,46 +494,38 @@ function generateSessionId(): string {
 }
 
 /**
- * Get Geo Location (Mock)
+ * Get Geo Location
  */
 async function getGeoLocation(req: Request): Promise<{ country: string; region: string; city: string }> {
-  // Mock implementation - in real app, use geo-IP service
-  return {
-    country: 'US',
-    region: 'CA',
-    city: 'San Francisco'
-  };
+  return undefined as any;
 }
 
 /**
- * Get Login Attempts (Mock)
+ * Get Login Attempts
  */
 async function getLoginAttempts(clientId: string): Promise<number> {
-  // Mock implementation - in real app, use Redis
-  return 0;
+  throw new Error('Login attempt tracking store is not configured.');
 }
 
 /**
- * Get Lockout Time (Mock)
+ * Get Lockout Time
  */
 async function getLockoutTime(clientId: string): Promise<number | null> {
-  // Mock implementation
-  return null;
+  throw new Error('Login lockout tracking store is not configured.');
 }
 
 /**
- * Reset Login Attempts (Mock)
+ * Reset Login Attempts
  */
 async function resetLoginAttempts(clientId: string): Promise<void> {
-  // Mock implementation
+  throw new Error('Login attempt tracking store is not configured.');
 }
 
 /**
- * Get Active Sessions (Mock)
+ * Get Active Sessions
  */
 async function getActiveSessions(userId: string): Promise<number> {
-  // Mock implementation
-  return 1;
+  throw new Error('Session store is not configured.');
 }
 
 // =====================================================================================

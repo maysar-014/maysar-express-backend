@@ -3,6 +3,7 @@ import { Email } from '../value-objects/email.value-object';
 import { PasswordHash } from '../value-objects/password-hash.value-object';
 import { PhoneNumber } from '../value-objects/phone-number.value-object';
 import { AuthenticationPolicy } from '../policies/authentication.policy';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 /**
  * Authentication Engine - Orchestrates authentication algorithms and policies
@@ -514,7 +515,7 @@ export class AuthenticationEngine {
    * Generates unique user ID
    */
   private static generateUserId(): string {
-    return `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    return makeId(getModelPrefix('User_User'));
   }
 
   /**

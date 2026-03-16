@@ -6,6 +6,7 @@ import { DatabaseConnection, prisma } from './infrastructure/database/prisma-cli
 import { logger } from './infrastructure/services/logger.service';
 import { createUserRoutes } from './api/routes/user.routes';
 import { healthRoutes } from './api/routes/health.routes';
+import { createMaintenanceRoutes } from './api/routes/maintenance.routes';
 import { errorHandler } from './api/middleware/error.middleware';
 import { requestLogger } from './api/middleware/request-logger.middleware';
 import { validationErrorHandler } from './api/middleware/validation.middleware';
@@ -138,6 +139,7 @@ class UserServiceApplication {
 
     // API versioning
     this.app.use('/api/v1', userRoutes);
+    this.app.use('/api/v1/system/maintenance', createMaintenanceRoutes());
 
     // Prometheus metrics
     this.app.get('/metrics', async (req, res) => {

@@ -35,7 +35,7 @@ export function createPricingRoutes(
 ): Router {
   const router = Router();
   const routesConfig = { ...DEFAULT_PRICING_ROUTES_CONFIG, ...config };
-  const apiPrefix = `/api/${routesConfig.apiVersion}`;
+  const apiPrefix = `/${routesConfig.apiVersion}`;
 
   // Middleware placeholders
   const authenticate = (req: any, res: any, next: any) => next();
@@ -53,7 +53,7 @@ export function createPricingRoutes(
 
   /**
    * Calculate Product Price
-   * POST /api/v1/pricing/calculate
+   * POST /v1/pricing/calculate
    */
   router.post(`${apiPrefix}/pricing/calculate`,
     ...commonMiddleware,
@@ -68,7 +68,7 @@ export function createPricingRoutes(
 
   /**
    * Update Product Price
-   * PUT /api/v1/products/:productId/pricing
+   * PUT /v1/products/:productId/pricing
    */
   router.put(`${apiPrefix}/products/:productId/pricing`,
     ...adminMiddleware,
@@ -83,7 +83,7 @@ export function createPricingRoutes(
 
   /**
    * Bulk Update Pricing
-   * POST /api/v1/pricing/bulk-update
+   * POST /v1/pricing/bulk-update
    */
   router.post(`${apiPrefix}/pricing/bulk-update`,
     ...adminMiddleware,
@@ -98,7 +98,7 @@ export function createPricingRoutes(
 
   /**
    * Get Pricing Rules
-   * GET /api/v1/pricing/rules
+   * GET /v1/pricing/rules
    */
   router.get(`${apiPrefix}/pricing/rules`,
     ...commonMiddleware,
@@ -110,7 +110,7 @@ export function createPricingRoutes(
 
   /**
    * Create Pricing Rule
-   * POST /api/v1/pricing/rules
+   * POST /v1/pricing/rules
    */
   router.post(`${apiPrefix}/pricing/rules`,
     ...adminMiddleware,
@@ -121,7 +121,7 @@ export function createPricingRoutes(
 
   /**
    * Validate Pricing Rule
-   * POST /api/v1/pricing/validate-rule
+   * POST /v1/pricing/validate-rule
    */
   router.post(`${apiPrefix}/pricing/validate-rule`,
     ...commonMiddleware,
@@ -140,7 +140,7 @@ export function createPricingRoutes(
 
   /**
    * Get Pricing Analytics
-   * GET /api/v1/pricing/analytics
+   * GET /v1/pricing/analytics
    */
   router.get(`${apiPrefix}/pricing/analytics`,
     ...adminMiddleware,
@@ -170,7 +170,7 @@ export class PricingRoutesFactory {
  */
 export const PRICING_ROUTES_METADATA = {
   version: 'v1',
-  prefix: '/api/v1',
+  prefix: '/v1',
   routes: [
     { method: 'POST', path: '/pricing/calculate', description: 'Calculate product price', auth: 'public' },
     { method: 'PUT', path: '/products/:productId/pricing', description: 'Update product price', auth: 'admin' },

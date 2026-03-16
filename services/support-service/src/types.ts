@@ -29,6 +29,7 @@ export const TYPES = {
     // Messaging
     SupportEventPublisher: Symbol.for('SupportEventPublisher'),
     SupportEventSubscriber: Symbol.for('SupportEventSubscriber'),
+    SupportOutboxRepository: Symbol.for('SupportOutboxRepository'),
 
     // Controllers
     TicketController: Symbol.for('TicketController'),

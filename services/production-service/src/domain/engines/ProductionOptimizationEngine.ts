@@ -1,7 +1,6 @@
 
 export class ProductionOptimizationEngine {
     optimizeBatchSize(totalQuantity: number): number {
-        // Mock logic for EOQ or similar
-        return Math.min(totalQuantity, 100);
+        throw new Error('Production batch optimization is not implemented.');
     }
 }

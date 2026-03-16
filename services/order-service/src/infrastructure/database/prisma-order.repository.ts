@@ -28,6 +28,7 @@ export class PrismaOrderRepository implements OrderRepository {
     try {
       const orderData = {
         id: order.id,
+        trackingNumber: order.trackingNumber,
         buyerId: order.buyerId,
         sellerId: order.sellerId,
         status: this.toDbStatus(order.status),
@@ -108,11 +109,30 @@ export class PrismaOrderRepository implements OrderRepository {
     }
   }
 
+  async findByTrackingNumber(trackingNumber: string): Promise<Order | null> {
+    try {
+      const prismaOrder = await this.orderDelegate.findUnique({
+        where: { trackingNumber },
+        include: { items: true }
+      });
+
+      if (!prismaOrder) {
+        return null;
+      }
+
+      return this.mapPrismaOrderToDomain(prismaOrder);
+    } catch (error) {
+      console.error('Error finding order by tracking number:', error);
+      throw new Error(`Failed to find order by tracking number: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
   async update(order: Order): Promise<void> {
     try {
       const orderData = {
         buyerId: order.buyerId,
         sellerId: order.sellerId,
+        trackingNumber: order.trackingNumber,
         status: this.toDbStatus(order.status),
         paymentMethod: this.toDbPaymentMethod(order.paymentMethod),
         totalAmount: order.totalAmount.amount,
@@ -155,6 +175,7 @@ export class PrismaOrderRepository implements OrderRepository {
 
     const orderData = {
       id: prismaOrder.id,
+      trackingNumber: prismaOrder.trackingNumber,
       buyerId: prismaOrder.buyerId,
       sellerId: prismaOrder.sellerId,
       items: prismaOrder.items.map((item: any) => ({

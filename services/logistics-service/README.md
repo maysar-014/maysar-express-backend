@@ -245,9 +245,9 @@ npm install
 cp .env.example .env
 # Configure database, Redis, and external API credentials
 
-# Database setup
-npx prisma migrate dev
-npx prisma generate
+# Database setup (from repo root)
+npx prisma migrate dev --schema prisma/schema.prisma
+npx prisma generate --schema prisma/schema.prisma
 
 # Start development server
 npm run dev
@@ -457,7 +457,7 @@ The Logistics Service enables the Courier Console to provide:
 ## Support & Documentation
 
 ### API Documentation
-- **OpenAPI Specification**: Complete API contract in `logistics-api-contract.yaml`
+- **OpenAPI Specification**: Complete API contract in `openapi.yaml`
 - **Postman Collection**: Ready-to-use API tests in `logistics-api-tests.postman_collection.json`
 - **Integration Guides**: Platform integration documentation
 

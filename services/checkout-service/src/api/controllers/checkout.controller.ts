@@ -21,7 +21,8 @@ export class CheckoutController {
   constructor(
     private checkoutRepository: any,
     private eventBus: any,
-    private cartRepository?: any
+    private cartRepository?: any,
+    private enablerLookup?: any
   ) {
     const pricingPolicy = new PricingPolicy({
       taxRate: config.pricing.taxRate,
@@ -33,7 +34,8 @@ export class CheckoutController {
       pricingPolicy,
       checkoutRepository,
       cartRepository,
-      eventBus
+      eventBus,
+      enablerLookup
     );
   }
 
@@ -58,7 +60,8 @@ export class CheckoutController {
         shippingAddressId,
         billingAddressId,
         shippingMethodId,
-        shippingCost
+        shippingCost,
+        enablerCode
       } = req.body;
 
       validateCheckoutRequest({
@@ -76,7 +79,8 @@ export class CheckoutController {
         shippingAddressId,
         billingAddressId,
         shippingMethodId,
-        shippingCost
+        shippingCost,
+        enablerCode
       );
 
       if (!result.success) {
@@ -191,7 +195,8 @@ export class CheckoutController {
       await this.eventBus.publish('OrderCreated', {
         checkoutId: sessionId,
         userId: session.userId,
-        totalAmount: session.totalAmount
+        totalAmount: session.totalAmount,
+        ...(session.enablerId ? { enablerId: session.enablerId, enablerCode: session.enablerCode } : {})
       });
 
       const response = {

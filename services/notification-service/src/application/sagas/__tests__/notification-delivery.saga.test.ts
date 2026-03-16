@@ -1,29 +1,48 @@
-import { NotificationDeliverySaga } from '../notification-delivery.saga';
+const sagaLogRepositoryStub = {
+    save: jest.fn().mockResolvedValue(undefined),
+    saveStep: jest.fn().mockResolvedValue(undefined),
+    update: jest.fn().mockResolvedValue(undefined),
+    updateStep: jest.fn().mockResolvedValue(undefined),
+    getById: jest.fn().mockResolvedValue({ sagaId: 's1', currentStep: 'START', payload: {} }),
+    getSteps: jest.fn().mockResolvedValue([])
+};
 
-const mockRepository = { findById: jest.fn(), update: jest.fn() } as any;
-const mockProvider = { send: jest.fn() } as any;
-const mockEventBus = { publish: jest.fn() } as any;
+jest.mock('../../../infrastructure/repositories/saga.repository', () => ({
+    sagaLogRepository: sagaLogRepositoryStub
+}));
+
+import { executeNotificationDeliverySaga } from '../notification-delivery.saga';
+import { Notification } from '../../../domain/entities/notification.entity';
+import { NotificationContent } from '../../../domain/value-objects/notification-content.value-object';
+import { NotificationValidationService } from '../../../domain/services/notification-validation.service';
 
 describe('NotificationDeliverySaga', () => {
-    let saga: NotificationDeliverySaga;
+    it('should trigger send via channel', async () => {
+        const notification = Notification.create({
+            id: 'n1',
+            userId: 'u1',
+            type: 'email',
+            channel: 'email',
+            subject: 'Test',
+            content: NotificationContent.create('Test content')
+        });
 
-    beforeEach(() => {
-        jest.clearAllMocks();
-        saga = new NotificationDeliverySaga(mockRepository, mockProvider, mockEventBus);
-    });
+        const notificationRepository = { update: jest.fn().mockResolvedValue(notification) } as any;
+        const preferenceRepository = { findByUserAndChannel: jest.fn().mockResolvedValue(null) } as any;
+        const validationService = new NotificationValidationService();
+        const sendViaChannel = jest.fn().mockResolvedValue(undefined);
+        const recordMetrics = jest.fn().mockResolvedValue(undefined);
 
-    it('should deliver notification successfully', async () => {
-        mockProvider.send.mockResolvedValue({ success: true });
+        await executeNotificationDeliverySaga(
+            notification,
+            notificationRepository,
+            preferenceRepository,
+            validationService,
+            sendViaChannel,
+            recordMetrics
+        );
+        await new Promise(resolve => setTimeout(resolve, 0));
 
-        await saga.execute({ notificationId: 'n1' });
-
-        expect(mockProvider.send).toHaveBeenCalled();
-        expect(mockEventBus.publish).toHaveBeenCalled();
-    });
-
-    it('should compensate on failure', async () => {
-        mockProvider.send.mockRejectedValue(new Error('Provider error'));
-
-        await expect(saga.execute({ notificationId: 'n1' })).rejects.toThrow();
+        expect(sendViaChannel).toHaveBeenCalledWith(notification);
     });
 });

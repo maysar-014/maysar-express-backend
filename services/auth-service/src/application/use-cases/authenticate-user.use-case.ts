@@ -1,11 +1,10 @@
 import { AuthUser, UserStatus } from '../../domain/entities/user.types';
 import { IUserRepository } from '../../domain/repositories';
-import { AuthenticationEngine } from '../../domain/engines/authentication.engine';
-import { AuthenticationPolicy } from '../../domain/policies/authentication.policy';
 import { UserServiceRepository } from '../../infrastructure/repositories/user-service.repository';
 import { getUserServiceClient } from '../../infrastructure/services/service-discovery';
 import { logger } from '../../infrastructure/services/logger.service';
 import { AuthEventPublisher } from '../../infrastructure/messaging/auth-event-publisher';
+import jwt from 'jsonwebtoken';
 
 /**
  * Authenticate User Use Case
@@ -110,7 +109,19 @@ export class AuthenticateUserUseCase {
 
       // Simplified password verification (in production, use proper password hashing)
       // This would normally delegate to AuthenticationEngine
-      const passwordValid = this.verifyPassword(input.password, user);
+      let passwordValid = false;
+      try {
+        passwordValid = await this.verifyPassword(input.password, user);
+      } catch (error: any) {
+        logger.error('Password verification failed', {
+          userId: user.id,
+          message: error?.message
+        });
+        return {
+          success: false,
+          message: 'Authentication unavailable'
+        };
+      }
 
       if (!passwordValid) {
         // Record failed attempt
@@ -238,11 +249,8 @@ export class AuthenticateUserUseCase {
    * Simplified password verification (placeholder)
    * In production, this would use proper password hashing from User Service
    */
-  private verifyPassword(password: string, user: AuthUser): boolean {
-    // This is a placeholder - in production, password verification would be
-    // handled by the User Service or a shared authentication library
-    // For now, we assume password verification happens at the User Service level
-    return true; // Placeholder implementation
+  private async verifyPassword(_password: string, _user: AuthUser): Promise<boolean> {
+    throw new Error('Password verification is not configured. Provide a real credential validation flow.');
   }
 
   /**
@@ -277,12 +285,32 @@ export class AuthenticateUserUseCase {
       exp: Math.floor(Date.now() / 1000) + (15 * 60) // 15 minutes
     };
 
-    // Mock JWT generation - replace with actual JWT library
-    const accessToken = `jwt.${btoa(JSON.stringify(payload))}`;
-    const refreshToken = `refresh.${btoa(JSON.stringify({
-      userId: user.id,
-      exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60)
-    }))}`;
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET is required to issue tokens.');
+    }
+
+    const issuer = process.env.JWT_ISSUER || 'maysar-auth-service';
+    const audience = process.env.JWT_AUDIENCE;
+
+    const accessToken = jwt.sign(payload, jwtSecret, {
+      expiresIn: '15m',
+      issuer,
+      ...(audience ? { audience } : {})
+    });
+
+    const refreshToken = jwt.sign(
+      {
+        userId: user.id,
+        type: 'refresh'
+      },
+      jwtSecret,
+      {
+        expiresIn: '7d',
+        issuer,
+        ...(audience ? { audience } : {})
+      }
+    );
 
     return { accessToken, refreshToken };
   }

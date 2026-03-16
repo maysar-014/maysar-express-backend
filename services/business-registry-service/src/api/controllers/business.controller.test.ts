@@ -31,6 +31,14 @@ describe('BusinessController', () => {
     findByOwnerId: jest.fn(),
     search: jest.fn()
   };
+  const businessDocumentRepository = {
+    createDocument: jest.fn(),
+    findByBusinessId: jest.fn()
+  };
+  const businessComplianceRepository = {
+    createRecord: jest.fn(),
+    findByBusinessId: jest.fn()
+  };
 
   const makeController = () =>
     new BusinessController(
@@ -39,7 +47,9 @@ describe('BusinessController', () => {
       updateBusinessUseCase as never,
       suspendBusinessUseCase as never,
       reactivateBusinessUseCase as never,
-      businessRepository as never
+      businessRepository as never,
+      businessDocumentRepository as never,
+      businessComplianceRepository as never
     );
 
   beforeEach(() => {

@@ -60,15 +60,19 @@ describe('SendSmsUseCase', () => {
 
   describe('execute', () => {
     it('should send SMS successfully', async () => {
-      const mockMessage = { getId: () => 'sms-1', getStatus: () => SmsStatus.SENT, getContent: () => ({ getSegmentCount: () => 1 }) } as any;
+      const mockMessage = {
+        getId: () => 'sms-1',
+        getStatus: () => SmsStatus.SENT,
+        getContent: () => ({ getSegmentCount: () => 1 }),
+        markAsSending: jest.fn(),
+        markAsSent: jest.fn(),
+        getDomainEvents: jest.fn().mockReturnValue([]),
+        clearDomainEvents: jest.fn()
+      } as any;
       mockRepository.create.mockResolvedValue(mockMessage);
       mockRepository.update.mockResolvedValue(mockMessage);
 
-      const providerResponse = ProviderResponse.create({
-        success: true,
-        providerMessageId: 'msg-123',
-        status: 'sent'
-      });
+      const providerResponse = ProviderResponse.createSuccess('msg-123');
       mockProvider.send.mockResolvedValue(providerResponse);
 
       const result = await useCase.execute(validDto);
@@ -94,7 +98,7 @@ describe('SendSmsUseCase', () => {
     it('should throw RateLimitExceededError when global rate limit exceeded', async () => {
       mockRateLimitPolicy.isRateLimitExceeded.mockReturnValue({
         exceeded: true,
-        retryAfter: 30000
+        retryAfter: new Date(Date.now() + 30000)
       });
 
       await expect(useCase.execute(validDto)).rejects.toThrow(RateLimitExceededError);
@@ -125,11 +129,7 @@ describe('SendSmsUseCase', () => {
       mockRepository.create.mockResolvedValue(mockMessage);
       mockRepository.update.mockResolvedValue(mockMessage);
 
-      const providerResponse = ProviderResponse.create({
-        success: false,
-        errorMessage: 'Invalid phone number',
-        status: 'failed'
-      });
+      const providerResponse = ProviderResponse.createFailure('Invalid phone number', '400');
       mockProvider.send.mockResolvedValue(providerResponse);
 
       const result = await useCase.execute(validDto);
@@ -174,11 +174,7 @@ describe('SendSmsUseCase', () => {
       mockRepository.create.mockResolvedValue(mockMessage);
       mockRepository.update.mockResolvedValue(mockMessage);
 
-      const providerResponse = ProviderResponse.create({
-        success: true,
-        providerMessageId: 'msg-123',
-        status: 'sent'
-      });
+      const providerResponse = ProviderResponse.createSuccess('msg-123');
       mockProvider.send.mockResolvedValue(providerResponse);
 
       await useCase.execute(validDto);
@@ -201,11 +197,7 @@ describe('SendSmsUseCase', () => {
       mockRepository.create.mockResolvedValue(mockMessage);
       mockRepository.update.mockResolvedValue(mockMessage);
 
-      const providerResponse = ProviderResponse.create({
-        success: true,
-        providerMessageId: 'msg-123',
-        status: 'sent'
-      });
+      const providerResponse = ProviderResponse.createSuccess('msg-123');
       mockProvider.send.mockResolvedValue(providerResponse);
 
       await useCase.execute(validDto);
@@ -227,11 +219,7 @@ describe('SendSmsUseCase', () => {
       mockRepository.create.mockResolvedValue(mockMessage);
       mockRepository.update.mockResolvedValue(mockMessage);
 
-      const providerResponse = ProviderResponse.create({
-        success: true,
-        providerMessageId: 'msg-123',
-        status: 'sent'
-      });
+      const providerResponse = ProviderResponse.createSuccess('msg-123');
       mockProvider.send.mockResolvedValue(providerResponse);
 
       await useCase.execute(validDto);

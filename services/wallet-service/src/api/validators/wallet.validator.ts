@@ -1,8 +1,9 @@
 import Joi from 'joi';
+import { joiId } from '@shared/validation/id';
 
 export class WalletValidator {
     static creditWallet = Joi.object({
-        userId: Joi.string().uuid().required(),
+        userId: joiId().required(),
         amount: Joi.number().positive().required(),
         currency: Joi.string().length(3).uppercase().required(),
         description: Joi.string().optional(),
@@ -14,7 +15,7 @@ export class WalletValidator {
     });
 
     static debitWallet = Joi.object({
-        userId: Joi.string().uuid().required(),
+        userId: joiId().required(),
         amount: Joi.number().positive().required(),
         currency: Joi.string().length(3).uppercase().required(),
         description: Joi.string().optional(),
@@ -27,7 +28,7 @@ export class WalletValidator {
     });
 
     static placeHold = Joi.object({
-        userId: Joi.string().uuid().required(),
+        userId: joiId().required(),
         amount: Joi.number().positive().required(),
         currency: Joi.string().length(3).uppercase().required(),
         reason: Joi.string().required(),
@@ -38,16 +39,16 @@ export class WalletValidator {
     });
 
     static releaseHold = Joi.object({
-        userId: Joi.string().uuid().required(),
-        holdId: Joi.string().uuid().required(),
+        userId: joiId().required(),
+        holdId: joiId().required(),
         reason: Joi.string().optional(),
         correlationId: Joi.string().uuid().required(),
         idempotencyKey: Joi.string().required()
     });
 
     static captureHold = Joi.object({
-        userId: Joi.string().uuid().required(),
-        holdId: Joi.string().uuid().required(),
+        userId: joiId().required(),
+        holdId: joiId().required(),
         amount: Joi.number().positive().optional(), // Optional: partial capture
         reason: Joi.string().optional(),
         correlationId: Joi.string().uuid().required(),
@@ -55,15 +56,15 @@ export class WalletValidator {
     });
 
     static reverseTransaction = Joi.object({
-        userId: Joi.string().uuid().required(),
-        transactionId: Joi.string().uuid().required(),
+        userId: joiId().required(),
+        transactionId: joiId().required(),
         reason: Joi.string().required(),
         correlationId: Joi.string().uuid().required(),
         idempotencyKey: Joi.string().required()
     });
 
     static getStatement = Joi.object({
-        userId: Joi.string().uuid().required(),
+        userId: joiId().required(),
         startDate: Joi.date().iso().optional(),
         endDate: Joi.date().iso().optional(),
         page: Joi.number().integer().min(1).default(1),
@@ -71,7 +72,7 @@ export class WalletValidator {
     });
 
     static topUp = Joi.object({
-        userId: Joi.string().uuid().required(),
+        userId: joiId().required(),
         amount: Joi.number().positive().required(),
         currency: Joi.string().length(3).uppercase().required(),
         method: Joi.string().required(),

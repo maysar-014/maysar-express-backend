@@ -13,6 +13,8 @@ export class RegisterEnablerDto {
 export class EnablerResponseDto {
     id!: string;
     userId!: string;
+    enablerCode?: string;
+    enablerCodeShort?: string;
     businessName!: string;
     status!: string;
     tier!: string;

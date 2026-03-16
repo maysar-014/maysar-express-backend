@@ -76,21 +76,21 @@ describe('UserServiceRepository', () => {
     expect(result?.lastLoginAt).toBeInstanceOf(Date);
   });
 
-  it('findById returns null when user does not exist and falls back to local cache on client errors', async () => {
+  it('findById returns null when user does not exist and throws on client errors', async () => {
     const repository = new UserServiceRepository(client as any);
 
     client.findUserById.mockResolvedValueOnce(null);
     await expect(repository.findById('missing')).resolves.toBeNull();
 
     client.findUserById.mockRejectedValueOnce(new Error('upstream unavailable'));
-    await expect(repository.findById('user-err')).resolves.toBeNull();
+    await expect(repository.findById('user-err')).rejects.toThrow('upstream unavailable');
     expect(mockLogger.error).toHaveBeenCalledWith(
       'Failed to find user by ID via User Service',
       expect.objectContaining({ userId: 'user-err' })
     );
   });
 
-  it('findByEmail maps payload, returns null for missing, and falls back on lookup errors', async () => {
+  it('findByEmail maps payload, returns null for missing, and throws on lookup errors', async () => {
     const repository = new UserServiceRepository(client as any);
 
     client.findUserByEmail.mockResolvedValueOnce(createUserData());
@@ -101,7 +101,7 @@ describe('UserServiceRepository', () => {
     await expect(repository.findByEmail('missing@example.com')).resolves.toBeNull();
 
     client.findUserByEmail.mockRejectedValueOnce(new Error('email lookup failed'));
-    await expect(repository.findByEmail('boom@example.com')).resolves.toBeNull();
+    await expect(repository.findByEmail('boom@example.com')).rejects.toThrow('email lookup failed');
   });
 
   it('save sends only auth-managed fields and skips update when nothing changed', async () => {
@@ -134,14 +134,14 @@ describe('UserServiceRepository', () => {
     await expect(repository.save(user)).rejects.toThrow('cannot persist');
   });
 
-  it('emailExists returns value on success and false on errors', async () => {
+  it('emailExists returns value on success and throws on errors', async () => {
     const repository = new UserServiceRepository(client as any);
 
     client.emailExists.mockResolvedValueOnce(true);
     await expect(repository.emailExists('exists@example.com')).resolves.toBe(true);
 
     client.emailExists.mockRejectedValueOnce(new Error('timeout'));
-    await expect(repository.emailExists('error@example.com')).resolves.toBe(false);
+    await expect(repository.emailExists('error@example.com')).rejects.toThrow('timeout');
     expect(mockLogger.error).toHaveBeenCalledWith(
       'Failed to check email existence via User Service',
       expect.objectContaining({ email: 'error@example.com' })

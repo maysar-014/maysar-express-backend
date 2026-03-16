@@ -99,7 +99,12 @@ export class OutboxRepository implements IOutboxRepository {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const dynamicClient = client as any;
     // Dynamic Prisma model lookup is intentional; Prisma does not expose model delegates generically by runtime name.
-    const model = (dynamicClient[this.modelName] || dynamicClient.sharedOutboxEvent || dynamicClient.outboxEvent) as
+    const model = (
+      dynamicClient[this.modelName] ||
+      dynamicClient.sharedOutboxEvent ||
+      dynamicClient.global_OutboxEvent ||
+      dynamicClient.outboxEvent
+    ) as
       | OutboxModelDelegate
       | undefined;
     if (!model) {

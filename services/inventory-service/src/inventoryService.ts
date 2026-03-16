@@ -3,6 +3,7 @@ import { TransactionalOutbox } from '../../../shared/outbox/outboxPattern';
 import { EventEnvelope, InventoryReservedPayload, InventoryReleasedPayload, EventFactory } from '../../../events';
 import { eventBus } from '@shared-events/eventBus';
 import { randomUUID } from 'crypto';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type LegacyPayload = Record<string, any>;
@@ -318,14 +319,14 @@ export class InventoryService {
           throw new Error(`Insufficient stock for ${item.productVariantId}`);
         }
 
-        const reservationId = randomUUID();
+        const reservationId = makeId(getModelPrefix('Inventory_Reservation'));
         
         // Create reservation
         await tx.inventory_Reservation.create({
           data: {
             id: reservationId,
             orderId: reservationData.orderId,
-            orderItemId: randomUUID(),
+            orderItemId: makeId(getModelPrefix('Order_OrderItem')),
             productVariantId: item.productVariantId,
             warehouseId: item.warehouseId,
             quantityReserved: item.quantity,

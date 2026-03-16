@@ -6,12 +6,14 @@ describe('NotificationTemplate', () => {
             id: 't1',
             name: 'Welcome',
             type: 'email',
+            channel: 'email',
             subject: 'Welcome!',
-            body: 'Hello {{name}}'
+            bodyTemplate: 'Hello {{name}}',
+            createdBy: 'system'
         });
 
-        expect(template.getId()).toBe('t1');
-        expect(template.getName()).toBe('Welcome');
+        expect(template.id).toBe('t1');
+        expect(template.name).toBe('Welcome');
     });
 
     it('should render template with variables', () => {
@@ -19,8 +21,10 @@ describe('NotificationTemplate', () => {
             id: 't1',
             name: 'Welcome',
             type: 'email',
+            channel: 'email',
             subject: 'Welcome {{name}}!',
-            body: 'Hello {{name}}'
+            bodyTemplate: 'Hello {{name}}',
+            createdBy: 'system'
         });
 
         const rendered = template.render({ name: 'John' });

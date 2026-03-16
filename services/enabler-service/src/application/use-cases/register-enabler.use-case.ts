@@ -5,12 +5,16 @@ import { EnablerEntity } from '../../domain/entities/enabler.entity';
 import { EnablerMapper } from '../mappers/enabler.mapper';
 import { EnablerRegisteredEvent } from '../../domain/events/enabler-events';
 import { Enabler_Status } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
+import { IEnablerAnalyticsRepository } from '../../domain/repositories/enabler-analytics.repository.interface';
+import { IEnablerPolicyRepository } from '../../domain/repositories/enabler-policy.repository.interface';
 
 export class RegisterEnablerUseCase {
     constructor(
         private readonly enablerRepository: IEnablerRepository,
-        private readonly eventPublisher: any // Interface to be defined in infra
+        private readonly eventPublisher: any, // Interface to be defined in infra
+        private readonly analyticsRepository?: IEnablerAnalyticsRepository,
+        private readonly policyRepository?: IEnablerPolicyRepository
     ) { }
 
     async execute(dto: RegisterEnablerDto): Promise<EnablerResponseDto> {
@@ -36,8 +40,10 @@ export class RegisterEnablerUseCase {
 
         // 3. Create Enabler Entity
         const enabler = EnablerEntity.create({
-            id: uuidv4(),
+            id: makeId(getModelPrefix('Enabler_Profile')),
             userId: dto.userId,
+            enablerCode: null,
+            enablerCodeShort: null,
             businessName: dto.businessName,
             contactEmail: dto.contactEmail,
             contactPhone: dto.contactPhone,
@@ -57,6 +63,14 @@ export class RegisterEnablerUseCase {
 
         // 4. Save to Repository
         await this.enablerRepository.save(enabler);
+
+        // 4b. Initialize analytics + default policy
+        if (this.analyticsRepository) {
+            await this.analyticsRepository.upsertInitial(enabler.id);
+        }
+        if (this.policyRepository) {
+            await this.policyRepository.createDefaultPolicy(enabler.id, dto.userId);
+        }
 
         // 5. Publish Event
         await this.eventPublisher.publish(new EnablerRegisteredEvent(enabler.id, dto.userId));

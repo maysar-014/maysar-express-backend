@@ -69,11 +69,7 @@ describe('SmsMessage Entity', () => {
         content: 'Test'
       });
       message.markAsSending('provider');
-      const providerResponse = ProviderResponse.create({
-        success: true,
-        providerMessageId: 'msg-123',
-        status: 'sent'
-      });
+      const providerResponse = ProviderResponse.createSuccess('msg-123');
       message.markAsSent(providerResponse);
 
       expect(() => message.markAsSending('provider')).toThrow(InvalidStateTransitionError);
@@ -89,11 +85,7 @@ describe('SmsMessage Entity', () => {
       });
       message.markAsSending('provider');
 
-      const providerResponse = ProviderResponse.create({
-        success: true,
-        providerMessageId: 'msg-123',
-        status: 'sent'
-      });
+      const providerResponse = ProviderResponse.createSuccess('msg-123');
       message.markAsSent(providerResponse);
 
       expect(message.getStatus()).toBe(SmsStatus.SENT);
@@ -110,11 +102,7 @@ describe('SmsMessage Entity', () => {
         content: 'Test'
       });
       message.markAsSending('provider');
-      const providerResponse = ProviderResponse.create({
-        success: true,
-        providerMessageId: 'msg-123',
-        status: 'sent'
-      });
+      const providerResponse = ProviderResponse.createSuccess('msg-123');
       message.markAsSent(providerResponse);
 
       message.markAsDelivered();
@@ -133,11 +121,7 @@ describe('SmsMessage Entity', () => {
         content: 'Test'
       });
       message.markAsSending('provider');
-      const providerResponse = ProviderResponse.create({
-        success: true,
-        providerMessageId: 'msg-123',
-        status: 'sent'
-      });
+      const providerResponse = ProviderResponse.createSuccess('msg-123');
       message.markAsSent(providerResponse);
 
       message.markAsUndelivered('Invalid number');
@@ -268,11 +252,7 @@ describe('SmsMessage Entity', () => {
       message.markAsSending('provider');
       expect(message.isSending()).toBe(true);
 
-      const providerResponse = ProviderResponse.create({
-        success: true,
-        providerMessageId: 'msg-123',
-        status: 'sent'
-      });
+      const providerResponse = ProviderResponse.createSuccess('msg-123');
       message.markAsSent(providerResponse);
       expect(message.isSent()).toBe(true);
 
@@ -303,11 +283,7 @@ describe('SmsMessage Entity', () => {
       });
       message.clearDomainEvents();
       message.markAsSending('provider');
-      const providerResponse = ProviderResponse.create({
-        success: true,
-        providerMessageId: 'msg-123',
-        status: 'sent'
-      });
+      const providerResponse = ProviderResponse.createSuccess('msg-123');
       message.markAsSent(providerResponse);
 
       const events = message.getDomainEvents();

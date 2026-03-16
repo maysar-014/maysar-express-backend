@@ -5,8 +5,8 @@
  * Constitution Section 8: Infrastructure Isolation Rule - Infrastructure adapts to Domain
  */
 
-import { RouteOptimizationPort, OptimizedRoute } from '../../../domain/engines/ports/route-optimization.port';
-import { GeoPoint } from '../../../domain/value-objects/geopoint.value-object';
+import { RouteOptimizationPort, OptimizedRoute } from '../../domain/engines/ports/route-optimization.port';
+import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 
 describe('Route Optimization Service Integration Tests', () => {
   let routeOptimizationAdapter: any;
@@ -168,7 +168,7 @@ describe('Route Optimization Service Integration Tests', () => {
 
   describe('Error Handling', () => {
     it('should handle invalid coordinates gracefully', async () => {
-      const invalidLocation = GeoPoint.create(91, 181, 'Invalid');
+      const invalidLocation = { lat: 91, lng: 181, address: 'Invalid' } as any;
 
       routeOptimizationAdapter.calculateOptimalRoute = jest.fn().mockRejectedValue(
         new Error('Invalid coordinates provided')

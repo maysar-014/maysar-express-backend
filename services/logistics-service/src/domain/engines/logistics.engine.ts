@@ -2,6 +2,7 @@ import { GeoPoint } from '../value-objects/geopoint.value-object';
 import { Weight } from '../value-objects/weight.value-object';
 import { TimeWindow } from '../value-objects/time-window.value-object';
 import { Money } from '../value-objects/money.value-object';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export interface LogisticsInput {
   orderId: string;
@@ -355,19 +356,8 @@ export class LogisticsEngine {
    * Pure function: Generate delivery ID (business rule for ID format)
    */
   generateDeliveryId(orderId: string): string {
-    // Business rule - use UUID v4 format for consistency
-    return this.generateUUID();
-  }
-
-  /**
-   * Generate UUID v4 (simplified implementation for domain layer)
-   */
-  private generateUUID(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-      const r = Math.random() * 16 | 0;
-      const v = c == 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
+    void orderId;
+    return makeId(getModelPrefix('Logistics_Delivery'));
   }
 
   /**

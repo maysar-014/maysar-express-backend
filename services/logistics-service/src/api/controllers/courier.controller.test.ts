@@ -4,7 +4,8 @@ import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 const courierRepository = {
   findAvailableCouriers: jest.fn(),
   getCourierById: jest.fn(),
-  updateCourierAvailability: jest.fn()
+  updateCourierAvailability: jest.fn(),
+  updateCourierStatus: jest.fn()
 };
 
 jest.mock('../../infrastructure/container', () => ({
@@ -47,6 +48,7 @@ describe('CourierController', () => {
         phone: '+255700000001',
         vehicle: { type: 'motorbike' },
         rating: 4.7,
+        status: 'online',
         isAvailable: true,
         currentLocation: point
       }
@@ -65,7 +67,7 @@ describe('CourierController', () => {
             phone: '+255700000001',
             vehicle: 'motorbike',
             rating: 4.7,
-            status: 'active',
+            status: 'online',
             currentLocation: { lat: -6.8, lng: 39.2 },
             stats: {
               deliveriesCompleted: 0,
@@ -106,6 +108,7 @@ describe('CourierController', () => {
       phone: '+255700000001',
       vehicle: { type: 'motorbike' },
       rating: 4.7,
+      status: 'offline',
       isAvailable: false,
       currentLocation: GeoPoint.create(-6.81, 39.21, 'Cour 1')
     });
@@ -121,7 +124,7 @@ describe('CourierController', () => {
         phone: '+255700000001',
         vehicle: 'motorbike',
         rating: 4.7,
-        status: 'inactive',
+        status: 'offline',
         currentLocation: { lat: -6.81, lng: 39.21 },
         stats: {
           deliveriesCompleted: 0,
@@ -168,22 +171,22 @@ describe('CourierController', () => {
     const controller = new CourierController();
     const req = {
       params: { courierId: 'cour-1' },
-      body: { status: 'active' }
+      body: { status: 'online' }
     } as unknown as Request;
     const res = createResponse();
 
-    courierRepository.getCourierById.mockResolvedValue({ id: 'cour-1' });
-    courierRepository.updateCourierAvailability.mockResolvedValue(undefined);
+    courierRepository.getCourierById.mockResolvedValue({ id: 'cour-1', status: 'offline' });
+    courierRepository.updateCourierStatus.mockResolvedValue(undefined);
 
     await controller.updateCourierStatus(req, res);
 
-    expect(courierRepository.updateCourierAvailability).toHaveBeenCalledWith('cour-1', true);
+    expect(courierRepository.updateCourierStatus).toHaveBeenCalledWith('cour-1', 'online');
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
         data: expect.objectContaining({
           courierId: 'cour-1',
-          status: 'active',
+          status: 'online',
           updatedAt: expect.any(Date)
         })
       })
@@ -194,7 +197,7 @@ describe('CourierController', () => {
     const controller = new CourierController();
     const req = {
       params: { courierId: 'cour-404' },
-      body: { status: 'inactive' }
+      body: { status: 'offline' }
     } as unknown as Request;
     const res = createResponse();
 
@@ -207,14 +210,14 @@ describe('CourierController', () => {
       success: false,
       error: 'Courier not found'
     });
-    expect(courierRepository.updateCourierAvailability).not.toHaveBeenCalled();
+    expect(courierRepository.updateCourierStatus).not.toHaveBeenCalled();
   });
 
   it('updateCourierStatus returns 500 for repository errors', async () => {
     const controller = new CourierController();
     const req = {
       params: { courierId: 'cour-err' },
-      body: { status: 'active' }
+      body: { status: 'online' }
     } as unknown as Request;
     const res = createResponse();
 

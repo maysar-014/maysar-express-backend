@@ -1,4 +1,17 @@
 import { CODReputationEngine, CODAction } from '../../domain/engines/cod-reputation.engine';
+import type { IUserRepository } from '../../domain/repositories';
+
+interface CODRepository extends Pick<IUserRepository, 'findById'> {
+    updateCODStanding(userId: string, updates: Record<string, unknown>): Promise<void>;
+    saveCODHistory(history: {
+        userId: string;
+        orderId: string;
+        action: string;
+        reputationChange: number;
+        reputationAfter: number;
+        reason?: string;
+    }): Promise<void>;
+}
 
 export interface UpdateCODReputationInput {
     userId: string;
@@ -8,7 +21,7 @@ export interface UpdateCODReputationInput {
 
 export class UpdateCODReputationUseCase {
     constructor(
-        private readonly userRepository: any,
+        private readonly userRepository: CODRepository,
         private readonly reputationEngine: CODReputationEngine
     ) { }
 
@@ -42,7 +55,7 @@ export class UpdateCODReputationUseCase {
             (updates as any).codFailedOrders = (user.codFailedOrders || 0) + 1;
         }
 
-        await this.userRepository.update(input.userId, updates);
+        await this.userRepository.updateCODStanding(input.userId, updates);
 
         // Record History in User_CODHistory
         await this.userRepository.saveCODHistory({

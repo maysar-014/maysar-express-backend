@@ -1,4 +1,22 @@
 const mockLoggerError = jest.fn();
+const prismaUserCountMock = jest.fn();
+const prismaSessionCountMock = jest.fn();
+const prismaTransactionMock = jest.fn();
+const serviceDiscoveryMock = {
+  getAllServices: jest.fn()
+};
+
+jest.mock('../../infrastructure/database/prisma-client', () => ({
+  prisma: {
+    user: { count: prismaUserCountMock },
+    session: { count: prismaSessionCountMock },
+    $transaction: prismaTransactionMock
+  }
+}));
+
+jest.mock('../../infrastructure/services/service-discovery.service', () => ({
+  serviceDiscovery: serviceDiscoveryMock
+}));
 
 jest.mock('../../infrastructure/services/logger.service', () => ({
   logger: {
@@ -17,6 +35,15 @@ describe('SystemService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     service = new SystemService();
+    prismaTransactionMock.mockImplementation(async (arg: any) => {
+      if (Array.isArray(arg)) {
+        return Promise.all(arg);
+      }
+      return arg({
+        user: { count: prismaUserCountMock },
+        session: { count: prismaSessionCountMock }
+      });
+    });
   });
 
   afterEach(() => {
@@ -24,44 +51,46 @@ describe('SystemService', () => {
   });
 
   it('returns system statistics with expected shape', async () => {
-    const randomSpy = jest
-      .spyOn(Math, 'random')
-      .mockReturnValueOnce(0.5)
-      .mockReturnValueOnce(0.6)
-      .mockReturnValueOnce(0.7)
-      .mockReturnValueOnce(0.8)
-      .mockReturnValueOnce(0.9);
-
+    prismaUserCountMock.mockResolvedValueOnce(42);
+    prismaSessionCountMock.mockResolvedValueOnce(7);
     const stats = await service.getSystemStats();
-    randomSpy.mockRestore();
 
     expect(stats).toEqual(
       expect.objectContaining({
         uptime: expect.any(Number),
         memory: expect.objectContaining({
-          used: expect.any(String),
-          total: '1GB'
+          usedBytes: expect.any(Number),
+          totalBytes: expect.any(Number),
+          usedPercent: expect.any(Number)
         }),
         cpu: expect.objectContaining({
-          usage: expect.any(String)
+          loadAverage: expect.any(Number),
+          cores: expect.any(Number)
         }),
-        activeUsers: expect.any(Number),
-        activeSessions: expect.any(Number),
-        requestsPerSecond: expect.any(Number),
+        activeUsers: 42,
+        activeSessions: 7,
+        requestsPerSecond: 0,
         timestamp: expect.any(String)
       })
     );
   });
 
   it('returns service health overview payload', async () => {
+    serviceDiscoveryMock.getAllServices.mockReturnValueOnce([
+      {
+        name: 'auth-service',
+        url: 'http://auth:3000',
+        health: true,
+        lastCheck: new Date('2026-03-10T00:00:00.000Z'),
+        responseTimeMs: 12
+      }
+    ]);
     const health = await service.getServiceHealth();
 
     expect(health.overallStatus).toBe('healthy');
     expect(health.services).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ name: 'auth-service', status: 'healthy' }),
-        expect.objectContaining({ name: 'user-service', status: 'healthy' }),
-        expect.objectContaining({ name: 'database', status: 'healthy' })
+        expect.objectContaining({ name: 'auth-service', status: 'healthy' })
       ])
     );
     expect(health.timestamp).toEqual(expect.any(String));

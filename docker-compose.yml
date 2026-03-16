@@ -17,11 +17,20 @@ services:
       JAEGER_ENDPOINT: "http://jaeger:14268/api/traces"
       SERVICE_NAME: "maysar-monolith"
       SERVICE_VERSION: "1.0.0"
+      SEARCH_PROVIDER: meilisearch
+      MEILISEARCH_HOST: meilisearch
+      MEILISEARCH_PORT: 7700
+      MEILISEARCH_PROTOCOL: http
+      MEILISEARCH_API_KEY: ${MEILI_MASTER_KEY}
+      MEILISEARCH_INDEX_NAME: catalog
+      MEILISEARCH_REQUEST_TIMEOUT: 30000
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      meilisearch:
+        condition: service_started
     networks:
       - backend-network
       - database-network
@@ -108,6 +117,17 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    environment:
+      MEILI_ENV: production
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+    volumes:
+      - meili_data:/meili_data
+    networks:
+      - backend-network
+    restart: always
+
   prometheus:
     image: prom/prometheus:latest
     volumes:
@@ -140,3 +160,4 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  meili_data:

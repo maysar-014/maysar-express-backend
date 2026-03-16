@@ -151,7 +151,9 @@ export class Product {
     private readonly identifiers?: ProductIdentifiers,
     private readonly fingerprint?: ProductFingerprint,
     private readonly createdAt: Date = new Date(),
-    private readonly updatedAt: Date = new Date()
+    private readonly updatedAt: Date = new Date(),
+    private readonly enablerEnabled: boolean = false,
+    private readonly enablerCommissionRate?: number
   ) {
     // Backward-compatible argument normalization for legacy constructor ordering.
     if (Array.isArray(this.brand)) {
@@ -248,6 +250,14 @@ export class Product {
     return this.createdAt;
   }
 
+  getEnablerEnabled(): boolean {
+    return this.enablerEnabled;
+  }
+
+  getEnablerCommissionRate(): number | undefined {
+    return this.enablerCommissionRate;
+  }
+
   getUpdatedAt(): Date {
     return this.updatedAt;
   }
@@ -303,19 +313,21 @@ export class Product {
     description: string,
     type: ProductType,
     variants: ProductVariantLike[],
-    options?: {
-      categoryId?: CategoryId;
-      brand?: string;
-      model?: string;
-      visibility?: ProductVisibility;
-      images?: string[];
-      tags?: string[];
-      seoData?: SEOData;
-      shippingInfo?: ShippingInfo;
-      condition?: ProductCondition;
-      identifiers?: ProductIdentifiers;
-      fingerprint?: ProductFingerprint;
-    }
+      options?: {
+        categoryId?: CategoryId;
+        brand?: string;
+        model?: string;
+        visibility?: ProductVisibility;
+        images?: string[];
+        tags?: string[];
+        seoData?: SEOData;
+        shippingInfo?: ShippingInfo;
+        condition?: ProductCondition;
+        identifiers?: ProductIdentifiers;
+        fingerprint?: ProductFingerprint;
+        enablerEnabled?: boolean;
+        enablerCommissionRate?: number;
+      }
   ): Product {
     const id = ProductId.create();
     const status = new ProductStatusValue(ProductStatus.DRAFT);
@@ -338,7 +350,11 @@ export class Product {
       options?.shippingInfo,
       options?.condition,
       options?.identifiers,
-      options?.fingerprint
+      options?.fingerprint,
+      new Date(),
+      new Date(),
+      options?.enablerEnabled ?? false,
+      options?.enablerCommissionRate
     );
   }
 }

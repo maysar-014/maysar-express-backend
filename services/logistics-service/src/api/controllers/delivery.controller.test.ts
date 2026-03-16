@@ -37,9 +37,8 @@ const mockContainer = {
 
 const mockGeoPointCreate = jest.fn((lat: number, lng: number, address: string) => ({ lat, lng, address }));
 const mockWeightFromKilograms = jest.fn((kg: number) => ({ kg }));
-const mockCourierEntityCreate = jest.fn((payload: unknown) => payload);
-const mockRouteCreate = jest.fn(() => ({ getId: () => 'route-1' }));
-const mockRouteProgressCreate = jest.fn(() => ({ value: 'progress' }));
+const mockCourierMapperToEntity = jest.fn((payload: unknown) => payload);
+const mockRouteMapperToBasicRoute = jest.fn(() => ({ getId: () => 'route-1' }));
 
 jest.mock(
   'express-validator',
@@ -67,21 +66,15 @@ jest.mock('../../domain/value-objects/weight.value-object', () => ({
   }
 }));
 
-jest.mock('../../domain/entities/courier.entity', () => ({
-  CourierEntity: {
-    create: (payload: unknown) => mockCourierEntityCreate(payload)
+jest.mock('../../application/mappers/courier.mapper', () => ({
+  CourierMapper: {
+    toCourierEntity: (payload: unknown) => mockCourierMapperToEntity(payload)
   }
 }));
 
-jest.mock('../../domain/entities/route.entity', () => ({
-  Route: {
-    create: () => mockRouteCreate()
-  }
-}));
-
-jest.mock('../../domain/value-objects/route-progress.value-object', () => ({
-  RouteProgress: {
-    create: () => mockRouteProgressCreate()
+jest.mock('../../application/mappers/route.mapper', () => ({
+  RouteMapper: {
+    toBasicRoute: () => mockRouteMapperToBasicRoute()
   }
 }));
 
@@ -244,6 +237,7 @@ describe('DeliveryController', () => {
       rating: 4.8,
       completionRate: 0.92,
       currentLocation: { lat: -6.79, lng: 39.21 },
+      status: 'online',
       isAvailable: true,
       trafficExperience: 3
     });
@@ -261,7 +255,7 @@ describe('DeliveryController', () => {
         priority: 'express'
       });
 
-    expect(mockCourierEntityCreate).toHaveBeenCalled();
+    expect(mockCourierMapperToEntity).toHaveBeenCalled();
     expect(mockRouteCreationService.createRouteForSingleDelivery).toHaveBeenCalled();
     expect(mockRouteRepository.save).toHaveBeenCalledWith(expect.objectContaining({ getId: expect.any(Function) }));
   });
@@ -309,8 +303,7 @@ describe('DeliveryController', () => {
         deliveryLocation: { lat: -6.81, lng: 39.25, address: 'Dropoff' }
       });
 
-    expect(mockRouteProgressCreate).toHaveBeenCalled();
-    expect(mockRouteCreate).toHaveBeenCalled();
+    expect(mockRouteMapperToBasicRoute).toHaveBeenCalled();
     expect(mockRouteRepository.save).toHaveBeenCalled();
   });
 

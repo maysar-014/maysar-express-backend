@@ -6,9 +6,14 @@ jest.mock(
   { virtual: true }
 );
 
-jest.mock('uuid', () => ({
-  v4: () => 'badge-fixed-id'
-}));
+jest.mock('@shared/ids/id', () => {
+  const actual = jest.requireActual('@shared/ids/id');
+  return {
+    ...actual,
+    makeId: jest.fn(() => 'trn_bad_01H00000000000000000000000')
+  };
+});
+import { makeId } from '@shared/ids/id';
 
 describe('AwardBadgeUseCase', () => {
   it('persists badge, updates leaderboard, publishes event, and returns response', async () => {
@@ -24,6 +29,7 @@ describe('AwardBadgeUseCase', () => {
       leaderboardRepo as never,
       events as never
     );
+    (makeId as jest.Mock).mockReturnValue('trn_bad_01H00000000000000000000000');
 
     const result = await useCase.execute({
       learnerId: 'learner-1',
@@ -34,7 +40,7 @@ describe('AwardBadgeUseCase', () => {
 
     expect(badgeRepo.save).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: 'badge-fixed-id',
+        id: 'trn_bad_01H00000000000000000000000',
         learnerId: 'learner-1',
         type: 'QUICK_LEARNER',
         reason: 'High score'
@@ -47,11 +53,11 @@ describe('AwardBadgeUseCase', () => {
     expect(events.publish).toHaveBeenCalledWith(
       'BadgeEarned.v1',
       expect.objectContaining({
-        badgeId: 'badge-fixed-id',
+        badgeId: 'trn_bad_01H00000000000000000000000',
         learnerId: 'learner-1',
         badgeType: 'QUICK_LEARNER'
       })
     );
-    expect(result.badgeId).toBe('badge-fixed-id');
+    expect(result.badgeId).toBe('trn_bad_01H00000000000000000000000');
   });
 });

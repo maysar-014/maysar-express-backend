@@ -1,12 +1,14 @@
 import { EnablerId } from './enabler-id.value-object';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 describe('EnablerId', () => {
-  it('creates valid UUID-based identifier', () => {
-    const id = EnablerId.create('123e4567-e89b-12d3-a456-426614174000');
+  it('creates valid identifier', () => {
+    const value = makeId(getModelPrefix('Enabler_Profile'));
+    const id = EnablerId.create(value);
 
-    expect(id.getValue()).toBe('123e4567-e89b-12d3-a456-426614174000');
-    expect(id.toString()).toBe('123e4567-e89b-12d3-a456-426614174000');
-    expect(id.equals(EnablerId.create('123e4567-e89b-12d3-a456-426614174000'))).toBe(true);
+    expect(id.getValue()).toBe(value);
+    expect(id.toString()).toBe(value);
+    expect(id.equals(EnablerId.create(value))).toBe(true);
   });
 
   it('rejects empty and malformed IDs', () => {

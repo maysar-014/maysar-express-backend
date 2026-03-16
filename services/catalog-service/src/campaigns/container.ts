@@ -1,5 +1,6 @@
 import { Container } from 'inversify';
 import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '@shared/database/prisma-client';
 import { TYPES } from './types';
 import { ICampaignRepository } from './domain/repositories/campaign.repository.interface';
 import { PrismaCampaignRepository } from './infrastructure/repositories/prisma-campaign.repository';
@@ -25,7 +26,7 @@ const container = new Container();
 container.bind<CampaignController>(TYPES.CampaignController).to(CampaignController);
 
 // Infrastructure
-container.bind<PrismaClient>(TYPES.PrismaClient).toConstantValue(new PrismaClient());
+container.bind<PrismaClient>(TYPES.PrismaClient).toConstantValue(createPrismaClient());
 container.bind<LoggerService>(LoggerService).toSelf().inSingletonScope();
 container.bind<EventPublisherService>(TYPES.EventPublisher).to(EventPublisherService).inSingletonScope();
 

@@ -1,6 +1,6 @@
 import { IDomainEventPublisher, DomainEvent, UserRegisteredEvent, UserProfileUpdatedEvent, UserEmailVerifiedEvent } from '../../domain/events';
 import { logger } from '../services/logger.service';
-import { OutboxRepository } from '../../../../../shared/outbox/outbox.repository';
+import { IOutboxRepository } from '../../../../../shared/outbox/outbox.repository';
 import { eventBus, EventEnvelope, IEventPublisher } from '@shared/events/eventBus';
 
 /**
@@ -9,7 +9,7 @@ import { eventBus, EventEnvelope, IEventPublisher } from '@shared/events/eventBu
  */
 export class UserEventPublisher implements IDomainEventPublisher {
   constructor(
-    private readonly outboxRepository: OutboxRepository,
+    private readonly outboxRepository: IOutboxRepository,
     private readonly events: IEventPublisher = eventBus
   ) { }
 

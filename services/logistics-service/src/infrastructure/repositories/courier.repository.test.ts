@@ -1,5 +1,12 @@
 import { CourierRepository } from './courier.repository';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
+import { DistanceCalculationAlgorithm } from '../../domain/algorithms/distance-calculation.algorithm';
+
+jest.mock('../../domain/algorithms/distance-calculation.algorithm', () => ({
+  DistanceCalculationAlgorithm: {
+    calculateDeliveryDistance: jest.fn()
+  }
+}));
 
 type QueryResult = { data: any; error: any; count?: number | null };
 
@@ -89,16 +96,23 @@ const courierRow = {
   current_lng: 39.208,
   current_address: 'Kariakoo',
   is_available: true,
+  status: 'online',
   traffic_experience: 0.9
 };
 
 describe('CourierRepository', () => {
   const logSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
   const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+  const distanceMock = DistanceCalculationAlgorithm.calculateDeliveryDistance as jest.Mock;
 
   afterAll(() => {
     logSpy.mockRestore();
     errorSpy.mockRestore();
+  });
+
+  beforeEach(() => {
+    distanceMock.mockReset();
+    distanceMock.mockResolvedValue({ distance: 1 });
   });
 
   it('findAvailableCouriers validates location and radius inputs', async () => {
@@ -130,6 +144,9 @@ describe('CourierRepository', () => {
     });
     const repository = new CourierRepository(client);
     const center = GeoPoint.create(-6.792, 39.208, 'Search center');
+    distanceMock
+      .mockResolvedValueOnce({ distance: 2 })
+      .mockResolvedValueOnce({ distance: 10 });
 
     const result = await repository.findAvailableCouriers(center, 5);
 
@@ -290,7 +307,7 @@ describe('CourierRepository', () => {
     await repository.updateCourierAvailability('cour-4', true);
 
     expect(calls.update[0]?.data).toEqual(
-      expect.objectContaining({ is_available: true, current_delivery_id: null })
+      expect.objectContaining({ is_available: true, status: 'online', current_delivery_id: null })
     );
   });
 

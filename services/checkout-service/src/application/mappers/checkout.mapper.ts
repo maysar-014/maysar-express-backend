@@ -36,6 +36,8 @@ export class CheckoutMapper {
       id: session.id,
       cartId: session.cartId,
       userId: session.userId,
+      enablerId: session.enablerId,
+      enablerCode: session.enablerCode,
       status: session.status,
       shippingAddressId: session.shippingAddressId,
       billingAddressId: session.billingAddressId,

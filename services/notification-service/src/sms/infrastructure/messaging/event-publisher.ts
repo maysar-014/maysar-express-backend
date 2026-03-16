@@ -1,4 +1,5 @@
 import { DomainEvent } from '../../domain/events/sms.events';
+import { eventBus } from '@shared/events/eventBus';
 
 /**
  * Event Publisher Interface
@@ -17,12 +18,7 @@ export class EventPublisher implements IEventPublisher {
 
     async publish(eventType: string, payload: any): Promise<void> {
         try {
-            // In a real implementation, this would publish to:
-            // - Node.js EventEmitter
-            // - Kafka
-            // - RabbitMQ
-            // - Redis Pub/Sub
-            // etc.
+            await eventBus.publish(eventType, payload);
 
             if (this.logger && process.env.NODE_ENV !== 'test') {
                 this.logger.info('Event published', {
@@ -31,9 +27,6 @@ export class EventPublisher implements IEventPublisher {
                     timestamp: new Date().toISOString()
                 });
             }
-
-            // TODO: Implement actual event bus integration
-            // Example: await this.eventBus.emit(eventType, payload);
         } catch (error) {
             if (this.logger) {
                 this.logger.error('Failed to publish event', {

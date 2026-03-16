@@ -1,5 +1,5 @@
 import prisma from '../database/prisma-client';
-import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export class EnablerEventPublisher {
 
@@ -10,7 +10,8 @@ export class EnablerEventPublisher {
         // Save to transactional outbox
         await prisma.enabler_OutboxEvent.create({
             data: {
-                eventId: uuidv4(),
+                id: makeId(getModelPrefix('Enabler_OutboxEvent')),
+                eventId: event.eventId || makeId('evt'),
                 eventType: eventName,
                 eventData: eventData, // Stores as JSON
                 status: 'PENDING',

@@ -1,9 +1,10 @@
 
 import { z } from 'zod';
+import { zodId } from '@shared/validation/id';
 
 export const creditWalletSchema = z.object({
     params: z.object({
-        userId: z.string().uuid(),
+        userId: zodId(),
     }),
     body: z.object({
         amount: z.number().positive(),
@@ -14,7 +15,7 @@ export const creditWalletSchema = z.object({
 
 export const debitWalletSchema = z.object({
     params: z.object({
-        userId: z.string().uuid(),
+        userId: zodId(),
     }),
     body: z.object({
         amount: z.number().positive(),
@@ -25,6 +26,6 @@ export const debitWalletSchema = z.object({
 
 export const getWalletSchema = z.object({
     params: z.object({
-        userId: z.string().uuid(),
+        userId: zodId(),
     })
 });

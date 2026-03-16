@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { EventEnvelope } from '../events/eventBus';
-import { v4 as uuidv4 } from 'uuid';
 import type { PrismaTransaction } from '../types';
+import { getModelPrefix, makeId } from '../ids/id';
 
 export enum OutboxStatus {
   PENDING = 'PENDING',
@@ -61,7 +61,7 @@ export class TransactionalOutbox {
 
     await model.create({
       data: {
-        id: uuidv4(),
+        id: makeId(getModelPrefix(this.modelName)),
         eventId: envelope.eventId,
         eventType: envelope.eventType,
         eventData: envelope,

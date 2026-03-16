@@ -1,6 +1,7 @@
 import { TransactionalOutbox, OutboxStatus } from './outboxPattern';
 import { eventBus as globalEventBus, EventEnvelope, IEventBus } from '../events/eventBus';
 import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 export class OutboxPublisher {
   private isRunning = false;
@@ -71,7 +72,7 @@ export class OutboxPublisher {
     sent: number;
     failed: number;
   }> {
-    const prisma = new PrismaClient();
+    const prisma = createPrismaClient();
 
     const [pending, processing, sent, failed] = await Promise.all([
       prisma.outboxEvent.count({ where: { status: OutboxStatus.PENDING } }),

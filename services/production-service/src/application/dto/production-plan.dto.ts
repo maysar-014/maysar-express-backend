@@ -9,6 +9,10 @@ export interface CreateProductionPlanDto {
     startDate: string;
     endDate: string;
     priority?: ProductionPriority;
+    maxCapacity?: number;
+    usedCapacity?: number;
+    reservedCapacity?: number;
+    capacityUnit?: string;
 }
 
 export interface UpdateProductionPlanDto {

@@ -42,10 +42,11 @@ try {
   const path = require('path');
   
   const infraFiles = [
-    'infrastructure/database/prisma.client.ts',
+    'infrastructure/database/prisma-client.ts',
     'infrastructure/cache/redis.client.ts',
     'infrastructure/messaging/kafka.client.ts',
-    'infrastructure/database/migrations/001_create_logistics_tables.sql',
+    '../../../prisma/schema.prisma',
+    '../../../prisma/migrations',
     'infrastructure/database/repositories/courier.repository.ts'
   ];
   
@@ -59,7 +60,7 @@ try {
     }
   });
   
-  console.log(`✅ Infrastructure Files: ${infraCount}/5 completed`);
+  console.log(`✅ Infrastructure Files: ${infraCount}/${infraFiles.length} completed`);
   console.log('🎯 Day 2 Database Infrastructure: ✅ COMPLETED\\n');
   
 } catch (error) {
@@ -77,7 +78,7 @@ console.log('  - Environment-based configuration management');
 console.log('');
 console.log('✅ Day 2: Database Infrastructure - COMPLETED');
 console.log('  - Prisma client setup with connection management');
-console.log('  - Database migrations for all logistics tables');
+console.log('  - Prisma migrations managed at repo root');
 console.log('  - Repository pattern implementation');
 console.log('  - Database health checks and monitoring');
 console.log('');

@@ -55,7 +55,7 @@ describe('notification adapters', () => {
   });
 
   it('sends business-registry notifications over HTTP and logs success/failure', async () => {
-    process.env.NOTIFICATION_SERVICE_URL = 'http://notify.local';
+    process.env.PLATFORM_BASE_URL = 'http://platform.local';
 
     const businessModule = await import('../../../../business-registry-service/src/infrastructure/adapters/notification.adapter');
     const adapter = new businessModule.NotificationAdapter();
@@ -73,7 +73,7 @@ describe('notification adapters', () => {
       content: 'Hello'
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://notify.local/api/v1/notifications',
+      'http://platform.local/api/notification/notifications',
       expect.objectContaining({
         method: 'POST'
       })

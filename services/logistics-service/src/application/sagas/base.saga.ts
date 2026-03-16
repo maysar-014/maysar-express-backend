@@ -139,6 +139,7 @@ export abstract class BaseSaga<TData = unknown> {
           compensatedAt: new Date()
         });
       } catch (error) {
+        this.context.compensations.push(stepName);
         console.error(`Compensation failed for step ${stepName}:`, error);
       }
     }
@@ -150,4 +151,3 @@ export abstract class BaseSaga<TData = unknown> {
 
   abstract execute(context: SagaContext<TData>): Promise<void>;
 }
-

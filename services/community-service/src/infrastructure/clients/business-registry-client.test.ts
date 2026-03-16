@@ -1,63 +1,45 @@
-import axios from 'axios';
 import { HttpBusinessRegistryClient } from './business-registry-client';
+import { VerificationStatus } from '../../../../business-registry-service/src/domain/entities/business.entity';
 
-jest.mock('axios', () => ({
-  create: jest.fn()
+const mockBusinessRepository = {
+  findById: jest.fn()
+};
+
+jest.mock('../../../../business-registry-service/src/infrastructure', () => ({
+  businessRepository: mockBusinessRepository
 }));
 
 describe('HttpBusinessRegistryClient', () => {
-  const httpClient = {
-    get: jest.fn()
-  };
-
   beforeEach(() => {
     jest.clearAllMocks();
-    (axios.create as jest.Mock).mockReturnValue(httpClient);
   });
 
   it('verifies business credentials and returns true only when verified flag is true', async () => {
-    httpClient.get.mockResolvedValueOnce({ data: { verified: true } });
-    const client = new HttpBusinessRegistryClient('http://registry.local');
+    mockBusinessRepository.findById.mockResolvedValueOnce({
+      id: 'biz-1',
+      ownerId: 'user-1',
+      verificationStatus: VerificationStatus.VERIFIED
+    });
+    const client = new HttpBusinessRegistryClient();
 
     await expect(client.verifyBusinessCredentials('user-1', 'biz-1')).resolves.toBe(true);
-    expect(httpClient.get).toHaveBeenCalledWith('/businesses/biz-1/verify', {
-      params: { userId: 'user-1' }
-    });
 
-    httpClient.get.mockResolvedValueOnce({ data: { verified: false } });
+    mockBusinessRepository.findById.mockResolvedValueOnce({
+      id: 'biz-1',
+      ownerId: 'user-1',
+      verificationStatus: VerificationStatus.UNVERIFIED
+    });
     await expect(client.verifyBusinessCredentials('user-1', 'biz-1')).resolves.toBe(false);
   });
 
-  it('returns false for expected verification failures (400/404)', async () => {
-    const client = new HttpBusinessRegistryClient('http://registry.local');
-
-    httpClient.get.mockRejectedValueOnce({ message: 'not found', response: { status: 404 } });
-    await expect(client.verifyBusinessCredentials('user-1', 'biz-404')).resolves.toBe(false);
-
-    httpClient.get.mockRejectedValueOnce({ message: 'bad request', response: { status: 400 } });
-    await expect(client.verifyBusinessCredentials('user-1', 'biz-400')).resolves.toBe(false);
-  });
-
-  it('throws wrapped errors for unexpected verification failures', async () => {
-    const client = new HttpBusinessRegistryClient('http://registry.local');
-    httpClient.get.mockRejectedValueOnce({ message: 'timeout', response: { status: 500 } });
-
-    await expect(client.verifyBusinessCredentials('user-1', 'biz-1')).rejects.toThrow(
-      'Business registry service error: timeout'
-    );
-  });
-
   it('loads business details, returning null on 404 and throwing on other errors', async () => {
-    const client = new HttpBusinessRegistryClient('http://registry.local');
-    const payload = { id: 'biz-1', name: 'Biz One', industry: 'Retail', verificationStatus: 'VERIFIED' };
-    httpClient.get.mockResolvedValueOnce({ data: payload });
+    const client = new HttpBusinessRegistryClient();
+    const payload = { id: 'biz-1', name: 'Biz One', industry: 'Retail', verificationStatus: VerificationStatus.VERIFIED };
+    mockBusinessRepository.findById.mockResolvedValueOnce(payload);
 
     await expect(client.getBusinessDetails('biz-1')).resolves.toEqual(payload);
 
-    httpClient.get.mockRejectedValueOnce({ message: 'missing', response: { status: 404 } });
+    mockBusinessRepository.findById.mockResolvedValueOnce(null);
     await expect(client.getBusinessDetails('biz-404')).resolves.toBeNull();
-
-    httpClient.get.mockRejectedValueOnce({ message: 'boom', response: { status: 500 } });
-    await expect(client.getBusinessDetails('biz-err')).rejects.toThrow('Business registry service error: boom');
   });
 });

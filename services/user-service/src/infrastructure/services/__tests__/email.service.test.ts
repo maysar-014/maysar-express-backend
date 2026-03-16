@@ -21,10 +21,9 @@ describe('InMemoryEmailService', () => {
   });
 });
 
-describe('SMTPService fallback', () => {
-  it('delegates to in-memory fallback and logs', async () => {
+describe('SMTPService configuration', () => {
+  it('throws when SMTP is not configured', async () => {
     const smtp = new SMTPService();
-    jest.spyOn(console, 'log').mockImplementation(() => {});
-    await expect(smtp.sendEmail('x@y.com', 'hi', '<p>hi</p>')).resolves.toBeUndefined();
+    await expect(smtp.sendEmail('x@y.com', 'hi', '<p>hi</p>')).rejects.toThrow('SMTP is not configured');
   });
 });

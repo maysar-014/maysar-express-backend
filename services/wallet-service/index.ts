@@ -4,9 +4,11 @@ import { Module } from '../../src/core/module.interface';
 import { EventIdempotency } from '../../shared/middleware/idempotency';
 import { healthRoutes } from './src/api/routes/health.routes';
 import { createWalletRoutes } from './src/api/routes/wallet.routes';
+import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { Container } from './src/container';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, prisma);
 
 export { eventIdempotency };
@@ -21,6 +23,7 @@ export const WalletModule: Module = {
     routes: (() => {
         const router = Router();
         router.use('/health', healthRoutes);
+        router.use('/system/maintenance', createMaintenanceRoutes());
 
         try {
             // Lazy load to avoid env-dependent side effects during module import

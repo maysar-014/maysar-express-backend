@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import { csrfTokenMiddleware } from '@shared/middleware/csrf.middleware';
 import { createLogger } from '@shared/logger/logger';
 import { tracingService, correlationMiddleware } from '@shared/tracing/openTelemetry';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 const mainLogger = createLogger('AuthService-Bootstrap', 'auth-service');
 
@@ -26,11 +27,13 @@ import { RegisterUserUseCase } from './application/use-cases/register-user.use-c
 import { AuthenticateUserUseCase } from './application/use-cases/authenticate-user.use-case';
 import { PrismaClient } from '@prisma/client';
 import { PrismaUserRepository } from './infrastructure/repositories/prisma-user.repository';
+import { PrismaSessionRepository } from './infrastructure/repositories/prisma-session.repository';
 import { UserSyncEventHandlers } from './infrastructure/events/user-sync.event-handlers';
 import { AuthEventPublisher } from './infrastructure/messaging/auth-event-publisher';
 import { OutboxRepository } from '@shared/outbox/outbox.repository';
 import { healthRoutes } from './api/routes/health.routes';
 import { adminRoutes } from './api/routes/admin.routes';
+import { createMaintenanceRoutes } from './api/routes/maintenance.routes';
 
 // 2FA Imports
 import { EncryptionService } from './2fa/infrastructure/services/encryption.service';
@@ -49,6 +52,7 @@ import { QRCodeService } from './2fa/infrastructure/services/qr-code.service';
 // Session Imports
 import { createSessionRouter } from './session/api/routes/session.routes';
 import { SessionEngine } from './domain/engines/session.engine';
+import { UserRole } from './domain/entities/user.entity';
 
 
 // Import services
@@ -56,6 +60,7 @@ import { logger } from './infrastructure/services/logger.service';
 import { initializeDatabase } from './infrastructure/database/connection';
 import { initializeRedis } from './infrastructure/cache/connection';
 import { metricsRegistry } from './infrastructure/monitoring/metrics';
+import { serviceDiscovery } from './infrastructure/services/service-discovery.service';
 
 // Load environment variables
 dotenv.config();
@@ -119,7 +124,7 @@ app.use(rateLimiter);
 app.use('/health', healthRoutes);
 
 // Wire up AuthController and routes
-const authPrisma = new PrismaClient();
+const authPrisma = createPrismaClient();
 const authOutboxRepository = new OutboxRepository(authPrisma, 'sharedOutboxEvent');
 const authEventPublisher = new AuthEventPublisher(authOutboxRepository);
 const userRepository = new PrismaUserRepository(authPrisma);
@@ -134,6 +139,7 @@ userSyncHandlers.registerHandlers();
 // API routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/system/maintenance', createMaintenanceRoutes(authPrisma));
 
 // Wire up 2FA
 const encryptionService = new EncryptionService(process.env.TWO_FACTOR_ENCRYPTION_KEY || 'default-two-factor-encryption-key-32-chars!!');
@@ -162,7 +168,14 @@ const twoFactorController = new TwoFactorController(
 app.use('/api/v1/auth/2fa', createTwoFactorRouter(twoFactorController));
 
 // Wire up Session
-const sessionEngine = new SessionEngine();
+const sessionRepository = new PrismaSessionRepository(authPrisma);
+const sessionEngine = new SessionEngine(
+  sessionRepository,
+  async (userId: string) => {
+    const user = await userRepository.findById(userId);
+    return user?.role || UserRole.USER;
+  }
+);
 app.use('/api/v1/sessions', createSessionRouter(sessionEngine));
 
 
@@ -240,6 +253,21 @@ async function startServer() {
     ]);
 
     logger.info('Infrastructure initialized successfully');
+
+    if (config.serviceDiscovery.enabled) {
+      if (config.serviceDiscovery.services.length === 0) {
+        logger.warn('Service discovery enabled but no services configured');
+      } else {
+        config.serviceDiscovery.services.forEach(service => {
+          serviceDiscovery.registerService(service.name, service.url);
+        });
+        logger.info('Service discovery registration complete', {
+          serviceCount: config.serviceDiscovery.services.length
+        });
+      }
+    } else {
+      logger.info('Service discovery disabled');
+    }
 
     // Start HTTP server
     server = app.listen(config.port, () => {

@@ -271,12 +271,65 @@ export class RouteRepository implements IRouteRepository {
         throw new Error(`Route with ID ${id} not found`);
       }
 
-      // For now, we can't directly update Route entities due to immutability
-      // In a real implementation, we'd need to create a new Route with updated values
-      // For this TODO implementation, we'll just return the current route
-      // TODO: Implement proper Route entity updates when the domain model supports it
+      const updatePayload: any = updates as any;
 
-      return currentRoute;
+      const updatedRoute = Route.fromDatabase({
+        id: currentRoute.getId(),
+        courier_id: updatePayload.courierId || currentRoute.getCourierId(),
+        status: updatePayload.getStatus ? updatePayload.getStatus() : updatePayload.status || currentRoute.getStatus(),
+        total_distance: updatePayload.totalDistance || currentRoute.getTotalDistance(),
+        estimated_duration: updatePayload.estimatedDuration || currentRoute.getEstimatedDuration(),
+        actual_duration: updatePayload.actualDuration || currentRoute.getActualDuration(),
+        waypoints: updatePayload.getWaypoints ? updatePayload.getWaypoints() : updatePayload.waypoints || currentRoute.getWaypoints(),
+        progress: updatePayload.getProgress ? updatePayload.getProgress() : updatePayload.progress || currentRoute.getProgress(),
+        created_at: currentRoute.getCreatedAt(),
+        updated_at: new Date(),
+        completed_at: updatePayload.completedAt || currentRoute.getCompletedAt()
+      });
+
+      const routeData = {
+        courier_id: updatedRoute.getCourierId(),
+        status: updatedRoute.getStatus(),
+        total_distance: updatedRoute.getTotalDistance(),
+        estimated_duration: updatedRoute.getEstimatedDuration(),
+        actual_duration: updatedRoute.getActualDuration(),
+        waypoints: updatedRoute.getWaypoints().map(wp => ({
+          lat: wp.getCoordinates().lat,
+          lng: wp.getCoordinates().lng,
+          address: wp.getAddress()
+        })),
+        progress: {
+          completed_stops: updatedRoute.getProgress().getCompletedStops(),
+          total_stops: updatedRoute.getProgress().getTotalStops(),
+          current_lat: updatedRoute.getProgress().getCurrentLocation().getCoordinates().lat,
+          current_lng: updatedRoute.getProgress().getCurrentLocation().getCoordinates().lng,
+          current_address: updatedRoute.getProgress().getCurrentLocation().getAddress(),
+          last_update_time: updatedRoute.getProgress().getLastUpdateTime().toISOString(),
+          estimated_completion_time: updatedRoute.getProgress().getEstimatedCompletionTime()?.toISOString(),
+          notes: updatedRoute.getProgress().getNotes()
+        },
+        updated_at: updatedRoute.getUpdatedAt().toISOString(),
+        completed_at: updatedRoute.getCompletedAt()?.toISOString()
+      };
+
+      if (this.databaseClient.route?.update) {
+        await this.databaseClient.route.update({
+          where: { id },
+          data: routeData
+        });
+      } else {
+        const { error } = await this.databaseClient
+          .from('routes')
+          .update(routeData)
+          .eq('id', id);
+
+        if (error) {
+          console.error('Database update error:', error);
+          throw new Error('Failed to update route in database');
+        }
+      }
+
+      return updatedRoute;
 
     } catch (error) {
       console.error('Error updating route:', error);

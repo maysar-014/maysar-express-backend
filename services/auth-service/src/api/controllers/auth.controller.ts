@@ -10,11 +10,22 @@ export class AuthController {
 
   async register(req: Request, res: Response): Promise<void> {
     try {
-      const { email, role, profile } = req.body;
+      const { email, role, profile, phoneNumber, firstName, lastName } = req.body;
+      const normalizedProfile: Record<string, any> = profile && typeof profile === 'object' ? { ...profile } : {};
+      if (phoneNumber) normalizedProfile.phoneNumber = phoneNumber;
+      if (firstName) normalizedProfile.firstName = firstName;
+      if (lastName) normalizedProfile.lastName = lastName;
+      if ((!normalizedProfile.firstName || !normalizedProfile.lastName) && typeof normalizedProfile.name === 'string') {
+        const parts = normalizedProfile.name.trim().split(/\s+/);
+        if (!normalizedProfile.firstName && parts[0]) normalizedProfile.firstName = parts[0];
+        if (!normalizedProfile.lastName && parts.length > 1) {
+          normalizedProfile.lastName = parts.slice(1).join(' ');
+        }
+      }
       const userId = await this.registerUserUseCase.execute({
         email,
         role: role || 'buyer',
-        profile: profile || {}
+        profile: normalizedProfile
       });
       res.json({ success: true, userId });
     } catch (error: any) {

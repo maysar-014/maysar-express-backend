@@ -5,6 +5,8 @@ describe('EnablerEntity', () => {
     const validProps: EnablerProfileProps = {
         id: 'enabler-123',
         userId: 'user-123',
+        enablerCode: null,
+        enablerCodeShort: null,
         businessName: 'My Business',
         contactEmail: 'test@example.com',
         status: Enabler_Status.APPROVED,

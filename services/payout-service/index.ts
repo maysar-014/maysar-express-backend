@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Module } from '../../src/core/module.interface';
 import { createPayoutRoutes } from './src/api/routes/payout.routes';
+import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { Container } from './src/container';
 import { SagaRecoveryWorker } from '../../shared/saga/saga-recovery.worker';
 import { SagaFactory } from '../../shared/saga/saga-factory';
@@ -31,6 +32,7 @@ export const PayoutModule: Module = {
         const router = Router();
         const container = Container.getInstance();
         router.use('/payouts', createPayoutRoutes(container.payoutController));
+        router.use('/system/maintenance', createMaintenanceRoutes());
         return router;
     })(),
     shutdown: async () => {

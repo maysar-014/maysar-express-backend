@@ -1,5 +1,7 @@
 import { DomainPolicy } from '@domain/interfaces';
 import { User, UserRole } from '@domain/entities/user.entity';
+import { getSharedRedisClient } from '@shared/redis/ioredis-client';
+import { prisma } from '../../infrastructure/database/prisma-client';
 
 /**
  * User Security Policy
@@ -87,14 +89,19 @@ export class UserSecurityPolicy implements DomainPolicy {
    * Check if phone number is suspicious
    */
   isSuspiciousPhoneNumber(phoneNumber: string): boolean {
-    // Check for valid Tanzanian phone numbers
-    // Format: +255 followed by 10 digits (7xx, 6xx, or 2xx area codes)
-    const validPatterns = [
-      /^\+?255(7\d{9}|6\d{9}|2\d{9})$/, // Tanzanian mobile and landline
-    ];
+    const normalized = phoneNumber.replace(/[^\d+]/g, '');
+    const digits = normalized.replace(/\D/g, '');
+    const e164Like = /^\+?\d{7,15}$/;
 
-    // If it matches valid Tanzanian patterns, it's not suspicious
-    return !validPatterns.some(pattern => pattern.test(phoneNumber));
+    if (!e164Like.test(normalized)) {
+      return true;
+    }
+
+    if (digits.length > 0 && digits.split('').every(d => d === digits[0])) {
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -149,16 +156,18 @@ export class UserSecurityPolicy implements DomainPolicy {
   /**
    * Check if user session is secure
    */
-  isSecureSession(user: User, sessionInfo: { ipAddress: string; userAgent: string; location?: string }): boolean {
+  async isSecureSession(user: User, sessionInfo: { ipAddress: string; userAgent: string; location?: string }): Promise<boolean> {
     // Check for suspicious IP addresses
-    if (this.isSuspiciousIPAddress(sessionInfo.ipAddress)) {
+    if (await this.isSuspiciousIPAddress(sessionInfo.ipAddress)) {
       return false;
     }
 
     // Check for known trusted devices
     if (user.metadata.trustedDeviceCount && user.metadata.trustedDeviceCount > 0) {
-      // In a real implementation, this would check against known devices
-      // For now, we'll assume it's secure if not from a suspicious IP
+      const trustedDevice = await this.findTrustedDevice(user.id, sessionInfo);
+      if (!trustedDevice) {
+        return false;
+      }
     }
 
     // Check for unusual location
@@ -206,16 +215,34 @@ export class UserSecurityPolicy implements DomainPolicy {
   /**
    * Check if IP address is suspicious
    */
-  private isSuspiciousIPAddress(ipAddress: string): boolean {
-    // In a real implementation, this would check against known malicious IPs
-    // For now, we'll use a simple check
-    const suspiciousPatterns = [
-      /^10\./, // Private networks (could be VPN)
-      /^192\.168\./, // Private networks
-      /^127\./, // Localhost
-    ];
+  private async isSuspiciousIPAddress(ipAddress: string): Promise<boolean> {
+    const redis = getSharedRedisClient();
+    const key = `security:ip:${ipAddress}:attempts`;
+    const attempts = await redis.incr(key);
+    if (attempts === 1) {
+      await redis.expire(key, 3600);
+    }
+    return attempts >= 10;
+  }
 
-    return suspiciousPatterns.some(pattern => pattern.test(ipAddress));
+  private async findTrustedDevice(
+    userId: string,
+    sessionInfo: { ipAddress: string; userAgent: string; location?: string }
+  ): Promise<any | null> {
+    const client = prisma as any;
+    const deviceRepo = client.user_TrustedDevice || client.user_Device || client.user_UserDevice;
+    if (!deviceRepo) {
+      return null;
+    }
+
+    return await deviceRepo.findFirst({
+      where: {
+        userId,
+        ipAddress: sessionInfo.ipAddress,
+        ...(sessionInfo.userAgent ? { userAgent: sessionInfo.userAgent } : {})
+      },
+      orderBy: { lastUsed: 'desc' }
+    });
   }
 
   /**

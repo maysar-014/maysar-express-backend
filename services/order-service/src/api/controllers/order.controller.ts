@@ -4,6 +4,7 @@ import { CheckCODEligibilityUseCase, CheckCODEligibilityInput } from '../../appl
 import { OrderRepository } from '../../domain/repositories/order.repository';
 import { PrismaOrderRepository } from '../../infrastructure/database/prisma-order.repository';
 import { OrderStatus } from '../../domain/entities/order.entity';
+import { IdGeneratorService } from '../../infrastructure/services/id-generator.service';
 
 export class OrderController {
   private orderRepository: OrderRepository;
@@ -21,6 +22,7 @@ export class OrderController {
       const response = await this.placeOrderUseCase.execute(request);
       res.status(201).json({
         id: response.orderId,
+        trackingNumber: response.trackingNumber,
         buyerId: request.buyerId,
         sellerId: request.sellerId,
         status: response.status,
@@ -69,6 +71,49 @@ export class OrderController {
       res.status(500).json({
         error: 'INTERNAL_ERROR',
         message: 'Failed to retrieve order',
+        requestId: req.headers['x-request-id'] as string
+      });
+    }
+  }
+
+  async getOrderByTrackingNumber(req: Request, res: Response): Promise<void> {
+    try {
+      const { trackingNumber } = req.params;
+
+      if (!IdGeneratorService.isValidOrderTrackingNumber(trackingNumber)) {
+        res.status(400).json({
+          error: 'INVALID_TRACKING_NUMBER',
+          message: 'Tracking number format is invalid',
+          requestId: req.headers['x-request-id'] as string
+        });
+        return;
+      }
+
+      if (!this.orderRepository.findByTrackingNumber) {
+        res.status(501).json({
+          error: 'NOT_IMPLEMENTED',
+          message: 'Tracking lookup is not supported',
+          requestId: req.headers['x-request-id'] as string
+        });
+        return;
+      }
+
+      const order = await this.orderRepository.findByTrackingNumber(trackingNumber);
+
+      if (!order) {
+        res.status(404).json({
+          error: 'ORDER_NOT_FOUND',
+          message: `Order with tracking number ${trackingNumber} not found`,
+          requestId: req.headers['x-request-id'] as string
+        });
+        return;
+      }
+
+      res.status(200).json(order);
+    } catch (error: any) {
+      res.status(500).json({
+        error: 'INTERNAL_ERROR',
+        message: 'Failed to retrieve order by tracking number',
         requestId: req.headers['x-request-id'] as string
       });
     }

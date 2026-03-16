@@ -125,6 +125,16 @@ describe('PhoneNumber Value Object - Branch Coverage', () => {
       const phone = new PhoneNumber('+255712345678');
       expect(phone.value).toMatch(/^\+255/);
     });
+
+    test('normalizes Tanzanian local 0XXXXXXXXX to +255XXXXXXXXX', () => {
+      const phone = new PhoneNumber('0612345678');
+      expect(phone.value).toBe('+255612345678');
+    });
+
+    test('normalizes +255 0XXXXXXXXX to +255XXXXXXXXX', () => {
+      const phone = new PhoneNumber('+255 07612435697');
+      expect(phone.value).toBe('+2557612435697');
+    });
   });
 
   describe('extractCountryCode branches', () => {

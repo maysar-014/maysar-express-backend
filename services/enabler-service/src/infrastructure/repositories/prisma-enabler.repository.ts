@@ -17,6 +17,19 @@ export class PrismaEnablerRepository implements IEnablerRepository {
         return this.mapToEntity(data);
     }
 
+    async findByCode(code: string): Promise<EnablerEntity | null> {
+        const data = await prisma.enabler_Profile.findFirst({
+            where: {
+                OR: [
+                    { enablerCode: code },
+                    { enablerCodeShort: code }
+                ]
+            }
+        });
+        if (!data) return null;
+        return this.mapToEntity(data);
+    }
+
     async findByStatus(status: Enabler_Status): Promise<EnablerEntity[]> {
         const data = await prisma.enabler_Profile.findMany({ where: { status } });
         return data.map(this.mapToEntity);
@@ -28,6 +41,8 @@ export class PrismaEnablerRepository implements IEnablerRepository {
             data: {
                 id: data.id,
                 userId: data.userId,
+                enablerCode: data.enablerCode || null,
+                enablerCodeShort: data.enablerCodeShort || null,
                 businessName: data.businessName,
                 contactEmail: data.contactEmail,
                 contactPhone: data.contactPhone,
@@ -58,6 +73,8 @@ export class PrismaEnablerRepository implements IEnablerRepository {
                 tier: data.tier,
                 commissionRate: data.commissionRate,
                 verificationStatus: data.verificationStatus,
+                enablerCode: data.enablerCode || null,
+                enablerCodeShort: data.enablerCodeShort || null,
                 totalSales: data.totalSales,
                 totalOrders: data.totalOrders,
                 conversionRate: data.conversionRate,

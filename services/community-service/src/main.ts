@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { PrismaClient } from '@prisma/client';
 import winston from 'winston';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 // Infrastructure components
 import { PrismaPostRepository } from './infrastructure/repositories/prisma-post.repository';
@@ -41,7 +42,7 @@ class CommunityService {
 
   constructor() {
     this.app = express();
-    this.prisma = new PrismaClient();
+    this.prisma = createPrismaClient();
     this.logger = this.setupLogger();
     this.cache = new RedisCache();
 

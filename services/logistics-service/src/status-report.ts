@@ -1,7 +1,7 @@
 // @ts-nocheck
 import 'dotenv/config';
 import { LogisticsEngine } from './engines/logistics.engine';
-import { PrismaClientManager } from './infrastructure/database/prisma.client';
+import { DatabaseConnection } from './infrastructure/database/prisma-client';
 import { RedisClientManager } from './infrastructure/cache/redis.client';
 
 async function generateStatusReport() {
@@ -12,10 +12,13 @@ async function generateStatusReport() {
   // Test Database Connection
   console.log('🗄️ DATABASE STATUS:');
   try {
-    const prisma = PrismaClientManager.getInstance();
-    await prisma.connect();
-    const health = await prisma.healthCheck();
-    console.log(`   ✅ Database: ${health.status} (${health.latency}ms)`);
+    const status = await DatabaseConnection.getConnectionStatus();
+    if (!status.connected) {
+      console.log(`   ❌ Database: Error - ${status.error || 'unhealthy'}`);
+    } else {
+      const latency = status.responseTime ?? 'unknown';
+      console.log(`   ✅ Database: healthy (${latency})`);
+    }
   } catch (error: any) {
     console.log(`   ❌ Database: Error - ${error.message}`);
   }

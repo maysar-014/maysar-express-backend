@@ -8,10 +8,7 @@ describe('Notification Entity', () => {
   });
 
   const createValidNotification = (overrides = {}) => {
-    const content = NotificationContent.create({
-      body: 'Test notification body',
-      data: {}
-    });
+    const content = NotificationContent.create('Test notification body');
 
     return Notification.create({
       id: 'notif-1',
@@ -172,7 +169,7 @@ describe('Notification Entity', () => {
     });
 
     it('should detect missing user ID', () => {
-      const content = NotificationContent.create({ body: 'Test', data: {} });
+      const content = NotificationContent.create('Test');
       const notification = new Notification({
         id: 'notif-1',
         userId: '',
@@ -195,7 +192,7 @@ describe('Notification Entity', () => {
     });
 
     it('should detect negative retry count', () => {
-      const content = NotificationContent.create({ body: 'Test', data: {} });
+      const content = NotificationContent.create('Test');
       const notification = new Notification({
         id: 'notif-1',
         userId: 'user-1',

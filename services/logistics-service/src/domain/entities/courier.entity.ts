@@ -1,6 +1,10 @@
 import { GeoPoint } from '../value-objects/geopoint.value-object';
+import { CourierStatus, isCourierAvailable } from '../enums/courier-status.enum';
+import { CourierStatusPolicy } from '../policies/courier-status.policy';
 
 export class CourierEntity {
+  private static statusPolicy = new CourierStatusPolicy();
+
   constructor(
     public readonly id: string,
     public readonly name: string,
@@ -16,7 +20,8 @@ export class CourierEntity {
     public readonly rating: number,
     public readonly completionRate: number,
     public readonly currentLocation: GeoPoint,
-    public readonly isAvailable: boolean,
+    public readonly status: CourierStatus,
+    public readonly estimatedArrivalTime: number | undefined,
     public readonly trafficExperience: number
   ) {}
 
@@ -28,9 +33,12 @@ export class CourierEntity {
     rating: number;
     completionRate: number;
     currentLocation: GeoPoint;
-    isAvailable: boolean;
+    isAvailable?: boolean;
+    status?: CourierStatus;
+    estimatedArrivalTime?: number;
     trafficExperience: number;
   }): CourierEntity {
+    const status = data.status ?? (data.isAvailable ? 'online' : 'offline');
     return new CourierEntity(
       data.id,
       data.name,
@@ -39,9 +47,30 @@ export class CourierEntity {
       data.rating,
       data.completionRate,
       data.currentLocation,
-      data.isAvailable,
+      status,
+      data.estimatedArrivalTime,
       data.trafficExperience
     );
+  }
+
+  get isAvailable(): boolean {
+    return isCourierAvailable(this.status);
+  }
+
+  transitionTo(status: CourierStatus): CourierEntity {
+    CourierEntity.statusPolicy.assertTransition(this.status, status);
+    return CourierEntity.create({
+      id: this.id,
+      name: this.name,
+      phone: this.phone,
+      vehicle: this.vehicle,
+      rating: this.rating,
+      completionRate: this.completionRate,
+      currentLocation: this.currentLocation,
+      status,
+      estimatedArrivalTime: this.estimatedArrivalTime,
+      trafficExperience: this.trafficExperience
+    });
   }
 
   isEligibleForAssignment(): boolean {

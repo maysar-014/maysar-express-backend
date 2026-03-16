@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { createBusinessRoutes } from './routes/business.routes';
 import { createHealthRoutes } from './routes/health.routes';
+import { createMaintenanceRoutes } from './routes/maintenance.routes';
 import { requestLoggerMiddleware } from './middleware/request-logger.middleware';
 import { errorMiddleware } from './middleware/error.middleware';
 
@@ -11,6 +12,7 @@ export function createApiRouter(): Router {
 
   router.use('/health', createHealthRoutes());
   router.use('/api/businesses', createBusinessRoutes());
+  router.use('/api/v1/system/maintenance', createMaintenanceRoutes());
 
   router.use(errorMiddleware);
 

@@ -9,6 +9,7 @@ import { Request, Response, NextFunction } from 'express';
 // =====================================================================================
 // AUTHORIZATION CONFIGURATION
 // =====================================================================================
+const permissionCache = new Map<string, { value: boolean; expiresAt: number }>();
 
 /**
  * Authorization Configuration
@@ -25,6 +26,7 @@ export interface AuthzConfig {
   defaultDenyAll: boolean;
   enableResourceOwnership: boolean;
   enableTimeBasedAccess: boolean;
+  roleHierarchy?: Record<string, string[]>;
   allowedTimeWindows: {
     [role: string]: {
       days: number[];
@@ -46,8 +48,9 @@ export const DEFAULT_AUTHZ_CONFIG: AuthzConfig = {
   adminRoles: ['admin', 'superuser'],
   superUserRoles: ['superuser'],
   defaultDenyAll: true,
-  enableResourceOwnership: true,
+  enableResourceOwnership: false,
   enableTimeBasedAccess: false,
+  roleHierarchy: {},
   allowedTimeWindows: {}
 };
 
@@ -369,12 +372,7 @@ export function authorizeSuperUser(config: Partial<AuthzConfig> = {}) {
  * Check if user has inherited role
  */
 function checkInheritedRole(userRoles: string[], requiredRole: string, config: AuthzConfig): boolean {
-  // Mock implementation - in real app, check role hierarchy from database
-  const roleHierarchy: Record<string, string[]> = {
-    'superuser': ['admin', 'moderator', 'user'],
-    'admin': ['moderator', 'user'],
-    'moderator': ['user']
-  };
+  const roleHierarchy = config.roleHierarchy || {};
 
   // Check if any user role can inherit the required role through the hierarchy
   return userRoles.some(userRole => {
@@ -429,7 +427,6 @@ async function checkUserPermissions(
     return (global as any).checkUserPermissions(user, requiredPermissions, config);
   }
 
-  // Mock implementation - in real app, check against database/permission service
   const userPermissions = user.permissions || [];
 
   return requiredPermissions.every(requiredPerm =>
@@ -517,16 +514,13 @@ async function checkResourceOwnership(
     return (global as any).checkResourceOwnership(userId, resourceType, resourceId);
   }
 
-  // Mock implementation - in real app, check ownership in database
-  // For example: SELECT owner_id FROM products WHERE id = resourceId
-  return true; // Assume ownership for demo
+  throw new Error('Resource ownership checks are not configured.');
 }
 
 /**
  * Get user permissions
  */
 async function getUserPermissions(user: any, config: AuthzConfig): Promise<Permission[]> {
-  // Mock implementation
   return user.permissions || [];
 }
 
@@ -534,8 +528,13 @@ async function getUserPermissions(user: any, config: AuthzConfig): Promise<Permi
  * Permission cache operations
  */
 async function checkPermissionCache(cacheKey: string): Promise<boolean | undefined> {
-  // Mock implementation - in real app, check Redis/cache
-  return undefined; // Cache miss
+  const cached = permissionCache.get(cacheKey);
+  if (!cached) return undefined;
+  if (Date.now() > cached.expiresAt) {
+    permissionCache.delete(cacheKey);
+    return undefined;
+  }
+  return cached.value;
 }
 
 async function setPermissionCache(
@@ -543,7 +542,10 @@ async function setPermissionCache(
   result: boolean,
   expirationTime: number
 ): Promise<void> {
-  // Mock implementation - in real app, set Redis/cache
+  permissionCache.set(cacheKey, {
+    value: result,
+    expiresAt: Date.now() + expirationTime
+  });
 }
 
 /**

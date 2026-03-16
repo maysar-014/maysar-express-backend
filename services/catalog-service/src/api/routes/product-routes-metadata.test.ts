@@ -3,7 +3,7 @@ import { PRODUCT_ROUTES_METADATA } from './product-routes-metadata';
 describe('PRODUCT_ROUTES_METADATA', () => {
   it('defines API versioning and prefix metadata', () => {
     expect(PRODUCT_ROUTES_METADATA.version).toBe('v1');
-    expect(PRODUCT_ROUTES_METADATA.prefix).toBe('/api/v1');
+    expect(PRODUCT_ROUTES_METADATA.prefix).toBe('/v1');
   });
 
   it('contains route definitions for product CRUD and operational endpoints', () => {

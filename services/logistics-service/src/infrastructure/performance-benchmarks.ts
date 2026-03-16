@@ -205,10 +205,7 @@ export class PerformanceBenchmarkEngine {
       async () => {
         const { DeliverySaga } = await import('../application/sagas/delivery.saga');
         const { container } = await import('./container');
-        const courierRepo = container.getCourierRepository();
-        const trackingProvider = container.getTrackingProvider();
-
-        return new DeliverySaga(courierRepo, trackingProvider);
+        return container.getDeliverySaga();
       },
       { saga: 'delivery', operation: 'creation' }
     );

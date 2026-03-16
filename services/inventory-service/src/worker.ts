@@ -6,10 +6,13 @@ import { WarehouseManager } from './modules/warehouse/warehouseManager';
 import { InventoryEventHandlers } from './modules/events/eventHandlers';
 import { EventIdempotency } from '@shared/middleware/idempotency';
 import { createRedisStockEngine, resolveRedisReservationMode } from './infrastructure/redis/redis-stock-engine';
+import { InventoryOutboxRepository } from './infrastructure/messaging/inventory-outbox.repository';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 async function startWorker() {
-  const prisma = new PrismaClient();
-  const stockManager = new StockManager(prisma as any, eventBus);
+  const prisma = createPrismaClient();
+  const outboxRepository = new InventoryOutboxRepository(prisma);
+  const stockManager = new StockManager(prisma as any, eventBus, outboxRepository);
   const warehouseManager = new WarehouseManager(prisma as any);
   const redisReservationMode = resolveRedisReservationMode();
   const redisStockEngineBundle = redisReservationMode === 'off' ? null : createRedisStockEngine();

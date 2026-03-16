@@ -1,5 +1,6 @@
 import { CreateProductUseCase } from '../create-product.use-case';
 import { StructuredCreateProductDto } from '../../dto/product.dto';
+import { isSystemId } from '@shared/ids/id';
 
 describe('CreateProductUseCase', () => {
   const buildDto = (): StructuredCreateProductDto => ({
@@ -40,7 +41,6 @@ describe('CreateProductUseCase', () => {
     };
     const mockIdGenerator = {
       generate: jest.fn()
-        .mockReturnValueOnce('product-1')
         .mockReturnValueOnce('event-1')
         .mockReturnValueOnce('event-2')
     };
@@ -61,9 +61,10 @@ describe('CreateProductUseCase', () => {
     const result = await useCase.execute(buildDto());
 
     expect(result.status).toBe('success');
-    expect(result.productId).toBe('product-1');
+    expect(isSystemId(result.productId)).toBe(true);
     expect(mockProductRepository.saveWithAttributesTransaction).toHaveBeenCalled();
     expect(mockEventPublisher.publish).toHaveBeenCalledTimes(2);
+    expect(mockIdGenerator.generate).toHaveBeenCalledTimes(2);
   });
 
   it('returns validation error when category is missing', async () => {

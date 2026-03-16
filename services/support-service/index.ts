@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { Module } from '../../src/core/module.interface';
 import { ticketRouter } from './src/api/routes/ticket.routes';
 import { agentRouter } from './src/api/routes/agent.routes';
+import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { SupportEventSubscriber } from './src/infrastructure/messaging/support-event-subscriber';
 import { container } from './src/infrastructure/container';
 import { TYPES } from './src/types';
@@ -49,6 +50,7 @@ export const SupportModule: Module = {
         const router = Router();
         router.use('/tickets', ticketRouter);
         router.use('/agents', agentRouter);
+        router.use('/system/maintenance', createMaintenanceRoutes());
         return router;
     })(),
     shutdown: async () => {

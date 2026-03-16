@@ -1,114 +1,155 @@
-﻿// @ts-nocheck
 import { PrismaClient } from '@prisma/client';
-import { CourierEntity } from '../../domain/entities/courier.entity';
-import { PrismaClientManager } from '../prisma.client';
+import { ICourierRepository, Courier } from '../../domain/repositories';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 import { DistanceCalculationAlgorithm } from '../../domain/algorithms/distance-calculation.algorithm';
+import { CourierStatus, isCourierAvailable, normalizeCourierStatus } from '../../domain/enums/courier-status.enum';
 
-export interface CourierRepository {
-  findById(id: string): Promise<CourierEntity | null>;
-  findByStatus(status: string): Promise<CourierEntity[]>;
-  findNearby(latitude: number, longitude: number, radius: number): Promise<CourierEntity[]>;
-  create(courier: CourierEntity): Promise<CourierEntity>;
-  update(id: string, updates: Partial<CourierEntity>): Promise<CourierEntity>;
-  updateLocation(id: string, latitude: number, longitude: number, accuracy: number): Promise<void>;
-  updateStatus(id: string, status: string): Promise<void>;
-}
+export class PrismaCourierRepository implements ICourierRepository {
+  constructor(private readonly prisma: PrismaClient) {}
 
-export class PrismaCourierRepository implements CourierRepository {
-  private prisma: PrismaClient;
-
-  constructor() {
-    this.prisma = PrismaClientManager.getInstance().getClient() as any;
+  private getPrefilterConfig(): { maxCandidates: number } {
+    const maxCandidates = Number(process.env.COURIER_PREFILTER_MAX_CANDIDATES ?? '15');
+    return {
+      maxCandidates: Number.isFinite(maxCandidates) && maxCandidates > 0 ? maxCandidates : 15
+    };
   }
 
-  async findById(id: string): Promise<CourierEntity | null> {
-    const courier = await this.prisma.courier.findUnique({
-      where: { id }
-    });
+  async findAvailableCouriers(location: GeoPoint, radius: number): Promise<Courier[]> {
+    if (!location) {
+      return Promise.reject(new Error('Location is required'));
+    }
+    if (typeof radius !== 'number' || radius <= 0) {
+      return Promise.reject(new Error('Radius must be a positive number'));
+    }
 
-    return courier ? this.mapToEntity(courier) : null;
-  }
-
-  async findByStatus(status: string): Promise<CourierEntity[]> {
-    const couriers = await this.prisma.courier.findMany({
-      where: { status }
-    });
-
-    return couriers.map(this.mapToEntity);
-  }
-
-  async findNearby(latitude: number, longitude: number, radius: number): Promise<CourierEntity[]> {
-    // Simplified nearby search - in production, use PostGIS or similar
-    const couriers = await this.prisma.courier.findMany({
+    const couriers = await this.prisma.logistics_Courier.findMany({
       where: {
-        status: 'active',
+        status: 'online',
         currentLatitude: { not: null },
-        currentLongitude: { not: null }
+        currentLongitude: { not: null },
+        customerRating: { gte: 4.0 },
+        onTimeDeliveryRate: { gte: 0.9 }
       }
     });
 
-    const mappedCouriers = couriers.map(this.mapToEntity);
-    const searchLocation = GeoPoint.create(latitude, longitude, 'search-location');
+    const { maxCandidates } = this.getPrefilterConfig();
+
+    const prefiltered = couriers
+      .map((courier) => {
+        const courierLocation = GeoPoint.create(
+          courier.currentLatitude ?? 0,
+          courier.currentLongitude ?? 0,
+          'Unknown'
+        );
+        const straightDistance = location.distanceTo(courierLocation);
+        return { courier, courierLocation, straightDistance };
+      })
+      .filter((entry) => entry.straightDistance <= radius)
+      .sort((a, b) => a.straightDistance - b.straightDistance)
+      .slice(0, maxCandidates);
+
+    if (prefiltered.length === 0) {
+      return [];
+    }
+
     const distanceChecks = await Promise.all(
-      mappedCouriers.map(async courier => {
-        if (!courier.currentLocation) return false;
-        const coords = courier.currentLocation.getCoordinates();
-        const courierLocation = GeoPoint.create(coords.lat, coords.lng, 'courier-location');
-        const distance = await DistanceCalculationAlgorithm.calculateDeliveryDistance(searchLocation, courierLocation);
-        return distance.distance <= radius;
+      prefiltered.map(async (entry) => {
+        const routeDistance = await DistanceCalculationAlgorithm.calculateDeliveryDistance(
+          location,
+          entry.courierLocation
+        );
+        return routeDistance.distance <= radius;
       })
     );
 
-    return mappedCouriers.filter((_courier, index) => distanceChecks[index]);
+    return prefiltered
+      .filter((_, index) => distanceChecks[index])
+      .map((entry) => this.toCourier(entry.courier));
   }
 
-  async create(courier: CourierEntity): Promise<CourierEntity> {
-    const created = await this.prisma.courier.create({
-      data: {
-        id: courier.id,
-        name: courier.name,
-        phone: courier.phone,
-        email: courier.email,
-        status: courier.status,
-        vehicleType: courier.vehicle.type,
-        vehicleLicensePlate: courier.vehicle.licensePlate,
-        vehicleCapacity: courier.vehicle.capacity,
-        vehicleFuelType: courier.vehicle.fuelType
-      }
+  async findAvailable(): Promise<Courier[]> {
+    const couriers = await this.prisma.logistics_Courier.findMany({
+      where: { status: 'online' }
     });
-
-    return this.mapToEntity(created);
+    return couriers.map((courier) => this.toCourier(courier));
   }
 
-  async update(id: string, updates: Partial<CourierEntity>): Promise<CourierEntity> {
-    const updated = await this.prisma.courier.update({
-      where: { id },
-      data: {
-        ...updates,
-        updatedAt: new Date()
-      }
+  async assignCourier(deliveryId: string, courierId: string): Promise<void> {
+    await this.prisma.$transaction([
+      this.prisma.logistics_Delivery.update({
+        where: { id: deliveryId },
+        data: {
+          courierId,
+          status: 'assigned',
+          updatedAt: new Date()
+        }
+      }),
+      this.prisma.logistics_Courier.update({
+        where: { id: courierId },
+        data: {
+          status: 'busy',
+          updatedAt: new Date()
+        }
+      })
+    ]);
+  }
+
+  async findById(courierId: string): Promise<Courier | null> {
+    const courier = await this.prisma.logistics_Courier.findUnique({
+      where: { id: courierId }
     });
-
-    return this.mapToEntity(updated);
+    return courier ? this.toCourier(courier) : null;
   }
 
-  async updateLocation(id: string, latitude: number, longitude: number, accuracy: number): Promise<void> {
-    await this.prisma.courier.update({
-      where: { id },
-      data: {
-        currentLatitude: latitude,
-        currentLongitude: longitude,
-        locationAccuracy: accuracy,
-        locationTimestamp: new Date(),
-        updatedAt: new Date()
-      }
-    });
+  async getCourierById(courierId: string): Promise<Courier> {
+    const courier = await this.findById(courierId);
+    if (!courier) {
+      throw new Error(`Courier with ID ${courierId} not found`);
+    }
+    return courier;
   }
 
-  async updateStatus(id: string, status: string): Promise<void> {
-    await this.prisma.courier.update({
-      where: { id },
+  async updateCourierLocation(courierId: string, location: GeoPoint): Promise<void> {
+    const geoPoint = location instanceof GeoPoint
+      ? location
+      : GeoPoint.create(
+          (location as any).lat || (location as any).latitude,
+          (location as any).lng || (location as any).longitude,
+          (location as any).address || 'Unknown'
+        );
+
+    const coords = geoPoint.getCoordinates();
+
+    await this.prisma.$transaction([
+      this.prisma.logistics_Courier.update({
+        where: { id: courierId },
+        data: {
+          currentLatitude: coords.lat,
+          currentLongitude: coords.lng,
+          locationTimestamp: new Date(),
+          updatedAt: new Date()
+        }
+      }),
+      this.prisma.logistics_LocationHistory.create({
+        data: {
+          courierId,
+          latitude: coords.lat,
+          longitude: coords.lng,
+          accuracy: null,
+          timestamp: new Date()
+        }
+      })
+    ]);
+  }
+
+  async updateCourierAvailability(courierId: string, isAvailable: boolean): Promise<void> {
+    const status: CourierStatus = isAvailable ? 'online' : 'offline';
+    await this.updateCourierStatus(courierId, status);
+  }
+
+  async updateCourierStatus(courierId: string, status: CourierStatus): Promise<void> {
+    await this.prisma.logistics_Courier.update({
+      where: { id: courierId },
       data: {
         status,
         updatedAt: new Date()
@@ -116,35 +157,60 @@ export class PrismaCourierRepository implements CourierRepository {
     });
   }
 
-  private mapToEntity(data: any): CourierEntity {
-    return new CourierEntity(
-      data.id,
-      data.name,
-      data.phone,
-      data.email,
-      {
-        type: data.vehicleType,
-        licensePlate: data.vehicleLicensePlate,
-        capacity: data.vehicleCapacity,
-        fuelType: data.vehicleFuelType
-      },
-      data.status,
-      data.currentLatitude && data.currentLongitude ? {
-        latitude: data.currentLatitude,
-        longitude: data.currentLongitude,
-        accuracy: data.locationAccuracy || 0,
-        timestamp: data.locationTimestamp || new Date()
-      } : undefined,
-      {
-        onTimeDeliveryRate: data.onTimeDeliveryRate || 0,
-        customerRating: data.customerRating || 0,
-        completedDeliveries: data.completedDeliveries || 0,
-        totalEarnings: data.totalEarnings || 0,
-        averageDeliveryTime: data.averageDeliveryTime || 0
-      },
-      data.createdAt,
-      data.updatedAt
-    );
+  async getCourierPerformance(courierId: string): Promise<{
+    totalDeliveries: number;
+    onTimeRate: number;
+    averageRating: number;
+  }> {
+    const deliveries = await this.prisma.logistics_Delivery.findMany({
+      where: {
+        courierId,
+        status: { in: ['delivered', 'DELIVERED', 'completed'] }
+      }
+    });
+
+    const totalDeliveries = deliveries.length;
+    const onTimeDeliveries = deliveries.filter((delivery) => {
+      if (!delivery.actualDeliveryTime || !delivery.estimatedDeliveryTime) return false;
+      return delivery.actualDeliveryTime <= delivery.estimatedDeliveryTime;
+    }).length;
+
+    const courier = await this.prisma.logistics_Courier.findUnique({
+      where: { id: courierId },
+      select: { customerRating: true }
+    });
+
+    return {
+      totalDeliveries,
+      onTimeRate: totalDeliveries > 0 ? onTimeDeliveries / totalDeliveries : 0,
+      averageRating: courier?.customerRating || 0
+    };
   }
 
+  private toCourier(record: any): Courier {
+    const status = normalizeCourierStatus(record.status ?? '');
+    return {
+      id: record.id,
+      name: record.name,
+      phone: record.phone,
+      vehicle: {
+        type: record.vehicleType,
+        capacity: {
+          maxWeight: record.vehicleCapacity,
+          maxVolume: 0,
+          maxItems: 0
+        }
+      },
+      rating: record.customerRating || 0,
+      completionRate: record.onTimeDeliveryRate || 0,
+      currentLocation: GeoPoint.create(
+        record.currentLatitude ?? 0,
+        record.currentLongitude ?? 0,
+        'Unknown'
+      ),
+      status,
+      isAvailable: isCourierAvailable(status),
+      trafficExperience: 0.8
+    };
+  }
 }

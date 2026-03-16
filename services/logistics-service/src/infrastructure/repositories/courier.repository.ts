@@ -1,9 +1,17 @@
 import { ICourierRepository, Courier } from '../../domain/repositories';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 import { DistanceCalculationAlgorithm } from '../../domain/algorithms/distance-calculation.algorithm';
+import { CourierStatus, isCourierAvailable, normalizeCourierStatus } from '../../domain/enums/courier-status.enum';
 
 export class CourierRepository implements ICourierRepository {
   constructor(private databaseClient: any) { }
+
+  private getPrefilterConfig(): { maxCandidates: number } {
+    const maxCandidates = Number(process.env.COURIER_PREFILTER_MAX_CANDIDATES ?? '15');
+    return {
+      maxCandidates: Number.isFinite(maxCandidates) && maxCandidates > 0 ? maxCandidates : 15
+    };
+  }
 
   async findAvailableCouriers(location: GeoPoint, radius: number): Promise<Courier[]> {
     // Validate inputs
@@ -38,6 +46,7 @@ export class CourierRepository implements ICourierRepository {
           current_lng,
           current_address,
           is_available,
+          status,
           traffic_experience,
           created_at,
           updated_at
@@ -67,43 +76,69 @@ export class CourierRepository implements ICourierRepository {
         return [];
       }
 
-      // Filter by route distance using configured routing provider (HERE)
-      const distanceChecks = await Promise.all(
-        couriers.map(async (courier: any) => {
+      const { maxCandidates } = this.getPrefilterConfig();
+
+      type PrefilterEntry = { courier: any; courierLocation: GeoPoint; straightDistance: number };
+
+      const prefiltered: PrefilterEntry[] = couriers
+        .map((courier: any): PrefilterEntry => {
           const courierLocation = GeoPoint.create(
             courier.current_lat,
             courier.current_lng,
             courier.current_address || 'Unknown'
           );
-          const routeDistance = await DistanceCalculationAlgorithm.calculateDeliveryDistance(location, courierLocation);
+          const straightDistance = location.distanceTo(courierLocation);
+          return { courier, courierLocation, straightDistance };
+        })
+        .filter((entry: PrefilterEntry) => entry.straightDistance <= radius)
+        .sort((a: PrefilterEntry, b: PrefilterEntry) => a.straightDistance - b.straightDistance)
+        .slice(0, maxCandidates);
+
+      if (prefiltered.length === 0) {
+        return [];
+      }
+
+      // Filter by route distance using configured routing provider (HERE)
+      const distanceChecks = await Promise.all(
+        prefiltered.map(async (entry: PrefilterEntry) => {
+          const routeDistance = await DistanceCalculationAlgorithm.calculateDeliveryDistance(
+            location,
+            entry.courierLocation
+          );
           return routeDistance.distance <= radius;
         })
       );
-      const availableCouriers = couriers.filter((_: any, index: number) => distanceChecks[index]);
+      const availableCouriers = prefiltered.filter((_: any, index: number) => distanceChecks[index]);
 
       // Map to domain entities
-      return availableCouriers.map((courier: any) => ({
-        id: courier.id,
-        name: courier.name,
-        phone: courier.phone,
-        vehicle: {
-          type: courier.vehicle_type,
-          capacity: {
-            maxWeight: courier.max_weight,
-            maxVolume: courier.max_volume,
-            maxItems: courier.max_items
-          }
-        },
-        rating: courier.rating,
-        completionRate: courier.completion_rate,
-        currentLocation: GeoPoint.create(
-          courier.current_lat,
-          courier.current_lng,
-          courier.current_address || 'Unknown'
-        ),
-        isAvailable: courier.is_available,
-        trafficExperience: courier.traffic_experience || 0.8
-      }));
+      return availableCouriers.map((entry: any) => {
+        const status = normalizeCourierStatus(
+          entry.courier.status ?? (entry.courier.is_available ? 'online' : 'offline')
+        );
+        return {
+          id: entry.courier.id,
+          name: entry.courier.name,
+          phone: entry.courier.phone,
+          vehicle: {
+            type: entry.courier.vehicle_type,
+            capacity: {
+              maxWeight: entry.courier.max_weight,
+              maxVolume: entry.courier.max_volume,
+              maxItems: entry.courier.max_items
+            }
+          },
+          rating: entry.courier.rating,
+          completionRate: entry.courier.completion_rate,
+          currentLocation: GeoPoint.create(
+            entry.courier.current_lat,
+            entry.courier.current_lng,
+            entry.courier.current_address || 'Unknown'
+          ),
+          status,
+          isAvailable: isCourierAvailable(status),
+          trafficExperience: entry.courier.traffic_experience || 0.8
+        };
+      });
 
     } catch (error) {
       console.error('Error finding available couriers:', error);
@@ -129,6 +164,7 @@ export class CourierRepository implements ICourierRepository {
           current_lng,
           current_address,
           is_available,
+          status,
           traffic_experience,
           created_at,
           updated_at
@@ -145,28 +181,32 @@ export class CourierRepository implements ICourierRepository {
       }
 
       // Map to domain entities
-      return couriers.map((courier: any) => ({
-        id: courier.id,
-        name: courier.name,
-        phone: courier.phone,
-        vehicle: {
-          type: courier.vehicle_type,
-          capacity: {
-            maxWeight: courier.max_weight,
-            maxVolume: courier.max_volume,
-            maxItems: courier.max_items
-          }
-        },
-        rating: courier.rating,
-        completionRate: courier.completion_rate,
-        currentLocation: GeoPoint.create(
-          courier.current_lat,
-          courier.current_lng,
-          courier.current_address || 'Unknown'
-        ),
-        isAvailable: courier.is_available,
-        trafficExperience: courier.traffic_experience || 0.8
-      }));
+      return couriers.map((courier: any) => {
+        const status = normalizeCourierStatus(courier.status ?? (courier.is_available ? 'online' : 'offline'));
+        return {
+          id: courier.id,
+          name: courier.name,
+          phone: courier.phone,
+          vehicle: {
+            type: courier.vehicle_type,
+            capacity: {
+              maxWeight: courier.max_weight,
+              maxVolume: courier.max_volume,
+              maxItems: courier.max_items
+            }
+          },
+          rating: courier.rating,
+          completionRate: courier.completion_rate,
+          currentLocation: GeoPoint.create(
+            courier.current_lat,
+            courier.current_lng,
+            courier.current_address || 'Unknown'
+          ),
+          status,
+          isAvailable: isCourierAvailable(status),
+          trafficExperience: courier.traffic_experience || 0.8
+        };
+      });
 
     } catch (error) {
       console.error('Error finding available couriers:', error);
@@ -192,6 +232,7 @@ export class CourierRepository implements ICourierRepository {
           current_lng,
           current_address,
           is_available,
+          status,
           traffic_experience,
           created_at,
           updated_at
@@ -208,6 +249,7 @@ export class CourierRepository implements ICourierRepository {
         return null;
       }
 
+      const status = normalizeCourierStatus(courier.status ?? (courier.is_available ? 'online' : 'offline'));
       // Map to domain entity
       return {
         id: courier.id,
@@ -228,7 +270,8 @@ export class CourierRepository implements ICourierRepository {
           courier.current_lng,
           courier.current_address || 'Unknown'
         ),
-        isAvailable: courier.is_available,
+        status,
+        isAvailable: isCourierAvailable(status),
         trafficExperience: courier.traffic_experience || 0.8
       };
 
@@ -245,6 +288,7 @@ export class CourierRepository implements ICourierRepository {
         .from('couriers')
         .update({
           is_available: false,
+          status: 'busy',
           current_delivery_id: deliveryId,
           updated_at: new Date().toISOString()
         })
@@ -272,6 +316,7 @@ export class CourierRepository implements ICourierRepository {
           .from('couriers')
           .update({
             is_available: true,
+            status: 'online',
             current_delivery_id: null,
             updated_at: new Date().toISOString()
           })
@@ -304,6 +349,7 @@ export class CourierRepository implements ICourierRepository {
           current_lng,
           current_address,
           is_available,
+          status,
           traffic_experience,
           created_at,
           updated_at
@@ -320,6 +366,7 @@ export class CourierRepository implements ICourierRepository {
         throw new Error(`Courier with ID ${courierId} not found`);
       }
 
+      const status = normalizeCourierStatus(courier.status ?? (courier.is_available ? 'online' : 'offline'));
       // Map to domain entity
       return {
         id: courier.id,
@@ -340,7 +387,8 @@ export class CourierRepository implements ICourierRepository {
           courier.current_lng,
           courier.current_address || 'Unknown'
         ),
-        isAvailable: courier.is_available,
+        status,
+        isAvailable: isCourierAvailable(status),
         trafficExperience: courier.traffic_experience || 0.8
       };
 
@@ -385,24 +433,35 @@ export class CourierRepository implements ICourierRepository {
   }
 
   async updateCourierAvailability(courierId: string, isAvailable: boolean): Promise<void> {
+    const status: CourierStatus = isAvailable ? 'online' : 'offline';
+    await this.updateCourierStatus(courierId, status);
+  }
+
+  async updateCourierStatus(courierId: string, status: CourierStatus): Promise<void> {
     try {
+      const isAvailable = isCourierAvailable(status);
+      const update: Record<string, unknown> = {
+        is_available: isAvailable,
+        status,
+        updated_at: new Date().toISOString()
+      };
+
+      if (status === 'online' || status === 'offline') {
+        update.current_delivery_id = null;
+      }
+
       const { error } = await this.databaseClient
         .from('couriers')
-        .update({
-          is_available: isAvailable,
-          current_delivery_id: isAvailable ? null : undefined, // Clear delivery if becoming available
-          updated_at: new Date().toISOString()
-        })
+        .update(update)
         .eq('id', courierId);
 
       if (error) {
         console.error('Database update error:', error);
-        throw new Error('Failed to update courier availability');
+        throw new Error('Failed to update courier status');
       }
-
     } catch (error) {
-      console.error('Error updating courier availability:', error);
-      throw new Error('Failed to update courier availability');
+      console.error('Error updating courier status:', error);
+      throw new Error('Failed to update courier status');
     }
   }
 

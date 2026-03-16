@@ -285,68 +285,19 @@ describe('RedisCacheService', () => {
     cacheService = new RedisCacheService();
   });
 
-  describe('Fallback behavior', () => {
+  describe('Configuration enforcement', () => {
     it('should have correct service name', () => {
       expect(cacheService.name).toBe('RedisCacheService');
     });
 
-    it('should set and retrieve values using fallback', async () => {
-      await cacheService.set('key', 'value');
-      const result = await cacheService.get('key');
-      expect(result).toBe('value');
-    });
-
-    it('should delete values using fallback', async () => {
-      await cacheService.set('key', 'value');
-      await cacheService.del('key');
-      const result = await cacheService.get('key');
-      expect(result).toBeNull();
-    });
-
-    it('should check existence using fallback', async () => {
-      await cacheService.set('key', 'value');
-      const exists = await cacheService.exists('key');
-      expect(exists).toBe(true);
-    });
-
-    it('should flush cache using fallback', async () => {
-      await cacheService.set('key1', 'value1');
-      await cacheService.set('key2', 'value2');
-      await cacheService.flush();
-
-      expect(await cacheService.get('key1')).toBeNull();
-      expect(await cacheService.get('key2')).toBeNull();
-    });
-
-    it('should increment using fallback', async () => {
-      await cacheService.set('counter', 5);
-      const result = await cacheService.increment('counter', 3);
-      expect(result).toBe(8);
-    });
-
-    it('should expire using fallback', async () => {
-      jest.useFakeTimers();
-      await cacheService.set('key', 'value');
-      await cacheService.expire('key', 1);
-
-      expect(await cacheService.get('key')).toBe('value');
-      jest.advanceTimersByTime(1100);
-      expect(await cacheService.get('key')).toBeNull();
-
-      jest.useRealTimers();
-    });
-  });
-
-  describe('TTL support', () => {
-    it('should respect TTL in fallback service', async () => {
-      jest.useFakeTimers();
-      await cacheService.set('ttl-key', 'value', 2);
-
-      expect(await cacheService.get('ttl-key')).toBe('value');
-      jest.advanceTimersByTime(2100);
-      expect(await cacheService.get('ttl-key')).toBeNull();
-
-      jest.useRealTimers();
+    it('should reject cache operations when not configured', async () => {
+      await expect(cacheService.set('key', 'value')).rejects.toThrow('RedisCacheService is not configured');
+      await expect(cacheService.get('key')).rejects.toThrow('RedisCacheService is not configured');
+      await expect(cacheService.del('key')).rejects.toThrow('RedisCacheService is not configured');
+      await expect(cacheService.exists('key')).rejects.toThrow('RedisCacheService is not configured');
+      await expect(cacheService.flush()).rejects.toThrow('RedisCacheService is not configured');
+      await expect(cacheService.increment('counter', 3)).rejects.toThrow('RedisCacheService is not configured');
+      await expect(cacheService.expire('key', 1)).rejects.toThrow('RedisCacheService is not configured');
     });
   });
 });

@@ -1,5 +1,3 @@
-import { logger } from '../../infrastructure/services/logger.service';
-
 export interface NotificationServiceClient {
   sendEmail(userId: string, template: string, data: Record<string, unknown>): Promise<void>;
   sendSMS(userId: string, message: string): Promise<void>;
@@ -15,37 +13,42 @@ export interface SessionServiceClient {
   invalidateSession(sessionId: string): Promise<void>;
 }
 
-// Mock implementations for development
-export class MockNotificationServiceClient implements NotificationServiceClient {
-  async sendEmail(userId: string, template: string, data: Record<string, unknown>): Promise<void> {
-    logger.info(`[NOTIFICATION] Email sent`, { userId, template, data });
-  }
-
-  async sendSMS(userId: string, message: string): Promise<void> {
-    logger.info(`[NOTIFICATION] SMS sent`, { userId, message });
-  }
-
-  async sendPushNotification(userId: string, title: string, body: string): Promise<void> {
-    logger.info(`[NOTIFICATION] Push notification sent`, { userId, title, body });
+class UnconfiguredServiceClientError extends Error {
+  constructor(serviceName: string) {
+    super(`${serviceName} is not configured. Provide a real service client implementation.`);
   }
 }
 
-export class MockAuditServiceClient implements AuditServiceClient {
-  async recordEvent(userId: string, action: string, metadata: Record<string, unknown>): Promise<void> {
-    logger.info(`[AUDIT] Event recorded`, { userId, action, metadata });
+export class NotificationServiceClientUnavailable implements NotificationServiceClient {
+  async sendEmail(): Promise<void> {
+    throw new UnconfiguredServiceClientError('NotificationServiceClient');
+  }
+
+  async sendSMS(): Promise<void> {
+    throw new UnconfiguredServiceClientError('NotificationServiceClient');
+  }
+
+  async sendPushNotification(): Promise<void> {
+    throw new UnconfiguredServiceClientError('NotificationServiceClient');
   }
 }
 
-export class MockSessionServiceClient implements SessionServiceClient {
-  async invalidateUserSessions(userId: string, reason: string): Promise<void> {
-    logger.info(`[SESSION] User sessions invalidated`, { userId, reason });
-  }
-
-  async invalidateSession(sessionId: string): Promise<void> {
-    logger.info(`[SESSION] Session invalidated`, { sessionId });
+export class AuditServiceClientUnavailable implements AuditServiceClient {
+  async recordEvent(): Promise<void> {
+    throw new UnconfiguredServiceClientError('AuditServiceClient');
   }
 }
 
-export const notificationClient = new MockNotificationServiceClient();
-export const auditClient = new MockAuditServiceClient();
-export const sessionClient = new MockSessionServiceClient();
+export class SessionServiceClientUnavailable implements SessionServiceClient {
+  async invalidateUserSessions(): Promise<void> {
+    throw new UnconfiguredServiceClientError('SessionServiceClient');
+  }
+
+  async invalidateSession(): Promise<void> {
+    throw new UnconfiguredServiceClientError('SessionServiceClient');
+  }
+}
+
+export const notificationClient = new NotificationServiceClientUnavailable();
+export const auditClient = new AuditServiceClientUnavailable();
+export const sessionClient = new SessionServiceClientUnavailable();

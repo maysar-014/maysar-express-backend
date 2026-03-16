@@ -70,6 +70,22 @@ describe('IdGeneratorService', () => {
     });
   });
 
+  describe('generateOrderTrackingNumber', () => {
+    it('should generate a valid public order tracking number format', () => {
+      const trackingNumber = IdGeneratorService.generateOrderTrackingNumber(new Date('2026-03-16T10:15:30Z'));
+
+      expect(trackingNumber).toMatch(/^MYS-TZ-ORD-\d{8}-\d[A-Z]\d[A-Z]$/);
+      expect(trackingNumber).toContain('MYS-TZ-ORD-20260316-');
+    });
+
+    it('should generate unique tracking numbers', () => {
+      const first = IdGeneratorService.generateOrderTrackingNumber();
+      const second = IdGeneratorService.generateOrderTrackingNumber();
+
+      expect(first).not.toBe(second);
+    });
+  });
+
   describe('generateShortOrderId', () => {
     it('should generate a shorter order ID format', () => {
       const shortId = IdGeneratorService.generateShortOrderId();
@@ -114,6 +130,14 @@ describe('IdGeneratorService', () => {
 
       const invalidId = 'MSR-ORD-20260113-173418-7F1E'; // Wrong type
       expect(IdGeneratorService.isValidTrackingId(invalidId)).toBe(false);
+    });
+
+    it('should validate public order tracking numbers', () => {
+      const validId = 'MYS-TZ-ORD-20260316-3A7B';
+      expect(IdGeneratorService.isValidOrderTrackingNumber(validId)).toBe(true);
+
+      const invalidId = 'MSR-ORD-20260316-3A7B';
+      expect(IdGeneratorService.isValidOrderTrackingNumber(invalidId)).toBe(false);
     });
   });
 

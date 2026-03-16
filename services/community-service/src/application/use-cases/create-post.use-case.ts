@@ -1,6 +1,5 @@
 import { Post, PostType, PostVisibility, PostMetadata, PostStatus } from '../../domain/entities/post.entity';
-import { User, UserRole } from '../../domain/entities/user.entity';
-import { TrustMetadata } from '../../domain/value-objects/trust-metadata.value-object';
+import { User } from '../../domain/entities/user.entity';
 import { PostingPermissionsPolicy } from '../../domain/policies/posting-permissions.policy';
 import { ContentModerationPolicy } from '../../domain/policies/content-moderation.policy';
 import { IPostRepository } from '../../domain/repositories';
@@ -13,7 +12,9 @@ import { IIdGenerator } from '../../infrastructure/services/id-generator.interfa
 export class CreatePostUseCase {
   constructor(
     private postRepository: IPostRepository,
-    private idGenerator: IIdGenerator
+    private idGenerator: IIdGenerator,
+    private authorProvider?: AuthorProvider,
+    private postStatsProvider?: PostStatsProvider
   ) {}
 
   async execute(params: CreatePostInput): Promise<CreatePostOutput> {
@@ -121,28 +122,34 @@ export class CreatePostUseCase {
   }
 
   private async getAuthor(authorId: string): Promise<User | null> {
-    // In real implementation, this would call user service
-    // For now, create a basic user for testing
-    return User.create({
-      id: authorId,
-      username: 'mockuser',
-      displayName: 'Mock User',
-      role: UserRole.BUYER,
-      trustMetadata: TrustMetadata.createDefault()
-    });
+    if (!this.authorProvider) {
+      throw new Error('Author provider is not configured for post creation.');
+    }
+    return this.authorProvider.getAuthor(authorId);
   }
 
   private async getPostsCountToday(authorId: string): Promise<number> {
-    // In real implementation, this would query the database
-    // For now, return 0
-    return 0;
+    if (!this.postStatsProvider) {
+      throw new Error('Post stats provider is not configured for post creation.');
+    }
+    return this.postStatsProvider.getPostsCountToday(authorId);
   }
 
   private async getCommercialPostsCountToday(authorId: string): Promise<number> {
-    // In real implementation, this would query the database
-    // For now, return 0
-    return 0;
+    if (!this.postStatsProvider) {
+      throw new Error('Post stats provider is not configured for post creation.');
+    }
+    return this.postStatsProvider.getCommercialPostsCountToday(authorId);
   }
+}
+
+export interface AuthorProvider {
+  getAuthor(authorId: string): Promise<User | null>;
+}
+
+export interface PostStatsProvider {
+  getPostsCountToday(authorId: string): Promise<number>;
+  getCommercialPostsCountToday(authorId: string): Promise<number>;
 }
 
 // Input/Output interfaces

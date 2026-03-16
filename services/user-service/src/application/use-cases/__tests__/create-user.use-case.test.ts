@@ -27,6 +27,7 @@ describe('CreateUserUseCase', () => {
     mockUserRepository = {
       emailExists: jest.fn().mockResolvedValue(false),
       phoneExists: jest.fn().mockResolvedValue(false),
+      publicCodeExists: jest.fn().mockResolvedValue(false),
       create: jest.fn().mockImplementation(async (user: any) => user)
     };
     mockEmailService = { sendEmail: jest.fn(), sendVerificationEmail: jest.fn() };

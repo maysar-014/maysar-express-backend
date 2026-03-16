@@ -1,0 +1,495 @@
+/* eslint-disable no-console */
+const fs = require('fs');
+const path = require('path');
+
+const repoRoot = path.resolve(__dirname, '..');
+const servicesDir = path.join(repoRoot, 'services');
+const collectionPath = path.join(repoRoot, 'postman', 'Maysar-Platform-E2E.postman_collection.json');
+const unmountedReportPath = path.join(repoRoot, 'reports', 'unmounted-routes.json');
+
+const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head'];
+
+const manualModuleFileMappings = {
+  // Modules that mount an app created in a non-routes file
+  'compliance-service': [
+    path.join(repoRoot, 'services', 'compliance-service', 'src', 'complianceService.ts')
+  ]
+};
+
+function readFile(filePath) {
+  return fs.readFileSync(filePath, 'utf8');
+}
+
+function fileExists(filePath) {
+  try {
+    fs.accessSync(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function normalizePath(value) {
+  if (!value) return '';
+  return value.replace(/\\/g, '/');
+}
+
+function joinPaths(...parts) {
+  const cleaned = parts
+    .filter(Boolean)
+    .map(p => String(p))
+    .join('/');
+  const normalized = cleaned.replace(/\/+/g, '/');
+  if (!normalized.startsWith('/')) {
+    return `/${normalized}`;
+  }
+  return normalized;
+}
+
+function extractModuleName(indexContent) {
+  const match = indexContent.match(/name:\s*['"]([^'"]+)['"]/);
+  return match ? match[1] : null;
+}
+
+function extractImports(indexContent, indexDir) {
+  const imports = new Map();
+  const importRegex = /import\s+([^;]+)\s+from\s+['"]([^'"]+)['"]/g;
+  let match;
+  while ((match = importRegex.exec(indexContent)) !== null) {
+    const clause = match[1].trim();
+    const source = match[2];
+    if (!source.startsWith('.')) {
+      continue;
+    }
+
+    const hasKnownExt = /\.(ts|tsx|js|jsx)$/.test(source);
+    const resolvedPath = path.resolve(indexDir, source + (hasKnownExt ? '' : '.ts'));
+    const resolvedPathAlt = path.resolve(indexDir, source, 'index.ts');
+    const resolved = fileExists(resolvedPath)
+      ? resolvedPath
+      : fileExists(resolvedPathAlt)
+        ? resolvedPathAlt
+        : null;
+    if (!resolved) {
+      continue;
+    }
+
+    if (clause.startsWith('{')) {
+      const named = clause
+        .replace(/[{}]/g, '')
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+      named.forEach(entry => {
+        const parts = entry.split(/\s+as\s+/i).map(s => s.trim()).filter(Boolean);
+        const alias = parts.length > 1 ? parts[1] : parts[0];
+        if (alias) {
+          imports.set(alias, resolved);
+        }
+      });
+    } else {
+      const defaultMatch = clause.match(/^([A-Za-z0-9_]+)/);
+      if (defaultMatch) {
+        imports.set(defaultMatch[1], resolved);
+      }
+    }
+  }
+
+  const requireRegex = /const\s+([A-Za-z0-9_]+)\s*=\s*require\(['"]([^'"]+)['"]\)(?:\\.default)?/g;
+  let requireMatch;
+  while ((requireMatch = requireRegex.exec(indexContent)) !== null) {
+    const symbol = requireMatch[1];
+    const source = requireMatch[2];
+    if (!source.startsWith('.')) {
+      continue;
+    }
+    const hasKnownExt = /\.(ts|tsx|js|jsx)$/.test(source);
+    const resolvedPath = path.resolve(indexDir, source + (hasKnownExt ? '' : '.ts'));
+    const resolvedPathAlt = path.resolve(indexDir, source, 'index.ts');
+    const resolved = fileExists(resolvedPath)
+      ? resolvedPath
+      : fileExists(resolvedPathAlt)
+        ? resolvedPathAlt
+        : null;
+    if (resolved) {
+      imports.set(symbol, resolved);
+    }
+  }
+
+  return imports;
+}
+
+function collectRouteFiles(rootDir) {
+  const results = [];
+  const stack = [rootDir];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (current.includes(`${path.sep}dist${path.sep}`)) {
+      continue;
+    }
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    entries.forEach(entry => {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === '__tests__' || entry.name === 'tests') {
+          return;
+        }
+        stack.push(fullPath);
+        return;
+      }
+      if (!entry.isFile()) return;
+      if (!entry.name.endsWith('.ts')) return;
+      if (entry.name.endsWith('.d.ts')) return;
+      if (entry.name.endsWith('.test.ts') || entry.name.endsWith('.spec.ts')) return;
+      if (entry.name.includes('metadata')) return;
+      if (!/routes/i.test(entry.name)) return;
+      results.push(fullPath);
+    });
+  }
+  return results;
+}
+
+function extractRouteUseMappings(indexContent, imports, moduleBase) {
+  const mappings = new Map();
+  const aliasToFile = new Map();
+
+  const aliasRegex = /\b(?:const|let|var)\s+([A-Za-z0-9_]+)\s*=\s*([A-Za-z0-9_]+)\s*\(/g;
+  const assignAliasRegex = /\b([A-Za-z0-9_]+)\s*=\s*([A-Za-z0-9_]+)\s*\(/g;
+  let aliasMatch;
+  while ((aliasMatch = aliasRegex.exec(indexContent)) !== null) {
+    const alias = aliasMatch[1];
+    const symbol = aliasMatch[2];
+    if (imports.has(symbol)) {
+      aliasToFile.set(alias, imports.get(symbol));
+    }
+  }
+  while ((aliasMatch = assignAliasRegex.exec(indexContent)) !== null) {
+    const alias = aliasMatch[1];
+    const symbol = aliasMatch[2];
+    if (imports.has(symbol)) {
+      aliasToFile.set(alias, imports.get(symbol));
+    }
+  }
+
+  const useRegex = /\b[A-Za-z0-9_$.]+(?:\.|\?\.)use\(([^;]+)\);/g;
+  let match;
+  while ((match = useRegex.exec(indexContent)) !== null) {
+    const args = match[1].trim();
+    let prefix = '';
+    let remainder = args;
+    const prefixMatch = remainder.match(/^['"`]([^'"`]+)['"`]\s*,\s*(.+)$/s);
+    if (prefixMatch) {
+      prefix = prefixMatch[1];
+      remainder = prefixMatch[2];
+    }
+
+    const allSymbols = new Map([...imports.entries(), ...aliasToFile.entries()]);
+    allSymbols.forEach((filePath, symbol) => {
+      const symbolRegex = new RegExp(`\\b${symbol}\\b`);
+      if (symbolRegex.test(remainder)) {
+        const fullPrefix = joinPaths(moduleBase, prefix);
+        if (!mappings.has(filePath)) {
+          mappings.set(filePath, new Set());
+        }
+        mappings.get(filePath).add(fullPrefix);
+      }
+    });
+  }
+
+  // Handle direct assignment to module routes: routes: symbol, routes = symbol(...), Module.routes = symbol(...)
+  const routeAssignmentRegexes = [
+    /routes\s*:\s*([A-Za-z0-9_]+)/g,
+    /routes\s*=\s*([A-Za-z0-9_]+)\(/g,
+    /[A-Za-z0-9_]+Module\.routes\s*=\s*([A-Za-z0-9_]+)\(/g,
+    /routes\s*=\s*([A-Za-z0-9_]+)\s*;/g,
+    /[A-Za-z0-9_]+Module\.routes\s*=\s*([A-Za-z0-9_]+)\s*;/g
+  ];
+  routeAssignmentRegexes.forEach(regex => {
+    let assignMatch;
+    while ((assignMatch = regex.exec(indexContent)) !== null) {
+      const symbol = assignMatch[1];
+      const filePath = imports.get(symbol) || aliasToFile.get(symbol);
+      if (filePath) {
+        if (!mappings.has(filePath)) {
+          mappings.set(filePath, new Set());
+        }
+        mappings.get(filePath).add(joinPaths(moduleBase));
+      }
+    }
+  });
+
+  return mappings;
+}
+
+function buildTransitiveRouteMappings(initialMappings) {
+  const mappings = new Map();
+  const visited = new Set();
+
+  const enqueue = (filePath, prefix) => {
+    const key = `${filePath}::${prefix}`;
+    if (visited.has(key)) return;
+    visited.add(key);
+    if (!mappings.has(filePath)) {
+      mappings.set(filePath, new Set());
+    }
+    mappings.get(filePath).add(prefix);
+  };
+
+  initialMappings.forEach((prefixes, filePath) => {
+    prefixes.forEach(prefix => enqueue(filePath, prefix));
+  });
+
+  const queue = Array.from(visited).map(entry => {
+    const [filePath, prefix] = entry.split('::');
+    return { filePath, prefix };
+  });
+
+  while (queue.length > 0) {
+    const { filePath, prefix } = queue.shift();
+    const content = readFile(filePath);
+    const imports = extractImports(content, path.dirname(filePath));
+    const nestedMappings = extractRouteUseMappings(content, imports, prefix);
+    nestedMappings.forEach((childPrefixes, childFile) => {
+      childPrefixes.forEach(childPrefix => {
+        const key = `${childFile}::${childPrefix}`;
+        if (!visited.has(key)) {
+          visited.add(key);
+          if (!mappings.has(childFile)) {
+            mappings.set(childFile, new Set());
+          }
+          mappings.get(childFile).add(childPrefix);
+          queue.push({ filePath: childFile, prefix: childPrefix });
+        }
+      });
+    });
+  }
+
+  return mappings;
+}
+
+function extractInlineRoutes(indexContent, moduleBase) {
+  const routes = [];
+  const methodRegex = new RegExp(`\\b\\w+\\.(${HTTP_METHODS.join('|')})\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'g');
+  let match;
+  while ((match = methodRegex.exec(indexContent)) !== null) {
+    const method = match[1].toUpperCase();
+    const routePath = match[2];
+    routes.push({ method, path: joinPaths(moduleBase, routePath) });
+  }
+  return routes;
+}
+
+function extractRoutesFromFile(filePath, prefixes) {
+  const content = readFile(filePath);
+  const routes = [];
+  const methodRegex = new RegExp(`\\b\\w+\\.(${HTTP_METHODS.join('|')})\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'g');
+  let match;
+  while ((match = methodRegex.exec(content)) !== null) {
+    const method = match[1].toUpperCase();
+    const routePath = match[2];
+    prefixes.forEach(prefix => {
+      routes.push({ method, path: joinPaths(prefix, routePath) });
+    });
+  }
+  return routes;
+}
+
+function extractRawRoutesFromFile(filePath) {
+  const content = readFile(filePath);
+  const routes = [];
+  const methodRegex = new RegExp(`\\b\\w+\\.(${HTTP_METHODS.join('|')})\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'g');
+  let match;
+  while ((match = methodRegex.exec(content)) !== null) {
+    routes.push({ method: match[1].toUpperCase(), path: match[2] });
+  }
+  return routes;
+}
+
+function collectModuleIndexes() {
+  const entries = fs.readdirSync(servicesDir, { withFileTypes: true });
+  return entries
+    .filter(entry => entry.isDirectory())
+    .map(entry => path.join(servicesDir, entry.name, 'index.ts'))
+    .filter(fileExists);
+}
+
+function buildRouteInventory() {
+  const moduleIndexes = collectModuleIndexes();
+  const allRoutes = [];
+  const routeFileMappings = new Map();
+  const debug = process.env.ROUTE_DEBUG === '1';
+
+  moduleIndexes.forEach(indexPath => {
+    const indexContent = readFile(indexPath);
+    const moduleName = extractModuleName(indexContent);
+    if (!moduleName) {
+      return;
+    }
+    const moduleBase = joinPaths('/api', moduleName.replace(/-service$/, ''));
+    const indexDir = path.dirname(indexPath);
+    const imports = extractImports(indexContent, indexDir);
+    const mappings = extractRouteUseMappings(indexContent, imports, moduleBase);
+
+    // Manual overrides for modules that mount an app factory directly
+    const manual = manualModuleFileMappings[moduleName] || [];
+    manual.forEach(filePath => {
+      if (!mappings.has(filePath)) {
+        mappings.set(filePath, new Set());
+      }
+      mappings.get(filePath).add(moduleBase);
+    });
+
+    if (debug) {
+      console.log(`\n[route-debug] module=${moduleName}`);
+    }
+
+    mappings.forEach((prefixes, filePath) => {
+      if (!routeFileMappings.has(filePath)) {
+        routeFileMappings.set(filePath, new Set());
+      }
+      Array.from(prefixes).forEach(prefix => routeFileMappings.get(filePath).add(prefix));
+    });
+
+    // Include inline routes defined in index file (health-summary, metrics, etc.)
+    allRoutes.push(...extractInlineRoutes(indexContent, moduleBase));
+  });
+
+  const transitiveMappings = buildTransitiveRouteMappings(
+    new Map(Array.from(routeFileMappings.entries()).map(([filePath, prefixes]) => [filePath, Array.from(prefixes)]))
+  );
+
+  if (debug) {
+    transitiveMappings.forEach((prefixes, filePath) => {
+      console.log(`  ${normalizePath(path.relative(repoRoot, filePath))} -> ${Array.from(prefixes).join(', ')}`);
+    });
+  }
+
+  transitiveMappings.forEach((prefixes, filePath) => {
+    allRoutes.push(...extractRoutesFromFile(filePath, Array.from(prefixes)));
+  });
+
+  // Global app-level routes in src/app.ts
+  allRoutes.push(
+    { method: 'GET', path: '/health' },
+    { method: 'GET', path: '/ready' },
+    { method: 'GET', path: '/debug-sentry' }
+  );
+
+  // Deduplicate by method+path
+  const seen = new Set();
+  const unique = [];
+  allRoutes.forEach(route => {
+    const key = `${route.method} ${route.path}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    unique.push(route);
+  });
+
+  unique.sort((a, b) => {
+    if (a.path === b.path) {
+      return a.method.localeCompare(b.method);
+    }
+    return a.path.localeCompare(b.path);
+  });
+
+  return unique;
+}
+
+function buildRouteInventoryFolder(routes) {
+  const testScript = [
+    'pm.test("Route is mounted (not 404)", function () {',
+    '  pm.expect(pm.response.code).to.not.equal(404);',
+    '});'
+  ];
+
+  return {
+    name: '99 Route Inventory (Auto)',
+    description: 'Auto-generated inventory of all detected module routes.',
+    item: routes.map(route => {
+      const headers = [{ key: 'Accept', value: 'application/json' }];
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(route.method)) {
+        headers.push({ key: 'Content-Type', value: 'application/json' });
+      }
+      return {
+        name: `${route.method} ${route.path}`,
+        event: [
+          {
+            listen: 'test',
+            script: { type: 'text/javascript', exec: testScript }
+          }
+        ],
+        request: {
+          method: route.method,
+          header: headers,
+          url: `{{platform_base_url}}${route.path}`,
+          description: ''
+        },
+        response: []
+      };
+    })
+  };
+}
+
+function updateCollection() {
+  const routes = buildRouteInventory();
+  const collection = JSON.parse(readFile(collectionPath));
+
+  collection.item = collection.item || [];
+  collection.item = collection.item.filter(item => item.name !== '99 Route Inventory (Auto)');
+  collection.item.push(buildRouteInventoryFolder(routes));
+
+  fs.writeFileSync(collectionPath, JSON.stringify(collection, null, 2));
+  const unmounted = buildUnmountedReport();
+  fs.mkdirSync(path.dirname(unmountedReportPath), { recursive: true });
+  fs.writeFileSync(unmountedReportPath, JSON.stringify(unmounted, null, 2));
+  console.log(`Updated collection with ${routes.length} routes.`);
+  console.log(`Unmounted route files: ${unmounted.files.length}`);
+}
+
+updateCollection();
+
+function buildUnmountedReport() {
+  const allRouteFiles = collectRouteFiles(servicesDir);
+
+  // Rebuild mounted mappings (transitive)
+  const moduleIndexes = collectModuleIndexes();
+  const routeFileMappings = new Map();
+
+  moduleIndexes.forEach(indexPath => {
+    const indexContent = readFile(indexPath);
+    const moduleName = extractModuleName(indexContent);
+    if (!moduleName) return;
+    const moduleBase = joinPaths('/api', moduleName.replace(/-service$/, ''));
+    const imports = extractImports(indexContent, path.dirname(indexPath));
+    const mappings = extractRouteUseMappings(indexContent, imports, moduleBase);
+
+    (manualModuleFileMappings[moduleName] || []).forEach(filePath => {
+      if (!mappings.has(filePath)) {
+        mappings.set(filePath, new Set());
+      }
+      mappings.get(filePath).add(moduleBase);
+    });
+
+    mappings.forEach((prefixes, filePath) => {
+      if (!routeFileMappings.has(filePath)) {
+        routeFileMappings.set(filePath, new Set());
+      }
+      Array.from(prefixes).forEach(prefix => routeFileMappings.get(filePath).add(prefix));
+    });
+  });
+
+  const transitiveMappings = buildTransitiveRouteMappings(
+    new Map(Array.from(routeFileMappings.entries()).map(([filePath, prefixes]) => [filePath, Array.from(prefixes)]))
+  );
+
+  const mountedFiles = new Set(Array.from(transitiveMappings.keys()));
+  const unmountedFiles = allRouteFiles.filter(filePath => !mountedFiles.has(filePath));
+
+  return {
+    generatedAt: new Date().toISOString(),
+    files: unmountedFiles.map(filePath => ({
+      file: normalizePath(path.relative(repoRoot, filePath)),
+      routes: extractRawRoutesFromFile(filePath)
+    }))
+  };
+}

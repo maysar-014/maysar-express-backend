@@ -510,12 +510,13 @@ describe('Delivery Events', () => {
         }
       };
 
-      // Events should be treated as immutable
+      Object.freeze(event);
+      Object.freeze(event.data);
+
       expect(() => {
         (event as any).eventId = 'modified';
-      }).not.toThrow(); // JS allows property modification, but this tests the concept
+      }).toThrow();
 
-      // But the original values should be preserved in our usage
       expect(event.eventId).toBe('evt_immutable');
     });
   });

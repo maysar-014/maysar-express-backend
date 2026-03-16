@@ -2,6 +2,8 @@
  * Push notification provider - Firebase/OneSignal
  */
 
+import admin from 'firebase-admin';
+
 export interface IPushProvider {
   send(deviceToken: string, payload: { title?: string; body?: string; data?: Record<string, any> }): Promise<void>;
   sendBatch(
@@ -13,15 +15,66 @@ export interface IPushProvider {
 }
 
 export class PushProviderAdapter implements IPushProvider {
+  private messaging?: admin.messaging.Messaging;
+
   constructor(private config?: { projectId?: string; privateKey?: string }) {}
+
+  private ensureMessaging(): admin.messaging.Messaging | undefined {
+    if (this.messaging) return this.messaging;
+
+    const projectId = this.config?.projectId || process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKeyRaw = this.config?.privateKey || process.env.FIREBASE_PRIVATE_KEY;
+    const privateKey = privateKeyRaw ? privateKeyRaw.replace(/\\n/g, '\n') : undefined;
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    if (!projectId || !clientEmail || !privateKey) {
+      if (isProduction) {
+        throw new Error('Firebase credentials are not configured for FCM');
+      }
+      if (process.env.NODE_ENV !== 'test') {
+        console.warn('FCM not configured; push delivery skipped');
+      }
+      return undefined;
+    }
+
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey
+        })
+      });
+    }
+
+    this.messaging = admin.messaging();
+    return this.messaging;
+  }
 
   async send(
     deviceToken: string,
     payload: { title?: string; body?: string; data?: Record<string, any> }
   ): Promise<void> {
-    if (process.env.NODE_ENV !== 'test') {
-      console.debug('PushProvider.send', { deviceToken: deviceToken.substring(0, 20) });
+    const messaging = this.ensureMessaging();
+    if (!messaging) {
+      return;
     }
+
+    const data = payload.data
+      ? Object.fromEntries(
+          Object.entries(payload.data).map(([key, value]) => [key, String(value)])
+        )
+      : undefined;
+
+    await messaging.send({
+      token: deviceToken,
+      notification: {
+        title: payload.title,
+        body: payload.body
+      },
+      data
+    });
   }
 
   async sendBatch(
@@ -30,8 +83,32 @@ export class PushProviderAdapter implements IPushProvider {
       payload: { title?: string; body?: string; data?: Record<string, any> };
     }>
   ): Promise<void> {
-    for (const item of items) {
-      await this.send(item.deviceToken, item.payload);
+    const messaging = this.ensureMessaging();
+    if (!messaging) {
+      return;
+    }
+
+    const chunkSize = 500;
+    for (let i = 0; i < items.length; i += chunkSize) {
+      const chunk = items.slice(i, i + chunkSize);
+      const messages = chunk.map((item) => {
+        const data = item.payload.data
+          ? Object.fromEntries(
+              Object.entries(item.payload.data).map(([key, value]) => [key, String(value)])
+            )
+          : undefined;
+
+        return {
+          token: item.deviceToken,
+          notification: {
+            title: item.payload.title,
+            body: item.payload.body
+          },
+          data
+        };
+      });
+
+      await messaging.sendAll(messages);
     }
   }
 }

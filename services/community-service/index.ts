@@ -7,6 +7,7 @@ import { eventBus } from '../../shared/events/eventBus';
 import { createKnowledgeRouter, createCommunityRouter } from './src/api/routes/community.routes';
 import { createDiscussionsRouter } from './src/api/routes/discussions.routes';
 import { postsRoutes } from './src/api/routes/posts.routes';
+import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { register as metricsRegistry } from './src/infrastructure/monitoring/metrics';
 import { KnowledgeController } from './src/api/controllers/knowledge.controller';
 import { CommunityController } from './src/api/controllers/community.controller';
@@ -24,10 +25,11 @@ import { PrismaDiscussionThreadRepository } from './src/infrastructure/repositor
 import { PrismaBusinessChallengeRepository } from './src/infrastructure/repositories/prisma-business-challenge.repository';
 import { HttpTrainingServiceClient } from './src/infrastructure/clients/training-service-client';
 import { HttpBusinessRegistryClient } from './src/infrastructure/clients/business-registry-client';
-import { randomUUID } from 'crypto';
+import { createPrismaClient } from '@shared/database/prisma-client';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 let outboxProcessor: OutboxProcessor | null = null;
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 class EventBusPublisher {
     constructor(private readonly bus: typeof eventBus) {}
@@ -88,7 +90,7 @@ class PrismaUserInteractionRepository {
 
         await this.client.community_UserInteraction.createMany({
             data: contentIds.map(contentId => ({
-                id: randomUUID(),
+                id: makeId(getModelPrefix('Community_UserInteraction')),
                 userId,
                 contentId,
                 contentType: 'DISCOVERY',
@@ -257,12 +259,8 @@ const communityWiring = (() => {
 
     const eventPublisher = new EventBusPublisher(eventBus);
     const expertProvider = new PrismaExpertProfileProvider(prisma);
-    const trainingServiceClient = new HttpTrainingServiceClient(
-        process.env.TRAINING_SERVICE_URL || 'http://training-service:3006'
-    );
-    const businessRegistryClient = new HttpBusinessRegistryClient(
-        process.env.BUSINESS_REGISTRY_URL || 'http://business-registry-service:3007'
-    );
+    const trainingServiceClient = new HttpTrainingServiceClient();
+    const businessRegistryClient = new HttpBusinessRegistryClient();
 
     const submitArticleUseCase = new SubmitKnowledgeArticleUseCase(
         articleRepository,
@@ -339,6 +337,8 @@ export const CommunityModule: Module = {
             res.set('Content-Type', metricsRegistry.contentType);
             res.end(await metricsRegistry.metrics());
         });
+
+        router.use('/system/maintenance', createMaintenanceRoutes(prisma));
 
         router.use('/knowledge', createKnowledgeRouter(communityWiring.knowledgeController as never));
         router.use('/', createCommunityRouter(communityWiring.communityController as never));

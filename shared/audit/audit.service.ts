@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { createLogger } from '../logger/logger';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 export interface EventBusAuditRecord {
     eventType: string;
@@ -16,7 +17,7 @@ export class AuditService {
     private logger = createLogger('AuditService', 'audit-service');
 
     private constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = createPrismaClient();
     }
 
     static getInstance(): AuditService {

@@ -33,7 +33,7 @@ export class OutboxRepository {
 
     async save(entry: OutboxEntry): Promise<void> {
         try {
-            await this.prisma.outboxEvent.create({
+            await this.prisma.wallet_OutboxEvent.create({
                 data: {
                     eventId: entry.eventId,
                     eventType: entry.eventType,
@@ -50,7 +50,7 @@ export class OutboxRepository {
 
     async findUnprocessed(limit: number = 100): Promise<PersistedOutboxEntry[]> {
         try {
-            const records = await this.prisma.outboxEvent.findMany({
+            const records = await this.prisma.wallet_OutboxEvent.findMany({
                 where: { status: 'PENDING' },
                 take: limit,
                 orderBy: { createdAt: 'asc' }
@@ -66,7 +66,7 @@ export class OutboxRepository {
 
     async markAsProcessed(id: string): Promise<void> {
         try {
-            await this.prisma.outboxEvent.update({
+            await this.prisma.wallet_OutboxEvent.update({
                 where: { id },
                 data: {
                     status: 'SENT',

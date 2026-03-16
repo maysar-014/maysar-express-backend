@@ -86,11 +86,11 @@ export class UserPolicies {
     // Business role transition rules
     const validTransitions: Record<UserRole, UserRole[]> = {
       [UserRole.BUYER]: [UserRole.SELLER, UserRole.SUPPLIER],
-      [UserRole.SELLER]: [UserRole.BUYER, UserRole.SUPPLIER, UserRole.ENABLER],
-      [UserRole.SUPPLIER]: [UserRole.SELLER, UserRole.ENABLER],
-      [UserRole.COURIER]: [UserRole.ENABLER],
-      [UserRole.ENABLER]: [UserRole.SYSTEM], // Only through promotion process
-      [UserRole.SYSTEM]: [] // No transitions allowed
+      [UserRole.SELLER]: [UserRole.BUYER, UserRole.SUPPLIER],
+      [UserRole.SUPPLIER]: [UserRole.SELLER],
+      [UserRole.COURIER]: [],
+      [UserRole.ENABLER]: [],
+      [UserRole.SYSTEM]: []
     };
 
     if (!validTransitions[targetUser.role]?.includes(newRole)) {
@@ -104,9 +104,8 @@ export class UserPolicies {
    * Business rules for user status changes
    */
   static canChangeStatus(currentUser: User, targetUser: User, newStatus: UserStatus): { allowed: boolean; reason?: string } {
-    // System admins and enablers can change status
-    const allowedRoles = [UserRole.SYSTEM, UserRole.ENABLER];
-    if (!allowedRoles.includes(currentUser.role)) {
+    // Only system admins can change user status
+    if (currentUser.role !== UserRole.SYSTEM) {
       return { allowed: false, reason: 'Insufficient permissions to change user status' };
     }
 
@@ -196,9 +195,8 @@ export class UserPolicies {
    * Business rules for bulk operations
    */
   static canPerformBulkOperation(currentUser: User, operation: string, targetCount: number): { allowed: boolean; reason?: string } {
-    // Only system admins and enablers can perform bulk operations
-    const allowedRoles = [UserRole.SYSTEM, UserRole.ENABLER];
-    if (!allowedRoles.includes(currentUser.role)) {
+    // Only system admins can perform bulk operations
+    if (currentUser.role !== UserRole.SYSTEM) {
       return { allowed: false, reason: 'Insufficient permissions for bulk operations' };
     }
 
@@ -232,9 +230,8 @@ export class UserPolicies {
     // Sellers and suppliers can search their related users (orders, etc.)
     // Implementation depends on business relationships
 
-    // Enablers and system admins have broader access
-    const adminRoles = [UserRole.ENABLER, UserRole.SYSTEM];
-    if (adminRoles.includes(currentUser.role)) {
+    // Only system admins have broader user search access
+    if (currentUser.role === UserRole.SYSTEM) {
       return { allowed: true };
     }
 
@@ -313,14 +310,6 @@ export class UserPolicies {
     // System admins have full access
     if (currentUser.role === UserRole.SYSTEM) {
       return { allowed: true };
-    }
-
-    // Enablers can view operational reports
-    if (currentUser.role === UserRole.ENABLER) {
-      const allowedReports = ['user_registration', 'user_activity', 'verification_rates'];
-      if (allowedReports.includes(reportType)) {
-        return { allowed: true };
-      }
     }
 
     // Sellers can view their own metrics

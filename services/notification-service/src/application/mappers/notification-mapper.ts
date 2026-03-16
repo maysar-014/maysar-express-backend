@@ -12,6 +12,7 @@ import {
 } from '../dto/notification.dto';
 import { CreateTemplateDto, TemplateResponseDto } from '../dto/template.dto';
 import { PreferenceResponseDto } from '../dto/preference.dto';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export class NotificationMapper {
   static toEntity(dto: CreateNotificationDto): Notification {
@@ -21,7 +22,7 @@ export class NotificationMapper {
       ? DeliveryAddress.create(dto.deliveryAddress, dto.deliveryAddressType)
       : undefined;
     return Notification.create({
-      id: NotificationMapper.generateId(),
+      id: makeId(getModelPrefix('Notification')),
       userId: dto.userId,
       type: dto.type,
       channel: dto.channel,
@@ -99,7 +100,7 @@ export class NotificationMapper {
 
   static templateToEntity(dto: CreateTemplateDto): NotificationTemplate {
     return NotificationTemplate.create({
-      id: NotificationMapper.generateId(),
+      id: makeId(getModelPrefix('NotificationTemplate')),
       name: dto.name,
       type: dto.type,
       channel: dto.channel,
@@ -153,7 +154,4 @@ export class NotificationMapper {
     });
   }
 
-  private static generateId(): string {
-    return `notif_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-  }
 }

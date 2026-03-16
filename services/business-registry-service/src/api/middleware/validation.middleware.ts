@@ -63,6 +63,20 @@ const suspendBusinessSchema = Joi.object({
   reason: Joi.string().max(500).optional()
 });
 
+const createBusinessDocumentSchema = Joi.object({
+  type: Joi.string().required(),
+  fileName: Joi.string().min(1).required(),
+  fileUrl: Joi.string().uri().required(),
+  status: Joi.string().optional()
+});
+
+const createComplianceRecordSchema = Joi.object({
+  type: Joi.string().required(),
+  status: Joi.string().required(),
+  expiresAt: Joi.date().iso().optional(),
+  notes: Joi.string().max(1000).optional()
+});
+
 export function validateCreateBusiness(req: Request, res: Response, next: NextFunction): void {
   const { error } = createBusinessSchema.validate(req.body);
   if (error) {
@@ -92,6 +106,24 @@ export function validateVerifyBusiness(req: Request, res: Response, next: NextFu
 
 export function validateSuspendBusiness(req: Request, res: Response, next: NextFunction): void {
   const { error } = suspendBusinessSchema.validate(req.body);
+  if (error) {
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.details[0]?.message } });
+    return;
+  }
+  next();
+}
+
+export function validateCreateBusinessDocument(req: Request, res: Response, next: NextFunction): void {
+  const { error } = createBusinessDocumentSchema.validate(req.body);
+  if (error) {
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.details[0]?.message } });
+    return;
+  }
+  next();
+}
+
+export function validateCreateComplianceRecord(req: Request, res: Response, next: NextFunction): void {
+  const { error } = createComplianceRecordSchema.validate(req.body);
   if (error) {
     res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.details[0]?.message } });
     return;

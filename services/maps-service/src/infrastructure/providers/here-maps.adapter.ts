@@ -34,7 +34,7 @@ export class HereRoutingAdapter implements RoutingPort {
             transportMode: this.getTransportMode(constraints),
             origin: `${originCoords.lat},${originCoords.lng}`,
             destination: `${destCoords.lat},${destCoords.lng}`,
-            return: 'summary,polyline,instructions',
+            return: 'summary',
             routingMode: 'fast'
         });
 
@@ -53,7 +53,7 @@ export class HereRoutingAdapter implements RoutingPort {
         const params = new URLSearchParams({
             apikey: this.apiKey,
             transportMode: this.getTransportMode(constraints),
-            return: 'summary,polyline,instructions',
+            return: 'summary',
             routingMode: 'fast'
         });
 
@@ -87,7 +87,7 @@ export class HereRoutingAdapter implements RoutingPort {
             transportMode: 'car',
             origin: `${originCoords.lat},${originCoords.lng}`,
             destination: `${destCoords.lat},${destCoords.lng}`,
-            return: 'summary,polyline,instructions',
+            return: 'summary',
             routingMode: 'fast',
             alternatives: String(requestedCount)
         });
@@ -139,7 +139,8 @@ export class HereRoutingAdapter implements RoutingPort {
     private async requestRoutes(params: URLSearchParams): Promise<any[]> {
         const response = await fetch(`${this.baseUrl}/routes?${params.toString()}`);
         if (!response.ok) {
-            throw new Error(`HERE API request failed: ${response.status} ${response.statusText}`);
+            const body = await response.text();
+            throw new Error(`HERE API request failed: ${response.status} ${response.statusText} - ${body}`);
         }
 
         const data = (await response.json()) as { routes?: any[] };

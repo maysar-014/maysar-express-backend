@@ -9,14 +9,41 @@ export interface DistanceResult {
   trafficDelay?: number; // traffic delay in minutes
 }
 
+export interface DistanceFallbackConfig {
+  enabled: boolean;
+  inflationFactor: number;
+  timeoutMs: number;
+}
+
 export class DistanceCalculationAlgorithm {
   private static routeOptimizationService?: RouteOptimizationPort;
+  private static readonly DEFAULT_INFLATION_FACTOR = 1.35;
+  private static readonly DEFAULT_ROUTING_TIMEOUT_MS = 800;
+  private static fallbackConfig: DistanceFallbackConfig = {
+    enabled: true,
+    inflationFactor: DistanceCalculationAlgorithm.DEFAULT_INFLATION_FACTOR,
+    timeoutMs: DistanceCalculationAlgorithm.DEFAULT_ROUTING_TIMEOUT_MS
+  };
 
   /**
    * Set the route optimization service (HERE Technologies) for accurate road-based calculations
    */
   static setRouteOptimizationService(service: RouteOptimizationPort): void {
     this.routeOptimizationService = service;
+  }
+
+  /**
+   * Configure fallback behavior (infrastructure layer should supply environment-based config).
+   */
+  static configureFallback(config: Partial<DistanceFallbackConfig>): void {
+    this.fallbackConfig = this.normalizeFallbackConfig({
+      ...this.fallbackConfig,
+      ...config
+    });
+  }
+
+  static getFallbackConfigSnapshot(): DistanceFallbackConfig {
+    return { ...this.fallbackConfig };
   }
 
   /**
@@ -49,27 +76,43 @@ export class DistanceCalculationAlgorithm {
     averageSpeedKmh: number = 30,
     constraints?: RouteConstraints
   ): Promise<DistanceResult> {
-    if (!this.routeOptimizationService) {
-      throw new Error('HERE Technologies service is required for distance calculations. Configure HERE_API_KEY and call setRouteOptimizationService().');
-    }
-
-    const route = await this.routeOptimizationService.calculateOptimalRoute(origin, destination, constraints);
+    const { enabled: fallbackEnabled, inflationFactor, timeoutMs } = this.getFallbackConfig();
     const bearing = this.calculateBearing(origin, destination);
 
-    return {
-      distance: Math.round(route.totalDistance * 100) / 100, // Round to 2 decimal places
-      bearing: Math.round(bearing * 100) / 100,
-      duration: Math.round(route.totalDuration),
-      baseDuration: route.baseDuration ? Math.round(route.baseDuration) : undefined,
-      trafficDelay: route.trafficDelay !== undefined ? Math.round(route.trafficDelay * 100) / 100 : undefined
-    };
+    if (!this.routeOptimizationService) {
+      if (!fallbackEnabled) {
+        throw new Error('HERE Technologies service is required for distance calculations. Configure HERE_API_KEY and call setRouteOptimizationService().');
+      }
+      return this.buildFallbackResult(origin, destination, averageSpeedKmh, bearing, inflationFactor);
+    }
+
+    try {
+      const route = await this.withTimeout(
+        this.routeOptimizationService.calculateOptimalRoute(origin, destination, constraints),
+        timeoutMs
+      );
+
+      return {
+        distance: Math.round(route.totalDistance * 100) / 100, // Round to 2 decimal places
+        bearing: Math.round(bearing * 100) / 100,
+        duration: Math.round(route.totalDuration),
+        baseDuration: route.baseDuration ? Math.round(route.baseDuration) : undefined,
+        trafficDelay: route.trafficDelay !== undefined ? Math.round(route.trafficDelay * 100) / 100 : undefined
+      };
+    } catch (error) {
+      if (!fallbackEnabled) {
+        throw error;
+      }
+      return this.buildFallbackResult(origin, destination, averageSpeedKmh, bearing, inflationFactor);
+    }
   }
 
   /**
    * Check if a point is within a specified radius of another point using HERE API
    */
   static async isWithinRadius(center: GeoPoint, point: GeoPoint, radiusKm: number): Promise<boolean> {
-    if (!this.routeOptimizationService) {
+    const { enabled: fallbackEnabled } = this.getFallbackConfig();
+    if (!this.routeOptimizationService && !fallbackEnabled) {
       throw new Error('HERE Technologies service is required for distance calculations. Configure HERE_API_KEY and call setRouteOptimizationService().');
     }
 
@@ -110,10 +153,6 @@ export class DistanceCalculationAlgorithm {
       return 0;
     }
 
-    if (!this.routeOptimizationService) {
-      throw new Error('HERE Technologies service is required for distance calculations. Configure HERE_API_KEY and call setRouteOptimizationService().');
-    }
-
     let totalDistance = 0;
     for (let i = 0; i < waypoints.length - 1; i++) {
       const segmentResult = await this.calculateDeliveryDistance(waypoints[i], waypoints[i + 1]);
@@ -121,6 +160,63 @@ export class DistanceCalculationAlgorithm {
     }
 
     return Math.round(totalDistance * 100) / 100;
+  }
+
+  private static buildFallbackResult(
+    origin: GeoPoint,
+    destination: GeoPoint,
+    averageSpeedKmh: number,
+    bearing: number,
+    inflationFactor: number
+  ): DistanceResult {
+    const straightDistance = origin.distanceTo(destination);
+    const inflatedDistance = straightDistance * inflationFactor;
+    const durationMinutes = (inflatedDistance / averageSpeedKmh) * 60;
+
+    return {
+      distance: Math.round(inflatedDistance * 100) / 100,
+      bearing: Math.round(bearing * 100) / 100,
+      duration: Math.round(durationMinutes),
+      baseDuration: Math.round(durationMinutes),
+      trafficDelay: 0
+    };
+  }
+
+  private static getFallbackConfig(): DistanceFallbackConfig {
+    return this.fallbackConfig;
+  }
+
+  private static normalizeFallbackConfig(config: DistanceFallbackConfig): DistanceFallbackConfig {
+    const inflation = Number.isFinite(config.inflationFactor) && config.inflationFactor > 1
+      ? config.inflationFactor
+      : this.DEFAULT_INFLATION_FACTOR;
+    const timeout = Number.isFinite(config.timeoutMs) && config.timeoutMs > 0
+      ? config.timeoutMs
+      : this.DEFAULT_ROUTING_TIMEOUT_MS;
+    return {
+      enabled: Boolean(config.enabled),
+      inflationFactor: inflation,
+      timeoutMs: timeout
+    };
+  }
+
+  private static async withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+    if (!timeoutMs || timeoutMs <= 0) {
+      return promise;
+    }
+
+    let timeoutHandle: NodeJS.Timeout | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutHandle = setTimeout(() => reject(new Error('Routing request timed out')), timeoutMs);
+    });
+
+    try {
+      return await Promise.race([promise, timeoutPromise]);
+    } finally {
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
+    }
   }
 
   private static toRadians(degrees: number): number {

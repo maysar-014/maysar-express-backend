@@ -150,85 +150,13 @@ export class HealthRoutesFactory {
  * Health Check Helper Functions
  */
 async function checkServiceReadiness(): Promise<boolean> {
-  // In a real implementation, this would check:
-  // - Database connectivity
-  // - Cache connectivity
-  // - Message bus connectivity
-  // - External service dependencies
-
-  // For now, simulate a basic readiness check
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Simulate 95% uptime
-      resolve(Math.random() > 0.05);
-    }, 10);
-  });
+  const requiredEnv = ['DATABASE_URL'];
+  const missing = requiredEnv.filter((key) => !process.env[key]);
+  return missing.length === 0;
 }
 
 async function getDetailedHealthStatus() {
-  const timestamp = new Date().toISOString();
-
-  // Mock detailed health checks
-  const checks = {
-    database: {
-      status: 'healthy',
-      latency: Math.floor(Math.random() * 50) + 10,
-      connections: {
-        active: 5,
-        idle: 10,
-        total: 15
-      }
-    },
-    cache: {
-      status: 'healthy',
-      hitRate: 0.85,
-      memoryUsage: {
-        used: 45,
-        total: 100,
-        unit: 'MB'
-      }
-    },
-    messageBus: {
-      status: 'healthy',
-      connections: 3,
-      pendingMessages: 0
-    },
-    search: {
-      status: 'healthy',
-      indexSize: 125000,
-      queryLatency: Math.floor(Math.random() * 30) + 5
-    },
-    externalServices: {
-      status: 'healthy',
-      services: {
-        cdn: 'healthy',
-        payment: 'healthy',
-        notification: 'healthy'
-      }
-    }
-  };
-
-  // Calculate overall status
-  const unhealthyChecks = Object.values(checks).filter(
-    (check: any) => check.status !== 'healthy'
-  );
-
-  const overall = unhealthyChecks.length === 0 ? 'healthy' :
-                 unhealthyChecks.length < 2 ? 'degraded' : 'unhealthy';
-
-  return {
-    overall,
-    timestamp,
-    uptime: Math.floor(process.uptime()),
-    version: '1.0.0',
-    checks,
-    summary: {
-      totalChecks: Object.keys(checks).length,
-      healthy: Object.values(checks).filter((c: any) => c.status === 'healthy').length,
-      degraded: Object.values(checks).filter((c: any) => c.status === 'degraded').length,
-      unhealthy: unhealthyChecks.length
-    }
-  };
+  throw new Error('Detailed health checks are not implemented.');
 }
 
 /**
@@ -236,7 +164,7 @@ async function getDetailedHealthStatus() {
  */
 export const HEALTH_ROUTES_METADATA = {
   version: 'v1',
-  prefix: '/api/v1',
+  prefix: '/v1',
   routes: [
     { method: 'GET', path: '/health', description: 'Basic health check', auth: 'none' },
     { method: 'GET', path: '/health/ready', description: 'Readiness probe', auth: 'none' },

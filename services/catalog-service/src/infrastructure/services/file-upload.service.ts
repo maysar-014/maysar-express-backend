@@ -5,8 +5,12 @@
  */
 
 import { Readable } from 'stream';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { gzipSync } from 'zlib';
 import { S3CDNProvider } from '../providers/cdn.provider';
 import { SharpImageProvider } from '../providers/image-processing.provider';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 /**
  * File Upload Configuration
@@ -388,8 +392,9 @@ export class FileUploadService {
 
       case 'local':
       default:
-        // In a real implementation, this would save to local filesystem
         const localPath = `/uploads/${filePath}`;
+        await fs.mkdir(path.dirname(localPath), { recursive: true });
+        await fs.writeFile(localPath, file.buffer);
         return {
           url: localPath
         };
@@ -400,17 +405,14 @@ export class FileUploadService {
    * Compress file
    */
   private async compressFile(buffer: Buffer, level?: number): Promise<Buffer> {
-    // In a real implementation, this would use compression libraries
-    // For now, return the original buffer
-    return buffer;
+    return gzipSync(buffer, typeof level === 'number' ? { level } : undefined);
   }
 
   /**
    * Generate unique file ID
    */
   private generateFileId(): string {
-    const crypto = require('crypto');
-    return crypto.randomUUID();
+    return makeId(getModelPrefix('MediaRef'));
   }
 
   /**

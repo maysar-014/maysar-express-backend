@@ -5,6 +5,7 @@ import { TrafficServicePort } from '../../domain/engines/ports/traffic.port';
 import { RouteOptimizationPort } from '../../domain/engines/ports/route-optimization.port';
 import { RealTimeTrackingPort } from '../../domain/engines/ports/tracking.port';
 import { CourierAssignmentPolicy } from '../../domain/policies/courier-assignment.policy';
+import { CourierSelectionEngine } from '../../domain/engines/courier-selection.engine';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 import { Weight } from '../../domain/value-objects/weight.value-object';
 import { TimeWindow } from '../../domain/value-objects/time-window.value-object';
@@ -144,14 +145,16 @@ export class CreateDeliveryUseCase {
       })
     );
 
-    // Apply domain policy (business rule)
-    const optimalCourier = this.courierPolicy.selectOptimalCourier(domainCouriers, {
+    // Apply domain selection engine (business rule)
+    const selectionEngine = new CourierSelectionEngine(this.courierPolicy);
+    const selection = selectionEngine.selectCourier(domainCouriers, {
       pickupLocation: pickupGeoPoint,
       deliveryLocation: deliveryGeoPoint,
       weight,
       priority: input.priority,
       specialRequirements: input.specialRequirements
     });
+    const optimalCourier = selection.courier;
 
     if (!optimalCourier) {
       throw new Error('No suitable courier found for delivery requirements');

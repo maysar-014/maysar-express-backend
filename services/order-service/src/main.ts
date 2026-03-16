@@ -2,6 +2,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { PrismaOrderRepository } from './infrastructure/database/prisma-order.repository';
+import { OrderPaymentRepository } from './infrastructure/repositories/order-payment.repository';
+import { OrderSettlementRepository } from './infrastructure/repositories/order-settlement.repository';
 import { EventPublisherImpl } from './infrastructure/messaging/event-publisher';
 import { PlaceOrderUseCase } from './application/use-cases/place-order.use-case';
 import { OrderController } from './api/controllers/order.controller';
@@ -25,6 +27,7 @@ import { EventIdempotency } from '@shared/middleware/idempotency';
 import { SagaRecoveryWorker } from '@shared/saga/saga-recovery.worker';
 import { DistributedSagaOrchestrator } from '@shared/saga/saga.orchestrator';
 import { redisCache } from './infrastructure/cache/redis-cache';
+import { OrderOutboxRepository } from './infrastructure/messaging/order-outbox.repository';
 
 // Load environment variables
 dotenv.config();
@@ -98,12 +101,11 @@ async function initializeService() {
     const orderRepository = new PrismaOrderRepository();
 
     // Initialize Outbox Repository for EventPublisher
-    const { PrismaOutboxRepository } = await import('@shared/outbox/outbox.repository');
-    const outboxRepository = new PrismaOutboxRepository(databaseManager.getPrisma());
+    const outboxRepository = new OrderOutboxRepository(databaseManager.getPrisma());
     const eventPublisher = new EventPublisherImpl(outboxRepository);
 
     // Start outbox processor after DB connection
-    const outbox = new TransactionalOutbox(databaseManager.getPrisma());
+    const outbox = new TransactionalOutbox(databaseManager.getPrisma(), 'order_OutboxEvent');
     const outboxProcessor = new OutboxProcessor(databaseManager.getPrisma(), outbox, eventBus);
     outboxProcessorRef = outboxProcessor;
     outboxProcessor.start();
@@ -123,9 +125,11 @@ async function initializeService() {
     const { SettlementService } = await import('./domain/engines/settlement.engine');
     
     const pesapalAdapter = new PesapalAdapter();
-    const settlementService = new SettlementService();
+    const settlementRepository = new OrderSettlementRepository(databaseManager.getPrisma());
+    const settlementService = new SettlementService(settlementRepository);
     
-    const paymentSaga = new PaymentSaga(pesapalAdapter);
+    const paymentRepository = new OrderPaymentRepository(databaseManager.getPrisma());
+    const paymentSaga = new PaymentSaga(pesapalAdapter, paymentRepository);
     const settlementSaga = new SettlementSaga(settlementService);
     const trainingSaga = new TrainingSaga(
       sagaLogRepository,

@@ -10,10 +10,12 @@ const buildDatabaseClient = (params?: {
   selectResults?: QueryResult[];
   upsertResult?: QueryResult;
   deleteResults?: QueryResult[];
+  updateResults?: QueryResult[];
 }) => {
   const selectQueue = [...(params?.selectResults || [])];
   const upsertResult = params?.upsertResult || { data: null, error: null };
   const deleteQueue = [...(params?.deleteResults || [])];
+  const updateQueue = [...(params?.updateResults || [])];
 
   const calls = {
     from: [] as string[],
@@ -24,6 +26,7 @@ const buildDatabaseClient = (params?: {
     order: [] as Array<{ table: string; field: string; options: { ascending: boolean } }>,
     range: [] as Array<{ table: string; from: number; to: number }>,
     upsert: [] as Array<{ table: string; data: any; options: any }>,
+    update: [] as Array<{ table: string; data: any; field: string; value: any }>,
     deleteEq: [] as Array<{ table: string; field: string; value: any }>
   };
 
@@ -69,6 +72,13 @@ const buildDatabaseClient = (params?: {
           const result = selectQueue.shift() || { data: [], error: null, count: 0 };
           return createSelectBuilder(table, result);
         },
+        update: (data: any) => ({
+          eq: (field: string, value: any) => {
+            calls.update.push({ table, data, field, value });
+            const result = updateQueue.shift() || { data: null, error: null };
+            return Promise.resolve(result);
+          }
+        }),
         delete: () => ({
           eq: (field: string, value: any) => {
             calls.deleteEq.push({ table, field, value });
@@ -268,14 +278,18 @@ describe('RouteRepository', () => {
     await expect(repository.findAll()).resolves.toEqual({ routes: [], total: 0 });
   });
 
-  it('updateRoute returns current route and throws when route does not exist', async () => {
+  it('updateRoute updates and returns route, throws when route does not exist', async () => {
     const success = buildDatabaseClient({
-      selectResults: [{ data: routeRow, error: null }]
+      selectResults: [{ data: routeRow, error: null }],
+      updateResults: [{ data: null, error: null }]
     });
     const repository = new RouteRepository(success.client);
     const unchanged = await repository.updateRoute('route-1', {});
 
     expect(unchanged.getId()).toBe('route-1');
+    expect(success.calls.update).toContainEqual(
+      expect.objectContaining({ table: 'routes', field: 'id', value: 'route-1' })
+    );
 
     const missing = buildDatabaseClient({
       selectResults: [{ data: null, error: { code: 'PGRST116' } }]

@@ -1,4 +1,5 @@
 import { logger } from '../services/logger.service';
+import { eventBus } from '@shared/events/eventBus';
 
 type WalletNotificationType = 'wallet_credited' | 'wallet_debited' | 'wallet_frozen' | 'wallet_unfrozen' | 'hold_created' | 'hold_released' | 'topup_initiated' | 'payout_initiated';
 
@@ -17,8 +18,8 @@ export interface INotificationAdapter {
 }
 
 /**
- * Mock Notification Adapter
- * Usually this would interact with a Notification Service or external provider (SMS/Email)
+ * Notification Adapter
+ * Publishes wallet notification events for downstream services (SMS/Email/etc).
  */
 export class NotificationAdapter implements INotificationAdapter {
     async sendWalletNotification(userId: string, type: WalletNotificationType, data: WalletNotificationData): Promise<void> {
@@ -27,13 +28,10 @@ export class NotificationAdapter implements INotificationAdapter {
             data
         });
 
-        // In a real implementation:
-        // await this.notificationServiceClient.send({
-        //     userId,
-        //     message: `Your wallet was ${type} with ${data.amount}`,
-        //     channel: 'SMS'
-        // });
-
-        return Promise.resolve();
+        await eventBus.publish('WalletNotificationRequested', {
+            userId,
+            type,
+            data
+        }, data.correlationId ? { correlationId: data.correlationId } : undefined);
     }
 }

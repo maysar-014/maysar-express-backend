@@ -44,7 +44,7 @@ describe('Search Routes', () => {
 
     it('should have correct route metadata', () => {
       expect(SEARCH_ROUTES_METADATA.version).toBe('v1');
-      expect(SEARCH_ROUTES_METADATA.prefix).toBe('/api/v1');
+      expect(SEARCH_ROUTES_METADATA.prefix).toBe('/v1');
       expect(SEARCH_ROUTES_METADATA.routes).toHaveLength(5);
       expect(SEARCH_ROUTES_METADATA.middleware).toEqual([
         'authentication',
@@ -55,7 +55,7 @@ describe('Search Routes', () => {
     });
   });
 
-  describe('Product Search - GET /api/v1/products/search', () => {
+  describe('Product Search - GET /v1/products/search', () => {
     it('should delegate to controller searchProducts method', async () => {
       mockSearchController.searchProducts.mockImplementation(async (req, res) => {
         res.status(200).json({
@@ -78,7 +78,7 @@ describe('Search Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/products/search?q=laptop&category=electronics&page=1&limit=20');
+        .get('/v1/products/search?q=laptop&category=electronics&page=1&limit=20');
 
       expect(mockSearchController.searchProducts).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -104,7 +104,7 @@ describe('Search Routes', () => {
       });
 
       await request(app)
-        .get('/api/v1/products/search?q=phone&category=electronics&minPrice=100&maxPrice=1000&sortBy=price&sortOrder=asc');
+        .get('/v1/products/search?q=phone&category=electronics&minPrice=100&maxPrice=1000&sortBy=price&sortOrder=asc');
 
       expect(mockSearchController.searchProducts).toHaveBeenCalled();
     });
@@ -127,7 +127,7 @@ describe('Search Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/products/search?q=nonexistent');
+        .get('/v1/products/search?q=nonexistent');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -144,7 +144,7 @@ describe('Search Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/products/search?q=a'); // Too short
+        .get('/v1/products/search?q=a'); // Too short
 
       expect(response.status).toBe(422);
       expect(response.body.success).toBe(false);
@@ -152,7 +152,7 @@ describe('Search Routes', () => {
     });
   });
 
-  describe('Search Suggestions - GET /api/v1/search/suggestions', () => {
+  describe('Search Suggestions - GET /v1/search/suggestions', () => {
     it('should delegate to controller getSearchSuggestions method', async () => {
       mockSearchController.getSearchSuggestions.mockImplementation(async (req, res) => {
         res.status(200).json({
@@ -169,7 +169,7 @@ describe('Search Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/search/suggestions?q=lap&limit=5');
+        .get('/v1/search/suggestions?q=lap&limit=5');
 
       expect(mockSearchController.getSearchSuggestions).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -194,7 +194,7 @@ describe('Search Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/search/suggestions?q=wireless');
+        .get('/v1/search/suggestions?q=wireless');
 
       expect(response.body.data.suggestions.some((s: any) => s.type === 'category')).toBe(true);
       expect(response.body.data.suggestions.some((s: any) => s.type === 'product')).toBe(true);
@@ -213,7 +213,7 @@ describe('Search Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/search/suggestions?q=xyz123nonexistent');
+        .get('/v1/search/suggestions?q=xyz123nonexistent');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -221,7 +221,7 @@ describe('Search Routes', () => {
     });
   });
 
-  describe('Popular Searches - GET /api/v1/search/popular', () => {
+  describe('Popular Searches - GET /v1/search/popular', () => {
     it('should delegate to controller getPopularSearches method', async () => {
       mockSearchController.getPopularSearches.mockImplementation(async (req, res) => {
         res.status(200).json({
@@ -239,7 +239,7 @@ describe('Search Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/search/popular?period=7d&limit=10');
+        .get('/v1/search/popular?period=7d&limit=10');
 
       expect(mockSearchController.getPopularSearches).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -262,7 +262,7 @@ describe('Search Routes', () => {
       });
 
       await request(app)
-        .get('/api/v1/search/popular?period=30d&limit=20');
+        .get('/v1/search/popular?period=30d&limit=20');
 
       expect(mockSearchController.getPopularSearches).toHaveBeenCalled();
     });
@@ -276,14 +276,14 @@ describe('Search Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/search/popular');
+        .get('/v1/search/popular');
 
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);
     });
   });
 
-  describe('Search Analytics - GET /api/v1/search/analytics', () => {
+  describe('Search Analytics - GET /v1/search/analytics', () => {
     it('should delegate to controller getSearchAnalytics method', async () => {
       mockSearchController.getSearchAnalytics.mockImplementation(async (req, res) => {
         res.status(200).json({
@@ -310,7 +310,7 @@ describe('Search Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/search/analytics?period=30d&metrics=detailed');
+        .get('/v1/search/analytics?period=30d&metrics=detailed');
 
       expect(mockSearchController.getSearchAnalytics).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -334,7 +334,7 @@ describe('Search Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/search/analytics');
+        .get('/v1/search/analytics');
 
       expect(response.body.data.searchTrends.daily).toHaveLength(5);
       expect(response.body.data.searchTrends.weekly).toHaveLength(4);
@@ -350,47 +350,47 @@ describe('Search Routes', () => {
       });
 
       await request(app)
-        .get('/api/v1/search/analytics?period=7d&metrics=basic&format=json');
+        .get('/v1/search/analytics?period=7d&metrics=basic&format=json');
 
       expect(mockSearchController.getSearchAnalytics).toHaveBeenCalled();
     });
   });
 
-  describe('Legacy Search Route - GET /api/v1/search', () => {
+  describe('Legacy Search Route - GET /v1/search', () => {
     it('should redirect to new search endpoint', async () => {
       const response = await request(app)
-        .get('/api/v1/search?q=laptop&category=electronics&page=1')
+        .get('/v1/search?q=laptop&category=electronics&page=1')
         .redirects(0); // Don't follow redirects
 
       expect(response.status).toBe(301);
-      expect(response.headers.location).toBe('/api/v1/products/search?q=laptop&category=electronics&page=1');
+      expect(response.headers.location).toBe('/v1/products/search?q=laptop&category=electronics&page=1');
     });
 
     it('should handle search without query parameter', async () => {
       const response = await request(app)
-        .get('/api/v1/search?category=electronics&limit=10')
+        .get('/v1/search?category=electronics&limit=10')
         .redirects(0);
 
       expect(response.status).toBe(301);
-      expect(response.headers.location).toBe('/api/v1/products/search?category=electronics&limit=10');
+      expect(response.headers.location).toBe('/v1/products/search?category=electronics&limit=10');
     });
 
     it('should handle legacy query parameter', async () => {
       const response = await request(app)
-        .get('/api/v1/search?query=phone&sort=price')
+        .get('/v1/search?query=phone&sort=price')
         .redirects(0);
 
       expect(response.status).toBe(301);
-      expect(response.headers.location).toBe('/api/v1/products/search?q=phone&sort=price');
+      expect(response.headers.location).toBe('/v1/products/search?q=phone&sort=price');
     });
 
     it('should handle empty query parameters', async () => {
       const response = await request(app)
-        .get('/api/v1/search')
+        .get('/v1/search')
         .redirects(0);
 
       expect(response.status).toBe(301);
-      expect(response.headers.location).toBe('/api/v1/products/search?q=');
+      expect(response.headers.location).toBe('/v1/products/search?q=');
     });
   });
 
@@ -502,7 +502,7 @@ describe('Search Routes', () => {
       const invalidApp = createTestApp(invalidRoutes);
 
       const response = await request(invalidApp)
-        .get('/api/v1/search/non-existent-endpoint');
+        .get('/v1/search/non-existent-endpoint');
 
       expect(response.status).toBe(404);
     });
@@ -513,7 +513,7 @@ describe('Search Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/products/search?q=test');
+        .get('/v1/products/search?q=test');
 
       expect(response.status).toBe(500);
     });
@@ -526,7 +526,7 @@ describe('Search Routes', () => {
       });
 
       const promises = Array(5).fill().map(() =>
-        request(app).get('/api/v1/products/search?q=laptop')
+        request(app).get('/v1/products/search?q=laptop')
       );
 
       const responses = await Promise.all(promises);
@@ -545,7 +545,7 @@ describe('Search Routes', () => {
       const startTime = Date.now();
 
       await request(app)
-        .get('/api/v1/products/search?q=laptop');
+        .get('/v1/products/search?q=laptop');
 
       const endTime = Date.now();
       const responseTime = endTime - startTime;
@@ -571,7 +571,7 @@ describe('Search Routes', () => {
       });
 
       await request(app)
-        .get('/api/v1/products/search?q=gaming+laptop&category=electronics&brand=dell&minPrice=800&maxPrice=2000&inStock=true&sortBy=relevance&sortOrder=desc');
+        .get('/v1/products/search?q=gaming+laptop&category=electronics&brand=dell&minPrice=800&maxPrice=2000&inStock=true&sortBy=relevance&sortOrder=desc');
 
       expect(mockSearchController.searchProducts).toHaveBeenCalled();
     });
@@ -601,7 +601,7 @@ describe('Search Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/products/search?q=laptop&facets=true');
+        .get('/v1/products/search?q=laptop&facets=true');
 
       expect(response.body.data.facets).toBeDefined();
       expect(response.body.data.facets.category).toHaveLength(2);
@@ -625,7 +625,7 @@ describe('Search Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/products/search?q=laptop&page=2&limit=10');
+        .get('/v1/products/search?q=laptop&page=2&limit=10');
 
       expect(response.body.data.page).toBe(2);
       expect(response.body.data.limit).toBe(10);
@@ -645,7 +645,7 @@ describe('Search Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/products/search?q=a');
+        .get('/v1/products/search?q=a');
 
       expect(response.status).toBe(422);
       expect(response.body.error.code).toBe('QUERY_TOO_SHORT');
@@ -658,7 +658,7 @@ describe('Search Routes', () => {
       });
 
       await request(app)
-        .get('/api/v1/products/search?q=laptop%20%26%20mouse');
+        .get('/v1/products/search?q=laptop%20%26%20mouse');
 
       expect(mockSearchController.searchProducts).toHaveBeenCalled();
     });
@@ -674,7 +674,7 @@ describe('Search Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/products/search?q=test');
+        .get('/v1/products/search?q=test');
 
       expect(response.status).toBe(429);
       expect(response.body.error.code).toBe('RATE_LIMIT_EXCEEDED');

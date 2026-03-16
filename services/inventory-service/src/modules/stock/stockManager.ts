@@ -1,5 +1,7 @@
-import { EventBus } from '@shared-events/eventBus';
-import { LowStockAlertEvent, InventoryUpdatedEvent } from '../events/inventoryEvents';
+import { EventBus, EventEnvelope } from '@shared-events/eventBus';
+import { LowStockAlertEvent } from '../events/inventoryEvents';
+import { randomUUID } from 'crypto';
+import { IOutboxRepository } from '../../../../../shared/outbox/outbox.repository';
 
 export interface StockItemRecord {
   id?: string;
@@ -50,9 +52,12 @@ interface ReservationDelegate {
 }
 
 export interface StockManagerTxClient {
-  stockItem: StockItemDelegate;
-  inventoryMovement: InventoryMovementDelegate;
-  reservation: ReservationDelegate;
+  inventory_StockItem?: StockItemDelegate;
+  inventory_InventoryMovement?: InventoryMovementDelegate;
+  inventory_Reservation?: ReservationDelegate;
+  stockItem?: StockItemDelegate;
+  inventoryMovement?: InventoryMovementDelegate;
+  reservation?: ReservationDelegate;
 }
 
 export interface StockManagerPrisma extends StockManagerTxClient {
@@ -83,7 +88,8 @@ export interface StockUpdate {
 export class StockManager {
   constructor(
     private prisma: StockManagerPrisma,
-    private eventBus: EventBus
+    private eventBus: EventBus,
+    private outboxRepository?: IOutboxRepository
   ) {}
 
   /**
@@ -94,7 +100,8 @@ export class StockManager {
       ? { productVariantId: variantId, warehouseId }
       : { productVariantId: variantId };
 
-    const stockItems = await this.prisma.stockItem.findMany({
+    const stockItemDelegate = this.getStockItemDelegate(this.prisma);
+    const stockItems = await stockItemDelegate.findMany({
       where: whereClause,
       include: { warehouse: true },
       orderBy: { updatedAt: 'desc' }
@@ -117,8 +124,10 @@ export class StockManager {
   async updateStock(updates: StockUpdate[]): Promise<void> {
     const operations = updates.map(async (update) => {
       return await this.prisma.$transaction(async (tx: StockManagerTxClient) => {
+        const stockItemDelegate = this.getStockItemDelegate(tx);
+        const movementDelegate = this.getInventoryMovementDelegate(tx);
         // Get current stock item
-        const stockItem = await tx.stockItem.findUnique({
+        const stockItem = await stockItemDelegate.findUnique({
           where: {
             productVariantId_warehouseId: {
               productVariantId: update.variantId,
@@ -151,7 +160,7 @@ export class StockManager {
         await this.validateStockUpdate(stockItem, newQuantity, update);
 
         // Update stock item
-        const updatedStock = await tx.stockItem.update({
+        const updatedStock = await stockItemDelegate.update({
           where: {
             productVariantId_warehouseId: {
               productVariantId: update.variantId,
@@ -165,7 +174,7 @@ export class StockManager {
         });
 
         // Record inventory movement
-        await tx.inventoryMovement.create({
+        await movementDelegate.create({
           data: {
             productVariantId: update.variantId,
             warehouseId: update.warehouseId,
@@ -189,7 +198,7 @@ export class StockManager {
     await Promise.all(operations);
 
     // Emit inventory updated event
-    await this.eventBus.emit('InventoryUpdated.v1', {
+    await this.emitEvent('InventoryUpdated.v1', {
       updates: updates.map(u => ({
         variantId: u.variantId,
         warehouseId: u.warehouseId,
@@ -226,8 +235,10 @@ export class StockManager {
    */
   async reserveStock(orderId: string, orderItemId: string, variantId: string, warehouseId: string, quantity: number): Promise<void> {
     await this.prisma.$transaction(async (tx: StockManagerTxClient) => {
+      const stockItemDelegate = this.getStockItemDelegate(tx);
+      const reservationDelegate = this.getReservationDelegate(tx);
       // Check available stock
-      const stockItem = await tx.stockItem.findUnique({
+      const stockItem = await stockItemDelegate.findUnique({
         where: {
           productVariantId_warehouseId: {
             productVariantId: variantId,
@@ -241,7 +252,7 @@ export class StockManager {
       }
 
       // Create reservation
-      await tx.reservation.create({
+      await reservationDelegate.create({
         data: {
           orderId,
           orderItemId,
@@ -253,7 +264,7 @@ export class StockManager {
       });
 
       // Update reserved quantity
-      await tx.stockItem.update({
+      await stockItemDelegate.update({
         where: {
           productVariantId_warehouseId: {
             productVariantId: variantId,
@@ -271,7 +282,8 @@ export class StockManager {
    * Release reserved stock (cancelled/expired orders)
    */
   async releaseStock(orderId: string, reason: 'cancelled' | 'expired' = 'cancelled'): Promise<void> {
-    const reservations = await this.prisma.reservation.findMany({
+    const reservationDelegate = this.getReservationDelegate(this.prisma);
+    const reservations = await reservationDelegate.findMany({
       where: {
         orderId,
         status: 'active'
@@ -280,8 +292,10 @@ export class StockManager {
 
     for (const reservation of reservations) {
       await this.prisma.$transaction(async (tx: StockManagerTxClient) => {
+        const reservationTxDelegate = this.getReservationDelegate(tx);
+        const stockItemTxDelegate = this.getStockItemDelegate(tx);
         // Update reservation status
-        await tx.reservation.update({
+        await reservationTxDelegate.update({
           where: { id: reservation.id },
           data: {
             status: reason === 'cancelled' ? 'cancelled' : 'expired',
@@ -290,7 +304,7 @@ export class StockManager {
         });
 
         // Release reserved stock
-        await tx.stockItem.update({
+        await stockItemTxDelegate.update({
           where: {
             productVariantId_warehouseId: {
               productVariantId: reservation.productVariantId,
@@ -315,14 +329,17 @@ export class StockManager {
     if (availableStock <= reorderPoint && reorderPoint > 0) {
       const urgency = this.calculateUrgency(availableStock, reorderPoint);
 
-      await this.eventBus.emit('LowStockAlert.v1', {
-        productVariantId: stockItem.productVariantId,
-        warehouseId: stockItem.warehouseId,
-        currentStock: availableStock,
-        reorderPoint,
-        urgency,
-        timestamp: new Date().toISOString()
-      } as unknown as LowStockAlertEvent);
+      await this.emitEvent(
+        'LowStockAlert.v1',
+        {
+          productVariantId: stockItem.productVariantId,
+          warehouseId: stockItem.warehouseId,
+          currentStock: availableStock,
+          reorderPoint,
+          urgency,
+          timestamp: new Date().toISOString()
+        } as unknown as LowStockAlertEvent
+      );
     }
   }
 
@@ -380,5 +397,49 @@ export class StockManager {
       case 'set': return 'adjustment';
       default: return 'adjustment';
     }
+  }
+
+  private getStockItemDelegate(client: StockManagerTxClient): StockItemDelegate {
+    const delegate = client.inventory_StockItem ?? client.stockItem;
+    if (!delegate) {
+      throw new Error('Stock item delegate not found on Prisma client');
+    }
+    return delegate;
+  }
+
+  private getInventoryMovementDelegate(client: StockManagerTxClient): InventoryMovementDelegate {
+    const delegate = client.inventory_InventoryMovement ?? client.inventoryMovement;
+    if (!delegate) {
+      throw new Error('Inventory movement delegate not found on Prisma client');
+    }
+    return delegate;
+  }
+
+  private getReservationDelegate(client: StockManagerTxClient): ReservationDelegate {
+    const delegate = client.inventory_Reservation ?? client.reservation;
+    if (!delegate) {
+      throw new Error('Reservation delegate not found on Prisma client');
+    }
+    return delegate;
+  }
+
+  private async emitEvent(eventType: string, data: unknown, metadata?: Record<string, unknown>): Promise<void> {
+    const envelope: EventEnvelope = {
+      eventId: randomUUID(),
+      eventType,
+      data,
+      metadata,
+      timestamp: new Date()
+    };
+
+    if (this.outboxRepository) {
+      try {
+        await this.outboxRepository.save(envelope);
+      } catch {
+        // Best-effort outbox persistence; do not block event emission.
+      }
+    }
+
+    await this.eventBus.emit(eventType, data, metadata);
   }
 }

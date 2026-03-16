@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto';
 import { ITransactionRepository } from '../../domain/repositories/transaction.repository';
 import { IWalletRepository } from '../../domain/repositories/wallet.repository';
 import { IdempotencyService } from '../services/idempotency.service';
@@ -7,6 +6,7 @@ import { AuditInfo } from '../../domain/value-objects/audit-info.value-object';
 import { WalletEventPublisher } from '../../infrastructure/messaging/wallet-event-publisher';
 import { IAuditLogRepository } from '../../infrastructure/repositories/audit-log.repository';
 import { Transaction, TransactionType } from '../../domain/entities/transaction.entity';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export interface ReverseTransactionDTO {
     transactionId: string;
@@ -79,7 +79,7 @@ export class ReverseTransactionUseCase {
         // Mark original as reversed and create new reversal transaction
 
         const newTransaction = new Transaction({
-            id: randomUUID(),
+            id: makeId(getModelPrefix('Wallet_Transaction')),
             walletId: wallet.id,
             userId: wallet.userId,
             type: reversalType,

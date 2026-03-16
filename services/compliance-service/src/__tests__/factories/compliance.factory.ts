@@ -1,10 +1,10 @@
-import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export class ComplianceFactory {
     static createSubjectRightsRequest(overrides: any = {}) {
         return {
-            id: uuidv4(),
-            userId: uuidv4(),
+            id: makeId(getModelPrefix('Compliance_SubjectRightsRequest')),
+            userId: makeId(getModelPrefix('User_User')),
             requestType: 'access',
             status: 'pending',
             requestedAt: new Date(),
@@ -14,8 +14,8 @@ export class ComplianceFactory {
 
     static createKYCRecord(overrides: any = {}) {
         return {
-            id: uuidv4(),
-            userId: uuidv4(),
+            id: makeId(getModelPrefix('Compliance_KYCRecord')),
+            userId: makeId(getModelPrefix('User_User')),
             verificationStatus: 'pending',
             submittedAt: new Date(),
             ...overrides

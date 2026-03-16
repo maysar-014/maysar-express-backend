@@ -2,7 +2,7 @@
 import 'dotenv/config';
 import { Logger } from './utils/logger';
 import { AppConfiguration } from './config/app.config';
-import { PrismaClientManager } from './infrastructure/database/prisma.client';
+import { DatabaseConnection } from './infrastructure/database/prisma-client';
 import { RedisClientManager } from './infrastructure/cache/redis.client';
 import { LogisticsEngine } from './engines/logistics.engine';
 
@@ -65,16 +65,13 @@ class LogisticsDiagnosticRunner {
   private async checkDatabaseConnection(): Promise<void> {
     const start = Date.now();
     try {
-      const prisma = PrismaClientManager.getInstance();
-      await prisma.connect();
-      
-      const health = await prisma.healthCheck();
-      
+      const status = await DatabaseConnection.getConnectionStatus();
+      const healthy = status.connected;
       this.results.push({
         component: 'Database',
-        status: health.status === 'healthy' ? 'healthy' : 'error',
-        message: health.status === 'healthy' ? 'Database connection successful' : 'Database connection failed',
-        details: { latency: health.latency },
+        status: healthy ? 'healthy' : 'error',
+        message: healthy ? 'Database connection successful' : 'Database connection failed',
+        details: { latency: status.responseTime, error: status.error },
         duration: Date.now() - start
       });
     } catch (error: any) {

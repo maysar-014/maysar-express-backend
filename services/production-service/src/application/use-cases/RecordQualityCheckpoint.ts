@@ -3,6 +3,7 @@ import { QualityCheckpointDto } from '../dto/quality-checkpoint.dto';
 import { QualityControlEngine } from '../../domain/engines/QualityControlEngine';
 import { IQualityRepository } from '../../domain/interfaces/IQualityRepository';
 import { QualityCheckpoint, QualityStatus } from '../../domain/entities/QualityCheckpoint.entity';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export class RecordQualityCheckpoint {
     constructor(
@@ -12,7 +13,7 @@ export class RecordQualityCheckpoint {
 
     async execute(dto: QualityCheckpointDto): Promise<void> {
         const checkpoint = new QualityCheckpoint({
-            id: crypto.randomUUID(),
+            id: makeId(getModelPrefix('Production_QualityCheckpoint')),
             productionOrderId: dto.orderId,
             status: dto.passed ? QualityStatus.PASSED : QualityStatus.FAILED,
             passed: dto.passed,

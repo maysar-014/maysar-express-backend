@@ -140,6 +140,9 @@ export class CourierAssignmentPolicy {
     const weightKg = weight.toKilograms();
     const capacityRatio = weightKg / courier.vehicle.capacity.maxWeight;
 
+    // Penalize oversized vehicles for small loads
+    if (capacityRatio <= 0.1) return 0.7;
+    if (capacityRatio <= 0.3) return 0.9;
     if (capacityRatio <= 0.5) return 1.0; // Perfect match
     if (capacityRatio <= 0.8) return 0.8; // Good match
     if (capacityRatio <= 1.0) return 0.6; // Acceptable match

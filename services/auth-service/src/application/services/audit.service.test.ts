@@ -2,6 +2,10 @@ const authLoggerInfoMock = jest.fn();
 const authLoggerErrorMock = jest.fn();
 const sharedLoggerErrorMock = jest.fn();
 const prismaEventLogCreateMock = jest.fn();
+const prismaAuditLogCreateMock = jest.fn();
+const prismaAuditLogFindManyMock = jest.fn();
+const prismaAuditLogCountMock = jest.fn();
+const prismaTransactionMock = jest.fn();
 const prismaCtorMock = jest.fn().mockImplementation(() => ({
   eventLog: {
     create: prismaEventLogCreateMock
@@ -27,11 +31,28 @@ jest.mock('@prisma/client', () => ({
   PrismaClient: prismaCtorMock
 }));
 
+jest.mock('../../infrastructure/database/prisma-client', () => ({
+  prisma: {
+    auditLog: {
+      create: prismaAuditLogCreateMock,
+      findMany: prismaAuditLogFindManyMock,
+      count: prismaAuditLogCountMock
+    },
+    $transaction: prismaTransactionMock
+  }
+}));
+
 import { AuditService as AuthAuditService } from './audit.service';
 
 describe('audit service contracts', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    prismaTransactionMock.mockImplementation(async (arg: any) => {
+      if (Array.isArray(arg)) {
+        return Promise.all(arg);
+      }
+      return arg({ auditLog: { create: prismaAuditLogCreateMock } });
+    });
   });
 
   afterEach(() => {
@@ -41,6 +62,7 @@ describe('audit service contracts', () => {
   it('logs auth audit events and returns mock logs', async () => {
     const service = new AuthAuditService();
 
+    prismaAuditLogCreateMock.mockResolvedValueOnce(undefined);
     await service.logAuditEvent({
       userId: 'user-1',
       action: 'LOGIN',
@@ -48,15 +70,24 @@ describe('audit service contracts', () => {
       details: { ip: '127.0.0.1' }
     });
 
-    expect(authLoggerInfoMock).toHaveBeenCalledWith(
-      'Audit event logged',
+    expect(prismaAuditLogCreateMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'audit',
-        userId: 'user-1',
-        action: 'LOGIN'
+        data: expect.objectContaining({
+          userId: 'user-1',
+          action: 'LOGIN'
+        })
       })
     );
 
+    prismaAuditLogFindManyMock.mockResolvedValueOnce([
+      {
+        id: 'audit-1',
+        userId: 'user-1',
+        action: 'LOGIN',
+        timestamp: new Date('2026-03-08T00:00:00.000Z')
+      }
+    ]);
+    prismaAuditLogCountMock.mockResolvedValueOnce(1);
     const logsResult = await service.getAuditLogs({ userId: 'user-1', action: 'LOGIN' });
     expect(logsResult.total).toBe(1);
     expect(logsResult.logs[0]).toEqual(
@@ -68,9 +99,7 @@ describe('audit service contracts', () => {
   });
 
   it('rethrows auth logging failures after recording error', async () => {
-    authLoggerInfoMock.mockImplementationOnce(() => {
-      throw new Error('logger unavailable');
-    });
+    prismaAuditLogCreateMock.mockRejectedValueOnce(new Error('db unavailable'));
     const service = new AuthAuditService();
 
     await expect(
@@ -80,7 +109,7 @@ describe('audit service contracts', () => {
         resource: 'profile',
         details: {}
       })
-    ).rejects.toThrow('logger unavailable');
+    ).rejects.toThrow('db unavailable');
     expect(authLoggerErrorMock).toHaveBeenCalled();
   });
 

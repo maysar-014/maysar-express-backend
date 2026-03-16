@@ -27,13 +27,13 @@ describe('PrismaSmsRepository', () => {
         it('should create message', async () => {
             const message = SmsMessage.create({
                 id: 'msg-1',
-                phoneNumber: '+254712345678',
+                phoneNumber: '+255612834684',
                 content: 'Test'
             });
 
             (mockPrisma.sms_Message.create as jest.Mock).mockResolvedValue({
                 id: 'msg-1',
-                phoneNumber: '+254712345678',
+                phoneNumber: '+255612834684',
                 content: 'Test',
                 status: 'QUEUED',
                 retryCount: 0,
@@ -53,7 +53,7 @@ describe('PrismaSmsRepository', () => {
         it('should find message by ID', async () => {
             (mockPrisma.sms_Message.findUnique as jest.Mock).mockResolvedValue({
                 id: 'msg-1',
-                phoneNumber: '+254712345678',
+                phoneNumber: '+255612834684',
                 content: 'Test',
                 status: 'SENT',
                 retryCount: 0,
@@ -82,7 +82,7 @@ describe('PrismaSmsRepository', () => {
             (mockPrisma.sms_Message.findMany as jest.Mock).mockResolvedValue([
                 {
                     id: 'msg-1',
-                    phoneNumber: '+254712345678',
+                    phoneNumber: '+255612834684',
                     content: 'Test',
                     status: 'FAILED',
                     retryCount: 1,
@@ -104,7 +104,7 @@ describe('PrismaSmsRepository', () => {
             (mockPrisma.sms_Message.findMany as jest.Mock).mockResolvedValue([
                 {
                     id: 'msg-1',
-                    phoneNumber: '+254712345678',
+                    phoneNumber: '+255612834684',
                     content: 'Test',
                     status: 'SENT',
                     userId: 'user-1',
@@ -126,7 +126,7 @@ describe('PrismaSmsRepository', () => {
             (mockPrisma.sms_Message.findMany as jest.Mock).mockResolvedValue([
                 {
                     id: 'msg-1',
-                    phoneNumber: '+254712345678',
+                    phoneNumber: '+255612834684',
                     content: 'Test',
                     status: 'FAILED',
                     retryCount: 1,
@@ -148,7 +148,7 @@ describe('PrismaSmsRepository', () => {
         it('should update message', async () => {
             const message = SmsMessage.reconstitute({
                 id: 'msg-1',
-                phoneNumber: '+254712345678',
+                phoneNumber: '+255612834684',
                 content: 'Test',
                 status: SmsStatus.SENT,
                 retryCount: 0,
@@ -159,7 +159,7 @@ describe('PrismaSmsRepository', () => {
 
             (mockPrisma.sms_Message.update as jest.Mock).mockResolvedValue({
                 id: 'msg-1',
-                phoneNumber: '+254712345678',
+                phoneNumber: '+255612834684',
                 content: 'Test',
                 status: 'SENT',
                 retryCount: 0,

@@ -1,23 +1,22 @@
 import { NotificationMetadata } from '../notification-metadata.value-object';
 
 describe('NotificationMetadata', () => {
-    it('should create metadata', () => {
+    it('should create metadata and read values', () => {
         const metadata = NotificationMetadata.create({
             priority: 'high',
-            tags: ['urgent'],
-            customData: { orderId: '123' }
+            urgent: true,
+            orderId: '123'
         });
 
-        expect(metadata.getPriority()).toBe('high');
-        expect(metadata.getTags()).toContain('urgent');
+        expect(metadata.get('priority')).toBe('high');
+        expect(metadata.get('urgent')).toBe(true);
+        expect(metadata.get('orderId')).toBe('123');
     });
 
-    it('should get custom data', () => {
-        const metadata = NotificationMetadata.create({
-            priority: 'normal',
-            customData: { key: 'value' }
-        });
+    it('should merge metadata', () => {
+        const metadata = NotificationMetadata.create({ a: '1' });
+        const merged = metadata.merge({ b: 2 });
 
-        expect(metadata.getCustomData()).toEqual({ key: 'value' });
+        expect(merged.toObject()).toEqual({ a: '1', b: 2 });
     });
 });

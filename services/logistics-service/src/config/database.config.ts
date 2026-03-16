@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 export interface DatabaseConfig {
   url: string;
@@ -36,7 +37,7 @@ export class DatabaseConfiguration {
   }
 
   createPrismaClient(): PrismaClient {
-    return new PrismaClient({
+    return createPrismaClient({
       datasources: {
         db: {
           url: this.config.url

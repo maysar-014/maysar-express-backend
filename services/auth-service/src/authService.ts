@@ -8,9 +8,10 @@ import { AuthEventHandlers } from './infrastructure/events/auth.event-handlers';
 import { UserSyncEventHandlers } from './infrastructure/events/user-sync.event-handlers';
 import { AuthEventPublisher } from './infrastructure/messaging/auth-event-publisher';
 import { OutboxRepository } from '@shared/outbox/outbox.repository';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 const app = express();
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const authOutboxRepository = new OutboxRepository(prisma, 'sharedOutboxEvent');
 const authEventPublisher = new AuthEventPublisher(authOutboxRepository);
 app.use(express.json());

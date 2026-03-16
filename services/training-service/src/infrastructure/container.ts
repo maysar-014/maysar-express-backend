@@ -17,6 +17,7 @@ import { TrainingCompletionSaga } from '../application/sagas/training-completion
 import { TrainingController } from '../api/controllers/training.controller';
 import { ModuleController } from '../api/controllers/module.controller';
 import { HealthController } from '../api/controllers/health.controller';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 export class Container {
     private static instance: Container;
@@ -46,7 +47,7 @@ export class Container {
     public readonly healthController: HealthController;
 
     private constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = createPrismaClient();
 
         this.trainingRecordRepo = new PrismaTrainingRecordRepository(this.prisma);
         this.requirementRepo = new PrismaCertificationRequirementRepository(this.prisma);

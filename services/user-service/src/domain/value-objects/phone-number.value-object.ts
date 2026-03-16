@@ -25,15 +25,39 @@ export class PhoneNumber implements ValueObject<string> {
    * Normalize phone number format
    */
   private normalize(phoneNumber: string): string {
-    // Remove all non-digit characters except leading +
-    let normalized = phoneNumber.replace(/[^\d+]/g, '');
-    
-    // Ensure it starts with +
-    if (!normalized.startsWith('+')) {
-      normalized = `+${normalized}`;
+    const raw = String(phoneNumber || '').trim();
+    const hasPlus = raw.startsWith('+');
+    let digits = raw.replace(/\D/g, '');
+
+    if (!digits) {
+      return raw;
     }
 
-    return normalized;
+    // Normalize international prefix 00 -> +
+    if (!hasPlus && digits.startsWith('00')) {
+      digits = digits.slice(2);
+      return `+${digits}`;
+    }
+
+    // Tanzania local format 0XXXXXXXXX -> +255XXXXXXXXX
+    if (!hasPlus && digits.length === 10 && digits.startsWith('0')) {
+      return `+255${digits.slice(1)}`;
+    }
+
+    // Tanzania without plus but with country code
+    if (!hasPlus && digits.startsWith('255')) {
+      const rest = digits.slice(3);
+      if (rest.startsWith('0')) {
+        return `+255${rest.slice(1)}`;
+      }
+      return `+${digits}`;
+    }
+
+    // Default: ensure leading +
+    if (hasPlus && digits.startsWith('2550')) {
+      return `+255${digits.slice(4)}`;
+    }
+    return `+${digits}`;
   }
 
   /**

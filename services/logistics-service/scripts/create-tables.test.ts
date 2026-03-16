@@ -1,39 +1,47 @@
-const flush = () => new Promise<void>(resolve => setImmediate(resolve));
+const flush = () => new Promise<void>((resolve) => setImmediate(resolve));
 
 describe('create-tables script', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
+    delete process.env.PRISMA_SCHEMA_PATH;
+    delete process.env.MIGRATION_MODE;
   });
 
-  it('issues create table query through prisma manager', async () => {
-    const executeRawUnsafe = jest.fn().mockResolvedValue(1);
-    const connect = jest.fn().mockResolvedValue(undefined);
-    const getClient = jest.fn(() => ({ $executeRawUnsafe: executeRawUnsafe }));
+  it('runs prisma migrate deploy and generate with the repo schema', async () => {
+    const execSync = jest.fn();
 
-    jest.doMock('../src/infrastructure/database/prisma.client', () => ({
-      PrismaClientManager: {
-        getInstance: jest.fn(() => ({ connect, getClient }))
-      }
-    }));
+    jest.doMock('child_process', () => ({ execSync }));
 
     require('./create-tables');
     await flush();
 
-    expect(connect).toHaveBeenCalledTimes(1);
-    expect(getClient).toHaveBeenCalledTimes(1);
-    expect(executeRawUnsafe).toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE IF NOT EXISTS couriers'));
+    expect(execSync).toHaveBeenCalledTimes(2);
+    expect(execSync.mock.calls[0][0]).toEqual(expect.stringContaining('prisma migrate deploy'));
+    expect(execSync.mock.calls[0][0]).toEqual(expect.stringMatching(/prisma[\\/]+schema\.prisma/));
+    expect(execSync.mock.calls[1][0]).toEqual(expect.stringContaining('prisma generate'));
+    expect(execSync.mock.calls[1][0]).toEqual(expect.stringMatching(/prisma[\\/]+schema\.prisma/));
+  });
+
+  it('uses migrate dev when MIGRATION_MODE=dev', async () => {
+    const execSync = jest.fn();
+    process.env.MIGRATION_MODE = 'dev';
+
+    jest.doMock('child_process', () => ({ execSync }));
+
+    require('./create-tables');
+    await flush();
+
+    expect(execSync.mock.calls[0][0]).toEqual(expect.stringContaining('prisma migrate dev'));
   });
 
   it('forwards script errors to console.error', async () => {
-    const connect = jest.fn().mockRejectedValue(new Error('connect-failed'));
+    const execSync = jest.fn(() => {
+      throw new Error('migration-failed');
+    });
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    jest.doMock('../src/infrastructure/database/prisma.client', () => ({
-      PrismaClientManager: {
-        getInstance: jest.fn(() => ({ connect, getClient: jest.fn() }))
-      }
-    }));
+    jest.doMock('child_process', () => ({ execSync }));
 
     require('./create-tables');
     await flush();

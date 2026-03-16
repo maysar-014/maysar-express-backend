@@ -94,6 +94,7 @@ describe('DeliverySaga', () => {
         rating: 4.8,
         completionRate: 0.97,
         currentLocation: GeoPoint.create(-6.7901, 39.2001, 'Current'),
+        status: 'online',
         isAvailable: true,
         trafficExperience: 0.9
       }
@@ -147,6 +148,7 @@ describe('DeliverySaga', () => {
         rating: 4.4,
         completionRate: 0.96,
         currentLocation: GeoPoint.create(-6.79, 39.2, 'Current'),
+        status: 'online',
         isAvailable: true,
         trafficExperience: 0.7
       }
@@ -179,6 +181,7 @@ describe('DeliverySaga', () => {
         rating: 4.6,
         completionRate: 0.97,
         currentLocation: GeoPoint.create(-6.79, 39.2, 'Current'),
+        status: 'online',
         isAvailable: true,
         trafficExperience: 0.9
       }

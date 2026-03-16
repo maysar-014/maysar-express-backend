@@ -29,28 +29,26 @@ describe('ServiceDiscoveryService', () => {
   });
 
   it('returns null for unknown services and unhealthy services', async () => {
-    const discovery = new ServiceDiscoveryService();
+    const healthChecker = jest.fn().mockResolvedValue({ ok: false, responseTimeMs: 120 });
+    const discovery = new ServiceDiscoveryService(healthChecker);
     discovery.registerService('order-service', 'http://order:3002');
 
     expect(discovery.getServiceUrl('unknown')).toBeNull();
 
-    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.05);
     const health = await discovery.checkServiceHealth('order-service');
-    randomSpy.mockRestore();
 
     expect(health).toBe(false);
     expect(discovery.getServiceUrl('order-service')).toBeNull();
   });
 
   it('checks health and refreshes all registered services', async () => {
-    const discovery = new ServiceDiscoveryService();
+    const healthChecker = jest.fn().mockResolvedValue({ ok: true, responseTimeMs: 45 });
+    const discovery = new ServiceDiscoveryService(healthChecker);
     discovery.registerService('catalog-service', 'http://catalog:3003');
     discovery.registerService('wallet-service', 'http://wallet:3004');
 
-    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.95);
     const singleHealth = await discovery.checkServiceHealth('catalog-service');
     await discovery.refresh();
-    randomSpy.mockRestore();
 
     expect(singleHealth).toBe(true);
     expect(discovery.getAllServices()).toHaveLength(2);

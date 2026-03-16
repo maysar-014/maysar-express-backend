@@ -21,7 +21,7 @@ describe('TrackDeliveryUseCase', () => {
         it('should return status for existing message', async () => {
             const message = SmsMessage.reconstitute({
                 id: 'msg-1',
-                phoneNumber: '+254712345678',
+                phoneNumber: '+255612834684',
                 content: 'Test',
                 status: SmsStatus.DELIVERED,
                 retryCount: 0,
@@ -49,7 +49,7 @@ describe('TrackDeliveryUseCase', () => {
         it('should return statuses for multiple messages', async () => {
             const message1 = SmsMessage.reconstitute({
                 id: 'msg-1',
-                phoneNumber: '+254712345678',
+                phoneNumber: '+255612834684',
                 content: 'Test',
                 status: SmsStatus.SENT,
                 retryCount: 0,
@@ -60,7 +60,7 @@ describe('TrackDeliveryUseCase', () => {
 
             const message2 = SmsMessage.reconstitute({
                 id: 'msg-2',
-                phoneNumber: '+254712345679',
+                phoneNumber: '+255612834685',
                 content: 'Test',
                 status: SmsStatus.DELIVERED,
                 retryCount: 0,
@@ -95,7 +95,7 @@ describe('TrackDeliveryUseCase', () => {
             const messages = [
                 SmsMessage.reconstitute({
                     id: 'msg-1',
-                    phoneNumber: '+254712345678',
+                    phoneNumber: '+255612834684',
                     content: 'Test',
                     status: SmsStatus.SENT,
                     retryCount: 0,
@@ -107,10 +107,10 @@ describe('TrackDeliveryUseCase', () => {
 
             mockRepository.findByPhoneNumber.mockResolvedValue(messages);
 
-            const result = await useCase.executeByPhoneNumber('+254712345678');
+            const result = await useCase.executeByPhoneNumber('+255612834684');
 
             expect(result).toHaveLength(1);
-            expect(mockRepository.findByPhoneNumber).toHaveBeenCalledWith('+254712345678', 10);
+            expect(mockRepository.findByPhoneNumber).toHaveBeenCalledWith('+255612834684', 10);
         });
     });
 
@@ -119,7 +119,7 @@ describe('TrackDeliveryUseCase', () => {
             const messages = [
                 SmsMessage.reconstitute({
                     id: 'msg-1',
-                    phoneNumber: '+254712345678',
+                    phoneNumber: '+255612834684',
                     content: 'Test',
                     status: SmsStatus.SENT,
                     retryCount: 0,

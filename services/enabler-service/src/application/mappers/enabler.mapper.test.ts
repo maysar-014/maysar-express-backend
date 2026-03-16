@@ -6,6 +6,8 @@ const createEnabler = (): EnablerEntity =>
   EnablerEntity.create({
     id: 'enabler-1',
     userId: 'user-1',
+    enablerCode: 'ENB-8F3K29',
+    enablerCodeShort: 'E8F3K29',
     businessName: 'Amina Distribution',
     contactEmail: 'amina@example.com',
     status: Enabler_Status.ACTIVE,
@@ -28,6 +30,8 @@ describe('EnablerMapper', () => {
     expect(dto).toEqual({
       id: 'enabler-1',
       userId: 'user-1',
+      enablerCode: 'ENB-8F3K29',
+      enablerCodeShort: 'E8F3K29',
       businessName: 'Amina Distribution',
       status: Enabler_Status.ACTIVE,
       tier: Enabler_Tier.SILVER,

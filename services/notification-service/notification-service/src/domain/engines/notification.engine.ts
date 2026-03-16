@@ -1,3 +1,5 @@
+import { getModelPrefix, makeId } from '@shared/ids/id';
+
 export interface NotificationRequest {
   recipientId: string;
   recipientType: 'buyer' | 'seller' | 'courier' | 'supplier' | 'admin';
@@ -172,7 +174,7 @@ export class NotificationEngine {
   }
 
   private generateNotificationId(): string {
-    return `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return makeId(getModelPrefix('Notification'));
   }
 
   private createBatches<T>(items: T[], batchSize: number): T[][] {

@@ -117,8 +117,9 @@ export class PhoneVerificationUseCase {
   }
 
   private isValidPhoneNumber(phoneNumber: string): boolean {
-    const tanzanianPhoneRegex = /^(\+255|0)(7[0-9]|6[0-9]|2[0-9])\d{7}$/;
-    return tanzanianPhoneRegex.test(phoneNumber.replace(/\s+/g, ''));
+    const normalized = phoneNumber.replace(/[^\d+]/g, '');
+    const e164Like = /^\+?\d{7,15}$/;
+    return e164Like.test(normalized);
   }
 
   private async storeOTP(userId: string, phoneNumber: string, _otp: string, expiresAt: Date): Promise<void> {

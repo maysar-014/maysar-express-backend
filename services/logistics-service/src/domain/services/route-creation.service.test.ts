@@ -67,7 +67,8 @@ describe('RouteCreationService', () => {
         getRouteAlternatives: jest.fn(),
         validateRoute: jest.fn()
       } as never,
-      {} as never
+      {} as never,
+      { clusteringEnabled: false, clusteringRadiusKm: 1.0 }
     );
     jest.spyOn(console, 'warn').mockImplementation(() => undefined);
     jest.spyOn(Math, 'random').mockReturnValue(0.123456);

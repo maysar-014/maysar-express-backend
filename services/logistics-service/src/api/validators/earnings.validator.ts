@@ -1,5 +1,6 @@
 ﻿// @ts-nocheck
 import { body, param, query } from 'express-validator';
+import { isSystemId } from '@shared/validation/id';
 
 export class EarningsValidator {
   static recordEarnings(): ValidationChain[] {
@@ -130,8 +131,8 @@ export class EarningsValidator {
   static updatePaymentStatus(): ValidationChain[] {
     return [
       param('earningsId')
-        .isUUID()
-        .withMessage('Earnings ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Earnings ID must be a valid ID'),
 
       body('status')
         .isIn(['pending', 'paid', 'failed'])
@@ -218,8 +219,8 @@ export class EarningsValidator {
 
       query('courierId')
         .optional()
-        .isUUID()
-        .withMessage('Courier ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Courier ID must be a valid ID'),
 
       query('groupBy')
         .optional()
@@ -284,8 +285,8 @@ export class EarningsValidator {
         .withMessage('Payments must be an array with 1-100 items'),
 
       body('payments.*.earningsId')
-        .isUUID()
-        .withMessage('Each earnings ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Each earnings ID must be a valid ID'),
 
       body('payments.*.amount')
         .isFloat({ min: 0 })
@@ -307,7 +308,7 @@ export class EarningsValidator {
 
       body('processedBy')
         .optional()
-        .isUUID()
+        .custom(isSystemId)
         .withMessage('Processed by must be a valid user ID'),
     ];
   }

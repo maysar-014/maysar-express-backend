@@ -1,9 +1,10 @@
 
 import { z } from 'zod';
+import { zodId } from '@shared/validation/id';
 
 export const createPayoutSchema = z.object({
     body: z.object({
-        userId: z.string().uuid(),
+        userId: zodId(),
         amount: z.number().positive(),
         currency: z.string().length(3).default('TZS'),
         method: z.enum(['MOBILE_MONEY', 'BANK_TRANSFER']),
@@ -17,6 +18,6 @@ export const createPayoutSchema = z.object({
 
 export const getPayoutSchema = z.object({
     params: z.object({
-        id: z.string().uuid(),
+        id: zodId(),
     }),
 });

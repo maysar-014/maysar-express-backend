@@ -238,6 +238,7 @@ paths:
                 $ref: '#/components/schemas/OrderResponse'
               example:
                 id: "order_abc123def456"
+                trackingNumber: "MYS-TZ-ORD-20260316-1A2B"
                 buyerId: "buyer_123"
                 sellerId: "seller_456"
                 status: "pending"
@@ -474,7 +475,7 @@ paths:
                 paymentMethod: "COD"
                 paymentStatus: "pending"
                 tracking:
-                  trackingNumber: "TN123456789"
+                  trackingNumber: "MYS-TZ-ORD-20260316-1A2B"
                   carrier: "DHL"
                   status: "in_transit"
                   estimatedDelivery: "2024-01-15T10:30:00.000Z"
@@ -497,6 +498,43 @@ paths:
                 error: "NotFoundError"
                 message: "Order not found"
                 orderId: "order_invalid"
+        '401':
+          description: Authentication required
+
+  /orders/tracking/{trackingNumber}:
+    get:
+      summary: Get order by tracking number
+      description: |
+        Retrieves order details using the public tracking number.
+      tags:
+        - Orders
+      parameters:
+        - name: trackingNumber
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^MYS-TZ-ORD-\\d{8}-\\d[A-Z]\\d[A-Z]$'
+          description: Public tracking number
+      responses:
+        '200':
+          description: Order details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetailResponse'
+        '400':
+          description: Invalid tracking number
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Authentication required
 
@@ -909,6 +947,10 @@ components:
           type: string
           pattern: '^order_[a-zA-Z0-9]+$'
           example: "order_abc123def456"
+        trackingNumber:
+          type: string
+          pattern: '^MYS-TZ-ORD-\\d{8}-\\d[A-Z]\\d[A-Z]$'
+          example: "MYS-TZ-ORD-20260316-1A2B"
         buyerId:
           type: string
           example: "buyer_123"

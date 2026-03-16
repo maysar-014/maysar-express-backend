@@ -1,6 +1,7 @@
 import { Payout, PayoutStatus, PayoutMethod } from '../../domain/entities/payout.entity';
 import { IPayoutRepository } from '../../domain/ports/payout.repository.port';
 import { PayoutPolicy } from '../../domain/policies/payout.policy';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export interface InitiatePayoutDTO {
     userId: string;
@@ -130,6 +131,6 @@ export class InitiatePayoutUseCase {
     }
 
     private generateId(): string {
-        return `pyt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        return makeId(getModelPrefix('Payout'));
     }
 }

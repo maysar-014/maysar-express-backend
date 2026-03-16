@@ -6,6 +6,7 @@ import { Weight } from '../value-objects/weight.value-object';
 import { CourierEntity } from '../entities/courier.entity';
 import { RouteOptimizationPort } from '../engines/ports/route-optimization.port';
 import { DistanceCalculationAlgorithm } from '../algorithms/distance-calculation.algorithm';
+import { PickupClusteringAlgorithm } from '../algorithms/pickup-clustering.algorithm';
 
 export interface DeliveryForRoute {
   id: string;
@@ -24,6 +25,9 @@ export interface RouteCreationConstraints {
   maxRouteDurationHours?: number;
   maxTotalWeightKg?: number;
   optimizationPreference?: 'fastest' | 'shortest' | 'balanced';
+  enableClustering?: boolean;
+  clusteringRadiusKm?: number;
+  maxClusterSize?: number;
 }
 
 export interface RouteCreationResult {
@@ -37,6 +41,11 @@ export interface RouteCreationResult {
   };
 }
 
+export interface RouteCreationDefaults {
+  clusteringEnabled: boolean;
+  clusteringRadiusKm: number;
+}
+
 /**
  * Route Creation Service - Domain Service
  *
@@ -48,10 +57,20 @@ export interface RouteCreationResult {
  * - Weight and volume limits
  */
 export class RouteCreationService {
+  private readonly defaults: RouteCreationDefaults;
+
   constructor(
     private routeOptimizationPort: RouteOptimizationPort,
-    private distanceAlgorithm: DistanceCalculationAlgorithm
-  ) {}
+    private distanceAlgorithm: DistanceCalculationAlgorithm,
+    defaults: RouteCreationDefaults = { clusteringEnabled: true, clusteringRadiusKm: 1.0 }
+  ) {
+    this.defaults = {
+      clusteringEnabled: defaults.clusteringEnabled,
+      clusteringRadiusKm: Number.isFinite(defaults.clusteringRadiusKm) && defaults.clusteringRadiusKm > 0
+        ? defaults.clusteringRadiusKm
+        : 1.0
+    };
+  }
 
   /**
    * Create optimized route for courier with assigned deliveries
@@ -68,12 +87,23 @@ export class RouteCreationService {
       throw new Error('No deliveries can be assigned to this courier under current constraints');
     }
 
-    // Optimize delivery sequence using route optimization
-    const optimizedSequence = await this.optimizeDeliverySequence(
+    // Optionally cluster deliveries before optimization
+    const clusteredDeliveries = await this.applyPickupClustering(
       courier,
       validDeliveries,
-      constraints.optimizationPreference || 'balanced'
+      constraints
     );
+
+    const shouldOptimize = clusteredDeliveries === validDeliveries;
+
+    // Optimize delivery sequence using route optimization
+    const optimizedSequence = shouldOptimize
+      ? await this.optimizeDeliverySequence(
+          courier,
+          clusteredDeliveries,
+          constraints.optimizationPreference || 'balanced'
+        )
+      : clusteredDeliveries;
 
     // Calculate route metrics
     const routeMetrics = await this.calculateRouteMetrics(courier, optimizedSequence);
@@ -232,6 +262,51 @@ export class RouteCreationService {
 
     scoredDeliveries.sort((a, b) => a.distance - b.distance);
     return scoredDeliveries.map(item => item.delivery);
+  }
+
+  /**
+   * Cluster deliveries by pickup location to reduce routing complexity
+   */
+  private async applyPickupClustering(
+    courier: CourierEntity,
+    deliveries: DeliveryForRoute[],
+    constraints: RouteCreationConstraints
+  ): Promise<DeliveryForRoute[]> {
+    const clusteringEnabled = constraints.enableClustering ?? this.defaults.clusteringEnabled;
+    if (!clusteringEnabled || deliveries.length <= 1) {
+      return deliveries;
+    }
+
+    const radiusKm = constraints.clusteringRadiusKm
+      ?? this.defaults.clusteringRadiusKm;
+    const maxClusterSize = constraints.maxClusterSize;
+
+    const clusters = PickupClusteringAlgorithm.clusterByPickup(deliveries, {
+      radiusKm,
+      maxClusterSize
+    });
+
+    // Order clusters by distance from courier current location
+    const orderedClusters = clusters
+      .map(cluster => ({
+        cluster,
+        distance: courier.currentLocation.distanceTo(cluster.centroid)
+      }))
+      .sort((a, b) => a.distance - b.distance)
+      .map(item => item.cluster);
+
+    // Optimize within each cluster
+    const flattened: DeliveryForRoute[] = [];
+    for (const cluster of orderedClusters) {
+      if (cluster.deliveries.length <= 1) {
+        flattened.push(...cluster.deliveries);
+        continue;
+      }
+      const optimized = await this.optimizeDeliverySequence(courier, cluster.deliveries, 'balanced');
+      flattened.push(...optimized);
+    }
+
+    return flattened;
   }
 
   /**

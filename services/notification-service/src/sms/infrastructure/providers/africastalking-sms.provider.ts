@@ -11,16 +11,42 @@ export class AfricasTalkingSmsProvider implements ISmsProvider {
     private readonly username: string;
     private readonly apiKey: string;
     private readonly senderId?: string;
-    private readonly baseUrl = 'https://api.africastalking.com/version1';
+    private readonly baseUrl: string;
+    private readonly bulkSMSMode?: number;
+    private readonly enqueue?: number;
+    private readonly keyword?: string;
+    private readonly linkId?: string;
+    private readonly retryDurationInHours?: number;
+    private readonly isSandbox: boolean;
+
+    private static readonly LIVE_BASE_URL = 'https://api.africastalking.com/version1';
+    private static readonly SANDBOX_BASE_URL = 'https://api.sandbox.africastalking.com/version1';
 
     constructor(config: {
         username: string;
         apiKey: string;
         senderId?: string;
+        environment?: 'live' | 'sandbox';
+        baseUrl?: string;
+        bulkSMSMode?: number;
+        enqueue?: number;
+        keyword?: string;
+        linkId?: string;
+        retryDurationInHours?: number;
     }) {
         this.username = config.username;
         this.apiKey = config.apiKey;
         this.senderId = config.senderId;
+        this.bulkSMSMode = config.bulkSMSMode;
+        this.enqueue = config.enqueue;
+        this.keyword = config.keyword;
+        this.linkId = config.linkId;
+        this.retryDurationInHours = config.retryDurationInHours;
+        this.isSandbox = config.environment === 'sandbox';
+        const defaultBaseUrl = this.isSandbox
+            ? AfricasTalkingSmsProvider.SANDBOX_BASE_URL
+            : AfricasTalkingSmsProvider.LIVE_BASE_URL;
+        this.baseUrl = (config.baseUrl || defaultBaseUrl).replace(/\/+$/, '');
     }
 
     async send(phoneNumber: string, message: string): Promise<ProviderResponse> {
@@ -29,8 +55,23 @@ export class AfricasTalkingSmsProvider implements ISmsProvider {
             urlencoded.append('username', this.username);
             urlencoded.append('to', phoneNumber);
             urlencoded.append('message', message);
-            if (this.senderId) {
+            if (this.senderId && !this.isSandbox) {
                 urlencoded.append('from', this.senderId);
+            }
+            if (this.bulkSMSMode !== undefined) {
+                urlencoded.append('bulkSMSMode', String(this.bulkSMSMode));
+            }
+            if (this.enqueue !== undefined) {
+                urlencoded.append('enqueue', String(this.enqueue));
+            }
+            if (this.keyword) {
+                urlencoded.append('keyword', this.keyword);
+            }
+            if (this.linkId) {
+                urlencoded.append('linkId', this.linkId);
+            }
+            if (this.retryDurationInHours !== undefined) {
+                urlencoded.append('retryDurationInHours', String(this.retryDurationInHours));
             }
 
             const response = await fetch(`${this.baseUrl}/messaging`, {
@@ -43,11 +84,27 @@ export class AfricasTalkingSmsProvider implements ISmsProvider {
                 body: urlencoded
             });
 
-            const data: any = await response.json();
+            const raw = await response.text();
+            let data: any = null;
+            if (raw) {
+                try {
+                    data = JSON.parse(raw);
+                } catch {
+                    // Non-JSON response (XML or plain text)
+                    data = this.tryParseXmlResponse(raw);
+                }
+            }
 
             if (!response.ok) {
                 return ProviderResponse.createFailure(
-                    data.message || 'Africa\'s Talking API error',
+                    (data && (data.message || data.error)) || raw || 'Africa\'s Talking API error',
+                    response.status.toString()
+                );
+            }
+
+            if (!data) {
+                return ProviderResponse.createFailure(
+                    raw || 'Africa\'s Talking API error',
                     response.status.toString()
                 );
             }
@@ -55,15 +112,18 @@ export class AfricasTalkingSmsProvider implements ISmsProvider {
             // Check if message was sent
             const recipients = data.SMSMessageData?.Recipients || [];
             if (recipients.length === 0) {
+                const apiMessage = data.SMSMessageData?.Message || data.message || data.error;
                 return ProviderResponse.createFailure(
-                    'No recipients processed',
+                    apiMessage || 'No recipients processed',
                     '400'
                 );
             }
 
             const recipient = recipients[0];
 
-            if (recipient.status === 'Success' || recipient.statusCode === 101) {
+            const statusCode = Number(recipient.statusCode);
+            const isSuccessCode = statusCode === 100 || statusCode === 101 || statusCode === 102;
+            if (recipient.status === 'Success' || isSuccessCode) {
                 return ProviderResponse.createSuccess(recipient.messageId, {
                     provider: this.name,
                     phoneNumber,
@@ -126,6 +186,48 @@ export class AfricasTalkingSmsProvider implements ISmsProvider {
             supportsDeliveryReports: true,
             supportsBatch: true
         };
+    }
+
+    private tryParseXmlResponse(xml: string): any | null {
+        try {
+            if (!xml.includes('<SMSMessageData')) {
+                return null;
+            }
+
+            const getTagValue = (tag: string): string | undefined => {
+                const match = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'i').exec(xml);
+                return match?.[1]?.trim();
+            };
+
+            const status = getTagValue('status');
+            const statusCodeRaw = getTagValue('statusCode');
+            const messageId = getTagValue('messageId');
+            const number = getTagValue('number');
+            const cost = getTagValue('cost');
+
+            if (!status && !statusCodeRaw) {
+                return null;
+            }
+
+            const statusCode = statusCodeRaw ? Number(statusCodeRaw) : undefined;
+
+            return {
+                SMSMessageData: {
+                    Message: getTagValue('Message'),
+                    Recipients: [
+                        {
+                            cost,
+                            messageId,
+                            number,
+                            status: status || 'Unknown',
+                            statusCode
+                        }
+                    ]
+                }
+            };
+        } catch {
+            return null;
+        }
     }
 
     /**

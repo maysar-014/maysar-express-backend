@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Module } from '../../src/core/module.interface';
 import { logger } from './src/infrastructure/services/logger.service';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 const port = process.env.PORT || 3001;
 import { AuthController } from './src/api/controllers/auth.controller';
@@ -11,6 +12,7 @@ import { adminRoutes } from './src/api/routes/admin.routes';
 import { authMiddlewareRoutes } from './src/api/routes/auth-middleware.routes';
 import { googleOAuthRoutes } from './src/api/routes/google-oauth.routes';
 import { healthRoutes as authHealthRoutes } from './src/api/routes/health.routes';
+import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { UserServiceRepository } from './src/infrastructure/repositories/user-service.repository';
 import { getUserServiceClient } from './src/infrastructure/services/service-discovery';
 import { UserSyncEventHandlers } from './src/infrastructure/events/user-sync.event-handlers';
@@ -38,7 +40,7 @@ import { SessionEngine } from './src/domain/engines/session.engine';
 import { PrismaClient } from '@prisma/client';
 import { healthRoutes as twoFactorHealthRoutes } from './src/2fa/api/routes/health.routes';
 
-const authPrisma = new PrismaClient();
+const authPrisma = createPrismaClient();
 const authOutboxRepository = new OutboxRepository(authPrisma, 'sharedOutboxEvent');
 const authEventPublisher = new AuthEventPublisher(authOutboxRepository);
 
@@ -102,6 +104,7 @@ export const AuthModule: Module = {
             mainRouter.use('/', authMiddlewareRoutes);
             mainRouter.use('/oauth', googleOAuthRoutes);
             mainRouter.use('/health', authHealthRoutes);
+            mainRouter.use('/system/maintenance', createMaintenanceRoutes(authPrisma));
 
             console.log('Consolidated 2FA and Session routes mounted successfully');
 

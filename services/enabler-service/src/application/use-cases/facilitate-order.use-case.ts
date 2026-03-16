@@ -6,7 +6,7 @@ import { OrderFacilitationPolicy } from '../../domain/policies/order-facilitatio
 import { EnablerOrderEntity } from '../../domain/entities/enabler-order.entity';
 import { OrderFacilitatedEvent } from '../../domain/events/enabler-events';
 import { Enabler_OrderStatus, Enabler_Status } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export class FacilitateOrderUseCase {
     constructor(
@@ -60,7 +60,7 @@ export class FacilitateOrderUseCase {
 
         // 7. Create Enabler Order Entity
         const enablerOrder = EnablerOrderEntity.create({
-            id: uuidv4(),
+            id: makeId(getModelPrefix('Enabler_Order')),
             enablerId: dto.enablerId,
             orderId: orderDetails.id,
             sellerId: listing.sellerId,

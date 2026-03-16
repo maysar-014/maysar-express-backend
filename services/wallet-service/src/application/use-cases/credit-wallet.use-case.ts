@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto';
 import { Wallet, WalletStatus } from '../../domain/entities/wallet.entity';
 import { Transaction, TransactionType } from '../../domain/entities/transaction.entity';
 import { IWalletRepository } from '../../domain/repositories/wallet.repository';
@@ -9,6 +8,7 @@ import { AuditInfo } from '../../domain/value-objects/audit-info.value-object';
 import { WalletEventPublisher } from '../../infrastructure/messaging/wallet-event-publisher';
 import { IAuditLogRepository } from '../../infrastructure/repositories/audit-log.repository';
 import { RedisLock } from '../../../../../shared/locking/redis-lock';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export interface CreditWalletDTO {
     userId: string;
@@ -52,7 +52,7 @@ export class CreditWalletUseCase {
             let wallet = await this.walletRepository.findByUserId(dto.userId);
             if (!wallet) {
                 wallet = new Wallet({
-                    id: randomUUID(),
+                    id: makeId(getModelPrefix('Wallet_Wallet')),
                     userId: dto.userId,
                     balance: 0,
                     currency: dto.currency || 'TZS',
@@ -77,7 +77,7 @@ export class CreditWalletUseCase {
 
             // Record transaction
             const transaction = new Transaction({
-                id: randomUUID(),
+                id: makeId(getModelPrefix('Wallet_Transaction')),
                 walletId: wallet.id,
                 userId: dto.userId,
                 type: TransactionType.CREDIT,

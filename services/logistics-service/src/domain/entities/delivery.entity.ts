@@ -49,7 +49,7 @@ export class DeliveryEntity {
     public readonly orderId: string,
     public readonly pickupAddress: DeliveryAddress,
     public readonly deliveryAddress: DeliveryAddress,
-    public readonly package: DeliveryPackage,
+    public readonly packageDetails: DeliveryPackage,
     public status: DeliveryStatus,
     public courierId?: string,
     public trackingNumber?: string,
@@ -164,11 +164,11 @@ export class DeliveryEntity {
     if (!this.orderId) errors.push('Order ID is required');
     if (!this.pickupAddress) errors.push('Pickup address is required');
     if (!this.deliveryAddress) errors.push('Delivery address is required');
-    if (!this.package) errors.push('Package information is required');
+    if (!this.packageDetails) errors.push('Package information is required');
 
-    if (this.package) {
-      if (this.package.weight <= 0) errors.push('Package weight must be positive');
-      if (this.package.value <= 0) errors.push('Package value must be positive');
+    if (this.packageDetails) {
+      if (this.packageDetails.weight <= 0) errors.push('Package weight must be positive');
+      if (this.packageDetails.value <= 0) errors.push('Package value must be positive');
     }
 
     return {

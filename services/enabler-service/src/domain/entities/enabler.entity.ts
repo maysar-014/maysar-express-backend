@@ -3,6 +3,8 @@ import { Enabler_Status, Enabler_Tier } from '../types/enabler.types';
 export interface EnablerProfileProps {
     id: string;
     userId: string;
+    enablerCode?: string | null;
+    enablerCodeShort?: string | null;
     businessName: string;
     contactEmail: string;
     contactPhone?: string | null;
@@ -43,6 +45,14 @@ export class EnablerEntity {
 
     get userId(): string {
         return this.props.userId;
+    }
+
+    get enablerCode(): string | null | undefined {
+        return this.props.enablerCode;
+    }
+
+    get enablerCodeShort(): string | null | undefined {
+        return this.props.enablerCodeShort;
     }
 
     get businessName(): string {
@@ -148,6 +158,11 @@ export class EnablerEntity {
         this.props.approvedBy = approvedBy;
         this.props.approvedAt = new Date();
         this.props.rejectionReason = null;
+    }
+
+    assignEnablerCode(code: string, shortCode?: string): void {
+        this.props.enablerCode = code;
+        this.props.enablerCodeShort = shortCode || this.props.enablerCodeShort || null;
     }
 
     activate(): void {

@@ -34,4 +34,16 @@ export interface ISmsProvider {
         supportsDeliveryReports: boolean;
         supportsBatch: boolean;
     };
+
+    /**
+     * Parse delivery report payloads (optional)
+     */
+    parseDeliveryReport?(body: unknown): DeliveryReport | null;
 }
+
+export type DeliveryReport = {
+    providerMessageId: string;
+    status: 'delivered' | 'failed';
+    phoneNumber: string;
+    failureReason?: string;
+};

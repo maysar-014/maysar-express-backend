@@ -41,7 +41,7 @@ src/domain/
 ```
 src/infrastructure/
 ├── database/
-│   ├── prisma.client.ts       ❌ Missing
+│   ├── prisma-client.ts       ✅ Present
 │   ├── migrations/            ❌ Missing
 │   └── repositories/          ❌ Missing
 ├── cache/

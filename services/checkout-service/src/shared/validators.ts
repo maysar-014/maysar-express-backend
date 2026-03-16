@@ -4,6 +4,7 @@
  */
 
 import { ValidationError } from './errors/app.error';
+import { isSystemId } from '@shared/ids/id';
 
 export interface ValidationRule {
   field: string;
@@ -45,8 +46,7 @@ export class Validator {
   }
 
   uuid(field: string, _value: any): this {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    return this.addRule(field, v => !v || uuidRegex.test(v), `${field} must be a valid UUID`);
+    return this.addRule(field, v => !v || isSystemId(v), `${field} must be a valid ID`);
   }
 
   validate(data: Record<string, any>): void {

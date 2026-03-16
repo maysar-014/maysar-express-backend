@@ -2,6 +2,15 @@
 // Tests for all 3 endpoints with real-world scenarios
 
 import { describe, it, expect, beforeEach } from 'vitest';
+import { getModelPrefix, isSystemId, makeId } from '@shared/ids/id';
+
+const productId = makeId(getModelPrefix('Catalog_Product'));
+const existingProductId = makeId(getModelPrefix('Catalog_Product'));
+const confirmationId = makeId(getModelPrefix('Catalog_MatchConfirmation'));
+const attributeRecordId1 = makeId(getModelPrefix('ProductAttribute'));
+const attributeRecordId2 = makeId(getModelPrefix('ProductAttribute'));
+const attributeDefinitionId1 = makeId(getModelPrefix('CategoryAttribute'));
+const attributeDefinitionId2 = makeId(getModelPrefix('CategoryAttribute'));
 
 // ============================================================================
 // Integration Test: POST /api/catalog/products/create
@@ -32,7 +41,7 @@ describe('Integration: POST /api/catalog/products/create', () => {
       const expectedResponse = {
         success: true,
         data: {
-          productId: 'product-uuid',
+          productId,
         },
       };
 
@@ -58,7 +67,7 @@ describe('Integration: POST /api/catalog/products/create', () => {
       const event = {
         eventType: 'ProductCreated',
         payload: {
-          productId: 'product-uuid',
+          productId,
           sellerId: 'seller-123',
           name: 'Wireless Headphones',
           categoryId: 'electronics-456',
@@ -77,7 +86,7 @@ describe('Integration: POST /api/catalog/products/create', () => {
       const event = {
         eventType: 'ProductCreatedWithStructuredData',
         payload: {
-          productId: 'product-uuid',
+          productId,
           sellerId: 'seller-123',
           slug: 'techbrand-wireless-headphones',
           categorySlug: 'electronics',
@@ -112,10 +121,10 @@ describe('Integration: POST /api/catalog/products/create', () => {
         success: true,
         data: {
           matchingRequired: true,
-          confirmationId: 'confirmation-uuid',
+          confirmationId,
           candidates: [
             {
-              productId: 'existing-product-1',
+              productId: existingProductId,
               title: 'Premium Wireless Headphones',
               brand: 'TechBrand',
               matchScore: 0.95,
@@ -150,7 +159,7 @@ describe('Integration: POST /api/catalog/products/create', () => {
         success: true,
         data: {
           matched: true,
-          productId: 'existing-product-uuid',
+          productId: existingProductId,
         },
       };
 
@@ -234,7 +243,7 @@ describe('Integration: POST /api/catalog/products/create', () => {
   describe('Data Persistence', () => {
     it('should save product with all SEO fields', async () => {
       const savedProduct = {
-        id: 'product-uuid',
+        id: productId,
         title: 'Wireless Headphones',
         slug: 'techbrand-wireless-headphones',
         seoTitle: 'Wireless Headphones by TechBrand',
@@ -252,25 +261,25 @@ describe('Integration: POST /api/catalog/products/create', () => {
       expect(savedProduct.qualityScore).toBeGreaterThanOrEqual(60);
     });
 
-    it('should save product attributes with UUID IDs', async () => {
+    it('should save product attributes with system IDs', async () => {
       const attributes = [
         {
-          id: '550e8400-e29b-41d4-a716-446655440000',
-          productId: 'product-uuid',
-          attributeId: 'attr-uuid-1',
+          id: attributeRecordId1,
+          productId,
+          attributeId: attributeDefinitionId1,
           value: 'Black',
         },
         {
-          id: '550e8400-e29b-41d4-a716-446655440001',
-          productId: 'product-uuid',
-          attributeId: 'attr-uuid-2',
+          id: attributeRecordId2,
+          productId,
+          attributeId: attributeDefinitionId2,
           value: 'Bluetooth 5.0',
         },
       ];
 
       attributes.forEach(attr => {
-        // Validate UUID format
-        expect(attr.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+        // Validate ID format
+        expect(isSystemId(attr.id)).toBe(true);
       });
     });
 
@@ -382,14 +391,14 @@ describe('Integration: POST /api/catalog/products/preview', () => {
 describe('Integration: POST /api/catalog/matching/confirm', () => {
   it('should merge products successfully', async () => {
     const payload = {
-      confirmationId: 'confirmation-uuid',
-      candidateId: 'existing-product-uuid',
+      confirmationId,
+      candidateId: existingProductId,
     };
 
     const expectedResponse = {
       success: true,
       data: {
-        productId: 'existing-product-uuid',
+        productId: existingProductId,
         merged: true,
       },
     };
@@ -401,8 +410,8 @@ describe('Integration: POST /api/catalog/matching/confirm', () => {
 
   it('should return error on invalid confirmation ID', async () => {
     const payload = {
-      confirmationId: 'invalid-uuid',
-      candidateId: 'product-uuid',
+      confirmationId: 'invalid-id',
+      candidateId: productId,
     };
 
     const expectedResponse = {
@@ -417,8 +426,8 @@ describe('Integration: POST /api/catalog/matching/confirm', () => {
 
   it('should return error on invalid candidate ID', async () => {
     const payload = {
-      confirmationId: 'confirmation-uuid',
-      candidateId: 'invalid-uuid',
+      confirmationId,
+      candidateId: 'invalid-id',
     };
 
     const expectedResponse = {
@@ -469,10 +478,10 @@ describe('End-to-End: Complete Product Creation Flow', () => {
       success: true,
       data: {
         matchingRequired: true,
-        confirmationId: 'confirmation-uuid',
+        confirmationId,
         candidates: [
           {
-            productId: 'existing-product-1',
+            productId: existingProductId,
             title: 'Premium Wireless Headphones',
             matchScore: 0.95,
           },
@@ -492,7 +501,7 @@ describe('End-to-End: Complete Product Creation Flow', () => {
     const confirmResponse = {
       success: true,
       data: {
-        productId: 'existing-product-1',
+        productId: existingProductId,
         merged: true,
       },
     };
@@ -518,7 +527,7 @@ describe('End-to-End: Complete Product Creation Flow', () => {
     const createResponse = {
       success: true,
       data: {
-        productId: 'product-uuid',
+        productId,
       },
     };
 

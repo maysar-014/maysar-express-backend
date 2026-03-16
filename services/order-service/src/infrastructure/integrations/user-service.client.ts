@@ -8,12 +8,6 @@ export class UserServiceClient implements IUserServiceClient {
         permanentlyDisabled?: boolean;
     }> {
         console.log(`[UserServiceClient] Fetching COD reputation for user ${userId}`);
-
-        // Mocking reputation data
-        return {
-            score: 85,
-            successfulOrders: 10,
-            permanentlyDisabled: false
-        };
+        throw new Error('UserServiceClient.getCODReputation is not implemented. Configure user-service integration.');
     }
 }

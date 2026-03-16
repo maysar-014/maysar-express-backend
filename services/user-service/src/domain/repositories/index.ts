@@ -81,6 +81,11 @@ export interface IUserRepository {
    */
   phoneExists(phoneNumber: string): Promise<boolean>;
 
+  /**
+   * Check if public user code exists
+   */
+  publicCodeExists(code: string): Promise<boolean>;
+
   // Analytics and Reporting
   /**
    * Get user count by status

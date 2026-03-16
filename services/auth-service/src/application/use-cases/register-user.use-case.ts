@@ -2,6 +2,8 @@ import { IUserRepository } from '../../domain/repositories/user.repository';
 import { User } from '../../domain/entities/user.entity';
 import { eventBus, EventEnvelope } from '@shared/events/eventBus';
 import { v4 as uuidv4 } from 'uuid';
+import { makeId } from '@shared/ids/id';
+import { generatePublicUserCode } from '@shared/ids/public-codes';
 
 export interface RegisterUserRequest {
     email: string;
@@ -36,7 +38,8 @@ export class RegisterUserUseCase {
         };
 
         const user = User.create({
-            id: uuidv4(),
+            id: makeId('usr'),
+            publicCode: generatePublicUserCode(),
             email: request.email,
             role: primaryRole,
             status: 'PENDING_VERIFICATION',
@@ -50,6 +53,7 @@ export class RegisterUserUseCase {
             eventType: 'UserRegistered.v1',
             data: {
                 userId: user.id,
+                publicCode: user.publicCode,
                 email: user.email,
                 role: user.role,
                 profile: user.profile

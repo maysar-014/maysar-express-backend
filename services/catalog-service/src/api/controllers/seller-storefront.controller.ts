@@ -31,6 +31,9 @@ export class SellerStorefrontController {
 
   async getStorefront(req: Request, res: Response): Promise<void> {
     try {
+      this.sendNotImplemented(res, 'Seller storefront is not implemented.');
+      return;
+
       const { sellerId } = req.params;
 
       if (!sellerId) {
@@ -86,6 +89,9 @@ export class SellerStorefrontController {
 
   async generateShareUrl(req: Request, res: Response): Promise<void> {
     try {
+      this.sendNotImplemented(res, 'Seller share URLs are not implemented.');
+      return;
+
       const { sellerId } = req.params;
       const { includeQR = true, customSlug } = req.body;
 
@@ -149,15 +155,13 @@ export class SellerStorefrontController {
   }
 
   private async getSellerDetails(sellerId: string): Promise<any> {
-    // TODO: Replace with actual database query
-    // For now, return mock data
-    return {
-      id: sellerId,
-      name: `Seller ${sellerId}`,
-      description: 'Quality products from trusted seller',
-      logo: null,
-      totalProducts: 25,
-      rating: 4.5
-    };
+    throw new Error('Seller lookup is not implemented.');
+  }
+
+  private sendNotImplemented(res: Response, message: string): void {
+    res.status(501).json({
+      success: false,
+      error: { code: 'NOT_IMPLEMENTED', message }
+    });
   }
 }

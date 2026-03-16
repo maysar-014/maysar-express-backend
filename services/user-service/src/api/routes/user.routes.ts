@@ -3,6 +3,7 @@ import { UserController } from '../controllers/user.controller';
 import { CreateUserUseCase } from '../../application/use-cases/create-user.use-case';
 import { UserValidationService } from '../../domain/services/user-validation.service';
 import { UserSecurityPolicy } from '../../domain/policies/user-security.policy';
+import { UserMapper } from '../../application/mappers/user-mapper';
 
 /**
  * API Route Definition Interface
@@ -54,17 +55,24 @@ import { UserEventPublisher } from '../../infrastructure/messaging/user-event-pu
 import { emailService, notificationClient } from '../../infrastructure/services/service-instances';
 import { prisma } from '../../infrastructure/database/prisma-client';
 import { PiiEncryptionService } from '@shared/encryption/pii-encryption.service';
-import { OutboxRepository } from '../../../../../shared/outbox/outbox.repository';
+import { UserOutboxRepository } from '../../infrastructure/messaging/user-outbox.repository';
+import { PrismaEmailVerificationTokenRepository } from '../../infrastructure/repositories/prisma-email-verification-token.repository';
+import { PrismaPasswordResetTokenRepository } from '../../infrastructure/repositories/prisma-password-reset-token.repository';
+import { RequestPasswordResetUseCase } from '../../application/use-cases/request-password-reset.use-case';
+import { ResetPasswordUseCase } from '../../application/use-cases/reset-password.use-case';
 
 let userController: UserController;
 let codReputationController: CODReputationController;
+let userRepository: PrismaUserRepository;
 
 function initializeController(): void {
   if (!userController) {
     const userValidationService = new UserValidationService();
     const userSecurityPolicy = new UserSecurityPolicy();
-    const userRepository = new PrismaUserRepository(prisma, new PiiEncryptionService());
-    const outboxRepository = new OutboxRepository(prisma, 'user_OutboxEvent');
+    userRepository = new PrismaUserRepository(prisma, new PiiEncryptionService());
+    const emailVerificationTokens = new PrismaEmailVerificationTokenRepository(prisma);
+    const passwordResetTokens = new PrismaPasswordResetTokenRepository(prisma);
+    const outboxRepository = new UserOutboxRepository(prisma);
     const eventPublisher = new UserEventPublisher(outboxRepository);
 
     // Instantiate all use cases with dependencies
@@ -73,6 +81,7 @@ function initializeController(): void {
       userValidationService,
       userSecurityPolicy,
       eventPublisher,
+      emailVerificationTokens,
       emailService,
       notificationClient
     );
@@ -85,7 +94,9 @@ function initializeController(): void {
     const reportSecurityBreachUseCase = new ReportSecurityBreachUseCase(userRepository, emailService, notificationClient);
     const getUserUseCase = new GetUserUseCase(userRepository);
     const updateUserUseCase = new UpdateUserUseCase(userRepository, eventPublisher);
-    const verifyEmailUseCase = new VerifyEmailUseCase(userRepository, eventPublisher);
+    const verifyEmailUseCase = new VerifyEmailUseCase(userRepository, eventPublisher, emailVerificationTokens);
+    const requestPasswordResetUseCase = new RequestPasswordResetUseCase(userRepository, passwordResetTokens, emailService);
+    const resetPasswordUseCase = new ResetPasswordUseCase(changePasswordUseCase, passwordResetTokens);
 
     userController = new UserController(
       createUserUseCase,
@@ -99,6 +110,8 @@ function initializeController(): void {
       getUserUseCase,
       updateUserUseCase,
       verifyEmailUseCase,
+      requestPasswordResetUseCase,
+      resetPasswordUseCase,
       emailService,
       notificationClient
     );
@@ -172,10 +185,76 @@ export async function handleGetCODReputation(req: Request, res: Response): Promi
   await codReputationController.getReputation(req, res);
 }
 
+function requireInternalCall(req: Request, res: Response): boolean {
+  const caller = String(req.headers['x-internal-call'] || '');
+  if (caller !== 'auth-service') {
+    res.status(403).json({
+      success: false,
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Internal endpoint'
+      }
+    });
+    return false;
+  }
+  return true;
+}
+
+export async function handleLookupUser(req: Request, res: Response): Promise<void> {
+  if (!requireInternalCall(req, res)) return;
+
+  const email = typeof req.query.email === 'string' ? req.query.email.trim() : '';
+  const phoneNumber = typeof req.query.phoneNumber === 'string' ? req.query.phoneNumber.trim() : '';
+
+  if (!email && !phoneNumber) {
+    res.status(400).json({
+      success: false,
+      error: {
+        code: 'MISSING_QUERY',
+        message: 'email or phoneNumber is required'
+      }
+    });
+    return;
+  }
+
+  const user = email
+    ? await userRepository.findByEmail(email)
+    : await userRepository.findByPhoneNumber(phoneNumber);
+
+  res.status(200).json({
+    success: true,
+    data: { user: user ? UserMapper.toResponseDto(user) : null }
+  });
+}
+
+export async function handleSearchUsers(req: Request, res: Response): Promise<void> {
+  if (!requireInternalCall(req, res)) return;
+
+  const query = typeof req.query.query === 'string' ? req.query.query.trim() : '';
+  const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : 50;
+  const offset = req.query.offset ? parseInt(String(req.query.offset), 10) : 0;
+
+  if (!query) {
+    res.status(200).json({
+      success: true,
+      data: { users: [] }
+    });
+    return;
+  }
+
+  const users = await userRepository.search(query, limit, offset);
+  res.status(200).json({
+    success: true,
+    data: { users: users.map(UserMapper.toResponseDto) }
+  });
+}
+
 export function createUserRoutes(): Router {
   const router = Router();
   initializeController();
 
+  router.get('/lookup', handleLookupUser);
+  router.get('/search', handleSearchUsers);
   router.post('/', handleCreateUser);
   // Profile routes must be before /:id so GET/PUT /profile are not matched as id="profile"
   router.get('/profile', handleGetProfile);

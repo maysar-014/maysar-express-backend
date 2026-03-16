@@ -8,7 +8,8 @@ import { IDeliveryRepository, ICourierRepository } from '../../domain/repositori
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 import { Weight } from '../../domain/value-objects/weight.value-object';
 import { RouteStatus } from '../../domain/enums/route-status.enum';
-import { CourierEntity } from '../../domain/entities/courier.entity';
+import { CourierMapper } from '../../application/mappers/courier.mapper';
+import { RouteMapper } from '../../application/mappers/route.mapper';
 
 export class DeliveryController {
   private createDeliveryUseCase: CreateDeliveryUseCase | undefined;
@@ -167,17 +168,7 @@ export class DeliveryController {
       }
 
       // Create courier entity
-      const courierEntity = CourierEntity.create({
-        id: courier.id,
-        name: courier.name,
-        phone: courier.phone,
-        vehicle: courier.vehicle,
-        rating: courier.rating,
-        completionRate: courier.completionRate,
-        currentLocation: courier.currentLocation,
-        isAvailable: courier.isAvailable,
-        trafficExperience: courier.trafficExperience
-      });
+      const courierEntity = CourierMapper.toCourierEntity(courier);
 
       // Prepare delivery for route creation
       const deliveryForRoute = {
@@ -231,10 +222,6 @@ export class DeliveryController {
         throw new Error(`Courier ${courierId} not found`);
       }
 
-      // Create a basic route entity
-      const Route = (await import('../../domain/entities/route.entity')).Route;
-      const RouteProgress = (await import('../../domain/value-objects/route-progress.value-object')).RouteProgress;
-
       const pickupPoint = GeoPoint.create(
         deliveryInput.pickupLocation.lat,
         deliveryInput.pickupLocation.lng,
@@ -247,25 +234,11 @@ export class DeliveryController {
         deliveryInput.deliveryLocation.address
       );
 
-      // Create route progress
-      const progress = RouteProgress.create(
-        0, // completed stops
-        2, // total stops (pickup + delivery)
-        pickupPoint, // current location
-        new Date(), // last update
-        undefined, // estimated completion
-        undefined // notes
-      );
-
-      // Create route
-      const route = Route.create({
-        id: `route_${deliveryId}`,
-        courierId: courierId,
-        status: RouteStatus.PLANNED,
-        totalDistance: 10.0, // Basic estimate
-        estimatedDuration: 20, // Basic estimate
-        waypoints: [pickupPoint, deliveryPoint],
-        progress
+      const route = RouteMapper.toBasicRoute({
+        deliveryId,
+        courierId,
+        pickupPoint,
+        deliveryPoint
       });
 
       // Save the route

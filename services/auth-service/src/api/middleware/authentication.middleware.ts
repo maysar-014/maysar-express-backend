@@ -483,15 +483,11 @@ export class AuthenticationMiddleware {
   }
 
   /**
-   * Get Geo Location (Mock for now)
+   * Get Geo Location
+   * Requires an external geo-IP service integration; returns undefined when not configured.
    */
-  private getGeoLocation(req: Request): { country: string; region: string; city: string } | undefined {
-    // In production, use a geo-IP service
-    return {
-      country: 'US',
-      region: 'CA',
-      city: 'San Francisco'
-    };
+  private getGeoLocation(_req: Request): { country: string; region: string; city: string } | undefined {
+    return undefined;
   }
 
   /**

@@ -1,29 +1,43 @@
-import { PrismaClientManager } from '../src/infrastructure/database/prisma.client';
+import { execSync } from 'child_process';
+import path from 'path';
 
-async function createTables() {
-  const manager = PrismaClientManager.getInstance();
-  await manager.connect();
-  const prisma = manager.getClient();
+type MigrationMode = 'deploy' | 'dev';
 
-  await prisma.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS couriers (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      user_id UUID NOT NULL,
-      name VARCHAR(255) NOT NULL,
-      email VARCHAR(255) UNIQUE NOT NULL,
-      phone VARCHAR(20) NOT NULL,
-      vehicle_type VARCHAR(50) NOT NULL,
-      vehicle_number VARCHAR(50) NOT NULL,
-      license_number VARCHAR(100) NOT NULL,
-      status VARCHAR(20) DEFAULT 'active',
-      rating DECIMAL(3,2) DEFAULT 0.00,
-      total_deliveries INTEGER DEFAULT 0,
-      created_at TIMESTAMP DEFAULT NOW(),
-      updated_at TIMESTAMP DEFAULT NOW()
-    );
-  `);
+const resolveSchemaPath = (): string => {
+  if (process.env.PRISMA_SCHEMA_PATH) {
+    return process.env.PRISMA_SCHEMA_PATH;
+  }
 
-  console.log('Tables setup complete via Prisma');
+  const repoRoot = path.resolve(__dirname, '..', '..', '..');
+  return path.join(repoRoot, 'prisma', 'schema.prisma');
+};
+
+const resolveMigrationMode = (): MigrationMode => {
+  const mode = process.env.MIGRATION_MODE?.toLowerCase();
+  if (mode === 'dev' || mode === 'deploy') {
+    return mode;
+  }
+
+  return process.env.NODE_ENV === 'production' ? 'deploy' : 'deploy';
+};
+
+const runPrismaMigrations = (): void => {
+  const schemaPath = resolveSchemaPath();
+  const repoRoot = path.resolve(__dirname, '..', '..', '..');
+  const mode = resolveMigrationMode();
+  const migrateCommand =
+    mode === 'dev'
+      ? `npx prisma migrate dev --schema "${schemaPath}"`
+      : `npx prisma migrate deploy --schema "${schemaPath}"`;
+
+  execSync(migrateCommand, { stdio: 'inherit', cwd: repoRoot });
+  execSync(`npx prisma generate --schema "${schemaPath}"`, { stdio: 'inherit', cwd: repoRoot });
+  console.log('Prisma migrations applied for logistics service');
+};
+
+try {
+  runPrismaMigrations();
+} catch (error) {
+  console.error(error);
+  process.exitCode = 1;
 }
-
-createTables().catch(console.error);

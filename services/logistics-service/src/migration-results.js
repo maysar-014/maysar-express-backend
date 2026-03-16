@@ -26,9 +26,9 @@ console.log('  ✅ Database Client: CONNECTED');
 console.log('  ✅ Prisma Schema: MIGRATION-READY');
 
 console.log('\n📝 NEXT STEPS:');
-console.log('  1. Verify Database database credentials');
+console.log('  1. Verify DATABASE_URL for the logistics database');
 console.log('  2. Check database permissions');
-console.log('  3. Retry migration when connection is stable');
+console.log('  3. Run: npx prisma migrate deploy --schema prisma/schema.prisma');
 
 console.log('\n🏆 OVERALL STATUS: LOGISTICS SERVICE READY');
 console.log('🎯 Database migration pending connection resolution');

@@ -8,11 +8,12 @@ import { eventBus } from '../../shared/events/eventBus';
 import { initializeEventRegistry } from '../../shared/events/registry';
 import type { DistributedSagaOrchestrator } from '../../shared/saga/saga.orchestrator';
 import { createCampaignRoutes } from './src/campaigns/api/routes/campaign.routes';
-import { container } from './src/campaigns/infrastructure/container';
+import { container } from './src/campaigns/container';
 import { TYPES } from './src/campaigns/types';
 import { sagaLogRepository } from './src/campaigns/infrastructure/repositories/saga.repository';
 import { createSagaFactory } from './src/application/sagas/saga-factory';
 import pricingRoutes from './src/pricing/api/routes/pricing.routes';
+import { healthRoutes as pricingHealthRoutes } from './src/pricing/api/routes/health.routes';
 import { createProductRoutes } from './src/api/routes/product.routes';
 import { createSearchRoutes } from './src/api/routes/search.routes';
 import { MatchingRoutes } from './src/api/routes/matching.routes';
@@ -20,6 +21,7 @@ import { BuyBoxRoutes } from './src/api/routes/buy-box.routes';
 import { createSellerStorefrontRoutes } from './src/api/routes/seller-storefront.routes';
 import { createPricingRoutes as createCatalogPricingRoutes } from './src/api/routes/pricing.routes';
 import { createHealthRoutes as createCatalogHealthRoutes } from './src/api/routes/health.routes';
+import { createMaintenanceRoutes as createCatalogMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { ProductControllerFactory } from './src/api/controllers/product.controller';
 import { SearchController } from './src/api/controllers/search.controller';
 import { ProductMatchingController } from './src/api/controllers/product-matching.controller';
@@ -45,10 +47,15 @@ import { PrismaBuyBoxRepository } from './src/infrastructure/repositories/prisma
 import { EventPublisherFactory } from './src/infrastructure/messaging/event-publisher';
 import { BuyBoxWeights } from './src/domain/value-objects/buy-box-weights.value-object';
 import { BuyBoxEventPublisher } from './src/infrastructure/messaging/buy-box-event-publisher';
-import { randomUUID } from 'crypto';
+import { CatalogOutboxRepository } from './src/infrastructure/messaging/catalog-outbox.repository';
+import { externalServicesConfig } from './src/config/external-services.config';
+import { SearchProviderFactory, SearchConfig } from './src/infrastructure/providers/search.provider';
+import { MeilisearchSearchService } from './src/infrastructure/services/search.service';
 import type { CategoryRepository, MediaRepository, SearchService, IdGenerator, DateTimeService } from './src/domain/interfaces';
+import { createPrismaClient } from '@shared/database/prisma-client';
+import { getModelPrefix, isSystemId, makeId } from '@shared/ids/id';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 class PrismaCategoryRepository implements CategoryRepository {
     constructor(private readonly client: PrismaClient) {}
@@ -167,8 +174,8 @@ class PrismaSearchService implements SearchService {
 }
 
 const idGenerator: IdGenerator = {
-    generate: () => randomUUID(),
-    validate: (id: string) => typeof id === 'string' && id.length > 0
+    generate: () => makeId('evt'),
+    validate: (id: string) => isSystemId(id)
 };
 
 const dateTimeService: DateTimeService = {
@@ -194,8 +201,38 @@ const catalogWiring = (() => {
     const categoryAttributeRepository = new PrismaCategoryAttributeRepository(prisma);
     const productAttributeRepository = new PrismaProductAttributeRepository(prisma);
     const mediaRepository = new PrismaMediaRepository(prisma);
-    const searchService = new PrismaSearchService(prisma);
-    const eventPublisher = EventPublisherFactory.createInMemory({}, idGenerator, dateTimeService);
+    const fallbackSearchService = new PrismaSearchService(prisma);
+    const searchConfig: SearchConfig = {
+        provider: externalServicesConfig.search.provider,
+        indexName: externalServicesConfig.search.meilisearch?.indexName || 'catalog',
+        timeout: externalServicesConfig.search.meilisearch?.requestTimeout || 30000,
+        apiKey: externalServicesConfig.search.meilisearch?.apiKey,
+        host: externalServicesConfig.search.meilisearch?.host,
+        port: externalServicesConfig.search.meilisearch?.port,
+        protocol: externalServicesConfig.search.meilisearch?.protocol,
+        meilisearch: externalServicesConfig.search.meilisearch ? {
+            host: externalServicesConfig.search.meilisearch.host,
+            port: externalServicesConfig.search.meilisearch.port,
+            protocol: externalServicesConfig.search.meilisearch.protocol,
+            apiKey: externalServicesConfig.search.meilisearch.apiKey,
+            indexName: externalServicesConfig.search.meilisearch.indexName,
+            requestTimeout: externalServicesConfig.search.meilisearch.requestTimeout
+        } : undefined
+    };
+    const searchProvider = SearchProviderFactory.createDefault(searchConfig);
+    const searchService: SearchService = externalServicesConfig.search.enabled
+        ? new MeilisearchSearchService(searchProvider, {
+            indexName: searchConfig.indexName || 'catalog',
+            fallback: fallbackSearchService
+        })
+        : fallbackSearchService;
+    const catalogOutboxRepository = new CatalogOutboxRepository(prisma);
+    const eventPublisher = EventPublisherFactory.createDefault(
+        {},
+        idGenerator,
+        dateTimeService,
+        catalogOutboxRepository
+    );
 
     const createProductUseCase = new CreateProductUseCase(
         productRepository,
@@ -377,6 +414,7 @@ export const CatalogModule: Module = {
         // Mount pricing routes under /pricing
         if (pricingRoutes) {
             router.use('/pricing', pricingRoutes);
+            router.use('/pricing/health', pricingHealthRoutes);
         }
 
         // Mount catalog API routes (previously unmounted in monolith)
@@ -389,7 +427,7 @@ export const CatalogModule: Module = {
             router.use(createCatalogPricingRoutes(catalogWiring.pricingController as any));
         } catch (e) {
             logger.warn('Failed to mount catalog API routes, falling back to degraded handler:', e);
-            router.all('/api/v1/*', (_req, res) => {
+            router.all('/v1/*', (_req, res) => {
                 res.status(503).json({
                     success: false,
                     error: 'Catalog API routes not available',
@@ -408,6 +446,7 @@ export const CatalogModule: Module = {
             });
         });
         router.use(createCatalogHealthRoutes());
+        router.use('/system/maintenance', createCatalogMaintenanceRoutes(prisma));
 
         return router;
     })(),
@@ -418,5 +457,3 @@ export const CatalogModule: Module = {
         }
     }
 };
-
-

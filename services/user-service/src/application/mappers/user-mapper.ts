@@ -2,6 +2,7 @@ import { User } from '../../domain/entities/user.entity';
 import { Email } from '../../domain/value-objects/email.value-object';
 import { PhoneNumber } from '../../domain/value-objects/phone-number.value-object';
 import { Address } from '../../domain/value-objects/address.value-object';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 import {
   CreateUserDto,
   UpdateUserProfileDto,
@@ -23,9 +24,10 @@ export class UserMapper {
   /**
    * Map CreateUserDto to User entity
    */
-  static toEntity(createUserDto: CreateUserDto): User {
+  static toEntity(createUserDto: CreateUserDto, options?: { publicCode?: string }): User {
     return User.create({
       id: this.generateUserId(),
+      ...(options?.publicCode ? { publicCode: options.publicCode } : {}),
       email: Email.create(createUserDto.email),
       phoneNumber: PhoneNumber.create(createUserDto.phoneNumber),
       firstName: createUserDto.firstName,
@@ -45,6 +47,7 @@ export class UserMapper {
   static toResponseDto(user: User): UserResponseDto {
     return {
       id: user.id,
+      publicCode: user.publicCode,
       email: user.email.value,
       phoneNumber: user.phoneNumber.value,
       firstName: user.firstName,
@@ -100,6 +103,7 @@ export class UserMapper {
 
     return User.create({
       id: userData.id,
+      publicCode: userData.publicCode ?? undefined,
       email: Email.create(userData.email),
       phoneNumber: PhoneNumber.create(userData.phoneNumber || ''),
       firstName: userData.firstName || '',
@@ -123,6 +127,7 @@ export class UserMapper {
   static toPersistence(user: User): any {
     return {
       id: user.id,
+      publicCode: user.publicCode,
       email: user.email.value,
       phoneNumber: user.phoneNumber.value,
       firstName: user.firstName,
@@ -149,6 +154,7 @@ export class UserMapper {
   static toSummaryDto(user: User): UserSummaryDto {
     return {
       id: user.id,
+      publicCode: user.publicCode,
       email: user.email.value,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -172,6 +178,7 @@ export class UserMapper {
   static toAuthDto(user: User): AuthUserDto {
     return {
       id: user.id,
+      publicCode: user.publicCode,
       email: user.email.value,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -345,14 +352,14 @@ export class UserMapper {
    * Generate a unique user ID
    */
   private static generateUserId(): string {
-    return `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return makeId(getModelPrefix('User_User'));
   }
 
   /**
    * Generate a unique address ID
    */
   private static generateAddressId(): string {
-    return `addr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return makeId(getModelPrefix('User_UserAddress'));
   }
 
   /**

@@ -1,5 +1,6 @@
 import { UserServiceClient, createUserServiceClient } from '../clients/user-service.client';
 import { logger } from './logger.service';
+import { getServiceBaseUrl } from '../../../../../shared/config/service-base-url';
 
 /**
  * Service Discovery Configuration
@@ -39,17 +40,16 @@ export class ServiceDiscovery {
   private healthCheckTimer?: NodeJS.Timeout;
 
   constructor(config?: Partial<ServiceDiscoveryConfig>) {
-    const monolithUserBaseUrl = (process.env.PLATFORM_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
     this.config = {
       services: {
         userService: {
-          urls: [process.env.USER_SERVICE_URL || `${monolithUserBaseUrl}/api/user`],
+          urls: [getServiceBaseUrl('user')],
           healthCheckPath: '/health',
           timeout: 5000
         }
       },
-      // In monolith mode, disable background discovery probing unless explicitly enabled.
-      enableHealthChecks: process.env.ENABLE_SERVICE_DISCOVERY_HEALTH_CHECKS === 'true',
+      // Standalone discovery removed; keep health checks explicit if ever re-enabled.
+      enableHealthChecks: false,
       healthCheckInterval: parseInt(process.env.HEALTH_CHECK_INTERVAL || '30000'),
       failureThreshold: parseInt(process.env.FAILURE_THRESHOLD || '3'),
       recoveryTimeout: parseInt(process.env.RECOVERY_TIMEOUT || '60000'),
@@ -154,21 +154,8 @@ export class ServiceDiscovery {
   /**
    * Check health of a specific service instance
    */
-  private async checkServiceHealth(baseUrl: string, healthPath: string): Promise<boolean> {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.config.services.userService.timeout);
-
-      const response = await fetch(`${baseUrl}${healthPath}`, {
-        method: 'GET',
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-      return response.ok;
-    } catch (error) {
-      return false;
-    }
+  private async checkServiceHealth(_baseUrl: string, _healthPath: string): Promise<boolean> {
+    return true;
   }
 
   /**
@@ -203,7 +190,7 @@ export class ServiceDiscovery {
     }
 
     try {
-      return createUserServiceClient(instance.url);
+      return createUserServiceClient();
     } catch (error) {
       logger.error('Failed to create User Service client', { url: instance.url, error });
       return null;

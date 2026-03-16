@@ -1,4 +1,8 @@
+import { getModelPrefix, makeId } from '@shared/ids/id';
+import { prisma } from '../../infrastructure/database/prisma-client';
 import { logger } from '../../infrastructure/services/logger.service';
+
+const auditIdPrefix = getModelPrefix('AuditLog');
 
 /**
  * Audit Service
@@ -15,19 +19,27 @@ export class AuditService {
     details: any;
   }): Promise<void> {
     try {
-      // In a real implementation, this would save to a database
-      // For now, we'll log it
-      logger.info('Audit event logged', {
-        type: 'audit',
-        userId: event.userId,
-        action: event.action,
+      const details = event.details || {};
+      const ipAddress = details.ipAddress || details.ip || 'system';
+      const userAgent = details.userAgent || 'system';
+      const metadata = {
         resource: event.resource,
-        details: event.details,
-        timestamp: new Date().toISOString()
-      });
+        details
+      };
 
-      // In production, you would save this to an audit log database
-      // await this.auditRepository.create(event);
+      await prisma.auditLog.create({
+        data: {
+          id: makeId(auditIdPrefix),
+          userId: event.userId,
+          email: details.email,
+          action: event.action,
+          ipAddress,
+          userAgent,
+          success: details.success ?? true,
+          reason: details.reason,
+          metadata
+        }
+      });
     } catch (error) {
       logger.error('AuditService.logAuditEvent error', { error, event });
       throw error;
@@ -46,22 +58,39 @@ export class AuditService {
     offset?: number;
   }): Promise<{ logs: any[]; total: number }> {
     try {
-      // In a real implementation, this would query a database
-      // For now, we'll return mock data
-      const mockLogs = [
-        {
-          id: 'audit_001',
-          userId: params.userId || 'user123',
-          action: params.action || 'LOGIN',
-          resource: 'auth',
-          timestamp: new Date().toISOString(),
-          details: { ip: '192.168.1.1', userAgent: 'Mozilla/5.0' }
+      const where: any = {};
+      if (params.userId) {
+        where.userId = params.userId;
+      }
+      if (params.action) {
+        where.action = params.action;
+      }
+      if (params.startDate || params.endDate) {
+        where.timestamp = {};
+        if (params.startDate) {
+          where.timestamp.gte = new Date(params.startDate);
         }
-      ];
+        if (params.endDate) {
+          where.timestamp.lte = new Date(params.endDate);
+        }
+      }
+
+      const limit = params.limit ?? 100;
+      const offset = params.offset ?? 0;
+
+      const [logs, total] = await prisma.$transaction([
+        prisma.auditLog.findMany({
+          where,
+          orderBy: { timestamp: 'desc' },
+          take: limit,
+          skip: offset
+        }),
+        prisma.auditLog.count({ where })
+      ]);
 
       return {
-        logs: mockLogs,
-        total: mockLogs.length
+        logs,
+        total
       };
     } catch (error) {
       logger.error('AuditService.getAuditLogs error', { error, params });

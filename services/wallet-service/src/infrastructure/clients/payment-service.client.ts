@@ -1,4 +1,5 @@
-import axios from 'axios';
+import type { ProcessPaymentDTO, PaymentResultDTO } from '../../../../payment-service/src/application/use-cases/process-payment.use-case';
+import type { PaymentStatusDTO } from '../../../../payment-service/src/application/use-cases/check-payment-status.use-case';
 
 export interface CreatePaymentDTO {
     orderId: string;
@@ -25,19 +26,52 @@ export interface PaymentResponse {
 }
 
 export class PaymentServiceClient {
-    private readonly baseUrl: string;
-
-    constructor(baseUrl: string) {
-        this.baseUrl = baseUrl || process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3003';
-    }
-
     async createPayment(dto: CreatePaymentDTO): Promise<PaymentResponse> {
-        const response = await axios.post(`${this.baseUrl}/api/payments`, dto);
-        return response.data;
+        const { Container } = await import('../../../../payment-service/src/container');
+        const container = Container.getInstance();
+
+        const payload: ProcessPaymentDTO = {
+            orderId: dto.orderId,
+            userId: dto.userId,
+            amount: dto.amount,
+            currency: dto.currency,
+            method: dto.method as ProcessPaymentDTO['method'],
+            customerInfo: {
+                email: dto.customerEmail,
+                phoneNumber: dto.phoneNumber,
+                name: dto.customerName,
+                ipAddress: typeof dto.metadata?.ipAddress === 'string' ? dto.metadata.ipAddress : '0.0.0.0',
+                deviceFingerprint: typeof dto.metadata?.deviceFingerprint === 'string'
+                    ? dto.metadata.deviceFingerprint
+                    : 'internal'
+            },
+            metadata: {
+                ...dto.metadata,
+                callbackUrl: dto.callbackUrl
+            }
+        };
+
+        const result: PaymentResultDTO = await container.processPaymentUseCase.execute(payload);
+        return {
+            success: result.success,
+            data: {
+                paymentId: result.paymentId,
+                status: result.status,
+                redirectUrl: result.redirectUrl,
+                providerReference: result.providerReference
+            },
+            message: result.message
+        };
     }
 
-    async getPaymentStatus(paymentId: string): Promise<unknown> {
-        const response = await axios.get(`${this.baseUrl}/api/payments/${paymentId}`);
-        return response.data;
+    async getPaymentStatus(paymentId: string): Promise<{ success: boolean; data?: PaymentStatusDTO | null }> {
+        const { Container } = await import('../../../../payment-service/src/container');
+        const container = Container.getInstance();
+
+        const result = await container.checkPaymentStatusUseCase.execute({ paymentId });
+        return {
+            success: Boolean(result),
+            data: result
+        };
     }
 }

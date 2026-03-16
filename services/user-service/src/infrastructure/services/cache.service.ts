@@ -88,49 +88,32 @@ export class InMemoryCacheService implements CacheService {
  */
 export class RedisCacheService implements CacheService {
   public readonly name = 'RedisCacheService';
-  
-  // TODO: Implement Redis integration
-  // This would require setting up Redis client and connection
-  // For now, we'll use the in-memory implementation as fallback
 
-  private fallbackService: InMemoryCacheService;
-
-  constructor() {
-    this.fallbackService = new InMemoryCacheService();
+  async set(_key: string, _value: any, _ttl?: number): Promise<void> {
+    throw new Error('RedisCacheService is not configured. Provide a Redis-backed implementation.');
   }
 
-  async set(key: string, value: any, ttl?: number): Promise<void> {
-    // TODO: Implement Redis set with TTL
-    return this.fallbackService.set(key, value, ttl);
+  async get<T>(_key: string): Promise<T | null> {
+    throw new Error('RedisCacheService is not configured. Provide a Redis-backed implementation.');
   }
 
-  async get<T>(key: string): Promise<T | null> {
-    // TODO: Implement Redis get
-    return this.fallbackService.get<T>(key);
+  async del(_key: string): Promise<void> {
+    throw new Error('RedisCacheService is not configured. Provide a Redis-backed implementation.');
   }
 
-  async del(key: string): Promise<void> {
-    // TODO: Implement Redis delete
-    return this.fallbackService.del(key);
-  }
-
-  async exists(key: string): Promise<boolean> {
-    // TODO: Implement Redis exists
-    return this.fallbackService.exists(key);
+  async exists(_key: string): Promise<boolean> {
+    throw new Error('RedisCacheService is not configured. Provide a Redis-backed implementation.');
   }
 
   async flush(): Promise<void> {
-    // TODO: Implement Redis flush
-    return this.fallbackService.flush();
+    throw new Error('RedisCacheService is not configured. Provide a Redis-backed implementation.');
   }
 
-  async increment(key: string, amount?: number): Promise<number> {
-    // TODO: Implement Redis increment
-    return this.fallbackService.increment(key, amount);
+  async increment(_key: string, _amount?: number): Promise<number> {
+    throw new Error('RedisCacheService is not configured. Provide a Redis-backed implementation.');
   }
 
-  async expire(key: string, ttl: number): Promise<void> {
-    // TODO: Implement Redis expire
-    return this.fallbackService.expire(key, ttl);
+  async expire(_key: string, _ttl: number): Promise<void> {
+    throw new Error('RedisCacheService is not configured. Provide a Redis-backed implementation.');
   }
 }

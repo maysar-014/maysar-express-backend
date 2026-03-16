@@ -50,7 +50,7 @@ describe('RouteValidator', () => {
     expect(validators.length).toBeGreaterThan(10);
     expect(createdChains.some(chain => chain.field === 'deliveries')).toBe(true);
     expect(createdChains.some(chain => chain.calls.some(call => call.method === 'isArray'))).toBe(true);
-    expect(createdChains.some(chain => chain.calls.some(call => call.method === 'isUUID'))).toBe(true);
+    expect(createdChains.some(chain => chain.calls.some(call => call.method === 'custom'))).toBe(true);
   });
 
   it('builds chain validators for getRoute lookup', () => {

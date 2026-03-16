@@ -8,7 +8,8 @@
 import { CheckoutEngine, CheckoutContext } from '../../domain/engines/checkout.engine';
 import { PricingPolicy } from '../../domain/policies/pricing.policy';
 import { Cart } from '../../domain/value-objects/cart.value-object';
-import { v4 as uuid } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
+import { normalizeEnablerCode, toShortEnablerCode } from '@shared/ids/public-codes';
 
 export interface CheckoutRepository {
   saveCheckoutSession(session: any): Promise<void>;
@@ -17,6 +18,10 @@ export interface CheckoutRepository {
 
 export interface CartRepository {
   getCart(id: string): Promise<any>;
+}
+
+export interface EnablerLookup {
+  findByCode(code: string, shortCode?: string): Promise<{ id: string; userId: string; status: string } | null>;
 }
 
 export interface EventBus {
@@ -50,7 +55,8 @@ export class InitiateCheckoutUseCase {
     pricingPolicy: PricingPolicy,
     private checkoutRepository: CheckoutRepository,
     private cartRepository?: CartRepository,
-    private eventBus?: EventBus
+    private eventBus?: EventBus,
+    private enablerLookup?: EnablerLookup
   ) {
     this.engine = new CheckoutEngine(pricingPolicy);
   }
@@ -61,7 +67,8 @@ export class InitiateCheckoutUseCase {
     shippingAddressId: string,
     billingAddressId: string,
     shippingMethodId: string,
-    shippingCost: number
+    shippingCost: number,
+    enablerCode?: string
   ): Promise<CheckoutResult> {
     const errors: ValidationError[] = [];
 
@@ -77,26 +84,63 @@ export class InitiateCheckoutUseCase {
         return { success: false, errors };
       }
 
-      // Fetch cart
-      let cartData;
-      if (this.cartRepository) {
-        cartData = await this.cartRepository.getCart(cartId);
-        if (!cartData) {
+      let resolvedEnabler: { id: string; userId: string; code: string; shortCode?: string } | undefined;
+      if (enablerCode) {
+        if (!this.enablerLookup) {
           return {
             success: false,
-            errors: [{ field: 'cartId', message: 'Cart not found' }]
+            errors: [{ field: 'enablerCode', message: 'Enabler attribution service is unavailable' }]
           };
         }
-      } else {
-        // Use mock cart data for testing
-        cartData = {
-          items: [
-            {
-              productId: 'prod-1',
-              quantity: 1,
-              priceAtTime: 100
-            }
-          ]
+
+        const normalizedCode = normalizeEnablerCode(enablerCode);
+        if (!normalizedCode) {
+          return {
+            success: false,
+            errors: [{ field: 'enablerCode', message: 'Invalid enabler code format' }]
+          };
+        }
+
+        const shortCode = toShortEnablerCode(normalizedCode) || undefined;
+        const enabler = await this.enablerLookup.findByCode(normalizedCode, shortCode);
+        if (!enabler) {
+          return {
+            success: false,
+            errors: [{ field: 'enablerCode', message: 'Enabler code not found' }]
+          };
+        }
+
+        const status = String(enabler.status || '').toUpperCase();
+        if (status !== 'APPROVED' && status !== 'ACTIVE') {
+          return {
+            success: false,
+            errors: [{ field: 'enablerCode', message: 'Enabler is not active' }]
+          };
+        }
+
+        if (enabler.userId === userId) {
+          return {
+            success: false,
+            errors: [{ field: 'enablerCode', message: 'Enabler cannot be the buyer' }]
+          };
+        }
+
+        resolvedEnabler = { id: enabler.id, userId: enabler.userId, code: normalizedCode, shortCode };
+      }
+
+      // Fetch cart
+      if (!this.cartRepository) {
+        return {
+          success: false,
+          errors: [{ field: 'cartId', message: 'Cart repository is not configured' }]
+        };
+      }
+
+      const cartData = await this.cartRepository.getCart(cartId);
+      if (!cartData) {
+        return {
+          success: false,
+          errors: [{ field: 'cartId', message: 'Cart not found' }]
         };
       }
 
@@ -123,7 +167,7 @@ export class InitiateCheckoutUseCase {
       }
 
       // Create checkout session
-      const checkoutId = uuid();
+      const checkoutId = makeId(getModelPrefix('Checkout_CheckoutSession'));
       const expiresAt = new Date(Date.now() + 3600000); // 1 hour
       const items = cart.getItems();
 
@@ -131,6 +175,9 @@ export class InitiateCheckoutUseCase {
         id: checkoutId,
         cartId,
         userId,
+        ...(resolvedEnabler
+          ? { enablerId: resolvedEnabler.id, enablerCode: resolvedEnabler.code }
+          : {}),
         shippingAddressId,
         billingAddressId,
         shippingMethodId,
@@ -141,7 +188,16 @@ export class InitiateCheckoutUseCase {
         shippingCost: pricingResult.pricing!.shippingCost.getAmount(),
         totalAmount: pricingResult.pricing!.total.getAmount(),
         items,
-        metadata: { items },
+        metadata: {
+          items,
+          ...(resolvedEnabler
+            ? {
+              enablerId: resolvedEnabler.id,
+              enablerCode: resolvedEnabler.code,
+              enablerCodeShort: resolvedEnabler.shortCode
+            }
+            : {})
+        },
         expiresAt,
         createdAt: new Date()
       };
@@ -155,6 +211,9 @@ export class InitiateCheckoutUseCase {
           checkoutId,
           cartId,
           userId,
+          ...(resolvedEnabler
+            ? { enablerId: resolvedEnabler.id, enablerCode: resolvedEnabler.code }
+            : {}),
           totalAmount: pricingResult.pricing!.total.getAmount(),
           timestamp: new Date()
         });

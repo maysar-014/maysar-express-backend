@@ -4,6 +4,9 @@ import { eventBus, EventBus } from '@shared-events/eventBus';
 import { t } from '@shared/i18n/i18n';
 import { i18next, i18nextMiddleware } from '@shared/i18n/i18n';
 import { z } from 'zod';
+import { isSystemId } from '@shared/validation/id';
+import { PrismaComplianceRepository } from './infrastructure/repositories/prisma-compliance.repository';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 const parseOrRespond = (schema: z.ZodSchema, data: any, res: express.Response) => {
   const result = schema.safeParse(data);
@@ -14,13 +17,10 @@ const parseOrRespond = (schema: z.ZodSchema, data: any, res: express.Response) =
   return result.data;
 };
 
-const isSupportedId = (value: string) =>
-  z.string().cuid().safeParse(value).success || z.string().uuid().safeParse(value).success;
-
 const supportedIdSchema = z
   .string()
   .trim()
-  .refine((value) => isSupportedId(value), { message: 'Expected CUID or UUID' });
+  .refine((value) => isSystemId(value), { message: 'Expected system ID' });
 
 const verifyDocumentSchema = z.object({
   userId: supportedIdSchema,
@@ -62,14 +62,91 @@ const kycStatusParamSchema = z.object({
   userId: supportedIdSchema
 });
 
+const amlRecordSchema = z.object({
+  userId: supportedIdSchema,
+  sanctionsStatus: z.string().min(1).optional(),
+  pepStatus: z.boolean().optional(),
+  riskScore: z.number().min(0).max(100).optional(),
+  flags: z.record(z.any()).optional()
+});
+
+const subjectRightsRequestSchema = z.object({
+  userId: supportedIdSchema,
+  requestType: z.enum(['access', 'delete', 'portability', 'rectification']),
+  reason: z.string().optional(),
+  payload: z.record(z.any()).optional()
+});
+
+const dataDeletionLogSchema = z.object({
+  userId: supportedIdSchema,
+  dataType: z.string().min(1),
+  recordsDeleted: z.number().int().nonnegative(),
+  requestedBy: supportedIdSchema,
+  reason: z.string().min(1)
+});
+
+const dataRetentionPolicySchema = z.object({
+  dataType: z.string().min(1),
+  retentionPeriod: z.number().int().positive(),
+  legalBasis: z.string().min(1),
+  applicableLaw: z.string().min(1),
+  autoDelete: z.boolean().default(true),
+  nextReviewDate: z.coerce.date()
+});
+
+const dataProcessingRecordSchema = z.object({
+  purpose: z.string().min(1),
+  categories: z.record(z.any()),
+  recipients: z.record(z.any()),
+  retentionPeriod: z.string().min(1),
+  securityMeasures: z.record(z.any())
+});
+
+const privacyImpactAssessmentSchema = z.object({
+  projectName: z.string().min(1),
+  assessor: z.string().min(1),
+  riskLevel: z.enum(['low', 'medium', 'high', 'critical']),
+  findings: z.record(z.any()).optional(),
+  recommendations: z.record(z.any()).optional(),
+  status: z.enum(['in_progress', 'completed', 'requires_action']).optional()
+});
+
+const tcraRecordSchema = z.object({
+  userId: supportedIdSchema,
+  licenseNumber: z.string().optional(),
+  status: z.string().optional(),
+  registrationAt: z.coerce.date().optional(),
+  expiryDate: z.coerce.date().optional(),
+  lastAuditAt: z.coerce.date().optional(),
+  auditFindings: z.record(z.any()).optional()
+});
+
+const traRecordSchema = z.object({
+  userId: supportedIdSchema,
+  tin: z.string().min(1),
+  vrn: z.string().optional(),
+  taxComplianceStatus: z.string().optional(),
+  lastFiscalCheck: z.coerce.date().optional(),
+  efdStatus: z.string().optional()
+});
+
+const marketRecordSchema = z.object({
+  sellerId: supportedIdSchema,
+  ethicalScore: z.number().min(0).max(100).optional(),
+  qualityStatus: z.string().optional(),
+  certifications: z.record(z.any()).optional(),
+  lastAuditAt: z.coerce.date().optional()
+});
+
 export const createApp = (prisma: PrismaClient, eventBus: EventBus) => {
 const app = express();
+const complianceRepository = new PrismaComplianceRepository(prisma);
 
 app.use(express.json());
 app.use(i18nextMiddleware.handle(i18next));
 
 // KYC Document Verification
-app.post('/api/compliance/verify-document', async (req, res) => {
+app.post('/verify-document', async (req, res) => {
   const validated = parseOrRespond(verifyDocumentSchema, req.body, res);
   if (!validated) return;
 
@@ -98,7 +175,7 @@ app.post('/api/compliance/verify-document', async (req, res) => {
 });
 
 // KYC Manual Review
-app.post('/api/compliance/manual-review', async (req, res) => {
+app.post('/manual-review', async (req, res) => {
   const validated = parseOrRespond(manualReviewSchema, req.body, res);
   if (!validated) return;
 
@@ -145,7 +222,7 @@ app.post('/api/compliance/manual-review', async (req, res) => {
 });
 
 // KYC Risk Assessment
-app.post('/api/compliance/risk-assessment', async (req, res) => {
+app.post('/risk-assessment', async (req, res) => {
   const validated = parseOrRespond(riskAssessmentSchema, req.body, res);
   if (!validated) return;
 
@@ -189,6 +266,21 @@ app.post('/api/compliance/risk-assessment', async (req, res) => {
 
     await eventBus.publish('ComplianceCheckCompleted.v1', { userId, complianceResult, sagaId });
 
+    const amlRecordId = await complianceRepository.upsertAmlRecord({
+      userId,
+      sanctionsStatus: complianceResult.sanctionsCheck,
+      pepStatus: complianceResult.pepCheck !== 'clear',
+      riskScore,
+      flags: { complianceResult }
+    });
+
+    await eventBus.publish('AMLRecordUpdated.v1', {
+      userId,
+      amlRecordId,
+      riskScore,
+      sagaId
+    });
+
     const riskDecision = riskScore > 80 ? 'reject' : 'accept';
     await eventBus.publish('RiskDecisionMade.v1', { userId, riskDecision, sagaId });
 
@@ -199,7 +291,7 @@ app.post('/api/compliance/risk-assessment', async (req, res) => {
 });
 
 // KYC Compliance Monitoring
-app.post('/api/compliance/monitor', async (req, res) => {
+app.post('/monitor', async (req, res) => {
   const validated = parseOrRespond(monitorSchema, req.body, res);
   if (!validated) return;
 
@@ -224,7 +316,7 @@ app.post('/api/compliance/monitor', async (req, res) => {
 });
 
 // KYC Report Generation
-app.post('/api/compliance/generate-report', async (req, res) => {
+app.post('/generate-report', async (req, res) => {
   const validated = parseOrRespond(generateReportSchema, req.body, res);
   if (!validated) return;
 
@@ -276,7 +368,7 @@ app.post('/api/compliance/generate-report', async (req, res) => {
 });
 
 // KYC Audit Log
-app.post('/api/compliance/audit-log', async (req, res) => {
+app.post('/audit-log', async (req, res) => {
   const validated = parseOrRespond(auditLogSchema, req.body, res);
   if (!validated) return;
 
@@ -307,8 +399,277 @@ app.post('/api/compliance/audit-log', async (req, res) => {
   }
 });
 
+// AML Record (manual update)
+app.post('/aml-record', async (req, res) => {
+  const validated = parseOrRespond(amlRecordSchema, req.body, res);
+  if (!validated) return;
+
+  const { userId, sanctionsStatus, pepStatus, riskScore, flags } = validated;
+  const { sagaId } = req.body;
+
+  try {
+    const amlRecordId = await complianceRepository.upsertAmlRecord({
+      userId,
+      sanctionsStatus: sanctionsStatus ?? 'clear',
+      pepStatus: pepStatus ?? false,
+      riskScore: riskScore ?? 0,
+      flags: flags ?? undefined
+    });
+
+    await eventBus.publish('AMLRecordUpdated.v1', {
+      userId,
+      amlRecordId,
+      sagaId
+    });
+
+    res.status(201).json({ success: true, amlRecordId });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// Subject Rights Request
+app.post('/subject-rights-request', async (req, res) => {
+  const validated = parseOrRespond(subjectRightsRequestSchema, req.body, res);
+  if (!validated) return;
+
+  const { userId, requestType, reason, payload } = validated;
+  const { sagaId } = req.body;
+
+  try {
+    const requestId = await complianceRepository.createSubjectRightsRequest({
+      userId,
+      requestType,
+      reason,
+      payload
+    });
+
+    await eventBus.publish('SubjectRightsRequestCreated.v1', {
+      requestId,
+      userId,
+      requestType,
+      sagaId
+    });
+
+    res.status(201).json({ success: true, requestId });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// Data Deletion Log
+app.post('/data-deletion-log', async (req, res) => {
+  const validated = parseOrRespond(dataDeletionLogSchema, req.body, res);
+  if (!validated) return;
+
+  const { userId, dataType, recordsDeleted, requestedBy, reason } = validated;
+  const { sagaId } = req.body;
+
+  try {
+    const logId = await complianceRepository.createDataDeletionLog({
+      userId,
+      dataType,
+      recordsDeleted,
+      requestedBy,
+      reason
+    });
+
+    await eventBus.publish('DataDeletionLogged.v1', {
+      logId,
+      userId,
+      dataType,
+      recordsDeleted,
+      sagaId
+    });
+
+    res.status(201).json({ success: true, logId });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// Data Retention Policy
+app.post('/data-retention-policy', async (req, res) => {
+  const validated = parseOrRespond(dataRetentionPolicySchema, req.body, res);
+  if (!validated) return;
+
+  const { dataType, retentionPeriod, legalBasis, applicableLaw, autoDelete, nextReviewDate } = validated;
+  const { sagaId } = req.body;
+
+  try {
+    const policyId = await complianceRepository.upsertDataRetentionPolicy({
+      dataType,
+      retentionPeriod,
+      legalBasis,
+      applicableLaw,
+      autoDelete,
+      nextReviewDate
+    });
+
+    await eventBus.publish('DataRetentionPolicyUpdated.v1', {
+      policyId,
+      dataType,
+      sagaId
+    });
+
+    res.status(201).json({ success: true, policyId });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// Data Processing Record
+app.post('/data-processing-record', async (req, res) => {
+  const validated = parseOrRespond(dataProcessingRecordSchema, req.body, res);
+  if (!validated) return;
+
+  const { purpose, categories, recipients, retentionPeriod, securityMeasures } = validated;
+  const { sagaId } = req.body;
+
+  try {
+    const recordId = await complianceRepository.createDataProcessingRecord({
+      purpose,
+      categories,
+      recipients,
+      retentionPeriod,
+      securityMeasures
+    });
+
+    await eventBus.publish('DataProcessingRecordCreated.v1', {
+      recordId,
+      purpose,
+      sagaId
+    });
+
+    res.status(201).json({ success: true, recordId });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// Privacy Impact Assessment
+app.post('/privacy-impact-assessment', async (req, res) => {
+  const validated = parseOrRespond(privacyImpactAssessmentSchema, req.body, res);
+  if (!validated) return;
+
+  const { projectName, assessor, riskLevel, findings, recommendations, status } = validated;
+  const { sagaId } = req.body;
+
+  try {
+    const assessmentId = await complianceRepository.createPrivacyImpactAssessment({
+      projectName,
+      assessor,
+      riskLevel,
+      findings,
+      recommendations,
+      status
+    });
+
+    await eventBus.publish('PrivacyImpactAssessmentCreated.v1', {
+      assessmentId,
+      projectName,
+      riskLevel,
+      sagaId
+    });
+
+    res.status(201).json({ success: true, assessmentId });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// TCRA Record
+app.post('/tcra-record', async (req, res) => {
+  const validated = parseOrRespond(tcraRecordSchema, req.body, res);
+  if (!validated) return;
+
+  const { userId, licenseNumber, status, registrationAt, expiryDate, lastAuditAt, auditFindings } = validated;
+  const { sagaId } = req.body;
+
+  try {
+    const recordId = await complianceRepository.upsertTcraRecord({
+      userId,
+      licenseNumber,
+      status,
+      registrationAt,
+      expiryDate,
+      lastAuditAt,
+      auditFindings
+    });
+
+    await eventBus.publish('TCRARecordUpdated.v1', {
+      userId,
+      recordId,
+      sagaId
+    });
+
+    res.status(201).json({ success: true, recordId });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// TRA Record
+app.post('/tra-record', async (req, res) => {
+  const validated = parseOrRespond(traRecordSchema, req.body, res);
+  if (!validated) return;
+
+  const { userId, tin, vrn, taxComplianceStatus, lastFiscalCheck, efdStatus } = validated;
+  const { sagaId } = req.body;
+
+  try {
+    const recordId = await complianceRepository.upsertTraRecord({
+      userId,
+      tin,
+      vrn,
+      taxComplianceStatus,
+      lastFiscalCheck,
+      efdStatus
+    });
+
+    await eventBus.publish('TRARecordUpdated.v1', {
+      userId,
+      recordId,
+      sagaId
+    });
+
+    res.status(201).json({ success: true, recordId });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// Market Record
+app.post('/market-record', async (req, res) => {
+  const validated = parseOrRespond(marketRecordSchema, req.body, res);
+  if (!validated) return;
+
+  const { sellerId, ethicalScore, qualityStatus, certifications, lastAuditAt } = validated;
+  const { sagaId } = req.body;
+
+  try {
+    const recordId = await complianceRepository.upsertMarketRecord({
+      sellerId,
+      ethicalScore,
+      qualityStatus,
+      certifications,
+      lastAuditAt
+    });
+
+    await eventBus.publish('MarketComplianceRecordUpdated.v1', {
+      sellerId,
+      recordId,
+      sagaId
+    });
+
+    res.status(201).json({ success: true, recordId });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
 // KYC Status Endpoint
-app.get('/api/compliance/kyc-status/:userId', async (req, res) => {
+app.get('/kyc-status/:userId', async (req, res) => {
   const validated = parseOrRespond(kycStatusParamSchema, req.params, res);
   if (!validated) return;
 
@@ -355,9 +716,9 @@ return app;
 
 const PORT = process.env.PORT || 3013;
 if (require.main === module) {
-  const prisma = new PrismaClient();
+  const prisma = createPrismaClient();
   const app = createApp(prisma, eventBus);
   app.listen(PORT, () => console.log(`Compliance Service (KYC only) running on port ${PORT}`));
 }
 
-export default createApp(new PrismaClient(), eventBus);
+export default createApp(createPrismaClient(), eventBus);

@@ -1,3 +1,5 @@
+import { getModelPrefix, makeId } from '@shared/ids/id';
+
 export interface SettlementRequest {
   orderId: string;
   buyerId: string;
@@ -16,7 +18,21 @@ export interface SettlementResult {
   status: 'pending' | 'completed' | 'failed';
 }
 
+export interface SettlementRepository {
+  create(record: {
+    orderId: string;
+    settlementId: string;
+    sellerPayout: number;
+    platformCommission: number;
+    courierEarnings?: number;
+    status: SettlementResult['status'];
+    processedAt?: Date | null;
+  }): Promise<void>;
+}
+
 export class SettlementService {
+  constructor(private readonly settlementRepository?: SettlementRepository) {}
+
   async processSettlement(request: SettlementRequest): Promise<SettlementResult> {
     const commission = this.calculateCommission(request.totalAmount, request.commissionRate);
     const courierEarnings = this.calculateCourierEarnings(request.totalAmount);
@@ -30,11 +46,24 @@ export class SettlementService {
       status: 'pending'
     };
 
-    if (request.paymentMethod === 'COD') {
-      return await this.processCODSettlement(settlement, request);
-    } else {
-      return await this.processDigitalSettlement(settlement, request);
+    const finalSettlement =
+      request.paymentMethod === 'COD'
+        ? await this.processCODSettlement(settlement, request)
+        : await this.processDigitalSettlement(settlement, request);
+
+    if (this.settlementRepository) {
+      await this.settlementRepository.create({
+        orderId: request.orderId,
+        settlementId: finalSettlement.settlementId,
+        sellerPayout: finalSettlement.sellerPayout,
+        platformCommission: finalSettlement.platformCommission,
+        courierEarnings: finalSettlement.courierEarnings,
+        status: finalSettlement.status,
+        processedAt: finalSettlement.status === 'completed' ? new Date() : null
+      });
     }
+
+    return finalSettlement;
   }
 
   private calculateCommission(amount: number, rate: number): number {
@@ -61,6 +90,6 @@ export class SettlementService {
   }
 
   private generateSettlementId(): string {
-    return `settlement_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return makeId(getModelPrefix('Order_Settlement'));
   }
 }

@@ -13,6 +13,7 @@ import { IEventBus } from './infrastructure/messaging/event-bus.interface';
 import { provideSagaLogRepository } from './infrastructure/repositories/saga.repository';
 import { PayoutProcessingSaga } from './application/sagas/payout-processing.saga';
 import { WalletServiceClient } from '../../payment-service/src/infrastructure/clients/wallet-service.client';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 export class Container {
     private static instance: Container;
@@ -21,9 +22,13 @@ export class Container {
     public readonly eventBus: IEventBus;
     public readonly outboxProcessor: OutboxProcessor;
     public readonly payoutProcessingSaga: PayoutProcessingSaga;
+    public readonly payoutRepository: PayoutRepository;
+    public readonly initiatePayoutUseCase: InitiatePayoutUseCase;
+    public readonly completePayoutUseCase: CompletePayoutUseCase;
+    public readonly cancelPayoutUseCase: CancelPayoutUseCase;
 
     private constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = createPrismaClient();
         const piiEncryptionService = new PiiEncryptionService();
         const payoutRepository = new PayoutRepository(this.prisma, piiEncryptionService);
         const payoutPolicy = new PayoutPolicy();
@@ -34,8 +39,12 @@ export class Container {
 
         const sagaLogRepository = provideSagaLogRepository(this.prisma);
 
-        const walletServiceClient = new WalletServiceClient(process.env.WALLET_SERVICE_URL || 'http://localhost:3002');
-        const payoutProviderFactory = { getProvider: (method: string) => ({ initiateTransfer: async () => ({ success: true }) }) }; // Mock provider factory
+        const walletServiceClient = new WalletServiceClient();
+        const payoutProviderFactory = {
+            getProvider: (method: string) => {
+                throw new Error(`Payout provider not configured for method "${method}"`);
+            }
+        };
 
         this.payoutProcessingSaga = new PayoutProcessingSaga(
             sagaLogRepository,
@@ -59,6 +68,11 @@ export class Container {
             cancelUseCase,
             payoutRepository
         );
+
+        this.payoutRepository = payoutRepository;
+        this.initiatePayoutUseCase = initiateUseCase;
+        this.completePayoutUseCase = completeUseCase;
+        this.cancelPayoutUseCase = cancelUseCase;
     }
 
     public static getInstance(): Container {

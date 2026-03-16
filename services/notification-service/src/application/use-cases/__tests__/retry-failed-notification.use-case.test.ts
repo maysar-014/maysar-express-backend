@@ -1,55 +1,50 @@
 import { RetryFailedNotificationUseCase } from '../retry-failed-notification.use-case';
-
-const mockRepository = { findById: jest.fn(), update: jest.fn(), findFailed: jest.fn() } as any;
-const mockProvider = { send: jest.fn() } as any;
+import { NotificationNotFoundError, NotificationValidationError } from '../../../domain/errors/notification.errors';
 
 describe('RetryFailedNotificationUseCase', () => {
     let useCase: RetryFailedNotificationUseCase;
+    const mockRepository = { findById: jest.fn(), update: jest.fn() } as any;
+    const mockDeliveryPolicy = { shouldRetry: jest.fn() } as any;
+    const mockTriggerSaga = jest.fn();
 
     beforeEach(() => {
         jest.clearAllMocks();
-        useCase = new RetryFailedNotificationUseCase(mockRepository, mockProvider);
+        useCase = new RetryFailedNotificationUseCase(
+            mockRepository,
+            mockDeliveryPolicy,
+            mockTriggerSaga
+        );
     });
 
-    it('should retry failed notification', async () => {
-        mockRepository.findFailed.mockResolvedValue([{ id: 'n1', retryCount: 1 }]);
-        mockProvider.send.mockResolvedValue({ success: true });
+    it('should retry failed notification when eligible', async () => {
+        const incremented = { id: 'n1', retryCount: 1 } as any;
+        const notification = {
+            id: 'n1',
+            incrementRetryCount: jest.fn().mockReturnValue(incremented)
+        } as any;
+        mockRepository.findById.mockResolvedValue(notification);
+        mockDeliveryPolicy.shouldRetry.mockReturnValue(true);
+        mockRepository.update.mockResolvedValue(incremented);
 
-        await useCase.execute();
+        const result = await useCase.execute('n1');
 
-        expect(mockProvider.send).toHaveBeenCalled();
+        expect(notification.incrementRetryCount).toHaveBeenCalled();
+        expect(mockRepository.update).toHaveBeenCalledWith(incremented);
+        expect(mockTriggerSaga).toHaveBeenCalledWith(incremented);
+        expect(result).toBe(incremented);
     });
 
-    it('should skip notifications exceeding max retries', async () => {
-        mockRepository.findFailed.mockResolvedValue([{ id: 'n1', retryCount: 5 }]);
-        await useCase.execute();
-        expect(mockProvider.send).not.toHaveBeenCalled();
+    it('should throw when notification not found', async () => {
+        mockRepository.findById.mockResolvedValue(null);
+
+        await expect(useCase.execute('n1')).rejects.toThrow(NotificationNotFoundError);
     });
 
-    it('should update retry count on success', async () => {
-        mockRepository.findFailed.mockResolvedValue([{ id: 'n1', retryCount: 1 }]);
-        mockProvider.send.mockResolvedValue({ success: true });
-        await useCase.execute();
-        expect(mockRepository.update).toHaveBeenCalledWith('n1', expect.objectContaining({ status: 'sent' }));
-    });
+    it('should throw when notification cannot be retried', async () => {
+        const notification = { id: 'n1', incrementRetryCount: jest.fn() } as any;
+        mockRepository.findById.mockResolvedValue(notification);
+        mockDeliveryPolicy.shouldRetry.mockReturnValue(false);
 
-    it('should increment retry count on failure', async () => {
-        mockRepository.findFailed.mockResolvedValue([{ id: 'n1', retryCount: 1 }]);
-        mockProvider.send.mockResolvedValue({ success: false });
-        await useCase.execute();
-        expect(mockRepository.update).toHaveBeenCalledWith('n1', expect.objectContaining({ retryCount: 2 }));
-    });
-
-    it('should handle multiple failed notifications', async () => {
-        mockRepository.findFailed.mockResolvedValue([{ id: 'n1', retryCount: 1 }, { id: 'n2', retryCount: 2 }]);
-        mockProvider.send.mockResolvedValue({ success: true });
-        await useCase.execute();
-        expect(mockProvider.send).toHaveBeenCalledTimes(2);
-    });
-
-    it('should handle provider errors gracefully', async () => {
-        mockRepository.findFailed.mockResolvedValue([{ id: 'n1', retryCount: 1 }]);
-        mockProvider.send.mockRejectedValue(new Error('Network error'));
-        await expect(useCase.execute()).resolves.not.toThrow();
+        await expect(useCase.execute('n1')).rejects.toThrow(NotificationValidationError);
     });
 });

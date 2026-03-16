@@ -213,27 +213,27 @@ describe('DatabaseUserRepository', () => {
     repo = new DatabaseUserRepository();
   });
 
-  it('delegates all operations to fallback repository', async () => {
+  it('throws when used without a real database implementation', async () => {
     const user = makeUser('db-test');
-    
-    // Test all methods delegate properly
-    await expect(repo.save(user)).resolves.not.toThrow();
-    await expect(repo.create(user)).resolves.toBeDefined();
-    await expect(repo.findById('db-test')).resolves.toBeDefined();
-    await expect(repo.findByCriteria({ role: UserRole.BUYER })).resolves.toBeDefined();
-    await expect(repo.update(user)).resolves.toBeDefined();
-    await expect(repo.count()).resolves.toBeGreaterThanOrEqual(0);
-    await expect(repo.findByEmail(user.email.toString())).resolves.toBeDefined();
-    await expect(repo.findByPhoneNumber(user.phoneNumber.toString())).resolves.toBeDefined();
-    await expect(repo.findByBusinessId('business-123')).resolves.toBeNull();
-    await expect(repo.findByRole(UserRole.BUYER)).resolves.toBeDefined();
-    await expect(repo.findByStatus('ACTIVE')).resolves.toBeDefined();
-    await expect(repo.incrementLoginAttempts('db-test')).resolves.not.toThrow();
-    await expect(repo.resetLoginAttempts('db-test')).resolves.not.toThrow();
-    await expect(repo.lockAccount('db-test', new Date())).resolves.not.toThrow();
-    await expect(repo.unlockAccount('db-test')).resolves.not.toThrow();
-    await expect(repo.updateLastLogin('db-test')).resolves.not.toThrow();
-    await expect(repo.updateMetadata('db-test', {})).resolves.not.toThrow();
-    await expect(repo.delete('db-test')).resolves.not.toThrow();
+    const message = 'DatabaseUserRepository is not implemented';
+
+    await expect(repo.save(user)).rejects.toThrow(message);
+    await expect(repo.create(user)).rejects.toThrow(message);
+    await expect(repo.findById('db-test')).rejects.toThrow(message);
+    await expect(repo.findByCriteria({ role: UserRole.BUYER })).rejects.toThrow(message);
+    await expect(repo.update(user)).rejects.toThrow(message);
+    await expect(repo.count()).rejects.toThrow(message);
+    await expect(repo.findByEmail(user.email.toString())).rejects.toThrow(message);
+    await expect(repo.findByPhoneNumber(user.phoneNumber.toString())).rejects.toThrow(message);
+    await expect(repo.findByBusinessId('business-123')).rejects.toThrow(message);
+    await expect(repo.findByRole(UserRole.BUYER)).rejects.toThrow(message);
+    await expect(repo.findByStatus('ACTIVE')).rejects.toThrow(message);
+    await expect(repo.incrementLoginAttempts('db-test')).rejects.toThrow(message);
+    await expect(repo.resetLoginAttempts('db-test')).rejects.toThrow(message);
+    await expect(repo.lockAccount('db-test', new Date())).rejects.toThrow(message);
+    await expect(repo.unlockAccount('db-test')).rejects.toThrow(message);
+    await expect(repo.updateLastLogin('db-test')).rejects.toThrow(message);
+    await expect(repo.updateMetadata('db-test', {})).rejects.toThrow(message);
+    await expect(repo.delete('db-test')).rejects.toThrow(message);
   });
 });

@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 import { ITwoFactorRepository } from '../../domain/repositories/two-factor.repository';
 import { TotpEngine } from '../../domain/engines/totp.engine';
 import { BackupCodeEngine } from '../../domain/engines/backup-code.engine';
@@ -43,7 +43,7 @@ export class SetupTwoFactorUseCase {
 
         // 5. Create and save config
         const config = TwoFactorConfig.create({
-            id: uuidv4(),
+            id: makeId(getModelPrefix('User_TwoFactorAuth')),
             userId,
             method: request.method,
             secret: secret.getValue(), // Repository should handle encryption

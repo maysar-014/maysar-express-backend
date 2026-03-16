@@ -1,6 +1,6 @@
 import { UpdatePreferenceUseCase } from '../update-preference.use-case';
 
-const mockRepository = { findById: jest.fn(), update: jest.fn() } as any;
+const mockRepository = { findByUserAndChannel: jest.fn(), update: jest.fn() } as any;
 
 describe('UpdatePreferenceUseCase', () => {
     let useCase: UpdatePreferenceUseCase;
@@ -11,41 +11,32 @@ describe('UpdatePreferenceUseCase', () => {
     });
 
     it('should update preference', async () => {
-        mockRepository.findById.mockResolvedValue({ id: 'p1', enabled: true, disable: jest.fn() });
+        const updated = { id: 'p1', enabled: false };
+        const preference = {
+            updatePreference: jest.fn().mockReturnValue(updated)
+        };
+        mockRepository.findByUserAndChannel.mockResolvedValue(preference);
+        mockRepository.update.mockResolvedValue(updated);
 
-        await useCase.execute('p1', { enabled: false });
+        await useCase.execute('user-1', 'email', { enabled: false });
 
-        expect(mockRepository.update).toHaveBeenCalled();
+        expect(mockRepository.update).toHaveBeenCalledWith(updated);
     });
 
     it('should fail if preference not found', async () => {
-        mockRepository.findById.mockResolvedValue(null);
-        await expect(useCase.execute('p1', { enabled: false }))
+        mockRepository.findByUserAndChannel.mockResolvedValue(null);
+        await expect(useCase.execute('user-1', 'email', { enabled: false }))
             .rejects.toThrow('Preference not found');
     });
 
-    it('should enable disabled preference', async () => {
-        mockRepository.findById.mockResolvedValue({ id: 'p1', enabled: false, enable: jest.fn() });
-        await useCase.execute('p1', { enabled: true });
-        expect(mockRepository.update).toHaveBeenCalled();
-    });
-
-    it('should update channel preferences', async () => {
-        mockRepository.findById.mockResolvedValue({ id: 'p1', channels: ['email'] });
-        await useCase.execute('p1', { channels: ['email', 'sms'] });
-        expect(mockRepository.update).toHaveBeenCalledWith('p1', expect.objectContaining({ channels: ['email', 'sms'] }));
-    });
-
-    it('should update quiet hours', async () => {
-        mockRepository.findById.mockResolvedValue({ id: 'p1' });
-        await useCase.execute('p1', { quietHours: { start: '22:00', end: '08:00' } });
-        expect(mockRepository.update).toHaveBeenCalled();
-    });
-
     it('should handle repository update failure', async () => {
-        mockRepository.findById.mockResolvedValue({ id: 'p1' });
+        const updated = { id: 'p1', enabled: false };
+        const preference = {
+            updatePreference: jest.fn().mockReturnValue(updated)
+        };
+        mockRepository.findByUserAndChannel.mockResolvedValue(preference);
         mockRepository.update.mockRejectedValue(new Error('Update failed'));
-        await expect(useCase.execute('p1', { enabled: false }))
+        await expect(useCase.execute('user-1', 'email', { enabled: false }))
             .rejects.toThrow('Update failed');
     });
 });

@@ -32,12 +32,9 @@ describe('diagnostic-runner script', () => {
         }))
       }
     }), { virtual: true });
-    jest.doMock('./infrastructure/database/prisma.client', () => ({
-      PrismaClientManager: {
-        getInstance: jest.fn(() => ({
-          connect: jest.fn().mockResolvedValue(undefined),
-          healthCheck: jest.fn().mockResolvedValue({ status: 'healthy', latency: 12 })
-        }))
+    jest.doMock('./infrastructure/database/prisma-client', () => ({
+      DatabaseConnection: {
+        getConnectionStatus: jest.fn().mockResolvedValue({ connected: true, responseTime: '12ms' })
       }
     }), { virtual: true });
     jest.doMock('./infrastructure/cache/redis.client', () => ({
@@ -89,12 +86,13 @@ describe('diagnostic-runner script', () => {
         }))
       }
     }), { virtual: true });
-    jest.doMock('./infrastructure/database/prisma.client', () => ({
-      PrismaClientManager: {
-        getInstance: jest.fn(() => ({
-          connect: jest.fn().mockRejectedValue(new Error('database unavailable')),
-          healthCheck: jest.fn()
-        }))
+    jest.doMock('./infrastructure/database/prisma-client', () => ({
+      DatabaseConnection: {
+        getConnectionStatus: jest.fn().mockResolvedValue({
+          connected: false,
+          responseTime: '0ms',
+          error: 'database unavailable'
+        })
       }
     }), { virtual: true });
     jest.doMock('./infrastructure/cache/redis.client', () => ({

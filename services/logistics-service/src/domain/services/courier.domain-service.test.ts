@@ -44,7 +44,7 @@ const createDelivery = (overrides?: Record<string, unknown>) => {
       contactName: 'Recipient',
       contactPhone: '+255700222222'
     },
-    package: {
+    packageDetails: {
       weight: 8,
       dimensions: { length: 30, width: 20, height: 15 },
       value: 100000,
@@ -201,7 +201,7 @@ describe('CourierDomainService', () => {
       orderId: 'ord-2',
       pickupAddress: { ...eligible.pickupAddress, city: 'Arusha' },
       deliveryAddress: { ...eligible.deliveryAddress, city: 'Mwanza' },
-      package: { ...eligible.package, weight: 50 },
+      packageDetails: { ...(eligible as any).packageDetails, weight: 50 },
       status: 'pending'
     });
     const denied = service.canHandleDelivery(courier, overweightOutside);

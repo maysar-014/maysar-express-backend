@@ -85,18 +85,17 @@ describe('InMemoryUserRepository additional behaviors', () => {
   });
 });
 
-describe('DatabaseUserRepository delegation', () => {
-  test('delegates methods to in-memory fallback', async () => {
+describe('DatabaseUserRepository', () => {
+  test('throws without a real database implementation', async () => {
     const db = new DatabaseUserRepository();
     const u = makeUser('db1');
-    await db.create(u);
-    await db.incrementLoginAttempts('db1');
-    await db.lockAccount('db1', new Date(Date.now() + 1000));
-    await db.updateLastLogin('db1');
+    const message = 'DatabaseUserRepository is not implemented';
 
-    const found = await db.findById('db1');
-    expect(found?.id).toBe('db1');
-    const byRole = await db.findByRole(u.role);
-    expect(byRole.length).toBeGreaterThanOrEqual(1);
+    await expect(db.create(u)).rejects.toThrow(message);
+    await expect(db.incrementLoginAttempts('db1')).rejects.toThrow(message);
+    await expect(db.lockAccount('db1', new Date(Date.now() + 1000))).rejects.toThrow(message);
+    await expect(db.updateLastLogin('db1')).rejects.toThrow(message);
+    await expect(db.findById('db1')).rejects.toThrow(message);
+    await expect(db.findByRole(u.role)).rejects.toThrow(message);
   });
 });

@@ -1,5 +1,6 @@
 ﻿// @ts-nocheck
 import { body, param, query } from 'express-validator';
+import { isSystemId } from '@shared/validation/id';
 
 export class TrackingValidator {
   static storeLocationUpdate(): ValidationChain[] {
@@ -52,8 +53,8 @@ export class TrackingValidator {
 
       body('deliveryId')
         .optional()
-        .isUUID()
-        .withMessage('Delivery ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Delivery ID must be a valid ID'),
 
       body('timestamp')
         .optional()
@@ -180,13 +181,13 @@ export class TrackingValidator {
 
       query('courierIds.*')
         .optional()
-        .isUUID()
-        .withMessage('Each courier ID must be a valid UUID'),
+        .custom(isSystemId)
+        .withMessage('Each courier ID must be a valid ID'),
 
       query('status')
         .optional()
-        .isIn(['active', 'inactive', 'offline'])
-        .withMessage('Status must be active, inactive, or offline'),
+        .isIn(['online', 'offline', 'busy', 'delivering', 'returning', 'active', 'inactive'])
+        .withMessage('Status must be online, offline, busy, delivering, returning, active, or inactive'),
 
       query('vehicleType')
         .optional()
@@ -242,7 +243,7 @@ export class TrackingValidator {
         .withMessage('Courier ID must be a valid identifier'),
 
       body('status')
-        .isIn(['online', 'offline', 'busy', 'maintenance'])
+        .isIn(['online', 'offline', 'busy', 'delivering', 'returning', 'maintenance'])
         .withMessage('Invalid status'),
 
       body('reason')

@@ -16,6 +16,6 @@ export class CapacityManagementEngine {
     }
 
     detectBottlenecks(capacities: ProductionCapacity[]): Date[] {
-        return []; // Mock implementation
+        throw new Error('Capacity bottleneck detection is not implemented.');
     }
 }

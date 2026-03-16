@@ -14,6 +14,7 @@ const mockCourierRepository: jest.Mocked<ICourierRepository> = {
   getCourierById: jest.fn(),
   updateCourierLocation: jest.fn(),
   updateCourierAvailability: jest.fn(),
+  updateCourierStatus: jest.fn(),
   getCourierPerformance: jest.fn()
 };
 
@@ -32,7 +33,8 @@ const mockSagaLogRepository: jest.Mocked<ISagaLogRepository> = {
   getById: jest.fn(),
   saveStep: jest.fn(),
   updateStep: jest.fn(),
-  getSteps: jest.fn()
+  getSteps: jest.fn(),
+  findStuck: jest.fn()
 };
 
 const mockRouteRepository: jest.Mocked<IRouteRepository> = {

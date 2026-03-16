@@ -1,6 +1,6 @@
 export const PRODUCT_ROUTES_METADATA = {
   version: 'v1',
-  prefix: '/api/v1',
+  prefix: '/v1',
   routes: [
     { method: 'POST', path: '/products', description: 'Create new structured product', auth: 'seller' },
     { method: 'GET', path: '/products/:id', description: 'Get product by ID', auth: 'public' },

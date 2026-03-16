@@ -7,7 +7,7 @@ import { GeoPoint } from '../value-objects/geopoint.value-object';
 
 const createDeliveryLike = (overrides?: Record<string, any>) => ({
   status: 'pending',
-  package: {
+  packageDetails: {
     weight: 10
   },
   pickupAddress: {
@@ -52,7 +52,7 @@ describe('DeliveryDomainService', () => {
 
   it('validateDeliveryConstraints returns all detected violations', () => {
     const invalid = createDeliveryLike({
-      package: { weight: 0 },
+      packageDetails: { weight: 0 },
       pickupAddress: { street: '', city: '', coordinates: { lat: 100, lng: 200 } },
       deliveryAddress: { street: '', city: '', coordinates: { lat: 100, lng: 200 } }
     });
@@ -72,7 +72,7 @@ describe('DeliveryDomainService', () => {
 
   it('validateDeliveryConstraints enforces max weight boundary', () => {
     const overweight = createDeliveryLike({
-      package: { weight: 600 }
+      packageDetails: { weight: 600 }
     });
     const result = service.validateDeliveryConstraints(overweight as any);
 
@@ -103,7 +103,7 @@ describe('DeliveryDomainService', () => {
   });
 
   it('updateDeliveryStatus validates transition rules', () => {
-    const pending = createDeliveryLike({ status: 'pending' });
+    const pending = createDeliveryLike({ status: 'pending', courierId: 'cour-1', assignCourier: jest.fn() });
     expect(service.updateDeliveryStatus(pending as any, 'assigned')).toEqual({ success: true });
     expect(service.updateDeliveryStatus(pending as any, 'delivered')).toEqual({
       success: false,

@@ -5,6 +5,7 @@ import { IFraudRepository } from './domain/repositories/fraud.repository';
 import { RefundRepository } from './infrastructure/repositories/refund.repository';
 import { FraudRepository } from './infrastructure/repositories/fraud.repository';
 import Redis from 'ioredis';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 import { PesapalAdapter } from './infrastructure/providers/pesapal.adapter';
 import { ProcessPaymentUseCase } from './application/use-cases/process-payment.use-case';
@@ -22,6 +23,7 @@ import { EventBus } from '@shared-events/eventBus';
 import { IEventBus } from './infrastructure/messaging/event-bus.interface';
 import { OutboxRepository } from './infrastructure/messaging/outbox.repository';
 import { OutboxProcessor } from './infrastructure/messaging/outbox-processor';
+import { WebhookEventRepository } from './infrastructure/repositories/webhook-event.repository';
 
 import { WalletServiceClient } from './infrastructure/clients/wallet-service.client';
 import { SagaEventHandler } from './api/sagas/saga.event-handler';
@@ -46,6 +48,7 @@ export class Container {
     public refundRepository: IRefundRepository;
     public fraudRepository: IFraudRepository;
     public outboxRepository: OutboxRepository;
+    public webhookEventRepository: WebhookEventRepository;
     public sagaLogRepository: ISagaLogRepository;
 
     // Clients
@@ -85,7 +88,7 @@ export class Container {
     public webhookController: WebhookController;
 
     private constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = createPrismaClient();
 
         // Redis client (optional)
         if (process.env.REDIS_URL) {
@@ -97,6 +100,7 @@ export class Container {
         this.refundRepository = new RefundRepository(this.prisma);
         this.fraudRepository = new FraudRepository(this.prisma as any);
         this.outboxRepository = new OutboxRepository(this.prisma);
+        this.webhookEventRepository = new WebhookEventRepository(this.prisma);
 
         // Messaging - MUST be assigned before OutboxProcessor construction
         this.eventBus = new EventBus();
@@ -107,7 +111,7 @@ export class Container {
         this.sagaLogRepository = new PrismaSagaLogRepository(this.prisma as any);
 
         // Clients
-        this.walletServiceClient = new WalletServiceClient(process.env.WALLET_SERVICE_URL || 'http://wallet-service:3002');
+        this.walletServiceClient = new WalletServiceClient();
 
         // Providers
         this.pesapalAdapter = new PesapalAdapter();
@@ -153,7 +157,8 @@ export class Container {
         this.handlePesapalWebhookUseCase = new HandlePesapalWebhookUseCase(
             this.paymentRepository,
             this.pesapalAdapter,
-            this.eventBus
+            this.eventBus,
+            this.webhookEventRepository
         );
 
         // Controllers

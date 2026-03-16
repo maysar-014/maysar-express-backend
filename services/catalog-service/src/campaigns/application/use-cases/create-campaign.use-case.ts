@@ -10,7 +10,7 @@ import { PricingRuleValue } from '../../domain/value-objects/pricing-rule-value.
 import { CampaignPricingRule } from '../../domain/entities/campaign-pricing-rule.entity';
 import { CampaignCondition } from '../../domain/entities/campaign-condition.entity';
 import { CampaignMapper } from '../mappers/campaign.mapper';
-import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 @injectable()
 export class CreateCampaignUseCase {
@@ -20,7 +20,7 @@ export class CreateCampaignUseCase {
     ) { }
 
     async execute(sellerId: string, createdBy: string, dto: CreateCampaignDto): Promise<CampaignDto> {
-        const id = uuidv4();
+        const id = makeId(getModelPrefix('Campaign_Campaign'));
         const schedule = CampaignSchedule.create(dto.startDate, dto.endDate, dto.timezone);
         const metadata = CampaignMetadata.create();
 
@@ -38,14 +38,24 @@ export class CreateCampaignUseCase {
         // Add pricing rules
         for (const ruleDto of dto.pricingRules) {
             const ruleValue = PricingRuleValue.create(ruleDto.type, ruleDto.value);
-            const rule = CampaignPricingRule.create(uuidv4(), ruleValue, ruleDto.priority, ruleDto.conditions);
+            const rule = CampaignPricingRule.create(
+                makeId(getModelPrefix('Campaign_PricingRule')),
+                ruleValue,
+                ruleDto.priority,
+                ruleDto.conditions
+            );
             campaign.addPricingRule(rule);
         }
 
         // Add conditions
         if (dto.conditions) {
             for (const condDto of dto.conditions) {
-                const condition = CampaignCondition.create(uuidv4(), condDto.type, condDto.operator, condDto.value);
+                const condition = CampaignCondition.create(
+                    makeId(getModelPrefix('Campaign_Condition')),
+                    condDto.type,
+                    condDto.operator,
+                    condDto.value
+                );
                 campaign.addCondition(condition);
             }
         }

@@ -1,9 +1,9 @@
-import { v4 as uuidv4, validate as uuidValidate } from 'uuid';
+import { getModelPrefix, isSystemId, makeId } from '@shared/ids/id';
 
 export abstract class BaseId {
   constructor(protected readonly value: string) {
-    if (!uuidValidate(value)) {
-      throw new Error(`Invalid UUID: ${value}`);
+    if (!isSystemId(value)) {
+      throw new Error(`Invalid ID: ${value}`);
     }
   }
 
@@ -15,14 +15,14 @@ export abstract class BaseId {
     return this.value === other.value;
   }
 
-  static generate(): string {
-    return uuidv4();
+  static generate(prefix: string): string {
+    return makeId(prefix);
   }
 }
 
 export class CommissionId extends BaseId {
   static create(): CommissionId {
-    return new CommissionId(BaseId.generate());
+    return new CommissionId(BaseId.generate(getModelPrefix('Commission')));
   }
 
   static fromString(value: string): CommissionId {
@@ -32,7 +32,7 @@ export class CommissionId extends BaseId {
 
 export class OrderId extends BaseId {
   static create(): OrderId {
-    return new OrderId(BaseId.generate());
+    return new OrderId(BaseId.generate(getModelPrefix('Order_Order')));
   }
 
   static fromString(value: string): OrderId {
@@ -42,7 +42,7 @@ export class OrderId extends BaseId {
 
 export class SellerId extends BaseId {
   static create(): SellerId {
-    return new SellerId(BaseId.generate());
+    return new SellerId(BaseId.generate(getModelPrefix('User_User')));
   }
 
   static fromString(value: string): SellerId {
@@ -52,7 +52,7 @@ export class SellerId extends BaseId {
 
 export class RecipientId extends BaseId {
   static create(): RecipientId {
-    return new RecipientId(BaseId.generate());
+    return new RecipientId(BaseId.generate(getModelPrefix('User_User')));
   }
 
   static fromString(value: string): RecipientId {
@@ -62,7 +62,7 @@ export class RecipientId extends BaseId {
 
 export class PayoutId extends BaseId {
   static create(): PayoutId {
-    return new PayoutId(BaseId.generate());
+    return new PayoutId(BaseId.generate(getModelPrefix('Commission_Payout')));
   }
 
   static fromString(value: string): PayoutId {

@@ -37,7 +37,7 @@ export function createSearchRoutes(
 ): Router {
   const router = Router();
   const routesConfig = { ...DEFAULT_SEARCH_ROUTES_CONFIG, ...config };
-  const apiPrefix = `/api/${routesConfig.apiVersion}`;
+  const apiPrefix = `/${routesConfig.apiVersion}`;
 
   // Middleware placeholders
   const authenticate = (req: any, res: any, next: any) => next();
@@ -56,7 +56,7 @@ export function createSearchRoutes(
 
   /**
    * Search Products
-   * GET /api/v1/products/search
+   * GET /v1/products/search
    */
   router.get(`${apiPrefix}/products/search`,
     ...commonMiddleware,
@@ -72,7 +72,7 @@ export function createSearchRoutes(
 
   /**
    * Get Search Suggestions
-   * GET /api/v1/search/suggestions
+   * GET /v1/search/suggestions
    */
   router.get(`${apiPrefix}/search/suggestions`,
     ...commonMiddleware,
@@ -88,7 +88,7 @@ export function createSearchRoutes(
 
   /**
    * Get Popular Searches
-   * GET /api/v1/search/popular
+   * GET /v1/search/popular
    */
   router.get(`${apiPrefix}/search/popular`,
     ...commonMiddleware,
@@ -100,7 +100,7 @@ export function createSearchRoutes(
 
   /**
    * Get Search Analytics
-   * GET /api/v1/search/analytics
+   * GET /v1/search/analytics
    */
   router.get(`${apiPrefix}/search/analytics`,
     commonMiddleware[0], // authenticate only for analytics
@@ -116,7 +116,7 @@ export function createSearchRoutes(
 
   /**
    * Legacy Search Endpoint (deprecated)
-   * GET /api/v1/search
+   * GET /v1/search
    */
   router.get(`${apiPrefix}/search`,
     ...commonMiddleware,
@@ -150,7 +150,7 @@ export class SearchRoutesFactory {
  */
 export const SEARCH_ROUTES_METADATA = {
   version: 'v1',
-  prefix: '/api/v1',
+  prefix: '/v1',
   routes: [
     { method: 'GET', path: '/products/search', description: 'Search products with filters', auth: 'public' },
     { method: 'GET', path: '/search/suggestions', description: 'Get search suggestions', auth: 'public' },

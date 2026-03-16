@@ -109,6 +109,7 @@ export interface UserSearchDto {
  */
 export interface UserResponseDto {
   id: string;
+  publicCode?: string;
   email: string;
   phoneNumber: string;
   firstName: string;
@@ -140,6 +141,7 @@ export interface UserResponseDto {
  */
 export interface UserSummaryDto {
   id: string;
+  publicCode?: string;
   email: string;
   firstName: string;
   lastName: string;
@@ -161,6 +163,7 @@ export interface UserSummaryDto {
  */
 export interface AuthUserDto {
   id: string;
+  publicCode?: string;
   email: string;
   firstName: string;
   lastName: string;

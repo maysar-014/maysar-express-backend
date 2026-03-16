@@ -10,8 +10,11 @@ export class OrderRepositoryImpl implements OrderRepository {
     await this.prisma.order_Order.create({
       data: {
         id: order.id,
+        trackingNumber: order.trackingNumber,
         buyerId: order.buyerId,
         sellerId: order.sellerId,
+        enablerId: order.enablerId || null,
+        enablerCode: order.enablerCode || null,
         status: this.toDbStatus(order.status) as any,
         paymentMethod: this.toDbPaymentMethod(order.paymentMethod) as any,
         totalAmount: order.totalAmount.amount,
@@ -61,6 +64,15 @@ export class OrderRepositoryImpl implements OrderRepository {
     return records.map((r) => this.toDomain(r));
   }
 
+  async findByTrackingNumber(trackingNumber: string): Promise<Order | null> {
+    const record = await this.prisma.order_Order.findUnique({
+      where: { trackingNumber },
+      include: { items: true },
+    });
+
+    return record ? this.toDomain(record) : null;
+  }
+
   async findByStatus(status: OrderStatus): Promise<Order[]> {
     const records = await this.prisma.order_Order.findMany({
       where: { status: this.toDbStatus(status) as any },
@@ -79,7 +91,10 @@ export class OrderRepositoryImpl implements OrderRepository {
     const result = await this.prisma.order_Order.updateMany({
       where: { id: order.id, version: order.version },
       data: {
+        trackingNumber: order.trackingNumber,
         status: this.toDbStatus(order.status) as any,
+        enablerId: order.enablerId || null,
+        enablerCode: order.enablerCode || null,
         totalAmount: order.totalAmount.amount,
         totalWeight: order.totalWeight,
         deliveryAddress: {
@@ -126,8 +141,11 @@ export class OrderRepositoryImpl implements OrderRepository {
 
     return new Order({
       id: data.id,
+      trackingNumber: data.trackingNumber ?? undefined,
       buyerId: data.buyerId,
       sellerId: data.sellerId,
+      enablerId: data.enablerId ?? undefined,
+      enablerCode: data.enablerCode ?? undefined,
       items,
       totalAmount: Number(data.totalAmount),
       currency: data.currency,

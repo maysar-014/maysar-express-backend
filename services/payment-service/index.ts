@@ -5,6 +5,8 @@ import { EventIdempotency } from '../../shared/middleware/idempotency';
 import { logger } from './src/infrastructure/services/logger.service';
 import { createPayoutRoutes } from './src/api/routes/payout.routes';
 import { healthRoutes } from './src/api/routes/health.routes';
+import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
+import { createWebhookRoutes } from './src/api/routes/webhook.routes';
 import { register as metricsRegistry } from './src/infrastructure/monitoring/metrics';
 import { Container as PaymentContainer } from './src/container';
 import { Container as PayoutContainer } from '../payout-service/src/container';
@@ -12,8 +14,9 @@ import { PayoutRepository } from '../payout-service/src/infrastructure/repositor
 import { PiiEncryptionService } from '../../shared/encryption/pii-encryption.service';
 import { PayoutPolicy } from '../payout-service/src/domain/policies/payout.policy';
 import { InitiatePayoutUseCase } from '../payout-service/src/application/use-cases/initiate-payout.use-case';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, prisma);
 
 export { eventIdempotency };
@@ -98,6 +101,7 @@ export const PaymentModule: Module = {
             const createPaymentRoutes = require('./src/api/routes/payment.routes').createPaymentRoutes;
             router.use('/payments', createPaymentRoutes(container.paymentController));
             router.use('/payouts', createPayoutRoutes(payoutWiring.payoutController as never));
+            router.use('/webhooks', createWebhookRoutes(container.webhookController));
         } catch (error) {
             logger.warn('Failed to mount payment routes, falling back to degraded handler:', error);
             router.all('/payments/*', (_req, res) => {
@@ -108,6 +112,8 @@ export const PaymentModule: Module = {
                 });
             });
         }
+
+        router.use('/system/maintenance', createMaintenanceRoutes());
 
         return router;
     })(),

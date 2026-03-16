@@ -8,7 +8,43 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import http from 'http';
+import https from 'https';
+import { getModelPrefix, makeId } from '@shared/ids/id';
+import { resourceMappingManager } from '../../config/resource-mapping.config';
+import { prisma } from '../../infrastructure/database/prisma-client';
+import { serviceDiscovery } from '../../infrastructure/services/service-discovery.service';
 import { logger } from '../../infrastructure/services/logger.service';
+
+const auditLogPrefix = getModelPrefix('AuditLog');
+const DEFAULT_OWNER_FIELDS = [
+  'ownerId',
+  'userId',
+  'sellerId',
+  'buyerId',
+  'supplierId',
+  'enablerId',
+  'createdBy',
+  'createdById',
+  'accountId',
+  'merchantId'
+];
+
+const DEFAULT_OWNERSHIP_ENDPOINTS: Record<string, { serviceName: string; pathTemplate: string; ownerFields?: string[] }> = {
+  products: { serviceName: 'catalog-service', pathTemplate: '/products/:id', ownerFields: ['sellerId', 'ownerId', 'createdBy'] },
+  orders: { serviceName: 'order-service', pathTemplate: '/orders/:id', ownerFields: ['buyerId', 'sellerId', 'userId', 'ownerId'] },
+  suppliers: { serviceName: 'supplier-service', pathTemplate: '/suppliers/:id', ownerFields: ['ownerId', 'userId'] },
+  enablers: { serviceName: 'enabler-service', pathTemplate: '/enablers/:id', ownerFields: ['ownerId', 'userId'] },
+  inventory: { serviceName: 'inventory-service', pathTemplate: '/inventory/:id', ownerFields: ['ownerId', 'userId', 'sellerId'] }
+};
+
+const RESOURCE_OWNERSHIP_MODEL_MAP: Record<string, string> = {
+  products: 'product',
+  orders: 'order',
+  suppliers: 'supplier',
+  enablers: 'enabler',
+  inventory: 'inventory'
+};
 
 // =====================================================================================
 // TYPE DEFINITIONS
@@ -131,6 +167,7 @@ export interface AuthzConfig {
   defaultDenyAll: boolean;
   enableRoleInheritance: boolean;
   maxRoleDepth: number;
+  roleHierarchy?: Record<string, string[]>;
 
   // Time-based Access
   allowedTimeWindows: {
@@ -229,6 +266,7 @@ export const DEFAULT_AUTHZ_CONFIG: AuthzConfig = {
   defaultDenyAll: true,
   enableRoleInheritance: true,
   maxRoleDepth: 5,
+  roleHierarchy: {},
 
   // Time-based Access
   allowedTimeWindows: {},
@@ -667,20 +705,23 @@ export class AuthorizationMiddleware {
     resourceId: string,
     req: Request
   ): Promise<boolean> {
-    // In a real implementation, this would check against a database
-    // For now, we'll implement a mock that could be replaced with actual logic
     try {
-      // Mock implementation - replace with actual ownership check
-      const resourceOwners = {
-        'products': { 'prod-123': 'user-123', 'prod-456': 'user-456' },
-        'orders': { 'ord-123': 'user-123', 'ord-456': 'user-456' }
-      };
+      const modelName = RESOURCE_OWNERSHIP_MODEL_MAP[resourceType] || resourceType.replace(/s$/, '');
+      const prismaModel = (prisma as any)[modelName];
 
-      const owners = (resourceOwners as any)[resourceType];
-      if (!owners) return false;
+      if (!prismaModel || typeof prismaModel.findFirst !== 'function') {
+        logger.warn('Ownership check skipped: prisma model missing', { resourceType, modelName });
+        return false;
+      }
 
-      const owner = owners[resourceId];
-      return owner === user.userId;
+      const resource = await prismaModel.findFirst({
+        where: {
+          id: resourceId,
+          userId: user.userId
+        }
+      });
+
+      return Boolean(resource);
     } catch (error) {
       logger.error('Resource ownership check failed', { error: error instanceof Error ? error : new Error(String(error)), userId: user.userId, resourceType, resourceId });
       return false;
@@ -696,12 +737,7 @@ export class AuthorizationMiddleware {
       return requiredRoles.some(role => userRoles.includes(role));
     }
 
-    // Mock role hierarchy - in real implementation, this would come from database
-    const roleHierarchy: Record<string, string[]> = {
-      'superuser': ['admin', 'moderator', 'user'],
-      'admin': ['moderator', 'user'],
-      'moderator': ['user']
-    };
+    const roleHierarchy = config.roleHierarchy || {};
 
     for (const requiredRole of requiredRoles) {
       for (const userRole of userRoles) {
@@ -742,8 +778,7 @@ export class AuthorizationMiddleware {
   }
 
   private async checkGeofencing(user: UserContext, req: Request): Promise<boolean> {
-    // Mock geofencing implementation
-    // In real implementation, this would use IP geolocation services
+    // Requires user country attributes from upstream identity/geo-IP services
     const userCountry = user.attributes?.country || 'unknown';
     const config = this.config;
 
@@ -917,7 +952,7 @@ export class AuthorizationMiddleware {
       riskScore += 25;
     }
 
-    // IP reputation (mock implementation)
+    // IP reputation (basic heuristic; replace with reputation service if available)
     const clientIP = this.getClientIP(req);
     if (this.isSuspiciousIP(clientIP)) {
       riskScore += 40;
@@ -946,7 +981,7 @@ export class AuthorizationMiddleware {
   }
 
   private isSuspiciousIP(ip: string): boolean {
-    // Mock implementation - in real app, use IP reputation services
+    // Basic private-range heuristic; replace with IP reputation service if available
     const suspiciousPatterns = ['10.0.0.', '192.168.', '172.16.'];
     return suspiciousPatterns.some(pattern => ip.startsWith(pattern));
   }
@@ -977,10 +1012,175 @@ export class AuthorizationMiddleware {
       }
     };
 
+    void this.persistAuthorizationAudit(auditEvent, details);
     logger.info('Authorization event', auditEvent);
+  }
 
-    // In a real implementation, this would be stored in an audit database
-    // For now, we'll just log it
+  private resolveOwnershipEndpoint(resourceType: string): { serviceName: string; pathTemplate: string; ownerFields?: string[] } | null {
+    const override = DEFAULT_OWNERSHIP_ENDPOINTS[resourceType];
+    if (override) return override;
+
+    const mapping = resourceMappingManager.getResourceMapping(resourceType);
+    if (!mapping) return null;
+
+    const endpoint = mapping.endpoints.find(ep =>
+      ep.method === 'GET' && (ep.actions.includes('view') || ep.actions.includes('read'))
+    );
+    if (!endpoint) return null;
+
+    const pathTemplate = endpoint.path.replace(/^\/api\/v\d+/, '');
+    return {
+      serviceName: endpoint.microservice,
+      pathTemplate
+    };
+  }
+
+  private resolveServiceUrl(serviceName: string): string | null {
+    return (
+      serviceDiscovery.getServiceUrl(serviceName) ||
+      serviceDiscovery.getServiceUrl(serviceName.replace(/-service$/, '')) ||
+      null
+    );
+  }
+
+  private applyResourceId(pathTemplate: string, resourceId: string, req: Request): string {
+    const paramName = Object.keys(req.params || {}).find(param => param === 'id' || param.endsWith('Id')) || 'id';
+    return pathTemplate
+      .replace(new RegExp(`:${paramName}\\b`, 'g'), encodeURIComponent(resourceId))
+      .replace(/:id\b/g, encodeURIComponent(resourceId))
+      .replace(/:resourceId\b/g, encodeURIComponent(resourceId));
+  }
+
+  private buildOwnershipHeaders(req: Request): Record<string, string> {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'X-Internal-Call': 'auth-service'
+    };
+
+    const authHeader = req.headers?.authorization;
+    if (typeof authHeader === 'string') {
+      headers.Authorization = authHeader;
+    }
+
+    const correlationId = req.headers?.['x-correlation-id'];
+    if (typeof correlationId === 'string') {
+      headers['X-Correlation-Id'] = correlationId;
+    }
+
+    return headers;
+  }
+
+  private async fetchJson(url: string, headers: Record<string, string>): Promise<{ statusCode?: number; body?: any }> {
+    const target = new URL(url);
+    const client = target.protocol === 'https:' ? https : http;
+
+    return new Promise((resolve) => {
+      const req = client.request(
+        {
+          method: 'GET',
+          hostname: target.hostname,
+          port: target.port || (target.protocol === 'https:' ? 443 : 80),
+          path: `${target.pathname}${target.search}`,
+          headers,
+          timeout: 5000
+        },
+        (res) => {
+          const chunks: Buffer[] = [];
+          res.on('data', (chunk: Buffer) => chunks.push(chunk));
+          res.on('end', () => {
+            const raw = Buffer.concat(chunks).toString('utf-8');
+            if (!raw) {
+              resolve({ statusCode: res.statusCode });
+              return;
+            }
+            try {
+              resolve({ statusCode: res.statusCode, body: JSON.parse(raw) });
+            } catch {
+              resolve({ statusCode: res.statusCode, body: raw });
+            }
+          });
+        }
+      );
+
+      req.on('timeout', () => {
+        req.destroy();
+        resolve({ statusCode: 504 });
+      });
+      req.on('error', () => resolve({ statusCode: 502 }));
+      req.end();
+    });
+  }
+
+  private extractOwnerIds(payload: any, fields?: string[]): string[] {
+    const ownerFields = new Set([...(fields || []), ...DEFAULT_OWNER_FIELDS]);
+    const owners = new Set<string>();
+    const queue: Array<{ value: any; depth: number }> = [{ value: payload, depth: 0 }];
+    const maxDepth = 4;
+
+    while (queue.length > 0) {
+      const { value, depth } = queue.shift()!;
+      if (value === null || value === undefined) continue;
+
+      if (Array.isArray(value)) {
+        if (depth < maxDepth) {
+          value.forEach(item => queue.push({ value: item, depth: depth + 1 }));
+        }
+        continue;
+      }
+
+      if (typeof value !== 'object') continue;
+
+      for (const [key, val] of Object.entries(value)) {
+        if (ownerFields.has(key)) {
+          if (Array.isArray(val)) {
+            val.forEach(item => {
+              if (item !== null && item !== undefined) owners.add(String(item));
+            });
+          } else if (val !== null && val !== undefined) {
+            owners.add(String(val));
+          }
+        }
+
+        if (['owner', 'user', 'seller', 'buyer', 'supplier', 'enabler'].includes(key) && val && typeof val === 'object') {
+          const nestedId = (val as any).id || (val as any).userId;
+          if (nestedId) owners.add(String(nestedId));
+        }
+
+        if (depth < maxDepth) {
+          queue.push({ value: val, depth: depth + 1 });
+        }
+      }
+    }
+
+    return Array.from(owners);
+  }
+
+  private async persistAuthorizationAudit(auditEvent: AuditEvent, details: Record<string, any>): Promise<void> {
+    try {
+      const success = auditEvent.eventType === 'AUTHORIZATION_SUCCESS';
+      await prisma.auditLog.create({
+        data: {
+          id: makeId(auditLogPrefix),
+          userId: auditEvent.userId,
+          email: auditEvent.details?.email || auditEvent.metadata?.email,
+          action: `authorization:${auditEvent.eventType.toLowerCase()}`,
+          ipAddress: auditEvent.ipAddress,
+          userAgent: auditEvent.userAgent,
+          success,
+          reason: details.reason,
+          metadata: {
+            eventType: auditEvent.eventType,
+            resource: auditEvent.resource,
+            action: auditEvent.action,
+            riskScore: auditEvent.riskScore,
+            details: auditEvent.details,
+            metadata: auditEvent.metadata
+          }
+        }
+      });
+    } catch (error) {
+      logger.error('Authorization audit persistence failed', { error });
+    }
   }
 }
 

@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '@shared/database/prisma-client';
 import { logger } from '../services/logger.service';
 
 /**
@@ -12,7 +13,7 @@ const globalForPrisma = globalThis as unknown as {
 
 export const prisma =
   globalForPrisma.prisma ??
-  new PrismaClient({
+  createPrismaClient({
     log: ['query', 'error', 'info', 'warn'],
   });
 

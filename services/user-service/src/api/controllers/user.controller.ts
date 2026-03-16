@@ -10,13 +10,12 @@ import { ReportSecurityBreachUseCase } from '@application/use-cases/report-secur
 import { GetUserUseCase } from '@application/use-cases/get-user.use-case';
 import { UpdateUserUseCase } from '@application/use-cases/update-user.use-case';
 import { VerifyEmailUseCase } from '@application/use-cases/verify-email.use-case';
+import { RequestPasswordResetUseCase } from '@application/use-cases/request-password-reset.use-case';
+import { ResetPasswordUseCase } from '@application/use-cases/reset-password.use-case';
 import { UserMapper } from '@application/mappers/user-mapper';
 import { UserAlreadyExistsError } from '@domain/errors/user.errors';
-import { UserPasswordChangedEvent } from '@domain/events';
-import { executePasswordResetSaga } from '@application/sagas/password-reset.saga';
 import { EmailService } from '@infrastructure/services/email.service';
 import { NotificationServiceClient } from '@application/sagas/service-clients';
-import { v4 as uuidv4 } from 'uuid';
 
 export class UserController {
   constructor(
@@ -31,6 +30,8 @@ export class UserController {
     private getUserUseCase: GetUserUseCase,
     private updateUserUseCase: UpdateUserUseCase,
     private verifyEmailUseCase: VerifyEmailUseCase,
+    private requestPasswordResetUseCase: RequestPasswordResetUseCase,
+    private resetPasswordUseCase: ResetPasswordUseCase,
     private emailService: EmailService,
     private notificationClient: NotificationServiceClient
   ) { }
@@ -187,12 +188,8 @@ export class UserController {
         });
         return;
       }
-      const resetToken = uuidv4();
-      await this.emailService.sendPasswordResetEmail(email, resetToken);
-      res.status(200).json({
-        success: true,
-        message: 'If an account with that email exists, a reset link has been sent.'
-      });
+      const result = await this.requestPasswordResetUseCase.execute({ email });
+      res.status(result.success ? 200 : 400).json(result);
     } catch (error) {
       res.status(500).json({
         success: false,
@@ -207,27 +204,23 @@ export class UserController {
   async resetPassword(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.body.userId;
+      const token = req.body.token;
       const newPassword = req.body.newPassword;
-      if (!userId || !newPassword) {
+      if (!userId || !newPassword || !token) {
         res.status(400).json({
           success: false,
           error: {
             code: 'MISSING_FIELDS',
-            message: 'User ID and new password are required'
+            message: 'User ID, token, and new password are required'
           }
         });
         return;
       }
-      const result = await this.changePasswordUseCase.execute({
+      const result = await this.resetPasswordUseCase.execute({
         userId,
-        newPassword,
-        changedBy: userId,
-        currentPassword: ''
+        token,
+        newPassword
       });
-      if (result.success) {
-        const event = new UserPasswordChangedEvent(userId, userId, 'user_initiated');
-        await executePasswordResetSaga(event, this.emailService, this.notificationClient);
-      }
       res.status(result.success ? 200 : 400).json(result);
     } catch (error) {
       res.status(500).json({

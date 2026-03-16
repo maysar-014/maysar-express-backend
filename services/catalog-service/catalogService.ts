@@ -4,11 +4,13 @@ import { eventBus, EventEnvelope } from '@shared-events/eventBus';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
 import { SearchEngineInitializer } from './src/infrastructure/search-initializer';
+import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 dotenv.config();
 
 const app = express();
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const legacyWholesalePricingModel = (prisma as unknown as {
   wholesalePricing: {
     findMany(args: Record<string, unknown>): Promise<unknown[]>;
@@ -18,6 +20,7 @@ const legacyWholesalePricingModel = (prisma as unknown as {
 }).wholesalePricing;
 
 app.use(express.json());
+app.use('/api/v1/system/maintenance', createMaintenanceRoutes(prisma));
 
 let searchEngine: any;
 let indexManager: any;

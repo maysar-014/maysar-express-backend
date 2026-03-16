@@ -9,11 +9,11 @@ describe('NotificationPreference', () => {
             enabled: true
         });
 
-        expect(pref.getId()).toBe('p1');
-        expect(pref.isEnabled()).toBe(true);
+        expect(pref.id).toBe('p1');
+        expect(pref.enabled).toBe(true);
     });
 
-    it('should toggle preference', () => {
+    it('should update preference', () => {
         const pref = NotificationPreference.create({
             id: 'p1',
             userId: 'u1',
@@ -21,10 +21,7 @@ describe('NotificationPreference', () => {
             enabled: true
         });
 
-        pref.disable();
-        expect(pref.isEnabled()).toBe(false);
-
-        pref.enable();
-        expect(pref.isEnabled()).toBe(true);
+        const updated = pref.updatePreference({ enabled: false });
+        expect(updated.enabled).toBe(false);
     });
 });

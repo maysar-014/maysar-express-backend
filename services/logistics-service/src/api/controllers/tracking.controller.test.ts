@@ -9,12 +9,16 @@ const trackingRepository = {
 const deliveryRepository = {
   findById: jest.fn()
 };
+const trackingUpdateService = {
+  handleLocationUpdate: jest.fn()
+};
 
 jest.mock('../../infrastructure/container', () => ({
   DependencyContainer: {
     getInstance: jest.fn(() => ({
       getTrackingRepository: () => trackingRepository,
-      getDeliveryRepository: () => deliveryRepository
+      getDeliveryRepository: () => deliveryRepository,
+      getTrackingUpdateService: () => trackingUpdateService
     }))
   }
 }));
@@ -132,6 +136,13 @@ describe('TrackingController', () => {
     } as unknown as Request;
     const res = createResponse();
 
+    trackingUpdateService.handleLocationUpdate.mockResolvedValue({
+      courierId: 'cour-1',
+      stored: true,
+      estimatedArrival: undefined,
+      etaMinutes: undefined
+    });
+
     await controller.storeLocationUpdate(req, res);
 
     expect(res.json).toHaveBeenCalledWith(
@@ -152,6 +163,8 @@ describe('TrackingController', () => {
       body: { courierId: 'cour-2' }
     } as unknown as Request;
     const res = createResponse();
+
+    trackingUpdateService.handleLocationUpdate.mockRejectedValue(new Error('Invalid location update'));
 
     await controller.storeLocationUpdate(req, res);
 

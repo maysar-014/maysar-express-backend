@@ -1,4 +1,35 @@
+import { Auth_UserRole, Auth_UserStatus, Prisma } from '@prisma/client';
+import { prisma } from '../database/prisma-client';
 import { logger } from '../services/logger.service';
+
+const roleMap: Record<string, Auth_UserRole> = {
+  buyer: Auth_UserRole.BUYER,
+  seller: Auth_UserRole.SELLER,
+  supplier: Auth_UserRole.SUPPLIER,
+  courier: Auth_UserRole.COURIER,
+  enabler: Auth_UserRole.ENABLER,
+  system: Auth_UserRole.SYSTEM
+};
+
+const statusMap: Record<string, Auth_UserStatus> = {
+  active: Auth_UserStatus.ACTIVE,
+  suspended: Auth_UserStatus.SUSPENDED,
+  deactivated: Auth_UserStatus.DEACTIVATED,
+  locked: Auth_UserStatus.LOCKED,
+  pending_verification: Auth_UserStatus.PENDING_VERIFICATION
+};
+
+const normalizeRole = (role?: string | null): string | undefined =>
+  role ? String(role).toLowerCase() : undefined;
+
+const normalizeStatus = (status?: string | null): string | undefined =>
+  status ? String(status).toLowerCase() : undefined;
+
+const resolveRoleEnum = (role?: string): Auth_UserRole | undefined =>
+  role ? roleMap[String(role).toLowerCase()] : undefined;
+
+const resolveStatusEnum = (status?: string): Auth_UserStatus | undefined =>
+  status ? statusMap[String(status).toLowerCase()] : undefined;
 
 /**
  * Admin Repository
@@ -10,16 +41,19 @@ export class AdminRepository {
    */
   async getUserById(userId: string): Promise<any> {
     try {
-      // In a real implementation, this would query the database
-      // For now, we'll return mock data
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        return null;
+      }
+
       return {
-        userId,
-        email: 'user@example.com',
-        role: 'buyer',
-        status: 'active',
-        createdAt: new Date(),
-        lastLoginAt: new Date(),
-        permissions: ['read', 'write']
+        userId: user.id,
+        email: user.email,
+        role: normalizeRole(user.role),
+        status: normalizeStatus(user.status),
+        createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt,
+        permissions: []
       };
     } catch (error) {
       logger.error('AdminRepository.getUserById error', { error, userId });
@@ -32,13 +66,21 @@ export class AdminRepository {
    */
   async updateUserStatus(userId: string, status: string, reason?: string): Promise<any> {
     try {
-      // In a real implementation, this would update the database
-      // For now, we'll return mock data
+      const statusEnum = resolveStatusEnum(status);
+      if (!statusEnum) {
+        throw new Error('Invalid status');
+      }
+
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: { status: statusEnum }
+      });
+
       return {
-        userId,
-        status,
+        userId: updated.id,
+        status: normalizeStatus(updated.status),
         reason,
-        updatedAt: new Date()
+        updatedAt: updated.updatedAt
       };
     } catch (error) {
       logger.error('AdminRepository.updateUserStatus error', { error, userId, status });
@@ -51,12 +93,20 @@ export class AdminRepository {
    */
   async updateUserRole(userId: string, role: string): Promise<any> {
     try {
-      // In a real implementation, this would update the database
-      // For now, we'll return mock data
+      const roleEnum = resolveRoleEnum(role);
+      if (!roleEnum) {
+        throw new Error('Invalid role');
+      }
+
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: { role: roleEnum }
+      });
+
       return {
-        userId,
-        role,
-        updatedAt: new Date()
+        userId: updated.id,
+        role: normalizeRole(updated.role),
+        updatedAt: updated.updatedAt
       };
     } catch (error) {
       logger.error('AdminRepository.updateUserRole error', { error, userId, role });
@@ -75,22 +125,49 @@ export class AdminRepository {
     offset?: number;
   }): Promise<{ users: any[]; total: number }> {
     try {
-      // In a real implementation, this would query the database
-      // For now, we'll return mock data
-      const mockUsers = [
-        {
-          userId: 'user123',
-          email: 'user1@example.com',
-          role: 'buyer',
-          status: 'active',
-          createdAt: new Date(),
-          lastLoginAt: new Date()
-        }
-      ];
+      const where: Prisma.UserWhereInput = {};
+      const query = params.query?.trim();
+      if (query) {
+        where.OR = [
+          { email: { contains: query, mode: 'insensitive' } },
+          { publicCode: { contains: query, mode: 'insensitive' } },
+          { id: { contains: query, mode: 'insensitive' } }
+        ];
+      }
+
+      const roleEnum = resolveRoleEnum(params.role);
+      if (roleEnum) {
+        where.role = roleEnum;
+      }
+
+      const statusEnum = resolveStatusEnum(params.status);
+      if (statusEnum) {
+        where.status = statusEnum;
+      }
+
+      const limit = params.limit ?? 20;
+      const offset = params.offset ?? 0;
+
+      const [users, total] = await prisma.$transaction([
+        prisma.user.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip: offset,
+          take: limit
+        }),
+        prisma.user.count({ where })
+      ]);
 
       return {
-        users: mockUsers,
-        total: mockUsers.length
+        users: users.map(user => ({
+          userId: user.id,
+          email: user.email,
+          role: normalizeRole(user.role),
+          status: normalizeStatus(user.status),
+          createdAt: user.createdAt,
+          lastLoginAt: user.lastLoginAt
+        })),
+        total
       };
     } catch (error) {
       logger.error('AdminRepository.searchUsers error', { error, params });
@@ -103,21 +180,22 @@ export class AdminRepository {
    */
   async getUserSessions(userId: string): Promise<any[]> {
     try {
-      // In a real implementation, this would query the database
-      // For now, we'll return mock data
-      return [
-        {
-          sessionId: 'session123',
-          userId,
-          deviceInfo: { type: 'desktop', os: 'Windows' },
-          ipAddress: '192.168.1.100',
-          userAgent: 'Mozilla/5.0',
-          createdAt: new Date(),
-          lastActivity: new Date(),
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-          isActive: true
-        }
-      ];
+      const sessions = await prisma.session.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      return sessions.map(session => ({
+        sessionId: session.id,
+        userId: session.userId,
+        deviceInfo: { userAgent: session.userAgent },
+        ipAddress: session.ipAddress,
+        userAgent: session.userAgent,
+        createdAt: session.createdAt,
+        lastActivity: session.createdAt,
+        expiresAt: session.expiresAt,
+        isActive: session.expiresAt > new Date()
+      }));
     } catch (error) {
       logger.error('AdminRepository.getUserSessions error', { error, userId });
       throw error;
@@ -129,11 +207,16 @@ export class AdminRepository {
    */
   async terminateUserSessions(userId: string): Promise<{ terminatedCount: number }> {
     try {
-      // In a real implementation, this would update the database
-      // For now, we'll return mock data
-      return {
-        terminatedCount: 1
-      };
+      const terminatedCount = await prisma.$transaction(async (tx) => {
+        const result = await tx.session.deleteMany({ where: { userId } });
+        const userSessionDelegate = (tx as any).user_Session;
+        if (userSessionDelegate) {
+          await userSessionDelegate.deleteMany({ where: { userId } });
+        }
+        return result.count;
+      });
+
+      return { terminatedCount };
     } catch (error) {
       logger.error('AdminRepository.terminateUserSessions error', { error, userId });
       throw error;
@@ -145,11 +228,16 @@ export class AdminRepository {
    */
   async terminateSession(sessionId: string): Promise<{ terminated: boolean }> {
     try {
-      // In a real implementation, this would update the database
-      // For now, we'll return mock data
-      return {
-        terminated: true
-      };
+      const terminated = await prisma.$transaction(async (tx) => {
+        const result = await tx.session.deleteMany({ where: { id: sessionId } });
+        const userSessionDelegate = (tx as any).user_Session;
+        if (userSessionDelegate) {
+          await userSessionDelegate.deleteMany({ where: { id: sessionId } });
+        }
+        return result.count > 0;
+      });
+
+      return { terminated };
     } catch (error) {
       logger.error('AdminRepository.terminateSession error', { error, sessionId });
       throw error;

@@ -1,4 +1,7 @@
 import { NotificationDeliveryPolicy } from '../notification-delivery.policy';
+import { Notification } from '../../entities/notification.entity';
+import { NotificationContent } from '../../value-objects/notification-content.value-object';
+import { NotificationPreference } from '../../entities/notification-preference.entity';
 
 describe('NotificationDeliveryPolicy', () => {
     let policy: NotificationDeliveryPolicy;
@@ -7,21 +10,48 @@ describe('NotificationDeliveryPolicy', () => {
         policy = new NotificationDeliveryPolicy();
     });
 
-    it('should allow delivery within quiet hours', () => {
-        const canDeliver = policy.canDeliverNow('email', new Date('2024-01-01T10:00:00'));
+    it('should allow delivery when preference enabled and under rate limit', () => {
+        const notification = Notification.create({
+            id: 'n1',
+            userId: 'u1',
+            type: 'email',
+            channel: 'email',
+            subject: 'Test',
+            content: NotificationContent.create('Test content')
+        });
+        const preference = NotificationPreference.create({
+            id: 'p1',
+            userId: 'u1',
+            channel: 'email',
+            enabled: true
+        });
 
-        expect(canDeliver).toBe(true);
+        const result = policy.canSendNotification({ id: 'u1' }, notification, preference, 0);
+        expect(result.allowed).toBe(true);
     });
 
-    it('should respect quiet hours', () => {
-        const canDeliver = policy.canDeliverNow('push', new Date('2024-01-01T02:00:00'));
+    it('should block when rate limit exceeded', () => {
+        const notification = Notification.create({
+            id: 'n1',
+            userId: 'u1',
+            type: 'email',
+            channel: 'email',
+            subject: 'Test',
+            content: NotificationContent.create('Test content')
+        });
+        const preference = NotificationPreference.create({
+            id: 'p1',
+            userId: 'u1',
+            channel: 'email',
+            enabled: true
+        });
 
-        expect(canDeliver).toBe(false);
+        const result = policy.canSendNotification({ id: 'u1' }, notification, preference, 100);
+        expect(result.allowed).toBe(false);
     });
 
     it('should calculate retry delay', () => {
-        const delay = policy.calculateRetryDelay(2);
-
+        const delay = policy.getRetryDelay(2);
         expect(delay).toBeGreaterThan(0);
     });
 });

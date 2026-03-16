@@ -59,7 +59,9 @@ export class ProductMapper {
         seoData: dto.seoTitle || dto.seoDescription ?
           new SEOData(dto.seoTitle, dto.seoDescription, []) : undefined,
         shippingInfo: undefined, // Not provided in create DTO
-        condition: ProductCondition.NEW
+        condition: ProductCondition.NEW,
+        enablerEnabled: dto.enablerEnabled ?? false,
+        enablerCommissionRate: dto.enablerCommissionRate
       }
     );
   }
@@ -168,6 +170,10 @@ export class ProductMapper {
         description: entity.getSeoData()?.getDescription(),
         keywords: entity.getSeoData()?.getKeywords()
       },
+      enabler: {
+        enabled: entity.getEnablerEnabled(),
+        commissionRate: entity.getEnablerCommissionRate()
+      },
       analytics: options?.analytics || {
         viewCount: 0,
         purchaseCount: 0,
@@ -202,7 +208,9 @@ export class ProductMapper {
       tags: entity.getTags(),
       attributes: {}, // Simplified mapping
       seoTitle: entity.getSeoData()?.getTitle(),
-      seoDescription: entity.getSeoData()?.getDescription()
+      seoDescription: entity.getSeoData()?.getDescription(),
+      enablerEnabled: entity.getEnablerEnabled(),
+      enablerCommissionRate: entity.getEnablerCommissionRate()
     };
   }
 
@@ -218,6 +226,8 @@ export class ProductMapper {
     tags: string[];
     seoTitle: string;
     seoDescription: string;
+    enablerEnabled: boolean;
+    enablerCommissionRate: number | undefined;
   }> {
     this.validateUpdateProductDto(dto);
 
@@ -235,6 +245,9 @@ export class ProductMapper {
         keywords: []
       };
     }
+
+    if (dto.enablerEnabled !== undefined) update.enablerEnabled = dto.enablerEnabled;
+    if (dto.enablerCommissionRate !== undefined) update.enablerCommissionRate = dto.enablerCommissionRate;
 
     return update;
   }
@@ -350,6 +363,14 @@ export class ProductMapper {
     if (!dto.type) {
       throw new Error('Product type is required');
     }
+    if (dto.enablerEnabled) {
+      if (dto.enablerCommissionRate === undefined) {
+        throw new Error('Enabler commission rate is required when enabler is enabled');
+      }
+      if (dto.enablerCommissionRate <= 0 || dto.enablerCommissionRate > 1) {
+        throw new Error('Enabler commission rate must be between 0 and 1');
+      }
+    }
   }
 
   private static validateUpdateProductDto(dto: UpdateProductDto): void {
@@ -358,6 +379,12 @@ export class ProductMapper {
     }
     if (dto.price !== undefined && dto.price <= 0) {
       throw new Error('Price must be greater than 0');
+    }
+    if (dto.enablerEnabled && dto.enablerCommissionRate === undefined) {
+      throw new Error('Enabler commission rate is required when enabling enabler');
+    }
+    if (dto.enablerCommissionRate !== undefined && (dto.enablerCommissionRate <= 0 || dto.enablerCommissionRate > 1)) {
+      throw new Error('Enabler commission rate must be between 0 and 1');
     }
   }
 

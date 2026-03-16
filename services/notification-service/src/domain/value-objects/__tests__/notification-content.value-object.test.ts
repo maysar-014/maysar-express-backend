@@ -2,21 +2,17 @@ import { NotificationContent } from '../notification-content.value-object';
 
 describe('NotificationContent', () => {
     it('should create content', () => {
-        const content = NotificationContent.create({
-            subject: 'Test',
-            body: 'Test body',
-            type: 'text'
-        });
+        const content = NotificationContent.create('Test body');
+        expect(content.getPlainText()).toBe('Test body');
+        expect(content.getValue()).toBe('Test body');
+    });
 
-        expect(content.getSubject()).toBe('Test');
-        expect(content.getBody()).toBe('Test body');
+    it('should allow optional html', () => {
+        const content = NotificationContent.create('Plain', '<p>Plain</p>');
+        expect(content.getHtml()).toBe('<p>Plain</p>');
     });
 
     it('should validate content length', () => {
-        expect(() => NotificationContent.create({
-            subject: '',
-            body: 'Test',
-            type: 'text'
-        })).toThrow();
+        expect(() => NotificationContent.create('')).toThrow('Notification content is required');
     });
 });

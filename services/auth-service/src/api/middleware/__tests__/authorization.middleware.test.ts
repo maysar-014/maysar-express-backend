@@ -3,6 +3,23 @@ import { AuthorizationMiddleware, AuthorizationMiddlewareFactory } from '../auth
 import { DEFAULT_AUTHZ_CONFIG } from '../authorization.middleware';
 import { logger } from '../../../infrastructure/services/logger.service';
 
+const prismaAuditLogCreateMock = jest.fn();
+const serviceDiscoveryGetUrlMock = jest.fn();
+
+jest.mock('../../../infrastructure/database/prisma-client', () => ({
+  prisma: {
+    auditLog: {
+      create: prismaAuditLogCreateMock
+    }
+  }
+}));
+
+jest.mock('../../../infrastructure/services/service-discovery.service', () => ({
+  serviceDiscovery: {
+    getServiceUrl: (...args: unknown[]) => serviceDiscoveryGetUrlMock(...args)
+  }
+}));
+
 // Mock dependencies
 jest.mock('../../../infrastructure/services/logger.service', () => ({
   logger: {
@@ -26,12 +43,23 @@ describe('AuthorizationMiddleware', () => {
         email: 'test@example.com',
         roles: ['user'],
         permissions: [],
-        sessionId: 'session-123',
-        deviceId: 'device-123',
-        ipAddress: '127.0.0.1',
-        userAgent: 'test-agent',
-        issuedAt: Date.now(),
-        expiresAt: Date.now() + 3600000
+        attributes: {
+          accountCreated: new Date().toISOString()
+        },
+        sessionInfo: {
+          sessionId: 'session-123',
+          deviceId: 'device-123',
+          ipAddress: '127.0.0.1',
+          userAgent: 'test-agent',
+          loginTime: new Date(),
+          lastActivity: new Date()
+        },
+        securityContext: {
+          mfaEnabled: true,
+          accountStatus: 'active',
+          passwordLastChanged: new Date(),
+          failedLoginAttempts: 0
+        }
       },
       params: {},
       get: jest.fn().mockReturnValue('test-agent'),
@@ -45,6 +73,8 @@ describe('AuthorizationMiddleware', () => {
 
     // Reset mocks
     jest.clearAllMocks();
+    serviceDiscoveryGetUrlMock.mockReturnValue('http://catalog');
+    prismaAuditLogCreateMock.mockResolvedValue(undefined);
   });
 
   describe('Role-Based Authorization', () => {
@@ -187,6 +217,10 @@ describe('AuthorizationMiddleware', () => {
   describe('Resource Ownership Authorization', () => {
     it('should allow access to owned resource', async () => {
       mockRequest.params = { id: 'user-123' };
+      jest.spyOn(middleware as any, 'fetchJson').mockResolvedValueOnce({
+        statusCode: 200,
+        body: { ownerId: 'user-123' }
+      });
       const ownershipMiddleware = middleware.authorizeResourceOwnership('products', 'id');
 
       await ownershipMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
@@ -196,6 +230,10 @@ describe('AuthorizationMiddleware', () => {
 
     it('should deny access to non-owned resource', async () => {
       mockRequest.params = { id: 'user-456' };
+      jest.spyOn(middleware as any, 'fetchJson').mockResolvedValueOnce({
+        statusCode: 200,
+        body: { ownerId: 'user-999' }
+      });
       const ownershipMiddleware = middleware.authorizeResourceOwnership('products', 'id');
 
       await ownershipMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
@@ -213,6 +251,10 @@ describe('AuthorizationMiddleware', () => {
     it('should allow admin access to any resource', async () => {
       mockRequest.user!.roles = ['admin'];
       mockRequest.params = { id: 'user-456' };
+      jest.spyOn(middleware as any, 'fetchJson').mockResolvedValueOnce({
+        statusCode: 200,
+        body: { ownerId: 'user-999' }
+      });
       const ownershipMiddleware = middleware.authorizeResourceOwnership('products', 'id');
 
       await ownershipMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
@@ -300,6 +342,7 @@ describe('AuthorizationMiddleware', () => {
 
   describe('Risk-Based Authentication', () => {
     it('should allow low-risk access without MFA', async () => {
+      mockRequest.user!.securityContext!.mfaEnabled = false;
       const riskMiddleware = middleware.authorizeWithRiskAssessment();
 
       await riskMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
@@ -311,6 +354,7 @@ describe('AuthorizationMiddleware', () => {
       // Mock high risk score
       const originalCalculateRiskScore = middleware['calculateRiskScore'];
       middleware['calculateRiskScore'] = jest.fn().mockResolvedValue(80);
+      mockRequest.user!.securityContext!.mfaEnabled = false;
 
       const riskMiddleware = middleware.authorizeWithRiskAssessment({
         requireMFAForCritical: true
@@ -334,6 +378,7 @@ describe('AuthorizationMiddleware', () => {
     it('should allow high-risk access with MFA', async () => {
       const originalCalculateRiskScore = middleware['calculateRiskScore'];
       middleware['calculateRiskScore'] = jest.fn().mockResolvedValue(80);
+      mockRequest.user!.securityContext!.mfaEnabled = true;
 
       const riskMiddleware = middleware.authorizeWithRiskAssessment({
         requireMFAForCritical: true

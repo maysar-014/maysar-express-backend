@@ -4,7 +4,7 @@ import {
     validateApproveCommission,
     validateSellerId,
 } from '../validation.middleware';
-import { v4 as uuidv4 } from 'uuid';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 describe('Validation Middleware', () => {
     let mockRequest: Partial<Request>;
@@ -23,8 +23,8 @@ describe('Validation Middleware', () => {
         it('should call next() for valid input', () => {
             mockRequest = {
                 body: {
-                    orderId: uuidv4(),
-                    sellerId: uuidv4(),
+                    orderId: makeId(getModelPrefix('Order_Order')),
+                    sellerId: makeId(getModelPrefix('User_User')),
                     orderAmount: 100,
                     recipientType: 'seller',
                     commissionType: 'sale'
@@ -40,7 +40,7 @@ describe('Validation Middleware', () => {
             mockRequest = {
                 body: {
                     orderId: 'invalid-uuid',
-                    sellerId: uuidv4(),
+                    sellerId: makeId(getModelPrefix('User_User')),
                     orderAmount: 100,
                     recipientType: 'seller',
                     commissionType: 'sale'
@@ -57,7 +57,7 @@ describe('Validation Middleware', () => {
     describe('validateApproveCommission', () => {
         it('should validate both body and params', () => {
             mockRequest = {
-                params: { id: uuidv4() },
+                params: { id: makeId(getModelPrefix('Commission')) },
                 body: { autoSchedulePayout: true }
             };
 
@@ -80,7 +80,7 @@ describe('Validation Middleware', () => {
 
     describe('validateSellerId', () => {
         it('should allow valid uuid', () => {
-            mockRequest = { params: { sellerId: uuidv4() } };
+            mockRequest = { params: { sellerId: makeId(getModelPrefix('User_User')) } };
             validateSellerId(mockRequest as Request, mockResponse as Response, nextFunction);
             expect(nextFunction).toHaveBeenCalled();
         });

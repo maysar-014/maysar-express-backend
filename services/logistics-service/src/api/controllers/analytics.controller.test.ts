@@ -72,7 +72,7 @@ describe('AnalyticsController', () => {
       },
       { status: 'assigned', createdAt: '2026-01-03T10:00:00.000Z' }
     ]);
-    mockCourierRepository.findAvailable.mockResolvedValue([{ id: 'c1', isAvailable: true }]);
+    mockCourierRepository.findAvailable.mockResolvedValue([{ id: 'c1', status: 'online', isAvailable: true }]);
     mockEarningsRepository.findAllEarnings.mockResolvedValue([
       { totalEarnings: 12000 },
       { totalEarnings: 8000 }
@@ -162,8 +162,8 @@ describe('AnalyticsController', () => {
 
     mockDeliveryRepository.findAll.mockResolvedValue([{ status: 'assigned' }]);
     mockCourierRepository.findAvailable.mockResolvedValue([
-      { id: 'c1', isAvailable: true },
-      { id: 'c2', isAvailable: false }
+      { id: 'c1', status: 'online', isAvailable: true },
+      { id: 'c2', status: 'offline', isAvailable: false }
     ]);
 
     await controller.getPerformanceMetrics(req, res);

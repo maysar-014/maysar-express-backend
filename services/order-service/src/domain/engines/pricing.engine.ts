@@ -27,38 +27,28 @@ export interface PriceCalculationResult {
 }
 
 export class PricingEngine {
-    constructor(private readonly _apiClient?: any) { }
+    constructor(private readonly apiClient: { get: (path: string) => Promise<any> }) { }
 
     /**
      * Calculates the order-level price for a product variant.
-     * In production this would call the catalog pricing service; in tests the
-     * apiClient mock is used to simulate network responses.
+     * Calls the catalog pricing service for authoritative pricing data.
      */
     async calculatePrice(params: PriceCalculationParams): Promise<PriceCalculationResult> {
-        if (this._apiClient) {
-            const response = await this._apiClient.get(
-                `/pricing/${params.productVariantId}?qty=${params.quantity}&customerId=${params.customerId}`
-            );
-            const basePrice: number = response?.data?.basePrice ?? 50_000;
-            const discount = params.quantity >= 10 ? 0.05 : 0;
-            const shippingCost: number = response?.data?.shippingCost ?? 0;
-            return {
-                basePrice,
-                finalPrice: Math.round(basePrice * params.quantity * (1 - discount)),
-                currency: params.currency,
-                discountApplied: discount,
-                shippingCost,
-            };
+        const response = await this.apiClient.get(
+            `/pricing/${params.productVariantId}?qty=${params.quantity}&customerId=${params.customerId}`
+        );
+        const basePrice: number | undefined = response?.data?.basePrice;
+        if (basePrice === undefined || basePrice === null) {
+            throw new Error('PricingEngine: base price missing from pricing service response.');
         }
-
-        // Fallback when no API client is provided (pure in-memory)
-        const basePrice = 50_000;
+        const discount = params.quantity >= 10 ? 0.05 : 0;
+        const shippingCost: number = response?.data?.shippingCost ?? 0;
         return {
             basePrice,
-            finalPrice: basePrice * params.quantity,
+            finalPrice: Math.round(basePrice * params.quantity * (1 - discount)),
             currency: params.currency,
-            discountApplied: 0,
-            shippingCost: 0,
+            discountApplied: discount,
+            shippingCost,
         };
     }
 }

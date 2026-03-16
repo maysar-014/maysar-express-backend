@@ -16,9 +16,14 @@ describe('DistanceCalculationAlgorithm', () => {
   });
 
   it('calculateDeliveryDistance throws when HERE service is not configured', async () => {
+    const previousConfig = DistanceCalculationAlgorithm.getFallbackConfigSnapshot();
+    DistanceCalculationAlgorithm.configureFallback({ enabled: false });
+
     await expect(DistanceCalculationAlgorithm.calculateDeliveryDistance(origin, east)).rejects.toThrow(
       'HERE Technologies service is required for distance calculations.'
     );
+
+    DistanceCalculationAlgorithm.configureFallback(previousConfig);
   });
 
   it('calculateDeliveryDistance uses route service and rounds fields', async () => {

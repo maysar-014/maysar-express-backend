@@ -26,6 +26,7 @@ export enum UserStatus {
 
 export interface UserProps {
   id: string;
+  publicCode?: string;
   email: string | Email;
   role: string;
   status?: string;
@@ -60,6 +61,7 @@ export class User {
   }
 
   get id(): string { return this.props.id; }
+  get publicCode(): string | undefined { return this.props.publicCode; }
   get email(): Email { return typeof this.props.email === 'string' ? { toString: () => this.props.email as string } as Email : this.props.email as Email; }
   get role(): string { return this.props.role; }
   get status(): string { return this.props.status ?? UserStatus.ACTIVE; }

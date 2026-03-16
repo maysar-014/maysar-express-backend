@@ -1,9 +1,14 @@
 export class Weight {
   private constructor(private readonly value: number, private readonly unit: 'kg' | 'lbs') {
+    if (!['kg', 'lbs'].includes(unit)) {
+      throw new Error('Invalid weight unit');
+    }
     if (value < 0) {
       throw new Error('Weight cannot be negative');
     }
-    if (value > 1000) {
+
+    const valueInKg = unit === 'lbs' ? value * 0.453592 : value;
+    if (valueInKg > 1000) {
       throw new Error('Weight cannot exceed 1000kg');
     }
   }
@@ -37,9 +42,9 @@ export class Weight {
   }
 
   add(other: Weight): Weight {
-    const otherInSameUnit = other.unit === this.unit ? other.value : other.toKilograms();
     const thisInKg = this.toKilograms();
-    return new Weight(thisInKg + otherInSameUnit, 'kg');
+    const otherInKg = other.toKilograms();
+    return new Weight(thisInKg + otherInKg, 'kg');
   }
 
   isGreaterThan(other: Weight): boolean {

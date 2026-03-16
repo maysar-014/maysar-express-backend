@@ -1,16 +1,30 @@
 import { PrismaClient } from '@prisma/client';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting database seeding...');
 
+  const buyerId1 = makeId(getModelPrefix('User_User'));
+  const buyerId2 = makeId(getModelPrefix('User_User'));
+  const sellerId1 = makeId(getModelPrefix('User_User'));
+  const sellerId2 = makeId(getModelPrefix('User_User'));
+  const productId1 = makeId(getModelPrefix('Catalog_Product'));
+  const productId2 = makeId(getModelPrefix('Catalog_Product'));
+  const productId3 = makeId(getModelPrefix('Catalog_Product'));
+  const productId4 = makeId(getModelPrefix('Catalog_Product'));
+
+  const orderId1 = makeId(getModelPrefix('Order_Order'));
+  const orderId2 = makeId(getModelPrefix('Order_Order'));
+  const orderId3 = makeId(getModelPrefix('Order_Order'));
+
   // Create sample orders for testing
   const sampleOrders = [
     {
-      id: 'order_001',
-      buyerId: 'buyer_123',
-      sellerId: 'seller_456',
+      id: orderId1,
+      buyerId: buyerId1,
+      sellerId: sellerId1,
       status: 'PENDING' as const,
       paymentMethod: 'CARD' as const,
       totalAmount: 25000.00,
@@ -24,14 +38,14 @@ async function main() {
       },
       items: [
         {
-          productId: 'prod_001',
+          productId: productId1,
           quantity: 2,
           price: 10000.00,
           weight: 1.0,
           currency: 'TZS'
         },
         {
-          productId: 'prod_002',
+          productId: productId2,
           quantity: 1,
           price: 5000.00,
           weight: 0.5,
@@ -40,9 +54,9 @@ async function main() {
       ]
     },
     {
-      id: 'order_002',
-      buyerId: 'buyer_789',
-      sellerId: 'seller_456',
+      id: orderId2,
+      buyerId: buyerId2,
+      sellerId: sellerId1,
       status: 'CONFIRMED' as const,
       paymentMethod: 'COD' as const,
       totalAmount: 15000.00,
@@ -56,7 +70,7 @@ async function main() {
       },
       items: [
         {
-          productId: 'prod_003',
+          productId: productId3,
           quantity: 3,
           price: 5000.00,
           weight: 0.4,
@@ -65,9 +79,9 @@ async function main() {
       ]
     },
     {
-      id: 'order_003',
-      buyerId: 'buyer_123',
-      sellerId: 'seller_999',
+      id: orderId3,
+      buyerId: buyerId1,
+      sellerId: sellerId2,
       status: 'DELIVERED' as const,
       paymentMethod: 'MOBILE_MONEY' as const,
       totalAmount: 75000.00,
@@ -81,7 +95,7 @@ async function main() {
       },
       items: [
         {
-          productId: 'prod_004',
+          productId: productId4,
           quantity: 1,
           price: 75000.00,
           weight: 5.0,
@@ -113,8 +127,8 @@ async function main() {
   // Create sample payments
   const samplePayments = [
     {
-      id: 'payment_001',
-      orderId: 'order_001',
+      id: makeId(getModelPrefix('Order_Payment')),
+      orderId: orderId1,
       amount: 25000.00,
       currency: 'TZS',
       method: 'CARD' as const,
@@ -123,8 +137,8 @@ async function main() {
       externalRef: 'ext_ref_card_001'
     },
     {
-      id: 'payment_002',
-      orderId: 'order_002',
+      id: makeId(getModelPrefix('Order_Payment')),
+      orderId: orderId2,
       amount: 15000.00,
       currency: 'TZS',
       method: 'COD' as const,
@@ -133,8 +147,8 @@ async function main() {
       externalRef: 'ext_ref_cod_002'
     },
     {
-      id: 'payment_003',
-      orderId: 'order_003',
+      id: makeId(getModelPrefix('Order_Payment')),
+      orderId: orderId3,
       amount: 75000.00,
       currency: 'TZS',
       method: 'MOBILE_MONEY' as const,
@@ -155,8 +169,8 @@ async function main() {
   // Create sample settlements
   const sampleSettlements = [
     {
-      id: 'settlement_001',
-      orderId: 'order_001',
+      id: makeId(getModelPrefix('Order_Settlement')),
+      orderId: orderId1,
       settlementId: 'stl_001_1234567890',
       sellerPayout: 21250.00, // 85% after 15% commission
       platformCommission: 3750.00, // 15% commission
@@ -166,8 +180,8 @@ async function main() {
       processedAt: new Date('2024-01-15T10:30:00Z')
     },
     {
-      id: 'settlement_002',
-      orderId: 'order_003',
+      id: makeId(getModelPrefix('Order_Settlement')),
+      orderId: orderId3,
       settlementId: 'stl_003_1234567891',
       sellerPayout: 63750.00, // 85% after 15% commission
       platformCommission: 11250.00, // 15% commission

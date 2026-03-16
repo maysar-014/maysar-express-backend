@@ -5,11 +5,12 @@ import { register as metricsRegistry } from './src/infrastructure/monitoring/met
 import { createApp } from './src/complianceService';
 import { PrismaClient } from '@prisma/client';
 import { eventBus } from '../../shared/events/eventBus';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 // Initialize Tracing
 tracingService.start();
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 export const ComplianceModule: Module = {
     name: 'compliance-service',

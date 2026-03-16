@@ -88,8 +88,8 @@ describe('DeliveryEntity', () => {
     describe('Business Logic', () => {
         it('should calculate duration', () => {
             const delivery = createDelivery('delivered');
-            const start = new Date(Date.now() - 10000);
-            const end = new Date();
+            const start = new Date('2026-01-01T00:00:00.000Z');
+            const end = new Date(start.getTime() + 10000);
             delivery.timestamps.assigned = start;
             delivery.timestamps.delivered = end;
 

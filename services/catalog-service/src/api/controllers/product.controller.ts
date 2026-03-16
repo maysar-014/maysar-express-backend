@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 /**
  * Product Controller
  * API layer controller for product-related operations
@@ -365,6 +365,9 @@ export class ProductController {
    */
   async updateProduct(req: Request, res: Response): Promise<void> {
     try {
+      this.sendNotImplemented(res, 'Product updates are not implemented.');
+      return;
+
       const productId = req.params.id;
 
       if (!productId) {
@@ -407,6 +410,9 @@ export class ProductController {
    */
   async deleteProduct(req: Request, res: Response): Promise<void> {
     try {
+      this.sendNotImplemented(res, 'Product deletion is not implemented.');
+      return;
+
       const productId = req.params.id;
 
       if (!productId) {
@@ -439,6 +445,9 @@ export class ProductController {
    */
   async publishProduct(req: Request, res: Response): Promise<void> {
     try {
+      this.sendNotImplemented(res, 'Product publishing is not implemented.');
+      return;
+
       const productId = req.params.id;
 
       if (!productId) {
@@ -471,6 +480,9 @@ export class ProductController {
    */
   async getProductAnalytics(req: Request, res: Response): Promise<void> {
     try {
+      this.sendNotImplemented(res, 'Product analytics are not implemented.');
+      return;
+
       const productId = req.params.id;
       const period = req.query.period as string || '30d';
 
@@ -479,8 +491,7 @@ export class ProductController {
         return;
       }
 
-      // Note: In a real implementation, you would have analytics services
-      // For now, we'll return mock analytics
+      // Note: Analytics services are not implemented yet.
       const response: ApiResponse = {
         success: true,
         data: {
@@ -559,17 +570,24 @@ export class ProductController {
 
   // Private helper methods
 
-  private validateStructuredCreateProductRequest(body: any): { isValid: boolean; errors: string[] } {
-    const errors: string[] = [];
-    if (!body.sellerId) errors.push('Seller ID is required');
-    if (!body.categoryId) errors.push('Category ID is required');
-    if (!body.brand) errors.push('Brand is required');
-    if (!body.productName) errors.push('Product name is required');
-    if (!body.structuredAttributes) errors.push('Structured attributes are required');
-    if (!body.mediaUrls || body.mediaUrls.length === 0) errors.push('At least one media URL is required');
-    if (!body.price || body.price <= 0) errors.push('Valid price is required');
-    return { isValid: errors.length === 0, errors };
-  }
+    private validateStructuredCreateProductRequest(body: any): { isValid: boolean; errors: string[] } {
+      const errors: string[] = [];
+      if (!body.sellerId) errors.push('Seller ID is required');
+      if (!body.categoryId) errors.push('Category ID is required');
+      if (!body.brand) errors.push('Brand is required');
+      if (!body.productName) errors.push('Product name is required');
+      if (!body.structuredAttributes) errors.push('Structured attributes are required');
+      if (!body.mediaUrls || body.mediaUrls.length === 0) errors.push('At least one media URL is required');
+      if (!body.price || body.price <= 0) errors.push('Valid price is required');
+      if (body.enablerEnabled) {
+        if (body.enablerCommissionRate === undefined) {
+          errors.push('Enabler commission rate is required when enabler is enabled');
+        } else if (typeof body.enablerCommissionRate !== 'number' || body.enablerCommissionRate <= 0 || body.enablerCommissionRate > 1) {
+          errors.push('Enabler commission rate must be between 0 and 1');
+        }
+      }
+      return { isValid: errors.length === 0, errors };
+    }
 
   private validateUpdateProductRequest(body: any): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
@@ -582,12 +600,24 @@ export class ProductController {
       errors.push('Product price must be a positive number');
     }
 
-    if (body.tags && !Array.isArray(body.tags)) {
-      errors.push('Tags must be an array of strings');
-    }
+      if (body.tags && !Array.isArray(body.tags)) {
+        errors.push('Tags must be an array of strings');
+      }
 
-    return { isValid: errors.length === 0, errors };
-  }
+      if (body.enablerEnabled) {
+        if (body.enablerCommissionRate === undefined) {
+          errors.push('Enabler commission rate is required when enabler is enabled');
+        } else if (typeof body.enablerCommissionRate !== 'number' || body.enablerCommissionRate <= 0 || body.enablerCommissionRate > 1) {
+          errors.push('Enabler commission rate must be between 0 and 1');
+        }
+      }
+
+      if (body.enablerCommissionRate !== undefined && (typeof body.enablerCommissionRate !== 'number' || body.enablerCommissionRate <= 0 || body.enablerCommissionRate > 1)) {
+        errors.push('Enabler commission rate must be between 0 and 1');
+      }
+
+      return { isValid: errors.length === 0, errors };
+    }
 
   private validatePreviewDescriptionRequest(body: any): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
@@ -658,20 +688,22 @@ export class ProductController {
     };
   }
 
-  private mapToUpdateProductDto(body: any, productId: string): UpdateProductDto {
-    return {
-      productId,
-      name: body.name?.trim(),
-      description: body.description?.trim(),
-      price: body.price,
-      currency: body.currency,
-      categoryId: body.categoryId,
-      tags: body.tags,
-      attributes: body.attributes,
-      seoTitle: body.seoTitle,
-      seoDescription: body.seoDescription
-    };
-  }
+    private mapToUpdateProductDto(body: any, productId: string): UpdateProductDto {
+      return {
+        productId,
+        name: body.name?.trim(),
+        description: body.description?.trim(),
+        price: body.price,
+        currency: body.currency,
+        categoryId: body.categoryId,
+        tags: body.tags,
+        attributes: body.attributes,
+        seoTitle: body.seoTitle,
+        seoDescription: body.seoDescription,
+        enablerEnabled: body.enablerEnabled,
+        enablerCommissionRate: body.enablerCommissionRate
+      };
+    }
 
   private parseSearchRequest(req: Request): any {
     const query = req.query.q as string;
@@ -823,6 +855,21 @@ export class ProductController {
     };
 
     res.status(500).json(response);
+  }
+
+  private sendNotImplemented(res: Response, message: string): void {
+    const response: ApiResponse = {
+      success: false,
+      error: {
+        code: 'NOT_IMPLEMENTED',
+        message
+      },
+      meta: {
+        timestamp: new Date()
+      }
+    };
+
+    res.status(501).json(response);
   }
 }
 

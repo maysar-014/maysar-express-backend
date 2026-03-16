@@ -5,6 +5,7 @@ import { ProductionPlanRepository } from './src/infrastructure/repositories/Prod
 import { ProductionOrderRepository } from './src/infrastructure/repositories/ProductionOrderRepository';
 import { QualityCheckpointRepository } from './src/infrastructure/repositories/QualityCheckpointRepository';
 import { ProductionMetricsRepository } from './src/infrastructure/repositories/ProductionMetricsRepository';
+import { createPrismaClient } from '@shared/database/prisma-client';
 
 import { EventBusAdapter } from './src/infrastructure/messaging/EventBusAdapter';
 import { InventoryServiceAdapter } from './src/infrastructure/services/InventoryServiceAdapter';
@@ -48,7 +49,7 @@ export const ProductionModule: Module = {
         console.log('Initializing Production Service...');
 
         // Lazy load prisma to ensure it uses the one in context or creates new
-        const prisma = new PrismaClient(); // In a real merged app, pass this in or usage singleton
+        const prisma = createPrismaClient(); // In a real merged app, pass this in or usage singleton
 
         // 1. Adapters
         const localEventBus = EventBusAdapter.getInstance();
@@ -104,7 +105,7 @@ export const ProductionModule: Module = {
     },
     shutdown: async () => {
         console.log('Shutting down Production Service...');
-        const prisma = new PrismaClient();
+        const prisma = createPrismaClient();
         await prisma.$disconnect();
     }
 };

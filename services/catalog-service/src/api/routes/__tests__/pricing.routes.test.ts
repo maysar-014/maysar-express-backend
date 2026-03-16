@@ -46,12 +46,12 @@ describe('Pricing Routes', () => {
 
     it('should have correct route metadata', () => {
       expect(PRICING_ROUTES_METADATA.version).toBe('v1');
-      expect(PRICING_ROUTES_METADATA.prefix).toBe('/api/v1');
+      expect(PRICING_ROUTES_METADATA.prefix).toBe('/v1');
       expect(PRICING_ROUTES_METADATA.routes).toHaveLength(7);
     });
   });
 
-  describe('Pricing Calculations - POST /api/v1/pricing/calculate', () => {
+  describe('Pricing Calculations - POST /v1/pricing/calculate', () => {
     it('should delegate to controller calculatePrice method', async () => {
       mockPricingController.calculatePrice.mockImplementation(async (req, res) => {
         res.status(200).json({
@@ -66,7 +66,7 @@ describe('Pricing Routes', () => {
       });
 
       const response = await request(app)
-        .post('/api/v1/pricing/calculate')
+        .post('/v1/pricing/calculate')
         .send({
           productId: 'prod-123',
           customerId: 'cust-456',
@@ -88,7 +88,7 @@ describe('Pricing Routes', () => {
       });
 
       const response = await request(app)
-        .post('/api/v1/pricing/calculate')
+        .post('/v1/pricing/calculate')
         .send({ productId: 'invalid-id' });
 
       expect(response.status).toBe(400);
@@ -97,7 +97,7 @@ describe('Pricing Routes', () => {
     });
   });
 
-  describe('Product Price Updates - PUT /api/v1/products/:productId/pricing', () => {
+  describe('Product Price Updates - PUT /v1/products/:productId/pricing', () => {
     it('should delegate to controller updateProductPrice method', async () => {
       mockPricingController.updateProductPrice.mockImplementation(async (req, res) => {
         res.status(200).json({
@@ -112,7 +112,7 @@ describe('Pricing Routes', () => {
       });
 
       const response = await request(app)
-        .put('/api/v1/products/prod-123/pricing')
+        .put('/v1/products/prod-123/pricing')
         .send({
           price: 120,
           currency: 'USD',
@@ -132,7 +132,7 @@ describe('Pricing Routes', () => {
       });
 
       await request(app)
-        .put('/api/v1/products/prod-456/pricing')
+        .put('/v1/products/prod-456/pricing')
         .send({ price: 150 });
 
       expect(mockPricingController.updateProductPrice).toHaveBeenCalled();
@@ -147,7 +147,7 @@ describe('Pricing Routes', () => {
       });
 
       const response = await request(app)
-        .put('/api/v1/products/prod-123/pricing')
+        .put('/v1/products/prod-123/pricing')
         .send({ price: -50 });
 
       expect(response.status).toBe(422);
@@ -155,7 +155,7 @@ describe('Pricing Routes', () => {
     });
   });
 
-  describe('Bulk Pricing Updates - POST /api/v1/pricing/bulk-update', () => {
+  describe('Bulk Pricing Updates - POST /v1/pricing/bulk-update', () => {
     it('should delegate to controller bulkUpdatePricing method', async () => {
       mockPricingController.bulkUpdatePricing.mockImplementation(async (req, res) => {
         res.status(200).json({
@@ -173,7 +173,7 @@ describe('Pricing Routes', () => {
       });
 
       const response = await request(app)
-        .post('/api/v1/pricing/bulk-update')
+        .post('/v1/pricing/bulk-update')
         .send({
           updates: [
             { productId: 'prod-1', price: 100 },
@@ -199,7 +199,7 @@ describe('Pricing Routes', () => {
       });
 
       const response = await request(app)
-        .post('/api/v1/pricing/bulk-update')
+        .post('/v1/pricing/bulk-update')
         .send({ updates: [] });
 
       expect(response.status).toBe(400);
@@ -208,7 +208,7 @@ describe('Pricing Routes', () => {
   });
 
   describe('Pricing Rules Management', () => {
-    describe('GET /api/v1/pricing/rules - Get Pricing Rules', () => {
+    describe('GET /v1/pricing/rules - Get Pricing Rules', () => {
       it('should delegate to controller getPricingRules method', async () => {
         mockPricingController.getPricingRules.mockImplementation(async (req, res) => {
           res.status(200).json({
@@ -233,7 +233,7 @@ describe('Pricing Routes', () => {
         });
 
         const response = await request(app)
-          .get('/api/v1/pricing/rules?active=true');
+          .get('/v1/pricing/rules?active=true');
 
         expect(mockPricingController.getPricingRules).toHaveBeenCalled();
         expect(response.status).toBe(200);
@@ -250,13 +250,13 @@ describe('Pricing Routes', () => {
         });
 
         await request(app)
-          .get('/api/v1/pricing/rules?active=true&type=percentage');
+          .get('/v1/pricing/rules?active=true&type=percentage');
 
         expect(mockPricingController.getPricingRules).toHaveBeenCalled();
       });
     });
 
-    describe('POST /api/v1/pricing/rules - Create Pricing Rule', () => {
+    describe('POST /v1/pricing/rules - Create Pricing Rule', () => {
       it('should delegate to controller createPricingRule method', async () => {
         mockPricingController.createPricingRule.mockImplementation(async (req, res) => {
           res.status(201).json({
@@ -272,7 +272,7 @@ describe('Pricing Routes', () => {
         });
 
         const response = await request(app)
-          .post('/api/v1/pricing/rules')
+          .post('/v1/pricing/rules')
           .send({
             name: 'New Discount Rule',
             type: 'percentage',
@@ -297,7 +297,7 @@ describe('Pricing Routes', () => {
         });
 
         const response = await request(app)
-          .post('/api/v1/pricing/rules')
+          .post('/v1/pricing/rules')
           .send({
             name: '',
             type: 'invalid-type',
@@ -309,10 +309,10 @@ describe('Pricing Routes', () => {
       });
     });
 
-    describe('POST /api/v1/pricing/validate-rule - Validate Pricing Rule', () => {
+    describe('POST /v1/pricing/validate-rule - Validate Pricing Rule', () => {
       it('should return not implemented status', async () => {
         const response = await request(app)
-          .post('/api/v1/pricing/validate-rule')
+          .post('/v1/pricing/validate-rule')
           .send({
             name: 'Test Rule',
             type: 'percentage',
@@ -327,7 +327,7 @@ describe('Pricing Routes', () => {
     });
   });
 
-  describe('Pricing Analytics - GET /api/v1/pricing/analytics', () => {
+  describe('Pricing Analytics - GET /v1/pricing/analytics', () => {
     it('should delegate to controller getPricingAnalytics method', async () => {
       mockPricingController.getPricingAnalytics.mockImplementation(async (req, res) => {
         res.status(200).json({
@@ -347,7 +347,7 @@ describe('Pricing Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/pricing/analytics?period=30d');
+        .get('/v1/pricing/analytics?period=30d');
 
       expect(mockPricingController.getPricingAnalytics).toHaveBeenCalled();
       expect(response.status).toBe(200);
@@ -364,7 +364,7 @@ describe('Pricing Routes', () => {
       });
 
       await request(app)
-        .get('/api/v1/pricing/analytics?period=7d&metric=discounts');
+        .get('/v1/pricing/analytics?period=7d&metric=discounts');
 
       expect(mockPricingController.getPricingAnalytics).toHaveBeenCalled();
     });
@@ -378,7 +378,7 @@ describe('Pricing Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/pricing/analytics');
+        .get('/v1/pricing/analytics');
 
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);
@@ -491,7 +491,7 @@ describe('Pricing Routes', () => {
       const invalidApp = createTestApp(invalidRoutes);
 
       const response = await request(invalidApp)
-        .get('/api/v1/pricing/non-existent-endpoint');
+        .get('/v1/pricing/non-existent-endpoint');
 
       expect(response.status).toBe(404);
     });
@@ -502,7 +502,7 @@ describe('Pricing Routes', () => {
       });
 
       const response = await request(app)
-        .post('/api/v1/pricing/calculate')
+        .post('/v1/pricing/calculate')
         .send({});
 
       expect(response.status).toBe(500);
@@ -530,7 +530,7 @@ describe('Pricing Routes', () => {
 
       const promises = Array(5).fill().map(() =>
         request(app)
-          .post('/api/v1/pricing/calculate')
+          .post('/v1/pricing/calculate')
           .send({ productId: 'prod-123' })
       );
 
@@ -550,7 +550,7 @@ describe('Pricing Routes', () => {
       const startTime = Date.now();
 
       await request(app)
-        .post('/api/v1/pricing/calculate')
+        .post('/v1/pricing/calculate')
         .send({ productId: 'prod-123' });
 
       const endTime = Date.now();
@@ -564,7 +564,7 @@ describe('Pricing Routes', () => {
   describe('Input Validation', () => {
     it('should validate product ID parameters', async () => {
       const response = await request(app)
-        .put('/api/v1/products/invalid-id/pricing')
+        .put('/v1/products/invalid-id/pricing')
         .send({ price: 100 });
 
       // Note: This would typically be handled by middleware validation
@@ -574,7 +574,7 @@ describe('Pricing Routes', () => {
 
     it('should handle malformed JSON in request body', async () => {
       const response = await request(app)
-        .post('/api/v1/pricing/calculate')
+        .post('/v1/pricing/calculate')
         .set('Content-Type', 'application/json')
         .send('{ invalid json }');
 
@@ -591,7 +591,7 @@ describe('Pricing Routes', () => {
       });
 
       const response = await request(app)
-        .post('/api/v1/pricing/calculate')
+        .post('/v1/pricing/calculate')
         .send({});
 
       expect(response.status).toBe(400);
@@ -609,7 +609,7 @@ describe('Pricing Routes', () => {
       });
 
       const response = await request(app)
-        .post('/api/v1/pricing/rules')
+        .post('/v1/pricing/rules')
         .send({
           name: 'Conflicting Rule',
           type: 'percentage',
@@ -630,7 +630,7 @@ describe('Pricing Routes', () => {
       });
 
       const response = await request(app)
-        .post('/api/v1/pricing/rules')
+        .post('/v1/pricing/rules')
         .send({
           name: 'Invalid Rule',
           type: 'percentage',
@@ -660,7 +660,7 @@ describe('Pricing Routes', () => {
       });
 
       const response = await request(app)
-        .post('/api/v1/pricing/bulk-update')
+        .post('/v1/pricing/bulk-update')
         .send({
           updates: [
             { productId: 'prod-1', price: 100 },

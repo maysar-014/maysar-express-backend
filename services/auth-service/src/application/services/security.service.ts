@@ -1,4 +1,8 @@
+import { getModelPrefix, makeId } from '@shared/ids/id';
+import { prisma } from '../../infrastructure/database/prisma-client';
 import { logger } from '../../infrastructure/services/logger.service';
+
+const securityAuditPrefix = getModelPrefix('AuditLog');
 
 /**
  * Security Service
@@ -18,21 +22,26 @@ export class SecurityService {
     details: any;
   }): Promise<void> {
     try {
-      // In a real implementation, this would save to a security database
-      // For now, we'll log it
-      logger.warn('Security event logged', {
-        type: 'security',
+      const metadata = {
         securityType: event.type,
-        userId: event.userId,
         sessionId: event.sessionId,
-        ipAddress: event.ipAddress,
-        userAgent: event.userAgent,
-        timestamp: event.timestamp.toISOString(),
         details: event.details
-      });
+      };
 
-      // In production, you would save this to a security events database
-      // await this.securityRepository.create(event);
+      await prisma.auditLog.create({
+        data: {
+          id: makeId(securityAuditPrefix),
+          userId: event.userId,
+          email: event.details?.email,
+          action: `security:${event.type}`,
+          ipAddress: event.ipAddress,
+          userAgent: event.userAgent,
+          success: event.details?.success ?? true,
+          reason: event.details?.reason,
+          metadata,
+          timestamp: event.timestamp
+        }
+      });
     } catch (error) {
       logger.error('SecurityService.logSecurityEvent error', { error, event });
       throw error;
@@ -48,20 +57,41 @@ export class SecurityService {
     limit?: number;
   }): Promise<any[]> {
     try {
-      // In a real implementation, this would query a database
-      // For now, we'll return mock data
-      const mockEvents = [
-        {
-          type: 'failed_login',
-          userId: 'user123',
-          ipAddress: '192.168.1.100',
-          userAgent: 'Mozilla/5.0',
-          timestamp: new Date().toISOString(),
-          details: { reason: 'invalid_credentials' }
-        }
-      ];
+      const hours = params.hours ?? 24;
+      const limit = params.limit ?? 100;
+      const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
 
-      return mockEvents;
+      const where: any = {
+        action: { startsWith: 'security:' },
+        timestamp: { gte: cutoff }
+      };
+
+      if (params.severity) {
+        where.metadata = {
+          path: ['details', 'severity'],
+          equals: params.severity
+        };
+      }
+
+      const records = await prisma.auditLog.findMany({
+        where,
+        orderBy: { timestamp: 'desc' },
+        take: limit
+      });
+
+      return records.map(record => {
+        const metadata = (record.metadata as any) || {};
+        const securityType = String(record.action || '').replace(/^security:/, '');
+        return {
+          type: securityType,
+          userId: record.userId,
+          sessionId: metadata.sessionId,
+          ipAddress: record.ipAddress,
+          userAgent: record.userAgent,
+          timestamp: record.timestamp,
+          details: metadata.details ?? metadata
+        };
+      });
     } catch (error) {
       logger.error('SecurityService.getSecurityEvents error', { error, params });
       throw error;

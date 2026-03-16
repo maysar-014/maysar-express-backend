@@ -2,6 +2,7 @@ import { User, UserRole } from '../../domain/entities/user.entity';
 import { IUserRepository } from '../../domain/repositories';
 import { UserPolicies } from '../../domain/policies/user-policies';
 import { logger } from '../../infrastructure/services/logger.service';
+import { prisma } from '../../infrastructure/database/prisma-client';
 
 /**
  * Search filters for users
@@ -106,7 +107,7 @@ export class SearchUsersUseCase {
       );
 
       // Get total count for pagination
-      const totalCount = await this.getTotalCount(authorizedQuery);
+      const totalCount = await this.getTotalCount(input.filters, authorizedQuery);
 
       const paginationInfo = {
         page: pagination.page,
@@ -223,15 +224,42 @@ export class SearchUsersUseCase {
   /**
    * Get total count for pagination (simplified)
    */
-  private async getTotalCount(query: string): Promise<number> {
+  private async getTotalCount(filters: UserSearchFilters, query: string): Promise<number> {
     try {
-      // In a real implementation, this would use a count query
-      // For now, we'll estimate or use repository methods
+      const where: any = {};
+
       if (query) {
-        // Assume search returns some results, estimate total
-        return Math.max(1, Math.floor(Math.random() * 1000)); // Mock implementation
+        where.OR = [
+          { email: { contains: query, mode: 'insensitive' } },
+          { firstName: { contains: query, mode: 'insensitive' } },
+          { lastName: { contains: query, mode: 'insensitive' } }
+        ];
       }
-      return 0;
+
+      if (filters.role) {
+        where.role = String(filters.role).toUpperCase();
+      }
+
+      if (filters.status) {
+        where.status = String(filters.status).toUpperCase();
+      }
+
+      if (filters.emailVerified !== undefined) {
+        where.isEmailVerified = filters.emailVerified;
+      }
+
+      if (filters.phoneVerified !== undefined) {
+        where.isPhoneVerified = filters.phoneVerified;
+      }
+
+      if (filters.createdAfter || filters.createdBefore) {
+        where.createdAt = {
+          ...(filters.createdAfter ? { gte: filters.createdAfter } : {}),
+          ...(filters.createdBefore ? { lte: filters.createdBefore } : {})
+        };
+      }
+
+      return await prisma.user_User.count({ where });
     } catch (error) {
       logger.error('Error getting total count', { error });
       return 0;
