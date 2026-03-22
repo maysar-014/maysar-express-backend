@@ -6,11 +6,15 @@ export const zodId = (message = 'Invalid ID format') =>
   z.string().refine(isSystemId, { message });
 
 export const joiId = (message = 'Invalid ID format') =>
-  Joi.string().custom((value, helpers) => {
-    if (typeof value === 'string' && isSystemId(value)) {
-      return value;
-    }
-    return helpers.message({ 'any.custom': message });
-  });
+  Joi.string()
+    .custom((value, helpers) => {
+      if (typeof value === 'string' && isSystemId(value)) {
+        return value;
+      }
+      return helpers.error('any.invalid');
+    })
+    .messages({
+      'any.invalid': message,
+    });
 
 export { isSystemId };

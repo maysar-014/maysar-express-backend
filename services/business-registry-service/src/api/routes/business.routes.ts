@@ -22,12 +22,15 @@ import { SagaEventHandler } from '../../application/sagas/saga-event-handler';
 import { MailerAdapter, ComplianceAdapter, CapabilityAdapter } from '../../infrastructure/adapters';
 import { eventBus } from '@shared/events/eventBus';
 import { logger } from '../../infrastructure/services/logger.service';
+import { requireAuth } from '@shared/middleware/auth-context.middleware';
 
 let businessController: BusinessController;
 let businessRepository: PrismaBusinessRepository;
 let businessDocumentRepository: PrismaBusinessDocumentRepository;
 let businessComplianceRepository: PrismaBusinessComplianceRepository;
 let sagaEventHandler: SagaEventHandler;
+
+type BusinessRouteMode = 'default' | 'legacy';
 
 function initializeController(): BusinessController {
   if (!businessController) {
@@ -72,12 +75,25 @@ function initializeController(): BusinessController {
 }
 
 export function createBusinessRoutes(): Router {
+  return createConfiguredBusinessRoutes('default');
+}
+
+export function createLegacyBusinessRoutes(): Router {
+  return createConfiguredBusinessRoutes('legacy');
+}
+
+function createConfiguredBusinessRoutes(mode: BusinessRouteMode): Router {
   const router = Router();
   const controller = initializeController();
 
-  router.post('/', validateCreateBusiness, (req, res, next) =>
-    controller.registerBusiness(req, res).catch(next)
-  );
+  router.use(requireAuth);
+
+  if (mode === 'default') {
+    router.post('/', validateCreateBusiness, (req, res, next) =>
+      controller.registerBusiness(req, res).catch(next)
+    );
+  }
+
   router.get('/search', (req, res, next) => controller.searchBusinesses(req, res).catch(next));
   router.get('/owner/:ownerId', (req, res, next) => controller.getBusinessesByOwner(req, res).catch(next));
   router.get('/:id', (req, res, next) => controller.getBusinessById(req, res).catch(next));
@@ -91,15 +107,17 @@ export function createBusinessRoutes(): Router {
   );
   router.post('/:id/reactivate', (req, res, next) => controller.reactivateBusiness(req, res).catch(next));
 
-  router.post('/:id/documents', validateCreateBusinessDocument, (req, res, next) =>
-    controller.addDocument(req, res).catch(next)
-  );
-  router.get('/:id/documents', (req, res, next) => controller.listDocuments(req, res).catch(next));
+  if (mode === 'default') {
+    router.post('/:id/documents', validateCreateBusinessDocument, (req, res, next) =>
+      controller.addDocument(req, res).catch(next)
+    );
+    router.get('/:id/documents', (req, res, next) => controller.listDocuments(req, res).catch(next));
 
-  router.post('/:id/compliance-records', validateCreateComplianceRecord, (req, res, next) =>
-    controller.addComplianceRecord(req, res).catch(next)
-  );
-  router.get('/:id/compliance-records', (req, res, next) => controller.listComplianceRecords(req, res).catch(next));
+    router.post('/:id/compliance-records', validateCreateComplianceRecord, (req, res, next) =>
+      controller.addComplianceRecord(req, res).catch(next)
+    );
+    router.get('/:id/compliance-records', (req, res, next) => controller.listComplianceRecords(req, res).catch(next));
+  }
 
   return router;
 }

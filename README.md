@@ -55,6 +55,25 @@ npm run db:fresh
 npm run dev
 ```
 
+## E2E Tests
+
+Run the Postman/Newman E2E collection after the server is up on `http://localhost:3000`.
+
+```bash
+# Optional (recommended in dev)
+export SMS_PROVIDER=mock
+export PAYMENT_RATE_LIMIT_DISABLED=true
+
+# Run E2E suite
+npx newman run postman/Maysar-Platform-E2E.postman_collection.json \
+  --timeout-request 12000 \
+  --timeout-script 12000 \
+  --reporters json \
+  --reporter-json-export reports/newman-e2e.json
+```
+
+The report is written to `reports/newman-e2e.json`.
+
 ## Service Modules
 
 | Service | Description |

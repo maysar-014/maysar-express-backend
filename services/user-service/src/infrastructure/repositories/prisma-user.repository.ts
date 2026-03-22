@@ -196,9 +196,11 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async emailExists(email: string): Promise<boolean> {
     try {
-      const count = await this.prisma.user_UserIndex.count({
-        where: { indexType: 'email', value: this.piiService.hash(email) }
-      });
+      const count = await this.withDbRetry('emailExists', () =>
+        this.prisma.user_UserIndex.count({
+          where: { indexType: 'email', value: this.piiService.hash(email) }
+        })
+      );
 
       return count > 0;
     } catch (error) {
@@ -212,9 +214,11 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async phoneExists(phoneNumber: string): Promise<boolean> {
     try {
-      const count = await this.prisma.user_UserIndex.count({
-        where: { indexType: 'phone', value: this.piiService.hash(phoneNumber) }
-      });
+      const count = await this.withDbRetry('phoneExists', () =>
+        this.prisma.user_UserIndex.count({
+          where: { indexType: 'phone', value: this.piiService.hash(phoneNumber) }
+        })
+      );
 
       return count > 0;
     } catch (error) {
@@ -997,6 +1001,43 @@ export class PrismaUserRepository implements IUserRepository {
   // ============================================================================
   // PRIVATE HELPER METHODS
   // ============================================================================
+
+  private async withDbRetry<T>(operation: string, fn: () => Promise<T>): Promise<T> {
+    const maxAttempts = 2;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        return await fn();
+      } catch (error) {
+        if (!this.isTransientDbError(error) || attempt === maxAttempts) {
+          throw error;
+        }
+        logger.warn('Transient database error, retrying', {
+          operation,
+          attempt,
+          error: this.formatError(error)
+        });
+        await this.delay(150 * attempt);
+      }
+    }
+    throw new Error(`Database retry attempts exhausted for ${operation}`);
+  }
+
+  private isTransientDbError(error: unknown): boolean {
+    const message = error instanceof Error ? error.message : String(error);
+    const code = (error as { code?: string } | null)?.code;
+    return (
+      code === 'P1001' ||
+      code === 'P1002' ||
+      message.includes("Can't reach database server") ||
+      message.includes('ECONNREFUSED') ||
+      message.includes('ETIMEDOUT') ||
+      message.includes('ENOTFOUND')
+    );
+  }
+
+  private async delay(ms: number): Promise<void> {
+    await new Promise(resolve => setTimeout(resolve, ms));
+  }
 
   /**
    * Map Prisma user data to domain User entity

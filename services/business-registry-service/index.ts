@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { Module } from '../../src/core/module.interface';
-import { createBusinessRoutes } from './src/api/routes/business.routes';
+import { createBusinessRoutes, createLegacyBusinessRoutes } from './src/api/routes/business.routes';
 import { createHealthRoutes } from './src/api/routes/health.routes';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
+import { errorMiddleware } from './src/api/middleware/error.middleware';
 
 export const BusinessRegistryModule: Module = {
     name: 'business-registry-service',
@@ -12,11 +14,15 @@ export const BusinessRegistryModule: Module = {
     routes: (() => {
         const router = Router();
         router.use('/health', createHealthRoutes());
+        router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
         router.use('/businesses', createBusinessRoutes());
-        router.use('/system/maintenance', createMaintenanceRoutes());
+        router.use('/', createLegacyBusinessRoutes());
+        router.use(errorMiddleware);
         return router;
     })(),
     shutdown: async () => {
         console.log('Shutting down business-registry-service module');
     }
 };
+
+

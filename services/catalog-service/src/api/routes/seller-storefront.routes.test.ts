@@ -13,7 +13,12 @@ describe('createSellerStorefrontRoutes', () => {
     app.use('/storefront', createSellerStorefrontRoutes(controller as never));
 
     const storefront = await request(app).get('/storefront/seller-1/storefront');
-    const share = await request(app).post('/storefront/seller-1/share-url');
+    const share = await request(app)
+      .post('/storefront/seller-1/share-url')
+      .set('x-contract-test', '1')
+      .set('x-user-id', 'usr_test_0001')
+      .set('x-user-roles', 'seller')
+      .send({});
 
     expect(storefront.status).toBe(200);
     expect(storefront.body.sellerId).toBe('seller-1');

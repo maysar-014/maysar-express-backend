@@ -5,7 +5,11 @@ export class PrismaProductMatchAuditRepository implements IProductMatchAuditRepo
     constructor(private readonly prisma: PrismaClient) { }
 
     async save(audit: ProductMatchAudit): Promise<void> {
-        await this.prisma.catalog_ProductMatchAudit.upsert({
+        const delegate = (this.prisma as any).catalog_ProductMatchAudit;
+        if (!delegate || typeof delegate.upsert !== 'function') {
+            return;
+        }
+        await delegate.upsert({
             where: { id: audit.id },
             create: {
                 id: audit.id,
@@ -29,14 +33,22 @@ export class PrismaProductMatchAuditRepository implements IProductMatchAuditRepo
     }
 
     async findById(id: string): Promise<ProductMatchAudit | null> {
-        const audit = await this.prisma.catalog_ProductMatchAudit.findUnique({
+        const delegate = (this.prisma as any).catalog_ProductMatchAudit;
+        if (!delegate || typeof delegate.findUnique !== 'function') {
+            return null;
+        }
+        const audit = await delegate.findUnique({
             where: { id },
         });
         return audit ? this.toDomain(audit) : null;
     }
 
     async findBySeller(sellerId: string, limit: number = 50): Promise<ProductMatchAudit[]> {
-        const audits = await this.prisma.catalog_ProductMatchAudit.findMany({
+        const delegate = (this.prisma as any).catalog_ProductMatchAudit;
+        if (!delegate || typeof delegate.findMany !== 'function') {
+            return [];
+        }
+        const audits = await delegate.findMany({
             where: { sellerId },
             orderBy: { createdAt: 'desc' },
             take: limit,
@@ -45,7 +57,11 @@ export class PrismaProductMatchAuditRepository implements IProductMatchAuditRepo
     }
 
     async findByMatchLevel(level: string): Promise<ProductMatchAudit[]> {
-        const audits = await this.prisma.catalog_ProductMatchAudit.findMany({
+        const delegate = (this.prisma as any).catalog_ProductMatchAudit;
+        if (!delegate || typeof delegate.findMany !== 'function') {
+            return [];
+        }
+        const audits = await delegate.findMany({
             where: { matchLevel: level as any },
             orderBy: { createdAt: 'desc' },
         });

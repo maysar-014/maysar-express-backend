@@ -3,6 +3,7 @@ import expressRateLimit from 'express-rate-limit';
 import { RedisRateLimitStore } from '@shared/middleware/redis-rate-limit.store';
 import { getSharedRedisClient, resolveRedisUrl } from '@shared/redis/ioredis-client';
 import { createError } from './error.middleware';
+import { shouldBypassRateLimit } from '@shared/middleware/rate-limit.util';
 
 const DEFAULT_LIMIT = 100;
 const WINDOW_MS = 60 * 1000; // 1 minute
@@ -27,6 +28,7 @@ export const rateLimit = (options?: { limit?: number; windowMs?: number; prefix?
     passOnStoreError: true,
     standardHeaders: true,
     legacyHeaders: false,
+    skip: shouldBypassRateLimit,
     handler: (_req: Request, _res: Response, next: NextFunction) => {
       next(createError.tooManyRequests('Rate limit exceeded'));
     }

@@ -87,6 +87,9 @@ export class UpdateDeliveryStatusUseCase {
   }
 
   private validateStatusTransition(currentStatus: DeliveryStatus, newStatus: DeliveryStatus): void {
+    const normalizedCurrentStatus = currentStatus === 'pending'
+      ? 'assigned'
+      : currentStatus;
     const validTransitions: Record<DeliveryStatus, DeliveryStatus[]> = {
       'assigned': ['picked_up', 'cancelled', 'failed'],
       'picked_up': ['in_transit', 'cancelled', 'failed'],
@@ -96,7 +99,7 @@ export class UpdateDeliveryStatusUseCase {
       'failed': [] // Terminal state
     };
 
-    if (!validTransitions[currentStatus].includes(newStatus)) {
+    if (!validTransitions[normalizedCurrentStatus]?.includes(newStatus)) {
       throw new Error(`Invalid status transition from ${currentStatus} to ${newStatus}`);
     }
   }

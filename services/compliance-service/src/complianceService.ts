@@ -21,6 +21,10 @@ const supportedIdSchema = z
   .string()
   .trim()
   .refine((value) => isSystemId(value), { message: 'Expected system ID' });
+const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F]+$/u;
+const safeVisibleStringSchema = z.string().min(1).regex(SAFE_VISIBLE_STRING_PATTERN, {
+  message: 'Expected a non-empty printable string'
+});
 
 const verifyDocumentSchema = z.object({
   userId: supportedIdSchema,
@@ -36,8 +40,8 @@ const manualReviewSchema = z.object({
 
 const riskAssessmentSchema = z.object({
   userId: supportedIdSchema,
-  assessmentType: z.string()
-});
+  assessmentType: safeVisibleStringSchema
+}).strict();
 
 const monitorSchema = z.object({
   complianceType: z.literal('kyc'),
@@ -47,16 +51,17 @@ const monitorSchema = z.object({
 
 const generateReportSchema = z.object({
   reportType: z.literal('kyc'),
-  period: z.string(),
-  requestedBy: z.string()
-});
+  period: safeVisibleStringSchema,
+  requestedBy: safeVisibleStringSchema
+}).strict();
 
 const auditLogSchema = z.object({
   userId: supportedIdSchema,
-  action: z.string().min(1),
-  resource: z.string().min(1),
-  resourceId: z.string()
-});
+  action: safeVisibleStringSchema,
+  resource: safeVisibleStringSchema,
+  resourceId: safeVisibleStringSchema,
+  details: z.record(z.any()).optional()
+}).strict();
 
 const kycStatusParamSchema = z.object({
   userId: supportedIdSchema
@@ -86,13 +91,13 @@ const dataDeletionLogSchema = z.object({
 });
 
 const dataRetentionPolicySchema = z.object({
-  dataType: z.string().min(1),
+  dataType: safeVisibleStringSchema,
   retentionPeriod: z.number().int().positive(),
-  legalBasis: z.string().min(1),
-  applicableLaw: z.string().min(1),
+  legalBasis: safeVisibleStringSchema,
+  applicableLaw: safeVisibleStringSchema,
   autoDelete: z.boolean().default(true),
-  nextReviewDate: z.coerce.date()
-});
+  nextReviewDate: z.string().datetime().transform((value) => new Date(value))
+}).strict();
 
 const dataProcessingRecordSchema = z.object({
   purpose: z.string().min(1),

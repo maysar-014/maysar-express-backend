@@ -1,6 +1,7 @@
-import Redis from 'ioredis';
+import { attachRedisErrorHandlers, getSharedRedisClient, resolveRedisUrl } from '@shared/redis/ioredis-client';
 
-export const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+export const redis = getSharedRedisClient(resolveRedisUrl(process.env.REDIS_URL));
+attachRedisErrorHandlers(redis, 'auth-service-cache');
 
 export async function initializeRedis(): Promise<void> {
   await redis.ping();

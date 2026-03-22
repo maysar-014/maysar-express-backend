@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\config\_fuzz.py
+# hypothesis_version: 6.151.9
+
+['max-steps', 'max-time', 'max_steps', 'max_time']

@@ -30,7 +30,9 @@ export class PreferenceController {
   async updatePreferences(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
-      const { channel, ...dto } = req.body as { channel: string; [k: string]: any };
+      const requestedChannel = (req.body as { channel?: string } | undefined)?.channel;
+      const channel = requestedChannel;
+      const { channel: _channel, ...dto } = req.body as { channel: string; [k: string]: any };
       if (!channel) {
         res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message: 'Channel is required' } });
         return;
@@ -56,7 +58,8 @@ export class PreferenceController {
   async optOut(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
-      const { channel } = req.body as { channel: string };
+      const requestedChannel = (req.body as { channel?: string } | undefined)?.channel;
+      const channel = requestedChannel;
       if (!channel) {
         res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message: 'Channel is required' } });
         return;

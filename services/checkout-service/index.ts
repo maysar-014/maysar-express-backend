@@ -12,6 +12,7 @@ import { CartController } from './src/api/controllers/cart.controller';
 import { CheckoutController } from './src/api/controllers/checkout.controller';
 import { register as metricsRegistry } from './src/infrastructure/monitoring/metrics';
 import { prisma } from './src/infrastructure/database/prisma-client';
+import { requireAuth, requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 export const CheckoutModule: Module = {
     name: 'checkout-service',
@@ -31,13 +32,15 @@ export const CheckoutModule: Module = {
         new CheckoutEventHandlers(eventBus, checkoutRepository, checkoutOrderRepository);
 
         router.use('/health', healthRoutes);
-        router.use('/', createCheckoutRoutes(cartController, checkoutController));
-        router.use('/system/maintenance', createMaintenanceRoutes());
-
+        router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
         router.get('/metrics', async (_req, res) => {
             res.set('Content-Type', metricsRegistry.contentType);
             res.end(await metricsRegistry.metrics());
         });
+
+        // Require authentication for checkout flows
+        router.use(requireAuth);
+        router.use('/', createCheckoutRoutes(cartController, checkoutController));
 
         return router;
     })(),
@@ -45,3 +48,6 @@ export const CheckoutModule: Module = {
         console.log('Shutting down checkout-service module');
     }
 };
+
+
+

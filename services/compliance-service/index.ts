@@ -6,6 +6,7 @@ import { createApp } from './src/complianceService';
 import { PrismaClient } from '@prisma/client';
 import { eventBus } from '../../shared/events/eventBus';
 import { createPrismaClient } from '@shared/database/prisma-client';
+import { requireAuth } from '@shared/middleware/auth-context.middleware';
 
 // Initialize Tracing
 tracingService.start();
@@ -25,6 +26,7 @@ export const ComplianceModule: Module = {
             res.end(await metricsRegistry.metrics());
         });
         const complianceApp = createApp(prisma, eventBus);
+        router.use(requireAuth);
         router.use(complianceApp);
         return router;
     })(),

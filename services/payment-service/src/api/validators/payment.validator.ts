@@ -8,7 +8,7 @@ export const createPaymentSchema = z.object({
         userId: zodId().optional(),
         amount: z.number().positive(),
         currency: z.string().length(3).default('TZS'),
-        method: z.enum(['MOBILE_MONEY', 'CARD', 'BANK_TRANSFER']),
+        method: z.enum(['MOBILE_MONEY', 'MPESA', 'AIRTEL_MONEY', 'TIGO_PESA', 'HALOPESA', 'WALLET', 'CARD', 'BANK_TRANSFER']),
         phoneNumber: z.string().regex(/^\+?[1-9]\d{1,14}$/).optional(),
         customerName: z.string().optional(),
         customerEmail: z.string().email().optional(),

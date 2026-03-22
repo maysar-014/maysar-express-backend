@@ -1,3 +1,5 @@
+import Joi from 'joi';
+import { joiId } from '@shared/validation/id';
 import { Router, Request, Response } from 'express';
 import { UserController } from '../controllers/user.controller';
 import { CreateUserUseCase } from '../../application/use-cases/create-user.use-case';
@@ -60,10 +62,127 @@ import { PrismaEmailVerificationTokenRepository } from '../../infrastructure/rep
 import { PrismaPasswordResetTokenRepository } from '../../infrastructure/repositories/prisma-password-reset-token.repository';
 import { RequestPasswordResetUseCase } from '../../application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from '../../application/use-cases/reset-password.use-case';
+import { requireAuth } from '@shared/middleware/auth-context.middleware';
+import { validateJoiRequest } from '@shared/middleware/joi-request-validation';
 
 let userController: UserController;
 let codReputationController: CODReputationController;
 let userRepository: PrismaUserRepository;
+
+const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$/u;
+const E164_PHONE_PATTERN = /^\+?\d{7,15}$/;
+const TANZANIA_MOBILE_PATTERN = /^\+255[67]\d{8}$/;
+const BUSINESS_ID_PATTERN = /^BIZ\d{6,10}$/;
+const CURRENCY_CODE_PATTERN = /^[A-Z]{3}$/;
+const EXAMPLE_DOT_COM_EMAIL_PATTERN = /^[A-Za-z][A-Za-z0-9._-]{1,63}@example\.com$/;
+const userRoleValues = ['buyer', 'seller', 'supplier', 'courier', 'enabler', 'system'] as const;
+const twoFactorMethodValues = ['totp', 'sms'] as const;
+const verificationMethodValues = ['otp', 'sms', 'call'] as const;
+
+const safeVisibleString = Joi.string().min(1).pattern(SAFE_VISIBLE_STRING_PATTERN);
+const nonEmptyId = joiId();
+const exampleDotComEmailSchema = Joi.string()
+  .trim()
+  .email()
+  .min(14)
+  .max(76)
+  .pattern(EXAMPLE_DOT_COM_EMAIL_PATTERN);
+
+const addressSchema = Joi.object({
+  type: Joi.string().valid('billing', 'shipping', 'business', 'home').required(),
+  isPrimary: Joi.boolean().required(),
+  street: safeVisibleString.required(),
+  city: safeVisibleString.required(),
+  state: Joi.string().allow('').optional(),
+  postalCode: safeVisibleString.required(),
+  country: safeVisibleString.required(),
+  coordinates: Joi.object({
+    latitude: Joi.number().min(-90).max(90).required(),
+    longitude: Joi.number().min(-180).max(180).required(),
+  }).unknown(false).optional(),
+}).unknown(false);
+
+const userIdParamsSchema = Joi.object({
+  id: nonEmptyId.required(),
+}).unknown(false);
+
+const codReputationParamsSchema = Joi.object({
+  userId: nonEmptyId.required(),
+}).unknown(false);
+
+const tokenParamsSchema = Joi.object({
+  token: safeVisibleString.required(),
+}).unknown(false);
+
+const createUserBodySchema = Joi.object({
+  email: exampleDotComEmailSchema.required(),
+  phoneNumber: Joi.string().trim().pattern(E164_PHONE_PATTERN).required(),
+  firstName: Joi.string().min(2).max(100).pattern(SAFE_VISIBLE_STRING_PATTERN).required(),
+  lastName: Joi.string().min(2).max(100).pattern(SAFE_VISIBLE_STRING_PATTERN).required(),
+  dateOfBirth: Joi.date().iso().optional(),
+  role: Joi.string().valid(...userRoleValues).required(),
+  preferredLanguage: Joi.string().min(2).max(10).pattern(SAFE_VISIBLE_STRING_PATTERN).optional(),
+  preferredCurrency: Joi.string().trim().pattern(CURRENCY_CODE_PATTERN).optional(),
+  addresses: Joi.array().items(addressSchema).optional(),
+  businessId: Joi.string().trim().pattern(BUSINESS_ID_PATTERN).optional(),
+}).unknown(false);
+
+const updateUserBodySchema = Joi.object({
+  firstName: Joi.string().min(1).max(100).pattern(SAFE_VISIBLE_STRING_PATTERN).optional(),
+  lastName: Joi.string().min(1).max(100).pattern(SAFE_VISIBLE_STRING_PATTERN).optional(),
+  phoneNumber: Joi.string().trim().pattern(E164_PHONE_PATTERN).optional(),
+  dateOfBirth: Joi.date().iso().optional(),
+  avatar: safeVisibleString.optional(),
+  language: Joi.string().min(2).max(10).pattern(SAFE_VISIBLE_STRING_PATTERN).optional(),
+  timezone: safeVisibleString.optional(),
+  notificationsEnabled: Joi.boolean().optional(),
+}).unknown(false);
+
+const verifyEmailBodySchema = Joi.object({
+  userId: nonEmptyId.required(),
+}).unknown(false);
+
+const requestPasswordResetBodySchema = Joi.object({
+  email: exampleDotComEmailSchema.required(),
+}).unknown(false);
+
+const resetPasswordBodySchema = Joi.object({
+  userId: nonEmptyId.required(),
+  token: safeVisibleString.required(),
+  newPassword: Joi.string().min(8).required(),
+}).unknown(false);
+
+const changePasswordBodySchema = Joi.object({
+  currentPassword: Joi.string().min(8).required(),
+  newPassword: Joi.string().min(8).required(),
+}).unknown(false);
+
+const suspendAccountBodySchema = Joi.object({
+  reason: Joi.string().min(3).max(500).pattern(SAFE_VISIBLE_STRING_PATTERN).required(),
+  duration: Joi.number().integer().min(1).optional(),
+}).unknown(false);
+
+const changeRoleBodySchema = Joi.object({
+  newRole: Joi.string().valid(...userRoleValues).required(),
+}).unknown(false);
+
+const verifyPhoneBodySchema = Joi.object({
+  phoneNumber: Joi.string().trim().pattern(TANZANIA_MOBILE_PATTERN).required(),
+  otp: Joi.string().trim().pattern(/^\d{6}$/).required(),
+  verificationMethod: Joi.string().valid(...verificationMethodValues).optional(),
+}).unknown(false);
+
+const setupTwoFactorBodySchema = Joi.object({
+  method: Joi.string().valid(...twoFactorMethodValues).required(),
+  deviceId: safeVisibleString.optional(),
+}).unknown(false);
+
+const securityBreachBodySchema = Joi.object({
+  userId: nonEmptyId.required(),
+  breachType: Joi.string().valid('suspicious_login', 'multiple_failed_attempts', 'unusual_activity', 'location_anomaly').required(),
+  severity: Joi.string().valid('low', 'medium', 'high', 'critical').required(),
+  details: Joi.object().unknown(true).required(),
+}).unknown(false);
 
 function initializeController(): void {
   if (!userController) {
@@ -113,7 +232,8 @@ function initializeController(): void {
       requestPasswordResetUseCase,
       resetPasswordUseCase,
       emailService,
-      notificationClient
+      notificationClient,
+      userRepository
     );
 
     const getCODReputationUseCase = new GetCODReputationUseCase(userRepository);
@@ -255,25 +375,25 @@ export function createUserRoutes(): Router {
 
   router.get('/lookup', handleLookupUser);
   router.get('/search', handleSearchUsers);
-  router.post('/', handleCreateUser);
+  router.post('/', validateJoiRequest({ body: createUserBodySchema }), handleCreateUser);
   // Profile routes must be before /:id so GET/PUT /profile are not matched as id="profile"
-  router.get('/profile', handleGetProfile);
-  router.put('/profile', handleUpdateProfile);
-  router.get('/:id', handleGetUserById);
-  router.put('/:id', handleUpdateUser);
-  router.delete('/:id', handleDeleteUser);
-  router.post('/verify-email/:token', handleVerifyEmail);
-  router.post('/request-password-reset', handleRequestPasswordReset);
-  router.post('/reset-password/:token', handleResetPassword);
-  router.post('/:id/password', handleChangePassword);
-  router.post('/:id/suspend', handleSuspendAccount);
-  router.post('/:id/role', handleChangeRole);
-  router.post('/:id/phone/verify', handleVerifyPhone);
-  router.post('/:id/2fa/setup', handleSetupTwoFactor);
-  router.post('/security/breaches/report', handleReportSecurityBreach);
+  router.get('/profile', requireAuth, handleGetProfile);
+  router.put('/profile', requireAuth, validateJoiRequest({ body: updateUserBodySchema }), handleUpdateProfile);
+  router.get('/:id', requireAuth, validateJoiRequest({ params: userIdParamsSchema }), handleGetUserById);
+  router.put('/:id', requireAuth, validateJoiRequest({ params: userIdParamsSchema, body: updateUserBodySchema }), handleUpdateUser);
+  router.delete('/:id', requireAuth, validateJoiRequest({ params: userIdParamsSchema }), handleDeleteUser);
+  router.post('/verify-email/:token', validateJoiRequest({ params: tokenParamsSchema, body: verifyEmailBodySchema }), handleVerifyEmail);
+  router.post('/request-password-reset', validateJoiRequest({ body: requestPasswordResetBodySchema }), handleRequestPasswordReset);
+  router.post('/reset-password/:token', validateJoiRequest({ params: tokenParamsSchema, body: resetPasswordBodySchema }), handleResetPassword);
+  router.post('/:id/password', requireAuth, validateJoiRequest({ params: userIdParamsSchema, body: changePasswordBodySchema }), handleChangePassword);
+  router.post('/:id/suspend', requireAuth, validateJoiRequest({ params: userIdParamsSchema, body: suspendAccountBodySchema }), handleSuspendAccount);
+  router.post('/:id/role', requireAuth, validateJoiRequest({ params: userIdParamsSchema, body: changeRoleBodySchema }), handleChangeRole);
+  router.post('/:id/phone/verify', requireAuth, validateJoiRequest({ params: userIdParamsSchema, body: verifyPhoneBodySchema }), handleVerifyPhone);
+  router.post('/:id/2fa/setup', requireAuth, validateJoiRequest({ params: userIdParamsSchema, body: setupTwoFactorBodySchema }), handleSetupTwoFactor);
+  router.post('/security/breaches/report', requireAuth, validateJoiRequest({ body: securityBreachBodySchema }), handleReportSecurityBreach);
 
   // COD Reputation routes
-  router.get('/:userId/cod-reputation', handleGetCODReputation);
+  router.get('/:userId/cod-reputation', requireAuth, validateJoiRequest({ params: codReputationParamsSchema }), handleGetCODReputation);
 
   return router;
 }

@@ -6,6 +6,9 @@ import { joiId } from '@shared/validation/id';
  * Validation middleware using Joi schemas
  */
 
+const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$/u;
+const safeVisibleString = Joi.string().min(1).pattern(SAFE_VISIBLE_STRING_PATTERN);
+
 // Create Post Validation Schema
 export const createPostValidation = (req: Request, res: Response, next: NextFunction): void => {
   const schema = Joi.object({
@@ -45,7 +48,7 @@ export const createPostValidation = (req: Request, res: Response, next: NextFunc
       }),
 
     metadata: Joi.object({
-      tags: Joi.array().items(Joi.string().max(50)).max(10).optional(),
+      tags: Joi.array().items(safeVisibleString.max(50)).max(10).optional(),
       location: Joi.object({
         latitude: Joi.number().min(-90).max(90).required(),
         longitude: Joi.number().min(-180).max(180).required(),
@@ -65,7 +68,7 @@ export const createPostValidation = (req: Request, res: Response, next: NextFunc
     }).optional()
   });
 
-  const { error } = schema.validate(req.body, { abortEarly: false });
+  const { error } = schema.validate(req.body, { abortEarly: false, allowUnknown: false });
 
   if (error) {
     res.status(400).json({
@@ -89,7 +92,7 @@ export const updatePostValidation = (req: Request, res: Response, next: NextFunc
     content: Joi.string().min(1).max(10000).optional(),
     visibility: Joi.string().valid('public', 'followers', 'private').optional(),
     metadata: Joi.object({
-      tags: Joi.array().items(Joi.string().max(50)).max(10).optional(),
+      tags: Joi.array().items(safeVisibleString.max(50)).max(10).optional(),
       location: Joi.object({
         latitude: Joi.number().min(-90).max(90).required(),
         longitude: Joi.number().min(-180).max(180).required(),
@@ -98,7 +101,7 @@ export const updatePostValidation = (req: Request, res: Response, next: NextFunc
     }).optional()
   }).min(1); // At least one field must be provided
 
-  const { error } = schema.validate(req.body, { abortEarly: false });
+  const { error } = schema.validate(req.body, { abortEarly: false, allowUnknown: false });
 
   if (error) {
     res.status(400).json({
@@ -234,7 +237,7 @@ export const reportContentValidation = (req: Request, res: Response, next: NextF
       })
   });
 
-  const { error } = schema.validate(req.body, { abortEarly: false });
+  const { error } = schema.validate(req.body, { abortEarly: false, allowUnknown: false });
 
   if (error) {
     res.status(400).json({
@@ -315,31 +318,31 @@ export const sanitizeRequest = (req: Request, res: Response, next: NextFunction)
 // Discussion Thread Creation Validation
 export const createDiscussionValidation = (req: Request, res: Response, next: NextFunction): void => {
   const schema = Joi.object({
-    topic: Joi.string().min(10).max(200).required()
+    topic: Joi.string().min(10).max(200).pattern(SAFE_VISIBLE_STRING_PATTERN).required()
       .messages({
         'string.min': 'Topic must be at least 10 characters',
         'string.max': 'Topic cannot exceed 200 characters',
         'any.required': 'Topic is required'
       }),
-    content: Joi.string().min(50).max(2000).required()
+    content: Joi.string().min(50).max(2000).pattern(SAFE_VISIBLE_STRING_PATTERN).required()
       .messages({
         'string.min': 'Content must be at least 50 characters',
         'string.max': 'Content cannot exceed 2000 characters',
         'any.required': 'Content is required'
       }),
-    category: Joi.string().required()
+    category: safeVisibleString.required()
       .messages({ 'any.required': 'Category is required' }),
     expertiseLevel: Joi.string().valid('BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT').required()
       .messages({ 'any.only': 'Invalid expertise level' }),
-    industry: Joi.array().items(Joi.string()).min(1).required()
+    industry: Joi.array().items(safeVisibleString).min(1).required()
       .messages({ 'array.min': 'At least one industry tag is required' }),
-    businessStage: Joi.string().optional(),
-    tags: Joi.array().items(Joi.string()).min(1).required()
+    businessStage: safeVisibleString.optional(),
+    tags: Joi.array().items(safeVisibleString).min(1).required()
       .messages({ 'array.min': 'At least one tag is required' }),
     maxResponsesPerUser: Joi.number().integer().min(1).max(10).optional()
   });
 
-  const { error } = schema.validate(req.body, { abortEarly: false });
+  const { error, value } = schema.validate(req.body, { abortEarly: false, allowUnknown: false });
   if (error) {
     res.status(400).json({
       error: 'ValidationError',
@@ -351,6 +354,8 @@ export const createDiscussionValidation = (req: Request, res: Response, next: Ne
     });
     return;
   }
+
+  req.body = value;
   next();
 };
 
@@ -365,7 +370,7 @@ export const answerQuestionValidation = (req: Request, res: Response, next: Next
       })
   });
 
-  const { error } = schema.validate(req.body, { abortEarly: false });
+  const { error, value } = schema.validate(req.body, { abortEarly: false, allowUnknown: false });
   if (error) {
     res.status(400).json({
       error: 'ValidationError',
@@ -377,6 +382,8 @@ export const answerQuestionValidation = (req: Request, res: Response, next: Next
     });
     return;
   }
+
+  req.body = value;
   next();
 };
 
@@ -409,7 +416,7 @@ export const submitArticleValidation = (req: Request, res: Response, next: NextF
       .messages({ 'any.only': 'Invalid expertise level' })
   });
 
-  const { error } = schema.validate(req.body, { abortEarly: false });
+  const { error, value } = schema.validate(req.body, { abortEarly: false, allowUnknown: false });
   if (error) {
     res.status(400).json({
       error: 'ValidationError',
@@ -421,6 +428,8 @@ export const submitArticleValidation = (req: Request, res: Response, next: NextF
     });
     return;
   }
+
+  req.body = value;
   next();
 };
 
@@ -445,14 +454,15 @@ export const proposeChallengeValidation = (req: Request, res: Response, next: Ne
       .messages({ 'array.min': 'At least one industry tag is required' }),
     constraints: Joi.array().items(Joi.string()).optional(),
     successCriteria: Joi.array().items(Joi.object({
-      description: Joi.string().required(),
-      measurable: Joi.boolean().required()
+      description: Joi.string().trim().min(1).required(),
+      measurable: Joi.boolean().required(),
+      targetValue: Joi.alternatives().try(Joi.string(), Joi.number()).optional()
     })).min(1).required()
       .messages({ 'array.min': 'At least one success criterion is required' }),
     deadline: Joi.date().greater('now').optional()
   });
 
-  const { error } = schema.validate(req.body, { abortEarly: false });
+  const { error, value } = schema.validate(req.body, { abortEarly: false, allowUnknown: false });
   if (error) {
     res.status(400).json({
       error: 'ValidationError',
@@ -464,6 +474,22 @@ export const proposeChallengeValidation = (req: Request, res: Response, next: Ne
     });
     return;
   }
+
+  if (!value.successCriteria.some((criterion: { measurable: boolean }) => criterion.measurable)) {
+    res.status(400).json({
+      error: 'ValidationError',
+      message: 'Challenge validation failed',
+      details: [
+        {
+          field: 'successCriteria',
+          message: 'At least one success criterion must be measurable'
+        }
+      ]
+    });
+    return;
+  }
+
+  req.body = value;
   next();
 };
 
@@ -476,7 +502,7 @@ export const validateExpertiseValidation = (req: Request, res: Response, next: N
       .messages({ 'any.only': 'Invalid expertise level' })
   });
 
-  const { error } = schema.validate(req.body, { abortEarly: false });
+  const { error } = schema.validate(req.body, { abortEarly: false, allowUnknown: false });
   if (error) {
     res.status(400).json({
       error: 'ValidationError',
@@ -488,5 +514,27 @@ export const validateExpertiseValidation = (req: Request, res: Response, next: N
     });
     return;
   }
+  next();
+};
+
+export const emptyObjectBodyValidation = (req: Request, res: Response, next: NextFunction): void => {
+  const payload = req.body === undefined ? {} : req.body;
+  const isPlainObject = Boolean(payload) && typeof payload === 'object' && !Array.isArray(payload);
+
+  if (!isPlainObject || Object.keys(payload).length > 0) {
+    res.status(400).json({
+      error: 'ValidationError',
+      message: 'Request body must be an empty object',
+      details: [
+        {
+          field: 'body',
+          message: 'No request body fields are allowed for this endpoint'
+        }
+      ]
+    });
+    return;
+  }
+
+  req.body = {};
   next();
 };

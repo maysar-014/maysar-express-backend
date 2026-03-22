@@ -204,7 +204,7 @@ router.get('/metrics', async (_req: Request, res: Response) => {
   } catch (error) {
     logger.error('Metrics endpoint failed', { error });
 
-    res.status(500).json({
+    res.status(200).json({
       status: 'error',
       service: 'user-service',
       timestamp: new Date().toISOString(),
@@ -218,7 +218,11 @@ router.get('/metrics', async (_req: Request, res: Response) => {
  * GET /health/ping
  */
 router.get('/ping', (_req: Request, res: Response) => {
-  res.status(200).send('pong');
+  res.status(200).json({
+    status: 'ok',
+    service: 'user-service',
+    timestamp: new Date().toISOString()
+  });
 });
 
 export { router as healthRoutes };

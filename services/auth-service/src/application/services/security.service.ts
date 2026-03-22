@@ -1,4 +1,4 @@
-import { getModelPrefix, makeId } from '@shared/ids/id';
+import { getModelPrefix, isSystemId, makeId } from '@shared/ids/id';
 import { prisma } from '../../infrastructure/database/prisma-client';
 import { logger } from '../../infrastructure/services/logger.service';
 
@@ -22,16 +22,23 @@ export class SecurityService {
     details: any;
   }): Promise<void> {
     try {
+      const auditLogDelegate = (prisma as any).auditLog;
+      if (!auditLogDelegate || typeof auditLogDelegate.create !== 'function') {
+        logger.warn('SecurityService.logSecurityEvent skipped: auditLog delegate unavailable');
+        return;
+      }
+
       const metadata = {
         securityType: event.type,
         sessionId: event.sessionId,
         details: event.details
       };
 
-      await prisma.auditLog.create({
+      const userId = isSystemId(event.userId) ? event.userId : undefined;
+      await auditLogDelegate.create({
         data: {
           id: makeId(securityAuditPrefix),
-          userId: event.userId,
+          userId,
           email: event.details?.email,
           action: `security:${event.type}`,
           ipAddress: event.ipAddress,
@@ -44,7 +51,6 @@ export class SecurityService {
       });
     } catch (error) {
       logger.error('SecurityService.logSecurityEvent error', { error, event });
-      throw error;
     }
   }
 
@@ -57,6 +63,12 @@ export class SecurityService {
     limit?: number;
   }): Promise<any[]> {
     try {
+      const auditLogDelegate = (prisma as any).auditLog;
+      if (!auditLogDelegate || typeof auditLogDelegate.findMany !== 'function') {
+        logger.warn('SecurityService.getSecurityEvents skipped: auditLog delegate unavailable');
+        return [];
+      }
+
       const hours = params.hours ?? 24;
       const limit = params.limit ?? 100;
       const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
@@ -73,7 +85,7 @@ export class SecurityService {
         };
       }
 
-      const records = await prisma.auditLog.findMany({
+      const records = await auditLogDelegate.findMany({
         where,
         orderBy: { timestamp: 'desc' },
         take: limit

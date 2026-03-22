@@ -1,8 +1,15 @@
+import { Prisma } from '@prisma/client';
 import { IEnablerOrderRepository } from '../../domain/repositories/enabler-order.repository.interface';
 import { EnablerOrderEntity } from '../../domain/entities/enabler-order.entity';
 import prisma from '../database/prisma-client';
 
 export class PrismaEnablerOrderRepository implements IEnablerOrderRepository {
+    private normalizeMetadata(metadata: Record<string, any> | null | undefined) {
+        if (metadata === null) {
+            return Prisma.JsonNull;
+        }
+        return metadata ?? undefined;
+    }
 
     async findById(id: string): Promise<EnablerOrderEntity | null> {
         const data = await prisma.enabler_Order.findUnique({ where: { id } });
@@ -33,8 +40,32 @@ export class PrismaEnablerOrderRepository implements IEnablerOrderRepository {
 
     async save(order: EnablerOrderEntity): Promise<void> {
         const data = order.toPlainObject();
-        await prisma.enabler_Order.create({
-            data: {
+        await prisma.enabler_Order.upsert({
+            where: { orderId: data.orderId },
+            update: {
+                id: data.id,
+                enablerId: data.enablerId,
+                sellerId: data.sellerId,
+                buyerId: data.buyerId,
+                productListingId: data.productListingId,
+                status: data.status,
+                orderAmount: data.orderAmount,
+                productAmount: data.productAmount,
+                enablerCommission: data.enablerCommission,
+                platformFee: data.platformFee,
+                commissionRate: data.commissionRate,
+                tierBonus: data.tierBonus,
+                performanceBonus: data.performanceBonus,
+                settlementStatus: data.settlementStatus,
+                sellerPaidAt: data.sellerPaidAt,
+                enablerPaidAt: data.enablerPaidAt,
+                cancelledAt: data.cancelledAt,
+                cancellationReason: data.cancellationReason,
+                disputeStatus: data.disputeStatus,
+                metadata: this.normalizeMetadata(data.metadata),
+                updatedAt: data.updatedAt
+            },
+            create: {
                 id: data.id,
                 enablerId: data.enablerId,
                 orderId: data.orderId,
@@ -45,8 +76,17 @@ export class PrismaEnablerOrderRepository implements IEnablerOrderRepository {
                 orderAmount: data.orderAmount,
                 productAmount: data.productAmount,
                 enablerCommission: data.enablerCommission,
+                platformFee: data.platformFee,
                 commissionRate: data.commissionRate,
+                tierBonus: data.tierBonus,
+                performanceBonus: data.performanceBonus,
                 settlementStatus: data.settlementStatus,
+                sellerPaidAt: data.sellerPaidAt,
+                enablerPaidAt: data.enablerPaidAt,
+                cancelledAt: data.cancelledAt,
+                cancellationReason: data.cancellationReason,
+                disputeStatus: data.disputeStatus,
+                metadata: this.normalizeMetadata(data.metadata),
                 createdAt: data.createdAt,
                 updatedAt: data.updatedAt
             }

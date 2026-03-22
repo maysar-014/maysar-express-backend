@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\cli\output.py
+# hypothesis_version: 6.151.9
+
+[240, 1000, '-', 'Loading', 'PYTEST_VERSION', 'PYTHONIOENCODING', 'Schema Loading Error', 'bright_white', 'clock', 'console', 'cyan', 'dev', 'green', 'is_interrupted', 'location', 'progress', 'progress_task_id', 'red', 'replace', 'start_time', 'utf-8', 'v', 'white', 'width', 'yellow', '━', '⚡  ', '✅  ', '❌  ']

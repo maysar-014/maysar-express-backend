@@ -77,7 +77,7 @@ export class PayoutPolicy {
         }
 
         // Check payout schedule
-        const nextPayoutDate = this.getNextPayoutDate(lastPayoutDate);
+        const nextPayoutDate = lastPayoutDate ? this.getNextPayoutDate(lastPayoutDate) : undefined;
         const now = new Date();
         if (nextPayoutDate && now < nextPayoutDate) {
             reasons.push(

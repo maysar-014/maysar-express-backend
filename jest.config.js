@@ -368,6 +368,11 @@ module.exports = {
       moduleNameMapper: {
         '^uuid$': require.resolve('uuid'),
       }
+    },
+    {
+      displayName: 'contract-scripts',
+      testEnvironment: 'node',
+      testMatch: ['<rootDir>/scripts/contract/**/*.test.js']
     }
   ],
 

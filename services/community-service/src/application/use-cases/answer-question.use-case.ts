@@ -78,6 +78,10 @@ export class AnswerQuestionUseCase {
         }
 
         // 4. Validate answer length
+        if (typeof request.content !== 'string' || !request.content.trim()) {
+            throw new Error('Answer content is required');
+        }
+
         if (request.content.length < AnswerQuestionUseCase.MIN_ANSWER_LENGTH) {
             throw new Error(`Answer must be at least ${AnswerQuestionUseCase.MIN_ANSWER_LENGTH} characters`);
         }

@@ -14,6 +14,31 @@ import { prisma } from '../database/prisma-client';
 export class PrismaCommissionRepository implements ICommissionRepository {
   constructor(private prismaClient: PrismaClient = prisma) {}
 
+  private toDomain(data: any): Commission | null {
+    try {
+      return new Commission(
+        CommissionId.fromString(data.id),
+        OrderId.fromString(data.orderId),
+        SellerId.fromString(data.sellerId),
+        CommissionAmount.fromNumber(Number(data.amount)),
+        CommissionRate.fromDecimal(Number(data.rate)),
+        data.type as CommissionType,
+        data.status as CommissionStatus,
+        data.createdAt,
+        data.paidAt || undefined,
+        data.payoutId || undefined,
+        data.metadata as Record<string, any> || undefined
+      );
+    } catch (error) {
+      console.warn('Skipping malformed commission record', {
+        id: data?.id,
+        sellerId: data?.sellerId,
+        error: error instanceof Error ? error.message : error
+      });
+      return null;
+    }
+  }
+
   async save(commission: Commission): Promise<void> {
     const data = {
       id: commission.id.toString(),
@@ -43,19 +68,7 @@ export class PrismaCommissionRepository implements ICommissionRepository {
 
     if (!data) return null;
 
-    return new Commission(
-      CommissionId.fromString(data.id),
-      OrderId.fromString(data.orderId),
-      SellerId.fromString(data.sellerId),
-      CommissionAmount.fromNumber(Number(data.amount)),
-      CommissionRate.fromDecimal(Number(data.rate)),
-      data.type as CommissionType,
-      data.status as CommissionStatus,
-      data.createdAt,
-      data.paidAt || undefined,
-      data.payoutId || undefined,
-      data.metadata as Record<string, any> || undefined
-    );
+    return this.toDomain(data);
   }
 
   async findByOrderId(orderId: OrderId): Promise<Commission[]> {
@@ -63,19 +76,9 @@ export class PrismaCommissionRepository implements ICommissionRepository {
       where: { orderId: orderId.toString() }
     });
 
-    return commissions.map((data: any) => new Commission(
-      CommissionId.fromString(data.id),
-      OrderId.fromString(data.orderId),
-      SellerId.fromString(data.sellerId),
-      CommissionAmount.fromNumber(data.amount),
-      CommissionRate.fromDecimal(data.rate),
-      data.type as CommissionType,
-      data.status as CommissionStatus,
-      data.createdAt,
-      data.paidAt || undefined,
-      data.payoutId || undefined,
-      data.metadata as Record<string, any> || undefined
-    ));
+    return commissions
+      .map((data: any) => this.toDomain(data))
+      .filter((commission): commission is Commission => commission !== null);
   }
 
   async findBySellerId(sellerId: SellerId): Promise<Commission[]> {
@@ -84,19 +87,9 @@ export class PrismaCommissionRepository implements ICommissionRepository {
       orderBy: { createdAt: 'desc' }
     });
 
-    return commissions.map((data: any) => new Commission(
-      CommissionId.fromString(data.id),
-      OrderId.fromString(data.orderId),
-      SellerId.fromString(data.sellerId),
-      CommissionAmount.fromNumber(data.amount),
-      CommissionRate.fromDecimal(data.rate),
-      data.type as CommissionType,
-      data.status as CommissionStatus,
-      data.createdAt,
-      data.paidAt || undefined,
-      data.payoutId || undefined,
-      data.metadata as Record<string, any> || undefined
-    ));
+    return commissions
+      .map((data: any) => this.toDomain(data))
+      .filter((commission): commission is Commission => commission !== null);
   }
 
   async findByStatus(status: CommissionStatus): Promise<Commission[]> {
@@ -105,19 +98,9 @@ export class PrismaCommissionRepository implements ICommissionRepository {
       orderBy: { createdAt: 'desc' }
     });
 
-    return commissions.map((data: any) => new Commission(
-      CommissionId.fromString(data.id),
-      OrderId.fromString(data.orderId),
-      SellerId.fromString(data.sellerId),
-      CommissionAmount.fromNumber(data.amount),
-      CommissionRate.fromDecimal(data.rate),
-      data.type as CommissionType,
-      data.status as CommissionStatus,
-      data.createdAt,
-      data.paidAt || undefined,
-      data.payoutId || undefined,
-      data.metadata as Record<string, any> || undefined
-    ));
+    return commissions
+      .map((data: any) => this.toDomain(data))
+      .filter((commission): commission is Commission => commission !== null);
   }
 
   async findPendingCommissions(): Promise<Commission[]> {

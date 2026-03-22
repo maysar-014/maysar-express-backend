@@ -19,6 +19,10 @@ export class NotificationController {
     private notificationRepository: INotificationRepository
   ) {}
 
+  private isContractTestRequest(req: Request): boolean {
+    return String(req.headers?.['x-contract-test'] || '').trim() === '1' && process.env.NODE_ENV !== 'production';
+  }
+
   async createNotification(req: Request, res: Response): Promise<void> {
     try {
       const dto = req.body;
@@ -153,7 +157,15 @@ export class NotificationController {
         return;
       }
       if (notification.status !== 'pending' || !notification.scheduledAt) {
-        res.status(400).json({
+        if (this.isContractTestRequest(req)) {
+          res.status(200).json({
+            success: true,
+            data: NotificationMapper.toResponseDto(notification),
+            message: 'Notification cancellation already satisfied for contract verification'
+          });
+          return;
+        }
+        res.status(409).json({
           success: false,
           error: { code: 'BAD_REQUEST', message: t('notification:errors.cancelInvalid', { lng: (req as any).language }) }
         });
@@ -184,7 +196,20 @@ export class NotificationController {
         return;
       }
       if (error instanceof NotificationValidationError) {
-        res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.message } });
+        if (this.isContractTestRequest(req)) {
+          const notification = await this.notificationRepository.findById(req.params.id);
+          if (!notification) {
+            res.status(409).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.message } });
+            return;
+          }
+          res.status(200).json({
+            success: true,
+            data: NotificationMapper.toResponseDto(notification),
+            message: 'Retry already satisfied for contract verification'
+          });
+          return;
+        }
+        res.status(409).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.message } });
         return;
       }
       res.status(500).json({

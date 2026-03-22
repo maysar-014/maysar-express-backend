@@ -3,6 +3,7 @@ import { validateRequest } from '../middleware/validation.middleware';
 import { asyncHandler } from '../middleware/error-handler.middleware';
 import { rateLimit } from '../middleware/rate-limiting.middleware';
 import { csrfValidationMiddleware } from '@shared/middleware/csrf.middleware';
+import { requireAuth } from '@shared/middleware/auth-context.middleware';
 
 const parseLimit = (value: string | undefined, fallback: number): number => {
   if (!value) return fallback;
@@ -33,16 +34,17 @@ export const createAuthRoutes = (authController: any): Router => { // Using any 
     validateRequest({
       body: {
         email: { type: 'string', required: true, format: 'email' },
-        phoneNumber: { type: 'string', required: false, pattern: /^[+]?[\d\s().-]{7,20}$/ },
-        firstName: { type: 'string', required: false, minLength: 2 },
-        lastName: { type: 'string', required: false, minLength: 2 },
+        phoneNumber: { type: 'string', required: true, pattern: /^[+]?[\d\s().-]{7,20}$/ },
+        firstName: { type: 'string', required: true, minLength: 2, maxLength: 100, pattern: /^(?=.*\S).+$/ },
+        lastName: { type: 'string', required: true, minLength: 2, maxLength: 100, pattern: /^(?=.*\S).+$/ },
         role: {
           type: 'string',
           required: false,
           enum: ['buyer', 'seller', 'courier', 'supplier', 'enabler', 'system', 'admin', 'user']
         },
+        phone: { type: 'string', required: false, pattern: /^[+]?[\d\s().-]{7,20}$/ },
         profile: { type: 'object', required: false },
-        password: { type: 'string', required: false, minLength: 8 }
+        password: { type: 'string', required: true, minLength: 8 }
       }
     }),
     asyncHandler(authController.register.bind(authController))
@@ -96,6 +98,7 @@ export const createAuthRoutes = (authController: any): Router => { // Using any 
    */
   router.get(
     '/verify',
+    requireAuth,
     validateRequest({
       headers: {
         authorization: { type: 'string', required: true, pattern: /^Bearer\s+/ }
@@ -135,7 +138,7 @@ export const createAuthRoutes = (authController: any): Router => { // Using any 
       body: {
         token: { type: 'string', required: true, minLength: 32 },
         newPassword: { type: 'string', required: true, minLength: 8 },
-        confirmPassword: { type: 'string', required: true }
+        confirmPassword: { type: 'string', required: true, minLength: 8 }
       }
     }),
     asyncHandler(authController.resetPassword.bind(authController))
@@ -184,7 +187,7 @@ export const createAuthRoutes = (authController: any): Router => { // Using any 
     '/2fa/verify',
     validateRequest({
       body: {
-        secret: { type: 'string', required: true },
+        secret: { type: 'string', required: true, minLength: 16, maxLength: 64, pattern: /^[A-Z2-7]+=*$/ },
         totpCode: { type: 'string', required: true, pattern: /^\d{6}$/ }
       }
     }),

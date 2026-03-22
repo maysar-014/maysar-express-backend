@@ -19,7 +19,7 @@ import { CreatePostUseCase } from './application/use-cases/create-post.use-case'
 
 // API components
 import { PostsController } from './api/controllers/posts.controller';
-import { postsRoutes } from './api/routes/posts.routes';
+import { createPostsRoutes } from './api/routes/posts.routes';
 
 // Domain components
 import { FeedEngine } from './domain/engines/feed-engine';
@@ -173,7 +173,7 @@ class CommunityService {
     const postsController = new PostsController(createPostUseCase, postRepository, feedEngine);
 
     // Routes
-    this.app.use('/api/posts', postsRoutes);
+    this.app.use('/api/posts', createPostsRoutes(this.prisma));
 
     // 404 handler
     this.app.use('*', (req, res) => {

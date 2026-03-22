@@ -11,6 +11,14 @@ import { MessageContent } from '../../domain/value-objects/message-content.value
 export class PrismaSmsRepository implements ISmsRepository {
     constructor(private readonly prisma: PrismaClient) { }
 
+    private warnedFallback = false;
+
+    private warnFallback(message: string): void {
+        if (this.warnedFallback) return;
+        this.warnedFallback = true;
+        console.warn(message);
+    }
+
     async create(message: SmsMessage): Promise<SmsMessage> {
         const data = this.toPrismaModel(message);
 
@@ -22,11 +30,19 @@ export class PrismaSmsRepository implements ISmsRepository {
     }
 
     async findById(id: string): Promise<SmsMessage | null> {
-        const message = await this.prisma.sms_Message.findUnique({
-            where: { id }
-        });
+        try {
+            const message = await this.prisma.sms_Message.findUnique({
+                where: { id }
+            });
 
-        return message ? this.toDomainEntity(message) : null;
+            return message ? this.toDomainEntity(message) : null;
+        } catch (error) {
+            if (process.env.NODE_ENV !== 'production') {
+                this.warnFallback('[sms] Prisma lookup failed; returning not-found fallback.');
+                return null;
+            }
+            throw error;
+        }
     }
 
     async findByStatus(status: SmsStatus, limit: number = 100): Promise<SmsMessage[]> {

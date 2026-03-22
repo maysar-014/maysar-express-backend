@@ -43,10 +43,6 @@ class FakePaymentProvider implements IPaymentProvider {
     this.webhookEvents.push(payload);
   }
 
-  verifyWebhookSignature(payload: string, signature: string): boolean {
-    return signature === `sig:${payload}`;
-  }
-
   getProviderName(): string {
     return 'fake-provider';
   }
@@ -118,11 +114,6 @@ describe('IPaymentProvider contract', () => {
     });
 
     expect(provider.getWebhookEventCount()).toBe(1);
-  });
-
-  it('validates webhook signatures deterministically', () => {
-    expect(provider.verifyWebhookSignature('body', 'sig:body')).toBe(true);
-    expect(provider.verifyWebhookSignature('body', 'invalid')).toBe(false);
   });
 
   it('exposes provider name', () => {

@@ -16,13 +16,20 @@ export class ResolveTicketUseCase {
         @inject(TYPES.EventBus) private eventBus: any
     ) { }
 
+    private async resolveAgent(agentId: string) {
+        return (
+            await this.agentRepository.findById(agentId)
+            || await this.agentRepository.findByUserId(agentId)
+        );
+    }
+
     public async execute(dto: ResolveTicketDto): Promise<TicketResponseDto> {
         const ticket = await this.ticketRepository.findById(dto.ticketId);
         if (!ticket) {
             throw new Error(`Ticket not found: ${dto.ticketId}`);
         }
 
-        const agent = await this.agentRepository.findById(dto.agentId);
+        const agent = await this.resolveAgent(dto.agentId);
         if (!agent) {
             throw new Error(`Agent not found: ${dto.agentId}`);
         }

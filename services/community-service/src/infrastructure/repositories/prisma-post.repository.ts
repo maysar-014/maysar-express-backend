@@ -9,28 +9,52 @@ import { IPostRepository } from '../../domain/repositories';
 export class PrismaPostRepository implements IPostRepository {
   constructor(private prisma: PrismaClient) {}
 
-  async findById(id: string): Promise<Post | null> {
-    const postData = await this.prisma.post.findUnique({
-      where: { id }
-    });
+  private warnedFallback = false;
 
-    if (!postData) {
-      return null;
+  private warnFallback(message: string): void {
+    if (this.warnedFallback) return;
+    this.warnedFallback = true;
+    console.warn(message);
+  }
+
+  private async safeQuery<T>(operation: () => Promise<T>, fallback: T): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      if (process.env.NODE_ENV !== 'production') {
+        this.warnFallback('[community] Prisma post query failed; using fallback response.');
+        return fallback;
+      }
+      throw error;
     }
+  }
 
-    // Convert database model to domain entity
+  async findById(id: string): Promise<Post | null> {
+    const postData = await this.safeQuery(
+      () =>
+        this.prisma.post.findUnique({
+          where: { id }
+        }),
+      null
+    );
+
+    if (!postData) return null;
     return this.mapToDomainEntity(postData);
   }
 
   async findByAuthorId(authorId: string, options?: { limit?: number; offset?: number }): Promise<Post[]> {
     const { limit = 50, offset = 0 } = options || {};
 
-    const postsData = await this.prisma.post.findMany({
-      where: { authorId },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      skip: offset
-    });
+    const postsData = await this.safeQuery(
+      () =>
+        this.prisma.post.findMany({
+          where: { authorId },
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+          skip: offset
+        }),
+      []
+    );
 
     return postsData.map(postData => this.mapToDomainEntity(postData));
   }
@@ -64,12 +88,16 @@ export class PrismaPostRepository implements IPostRepository {
       };
     }
 
-    const postsData = await this.prisma.post.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      skip: offset
-    });
+    const postsData = await this.safeQuery(
+      () =>
+        this.prisma.post.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+          skip: offset
+        }),
+      []
+    );
 
     return postsData.map(postData => this.mapToDomainEntity(postData));
   }
@@ -77,30 +105,42 @@ export class PrismaPostRepository implements IPostRepository {
   async save(post: Post): Promise<void> {
     const postData = this.mapToPrismaData(post);
 
-    await this.prisma.post.upsert({
-      where: { id: post.id },
-      update: postData,
-      create: postData
-    });
+    await this.safeQuery(
+      () =>
+        this.prisma.post.upsert({
+          where: { id: post.id },
+          update: postData,
+          create: postData
+        }),
+      undefined
+    );
   }
 
   async update(post: Post): Promise<void> {
     const postData = this.mapToPrismaData(post);
 
-    await this.prisma.post.update({
-      where: { id: post.id },
-      data: postData
-    });
+    await this.safeQuery(
+      () =>
+        this.prisma.post.update({
+          where: { id: post.id },
+          data: postData
+        }),
+      undefined
+    );
   }
 
   async delete(id: string): Promise<void> {
-    await this.prisma.post.update({
-      where: { id },
-      data: {
-        status: PostStatus.DELETED,
-        updatedAt: new Date()
-      }
-    });
+    await this.safeQuery(
+      () =>
+        this.prisma.post.update({
+          where: { id },
+          data: {
+            status: PostStatus.DELETED,
+            updatedAt: new Date()
+          }
+        }),
+      undefined
+    );
   }
 
   async findRelatedPosts(postId: string, limit: number = 5): Promise<Post[]> {
@@ -111,36 +151,41 @@ export class PrismaPostRepository implements IPostRepository {
     }
 
     // Find posts with similar tags, type, or author
-    const relatedPostsData = await this.prisma.post.findMany({
-      where: {
-        id: { not: postId },
-        status: PostStatus.PUBLISHED,
-        OR: [
-          // Same type
-          { type: originalPost.type as unknown as Community_PostType },
-          // Common tags
-          originalPost.getTags().length > 0 ? {
-            tags: { hasSome: originalPost.getTags() }
-          } : {},
-          // Same author (other posts)
-          { authorId: originalPost.authorId, id: { not: postId } }
-        ].filter(condition => Object.keys(condition).length > 0)
-      },
-      orderBy: { createdAt: 'desc' },
-      take: limit
-    });
+    const relatedPostsData = await this.safeQuery(
+      () =>
+        this.prisma.post.findMany({
+          where: {
+            id: { not: postId },
+            status: PostStatus.PUBLISHED,
+            OR: [
+              { type: originalPost.type as unknown as Community_PostType },
+              originalPost.getTags().length > 0
+                ? { tags: { hasSome: originalPost.getTags() } }
+                : {},
+              { authorId: originalPost.authorId, id: { not: postId } }
+            ].filter(condition => Object.keys(condition).length > 0)
+          },
+          orderBy: { createdAt: 'desc' },
+          take: limit
+        }),
+      []
+    );
 
     return relatedPostsData.map(postData => this.mapToDomainEntity(postData));
   }
 
   async getPostsByIds(ids: string[]): Promise<Post[]> {
-    const postsData = await this.prisma.post.findMany({
-      where: {
-        id: { in: ids },
-        status: { not: PostStatus.DELETED }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    const postsData = await this.safeQuery(
+      () =>
+        this.prisma.post.findMany({
+          where: {
+            id: { in: ids },
+            status: { not: PostStatus.DELETED }
+          },
+          orderBy: { createdAt: 'desc' }
+        }),
+      []
+    );
 
     return postsData.map(postData => this.mapToDomainEntity(postData));
   }
@@ -161,11 +206,15 @@ export class PrismaPostRepository implements IPostRepository {
       where.type = type;
     }
 
-    const postsData = await this.prisma.post.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: limit
-    });
+    const postsData = await this.safeQuery(
+      () =>
+        this.prisma.post.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          take: limit
+        }),
+      []
+    );
 
     return postsData.map(postData => this.mapToDomainEntity(postData));
   }

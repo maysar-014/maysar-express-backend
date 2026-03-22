@@ -19,7 +19,9 @@ export class RegisterUserUseCase {
     async execute(request: RegisterUserRequest): Promise<string> {
         const existing = await this.userRepository.findByEmail(request.email);
         if (existing) {
-            throw new Error('User already exists');
+            const err = new Error('User already exists');
+            err.name = 'UserAlreadyExistsError';
+            throw err;
         }
 
         const primaryRole = 'buyer';
@@ -62,6 +64,8 @@ export class RegisterUserUseCase {
         };
         await eventBus.publish(envelope);
 
-        return user.id;
+        // Ensure we return the persisted user ID from user-service if available.
+        const persisted = await this.userRepository.findByEmail(request.email);
+        return persisted?.id || user.id;
     }
 }

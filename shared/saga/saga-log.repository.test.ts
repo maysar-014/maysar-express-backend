@@ -210,17 +210,28 @@ describe('PrismaSagaLogRepository', () => {
       }
     ]);
 
-    const result = await repository.findStuck([SagaStatus.STARTED, SagaStatus.IN_PROGRESS], 30000);
+    const result = await repository.findStuck([SagaStatus.STARTED, SagaStatus.IN_PROGRESS], 30000, ['OrderSaga']);
 
     expect(prisma.sagaLog.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           status: { in: [SagaStatus.STARTED, SagaStatus.IN_PROGRESS] },
-          updatedAt: { lt: expect.any(Date) }
+          updatedAt: { lt: expect.any(Date) },
+          sagaType: { in: ['OrderSaga'] }
         }),
         orderBy: { updatedAt: 'asc' }
       })
     );
     expect(result[0]).toEqual(expect.objectContaining({ sagaId: 's6' }));
+  });
+
+  it('returns no stuck sagas without querying when saga type filter is empty', async () => {
+    const prisma = createPrismaMock();
+    const repository = new PrismaSagaLogRepository(prisma as any);
+
+    const result = await repository.findStuck([SagaStatus.STARTED], 30000, []);
+
+    expect(prisma.sagaLog.findMany).not.toHaveBeenCalled();
+    expect(result).toEqual([]);
   });
 });

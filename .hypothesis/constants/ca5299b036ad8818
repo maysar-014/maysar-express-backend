@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\core\curl.py
+# hypothesis_version: 6.151.9
+
+[' --insecure', 'Content-Length', 'Request body', 'Transfer-Encoding', 'command', 'replace', 'utf-8', 'warnings']

@@ -2,7 +2,7 @@ const mockPrisma = {
   enabler_Order: {
     findUnique: jest.fn(),
     findMany: jest.fn(),
-    create: jest.fn().mockResolvedValue(undefined),
+    upsert: jest.fn().mockResolvedValue(undefined),
     update: jest.fn().mockResolvedValue(undefined)
   }
 };
@@ -87,8 +87,13 @@ describe('PrismaEnablerOrderRepository', () => {
     await repo.save(order as any);
     await repo.update(order as any);
 
-    expect(mockPrisma.enabler_Order.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
+    expect(mockPrisma.enabler_Order.upsert).toHaveBeenCalledWith({
+      where: { orderId: 'o1' },
+      update: expect.objectContaining({
+        id: 'eo1',
+        enablerId: 'e1'
+      }),
+      create: expect.objectContaining({
         id: 'eo1',
         enablerId: 'e1',
         orderId: 'o1'

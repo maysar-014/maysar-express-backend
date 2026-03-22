@@ -1,75 +1,19 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { Module } from '../../src/core/module.interface';
 import { EventIdempotency } from '../../shared/middleware/idempotency';
 import { logger } from './src/infrastructure/services/logger.service';
-import { createPayoutRoutes } from './src/api/routes/payout.routes';
 import { healthRoutes } from './src/api/routes/health.routes';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { createWebhookRoutes } from './src/api/routes/webhook.routes';
 import { register as metricsRegistry } from './src/infrastructure/monitoring/metrics';
 import { Container as PaymentContainer } from './src/container';
-import { Container as PayoutContainer } from '../payout-service/src/container';
-import { PayoutRepository } from '../payout-service/src/infrastructure/repositories/payout.repository';
-import { PiiEncryptionService } from '../../shared/encryption/pii-encryption.service';
-import { PayoutPolicy } from '../payout-service/src/domain/policies/payout.policy';
-import { InitiatePayoutUseCase } from '../payout-service/src/application/use-cases/initiate-payout.use-case';
 import { createPrismaClient } from '@shared/database/prisma-client';
+import { requireAuth, requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 const prisma = createPrismaClient();
 const eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, prisma);
 
 export { eventIdempotency };
-
-const payoutWiring = (() => {
-    const payoutContainer = PayoutContainer.getInstance();
-    const payoutRepository = new PayoutRepository(prisma, new PiiEncryptionService());
-    const payoutPolicy = new PayoutPolicy();
-    const initiatePayoutUseCase = new InitiatePayoutUseCase(
-        payoutRepository,
-        payoutPolicy,
-        payoutContainer.payoutProcessingSaga
-    );
-
-    const payoutController = {
-        createPayout: async (req: any, res: any) => {
-            try {
-                const userId = req.body.userId || req.user?.id || req.body.sellerId;
-                const userRole = req.body.userRole || req.user?.role || 'seller';
-                const result = await initiatePayoutUseCase.execute({
-                    ...req.body,
-                    userId,
-                    userRole
-                });
-                res.status(result.success ? 201 : 400).json(result);
-            } catch (error) {
-                res.status(500).json({ success: false, error: 'Internal server error' });
-            }
-        },
-        getPayout: async (req: any, res: any) => {
-            try {
-                const payout = await payoutRepository.findById(req.params.id);
-                if (!payout) {
-                    res.status(404).json({ success: false, error: 'Payout not found' });
-                    return;
-                }
-                res.status(200).json({ success: true, data: payout });
-            } catch (error) {
-                res.status(500).json({ success: false, error: 'Internal server error' });
-            }
-        },
-        getSellerPayouts: async (req: any, res: any) => {
-            try {
-                const payouts = await payoutRepository.findByUserId(req.params.sellerId);
-                res.status(200).json({ success: true, data: payouts });
-            } catch (error) {
-                res.status(500).json({ success: false, error: 'Internal server error' });
-            }
-        }
-    };
-
-    return { payoutController };
-})();
 
 export const PaymentModule: Module = {
     name: 'payment-service',
@@ -99,8 +43,8 @@ export const PaymentModule: Module = {
             // Lazy load to avoid env-dependent side effects during module import
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const createPaymentRoutes = require('./src/api/routes/payment.routes').createPaymentRoutes;
-            router.use('/payments', createPaymentRoutes(container.paymentController));
-            router.use('/payouts', createPayoutRoutes(payoutWiring.payoutController as never));
+            router.use('/payments/webhooks', createWebhookRoutes(container.webhookController));
+            router.use('/payments', requireAuth, createPaymentRoutes(container.paymentController));
             router.use('/webhooks', createWebhookRoutes(container.webhookController));
         } catch (error) {
             logger.warn('Failed to mount payment routes, falling back to degraded handler:', error);
@@ -113,7 +57,7 @@ export const PaymentModule: Module = {
             });
         }
 
-        router.use('/system/maintenance', createMaintenanceRoutes());
+        router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
 
         return router;
     })(),
@@ -121,3 +65,6 @@ export const PaymentModule: Module = {
         logger.info('Shutting down payment-service module');
     }
 };
+
+
+

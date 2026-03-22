@@ -67,13 +67,16 @@ export class Validator {
 
 export function validateCheckoutRequest(data: any): void {
   const errors: Record<string, string> = {};
+  const isNonEmptyString = (value: unknown): value is string =>
+    typeof value === 'string' && value.trim().length > 0;
+  const shippingMethodId = data.shippingMethodId ?? data.paymentMethodId;
 
-  if (!data.cartId) errors.cartId = 'Cart ID is required';
-  if (!data.userId) errors.userId = 'User ID is required';
-  if (!data.shippingAddressId) errors.shippingAddressId = 'Shipping address is required';
-  if (!data.billingAddressId) errors.billingAddressId = 'Billing address is required';
-  if (!data.shippingMethodId) errors.shippingMethodId = 'Shipping method is required';
-  if (data.shippingCost === undefined || data.shippingCost < 0) {
+  if (!isNonEmptyString(data.cartId)) errors.cartId = 'Cart ID is required';
+  if (!isNonEmptyString(data.userId)) errors.userId = 'User ID is required';
+  if (!isNonEmptyString(data.shippingAddressId)) errors.shippingAddressId = 'Shipping address is required';
+  if (!isNonEmptyString(data.billingAddressId)) errors.billingAddressId = 'Billing address is required';
+  if (!isNonEmptyString(shippingMethodId)) errors.shippingMethodId = 'Shipping method is required';
+  if (typeof data.shippingCost !== 'number' || Number.isNaN(data.shippingCost) || data.shippingCost < 0) {
     errors.shippingCost = 'Shipping cost must be non-negative';
   }
 

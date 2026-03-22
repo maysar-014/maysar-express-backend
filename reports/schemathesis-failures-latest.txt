@@ -1,0 +1,599 @@
+=== POST /api/auth/2fa/backup
+TEXT:
+Network Error
+
+Connection broken. The server declared chunked encoding but sent an invalid chunk
+
+    [WinError 10054] An existing connection was forcibly closed by the remote host
+
+Reproduce with:
+
+    curl -X QUERY -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -d '{}' http://localhost:3000/api/auth/2fa/backup
+
+=== POST /api/auth/2fa/backup-codes/regenerate
+MESSAGE: 1. Test Case ID: QdvmhT
+
+- API accepted schema-violating request
+
+    Invalid data should have been rejected
+    Expected: 400, 401, 403, 404, 406, 422, 428, 5xx
+    Invalid component: in body - incorrect type
+
+[200] OK:
+
+    `{"success":true,"backupCodes":["9A46088E32","5343B3A949","E38ED10761","2AC272109B","2EC6AD26A9","5504199110","F100A3D46E","AC56980DD2","9980C86614","A95B5AA760"]}`
+
+Reproduce with:
+
+    curl -X POST -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '[null, null]' http://localhost:3000/api/auth/2fa/backup-codes/regenerate
+
+=== POST /api/auth/2fa/disable
+MESSAGE: 1. Test Case ID: 4UPkUJ
+
+- Missing header not rejected
+
+    Got 400 when missing required 'Authorization' header, expected 401
+
+[400] Bad Request:
+
+    `{"success":false,"message":"Validation failed","errors":["\"password\" is not allowed to be empty"]}`
+
+Reproduce with:
+
+    curl -X POST -H 'X-User-Id: usr_test_0001' -H 'X-Contract-Test: 1' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '{"password": ""}' http://localhost:3000/api/auth/2fa/disable
+
+=== POST /api/auth/2fa/enable
+MESSAGE: 1. Test Case ID: G9t35d
+
+- Missing header not rejected
+
+    Got 400 when missing required 'Authorization' header, expected 401
+
+[400] Bad Request:
+
+    `{"success":false,"message":"Validation failed","errors":["\"password\" is not allowed to be empty","\"totpCode\" is not allowed to be empty"]}`
+
+Reproduce with:
+
+    curl -X POST -H 'X-User-Id: usr_test_0001' -H 'X-Contract-Test: 1' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '{"password": "", "totpCode": ""}' http://localhost:3000/api/auth/2fa/enable
+
+=== POST /api/auth/2fa/verify
+TEXT:
+Network Error
+
+Connection broken. The server declared chunked encoding but sent an invalid chunk
+
+    [WinError 10054] An existing connection was forcibly closed by the remote host
+
+Reproduce with:
+
+    curl -X QUERY -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -d '{"secret": "", "totpCode": ""}' http://localhost:3000/api/auth/2fa/verify
+
+=== POST /api/auth/2fa/verify-setup
+MESSAGE: 1. Test Case ID: BqhYZZ
+
+- API accepted schema-violating request
+
+    Invalid data should have been rejected
+    Expected: 400, 401, 403, 404, 406, 422, 428, 5xx
+    Invalid component: in body - incorrect type
+
+[200] OK:
+
+    `{"success":true,"message":"Two-factor authentication is already enabled and verified."}`
+
+Reproduce with:
+
+    curl -X POST -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '[null, null]' http://localhost:3000/api/auth/2fa/verify-setup
+
+=== POST /api/auth/admin/discovery/refresh
+MESSAGE: 1. Test Case ID: 09eOA7
+
+- API accepted schema-violating request
+
+    Invalid data should have been rejected
+    Expected: 400, 401, 403, 404, 406, 422, 428, 5xx
+    Invalid component: in body - incorrect type
+
+[200] OK:
+
+    `{"success":true,"message":"Service discovery refreshed successfully"}`
+
+Reproduce with:
+
+    curl -X POST -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '[null, null]' http://localhost:3000/api/auth/admin/discovery/refresh
+
+=== POST /api/training/api/v1/training/{id}/complete
+MESSAGE: 1. Test Case ID: n6hGVE
+
+- Server error
+
+[500] Internal Server Error:
+
+    `{"error":"Training not in progress","timestamp":"2026-03-20T00:27:23.898Z"}`
+
+Reproduce with:
+
+    curl -X POST -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Content-Type: application/json' -d '{"score": 85}' http://localhost:3000/api/training/api/v1/training/obj_01ARZ3NDEKTSV4RRFFQ69G5FAV/complete
+
+=== PUT /api/production/plans/{id}/status
+MESSAGE: 1. Test Case ID: fxVWYt
+
+- API rejected schema-compliant request
+
+    Valid data should have been accepted
+    Expected: 2xx, 401, 403, 404, 409, 5xx
+
+[400] Bad Request:
+
+    `{"error":"Plan not found"}`
+
+Reproduce with:
+
+    curl -X PUT -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '{"status": "DRAFT"}' http://localhost:3000/api/production/plans/cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV/status
+
+=== POST /api/business-registry/businesses/{id}/compliance-records
+MESSAGE: 1. Test Case ID: fNUQx2
+
+- API rejected schema-compliant request
+
+    Valid data should have been accepted
+    Expected: 2xx, 401, 403, 404, 409, 5xx
+
+[400] Bad Request:
+
+    `{"success":false,"error":{"code":"VALIDATION_ERROR","message":"\"type\" is not allowed to be empty"}}`
+
+Reproduce with:
+
+    curl -X POST -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '{"status": "", "type": ""}' http://localhost:3000/api/business-registry/businesses/biz_01ARZ3NDEKTSV4RRFFQ69G5FAV/compliance-records
+
+=== POST /api/business-registry/businesses/{id}/documents
+MESSAGE: 1. Test Case ID: pS4aKs
+
+- API rejected schema-compliant request
+
+    Valid data should have been accepted
+    Expected: 2xx, 401, 403, 404, 409, 5xx
+
+[400] Bad Request:
+
+    `{"success":false,"error":{"code":"VALIDATION_ERROR","message":"\"type\" is not allowed to be empty"}}`
+
+Reproduce with:
+
+    curl -X POST -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '{"fileName": "", "fileUrl": "", "type": ""}' http://localhost:3000/api/business-registry/businesses/biz_01ARZ3NDEKTSV4RRFFQ69G5FAV/documents
+
+=== POST /api/business-registry/businesses/{id}/suspend
+MESSAGE: 1. Test Case ID: KEW1p2
+
+- API rejected schema-compliant request
+
+    Valid data should have been accepted
+    Expected: 2xx, 401, 403, 404, 409, 5xx
+
+[400] Bad Request:
+
+    `{"success":false,"error":{"code":"VALIDATION_ERROR","message":"\"suspendedBy\" is not allowed to be empty"}}`
+
+Reproduce with:
+
+    curl -X POST -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '{"suspendedBy": ""}' http://localhost:3000/api/business-registry/businesses/biz_01ARZ3NDEKTSV4RRFFQ69G5FAV/suspend
+
+=== POST /api/business-registry/businesses/{id}/verify
+MESSAGE: 1. Test Case ID: vxCfHl
+
+- API rejected schema-compliant request
+
+    Valid data should have been accepted
+    Expected: 2xx, 401, 403, 404, 409, 5xx
+
+[400] Bad Request:
+
+    `{"success":false,"error":{"code":"VALIDATION_ERROR","message":"\"verifiedBy\" is not allowed to be empty"}}`
+
+Reproduce with:
+
+    curl -X POST -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '{"documentTypes": [], "verifiedBy": ""}' http://localhost:3000/api/business-registry/businesses/biz_01ARZ3NDEKTSV4RRFFQ69G5FAV/verify
+
+=== POST /api/catalog/products/{productId}/buy-box/compute
+MESSAGE: 1. Test Case ID: 1WEOUO
+
+- Undocumented HTTP status code
+
+    Received: 200
+    Documented: 400, 401, 403, 404, 405, 409, 422, 500, 501, 201
+
+[200] OK:
+
+    `{"productId":"cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV","primarySellerId":null,"primaryScore":null,"alternatives":[],"lastComputedAt":"2026-03-20T00:27:27.228Z"}`
+
+Reproduce with:
+
+    curl -X POST -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '{"listings": []}' http://localhost:3000/api/catalog/products/cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV/buy-box/compute
+
+=== POST /api/catalog/v1/products/{id}/media
+MESSAGE: 1. Test Case ID: 2UrTAQ
+
+- Server error
+
+[501] Not Implemented:
+
+    `{"success":false,"error":{"code":"NOT_IMPLEMENTED","message":"Media upload functionality not yet implemented"}}`
+
+Reproduce with:
+
+    curl -X POST -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/catalog/v1/products/cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV/media
+
+=== POST /api/catalog/v1/products/{id}/publish
+MESSAGE: 1. Test Case ID: GInRKY
+
+- Server error
+
+[501] Not Implemented:
+
+    `{"success":false,"error":{"code":"NOT_IMPLEMENTED","message":"Product publishing is not implemented."},"meta":{"timestamp":"2026-03-20T00:27:27.505Z"}}`
+
+Reproduce with:
+
+    curl -X POST -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/catalog/v1/products/cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV/publish
+
+=== POST /api/catalog/v1/products/{id}/unpublish
+MESSAGE: 1. Test Case ID: nrmQcP
+
+- Server error
+
+[501] Not Implemented:
+
+    `{"success":false,"error":{"code":"NOT_IMPLEMENTED","message":"Unpublish functionality not yet implemented"}}`
+
+Reproduce with:
+
+    curl -X POST -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/catalog/v1/products/cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV/unpublish
+
+=== POST /api/user/reset-password/{token}
+MESSAGE: 1. Test Case ID: neWgfg
+
+- API rejected schema-compliant request
+
+    Valid data should have been accepted
+    Expected: 2xx, 401, 403, 404, 409, 5xx
+
+[400] Bad Request:
+
+    `{"success":false,"error":{"code":"MISSING_FIELDS","message":"User ID, token, and new password are required"}}`
+
+Reproduce with:
+
+    curl -X POST -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '{}' http://localhost:3000/api/user/reset-password/token-example
+
+=== POST /api/wallet/wallets/{userId}/transaction/{transactionId}/reverse
+MESSAGE: 1. Test Case ID: 9YDRvw
+
+- API rejected schema-compliant request
+
+    Valid data should have been accepted
+    Expected: 2xx, 401, 403, 404, 409, 5xx
+
+[400] Bad Request:
+
+    `{"error":"Internal Server Error","message":"Validation failed","stack":"Error: Validation failed\n    at Object.badRequest (C:\\Users\\abdal\\Desktop\\maysar-express-backend\\services\\wallet-service\\src\\api\\middleware\\error.middleware.ts:78:9)\n    at Layer.handle (C:\\Users\\abdal\\Desktop\\maysar-express-backend\\services\\wallet-service\\src\\api\\middleware\\validation.middleware.ts:28:41)\n    at Layer.asyncWrapper (C:\\Users\\abdal\\Desktop\\maysar-express-backend\\src\\async-errors.ts:13:25)\n   // Output truncated...`
+
+Reproduce with:
+
+    curl -X POST -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '{}' http://localhost:3000/api/wallet/wallets/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV/transaction/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV/reverse
+
+=== PUT /api/catalog/v1/products/{productId}/pricing
+MESSAGE: 1. Test Case ID: BAVPT1
+
+- Server error
+
+[501] Not Implemented:
+
+    `{"success":false,"error":{"code":"NOT_IMPLEMENTED","message":"Pricing updates are not implemented."},"meta":{"timestamp":"2026-03-20T00:27:29.127Z"}}`
+
+Reproduce with:
+
+    curl -X PUT -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '{}' http://localhost:3000/api/catalog/v1/products/cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV/pricing
+
+=== PUT /api/logistics/api/courier/{courierId}/status
+MESSAGE: 1. Test Case ID: hnOBhd
+
+- API rejected schema-compliant request
+
+    Valid data should have been accepted
+    Expected: 2xx, 401, 403, 404, 409, 5xx
+
+[400] Bad Request:
+
+    `{"success":false,"error":"Invalid courier status"}`
+
+Reproduce with:
+
+    curl -X PUT -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '{}' http://localhost:3000/api/logistics/api/courier/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV/status
+
+=== GET /api/analytics/analytics/dashboard/{sellerId}
+MESSAGE: 1. Test Case ID: SBOpXX
+
+- API accepts invalid authentication
+
+    Expected 401, got `200 OK` for `GET /api/analytics/analytics/dashboard/{sellerId}` (generated auth likely invalid)
+
+[200] OK:
+
+    `null`
+
+Reproduce with:
+
+    curl -X GET -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/analytics/analytics/dashboard/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+
+=== GET /api/analytics/analytics/sales/{sellerId}
+MESSAGE: 1. Test Case ID: daM1k9
+
+- API accepts invalid authentication
+
+    Expected 401, got `200 OK` for `GET /api/analytics/analytics/sales/{sellerId}` (generated auth likely invalid)
+
+[200] OK:
+
+    `[]`
+
+Reproduce with:
+
+    curl -X GET -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/analytics/analytics/sales/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+
+=== GET /api/analytics/courier/analytics/{courierId}
+MESSAGE: 1. Test Case ID: q6G9Dj
+
+- API accepts invalid authentication
+
+    Expected 401, got `200 OK` for `GET /api/analytics/courier/analytics/{courierId}` (generated auth likely invalid)
+
+[200] OK:
+
+    `null`
+
+Reproduce with:
+
+    curl -X GET -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/analytics/courier/analytics/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+
+=== GET /api/auth/admin/users/{userId}/sessions
+MESSAGE: 1. Test Case ID: Y211Mn
+
+- API accepts invalid authentication
+
+    Expected 401, got `200 OK` for `GET /api/auth/admin/users/{userId}/sessions` (generated auth likely invalid)
+
+[200] OK:
+
+    `{"success":true,"data":[],"message":"User sessions retrieved successfully"}`
+
+Reproduce with:
+
+    curl -X GET -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/auth/admin/users/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV/sessions
+
+=== GET /api/catalog/match/audit/{productId}
+MESSAGE: 1. Test Case ID: XnkcBr
+
+- API accepts invalid authentication
+
+    Expected 401, got `200 OK` for `GET /api/catalog/match/audit/{productId}` (generated auth likely invalid)
+
+[200] OK:
+
+    `{"audits":[]}`
+
+Reproduce with:
+
+    curl -X GET -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/catalog/match/audit/cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV
+
+=== GET /api/catalog/v1/products/{id}/analytics
+MESSAGE: 1. Test Case ID: Q3w15L
+
+- Server error
+
+[501] Not Implemented:
+
+    `{"success":false,"error":{"code":"NOT_IMPLEMENTED","message":"Product analytics are not implemented."},"meta":{"timestamp":"2026-03-20T00:27:30.610Z"}}`
+
+Reproduce with:
+
+    curl -X GET -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/catalog/v1/products/cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV/analytics
+
+=== GET /api/catalog/v1/products/{id}/metrics
+MESSAGE: 1. Test Case ID: tp5C5a
+
+- Server error
+
+[501] Not Implemented:
+
+    `{"success":false,"error":{"code":"NOT_IMPLEMENTED","message":"Metrics functionality not yet implemented"}}`
+
+Reproduce with:
+
+    curl -X GET -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/catalog/v1/products/cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV/metrics
+
+=== GET /api/commission/sellers/{sellerId}
+MESSAGE: 1. Test Case ID: qmG4NK
+
+- API accepts invalid authentication
+
+    Expected 401, got `200 OK` for `GET /api/commission/sellers/{sellerId}` (generated auth likely invalid)
+
+[200] OK:
+
+    `{"success":true,"data":{"commissions":[],"total":0,"limit":50,"offset":0}}`
+
+Reproduce with:
+
+    curl -X GET -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/commission/sellers/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+
+=== GET /api/commission/sellers/{sellerId}/summary
+MESSAGE: 1. Test Case ID: hEuVaV
+
+- API accepts invalid authentication
+
+    Expected 401, got `200 OK` for `GET /api/commission/sellers/{sellerId}/summary` (generated auth likely invalid)
+
+[200] OK:
+
+    `{"success":true,"data":{"totalEarned":0,"totalPaid":0,"pendingAmount":0,"averageRate":0}}`
+
+Reproduce with:
+
+    curl -X GET -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/commission/sellers/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV/summary
+
+=== GET /api/community/posts/users/{userId}/feed
+MESSAGE: 1. Test Case ID: XFNxsP
+
+- Server error
+
+[501] Not Implemented:
+
+    `{"error":"NOT_IMPLEMENTED","message":"User feed generation requires user profile integration."}`
+
+Reproduce with:
+
+    curl -X GET -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/community/posts/users/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV/feed
+
+=== GET /api/logistics/api/v1/couriers/{courierId}
+MESSAGE: 1. Test Case ID: FPOrdD
+
+- API accepts invalid authentication
+
+    Expected 401, got `200 OK` for `GET /api/logistics/api/v1/couriers/{courierId}` (generated auth likely invalid)
+
+[200] OK:
+
+    `{"success":true,"data":{"courierId":"usr_01ARZ3NDEKTSV4RRFFQ69G5FAV","name":"Fallback Courier","phone":"+255700000000","vehicle":"motorbike","rating":5,"status":"online","currentLocation":{"lat":-6.7924,"lng":39.2083},"stats":{"deliveriesCompleted":0,"averageRating":5,"onTimeDeliveryRate":0}}}`
+
+Reproduce with:
+
+    curl -X GET -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/logistics/api/v1/couriers/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+
+=== GET /api/logistics/api/v1/deliveries/{deliveryId}/history
+MESSAGE: 1. Test Case ID: FSIMXr
+
+- API accepts invalid authentication
+
+    Expected 401, got `200 OK` for `GET /api/logistics/api/v1/deliveries/{deliveryId}/history` (generated auth likely invalid)
+
+[200] OK:
+
+    `{"success":true,"data":{"deliveryId":"obj_01ARZ3NDEKTSV4RRFFQ69G5FAV","history":[{"status":"created","timestamp":"2026-03-19T22:27:31.266Z","location":"Order placed"},{"status":"assigned","timestamp":"2026-03-19T22:57:31.266Z","location":"Courier assigned"},{"status":"picked_up","timestamp":"2026-03-19T23:27:31.266Z","location":"Uhuru Street"},{"status":"in_transit","timestamp":"2026-03-19T23:57:31.266Z","location":"En route to destination"}]}}`
+
+Reproduce with:
+
+    curl -X GET -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/logistics/api/v1/deliveries/obj_01ARZ3NDEKTSV4RRFFQ69G5FAV/history
+
+=== GET /api/logistics/api/v1/earnings/courier/{courierId}
+MESSAGE: 1. Test Case ID: Whp4s3
+
+- API accepts invalid authentication
+
+    Expected 401, got `200 OK` for `GET /api/logistics/api/v1/earnings/courier/{courierId}` (generated auth likely invalid)
+
+[200] OK:
+
+    `{"success":true,"data":{"courierId":"usr_01ARZ3NDEKTSV4RRFFQ69G5FAV","period":"today","todayEarnings":0,"totalEarnings":0,"deliveriesCount":0,"averagePerDelivery":0,"lastUpdated":"2026-03-20T00:27:31.302Z"}}`
+
+Reproduce with:
+
+    curl -X GET -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/logistics/api/v1/earnings/courier/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+
+=== GET /api/logistics/api/v1/routes/courier/{courierId}
+MESSAGE: 1. Test Case ID: M9AVQ7
+
+- Server error
+
+[500] Internal Server Error:
+
+    `{"success":false,"error":"Failed to find routes"}`
+
+Reproduce with:
+
+    curl -X GET -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/logistics/api/v1/routes/courier/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+
+=== GET /api/notification/preferences/{userId}
+MESSAGE: 1. Test Case ID: BmJGpM
+
+- API accepts invalid authentication
+
+    Expected 401, got `200 OK` for `GET /api/notification/preferences/{userId}` (generated auth likely invalid)
+
+[200] OK:
+
+    `{"success":true,"data":[]}`
+
+Reproduce with:
+
+    curl -X GET -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/notification/preferences/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+
+=== DELETE /api/auth/admin/sessions/{sessionId}
+MESSAGE: 1. Test Case ID: KBo2HI
+
+- API accepts invalid authentication
+
+    Expected 401, got `200 OK` for `DELETE /api/auth/admin/sessions/{sessionId}` (generated auth likely invalid)
+
+- Undocumented HTTP status code
+
+    Received: 200
+    Documented: 400, 401, 403, 404, 405, 409, 422, 500, 501, 204
+
+[200] OK:
+
+    `{"success":true,"data":{"sessionId":"obj_01ARZ3NDEKTSV4RRFFQ69G5FAV","terminated":false,"timestamp":"2026-03-20T00:27:32.190Z"},"message":"Session terminated successfully"}`
+
+Reproduce with:
+
+    curl -X DELETE -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '{}' http://localhost:3000/api/auth/admin/sessions/obj_01ARZ3NDEKTSV4RRFFQ69G5FAV
+
+=== DELETE /api/auth/admin/users/{userId}/sessions
+MESSAGE: 1. Test Case ID: t8Txdg
+
+- API accepts invalid authentication
+
+    Expected 401, got `200 OK` for `DELETE /api/auth/admin/users/{userId}/sessions` (generated auth likely invalid)
+
+- Undocumented HTTP status code
+
+    Received: 200
+    Documented: 400, 401, 403, 404, 405, 409, 422, 500, 501, 204
+
+[200] OK:
+
+    `{"success":true,"data":{"userId":"usr_01ARZ3NDEKTSV4RRFFQ69G5FAV","terminatedCount":0,"timestamp":"2026-03-20T00:27:32.256Z"},"message":"User sessions terminated successfully"}`
+
+Reproduce with:
+
+    curl -X DELETE -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '{}' http://localhost:3000/api/auth/admin/users/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV/sessions
+
+=== DELETE /api/auth/device/{deviceId}
+MESSAGE: 1. Test Case ID: 7gk4lp
+
+- API rejected schema-compliant request
+
+    Valid data should have been accepted
+    Expected: 2xx, 401, 403, 404, 409, 5xx
+
+[400] Bad Request:
+
+    `{"success":false,"message":"Validation failed","errors":["\"userId\" is not allowed to be empty"]}`
+
+Reproduce with:
+
+    curl -X DELETE -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Content-Type: application/json' -H 'Cookie: [Filtered]' -d '{"userId": ""}' http://localhost:3000/api/auth/device/obj_01ARZ3NDEKTSV4RRFFQ69G5FAV
+
+=== DELETE /api/catalog/v1/products/{id}
+MESSAGE: 1. Test Case ID: FZyWgx
+
+- Server error
+
+[501] Not Implemented:
+
+    `{"success":false,"error":{"code":"NOT_IMPLEMENTED","message":"Product deletion is not implemented."},"meta":{"timestamp":"2026-03-20T00:27:32.387Z"}}`
+
+Reproduce with:
+
+    curl -X DELETE -H 'X-Contract-Test: 1' -H 'X-User-Id: usr_test_0001' -H 'X-User-Roles: admin,agent,seller,buyer' -H 'X-Service-Key: [Filtered]' -H 'Idempotency-Key: [Filtered]' -H 'Authorization: [Filtered]' -H 'Cookie: [Filtered]' http://localhost:3000/api/catalog/v1/products/cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV

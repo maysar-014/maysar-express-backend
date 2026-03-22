@@ -41,6 +41,8 @@ describe('Idempotency Infrastructure', () => {
       const req = {
         method: 'POST',
         headers: { 'idempotency-key': idempotencyKey },
+        baseUrl: '/api',
+        path: '/orders',
         body: { test: 'data' }
       } as unknown as Request;
 
@@ -48,7 +50,8 @@ describe('Idempotency Infrastructure', () => {
         statusCode: 200,
         json: jest.fn().mockReturnThis(),
         send: jest.fn().mockReturnThis(),
-        status: jest.fn().mockReturnThis()
+        status: jest.fn().mockReturnThis(),
+        on: jest.fn()
       } as unknown as Response;
 
       const next = jest.fn();
@@ -67,7 +70,8 @@ describe('Idempotency Infrastructure', () => {
       const res2 = {
         statusCode: 200,
         json: jest.fn().mockReturnThis(),
-        status: jest.fn().mockReturnThis()
+        status: jest.fn().mockReturnThis(),
+        on: jest.fn()
       } as unknown as Response;
       const next2 = jest.fn();
 
@@ -77,6 +81,169 @@ describe('Idempotency Infrastructure', () => {
       expect(next2).not.toHaveBeenCalled();
       expect(res2.status).toHaveBeenCalledWith(200);
       expect(res2.json).toHaveBeenCalledWith(responseBody);
+    });
+
+    test('should isolate cached responses by auth scope', async () => {
+      const idempotencyKey = 'test-key-123';
+
+      const authenticatedRequest = {
+        method: 'POST',
+        baseUrl: '/api',
+        path: '/orders',
+        headers: {
+          'idempotency-key': idempotencyKey,
+          authorization: 'Bearer token-one'
+        },
+        body: { test: 'data' }
+      } as unknown as Request;
+
+      const authenticatedResponse = {
+        statusCode: 200,
+        json: jest.fn().mockReturnThis(),
+        send: jest.fn().mockReturnThis(),
+        status: jest.fn().mockReturnThis(),
+        on: jest.fn()
+      } as unknown as Response;
+
+      const middleware = idempotencyMiddleware.middleware();
+      const next = jest.fn();
+
+      await middleware(authenticatedRequest, authenticatedResponse, next);
+      expect(next).toHaveBeenCalledTimes(1);
+
+      authenticatedResponse.json({ ok: true });
+
+      const anonymousRequest = {
+        method: 'POST',
+        baseUrl: '/api',
+        path: '/orders',
+        headers: { 'idempotency-key': idempotencyKey },
+        body: { test: 'data' }
+      } as unknown as Request;
+
+      const anonymousResponse = {
+        statusCode: 200,
+        json: jest.fn().mockReturnThis(),
+        send: jest.fn().mockReturnThis(),
+        status: jest.fn().mockReturnThis(),
+        on: jest.fn()
+      } as unknown as Response;
+
+      const nextAnonymous = jest.fn();
+
+      await middleware(anonymousRequest, anonymousResponse, nextAnonymous);
+
+      expect(nextAnonymous).toHaveBeenCalledTimes(1);
+      expect(anonymousResponse.status).not.toHaveBeenCalled();
+    });
+
+    test('should prefer resolved principal scope over raw auth headers', async () => {
+      const idempotencyKey = 'test-key-456';
+      const middleware = idempotencyMiddleware.middleware();
+
+      const firstRequest = {
+        method: 'POST',
+        baseUrl: '/api',
+        path: '/orders',
+        headers: {
+          'idempotency-key': idempotencyKey,
+          authorization: 'Bearer first-token'
+        },
+        user: {
+          userId: 'usr_test_0001',
+          roles: ['ADMIN']
+        },
+        body: { test: 'data' }
+      } as unknown as Request;
+
+      const firstResponse = {
+        statusCode: 200,
+        json: jest.fn().mockReturnThis(),
+        send: jest.fn().mockReturnThis(),
+        status: jest.fn().mockReturnThis(),
+        on: jest.fn()
+      } as unknown as Response;
+
+      const next = jest.fn();
+      await middleware(firstRequest, firstResponse, next);
+      expect(next).toHaveBeenCalledTimes(1);
+
+      const responseBody = { orderId: '123', status: 'created' };
+      firstResponse.json(responseBody);
+
+      const secondRequest = {
+        method: 'POST',
+        baseUrl: '/api',
+        path: '/orders',
+        headers: {
+          'idempotency-key': idempotencyKey,
+          authorization: 'Bearer refreshed-token'
+        },
+        user: {
+          userId: 'usr_test_0001',
+          roles: ['admin']
+        },
+        body: { test: 'data' }
+      } as unknown as Request;
+
+      const secondResponse = {
+        statusCode: 200,
+        json: jest.fn().mockReturnThis(),
+        status: jest.fn().mockReturnThis(),
+        on: jest.fn()
+      } as unknown as Response;
+
+      const nextSecond = jest.fn();
+      await middleware(secondRequest, secondResponse, nextSecond);
+
+      expect(nextSecond).not.toHaveBeenCalled();
+      expect(secondResponse.status).toHaveBeenCalledWith(200);
+      expect(secondResponse.json).toHaveBeenCalledWith(responseBody);
+    });
+
+    test('should isolate cached responses by request fingerprint', async () => {
+      const idempotencyKey = 'test-key-fingerprint';
+      const middleware = idempotencyMiddleware.middleware();
+
+      const firstRequest = {
+        method: 'POST',
+        baseUrl: '/api',
+        path: '/orders',
+        headers: { 'idempotency-key': idempotencyKey },
+        body: { quantity: 1 }
+      } as unknown as Request;
+
+      const firstResponse = {
+        statusCode: 200,
+        json: jest.fn().mockReturnThis(),
+        send: jest.fn().mockReturnThis(),
+        status: jest.fn().mockReturnThis(),
+        on: jest.fn()
+      } as unknown as Response;
+
+      const next = jest.fn();
+      await middleware(firstRequest, firstResponse, next);
+      expect(next).toHaveBeenCalledTimes(1);
+      firstResponse.json({ ok: true, quantity: 1 });
+
+      const secondRequest = {
+        ...firstRequest,
+        body: { quantity: 2 }
+      } as unknown as Request;
+
+      const secondResponse = {
+        statusCode: 200,
+        json: jest.fn().mockReturnThis(),
+        send: jest.fn().mockReturnThis(),
+        status: jest.fn().mockReturnThis(),
+        on: jest.fn()
+      } as unknown as Response;
+
+      const nextSecond = jest.fn();
+      await middleware(secondRequest, secondResponse, nextSecond);
+
+      expect(nextSecond).toHaveBeenCalledTimes(1);
+      expect(secondResponse.status).not.toHaveBeenCalled();
     });
 
     test('should require idempotency key for non-GET requests', async () => {

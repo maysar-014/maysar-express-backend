@@ -2,6 +2,7 @@ import { OrderRepository } from '../../domain/repositories/order.repository';
 import { Order } from '../../domain/entities/order.entity';
 import { OrderStatus } from '../../domain/entities/order.entity';
 import { databaseManager } from '../../config/database.config';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 interface OrderDelegate {
   create(args: Record<string, unknown>): Promise<unknown>;
@@ -46,6 +47,7 @@ export class PrismaOrderRepository implements OrderRepository {
         updatedAt: order.updatedAt,
         items: {
           create: order.items.map(item => ({
+            id: makeId(getModelPrefix('Order_OrderItem')),
             productId: item.productId,
             quantity: item.quantity,
             price: item.price.amount,

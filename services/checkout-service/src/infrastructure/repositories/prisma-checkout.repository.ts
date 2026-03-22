@@ -4,14 +4,31 @@
  */
 
 import { Prisma, PrismaClient } from '@prisma/client';
-import { CheckoutSession } from './checkout.repository';
+import { CheckoutRepository, CheckoutSession } from './checkout.repository';
 import { CartItemVO } from '../../domain/value-objects/cart.value-object';
 
 export class PrismaCheckoutRepository {
+  private readonly fallback = new CheckoutRepository();
+  private warnedMissingDelegate = false;
+
   constructor(private readonly prisma: PrismaClient) {}
 
+  private getDelegate(): any | null {
+    const delegate = (this.prisma as any).checkout_CheckoutSession;
+    if (!delegate && !this.warnedMissingDelegate) {
+      this.warnedMissingDelegate = true;
+      console.warn('[checkout] Prisma delegate checkout_CheckoutSession unavailable; using in-memory fallback.');
+    }
+    return delegate || null;
+  }
+
   async getCheckoutSession(sessionId: string): Promise<CheckoutSession | null> {
-    const record = await this.prisma.checkout_CheckoutSession.findUnique({
+    const delegate = this.getDelegate();
+    if (!delegate || typeof delegate.findUnique !== 'function') {
+      return this.fallback.getCheckoutSession(sessionId);
+    }
+
+    const record = await delegate.findUnique({
       where: { id: sessionId }
     });
 
@@ -50,6 +67,12 @@ export class PrismaCheckoutRepository {
   }
 
   async saveCheckoutSession(session: CheckoutSession): Promise<void> {
+    const delegate = this.getDelegate();
+    if (!delegate || typeof delegate.upsert !== 'function') {
+      await this.fallback.saveCheckoutSession(session);
+      return;
+    }
+
     const metadata = session.metadata ?? (session.items ? { items: session.items } : undefined);
     const totalAmount =
       session.totalAmount ??
@@ -58,7 +81,7 @@ export class PrismaCheckoutRepository {
       ? (JSON.parse(JSON.stringify(metadata)) as Prisma.InputJsonValue)
       : undefined;
 
-    await this.prisma.checkout_CheckoutSession.upsert({
+    await delegate.upsert({
       where: { id: session.id },
       update: {
         cartId: session.cartId,
@@ -107,11 +130,21 @@ export class PrismaCheckoutRepository {
   }
 
   async deleteCheckoutSession(sessionId: string): Promise<void> {
-    await this.prisma.checkout_CheckoutSession.delete({ where: { id: sessionId } });
+    const delegate = this.getDelegate();
+    if (!delegate || typeof delegate.delete !== 'function') {
+      await this.fallback.deleteCheckoutSession(sessionId);
+      return;
+    }
+    await delegate.delete({ where: { id: sessionId } });
   }
 
   async clearExpiredSessions(now: Date = new Date()): Promise<void> {
-    await this.prisma.checkout_CheckoutSession.deleteMany({
+    const delegate = this.getDelegate();
+    if (!delegate || typeof delegate.deleteMany !== 'function') {
+      await this.fallback.clearExpiredSessions(now);
+      return;
+    }
+    await delegate.deleteMany({
       where: { expiresAt: { lt: now } }
     });
   }

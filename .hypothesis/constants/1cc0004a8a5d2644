@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\specs\openapi\_operation_lookup.py
+# hypothesis_version: 6.151.9
+
+['$ref', '/', '_http_methods', '_operations_by_id', 'definition', 'method', 'operationId', 'parameters', 'path', 'schema', 'scope', 'shared_parameters', '~', '~0', '~1']

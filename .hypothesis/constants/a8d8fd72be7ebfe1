@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\generation\hypothesis\reporting.py
+# hypothesis_version: 6.151.9
+
+['data_too_large', 'default', 'filter_too_much', 'filtered out', 'large_base_example', 'location', 'name', 'original', 'pytest', 'rejected', 'schema', 'too large', 'too slow', 'too_slow', 'total']

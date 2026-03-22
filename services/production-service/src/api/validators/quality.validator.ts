@@ -9,5 +9,5 @@ export const recordQualityCheckpointSchema = z.object({
         defectCount: z.number().int().min(0),
         notes: z.string().optional(),
         images: z.array(z.string().url()).optional()
-    })
+    }).strict()
 });

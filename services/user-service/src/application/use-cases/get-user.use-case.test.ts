@@ -86,4 +86,27 @@ describe('GetUserUseCase', () => {
       message: 'Failed to retrieve user'
     });
   });
+
+  it('allows admin roles from upstream auth context', async () => {
+    const targetUser = createUser('target-user');
+    const requester = createUser('admin-user');
+    const repo = {
+      findById: jest
+        .fn()
+        .mockResolvedValueOnce(targetUser)
+        .mockResolvedValueOnce(requester)
+    };
+    const policySpy = jest.spyOn(UserPolicies, 'canSearchUsers');
+    const useCase = new GetUserUseCase(repo as never);
+
+    const result = await useCase.execute({
+      userId: 'target-user',
+      requestingUserId: 'admin-user',
+      requestingUserRoles: ['admin']
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.user?.id).toBe('target-user');
+    expect(policySpy).not.toHaveBeenCalled();
+  });
 });

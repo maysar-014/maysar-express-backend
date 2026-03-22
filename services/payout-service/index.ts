@@ -5,6 +5,7 @@ import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { Container } from './src/container';
 import { SagaRecoveryWorker } from '../../shared/saga/saga-recovery.worker';
 import { SagaFactory } from '../../shared/saga/saga-factory';
+import { requireAuth, requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 let sagaRecoveryWorker: SagaRecoveryWorker | null = null;
 
@@ -31,8 +32,8 @@ export const PayoutModule: Module = {
     routes: (() => {
         const router = Router();
         const container = Container.getInstance();
-        router.use('/payouts', createPayoutRoutes(container.payoutController));
-        router.use('/system/maintenance', createMaintenanceRoutes());
+        router.use('/payouts', requireAuth, createPayoutRoutes(container.payoutController));
+        router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
         return router;
     })(),
     shutdown: async () => {
@@ -47,3 +48,6 @@ export const PayoutModule: Module = {
         }
     }
 };
+
+
+

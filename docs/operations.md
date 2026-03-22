@@ -1817,19 +1817,9 @@ Preconditions: order exists and payment provider configuration is valid. Some fa
 | 5 | Refund payment | `POST {{platform_base_url}}/api/payment/payments/:id/refund` | 200 | 400, 404, 500 |
 | 6 | Handle provider webhook | `POST {{platform_base_url}}/api/payment/payments/webhooks/pesapal` | 200 | 400, 409, 500 |
 
-### Payouts (Payment Module Facade)
-
-Preconditions: seller wallet exists and payout policy allows request.
-
-| Step | User Intent / Action | Endpoint | Happy Status | Unhappy Status / Failure Path |
-|---|---|---|---|---|
-| 1 | Create payout | `POST {{platform_base_url}}/api/payment/payouts` | 200, 201 | 400, 422, 500 |
-| 2 | Get payout by id | `GET {{platform_base_url}}/api/payment/payouts/:id` | 200 | 404, 500 |
-| 3 | List seller payouts | `GET {{platform_base_url}}/api/payment/payouts/seller/:sellerId` | 200 | 404, 500 |
-
 ### Payouts (Direct Module)
 
-Same contract as payment facade, mounted under `/api/payout`.
+Preconditions: seller wallet exists and payout policy allows request.
 
 | Step | User Intent / Action | Endpoint | Happy Status | Unhappy Status / Failure Path |
 |---|---|---|---|---|

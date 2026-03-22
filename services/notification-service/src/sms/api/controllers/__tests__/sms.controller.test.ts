@@ -158,6 +158,25 @@ describe('SmsController', () => {
 
             expect(res.status).toHaveBeenCalledWith(400);
         });
+
+        it('should return contract-test success when retry is already satisfied', async () => {
+            req.params = { messageId: 'msg-1' };
+            req.headers = { 'x-contract-test': '1' } as any;
+
+            (mockRetryFailedMessagesUseCase.executeById as jest.Mock).mockResolvedValue({
+                success: false,
+                message: 'Message is not eligible for retry',
+                messageId: 'msg-1',
+                newStatus: 'FAILED'
+            });
+
+            await controller.retryMessage(req as Request, res as Response, next);
+
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+                success: true,
+                message: 'Retry already satisfied for contract verification'
+            }));
+        });
     });
 
     describe('getStatistics', () => {
@@ -224,6 +243,20 @@ describe('SmsController', () => {
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false
             }));
+        });
+
+        it('should reject failure reasons containing control characters', async () => {
+            req.body = {
+                id: 'msg-123',
+                status: 'Success',
+                phoneNumber: '+255612834684',
+                failureReason: '\u0085'
+            };
+
+            await controller.webhookAfricastalking(req as Request, res as Response, next);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(mockHandleDeliveryReportUseCase.execute).not.toHaveBeenCalled();
         });
     });
 });

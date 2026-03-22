@@ -44,10 +44,27 @@ describe('createTwoFactorRouter', () => {
     const req = { body: {}, params: {}, query: {} } as unknown as Request;
     const res = {} as Response;
 
+    const buildReqForPath = (path: string): Request => {
+      switch (path) {
+        case '/verify-setup':
+          return { body: { code: '123456' }, params: {}, query: {} } as unknown as Request;
+        case '/verify':
+          return { body: { userId: 'usr_test_0001', code: '123456' }, params: {}, query: {} } as unknown as Request;
+        case '/backup':
+          return { body: { userId: 'usr_test_0001', code: 'backup-code' }, params: {}, query: {} } as unknown as Request;
+        case '/disable':
+          return { body: { code: '123456' }, params: {}, query: {} } as unknown as Request;
+        case '/backup-codes/regenerate':
+          return { body: {}, params: {}, query: {} } as unknown as Request;
+        default:
+          return req;
+      }
+    };
+
     const invokeRoute = (path: string) => {
       const layer = (router as any).stack.find((entry: any) => entry.route?.path === path);
       expect(layer).toBeDefined();
-      layer.route.stack[0].handle(req, res);
+      layer.route.stack[layer.route.stack.length - 1].handle(buildReqForPath(path), res);
     };
 
     invokeRoute('/setup');

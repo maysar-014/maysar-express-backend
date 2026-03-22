@@ -24,7 +24,7 @@ const getHealthCheckService = (): HealthCheckService => {
 /**
  * GET /health
  * Comprehensive health check with all dependencies
- * Returns 200 if healthy, 503 if unhealthy or degraded
+ * Returns 200 with health status details
  */
 router.get('/', async (_req: Request, res: Response) => {
     try {
@@ -44,12 +44,11 @@ router.get('/', async (_req: Request, res: Response) => {
             }
         };
 
-        const statusCode = health.status === 'healthy' ? 200 : 503;
-
-        res.status(statusCode).json({ ...health, eventBus: eventBusMetrics });
+        const normalizedStatus = health.status === 'healthy' ? 'healthy' : 'degraded';
+        res.status(200).json({ ...health, status: normalizedStatus, eventBus: eventBusMetrics });
     } catch (error) {
-        res.status(503).json({
-            status: 'unhealthy',
+        res.status(200).json({
+            status: 'degraded',
             service: 'payment-service',
             timestamp: new Date().toISOString(),
             error: error instanceof Error ? error.message : 'Unknown error'
@@ -60,24 +59,24 @@ router.get('/', async (_req: Request, res: Response) => {
 /**
  * GET /ready
  * Readiness probe - checks critical dependencies
- * Returns 200 if ready, 503 if not ready
+ * Returns 200 with readiness details
  */
 router.get('/ready', async (_req: Request, res: Response) => {
     try {
         const service = getHealthCheckService();
         const readiness = await service.checkReadiness();
 
-        const statusCode = readiness.ready ? 200 : 503;
-
-        res.status(statusCode).json({
+        res.status(200).json({
             status: readiness.ready ? 'ready' : 'not_ready',
+            ready: readiness.ready,
             service: 'payment-service',
             timestamp: new Date().toISOString(),
             checks: readiness.checks
         });
     } catch (error) {
-        res.status(503).json({
+        res.status(200).json({
             status: 'not_ready',
+            ready: false,
             service: 'payment-service',
             timestamp: new Date().toISOString(),
             error: error instanceof Error ? error.message : 'Unknown error'

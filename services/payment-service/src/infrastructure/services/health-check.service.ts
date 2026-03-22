@@ -87,26 +87,31 @@ export class HealthCheckService {
         }
 
         try {
-            const pesapalUrl = process.env.PESAPAL_URL || 'https://api.pesapal.com/v3';
-            const secretKey = process.env.PESAPAL_SECRET_KEY || process.env.PESAPAL_CONSUMER_SECRET;
+            const pesapalUrl = process.env.PESAPAL_URL || 'https://cybqa.pesapal.com/pesapalv3';
+            const consumerKey = process.env.PESAPAL_CONSUMER_KEY;
+            const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET || process.env.PESAPAL_SECRET_KEY;
 
-            if (!secretKey) {
+            if (!consumerKey || !consumerSecret) {
                 return {
                     status: 'unhealthy',
                     timestamp: new Date(),
                     details: {
                         connection: 'not_configured',
-                        error: 'Pesapal secret key not configured'
+                        error: 'Pesapal consumer credentials are not configured'
                     }
                 };
             }
 
-            const response = await fetch(`${pesapalUrl}/transactions?limit=1`, {
-                method: 'GET',
+            const response = await fetch(`${pesapalUrl}/api/Auth/RequestToken`, {
+                method: 'POST',
                 headers: {
-                    Authorization: `Bearer ${secretKey}`,
+                    Accept: 'application/json',
                     'Content-Type': 'application/json',
                 },
+                body: JSON.stringify({
+                    consumer_key: consumerKey,
+                    consumer_secret: consumerSecret
+                }),
                 signal: AbortSignal.timeout(5000) // 5 second timeout
             });
 
@@ -131,7 +136,7 @@ export class HealthCheckService {
                 details: {
                     connection: 'successful',
                     provider: 'pesapal',
-                    environment: pesapalUrl.toLowerCase().includes('sandbox') ? 'sandbox' : 'production'
+                    environment: /cybqa|sandbox/i.test(pesapalUrl) ? 'sandbox' : 'production'
                 }
             };
         } catch (error) {

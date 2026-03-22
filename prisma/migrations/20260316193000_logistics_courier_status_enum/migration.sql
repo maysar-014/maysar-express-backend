@@ -7,12 +7,12 @@ END $$;
 UPDATE "logistics_couriers"
 SET "status" = CASE
   WHEN "status" IS NULL THEN 'offline'
-  WHEN LOWER("status") IN ('active','available') THEN 'online'
-  WHEN LOWER("status") IN ('inactive') THEN 'offline'
-  WHEN LOWER("status") IN ('assigned','busy') THEN 'busy'
-  WHEN LOWER("status") IN ('in_transit','delivering') THEN 'delivering'
-  WHEN LOWER("status") IN ('returning') THEN 'returning'
-  WHEN LOWER("status") IN ('online','offline') THEN LOWER("status")
+  WHEN LOWER("status"::text) IN ('active','available') THEN 'online'
+  WHEN LOWER("status"::text) IN ('inactive') THEN 'offline'
+  WHEN LOWER("status"::text) IN ('assigned','busy') THEN 'busy'
+  WHEN LOWER("status"::text) IN ('in_transit','delivering') THEN 'delivering'
+  WHEN LOWER("status"::text) IN ('returning') THEN 'returning'
+  WHEN LOWER("status"::text) IN ('online','offline') THEN LOWER("status"::text)
   ELSE 'offline'
 END;
 

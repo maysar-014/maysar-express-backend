@@ -1,7 +1,17 @@
 import Joi from 'joi';
 import { joiId } from '@shared/validation/id';
 
+const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$/u;
+const EXAMPLE_DOT_COM_EMAIL_PATTERN = /^[A-Za-z][A-Za-z0-9._-]{1,63}@example\.com$/;
+const TANZANIA_MOBILE_PATTERN = /^\+255[67]\d{8}$/;
+const safeVisibleString = Joi.string().min(1).pattern(SAFE_VISIBLE_STRING_PATTERN);
+const MOBILE_MONEY_METHODS = ['MOBILE_MONEY', 'MPESA', 'AIRTEL_MONEY', 'TIGO_PESA', 'HALOPESA'] as const;
+
 export class WalletValidator {
+    static walletUserParams = Joi.object({
+        userId: joiId().required()
+    });
+
     static creditWallet = Joi.object({
         userId: joiId().required(),
         amount: Joi.number().positive().required(),
@@ -30,10 +40,10 @@ export class WalletValidator {
     static placeHold = Joi.object({
         userId: joiId().required(),
         amount: Joi.number().positive().required(),
-        currency: Joi.string().length(3).uppercase().required(),
-        reason: Joi.string().required(),
+        currency: Joi.string().valid('TZS').required(),
+        reason: safeVisibleString.required(),
         expiresInSeconds: Joi.number().integer().positive().required(),
-        idempotencyKey: Joi.string().required(),
+        idempotencyKey: safeVisibleString.required(),
         correlationId: Joi.string().uuid().required(),
         metadata: Joi.object().optional()
     });
@@ -41,67 +51,89 @@ export class WalletValidator {
     static releaseHold = Joi.object({
         userId: joiId().required(),
         holdId: joiId().required(),
-        reason: Joi.string().optional(),
+        reason: safeVisibleString.optional(),
         correlationId: Joi.string().uuid().required(),
-        idempotencyKey: Joi.string().required()
+        idempotencyKey: safeVisibleString.required()
     });
 
     static captureHold = Joi.object({
         userId: joiId().required(),
         holdId: joiId().required(),
         amount: Joi.number().positive().optional(), // Optional: partial capture
-        reason: Joi.string().optional(),
+        reason: safeVisibleString.optional(),
         correlationId: Joi.string().uuid().required(),
-        idempotencyKey: Joi.string().required()
+        idempotencyKey: safeVisibleString.required()
     });
 
     static reverseTransaction = Joi.object({
         userId: joiId().required(),
         transactionId: joiId().required(),
-        reason: Joi.string().required(),
+        reason: safeVisibleString.required(),
         correlationId: Joi.string().uuid().required(),
-        idempotencyKey: Joi.string().required()
+        idempotencyKey: safeVisibleString.required()
     });
 
-    static getStatement = Joi.object({
-        userId: joiId().required(),
+    static statementQuery = Joi.object({
         startDate: Joi.date().iso().optional(),
         endDate: Joi.date().iso().optional(),
         page: Joi.number().integer().min(1).default(1),
         limit: Joi.number().integer().min(1).max(100).default(20)
     });
 
+    static getStatement = WalletValidator.statementQuery;
+
     static topUp = Joi.object({
         userId: joiId().required(),
         amount: Joi.number().positive().required(),
-        currency: Joi.string().length(3).uppercase().required(),
-        method: Joi.string().required(),
-        customerEmail: Joi.string().email().optional(),
-        customerName: Joi.string().optional(),
-        phoneNumber: Joi.string().optional(),
+        currency: Joi.string().valid('TZS').required(),
+        method: Joi.string().valid('MOBILE_MONEY', 'MPESA', 'AIRTEL_MONEY', 'TIGO_PESA', 'HALOPESA', 'WALLET', 'CARD', 'BANK_TRANSFER').required(),
+        customerEmail: Joi.string().email().min(14).max(76).pattern(EXAMPLE_DOT_COM_EMAIL_PATTERN).optional(),
+        customerName: safeVisibleString.optional(),
+        phoneNumber: Joi.string().trim().pattern(TANZANIA_MOBILE_PATTERN).when('method', {
+            is: Joi.string().valid(...MOBILE_MONEY_METHODS),
+            then: Joi.required()
+        }),
         callbackUrl: Joi.string().uri().optional(),
         correlationId: Joi.string().uuid().required(),
         metadata: Joi.object().optional()
     });
 
     static initiatePayout = Joi.object({
-        amount: Joi.number().positive().required(),
-        currency: Joi.string().length(3).uppercase().required(),
+        amount: Joi.number().min(10000).required(),
+        currency: Joi.string().valid('TZS').required(),
         method: Joi.string().valid('BANK_TRANSFER', 'MOBILE_MONEY', 'WALLET').required(),
         bankDetails: Joi.object({
-            bankName: Joi.string().required(),
-            bankCode: Joi.string().required(),
-            accountNumber: Joi.string().required(),
-            accountName: Joi.string().required(),
-            branchCode: Joi.string().optional()
+            bankName: safeVisibleString.required(),
+            bankCode: safeVisibleString.required(),
+            accountNumber: safeVisibleString.required(),
+            accountName: safeVisibleString.required(),
+            branchCode: safeVisibleString.optional()
         }).when('method', { is: 'BANK_TRANSFER', then: Joi.required() }),
         mobileMoneyDetails: Joi.object({
-            provider: Joi.string().required(),
-            phoneNumber: Joi.string().required(),
-            accountName: Joi.string().required()
+            provider: safeVisibleString.required(),
+            phoneNumber: Joi.string().trim().pattern(TANZANIA_MOBILE_PATTERN).required(),
+            accountName: safeVisibleString.required()
         }).when('method', { is: 'MOBILE_MONEY', then: Joi.required() }),
-        idempotencyKey: Joi.string().required(),
+        idempotencyKey: safeVisibleString.required(),
         correlationId: Joi.string().uuid().required(),
         metadata: Joi.object().optional()
+    });
+
+    static freezeFunds = Joi.object({
+        userId: joiId().required(),
+        amount: Joi.number().integer().min(1).required(),
+        description: safeVisibleString.required(),
+        reason: safeVisibleString.optional(),
+        idempotencyKey: safeVisibleString.required(),
+        correlationId: Joi.string().uuid().optional()
+    });
+
+    static unfreezeFunds = Joi.object({
+        userId: joiId().required(),
+        amount: Joi.number().integer().min(1).required(),
+        description: safeVisibleString.required(),
+        reason: safeVisibleString.optional(),
+        idempotencyKey: safeVisibleString.required(),
+        correlationId: Joi.string().uuid().optional()
     });
 }

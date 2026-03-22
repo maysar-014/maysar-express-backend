@@ -23,6 +23,7 @@ import { OutboxProcessor } from '../../shared/outbox/outbox.processor';
 import { databaseManager, loadDatabaseConfig } from './src/config/database.config';
 import healthRoutes from './src/api/routes/health.routes';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 let outboxProcessor: OutboxProcessor | null = null;
 
@@ -106,7 +107,7 @@ export const OrderModule: Module = {
 
             const orderRouter = setupOrderRoutes(orderController, codDisputeController);
             orderRouter.use('/health', healthRoutes);
-            orderRouter.use('/system/maintenance', createMaintenanceRoutes());
+            orderRouter.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
             OrderModule.routes = orderRouter;
             logger.info('Order-service routes mounted successfully');
 
@@ -130,4 +131,6 @@ export const OrderModule: Module = {
         await databaseManager.disconnect();
     }
 };
+
+
 

@@ -42,6 +42,38 @@ async function bootstrap() {
             bootstrapLogger.info(`Readiness probe at http://localhost:${port}/ready`);
         });
 
+        server.on('clientError', (error: NodeJS.ErrnoException, socket: import('net').Socket) => {
+            bootstrapLogger.warn('HTTP client error', {
+                code: error.code,
+                message: error.message
+            });
+
+            if (!socket.writable) {
+                socket.destroy();
+                return;
+            }
+
+            const isInvalidMethod = error.code === 'HPE_INVALID_METHOD';
+            const statusLine = isInvalidMethod
+                ? 'HTTP/1.1 405 Method Not Allowed'
+                : 'HTTP/1.1 400 Bad Request';
+            const body = JSON.stringify({
+                error: isInvalidMethod ? 'Method Not Allowed' : 'Bad Request',
+                message: isInvalidMethod
+                    ? 'Unsupported HTTP method'
+                    : 'Malformed HTTP request'
+            });
+
+            socket.end(
+                `${statusLine}\r\n`
+                + 'Connection: close\r\n'
+                + 'Content-Type: application/json\r\n'
+                + `Content-Length: ${Buffer.byteLength(body)}\r\n`
+                + '\r\n'
+                + body
+            );
+        });
+
         // Graceful shutdown
         const shutdown = async () => {
             bootstrapLogger.info('Received shutdown signal');
@@ -54,6 +86,22 @@ async function bootstrap() {
 
         process.on('SIGTERM', shutdown);
         process.on('SIGINT', shutdown);
+
+        const keepAliveOnCrash = process.env.NODE_ENV !== 'production';
+
+        process.on('unhandledRejection', (reason) => {
+            bootstrapLogger.error('Unhandled Promise Rejection', reason as any);
+            if (!keepAliveOnCrash) {
+                void shutdown();
+            }
+        });
+
+        process.on('uncaughtException', (error) => {
+            bootstrapLogger.error('Uncaught Exception', error);
+            if (!keepAliveOnCrash) {
+                void shutdown();
+            }
+        });
 
     } catch (error) {
         bootstrapLogger.error('Failed to bootstrap application:', error);

@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import { SearchEngineInitializer } from './src/infrastructure/search-initializer';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { createPrismaClient } from '@shared/database/prisma-client';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 dotenv.config();
 
@@ -20,7 +21,7 @@ const legacyWholesalePricingModel = (prisma as unknown as {
 }).wholesalePricing;
 
 app.use(express.json());
-app.use('/api/v1/system/maintenance', createMaintenanceRoutes(prisma));
+app.use('/api/v1/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(prisma));
 
 let searchEngine: any;
 let indexManager: any;
@@ -670,3 +671,5 @@ initializeServices().then(() => {
 });
 
 export default app;
+
+

@@ -36,17 +36,38 @@ export function errorMiddleware(err: Error, _req: Request, res: Response, _next:
     err instanceof BusinessValidationError ||
     err instanceof InvalidRegistrationNumberError
   ) {
-    res.status(400).json({
+    const normalized = err.message.toLowerCase();
+    const status = normalized.includes('already verified')
+      || normalized.includes('only suspended businesses can be reactivated')
+      || normalized.includes('already suspended')
+      || normalized.includes('conflict')
+      ? 409
+      : 400;
+    res.status(status).json({
       success: false,
       error: { code: 'VALIDATION_ERROR', message: err.message }
     });
     return;
   }
 
-  if (err instanceof BusinessSuspendedError || err instanceof UnauthorizedBusinessOperationError) {
+  if (err instanceof BusinessSuspendedError) {
     res.status(403).json({
       success: false,
       error: { code: 'UNAUTHORIZED', message: err.message }
+    });
+    return;
+  }
+
+  if (err instanceof UnauthorizedBusinessOperationError) {
+    const normalized = err.message.toLowerCase();
+    const status = normalized.includes('suspended')
+      || normalized.includes('closed')
+      || normalized.includes('reactivate')
+      ? 409
+      : 403;
+    res.status(status).json({
+      success: false,
+      error: { code: status === 409 ? 'CONFLICT' : 'UNAUTHORIZED', message: err.message }
     });
     return;
   }

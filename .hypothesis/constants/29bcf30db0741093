@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\specs\openapi\stateful\dependencies\models.py
+# hypothesis_version: 6.151.9
+
+[0.6, '.', '/', '/0', '0/', '_', '_guid', '_guids', '_id', '_ids', '_uuid', '_uuids', 'array', 'fields', 'fk_fields', 'guid', 'id', 'inputs', 'is_inferred', 'items', 'links', 'merge_body', 'method', 'name', 'nested_fk_fields', 'object', 'operationRef', 'operation_ref', 'operations', 'outputs', 'parameters', 'path', 'path.', 'properties', 'requestBody', 'request_body', 'resource', 'resources', 'source', 'status_code', 'type', 'types', 'uuid']

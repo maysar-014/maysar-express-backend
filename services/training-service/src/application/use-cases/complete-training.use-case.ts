@@ -29,7 +29,17 @@ export class CompleteTrainingUseCase {
         }
 
         const trainingScore = TrainingScore.create(score);
-        record.complete(trainingScore, requirement.minimumScore, requirement.validityPeriodDays);
+        try {
+            record.complete(trainingScore, requirement.minimumScore, requirement.validityPeriodDays);
+        } catch (error: any) {
+            const message = String(error?.message || '');
+            if (message.toLowerCase().includes('not in progress')) {
+                const domainError = new Error('Training not in progress') as Error & { status?: number };
+                domainError.status = 400;
+                throw domainError;
+            }
+            throw error;
+        }
 
         await this.trainingRecordRepo.save(record);
 

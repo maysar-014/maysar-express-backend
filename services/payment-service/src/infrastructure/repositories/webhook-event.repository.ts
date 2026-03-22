@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient } from '@prisma/client';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export interface WebhookEventInput {
   provider: string;
@@ -28,6 +29,7 @@ export class WebhookEventRepository {
         retryCount: { increment: 1 }
       },
       create: {
+        id: makeId(getModelPrefix('Payment_WebhookEvent')),
         provider: input.provider,
         eventType: input.eventType,
         eventId: input.eventId,
@@ -67,12 +69,17 @@ export class WebhookEventRepository {
     }
 
     if (Array.isArray(value)) {
-      return value.map((item) => this.toJsonSafe(item));
+      return value
+        .filter((item) => item !== undefined)
+        .map((item) => this.toJsonSafe(item));
     }
 
     if (value && typeof value === 'object') {
       const result: Record<string, Prisma.InputJsonValue> = {};
       for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+        if (item === undefined) {
+          continue;
+        }
         result[key] = this.toJsonSafe(item);
       }
       return result;

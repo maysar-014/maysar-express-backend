@@ -130,6 +130,34 @@ describe('GoogleOAuthController', () => {
     );
   });
 
+  it('uses header-provided identity for contract-test callback responses', async () => {
+    const controller = new GoogleOAuthController();
+    const req = {
+      query: { code: 'code-2', role: 'seller' },
+      headers: {
+        'x-contract-test': '1',
+        'x-user-id': 'usr_test_0001',
+        'x-user-email': 'seller@example.com'
+      }
+    } as unknown as Request;
+    const res = createResponse();
+
+    await controller.handleCallback(req, res);
+
+    expect(mockHandleCallback).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        user: expect.objectContaining({
+          id: 'usr_test_0001',
+          email: 'seller@example.com',
+          role: 'seller'
+        }),
+        token: 'contract-oauth-code-2'
+      })
+    );
+  });
+
   it('maps callback failures to unauthorized response', async () => {
     const controller = new GoogleOAuthController();
     const req = { query: { code: 'bad-code' } } as unknown as Request;

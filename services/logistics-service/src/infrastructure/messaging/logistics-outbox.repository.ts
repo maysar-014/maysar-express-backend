@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { IOutboxRepository, OutboxEvent, OutboxStatus } from '../../../../../shared/outbox/outbox.repository';
 import { EventEnvelope } from '../../../../../shared/events/eventBus';
 import type { PrismaTransaction } from '../../../../../shared/types';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 export class LogisticsOutboxRepository implements IOutboxRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -15,6 +16,7 @@ export class LogisticsOutboxRepository implements IOutboxRepository {
     const createdAt = envelope.timestamp ? new Date(envelope.timestamp) : new Date();
     await client.logistics_OutboxEvent.create({
       data: {
+        id: makeId(getModelPrefix('Logistics_OutboxEvent')),
         eventId,
         eventType,
         eventData,

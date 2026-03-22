@@ -42,7 +42,7 @@ export const validateRequest = (schema: ValidatableSchema) => {
     try {
       const { error, value } = schema.validate(_req.body, {
         abortEarly: false,
-        stripUnknown: true,
+        stripUnknown: false,
         convert: true
       });
 
@@ -80,7 +80,7 @@ export const validateQuery = (schema: ValidatableSchema) => {
     try {
       const { error, value } = schema.validate(_req.query, {
         abortEarly: false,
-        stripUnknown: true,
+        stripUnknown: false,
         convert: true
       });
 

@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\core\transport.py
+# hypothesis_version: 6.151.9
+
+[0.0, '1.0', '1.1', 'Unknown', 'X', '_deserialized', '_encoded_body', '_override', 'arbitrary-value', 'charset', 'content', 'default', 'elapsed', 'encoding', 'headers', 'http_version', 'message', 'request', 'status_code', 'utf-8', 'verify']

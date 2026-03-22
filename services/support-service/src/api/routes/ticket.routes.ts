@@ -11,7 +11,7 @@ const controller = container.get<TicketController>(TYPES.TicketController);
 
 // Ticket Lifecycle
 router.post('/', authenticate, validate(schemas.createTicketSchema), controller.createTicket.bind(controller));
-router.get('/', authenticate, authorize(['agent', 'admin']), validateQuery(schemas.listTicketsSchema), controller.listTickets.bind(controller));
+router.get('/', authenticate, validateQuery(schemas.listTicketsSchema), controller.listTickets.bind(controller));
 router.get('/:id', authenticate, controller.getTicket.bind(controller));
 
 // Assignment & Resolution

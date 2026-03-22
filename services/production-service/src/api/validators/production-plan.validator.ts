@@ -1,7 +1,7 @@
 
 import { z } from 'zod';
 import { zodId } from '@shared/validation/id';
-import { ProductionPriority } from '../../domain/entities/ProductionPlan.entity';
+import { ProductionPriority, ProductionStatus } from '../../domain/entities/ProductionPlan.entity';
 
 export const createProductionPlanSchema = z.object({
     body: z.object({
@@ -11,15 +11,19 @@ export const createProductionPlanSchema = z.object({
         targetQuantity: z.number().int().positive(),
         startDate: z.string().datetime(),
         endDate: z.string().datetime(),
-        priority: z.nativeEnum(ProductionPriority).optional()
-    })
+        priority: z.nativeEnum(ProductionPriority).optional(),
+        maxCapacity: z.number().int().positive().optional(),
+        usedCapacity: z.number().int().nonnegative().optional(),
+        reservedCapacity: z.number().int().nonnegative().optional(),
+        capacityUnit: z.string().min(1).optional()
+    }).strict()
 });
 
 export const updateProductionStatusSchema = z.object({
     params: z.object({
         id: zodId()
-    }),
+    }).strict(),
     body: z.object({
-        status: z.string() // Should be enum validation ideally
-    })
+        status: z.nativeEnum(ProductionStatus)
+    }).strict()
 });

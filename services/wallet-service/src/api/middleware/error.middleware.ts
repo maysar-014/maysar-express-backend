@@ -57,13 +57,9 @@ export const errorHandler = (
     }
 
     res.status(statusCode).json({
-        error: {
-            message,
-            code,
-            timestamp: new Date().toISOString(),
-            path: req.path,
-            method: req.method
-        }
+        error: 'Internal Server Error',
+        message,
+        ...(code ? { code } : {})
     });
 };
 

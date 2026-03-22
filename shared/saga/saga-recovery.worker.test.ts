@@ -21,11 +21,12 @@ describe('SagaRecoveryWorker', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+    delete process.env.ENABLE_SAGA_RECOVERY;
   });
 
   it('starts once, triggers immediate recovery, and polls on interval', async () => {
     const repo = { findStuck: jest.fn().mockResolvedValue([]) };
-    const worker = new SagaRecoveryWorker(repo as any, new Map(), {
+    const worker = new SagaRecoveryWorker(repo as any, new Map([['OrderSaga', {} as any]]), {
       pollIntervalMs: 1000
     });
     const recoverSpy = jest.spyOn(worker, 'recover').mockResolvedValue(undefined);
@@ -42,7 +43,7 @@ describe('SagaRecoveryWorker', () => {
 
   it('warns when start is called while worker is already running', () => {
     const repo = { findStuck: jest.fn().mockResolvedValue([]) };
-    const worker = new SagaRecoveryWorker(repo as any, new Map(), {
+    const worker = new SagaRecoveryWorker(repo as any, new Map([['OrderSaga', {} as any]]), {
       pollIntervalMs: 1000
     });
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
@@ -55,7 +56,7 @@ describe('SagaRecoveryWorker', () => {
 
   it('stops interval loop and logs stop', () => {
     const repo = { findStuck: jest.fn().mockResolvedValue([]) };
-    const worker = new SagaRecoveryWorker(repo as any, new Map(), {
+    const worker = new SagaRecoveryWorker(repo as any, new Map([['OrderSaga', {} as any]]), {
       pollIntervalMs: 1000
     });
     const clearSpy = jest.spyOn(global, 'clearInterval');
@@ -70,7 +71,7 @@ describe('SagaRecoveryWorker', () => {
 
   it('queries stuck sagas with STARTED and COMPENSATING statuses', async () => {
     const repo = { findStuck: jest.fn().mockResolvedValue([]) };
-    const worker = new SagaRecoveryWorker(repo as any, new Map(), {
+    const worker = new SagaRecoveryWorker(repo as any, new Map([['OrderSaga', {} as any]]), {
       stuckThresholdMs: 1234
     });
 
@@ -78,7 +79,8 @@ describe('SagaRecoveryWorker', () => {
 
     expect(repo.findStuck).toHaveBeenCalledWith(
       [SagaStatus.STARTED, SagaStatus.COMPENSATING],
-      1234
+      1234,
+      ['OrderSaga']
     );
   });
 
@@ -132,17 +134,41 @@ describe('SagaRecoveryWorker', () => {
     );
   });
 
-  it('skips saga when no orchestrator is registered for saga type', async () => {
+  it('does not query unknown saga types when registry filtering is applied', async () => {
     const repo = {
       findStuck: jest.fn().mockResolvedValue([makeSaga({ sagaType: 'UnknownSaga' })])
     };
-    const worker = new SagaRecoveryWorker(repo as any, new Map());
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const worker = new SagaRecoveryWorker(repo as any, new Map([['OrderSaga', {} as any]]));
 
     await worker.recover();
 
-    expect(warnSpy).toHaveBeenCalledWith(
-      'SagaRecoveryWorker: no orchestrator registered for saga type UnknownSaga, skipping saga-1'
+    expect(repo.findStuck).toHaveBeenCalledWith(
+      [SagaStatus.STARTED, SagaStatus.COMPENSATING],
+      5 * 60 * 1000,
+      ['OrderSaga']
     );
+  });
+
+  it('does not start when disabled via configuration', () => {
+    process.env.ENABLE_SAGA_RECOVERY = 'false';
+    const repo = { findStuck: jest.fn().mockResolvedValue([]) };
+    const worker = new SagaRecoveryWorker(repo as any, new Map([['OrderSaga', {} as any]]));
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    worker.start();
+
+    expect(repo.findStuck).not.toHaveBeenCalled();
+    expect(logSpy).toHaveBeenCalledWith('SagaRecoveryWorker disabled via configuration');
+  });
+
+  it('does not start when no saga types are registered', () => {
+    const repo = { findStuck: jest.fn().mockResolvedValue([]) };
+    const worker = new SagaRecoveryWorker(repo as any, new Map());
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    worker.start();
+
+    expect(repo.findStuck).not.toHaveBeenCalled();
+    expect(logSpy).toHaveBeenCalledWith('SagaRecoveryWorker disabled: no registered saga types');
   });
 });

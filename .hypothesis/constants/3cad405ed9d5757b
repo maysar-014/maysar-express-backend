@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\specs\openapi\checks.py
+# hypothesis_version: 6.151.9
+
+[200, 300, 400, 401, 404, 405, '\nInvalid component: ', ', ', '/', 'Cookie', 'DELETE', 'Invalid type string', 'OPTIONS', 'OpenApiSchema', 'POST', 'Response', 'Schema', 'Unknown', 'additionalProperties', 'allow', 'apiKey', 'app', 'array', 'auth', 'authorization', 'basic', 'boolean', 'content-type', 'cookie', 'cookies', 'default', 'delete', 'explicit', 'generated', 'generated_auth', 'get', 'head', 'header', 'headers', 'http', 'in', 'integer', 'invalid_auth', 'missing_allow_header', 'name', 'no_auth', 'null', 'number', 'object', 'options', 'params', 'patch', 'properties', 'property', 'query', 's', 'schema', 'session', 'string', 'type', 'value', 'variables', 'wrong_status', '{', '}']

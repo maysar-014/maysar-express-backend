@@ -7,6 +7,7 @@ describe('Seller Storefront Routes Integration', () => {
   let app: express.Application;
 
   beforeAll(() => {
+    process.env.ALLOWED_SERVICE_KEYS = 'test-service-key';
     app = express();
     app.use(express.json());
     
@@ -58,6 +59,8 @@ describe('Seller Storefront Routes Integration', () => {
     it('should generate share URL with QR code', async () => {
       const response = await request(app)
         .post('/api/catalog/api/v1/sellers/seller456/share-url')
+        .set('x-service-key', 'test-service-key')
+        .set('x-user-id', 'user-123')
         .send({ includeQR: true })
         .expect(200);
 
@@ -74,6 +77,8 @@ describe('Seller Storefront Routes Integration', () => {
     it('should generate share URL without QR code when requested', async () => {
       const response = await request(app)
         .post('/api/catalog/api/v1/sellers/seller456/share-url')
+        .set('x-service-key', 'test-service-key')
+        .set('x-user-id', 'user-123')
         .send({ includeQR: false })
         .expect(200);
 
@@ -83,6 +88,8 @@ describe('Seller Storefront Routes Integration', () => {
     it('should accept custom slug', async () => {
       const response = await request(app)
         .post('/api/catalog/api/v1/sellers/seller456/share-url')
+        .set('x-service-key', 'test-service-key')
+        .set('x-user-id', 'user-123')
         .send({ customSlug: 'my-shop' })
         .expect(200);
 
@@ -95,6 +102,8 @@ describe('Seller Storefront Routes Integration', () => {
     it('should handle empty request body', async () => {
       const response = await request(app)
         .post('/api/catalog/api/v1/sellers/seller456/share-url')
+        .set('x-service-key', 'test-service-key')
+        .set('x-user-id', 'user-123')
         .send({})
         .expect(200);
 
@@ -106,6 +115,8 @@ describe('Seller Storefront Routes Integration', () => {
     it('should validate content-type for POST requests', async () => {
       await request(app)
         .post('/api/catalog/api/v1/sellers/seller456/share-url')
+        .set('x-service-key', 'test-service-key')
+        .set('x-user-id', 'user-123')
         .set('Content-Type', 'application/json')
         .send({ includeQR: true })
         .expect(200);

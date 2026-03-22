@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\errors.py
+# hypothesis_version: 6.151.9
+
+['HookError', 'HookExecutionError', 'IncorrectUsage', 'InternalError', 'InvalidRateLimit', 'InvalidRegexPattern', 'InvalidRegexType', 'InvalidSchema', 'InvalidStateMachine', 'InvalidTransition', 'LoaderError', 'NoLinksFound', 'OperationNotFound', 'SchemathesisError', 'SerializationError', 'UnboundPrefix']

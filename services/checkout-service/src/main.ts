@@ -16,6 +16,7 @@ import { tracingService, correlationMiddleware } from '../../../shared/tracing/o
 import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
 import { prisma } from './infrastructure/database/prisma-client';
 import { createMaintenanceRoutes } from './api/routes/maintenance.routes';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 // Initialize Tracing
 tracingService.start();
@@ -52,7 +53,7 @@ app.get('/metrics', async (req, res) => {
 
 // Register routes
 app.use('/api/checkout', createCheckoutRoutes(cartController, checkoutController));
-app.use('/api/v1/system/maintenance', createMaintenanceRoutes());
+app.use('/api/v1/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
@@ -64,3 +65,5 @@ app.listen(PORT, () => {
 });
 
 export default app;
+
+

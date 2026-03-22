@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\config\_warnings.py
+# hypothesis_version: 6.151.9
+
+['display', 'enabled', 'fail-on', 'fail_on', 'missing_auth', 'missing_deserializer', 'missing_test_data', 'unsupported_regex', 'unused_openapi_auth', 'validation_mismatch']

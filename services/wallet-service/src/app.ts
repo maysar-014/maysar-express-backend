@@ -10,6 +10,7 @@ import { requestLogger } from './api/middleware/request-logger.middleware';
 import { correlationMiddleware } from '../../../shared/tracing/openTelemetry';
 import { metricsRegistry } from './infrastructure/monitoring/metrics';
 import { createMaintenanceRoutes } from './api/routes/maintenance.routes';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 export function createApp() {
     const app = express();
@@ -26,7 +27,7 @@ export function createApp() {
 
     // API routes
     app.use('/api/wallets', createWalletRoutes(container.walletController));
-    app.use('/api/v1/system/maintenance', createMaintenanceRoutes(container.prisma));
+    app.use('/api/v1/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(container.prisma));
 
     // Prometheus metrics
     app.get('/metrics', async (req, res) => {
@@ -39,3 +40,5 @@ export function createApp() {
 
     return app;
 }
+
+

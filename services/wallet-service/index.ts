@@ -7,6 +7,7 @@ import { createWalletRoutes } from './src/api/routes/wallet.routes';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { Container } from './src/container';
 import { createPrismaClient } from '@shared/database/prisma-client';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 const prisma = createPrismaClient();
 const eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, prisma);
@@ -23,7 +24,7 @@ export const WalletModule: Module = {
     routes: (() => {
         const router = Router();
         router.use('/health', healthRoutes);
-        router.use('/system/maintenance', createMaintenanceRoutes());
+        router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(prisma));
 
         try {
             // Lazy load to avoid env-dependent side effects during module import
@@ -47,3 +48,5 @@ export const WalletModule: Module = {
         console.log('Shutting down wallet-service module');
     }
 };
+
+

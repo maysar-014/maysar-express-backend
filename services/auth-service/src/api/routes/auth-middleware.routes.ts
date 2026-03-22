@@ -3,8 +3,22 @@ import { AuthMiddlewareController } from '../controllers/auth-middleware.control
 import { validateRequest } from '../middleware/validation.middleware';
 import { asyncHandler } from '../middleware/error-handler.middleware';
 import { rateLimit } from '../middleware/rate-limiting.middleware';
+import { isSystemId } from '@shared/ids/id';
 
 const router = Router();
+const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S).+$/;
+const requireBodySystemId = (fieldName: string) => (req: any, res: any, next: any) => {
+  const value = typeof req.body?.[fieldName] === 'string' ? req.body[fieldName].trim() : '';
+  if (!isSystemId(value)) {
+    res.status(400).json({
+      success: false,
+      message: 'Validation failed',
+      errors: [`"${fieldName}" must be a valid ID`]
+    });
+    return;
+  }
+  next();
+};
 
 // Create controller instance
 const authMiddlewareController = new AuthMiddlewareController();
@@ -94,7 +108,12 @@ router.post(
   validateRequest({
     body: {
       serviceId: { type: 'string', required: true, minLength: 3 },
-      permissions: { type: 'array', required: true, items: { type: 'string' } },
+      permissions: {
+        type: 'array',
+        required: true,
+        minItems: 1,
+        items: { type: 'string', minLength: 1 }
+      },
       expiresAt: { type: 'string', required: false, format: 'date-time' }
     }
   }),
@@ -230,13 +249,14 @@ router.get(
 router.delete(
   '/device/:deviceId',
   rateLimit({ windowMs: 60 * 1000, max: 10 }),
+  requireBodySystemId('userId'),
   validateRequest({
     params: {
       deviceId: { type: 'string', required: true, minLength: 1 }
     },
     body: {
       userId: { type: 'string', required: true },
-      reason: { type: 'string', required: false }
+      reason: { type: 'string', required: false, pattern: SAFE_VISIBLE_STRING_PATTERN }
     }
   }),
   asyncHandler(authMiddlewareController.removeDevice.bind(authMiddlewareController))

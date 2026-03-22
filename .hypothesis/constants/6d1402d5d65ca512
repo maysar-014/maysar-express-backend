@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\transport\requests.py
+# hypothesis_version: 6.151.9
+
+['?', 'Authorization', 'Content-Type', 'all', 'application/json', 'application/x-yaml', 'application/xml', 'application/yaml', 'ascii', 'auth', 'base_url', 'call', 'call_and_validate', 'cert', 'content-type', 'cookies', 'data', 'files', 'headers', 'latin-1', 'max_redirects', 'method', 'multipart/form-data', 'multipart/mixed', 'params', 'proxies', 'requests.Session', 'text/json', 'text/plain', 'text/vnd.yaml', 'text/x-yaml', 'text/xml', 'text/yaml', 'text/yml', 'timeout', 'url', 'utf8', 'verify']

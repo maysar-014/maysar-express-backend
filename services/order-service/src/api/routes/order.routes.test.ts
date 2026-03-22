@@ -39,6 +39,33 @@ const buildOrderController = () => ({
   getOrderAnalytics: jest.fn(async (_req: Request, res: Response) => res.status(200).json({ action: 'getOrderAnalytics' }))
 });
 
+const contractHeaders = {
+  'x-contract-test': '1',
+  'x-user-id': 'usr_test_0001',
+  'x-user-roles': 'admin'
+};
+
+const validOrderPayload = {
+  buyerId: 'usr_test_0001',
+  sellerId: 'usr_01ARZ3NDEKTSV4RRFFQ69G5FAV',
+  currency: 'TZS',
+  paymentMethod: 'WALLET',
+  items: [
+    {
+      productId: 'cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV',
+      quantity: 1,
+      price: 1000,
+      weight: 1
+    }
+  ],
+  deliveryAddress: {
+    street: 'Uhuru Street',
+    city: 'Dar es Salaam',
+    postalCode: '11101',
+    country: 'TZ'
+  }
+};
+
 describe('setupOrderRoutes', () => {
   it('registers order and COD dispute endpoints', () => {
     const orderController = buildOrderController();
@@ -75,8 +102,11 @@ describe('setupOrderRoutes', () => {
     app.use(express.json());
     app.use('/api', setupOrderRoutes(orderController as never, codDisputeController as never));
 
-    const createRes = await request(app).post('/api/orders').send({});
-    const resolveRes = await request(app).post('/api/orders/disputes/dispute-1/resolve');
+    const createRes = await request(app).post('/api/orders').set(contractHeaders).send(validOrderPayload);
+    const resolveRes = await request(app)
+      .post('/api/orders/disputes/dispute-1/resolve')
+      .set(contractHeaders)
+      .send({ resolution: 'Approved refund', decision: 'approved' });
 
     expect(createRes.status).toBe(201);
     expect(createRes.body.action).toBe('placeOrder');

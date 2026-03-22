@@ -4,6 +4,7 @@ import { TransactionalOutbox } from './outboxPattern';
 import { Counter, Histogram } from 'prom-client';
 import { metricsRegistry } from '../metrics/metrics.factory';
 import { createLogger } from '../logger/logger';
+import { isOutboxProcessorEnabled } from '../runtime/background-workers';
 
 export const outboxDelay = new Histogram({
     name: 'outbox_event_processing_delay_seconds',
@@ -27,22 +28,33 @@ export const outboxFailed = new Counter({
     registers: [metricsRegistry]
 });
 
+interface OutboxProcessorConfig {
+    pollInterval: number;
+    batchSize: number;
+    maxRetries: number;
+    retryDelayMs: number;
+    infrastructureBackoffMs: number;
+}
+
 export class OutboxProcessor {
     private isRunning = false;
+    private isProcessing = false;
     private intervalId?: NodeJS.Timeout;
     private logger: ReturnType<typeof createLogger>;
     private serviceName: string;
+    private pauseUntil = 0;
 
     constructor(
         private prisma: PrismaClient,
         private outbox: TransactionalOutbox,
         private eventPublisher: IEventPublisher,
         serviceName?: string,
-        private config = {
+        private config: OutboxProcessorConfig = {
             pollInterval: 5000,
             batchSize: 50,
             maxRetries: 5,
-            retryDelayMs: 30000
+            retryDelayMs: 30000,
+            infrastructureBackoffMs: 60000
         }
     ) {
         this.serviceName = serviceName || process.env.SERVICE_NAME || 'unknown';
@@ -50,11 +62,16 @@ export class OutboxProcessor {
     }
 
     start(): void {
+        if (!isOutboxProcessorEnabled()) {
+            this.logger.info('Outbox processor disabled via configuration');
+            return;
+        }
+
         if (this.isRunning) return;
 
         this.isRunning = true;
         this.intervalId = setInterval(() => {
-            this.processOutboxEvents().catch(err => this.logger.error('Error in outbox processing loop', err));
+            this.runProcessingLoop().catch(err => this.logger.error('Error in outbox processing loop', err));
         }, this.config.pollInterval);
 
         this.logger.info('Outbox processor started');
@@ -69,6 +86,35 @@ export class OutboxProcessor {
         }
 
         this.logger.info('Outbox processor stopped');
+    }
+
+    private async runProcessingLoop(): Promise<void> {
+        if (this.isProcessing) {
+            return;
+        }
+
+        if (Date.now() < this.pauseUntil) {
+            return;
+        }
+
+        this.isProcessing = true;
+        try {
+            await this.processOutboxEvents();
+        } catch (error) {
+            if (this.isInfrastructureError(error)) {
+                this.pauseUntil = Date.now() + this.config.infrastructureBackoffMs;
+                this.logger.error('Error in outbox processing loop', error);
+                this.logger.warn(
+                    `Outbox processor paused for ${this.config.infrastructureBackoffMs}ms after infrastructure error`,
+                    { resumeAt: new Date(this.pauseUntil).toISOString() }
+                );
+                return;
+            }
+
+            throw error;
+        } finally {
+            this.isProcessing = false;
+        }
     }
 
     private async processOutboxEvents(): Promise<void> {
@@ -112,5 +158,20 @@ export class OutboxProcessor {
         }
 
         return eventData as EventEnvelope;
+    }
+
+    private isInfrastructureError(error: unknown): boolean {
+        const message = error instanceof Error ? error.message : String(error);
+        const name = error instanceof Error ? error.name : '';
+        const normalizedMessage = message.toLowerCase();
+        const normalizedName = name.toLowerCase();
+
+        return (
+            normalizedName.includes('prismaclientinitializationerror')
+            || normalizedMessage.includes("can't reach database server")
+            || normalizedMessage.includes('database server')
+            || normalizedMessage.includes('econnrefused')
+            || normalizedMessage.includes('connect etimedout')
+        );
     }
 }

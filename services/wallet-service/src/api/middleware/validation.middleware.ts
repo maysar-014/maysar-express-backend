@@ -9,22 +9,88 @@ interface ValidatableSchema {
     };
 }
 
-export const validateRequest = (schema: ValidatableSchema) => {
+interface ValidationSchemaSections {
+    params?: ValidatableSchema;
+    query?: ValidatableSchema;
+    body?: ValidatableSchema;
+}
+
+const isSectionedSchema = (schema: ValidatableSchema | ValidationSchemaSections): schema is ValidationSchemaSections =>
+    typeof schema === 'object'
+    && schema !== null
+    && !('validate' in schema);
+
+const normalizeBody = (body: unknown) =>
+    body && typeof body === 'object' && !Array.isArray(body)
+        ? body
+        : {};
+
+const validateSection = (
+    schema: ValidatableSchema | undefined,
+    value: unknown
+): { error?: { details: Array<{ message: string }> }; value: unknown } => {
+    if (!schema) {
+        return { value };
+    }
+
+    return schema.validate(value, {
+        abortEarly: false,
+        stripUnknown: false,
+        convert: true
+    });
+};
+
+const logValidationFailure = (req: Request, errors: Array<{ message: string }>) => {
+    logger.warn('Request validation failed', {
+        path: req.path,
+        method: req.method,
+        errors: errors.map((d) => d.message)
+    });
+};
+
+export const validateRequest = (schema: ValidatableSchema | ValidationSchemaSections) => {
     return (req: Request, _res: Response, next: NextFunction) => {
         try {
-            const { error, value } = schema.validate(req.body, {
+            if (isSectionedSchema(schema)) {
+                const paramsResult = validateSection(schema.params, req.params);
+                if (paramsResult.error) {
+                    logValidationFailure(req, paramsResult.error.details);
+                    return next(createError.badRequest('Validation failed'));
+                }
+
+                const queryResult = validateSection(schema.query, req.query);
+                if (queryResult.error) {
+                    logValidationFailure(req, queryResult.error.details);
+                    return next(createError.badRequest('Validation failed'));
+                }
+
+                const bodyResult = validateSection(schema.body, normalizeBody(req.body));
+                if (bodyResult.error) {
+                    logValidationFailure(req, bodyResult.error.details);
+                    return next(createError.badRequest('Validation failed'));
+                }
+
+                if (schema.params) req.params = paramsResult.value as Request['params'];
+                if (schema.query) req.query = queryResult.value as Request['query'];
+                if (schema.body) req.body = bodyResult.value;
+                next();
+                return;
+            }
+
+            const payload = {
+                ...req.params,
+                ...req.query,
+                ...normalizeBody(req.body)
+            };
+
+            const { error, value } = schema.validate(payload, {
                 abortEarly: false,
-                stripUnknown: true,
+                stripUnknown: false,
                 convert: true
             });
 
             if (error) {
-                logger.warn('Request validation failed', {
-                    path: req.path,
-                    method: req.method,
-                    errors: error.details.map((d) => d.message)
-                });
-
+                logValidationFailure(req, error.details);
                 return next(createError.badRequest('Validation failed'));
             }
 

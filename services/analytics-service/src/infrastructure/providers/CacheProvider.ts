@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import { attachRedisErrorHandlers } from '@shared/redis/ioredis-client';
 
 export class CacheProvider {
     private readonly redis: Redis;
@@ -11,6 +12,7 @@ export class CacheProvider {
             port,
             retryStrategy: (times) => Math.min(times * 50, 2000)
         });
+        attachRedisErrorHandlers(this.redis, 'analytics-service');
     }
 
     async get(key: string): Promise<string | null> {

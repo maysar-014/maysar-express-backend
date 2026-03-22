@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\specs\openapi\serialization.py
+# hypothesis_version: 6.151.9
+
+[',', '.', ':', ';', '?', 'application/json', 'array', 'collectionFormat', 'content', 'cookie', 'csv', 'deepObject', 'encoding', 'explode', 'form', 'header', 'ignore', 'in', 'label', 'matrix', 'name', 'object', 'path', 'pipeDelimited', 'pipes', 'properties', 'query', 'querystring', 'schema', 'simple', 'spaceDelimited', 'ssv', 'style', 'tsv', 'type', 'utf-8', '|']

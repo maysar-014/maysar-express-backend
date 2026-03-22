@@ -1,9 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import { AnyZodObject, ZodError } from 'zod';
 
+const withStrictObject = (schema: AnyZodObject): AnyZodObject =>
+    typeof (schema as AnyZodObject & { strict?: () => AnyZodObject }).strict === 'function'
+        ? (schema as AnyZodObject & { strict: () => AnyZodObject }).strict()
+        : schema;
+
 export const validate = (schema: AnyZodObject) => async (req: Request, res: Response, next: NextFunction) => {
     try {
-        await schema.parseAsync(req.body);
+        await withStrictObject(schema).parseAsync(req.body);
         return next();
     } catch (error) {
         if (error instanceof ZodError) {
@@ -25,7 +30,7 @@ export const validate = (schema: AnyZodObject) => async (req: Request, res: Resp
 
 export const validateQuery = (schema: AnyZodObject) => async (req: Request, res: Response, next: NextFunction) => {
     try {
-        await schema.parseAsync(req.query);
+        await withStrictObject(schema).parseAsync(req.query);
         return next();
     } catch (error) {
         if (error instanceof ZodError) {

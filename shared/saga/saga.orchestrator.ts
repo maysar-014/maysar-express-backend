@@ -471,6 +471,12 @@ export abstract class DistributedSagaOrchestrator<T = unknown> {
         if (!saga) throw new Error(`Saga ${sagaId} not found`);
 
         if (saga.status === SagaStatus.STARTED || saga.status === SagaStatus.IN_PROGRESS) {
+            if (saga.currentStep === 'START') {
+                this.logger.info(`Resuming saga ${sagaId} from START`, { sagaId });
+                await this.executeNextStep(sagaId, saga.payload as T, 0);
+                return;
+            }
+
             const stepIndex = this.steps.findIndex(s => s.name === saga.currentStep);
             if (stepIndex === -1) {
                 this.logger.error(`Cannot resume saga ${sagaId}: step ${saga.currentStep} not found`, undefined, { sagaId, currentStep: saga.currentStep });

@@ -15,7 +15,11 @@ export class PrismaAuditRepository implements IAuditRepository {
     reason?: string;
     metadata?: Record<string, any>;
   }): Promise<void> {
-    await this.prisma.auditLog.create({
+    const delegate = (this.prisma as any).auditLog;
+    if (!delegate || typeof delegate.create !== 'function') {
+      return;
+    }
+    await delegate.create({
       data: {
         id: makeId(getModelPrefix('AuditLog')),
         userId: event.userId,
@@ -38,7 +42,11 @@ export class PrismaAuditRepository implements IAuditRepository {
     newValue?: any;
     reason?: string;
   }): Promise<void> {
-    await this.prisma.auditLog.create({
+    const delegate = (this.prisma as any).auditLog;
+    if (!delegate || typeof delegate.create !== 'function') {
+      return;
+    }
+    await delegate.create({
       data: {
         id: makeId(getModelPrefix('AuditLog')),
         userId: event.targetUserId,
@@ -66,7 +74,11 @@ export class PrismaAuditRepository implements IAuditRepository {
     reason?: string;
     metadata?: Record<string, any>;
   }>> {
-    const records = await this.prisma.auditLog.findMany({
+    const delegate = (this.prisma as any).auditLog;
+    if (!delegate || typeof delegate.findMany !== 'function') {
+      return [];
+    }
+    const records = await delegate.findMany({
       where: { userId },
       orderBy: { timestamp: 'desc' },
       take: limit
@@ -95,7 +107,11 @@ export class PrismaAuditRepository implements IAuditRepository {
     reason?: string;
   }>> {
     const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
-    const records = await this.prisma.auditLog.findMany({
+    const delegate = (this.prisma as any).auditLog;
+    if (!delegate || typeof delegate.findMany !== 'function') {
+      return [];
+    }
+    const records = await delegate.findMany({
       where: { timestamp: { gte: cutoff } },
       orderBy: { timestamp: 'desc' }
     });

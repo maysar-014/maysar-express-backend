@@ -24,6 +24,7 @@ const parseEnvBool = (key: string, fallback: boolean): boolean => {
 };
 
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+const getCheckoutDelegate = (): any | null => (prisma as any).checkout_CheckoutSession || null;
 
 const requireServiceKey = (req: Request, res: Response, next: NextFunction): void => {
   const header = req.headers['x-service-key'];
@@ -54,7 +55,21 @@ export const createMaintenanceRoutes = (): Router => {
     const cutoff = new Date(Date.now() - retentionDays * DAY_MS);
 
     try {
-      const count = await prisma.checkout_CheckoutSession.count({
+      const delegate = getCheckoutDelegate();
+      if (!delegate || typeof delegate.count !== 'function') {
+        return res.status(200).json({
+          success: true,
+          batchSize,
+          retentionDays,
+          cutoff,
+          count: 0,
+          estimatedBatches: 0,
+          durationMs: Date.now() - start,
+          note: 'checkout_CheckoutSession delegate unavailable; using empty report'
+        });
+      }
+
+      const count = await delegate.count({
         where: { expiresAt: { lt: cutoff } }
       });
 
@@ -90,11 +105,16 @@ export const createMaintenanceRoutes = (): Router => {
     const shouldStop = () => Date.now() - start >= maxRuntimeMs;
 
     const deleteInBatches = async (): Promise<CleanupResult> => {
+      const delegate = getCheckoutDelegate();
+      if (!delegate || typeof delegate.findMany !== 'function') {
+        return { deleted: 0, batches: 0 };
+      }
+
       let deleted = 0;
       let batches = 0;
 
       while (!shouldStop()) {
-        const rows = await prisma.checkout_CheckoutSession.findMany({
+        const rows = await delegate.findMany({
           where: { expiresAt: { lt: cutoff } },
           select: { id: true },
           orderBy: { expiresAt: 'asc' },
@@ -107,7 +127,7 @@ export const createMaintenanceRoutes = (): Router => {
         const ids = rows.map(row => row.id);
 
         if (!dryRun) {
-          const result = await prisma.checkout_CheckoutSession.deleteMany({
+          const result = await delegate.deleteMany({
             where: { id: { in: ids } }
           });
           deleted += result.count || 0;

@@ -5,6 +5,7 @@ import { initializeEventRegistry } from '../../shared/events/registry';
 import { createUserRoutes } from './src/api/routes/user.routes';
 import { healthRoutes } from './src/api/routes/health.routes';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 export const UserModule: Module = {
     name: 'user-service',
@@ -15,7 +16,7 @@ export const UserModule: Module = {
     routes: (() => {
         const router = Router();
         router.use('/health', healthRoutes);
-        router.use('/system/maintenance', createMaintenanceRoutes());
+        router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
         try {
             router.use('/', createUserRoutes());
         } catch (error) {
@@ -34,3 +35,5 @@ export const UserModule: Module = {
         logger.info('Shutting down user-service module');
     }
 };
+
+

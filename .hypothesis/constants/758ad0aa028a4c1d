@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\specs\openapi\adapter\responses.py
+# hypothesis_version: 6.151.9
+
+['$ref', '/', '2', ';', 'X', '_bundle', '_default_media_type', '_headers', '_inner', '_sse_validator', '_validation_cache', '_validator', 'adapter', 'content', 'default', 'definition', 'example', 'examples', 'headers', 'itemSchema', 'media_type', 'name', 'name_to_uri', 'resolver', 'schema', 'scope', 'status_code', 'validator', 'value', 'x-example', 'x-examples']

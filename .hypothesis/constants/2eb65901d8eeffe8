@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\specs\openapi\stateful\links.py
+# hypothesis_version: 6.151.9
+
+['.', '_cached_extract', 'body', 'container_name', 'expression', 'is_inferred', 'is_required', 'location', 'merge_body', 'name', 'operationId', 'operationRef', 'output', 'parameters', 'requestBody', 'source', 'status_code', 'target', 'x-schemathesis']

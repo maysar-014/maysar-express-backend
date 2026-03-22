@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  maysar-backend-test:
+    build:
+      context: ..
+      dockerfile: ../Dockerfile
+      target: runner
+    image: maysar-backend:test
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://${POSTGRES_USER:-maysar}:${POSTGRES_PASSWORD:-maysar}@postgres-test:5432/${POSTGRES_DB:-maysar_test}?schema=public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-maysar}@redis-test:6379
+      PORT: 3000
+      METRICS_ENABLED: "true"
+      SERVICE_NAME: "maysar-monolith-test"
+      SERVICE_VERSION: "test"
+      SEARCH_PROVIDER: meilisearch
+      MEILISEARCH_HOST: meilisearch-test
+      MEILISEARCH_PORT: 7700
+      MEILISEARCH_PROTOCOL: http
+      MEILISEARCH_API_KEY: ${MEILI_MASTER_KEY:-dev-master-key}
+      MEILISEARCH_INDEX_NAME: catalog_test
+      MEILISEARCH_REQUEST_TIMEOUT: 30000
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+      meilisearch-test:
+        condition: service_started
+    networks:
+      - test-network
+    ports:
+      - "3000:3000"
+
+  postgres-test:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-maysar_test}
+      POSTGRES_USER: ${POSTGRES_USER:-maysar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-maysar}
+    ports:
+      - "5433:5432"
+    networks:
+      - test-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-maysar} -d ${POSTGRES_DB:-maysar_test}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis-test:
+    image: redis:7-alpine
+    command: [ "redis-server", "--requirepass", "${REDIS_PASSWORD:-maysar}" ]
+    ports:
+      - "6380:6379"
+    networks:
+      - test-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-maysar}", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  meilisearch-test:
+    image: getmeili/meilisearch:latest
+    environment:
+      MEILI_ENV: development
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-dev-master-key}
+    ports:
+      - "7701:7700"
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge

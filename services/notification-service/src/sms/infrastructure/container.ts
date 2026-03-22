@@ -53,6 +53,7 @@ const allowLiveInDev = (process.env.SMS_ALLOW_LIVE_IN_DEV || '').toLowerCase() =
 const africasTalkingEnvRaw = (process.env.AFRICASTALKING_ENV || (isProduction ? 'live' : 'sandbox')).toLowerCase();
 const isLiveRequested = africasTalkingEnvRaw === 'live';
 const africasTalkingEnv = isLiveRequested && (isProduction || allowLiveInDev) ? 'live' : 'sandbox';
+const isSandboxEnv = africasTalkingEnv === 'sandbox';
 const perUserLimitPerHour = parseOptionalInt(process.env.SMS_RATE_LIMIT_PER_USER_PER_HOUR);
 const perPhoneNumberLimitPerDay = parseOptionalInt(process.env.SMS_RATE_LIMIT_PER_PHONE_NUMBER_PER_DAY);
 const resolvedBaseUrl = (process.env.AFRICASTALKING_BASE_URL ||
@@ -81,22 +82,25 @@ if (smsProviderName !== 'africastalking') {
 }
 
 const apiKey = process.env.AFRICASTALKING_API_KEY || process.env.SMS_SERVICE_API_KEY;
-if (!apiKey) {
-    throw new Error('Missing AFRICASTALKING_API_KEY (or SMS_SERVICE_API_KEY). SMS provider cannot be initialized.');
-}
 
-const provider = new AfricasTalkingSmsProvider({
-    username: resolvedUsername,
-    apiKey,
-    senderId: process.env.AFRICASTALKING_SENDER_ID,
-    environment: africasTalkingEnv,
-    baseUrl: resolvedBaseUrl,
-    bulkSMSMode: parseOptionalInt(process.env.AFRICASTALKING_BULK_SMS_MODE),
-    enqueue: parseOptionalInt(process.env.AFRICASTALKING_ENQUEUE),
-    keyword: process.env.AFRICASTALKING_KEYWORD,
-    linkId: process.env.AFRICASTALKING_LINK_ID,
-    retryDurationInHours: parseOptionalInt(process.env.AFRICASTALKING_RETRY_DURATION_HOURS)
-});
+const provider = (() => {
+    if (!apiKey) {
+        throw new Error('Missing AFRICASTALKING_API_KEY (or SMS_SERVICE_API_KEY). SMS provider cannot be initialized.');
+    }
+
+    return new AfricasTalkingSmsProvider({
+        username: resolvedUsername,
+        apiKey,
+        senderId: process.env.AFRICASTALKING_SENDER_ID,
+        environment: africasTalkingEnv,
+        baseUrl: resolvedBaseUrl,
+        bulkSMSMode: parseOptionalInt(process.env.AFRICASTALKING_BULK_SMS_MODE),
+        enqueue: parseOptionalInt(process.env.AFRICASTALKING_ENQUEUE),
+        keyword: process.env.AFRICASTALKING_KEYWORD,
+        linkId: process.env.AFRICASTALKING_LINK_ID,
+        retryDurationInHours: parseOptionalInt(process.env.AFRICASTALKING_RETRY_DURATION_HOURS)
+    });
+})();
 
 container.bind<ISmsProvider>(TYPES.SmsProvider).toConstantValue(provider);
 

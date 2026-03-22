@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\cli\commands\run\loaders.py
+# hypothesis_version: 6.151.9
+
+['"openapi"', '"swagger"', '.gql', '.graphql', '.json', '.yaml', '.yml', '/graphql', '/graphql/', 'BaseSchema', 'ProjectConfig', 'auth', 'cert', 'headers', 'ignore', 'openapi', 'swagger', 'verify', 'wait_for_schema']

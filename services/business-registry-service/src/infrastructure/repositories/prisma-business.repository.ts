@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { IBusinessRepository } from '../../domain/repositories';
 import { Business } from '../../domain/entities/business.entity';
 import { BusinessId } from '../../domain/value-objects/business-id.value-object';
@@ -6,6 +6,7 @@ import { RegistrationNumber } from '../../domain/value-objects/registration-numb
 import { TaxId } from '../../domain/value-objects/tax-id.value-object';
 import { BusinessAddress } from '../../domain/value-objects/business-address.value-object';
 import { BusinessStatus, VerificationStatus } from '../../domain/types/business.types';
+import { BusinessNotFoundError } from '../../domain/errors/business.errors';
 import { logger } from '../services/logger.service';
 
 export class PrismaBusinessRepository implements IBusinessRepository {
@@ -87,6 +88,7 @@ export class PrismaBusinessRepository implements IBusinessRepository {
           addresses: business.addresses.length
             ? {
                 create: business.addresses.map(addr => ({
+                  id: addr.getId(),
                   type: addr.getType() as 'MAIN' | 'BRANCH' | 'WAREHOUSE' | 'OTHER',
                   street: addr.getStreet(),
                   city: addr.getCity(),
@@ -162,6 +164,7 @@ export class PrismaBusinessRepository implements IBusinessRepository {
           } else {
             await tx.businessAddress.create({
               data: {
+                id: addrId,
                 businessId: business.id,
                 ...addrData
               }
@@ -176,10 +179,13 @@ export class PrismaBusinessRepository implements IBusinessRepository {
       });
 
       if (!data) {
-        throw new Error(`Business ${business.id} not found after update`);
+        throw new BusinessNotFoundError(`Business ${business.id} not found`);
       }
       return this.mapToDomain(data);
     } catch (error) {
+      if (this.isNotFoundError(error)) {
+        throw new BusinessNotFoundError('Business not found');
+      }
       logger.error('Error updating business', { businessId: business.id, error: this.formatError(error) });
       throw error;
     }
@@ -190,6 +196,9 @@ export class PrismaBusinessRepository implements IBusinessRepository {
       await this.prisma.business.delete({ where: { id } });
       logger.info('Business deleted successfully', { businessId: id });
     } catch (error) {
+      if (this.isNotFoundError(error)) {
+        throw new BusinessNotFoundError('Business not found');
+      }
       logger.error('Error deleting business', { businessId: id, error: this.formatError(error) });
       throw error;
     }
@@ -277,6 +286,9 @@ export class PrismaBusinessRepository implements IBusinessRepository {
       });
       logger.info('Business status updated', { businessId: id, status });
     } catch (error) {
+      if (this.isNotFoundError(error)) {
+        throw new BusinessNotFoundError('Business not found');
+      }
       logger.error('Error updating business status', { businessId: id, status, error: this.formatError(error) });
       throw error;
     }
@@ -294,6 +306,9 @@ export class PrismaBusinessRepository implements IBusinessRepository {
       });
       logger.info('Business verification status updated', { businessId: id, status });
     } catch (error) {
+      if (this.isNotFoundError(error)) {
+        throw new BusinessNotFoundError('Business not found');
+      }
       logger.error('Error updating verification status', { businessId: id, status, error: this.formatError(error) });
       throw error;
     }
@@ -418,5 +433,9 @@ export class PrismaBusinessRepository implements IBusinessRepository {
 
   private formatError(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
+  }
+
+  private isNotFoundError(error: unknown): boolean {
+    return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
   }
 }

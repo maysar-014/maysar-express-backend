@@ -43,6 +43,22 @@ describe('wallet validator schemas', () => {
     expect(result.error).toBeDefined();
   });
 
+  it('rejects top-up payloads with non-visible customer names', () => {
+    const result = WalletValidator.topUp.validate({
+      userId: validUuid,
+      amount: 1000,
+      currency: 'TZS',
+      method: 'CARD',
+      customerEmail: 'contract.user@example.com',
+      customerName: '\u0085',
+      callbackUrl: 'https://example.com/callback',
+      correlationId: validUuid,
+      metadata: {}
+    });
+
+    expect(result.error).toBeDefined();
+  });
+
   it('validates payment-service zod wallet schemas', () => {
     expect(() =>
       paymentCreditWalletSchema.parse({

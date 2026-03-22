@@ -1,5 +1,6 @@
 import { ISagaLogRepository, SagaStatus } from './saga.log';
 import { DistributedSagaOrchestrator } from './saga.orchestrator';
+import { isSagaRecoveryEnabled } from '../runtime/background-workers';
 
 export interface SagaRecoveryWorkerOptions {
     stuckThresholdMs: number;   // default: 5 * 60 * 1000 (5 min)
@@ -26,7 +27,21 @@ export class SagaRecoveryWorker {
         this.options = { ...DEFAULT_OPTIONS, ...options };
     }
 
+    private getOwnedSagaTypes(): string[] {
+        return Array.from(this.orchestratorRegistry.keys());
+    }
+
     start(): void {
+        if (!isSagaRecoveryEnabled()) {
+            console.log('SagaRecoveryWorker disabled via configuration');
+            return;
+        }
+
+        if (this.getOwnedSagaTypes().length === 0) {
+            console.log('SagaRecoveryWorker disabled: no registered saga types');
+            return;
+        }
+
         if (this.intervalHandle) {
             console.warn('SagaRecoveryWorker is already running');
             return;
@@ -55,9 +70,13 @@ export class SagaRecoveryWorker {
     }
 
     async recover(): Promise<void> {
+        const ownedSagaTypes = this.getOwnedSagaTypes();
+        if (ownedSagaTypes.length === 0) return;
+
         const stuckSagas = await this.sagaLogRepository.findStuck(
             [SagaStatus.STARTED, SagaStatus.COMPENSATING],
-            this.options.stuckThresholdMs
+            this.options.stuckThresholdMs,
+            ownedSagaTypes
         );
 
         if (stuckSagas.length === 0) return;

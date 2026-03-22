@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\specs\openapi\adapter\security.py
+# hypothesis_version: 6.151.9
+
+['$ref', 'Authorization', '_auth_provider_cache', '_parameters', 'adapter', 'apiKey', 'basic', 'components', 'cookie', 'format', 'header', 'http', 'in', 'name', 'query', 'raw_schema', 'required', 'resolver', 'scheme', 'security', 'securityDefinitions', 'securitySchemes', 'string', 'type']

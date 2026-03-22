@@ -5,6 +5,7 @@ import { InversifyExpressServer } from 'inversify-express-utils';
 import { correlationMiddleware } from '../../../shared/tracing/openTelemetry';
 import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
 import { createMaintenanceRoutes } from './api/routes/maintenance.routes';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 export function createServer(container: Container) {
     const server = new InversifyExpressServer(container);
@@ -19,8 +20,10 @@ export function createServer(container: Container) {
             res.end(await metricsRegistry.metrics());
         });
 
-        app.use('/api/v1/system/maintenance', createMaintenanceRoutes());
+        app.use('/api/v1/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
     });
 
     return server.build();
 }
+
+

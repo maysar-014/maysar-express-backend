@@ -1,9 +1,0 @@
-{
-  "generatedAt": "2026-03-15T15:33:47.416Z",
-  "files": [
-    {
-      "file": "services/order-service/src/api/routes.ts",
-      "routes": []
-    }
-  ]
-}

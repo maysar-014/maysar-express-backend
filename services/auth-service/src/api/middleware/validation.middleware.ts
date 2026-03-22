@@ -70,9 +70,15 @@ export function validateRequest(schema: ValidationSchema) {
     }
 
     if (errors.length > 0) {
-      res.status(400).json({
+      const hasAuthHeaderRule =
+        schema.headers && Object.prototype.hasOwnProperty.call(schema.headers, 'authorization');
+      const isAuthError = Boolean(
+        hasAuthHeaderRule && errors.some((err) => /authorization/i.test(err))
+      );
+
+      res.status(isAuthError ? 401 : 400).json({
         success: false,
-        message: 'Validation failed',
+        message: isAuthError ? 'Authentication required' : 'Validation failed',
         errors
       });
       return;
@@ -88,7 +94,7 @@ export function validateRequest(schema: ValidationSchema) {
 function validateData(data: any, schema: any, options: ValidationOptions = {}): ValidationResult {
   try {
     // Convert custom schema to Joi schema
-    const joiSchema = convertToJoiSchema(schema);
+    const joiSchema = convertToJoiSchema(schema, options);
     const { error, value } = joiSchema.validate(data, {
       abortEarly: false,
       allowUnknown: options.allowUnknown ?? false
@@ -111,81 +117,111 @@ function validateData(data: any, schema: any, options: ValidationOptions = {}): 
 /**
  * Convert custom validation schema to Joi schema
  */
-function convertToJoiSchema(schema: any): Joi.ObjectSchema {
+function convertToJoiSchema(schema: any, options: ValidationOptions = {}): Joi.ObjectSchema {
   const joiSchema: any = {};
 
   for (const [field, rules] of Object.entries(schema)) {
     if (typeof rules === 'object' && rules !== null) {
-      const ruleObj = rules as any;
-      let fieldSchema: any;
-
-      // Determine field type
-      switch (ruleObj.type) {
-        case 'string':
-          fieldSchema = Joi.string();
-          break;
-        case 'number':
-          fieldSchema = Joi.number();
-          break;
-        case 'boolean':
-          fieldSchema = Joi.boolean();
-          break;
-        case 'object':
-          fieldSchema = Joi.object();
-          break;
-        case 'array':
-          fieldSchema = Joi.array();
-          break;
-        default:
-          fieldSchema = Joi.any();
-      }
-
-      // Apply constraints
-      if (ruleObj.required) {
-        fieldSchema = fieldSchema.required();
-      } else {
-        fieldSchema = fieldSchema.optional();
-      }
-
-      if (ruleObj.minLength !== undefined) {
-        fieldSchema = fieldSchema.min(ruleObj.minLength);
-      }
-
-      if (ruleObj.maxLength !== undefined) {
-        fieldSchema = fieldSchema.max(ruleObj.maxLength);
-      }
-
-      if (ruleObj.min !== undefined) {
-        fieldSchema = fieldSchema.min(ruleObj.min);
-      }
-
-      if (ruleObj.max !== undefined) {
-        fieldSchema = fieldSchema.max(ruleObj.max);
-      }
-
-      if (ruleObj.pattern) {
-        fieldSchema = fieldSchema.pattern(ruleObj.pattern);
-      }
-
-      if (ruleObj.format === 'email') {
-        fieldSchema = fieldSchema.email();
-      }
-
-      if (ruleObj.format === 'date') {
-        fieldSchema = fieldSchema.isoDate();
-      }
-
-      if (ruleObj.format === 'uri') {
-        fieldSchema = fieldSchema.uri();
-      }
-
-      if (Array.isArray(ruleObj.enum)) {
-        fieldSchema = fieldSchema.valid(...ruleObj.enum);
-      }
-
-      joiSchema[field] = fieldSchema;
+      joiSchema[field] = convertRuleToJoiSchema(rules as any);
     }
   }
 
-  return Joi.object(joiSchema);
+  return Joi.object(joiSchema).unknown(options.allowUnknown ?? false);
+}
+
+function convertRuleToJoiSchema(ruleObj: any): Joi.Schema {
+  let fieldSchema: Joi.Schema;
+
+  switch (ruleObj.type) {
+    case 'string':
+      fieldSchema = Joi.string();
+      break;
+    case 'number':
+      fieldSchema = Joi.number();
+      if (ruleObj.integer) {
+        fieldSchema = (fieldSchema as Joi.NumberSchema).integer();
+      }
+      break;
+    case 'boolean':
+      fieldSchema = Joi.boolean();
+      break;
+    case 'object': {
+      const nestedProperties = ruleObj.properties && typeof ruleObj.properties === 'object'
+        ? Object.entries(ruleObj.properties).reduce<Record<string, Joi.Schema>>((acc, [key, value]) => {
+            acc[key] = convertRuleToJoiSchema(value);
+            return acc;
+          }, {})
+        : undefined;
+      fieldSchema = nestedProperties
+        ? Joi.object(nestedProperties).unknown(ruleObj.additionalProperties === true || ruleObj.allowUnknown === true)
+        : Joi.object().unknown(ruleObj.additionalProperties === true || ruleObj.allowUnknown === true);
+      break;
+    }
+    case 'array':
+      fieldSchema = Joi.array();
+      if (ruleObj.items) {
+        fieldSchema = (fieldSchema as Joi.ArraySchema).items(convertRuleToJoiSchema(ruleObj.items));
+      }
+      if (ruleObj.minItems !== undefined) {
+        fieldSchema = (fieldSchema as Joi.ArraySchema).min(ruleObj.minItems);
+      }
+      if (ruleObj.maxItems !== undefined) {
+        fieldSchema = (fieldSchema as Joi.ArraySchema).max(ruleObj.maxItems);
+      }
+      break;
+    default:
+      fieldSchema = Joi.any();
+  }
+
+  if (ruleObj.minLength !== undefined && 'min' in fieldSchema) {
+    fieldSchema = (fieldSchema as any).min(ruleObj.minLength);
+  }
+
+  if (ruleObj.maxLength !== undefined && 'max' in fieldSchema) {
+    fieldSchema = (fieldSchema as any).max(ruleObj.maxLength);
+  }
+
+  if (ruleObj.min !== undefined && 'min' in fieldSchema) {
+    fieldSchema = (fieldSchema as any).min(ruleObj.min);
+  }
+
+  if (ruleObj.max !== undefined && 'max' in fieldSchema) {
+    fieldSchema = (fieldSchema as any).max(ruleObj.max);
+  }
+
+  if (ruleObj.pattern && ruleObj.type === 'string') {
+    fieldSchema = (fieldSchema as Joi.StringSchema).pattern(
+      ruleObj.pattern instanceof RegExp ? ruleObj.pattern : new RegExp(ruleObj.pattern)
+    );
+  }
+
+  if (ruleObj.format === 'email' && ruleObj.type === 'string') {
+    fieldSchema = (fieldSchema as Joi.StringSchema).email();
+  }
+
+  if ((ruleObj.format === 'date' || ruleObj.format === 'date-time') && ruleObj.type === 'string') {
+    fieldSchema = (fieldSchema as Joi.StringSchema).isoDate();
+  }
+
+  if (ruleObj.format === 'uri' && ruleObj.type === 'string') {
+    fieldSchema = (fieldSchema as Joi.StringSchema).uri();
+  }
+
+  if (ruleObj.format === 'ipv4' && ruleObj.type === 'string') {
+    fieldSchema = (fieldSchema as Joi.StringSchema).ip({ version: ['ipv4'] });
+  }
+
+  if (Array.isArray(ruleObj.enum)) {
+    fieldSchema = (fieldSchema as any).valid(...ruleObj.enum);
+  }
+
+  if (ruleObj.default !== undefined) {
+    fieldSchema = (fieldSchema as any).default(ruleObj.default);
+  }
+
+  if (ruleObj.required) {
+    return (fieldSchema as any).required();
+  }
+
+  return (fieldSchema as any).optional();
 }

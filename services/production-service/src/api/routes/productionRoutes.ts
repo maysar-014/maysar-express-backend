@@ -1,54 +1,81 @@
 
 import { Router } from 'express';
+import { ZodError, ZodSchema } from 'zod';
 import { ProductionController } from '../controllers/ProductionController';
 import { createProductionPlanSchema, updateProductionStatusSchema } from '../validators/production-plan.validator';
 import { recordQualityCheckpointSchema } from '../validators/quality.validator';
 import { checkCapacitySchema } from '../validators/capacity.validator';
-// Assuming a shared validation middleware exists or I'll iterate
-// The user plan mentioned "middleware/validation.middleware.ts" exists in community service.
-// I will assume a local one or shared one needs to be imported.
-// For now I'll use a placeholder import path; update to the real shared path when available.
-// Given "modular monolith" context, shared utils are often in a `shared` package or common folder.
-// I'll skip middleware implementation import for now and just set up routes structure
-// But I should comment where middleware goes.
+import { requireAuth } from '@shared/middleware/auth-context.middleware';
 
 export const createProductionRoutes = (controller: ProductionController): Router => {
     const router = Router();
 
-    // Middleware placeholders
-    const validate = (schema: any) => (req: any, res: any, next: any) => next();
-    const authenticate = (req: any, res: any, next: any) => next();
+    const validate = (schema: ZodSchema) => (req: any, res: any, next: any) => {
+        try {
+            const parsed = schema.parse({
+                body: req.body,
+                params: req.params,
+                query: req.query
+            }) as {
+                body?: unknown;
+                params?: unknown;
+                query?: unknown;
+            };
+
+            if (parsed.body !== undefined) req.body = parsed.body;
+            if (parsed.params !== undefined) req.params = parsed.params as typeof req.params;
+            if (parsed.query !== undefined) req.query = parsed.query as typeof req.query;
+            next();
+        } catch (error) {
+            if (error instanceof ZodError) {
+                res.status(400).json({
+                    success: false,
+                    error: {
+                        code: 'VALIDATION_ERROR',
+                        message: 'Request validation failed',
+                        details: error.issues.map((issue) => ({
+                            field: issue.path.join('.'),
+                            message: issue.message
+                        }))
+                    }
+                });
+                return;
+            }
+
+            next(error);
+        }
+    };
 
     router.post(
         '/plans',
-        authenticate,
+        requireAuth,
         validate(createProductionPlanSchema),
         (req, res) => controller.createPlan(req, res)
     );
 
     router.get(
         '/dashboard',
-        authenticate,
+        requireAuth,
         (req, res) => controller.getDashboard(req, res)
     );
 
     router.put(
         '/plans/:id/status',
-        authenticate,
+        requireAuth,
         validate(updateProductionStatusSchema),
         (req, res) => controller.updateStatus(req, res)
     );
 
     router.post(
         '/quality/checkpoints',
-        authenticate,
+        requireAuth,
         validate(recordQualityCheckpointSchema),
         (req, res) => controller.recordQuality(req, res)
     );
 
     router.get(
         '/capacity',
-        authenticate,
+        requireAuth,
         validate(checkCapacitySchema),
         (req, res) => controller.getCapacity(req, res)
     );

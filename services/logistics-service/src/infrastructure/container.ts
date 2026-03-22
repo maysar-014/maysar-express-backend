@@ -112,6 +112,29 @@ export class DependencyContainer {
     return DependencyContainer.instance;
   }
 
+  private ensureInfrastructureInitialized(): void {
+    if (
+      this.courierRepository &&
+      this.deliveryRepository &&
+      this.earningsRepository &&
+      this.routeRepository &&
+      this.trackingRepository &&
+      this.weatherProvider &&
+      this.trafficProvider &&
+      this.routeOptimizationProvider &&
+      this.trackingProvider &&
+      this.eventPublisher
+    ) {
+      return;
+    }
+
+    try {
+      this.initializeInfrastructureSync();
+    } catch (error) {
+      console.warn('⚠️ Failed to initialize logistics infrastructure synchronously:', (error as Error).message);
+    }
+  }
+
   private initializeInfrastructureSync(): void {
     // Initialize repositories with proper database client
     const databaseClient = prisma;
@@ -127,8 +150,10 @@ export class DependencyContainer {
     this.trackingProvider = new MapsTrackingBridge();
     const outboxRepository = new LogisticsOutboxRepository(databaseClient);
     this.eventPublisher = new EventPublisher(outboxRepository, true); // Enable event store
+    this.sagaLogRepository = new PrismaSagaLogRepository(prisma);
     DistanceCalculationAlgorithm.setRouteOptimizationService(this.routeOptimizationProvider);
     DistanceCalculationAlgorithm.configureFallback(this.getDistanceFallbackConfig());
+    this.initializeDomainWithInfrastructure();
   }
 
   // Method to initialize database connections asynchronously
@@ -307,44 +332,103 @@ export class DependencyContainer {
     );
   }
 
+  private ensureApplicationInitialized(): void {
+    this.ensureInfrastructureInitialized();
+
+    if (!this.sagaLogRepository) {
+      this.sagaLogRepository = new PrismaSagaLogRepository(prisma);
+    }
+
+    if (!this.routeCreationService) {
+      this.initializeDomainWithInfrastructure();
+    }
+
+    if (
+      !this.createDeliveryUseCase ||
+      !this.getDeliveryUseCase ||
+      !this.getDeliveriesUseCase ||
+      !this.updateDeliveryStatusUseCase ||
+      !this.deliverySaga ||
+      !this.codDeliveryConfirmationSaga ||
+      !this.verifyCODDeliveryUseCase ||
+      !this.initiateCODDeliveryUseCase ||
+      !this.courierAssignmentService ||
+      !this.trackingUpdateService ||
+      !this.deliveryEventsSubscriber ||
+      !this.trackingStreamWorker
+    ) {
+      this.initializeApplication();
+    }
+  }
+
   // Getters for infrastructure adapters
   public getCourierRepository(): ICourierRepository {
+    if (!this.courierRepository) {
+      this.ensureInfrastructureInitialized();
+    }
     return this.courierRepository;
   }
 
   public getDeliveryRepository(): IDeliveryRepository {
+    if (!this.deliveryRepository) {
+      this.ensureInfrastructureInitialized();
+    }
     return this.deliveryRepository;
   }
 
   public getEarningsRepository(): IEarningsRepository {
+    if (!this.earningsRepository) {
+      this.ensureInfrastructureInitialized();
+    }
     return this.earningsRepository;
   }
 
   public getRouteRepository(): IRouteRepository {
+    if (!this.routeRepository) {
+      this.ensureInfrastructureInitialized();
+    }
     return this.routeRepository;
   }
 
   public getTrackingRepository(): ITrackingRepository {
+    if (!this.trackingRepository) {
+      this.ensureInfrastructureInitialized();
+    }
     return this.trackingRepository;
   }
 
   public getWeatherProvider(): WeatherServicePort {
+    if (!this.weatherProvider) {
+      this.ensureInfrastructureInitialized();
+    }
     return this.weatherProvider;
   }
 
   public getTrafficProvider(): TrafficServicePort {
+    if (!this.trafficProvider) {
+      this.ensureInfrastructureInitialized();
+    }
     return this.trafficProvider;
   }
 
   public getRouteOptimizationProvider(): RouteOptimizationPort {
+    if (!this.routeOptimizationProvider) {
+      this.ensureInfrastructureInitialized();
+    }
     return this.routeOptimizationProvider;
   }
 
   public getTrackingProvider(): RealTimeTrackingPort {
+    if (!this.trackingProvider) {
+      this.ensureInfrastructureInitialized();
+    }
     return this.trackingProvider;
   }
 
   public getEventPublisher(): EventPublisherPort {
+    if (!this.eventPublisher) {
+      this.ensureInfrastructureInitialized();
+    }
     return this.eventPublisher;
   }
 
@@ -376,28 +460,28 @@ export class DependencyContainer {
   // Getters for application services
   public getCreateDeliveryUseCase(): CreateDeliveryUseCase {
     if (!this.createDeliveryUseCase) {
-      this.initializeApplication();
+      this.ensureApplicationInitialized();
     }
     return this.createDeliveryUseCase;
   }
 
   public getGetDeliveryUseCase(): GetDeliveryUseCase {
     if (!this.getDeliveryUseCase) {
-      this.initializeApplication();
+      this.ensureApplicationInitialized();
     }
     return this.getDeliveryUseCase;
   }
 
   public getGetDeliveriesUseCase(): GetDeliveriesUseCase {
     if (!this.getDeliveriesUseCase) {
-      this.initializeApplication();
+      this.ensureApplicationInitialized();
     }
     return this.getDeliveriesUseCase;
   }
 
   public getUpdateDeliveryStatusUseCase(): UpdateDeliveryStatusUseCase {
     if (!this.updateDeliveryStatusUseCase) {
-      this.initializeApplication();
+      this.ensureApplicationInitialized();
     }
     return this.updateDeliveryStatusUseCase;
   }
@@ -416,21 +500,21 @@ export class DependencyContainer {
 
   public getTrackingUpdateService(): TrackingUpdateService {
     if (!this.trackingUpdateService) {
-      this.initializeApplication();
+      this.ensureApplicationInitialized();
     }
     return this.trackingUpdateService;
   }
 
   public getDeliveryEventsSubscriber(): DeliveryEventsSubscriber {
     if (!this.deliveryEventsSubscriber) {
-      this.initializeApplication();
+      this.ensureApplicationInitialized();
     }
     return this.deliveryEventsSubscriber;
   }
 
   public getTrackingStreamWorker(): TrackingStreamWorker {
     if (!this.trackingStreamWorker) {
-      this.initializeApplication();
+      this.ensureApplicationInitialized();
     }
     return this.trackingStreamWorker;
   }
@@ -512,10 +596,16 @@ export class DependencyContainer {
   }
 
   public getVerifyCODDeliveryUseCase(): VerifyCODDeliveryUseCase {
+    if (!this.verifyCODDeliveryUseCase) {
+      this.ensureApplicationInitialized();
+    }
     return this.verifyCODDeliveryUseCase;
   }
 
   public getInitiateCODDeliveryUseCase(): InitiateCODDeliveryUseCase {
+    if (!this.initiateCODDeliveryUseCase) {
+      this.ensureApplicationInitialized();
+    }
     return this.initiateCODDeliveryUseCase;
   }
 

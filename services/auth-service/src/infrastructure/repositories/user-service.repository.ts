@@ -2,6 +2,8 @@ import { AuthUser, UserRole, UserStatus } from '../../domain/entities/user.types
 import { IUserRepository } from '../../domain/repositories';
 import { UserServiceClient } from '../clients/user-service.client';
 import { logger } from '../services/logger.service';
+import axios from 'axios';
+import { getServiceBaseUrl } from '../../../../../shared/config/service-base-url';
 
 /**
  * User Service Repository Adapter
@@ -36,19 +38,29 @@ export class UserServiceRepository implements IUserRepository {
    */
   async findByEmail(email: string): Promise<AuthUser | null> {
     const normalizedEmail = email.toLowerCase();
+    logger.debug('Finding user by email via User Service', { email: normalizedEmail });
+
+    let userData: any | null = null;
     try {
-      logger.debug('Finding user by email via User Service', { email: normalizedEmail });
-
-      const userData = await this.userServiceClient.findUserByEmail(normalizedEmail);
-
-      if (!userData) return null;
-
-      const mapped = this.mapToAuthUser(userData);
-      return mapped;
+      userData = await this.userServiceClient.findUserByEmail(normalizedEmail);
     } catch (error) {
-      logger.error('Failed to find user by email via User Service', { email: normalizedEmail, error });
-      throw error;
+      logger.warn('Primary user lookup failed, falling back to HTTP lookup', {
+        email: normalizedEmail,
+        message: (error as Error)?.message
+      });
     }
+
+    if (userData) {
+      return this.mapToAuthUser(userData);
+    }
+
+    // Fallback: use internal lookup endpoint for parity with user-service routes
+    const fallback = await this.lookupUserByEmail(normalizedEmail);
+    if (fallback) {
+      return this.mapResponseToAuthUser(fallback);
+    }
+
+    return null;
   }
 
   /**
@@ -156,6 +168,48 @@ export class UserServiceRepository implements IUserRepository {
       twoFactorSecret: userData.twoFactorSecret,
       failedLoginAttempts: userData.failedLoginAttempts || 0,
       lockoutUntil: userData.lockoutUntil ? new Date(userData.lockoutUntil) : undefined,
+      lastLoginAt: userData.lastLoginAt ? new Date(userData.lastLoginAt) : undefined,
+      createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
+      updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date()
+    };
+  }
+
+  private async lookupUserByEmail(email: string): Promise<any | null> {
+    try {
+      const baseUrl = getServiceBaseUrl('user');
+      const response = await axios.get(`${baseUrl}/lookup`, {
+        params: { email },
+        headers: { 'x-internal-call': 'auth-service' },
+        timeout: 5000
+      });
+
+      const user = response?.data?.data?.user ?? null;
+      return user;
+    } catch (error: any) {
+      logger.warn('User lookup fallback failed', {
+        email,
+        message: error?.message
+      });
+      return null;
+    }
+  }
+
+  private mapResponseToAuthUser(userData: any): AuthUser {
+    const role = this.normalizeRole(userData.role);
+    const status = this.normalizeStatus(userData.status);
+    const metadata = userData.metadata || {};
+    return {
+      id: userData.id,
+      publicCode: userData.publicCode,
+      email: String(userData.email || '').toLowerCase(),
+      role,
+      status,
+      isEmailVerified: userData.emailVerified || false,
+      isPhoneVerified: userData.phoneVerified || false,
+      twoFactorEnabled: userData.twoFactorEnabled || false,
+      twoFactorSecret: userData.twoFactorSecret,
+      failedLoginAttempts: metadata.loginAttempts || 0,
+      lockoutUntil: metadata.accountLockedUntil ? new Date(metadata.accountLockedUntil) : undefined,
       lastLoginAt: userData.lastLoginAt ? new Date(userData.lastLoginAt) : undefined,
       createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
       updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date()

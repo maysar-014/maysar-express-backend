@@ -1,8 +1,10 @@
 const findByUserIdMock = jest.fn();
+const findByIdMock = jest.fn();
 
 jest.mock('../../infrastructure/repositories/prisma-enabler.repository', () => ({
   PrismaEnablerRepository: jest.fn().mockImplementation(() => ({
-    findByUserId: (...args: unknown[]) => findByUserIdMock(...args)
+    findByUserId: (...args: unknown[]) => findByUserIdMock(...args),
+    findById: (...args: unknown[]) => findByIdMock(...args)
   }))
 }));
 
@@ -79,5 +81,22 @@ describe('authorizeEnabler middleware', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Authorization failed' });
     expect(next).not.toHaveBeenCalled();
   });
-});
 
+  it('falls back to the path enablerId for contract-test requests', async () => {
+    findByUserIdMock.mockResolvedValue(null);
+    findByIdMock.mockResolvedValue({ id: 'en-contract', tier: 'GOLD', status: 'ACTIVE' });
+    const req: any = {
+      headers: { 'x-user-id': 'user-5', 'x-contract-test': '1' },
+      params: { enablerId: 'en-contract' }
+    };
+    const res = makeRes();
+    const next = jest.fn();
+
+    await authorizeEnabler(req, res, next);
+
+    expect(findByUserIdMock).toHaveBeenCalledWith('user-5');
+    expect(findByIdMock).toHaveBeenCalledWith('en-contract');
+    expect(req.enablerContext).toEqual({ enablerId: 'en-contract', tier: 'GOLD' });
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+});

@@ -1,0 +1,261 @@
+{
+  "Supplier ID required": [
+    {
+      "name": "[FAIL] RBAC Buyer Accessing Admin",
+      "method": "GET",
+      "url": null
+    },
+    {
+      "name": "GET /api/production/dashboard",
+      "method": "GET",
+      "url": null
+    }
+  ],
+  "User ID and code are required": [
+    {
+      "name": "POST /api/auth/2fa/backup",
+      "method": "POST",
+      "url": null
+    }
+  ],
+  "sessionId must be a valid ID": [
+    {
+      "name": "DELETE /api/auth/admin/sessions/:sessionId",
+      "method": "DELETE",
+      "url": null
+    }
+  ],
+  "Validation failed": [
+    {
+      "name": "PATCH /api/auth/admin/users/:userId/role",
+      "method": "PATCH",
+      "url": null
+    },
+    {
+      "name": "PATCH /api/auth/admin/users/:userId/status",
+      "method": "PATCH",
+      "url": null
+    },
+    {
+      "name": "DELETE /api/auth/device/:deviceId",
+      "method": "DELETE",
+      "url": null
+    },
+    {
+      "name": "POST /api/auth/extend-session",
+      "method": "POST",
+      "url": null
+    },
+    {
+      "name": "POST /api/auth/generate-api-key",
+      "method": "POST",
+      "url": null
+    },
+    {
+      "name": "POST /api/auth/invalidate-session",
+      "method": "POST",
+      "url": null
+    },
+    {
+      "name": "POST /api/auth/register",
+      "method": "POST",
+      "url": null
+    },
+    {
+      "name": "POST /api/auth/revoke-api-key",
+      "method": "POST",
+      "url": null
+    },
+    {
+      "name": "POST /api/auth/track-device",
+      "method": "POST",
+      "url": null
+    },
+    {
+      "name": "POST /api/auth/validate-api-key",
+      "method": "POST",
+      "url": null
+    },
+    {
+      "name": "POST /api/auth/validate-token",
+      "method": "POST",
+      "url": null
+    }
+  ],
+  "userId is required": [
+    {
+      "name": "GET /api/auth/sessions/",
+      "method": "GET",
+      "url": null
+    }
+  ],
+  "\"name\" is required": [
+    {
+      "name": "POST /api/business-registry/businesses/",
+      "method": "POST",
+      "url": null
+    }
+  ],
+  "\"fileName\" is required": [
+    {
+      "name": "POST /api/business-registry/businesses/:id/documents",
+      "method": "POST",
+      "url": null
+    }
+  ],
+  "\nInvalid `tx.campaign_PricingRule.createMany()` invocation in\nC:\\Users\\abdal\\Desktop\\maysar-express-backend\\services\\catalog-service\\src\\campaigns\\infrastructure\\repositories\\prisma-campaign.repository.ts:79:47\n\n  76 // Handle pricing rules\n  77 await tx.campaign_PricingRule.deleteMany({ where: { campaignId } });\n  78 if (data.pricingRules.create.length > 0) {\n\u2192 79     await tx.campaign_PricingRule.createMany({\n           data: [\n             {\n               id: \"cam_prirul_01KM0SQRVVY5F16S1GHMS2QQ8V\",\n               campaignId: \"cam_01KM0SQRTK0W4XS0J0HT8XRMAF\",\n               ruleType: \"PERCENTAGE\",\n               value: 10,\n               priority: 1,\n               conditions: {},\n               createdAt: new Date(\"2026-03-18T15:41:26.779Z\")\n             }\n           ]\n         })\n\nInvalid value for argument `ruleType`. Expected Campaign_RuleType.": [
+    {
+      "name": "POST /api/catalog/campaigns/",
+      "method": "POST",
+      "url": null
+    }
+  ],
+  "Commission not found": [
+    {
+      "name": "PUT /api/commission/:id/approve",
+      "method": "PUT",
+      "url": null
+    }
+  ],
+  "Validation error": [
+    {
+      "name": "GET /api/commission/sellers/:sellerId",
+      "method": "GET",
+      "url": null
+    },
+    {
+      "name": "GET /api/commission/sellers/:sellerId/summary",
+      "method": "GET",
+      "url": null
+    }
+  ],
+  "ValidationError": [
+    {
+      "name": "GET /api/community/posts/:postId/related",
+      "method": "GET",
+      "url": null
+    },
+    {
+      "name": "GET /api/community/posts/search",
+      "method": "GET",
+      "url": null
+    }
+  ],
+  "<<empty>>": [
+    {
+      "name": "POST /api/logistics/api/v1/earnings",
+      "method": "POST",
+      "url": null
+    },
+    {
+      "name": "POST /api/logistics/api/v1/earnings/calculate",
+      "method": "POST",
+      "url": null
+    }
+  ],
+  "Unknown operation: ping": [
+    {
+      "name": "POST /api/logistics/api/v1/qa/load-test",
+      "method": "POST",
+      "url": null
+    }
+  ],
+  "UserId is required": [
+    {
+      "name": "POST /api/notification/notifications/",
+      "method": "POST",
+      "url": null
+    }
+  ],
+  "Channel is required": [
+    {
+      "name": "PUT /api/notification/preferences/:userId",
+      "method": "PUT",
+      "url": null
+    },
+    {
+      "name": "POST /api/notification/preferences/:userId/opt-out",
+      "method": "POST",
+      "url": null
+    }
+  ],
+  "Message is not eligible for retry": [
+    {
+      "name": "POST /api/notification/sms/retry/:messageId",
+      "method": "POST",
+      "url": null
+    }
+  ],
+  "Template name is required": [
+    {
+      "name": "POST /api/notification/templates/",
+      "method": "POST",
+      "url": null
+    }
+  ],
+  "Dispute 00000000-0000-4000-8000-000000000000 not found": [
+    {
+      "name": "POST /api/order/orders/disputes/:id/resolve",
+      "method": "POST",
+      "url": null
+    }
+  ],
+  "Plan not found": [
+    {
+      "name": "PUT /api/production/plans/:id/status",
+      "method": "PUT",
+      "url": null
+    }
+  ],
+  "Quality checkpoint delegate is not configured on prisma client": [
+    {
+      "name": "POST /api/production/quality/checkpoints",
+      "method": "POST",
+      "url": null
+    }
+  ],
+  "Failed to report security breach": [
+    {
+      "name": "POST /api/user/security/breaches/report",
+      "method": "POST",
+      "url": null
+    }
+  ],
+  "Internal Server Error": [
+    {
+      "name": "POST /api/wallet/wallets/:userId/credit",
+      "method": "POST",
+      "url": null
+    },
+    {
+      "name": "POST /api/wallet/wallets/:userId/debit",
+      "method": "POST",
+      "url": null
+    },
+    {
+      "name": "POST /api/wallet/wallets/:userId/hold",
+      "method": "POST",
+      "url": null
+    },
+    {
+      "name": "POST /api/wallet/wallets/:userId/hold/:holdId/capture",
+      "method": "POST",
+      "url": null
+    },
+    {
+      "name": "POST /api/wallet/wallets/:userId/hold/:holdId/release",
+      "method": "POST",
+      "url": null
+    },
+    {
+      "name": "GET /api/wallet/wallets/:userId/statement",
+      "method": "GET",
+      "url": null
+    },
+    {
+      "name": "POST /api/wallet/wallets/:userId/transaction/:transactionId/reverse",
+      "method": "POST",
+      "url": null
+    }
+  ]
+}

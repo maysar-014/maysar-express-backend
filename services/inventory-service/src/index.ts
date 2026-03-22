@@ -27,6 +27,8 @@ import { createRedisStockEngine, resolveRedisReservationMode } from './infrastru
 import { InventoryOutboxRepository } from './infrastructure/messaging/inventory-outbox.repository';
 import { createMaintenanceRoutes } from './api/routes/maintenance.routes';
 import { createPrismaClient } from '@shared/database/prisma-client';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
+import { shouldBypassRateLimit } from '@shared/middleware/rate-limit.util';
 
 // Initialize dependencies
 tracingService.start();
@@ -85,7 +87,8 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: new RedisRateLimitStore(redisClient, 'rl:inventory:'),
-  passOnStoreError: true
+  passOnStoreError: true,
+  skip: shouldBypassRateLimit
 });
 app.use(limiter);
 
@@ -93,7 +96,7 @@ app.use(limiter);
 app.use('/health', healthRoutes);
 
 // Maintenance routes (service-key protected)
-app.use('/api/v1/system/maintenance', createMaintenanceRoutes(prisma));
+app.use('/api/v1/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(prisma));
 
 // API routes get a dedicated router with auth middleware applied
 const apiRouter = express.Router();
@@ -155,3 +158,5 @@ if (process.env.WORKER_ONLY !== 'true') {
 
 // Export objects for testing
 export { app, prisma, stockManager, reservationEngine, warehouseManager, eventHandlers };
+
+

@@ -22,6 +22,27 @@ const getRouteSignatures = (router: Router): string[] => {
 };
 
 describe('createDiscussionsRouter', () => {
+  const authHeaders = {
+    'x-contract-test': '1',
+    'x-user-id': 'usr_01ARZ3NDEKTSV4RRFFQ69G5FAV',
+    'x-user-roles': 'buyer'
+  };
+
+  const validDiscussionPayload = {
+    topic: 'How can sellers reduce failed deliveries?',
+    content: 'I am looking for practical steps that help sellers reduce failed deliveries, improve buyer communication, and keep courier handoffs consistent across busy order periods.',
+    category: 'logistics',
+    expertiseLevel: 'INTERMEDIATE',
+    industry: ['commerce'],
+    businessStage: 'growth',
+    tags: ['delivery', 'operations'],
+    maxResponsesPerUser: 5
+  };
+
+  const validAnswerPayload = {
+    content: 'Start by confirming customer availability before dispatch, capturing landmarks early, and aligning courier handoff notes so repeat delivery attempts are less likely.'
+  };
+
   it('registers discussion routes and answer workflows', () => {
     const controller = {
       createDiscussion: jest.fn(),
@@ -59,8 +80,14 @@ describe('createDiscussionsRouter', () => {
     app.use(express.json());
     app.use('/discussions', createDiscussionsRouter(controller as never));
 
-    const createRes = await request(app).post('/discussions').send({});
-    const answerRes = await request(app).post('/discussions/thread-1/answers').send({});
+    const createRes = await request(app)
+      .post('/discussions')
+      .set(authHeaders)
+      .send(validDiscussionPayload);
+    const answerRes = await request(app)
+      .post('/discussions/thread-1/answers')
+      .set(authHeaders)
+      .send(validAnswerPayload);
 
     expect(createRes.status).toBe(201);
     expect(answerRes.status).toBe(201);

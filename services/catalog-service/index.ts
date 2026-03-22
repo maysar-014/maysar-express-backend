@@ -54,6 +54,7 @@ import { MeilisearchSearchService } from './src/infrastructure/services/search.s
 import type { CategoryRepository, MediaRepository, SearchService, IdGenerator, DateTimeService } from './src/domain/interfaces';
 import { createPrismaClient } from '@shared/database/prisma-client';
 import { getModelPrefix, isSystemId, makeId } from '@shared/ids/id';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 const prisma = createPrismaClient();
 
@@ -446,7 +447,7 @@ export const CatalogModule: Module = {
             });
         });
         router.use(createCatalogHealthRoutes());
-        router.use('/system/maintenance', createCatalogMaintenanceRoutes(prisma));
+        router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createCatalogMaintenanceRoutes(prisma));
 
         return router;
     })(),
@@ -457,3 +458,5 @@ export const CatalogModule: Module = {
         }
     }
 };
+
+

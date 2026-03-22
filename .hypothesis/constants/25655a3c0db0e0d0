@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\engine\context.py
+# hypothesis_version: 6.151.9
+
+['_extra_data_source', '_thread_local', 'all', 'cert', 'control', 'headers', 'max_redirects', 'observations', 'outcome_cache', 'proxies', 'schema', 'session', 'start_time', 'timeout', 'verify']

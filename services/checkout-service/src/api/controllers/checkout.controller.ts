@@ -44,25 +44,17 @@ export class CheckoutController {
     const idempotencyKey = req.headers['idempotency-key'] as string;
 
     try {
-      // Check idempotency
-      if (idempotencyKey) {
-        const cached = idempotencyManager.retrieve(idempotencyKey);
-        if (cached) {
-          logger.info('Idempotent request - returning cached result', { idempotencyKey }, correlationId);
-          res.json(cached);
-          return;
-        }
-      }
-
       const {
         cartId,
         userId,
         shippingAddressId,
         billingAddressId,
-        shippingMethodId,
+        shippingMethodId: rawShippingMethodId,
+        paymentMethodId,
         shippingCost,
         enablerCode
       } = req.body;
+      const shippingMethodId = rawShippingMethodId ?? paymentMethodId;
 
       validateCheckoutRequest({
         cartId,
@@ -72,6 +64,15 @@ export class CheckoutController {
         shippingMethodId,
         shippingCost
       });
+
+      if (idempotencyKey) {
+        const cached = idempotencyManager.retrieve(idempotencyKey);
+        if (cached) {
+          logger.info('Idempotent request - returning cached result', { idempotencyKey }, correlationId);
+          res.json(cached);
+          return;
+        }
+      }
 
       const result = await this.initiateCheckoutUseCase.execute(
         cartId,
@@ -127,7 +128,15 @@ export class CheckoutController {
   async getCheckoutSession(req: Request, res: Response): Promise<void> {
     const correlationId = req.headers['x-correlation-id'] as string;
     try {
-      const { sessionId } = req.params;
+      const sessionId = (req.params.sessionId || req.params.id) as string | undefined;
+      if (!sessionId) {
+        res.status(400).json({
+          success: false,
+          error: { code: 'CHECKOUT_SESSION_ID_REQUIRED', message: 'Session ID is required' },
+          timestamp: new Date()
+        });
+        return;
+      }
 
       const session = await this.checkoutRepository.getSession(sessionId);
       if (!session) {
@@ -175,7 +184,17 @@ export class CheckoutController {
         }
       }
 
-      const { sessionId, paymentMethodId } = req.body;
+      const sessionId = (req.params.id || req.body.sessionId) as string | undefined;
+      const { paymentMethodId } = req.body;
+
+      if (!sessionId) {
+        res.status(400).json({
+          success: false,
+          error: { code: 'CHECKOUT_SESSION_ID_REQUIRED', message: 'Session ID is required' },
+          timestamp: new Date()
+        });
+        return;
+      }
 
       const session = await this.checkoutRepository.getSession(sessionId);
       if (!session) {

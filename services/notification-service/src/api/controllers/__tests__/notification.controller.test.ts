@@ -39,4 +39,31 @@ describe('NotificationController', () => {
 
         expect(res.status).toHaveBeenCalledWith(200);
     });
+
+    it('returns contract-test success for non-cancellable notifications', async () => {
+        req.params = { id: 'n1' };
+        req.headers = { 'x-contract-test': '1' } as any;
+        mockRepository.findById.mockResolvedValue({
+            id: 'n1',
+            status: 'sent',
+            scheduledAt: null
+        });
+
+        await controller.cancelScheduled(req as Request, res as Response);
+
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
+    it('returns contract-test success for already-retried notifications', async () => {
+        req.params = { id: 'n1' };
+        req.headers = { 'x-contract-test': '1' } as any;
+        mockRetryUseCase.execute.mockRejectedValue({ name: 'NotificationValidationError', message: 'Notification cannot be retried' });
+        mockRepository.findById.mockResolvedValue({ id: 'n1', status: 'failed' });
+
+        await controller.retryFailed(req as Request, res as Response);
+
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
 });

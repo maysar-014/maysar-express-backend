@@ -1,12 +1,12 @@
 import { Request, Response, Router } from 'express';
 import { NotificationController } from '../controllers/notification.controller';
 import { asyncHandler } from '../middleware/error.middleware';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { requireAuth } from '@shared/middleware/auth-context.middleware';
 import { rateLimit } from '../middleware/rate-limit.middleware';
 
 export function createNotificationRoutes(controller: NotificationController): Router {
   const router = Router();
-  router.use(authMiddleware);
+  router.use(requireAuth);
   router.use(rateLimit({ limit: 100, windowMs: 60000 }));
 
   router.post('/', asyncHandler((req: Request, res: Response) => controller.createNotification(req, res)));

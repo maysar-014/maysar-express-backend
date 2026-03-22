@@ -16,6 +16,7 @@ import { eventBus } from '@shared/events/eventBus';
 import type { DistributedSagaOrchestrator } from '@shared/saga/saga.orchestrator';
 import { PrismaUserRepository } from './infrastructure/repositories/prisma-user.repository';
 import { PiiEncryptionService } from '@shared/encryption/pii-encryption.service';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 /**
  * User Service - Enterprise-grade user management microservice
@@ -139,7 +140,7 @@ class UserServiceApplication {
 
     // API versioning
     this.app.use('/api/v1', userRoutes);
-    this.app.use('/api/v1/system/maintenance', createMaintenanceRoutes());
+    this.app.use('/api/v1/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
 
     // Prometheus metrics
     this.app.get('/metrics', async (req, res) => {
@@ -354,3 +355,5 @@ if (require.main === module) {
 }
 
 export default application;
+
+

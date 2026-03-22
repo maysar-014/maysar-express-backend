@@ -58,4 +58,23 @@ describe('sellerDashboardRoutes', () => {
     expect(response.status).toBe(401);
     expect(response.body.error).toBe('Missing authentication token');
   });
+
+  it('accepts requests that already have shared auth context attached', async () => {
+    mockController.getSellerDashboard.mockImplementation((_req, res) => {
+      res.status(200).json({ success: true });
+    });
+
+    const app = express();
+    app.use((req, _res, next) => {
+      (req as any).user = { userId: 'seller-1', roles: ['seller'] };
+      next();
+    });
+    app.use('/analytics', router);
+
+    const response = await request(app).get('/analytics/sellers/seller-1/dashboard');
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(mockController.getSellerDashboard).toHaveBeenCalled();
+  });
 });

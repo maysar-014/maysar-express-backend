@@ -21,9 +21,9 @@
 //   (Includes delivery management, routing, tracking, performance, earnings, vehicle management, training, support, etc.)
 
 import express from 'express';
+import Joi from 'joi';
 import rateLimit from 'express-rate-limit';
 import { RedisRateLimitStore } from '../../../../../shared/middleware/redis-rate-limit.store';
-import { DependencyContainer } from '../../infrastructure/container';
 import { DeliveryController } from '../controllers/delivery.controller';
 import { RouteController } from '../controllers/route.controller';
 import { CourierController } from '../controllers/courier.controller';
@@ -40,6 +40,9 @@ import { AnalyticsValidator } from '../validators/analytics.validator';
 import { validationResult } from 'express-validator';
 import { IdempotencyMiddleware } from '@shared/middleware/idempotency';
 import { getSharedRedisClient, resolveRedisUrl } from '@shared/redis/ioredis-client';
+import { shouldBypassRateLimit } from '@shared/middleware/rate-limit.util';
+import { requireAuth } from '@shared/middleware/auth-context.middleware';
+import { validateJoiRequest } from '@shared/middleware/joi-request-validation';
 
 // Simple validation middleware
 const handleValidationErrors = (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -52,6 +55,149 @@ const handleValidationErrors = (req: express.Request, res: express.Response, nex
 
 const createApiValidationChain = () => (req: express.Request, res: express.Response, next: express.NextFunction) => next();
 
+const NON_BLANK_PATTERN = /^(?=.*\S).+$/;
+const SYSTEM_ID_PATTERN = /^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$/;
+const courierStatusValues = ['online', 'offline', 'busy', 'delivering', 'returning', 'active', 'inactive', 'available', 'assigned', 'in_transit'];
+const deliveryStatusValues = ['assigned', 'picked_up', 'in_transit', 'delivered', 'cancelled', 'failed'];
+
+const routeIdParamsSchema = Joi.object({
+  routeId: Joi.string().min(1).required(),
+}).unknown(false);
+
+const courierIdParamsSchema = Joi.object({
+  courierId: Joi.string().min(1).required(),
+}).unknown(false);
+
+const deliveryIdParamsSchema = Joi.object({
+  deliveryId: Joi.string().min(1).required(),
+}).unknown(false);
+
+const deliveriesQuerySchema = Joi.object({
+  status: Joi.string().valid('assigned', 'picked_up', 'in_transit', 'delivered', 'cancelled').optional(),
+  courierId: Joi.string().pattern(SYSTEM_ID_PATTERN).optional(),
+  page: Joi.number().integer().min(1).optional(),
+  limit: Joi.number().integer().min(1).max(100).optional(),
+}).unknown(false);
+
+const optimizeRouteBodySchema = Joi.object({
+  deliveries: Joi.array().items(
+    Joi.object({
+      id: Joi.string().pattern(SYSTEM_ID_PATTERN).required(),
+      address: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
+      coordinates: Joi.object({
+        lat: Joi.number().min(-90).max(90).required(),
+        lng: Joi.number().min(-180).max(180).required(),
+      }).unknown(false).required(),
+    }).unknown(false)
+  ).min(1).required(),
+  startLocation: Joi.object({
+    lat: Joi.number().min(-90).max(90).required(),
+    lng: Joi.number().min(-180).max(180).required(),
+    address: Joi.string().trim().pattern(NON_BLANK_PATTERN).optional(),
+  }).unknown(false).optional(),
+  endLocation: Joi.object({
+    lat: Joi.number().min(-90).max(90).required(),
+    lng: Joi.number().min(-180).max(180).required(),
+    address: Joi.string().trim().pattern(NON_BLANK_PATTERN).optional(),
+  }).unknown(false).optional(),
+  constraints: Joi.object().unknown(true).optional(),
+}).unknown(false);
+
+const routeProgressBodySchema = Joi.object({
+  currentLocation: Joi.object({
+    lat: Joi.number().min(-90).max(90).required(),
+    lng: Joi.number().min(-180).max(180).required(),
+    address: Joi.string().trim().pattern(NON_BLANK_PATTERN).optional(),
+  }).unknown(false).required(),
+  completedDeliveries: Joi.number().integer().min(0).required(),
+  estimatedArrival: Joi.string().isoDate().optional(),
+  notes: Joi.string().max(1000).optional(),
+}).unknown(false);
+
+const alternativeRoutesBodySchema = Joi.object().unknown(false).default({});
+
+const courierStatusBodySchema = Joi.object({
+  status: Joi.string().valid(...courierStatusValues).required(),
+}).unknown(false);
+
+const trackingLocationBodySchema = Joi.object({
+  courierId: Joi.string().pattern(SYSTEM_ID_PATTERN).required(),
+  location: Joi.object({
+    latitude: Joi.number().min(-90).max(90).required(),
+    longitude: Joi.number().min(-180).max(180).required(),
+    address: Joi.string().trim().pattern(NON_BLANK_PATTERN).optional(),
+  }).unknown(false).required(),
+}).unknown(false);
+
+const qaLoadTestBodySchema = Joi.object({
+  operation: Joi.string().valid('route-calculation', 'database-query').required(),
+  concurrency: Joi.number().integer().min(1).optional(),
+  totalRequests: Joi.number().integer().min(1).optional(),
+}).unknown(false);
+
+const deliveryStatusBodySchema = Joi.object({
+  status: Joi.string().valid(...deliveryStatusValues).required(),
+  location: Joi.object({
+    lat: Joi.number().min(-90).max(90).optional(),
+    lng: Joi.number().min(-180).max(180).optional(),
+    latitude: Joi.number().min(-90).max(90).optional(),
+    longitude: Joi.number().min(-180).max(180).optional(),
+    address: Joi.string().optional(),
+  }).unknown(false).optional(),
+  recipientName: Joi.string().optional(),
+  notes: Joi.string().optional(),
+  reason: Joi.string().allow('').optional(),
+}).unknown(false);
+
+const codVerifyBodySchema = Joi.object({
+  otp: Joi.string().trim().pattern(NON_BLANK_PATTERN).optional(),
+  location: Joi.object({
+    lat: Joi.number().min(-90).max(90).optional(),
+    lng: Joi.number().min(-180).max(180).optional(),
+    address: Joi.string().trim().pattern(NON_BLANK_PATTERN).optional(),
+  }).unknown(false).optional(),
+}).unknown(false);
+
+const recordEarningsBodySchema = Joi.object({
+  courierId: Joi.string().pattern(SYSTEM_ID_PATTERN).required(),
+  deliveryId: Joi.string().pattern(SYSTEM_ID_PATTERN).required(),
+  baseFare: Joi.number().min(0).required(),
+  distanceFee: Joi.number().min(0).optional(),
+  weightFee: Joi.number().min(0).optional(),
+  priorityFee: Joi.number().min(0).optional(),
+  totalEarnings: Joi.number().min(0).required(),
+  commission: Joi.number().min(0).required(),
+  netEarnings: Joi.number().min(0).required(),
+  paymentStatus: Joi.string().valid('pending', 'paid', 'failed').required(),
+  paymentDate: Joi.string().isoDate().optional(),
+  bonuses: Joi.number().min(0).optional(),
+  deductions: Joi.number().min(0).optional(),
+  currency: Joi.string().length(3).optional(),
+  specialFees: Joi.array().items(
+    Joi.object({
+      type: Joi.string().min(1).max(50).required(),
+      amount: Joi.number().min(0).required(),
+      description: Joi.string().max(200).optional(),
+    }).unknown(false)
+  ).optional(),
+}).unknown(false);
+
+const calculateCommissionsBodySchema = Joi.object({
+  deliveries: Joi.array().items(
+    Joi.object({
+      deliveryId: Joi.string().pattern(SYSTEM_ID_PATTERN).required(),
+      amount: Joi.number().min(0).required(),
+      courierId: Joi.string().pattern(SYSTEM_ID_PATTERN).required(),
+    }).unknown(false)
+  ).min(1).required(),
+  commissionRate: Joi.number().min(0).max(1).optional(),
+  period: Joi.string().valid('daily', 'weekly', 'monthly').optional(),
+  specialRates: Joi.object().pattern(Joi.string(), Joi.number().min(0).max(1)).optional(),
+}).unknown(false);
+
+const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : 'Unexpected logistics route failure';
+
 const router = express.Router();
 const idempotencyMiddleware = new IdempotencyMiddleware(process.env.REDIS_URL!);
 const redisClient = getSharedRedisClient(resolveRedisUrl(process.env.REDIS_URL));
@@ -59,12 +205,17 @@ router.use(rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   store: new RedisRateLimitStore(redisClient, 'rl:logistics:'),
-  passOnStoreError: true
+  passOnStoreError: true,
+  skip: shouldBypassRateLimit
 }));
 router.use(idempotencyMiddleware.middleware());
-
-// Initialize dependency container
-const container = DependencyContainer.getInstance();
+router.use('/deliveries', requireAuth);
+router.use('/cod', requireAuth);
+router.use('/routes', requireAuth);
+router.use('/couriers', requireAuth);
+router.use('/tracking', requireAuth);
+router.use('/analytics', requireAuth);
+router.use('/earnings', requireAuth);
 
 // Initialize controllers using dependency injection - deferred until container is ready
 let deliveryController: DeliveryController;
@@ -145,11 +296,15 @@ router.post('/deliveries',
 
 router.get('/deliveries/:deliveryId',
   createApiValidationChain(),
+  validateJoiRequest({ params: deliveryIdParamsSchema }),
+  DeliveryValidator.getDelivery(),
+  handleValidationErrors,
   (req: express.Request, res: express.Response) => getDeliveryController().getDelivery(req, res)
 );
 
 router.get('/deliveries',
   createApiValidationChain(),
+  validateJoiRequest({ query: deliveriesQuerySchema }),
   DeliveryValidator.getDeliveries(),
   handleValidationErrors,
   (req: express.Request, res: express.Response) => getDeliveryController().getDeliveries(req, res)
@@ -157,8 +312,7 @@ router.get('/deliveries',
 
 router.post('/deliveries/:deliveryId/status',
   createApiValidationChain(),
-  DeliveryValidator.updateDeliveryStatus(),
-  handleValidationErrors,
+  validateJoiRequest({ params: deliveryIdParamsSchema, body: deliveryStatusBodySchema }),
   (req: express.Request, res: express.Response) => getDeliveryController().updateDeliveryStatus(req, res)
 );
 
@@ -172,6 +326,7 @@ router.post('/cod/:deliveryId/otp',
 
 router.post('/cod/:deliveryId/verify',
   createApiValidationChain(),
+  validateJoiRequest({ params: deliveryIdParamsSchema, body: codVerifyBodySchema }),
   (req: express.Request, res: express.Response) => getCODController().verifyDelivery(req, res)
 );
 
@@ -185,25 +340,29 @@ router.get('/routes',
 
 router.get('/routes/courier/:courierId',
   createApiValidationChain(),
+  validateJoiRequest({ params: courierIdParamsSchema }),
   (req: express.Request, res: express.Response) => getRouteController().getCourierRoutes(req, res)
 );
 
 router.post('/routes/optimize',
-  RouteValidator.optimizeRoute(),
+  validateJoiRequest({ body: optimizeRouteBodySchema }),
   (req: express.Request, res: express.Response) => getRouteController().optimizeRoute(req, res)
 );
 
 router.get('/routes/:routeId',
+  validateJoiRequest({ params: routeIdParamsSchema }),
   RouteValidator.getRoute(),
+  handleValidationErrors,
   (req: express.Request, res: express.Response) => getRouteController().getRoute(req, res)
 );
 
 router.put('/routes/:routeId/progress',
-  RouteValidator.updateRouteProgress(),
+  validateJoiRequest({ params: routeIdParamsSchema, body: routeProgressBodySchema }),
   (req: express.Request, res: express.Response) => getRouteController().updateRouteProgress(req, res)
 );
 
 router.post('/routes/:routeId/alternatives',
+  validateJoiRequest({ params: routeIdParamsSchema, body: alternativeRoutesBodySchema }),
   (req: express.Request, res: express.Response) => getRouteController().getAlternativeRoutes(req, res)
 );
 
@@ -217,11 +376,13 @@ router.get('/couriers',
 
 router.get('/couriers/:courierId',
   createApiValidationChain(),
+  validateJoiRequest({ params: courierIdParamsSchema }),
   (req: express.Request, res: express.Response) => getCourierController().getCourier(req, res)
 );
 
 router.put('/couriers/:courierId/status',
   createApiValidationChain(),
+  validateJoiRequest({ params: courierIdParamsSchema, body: courierStatusBodySchema }),
   (req: express.Request, res: express.Response) => getCourierController().updateCourierStatus(req, res)
 );
 
@@ -236,9 +397,7 @@ router.get('/tracking/:trackingNumber',
 );
 
 router.post('/tracking/location',
-  createApiValidationChain(),
-  TrackingValidator.storeLocationUpdate(),
-  handleValidationErrors,
+  validateJoiRequest({ body: trackingLocationBodySchema }),
   (req: express.Request, res: express.Response) => getTrackingController().storeLocationUpdate(req, res)
 );
 
@@ -303,8 +462,8 @@ router.get('/deliveries/:deliveryId/history', async (req, res) => {
         ]
       }
     });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, error: errorMessage(error) });
   }
 });
 
@@ -313,7 +472,7 @@ router.get('/deliveries/:deliveryId/history', async (req, res) => {
 
 router.get('/earnings',
   createApiValidationChain(),
-  EarningsValidator.getEarnings(),
+  EarningsValidator.getEarningsSummary(),
   handleValidationErrors,
   (req: express.Request, res: express.Response) => getEarningsController().getEarnings(req, res)
 );
@@ -326,16 +485,12 @@ router.get('/earnings/courier/:courierId',
 );
 
 router.post('/earnings',
-  createApiValidationChain(),
-  EarningsValidator.recordEarnings(),
-  handleValidationErrors,
+  validateJoiRequest({ body: recordEarningsBodySchema }),
   (req: express.Request, res: express.Response) => getEarningsController().recordEarnings(req, res)
 );
 
 router.post('/earnings/calculate',
-  createApiValidationChain(),
-  EarningsValidator.calculateCommissions(),
-  handleValidationErrors,
+  validateJoiRequest({ body: calculateCommissionsBodySchema }),
   (req: express.Request, res: express.Response) => getEarningsController().calculateCommissions(req, res)
 );
 
@@ -359,8 +514,8 @@ router.get('/stats/performance', async (req, res) => {
         timestamp: new Date().toISOString()
       }
     });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, error: errorMessage(error) });
   }
 });
 
@@ -388,8 +543,8 @@ router.get('/engines/status', async (req, res) => {
         healthyEngines: 11
       }
     });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error: unknown) {
+    res.status(500).json({ success: false, error: errorMessage(error) });
   }
 });
 
@@ -423,6 +578,7 @@ router.get('/qa/performance',
 );
 
 router.post('/qa/load-test',
+  validateJoiRequest({ body: qaLoadTestBodySchema }),
   (req: express.Request, res: express.Response) => getTestController().runLoadTest(req, res)
 );
 

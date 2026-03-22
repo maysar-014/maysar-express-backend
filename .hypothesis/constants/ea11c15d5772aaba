@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\engine\control.py
+# hypothesis_version: 6.151.9
+
+['_failures_counter', '_start_time', 'max_failures', 'max_time', 'stop_event']

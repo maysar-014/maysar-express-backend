@@ -29,13 +29,25 @@ describe('GetUserUseCase', () => {
 
   it('returns user when allowed', async () => {
     const user = User.create({ id: 'u1', email: Email.create('a@gmail.com'), phoneNumber: PhoneNumber.create('+255712345678'), firstName: 'A', lastName: 'B', role: UserRole.BUYER });
-    const repo: any = { findById: jest.fn().mockResolvedValue(user) };
+    const requester = User.create({ id: 'admin-user', email: Email.create('admin@gmail.com'), phoneNumber: PhoneNumber.create('+255712345678'), firstName: 'Admin', lastName: 'User', role: UserRole.SYSTEM });
+    const repo: any = { findById: jest.fn().mockResolvedValueOnce(user).mockResolvedValueOnce(requester) };
     jest.spyOn(UserPolicies as any, 'canSearchUsers').mockReturnValue({ allowed: true });
 
     const sut = new GetUserUseCase(repo);
-    const out = await sut.execute({ userId: 'u1', requestingUserId: 'someone' });
+    const out = await sut.execute({ userId: 'u1', requestingUserId: 'admin-user' });
     expect(out.success).toBe(true);
     expect(out.user).toBeDefined();
+  });
+
+  it('allows admin roles without invoking policy search', async () => {
+    const user = User.create({ id: 'u1', email: Email.create('a@gmail.com'), phoneNumber: PhoneNumber.create('+255712345678'), firstName: 'A', lastName: 'B', role: UserRole.BUYER });
+    const repo: any = { findById: jest.fn().mockResolvedValue(user) };
+    const policySpy = jest.spyOn(UserPolicies as any, 'canSearchUsers');
+
+    const sut = new GetUserUseCase(repo);
+    const out = await sut.execute({ userId: 'u1', requestingUserId: 'admin-user', requestingUserRoles: ['admin'] });
+    expect(out.success).toBe(true);
+    expect(policySpy).not.toHaveBeenCalled();
   });
 });
 

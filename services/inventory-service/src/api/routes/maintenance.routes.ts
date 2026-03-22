@@ -24,6 +24,10 @@ const parseEnvBool = (key: string, fallback: boolean): boolean => {
 };
 
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+const getOutboxDelegate = (prisma?: PrismaClient | null): any | null => {
+  if (!prisma) return null;
+  return (prisma as any).inventory_OutboxEvent || null;
+};
 
 const requireServiceKey = (req: Request, res: Response, next: NextFunction): void => {
   const header = req.headers['x-service-key'];
@@ -61,11 +65,25 @@ export const createMaintenanceRoutes = (prisma: PrismaClient): Router => {
     const failedStatuses = ['FAILED'];
 
     try {
+      const delegate = getOutboxDelegate(prisma);
+      if (!delegate || typeof delegate.count !== 'function') {
+        return res.status(200).json({
+          success: true,
+          batchSize,
+          retentionDays: { sent: sentRetentionDays, failed: failedRetentionDays },
+          cutoffs: { sent: sentCutoff, failed: failedCutoff },
+          counts: { processed: 0, failed: 0 },
+          estimatedBatches: { processed: 0, failed: 0 },
+          durationMs: Date.now() - start,
+          note: 'inventory_OutboxEvent delegate unavailable; using empty report'
+        });
+      }
+
       const [processedCount, failedCount] = await Promise.all([
-        prisma.inventory_OutboxEvent.count({
+        delegate.count({
           where: { status: { in: processedStatuses }, createdAt: { lt: sentCutoff } }
         }),
-        prisma.inventory_OutboxEvent.count({
+        delegate.count({
           where: { status: { in: failedStatuses }, createdAt: { lt: failedCutoff } }
         })
       ]);
@@ -117,11 +135,16 @@ export const createMaintenanceRoutes = (prisma: PrismaClient): Router => {
       statuses: string[],
       cutoff: Date
     ): Promise<CleanupResult> => {
+      const delegate = getOutboxDelegate(prisma);
+      if (!delegate || typeof delegate.findMany !== 'function') {
+        return { deleted: 0, batches: 0 };
+      }
+
       let deleted = 0;
       let batches = 0;
 
       while (!shouldStop()) {
-        const rows = await prisma.inventory_OutboxEvent.findMany({
+        const rows = await delegate.findMany({
           where: { status: { in: statuses }, createdAt: { lt: cutoff } },
           select: { id: true },
           orderBy: { createdAt: 'asc' },
@@ -134,7 +157,7 @@ export const createMaintenanceRoutes = (prisma: PrismaClient): Router => {
         const ids = rows.map(row => row.id);
 
         if (!dryRun) {
-          const result = await prisma.inventory_OutboxEvent.deleteMany({
+          const result = await delegate.deleteMany({
             where: { id: { in: ids } }
           });
           deleted += result.count || 0;

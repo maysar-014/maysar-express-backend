@@ -301,6 +301,20 @@ jobs:
       - name: 📄 Validate all OpenAPI specs with Redocly
         run: |
           FAILED=0
+          LINT_OPTS=""
+          if [ -f ".redocly.yaml" ]; then
+            LINT_OPTS="--config .redocly.yaml"
+          fi
+
+          if [ -f "openapi.yaml" ]; then
+            echo "🔍 Validating openapi.yaml..."
+            npx --yes @redocly/cli@latest lint "openapi.yaml" $LINT_OPTS || FAILED=1
+          fi
+
+          if [ -f "api-contract.yaml" ]; then
+            echo "🔍 Validating api-contract.yaml..."
+            npx --yes @redocly/cli@latest lint "api-contract.yaml" $LINT_OPTS || FAILED=1
+          fi
           
           # Find all service directories
           for SERVICE_DIR in services/*/; do
@@ -312,7 +326,7 @@ jobs:
               for SPEC in "${SERVICE_DIR}docs/api/"*.{yaml,yml,json}; do
                 [ -f "$SPEC" ] || continue
                 echo "  • Validating $SPEC"
-                npx --yes @redocly/cli@latest lint "$SPEC" --config .redocly.yaml || FAILED=1
+                npx --yes @redocly/cli@latest lint "$SPEC" $LINT_OPTS || FAILED=1
               done
             fi
             
@@ -320,14 +334,14 @@ jobs:
             for SPEC in "${SERVICE_DIR}"openapi.{yaml,yml,json}; do
               [ -f "$SPEC" ] || continue
               echo "🔍 Validating $SPEC..."
-              npx --yes @redocly/cli@latest lint "$SPEC" --config .redocly.yaml || FAILED=1
+              npx --yes @redocly/cli@latest lint "$SPEC" $LINT_OPTS || FAILED=1
             done
             
             # Check for service-specific API contract files
             for SPEC in "${SERVICE_DIR}"*-api*.{yaml,yml,json} "${SERVICE_DIR}"*-contract*.{yaml,yml,json}; do
               [ -f "$SPEC" ] || continue
               echo "🔍 Validating $SPEC..."
-              npx --yes @redocly/cli@latest lint "$SPEC" --config .redocly.yaml || FAILED=1
+              npx --yes @redocly/cli@latest lint "$SPEC" $LINT_OPTS || FAILED=1
             done
             
             # Check for AsyncAPI specs
@@ -344,6 +358,61 @@ jobs:
           fi
           echo "✅ All API specs valid"
 
+  # Contract Tests
+  contract-tests:
+    name: Contract Tests
+    runs-on: ubuntu-latest
+    needs: [openapi-validation]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start test stack
+        run: docker compose -f docker/docker-compose.test.yml up -d --build
+
+      - name: Wait for API
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://localhost:3000/health > /dev/null; then
+              echo "API is ready"
+              exit 0
+            fi
+            echo "Waiting for API..."
+            sleep 5
+          done
+          echo "API did not become ready in time"
+          exit 1
+
+      - name: Run contract tests
+        run: npm run test:contract
+        env:
+          CONTRACT_TEST_AUTO_INSTALL: "1"
+
+      - name: Upload contract reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-test-reports
+          path: tests/contract/reports/
+          retention-days: 14
+        if: always()
+
+      - name: Stop test stack
+        run: docker compose -f docker/docker-compose.test.yml down
+        if: always()
   # Monolithic Backend Build
   backend-monolith-build:
     name: 🏗️ Build Monolithic Backend
@@ -683,3 +752,8 @@ jobs:
           name: release-notes
           path: release-notes.md
           retention-days: 30
+
+
+
+
+

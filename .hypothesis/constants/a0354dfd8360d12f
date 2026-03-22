@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\specs\openapi\warnings.py
+# hypothesis_version: 6.151.9
+
+[0.6, 'array', 'content', 'content_type', 'get_raw_schema', 'object', 'operation_label', 'pattern', 'scheme_name', 'status_code', 'suggestion']

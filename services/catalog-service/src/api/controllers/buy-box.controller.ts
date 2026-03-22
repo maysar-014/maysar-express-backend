@@ -42,6 +42,17 @@ export class BuyBoxController {
         return;
       }
 
+      const hasInvalidListing = listings.some((listing) => (
+        !listing
+        || typeof listing !== 'object'
+        || Array.isArray(listing)
+      ));
+
+      if (hasInvalidListing) {
+        res.status(400).json({ error: 'Each listing must be an object' });
+        return;
+      }
+
       const result = await this.computeUseCase.execute({ productId, listings });
       res.status(200).json(result);
     } catch (error: any) {

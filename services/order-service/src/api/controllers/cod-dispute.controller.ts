@@ -34,10 +34,18 @@ export class CODDisputeController {
                 message: `Dispute ${id} resolved successfully with decision: ${decision}`
             });
         } catch (error: any) {
-            console.error(`[Dispute] Resolution failed for ${req.params.id}:`, error.message);
-            res.status(400).json({
+            const message = error instanceof Error ? error.message : 'Dispute resolution failed';
+            const normalized = message.toLowerCase();
+            const status = normalized.includes('not found')
+                ? 404
+                : normalized.includes('already closed')
+                    ? 409
+                    : 400;
+
+            console.error(`[Dispute] Resolution failed for ${req.params.id}:`, message);
+            res.status(status).json({
                 success: false,
-                error: error.message
+                error: message
             });
         }
     }

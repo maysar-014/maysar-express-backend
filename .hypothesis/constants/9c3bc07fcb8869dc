@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\cli\commands\run\events.py
+# hypothesis_version: 6.151.9
+
+['base_path', 'base_url', 'config', 'duration', 'id', 'location', 'schema', 'specification', 'statistic', 'timestamp']

@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\generation\case.py
+# hypothesis_version: 6.151.9
+
+[2134547244, ', ', '0', '__notes__', '_auth', '_components', '_freeze_metadata', '_has_explicit_auth', '_meta', 'after_call', 'app', 'auth', 'base_url', 'before_call', 'body', 'cookies', 'headers', 'id', 'media_type', 'method', 'operation', 'path', 'path_parameters', 'query', 'session', 'verify']

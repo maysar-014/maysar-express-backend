@@ -39,16 +39,19 @@ export class PrismaTicketMessageRepository implements ITicketMessageRepository {
 
     public async create(message: TicketMessage): Promise<TicketMessage> {
         try {
-            const data = await this.prisma.support_TicketMessage.create({
-                data: {
-                    id: message.id,
-                    ticketId: message.ticketId,
-                    senderId: message.senderId,
-                    senderType: message.senderType,
-                    content: message.content,
-                    isInternal: message.isInternal,
-                    createdAt: message.createdAt
-                }
+            const payload = {
+                id: message.id,
+                ticketId: message.ticketId,
+                senderId: message.senderId,
+                senderType: message.senderType,
+                content: message.content,
+                isInternal: message.isInternal,
+                createdAt: message.createdAt
+            };
+            const data = await this.prisma.support_TicketMessage.upsert({
+                where: { id: message.id },
+                create: payload,
+                update: payload
             });
             return MessageMapper.toDomain(data);
         } catch (error) {

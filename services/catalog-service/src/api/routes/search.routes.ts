@@ -126,7 +126,8 @@ export function createSearchRoutes(
       const params = new URLSearchParams(req.url.split('?')[1]);
       params.set('q', query as string);
 
-      res.redirect(301, `${apiPrefix}/products/search?${params.toString()}`);
+      const baseUrl = req.baseUrl || '';
+      res.redirect(301, `${baseUrl}${apiPrefix}/products/search?${params.toString()}`);
     }
   );
 

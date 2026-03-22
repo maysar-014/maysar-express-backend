@@ -4,7 +4,7 @@ import { IRefundRepository } from './domain/repositories/refund.repository';
 import { IFraudRepository } from './domain/repositories/fraud.repository';
 import { RefundRepository } from './infrastructure/repositories/refund.repository';
 import { FraudRepository } from './infrastructure/repositories/fraud.repository';
-import Redis from 'ioredis';
+import { attachRedisErrorHandlers, getSharedRedisClient, resolveRedisUrl } from '@shared/redis/ioredis-client';
 import { createPrismaClient } from '@shared/database/prisma-client';
 
 import { PesapalAdapter } from './infrastructure/providers/pesapal.adapter';
@@ -41,7 +41,7 @@ export class Container {
     private static instance: Container;
 
     public prisma: PrismaClient;
-    public redisClient?: Redis;
+    public redisClient?: ReturnType<typeof getSharedRedisClient>;
 
     // Repositories
     public paymentRepository: PaymentRepository;
@@ -92,7 +92,8 @@ export class Container {
 
         // Redis client (optional)
         if (process.env.REDIS_URL) {
-            this.redisClient = new Redis(process.env.REDIS_URL);
+            this.redisClient = getSharedRedisClient(resolveRedisUrl(process.env.REDIS_URL));
+            attachRedisErrorHandlers(this.redisClient, 'payment-service');
         }
 
         // Repositories
@@ -206,4 +207,3 @@ export class Container {
         return Container.instance;
     }
 }
-

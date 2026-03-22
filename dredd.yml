@@ -1,0 +1,11 @@
+blueprint: openapi.yaml
+endpoint: http://localhost:3000
+hookfiles:
+  - ./tests/contract/dredd.hooks.js
+reporter:
+  - dot
+  - xunit
+output:
+  - ./tests/contract/reports/dredd-junit.xml
+sorted: true
+path: []

@@ -6,6 +6,7 @@ describe('Payout Service Routes Integration', () => {
   it('returns payout detail using mounted route handler', async () => {
     const controller = {
       initiate: (_req: express.Request, res: express.Response) => res.status(201).json({ id: 'payout-1' }),
+      list: (_req: express.Request, res: express.Response) => res.status(200).json({ data: [] }),
       getPayout: (req: express.Request, res: express.Response) => res.status(200).json({ id: req.params.id }),
       cancel: (req: express.Request, res: express.Response) => res.status(200).json({ id: req.params.id, cancelled: true })
     } as any;

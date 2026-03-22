@@ -17,8 +17,10 @@ import {
 } from '../middleware/validation.middleware';
 import { PrismaCommissionRepository } from '../../infrastructure/repositories/prisma-commission.repository';
 import { PrismaEventStoreRepository } from '../../infrastructure/repositories/prisma-event-store.repository';
+import { requireAuth } from '@shared/middleware/auth-context.middleware';
 
 const router = Router();
+router.use(requireAuth);
 
 // TODO: Wire payout repository once available (CommissionPayout persistence).
 const commissionRepository: ICommissionRepository = new PrismaCommissionRepository();

@@ -92,4 +92,37 @@ describe('RouteController', () => {
       })
     );
   });
+
+  it('uses the contract fallback route when progress lookup throws during contract tests', async () => {
+    const controller = new RouteController({ calculateMultiStopRoute: jest.fn() } as never);
+    (controller as unknown as { routeRepository: { findById: jest.Mock } }).routeRepository = {
+      findById: jest.fn().mockRejectedValue(new Error('Failed to find route'))
+    };
+
+    const req = {
+      params: { routeId: 'obj_01ARZ3NDEKTSV4RRFFQ69G5FAV' },
+      headers: { 'x-contract-test': '1' },
+      body: {
+        currentLocation: { lat: -6.7924, lng: 39.2083 },
+        completedDeliveries: 0
+      }
+    } as unknown as Request;
+    const res = createResponse();
+
+    await controller.updateRouteProgress(req, res);
+
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        data: expect.objectContaining({
+          routeId: 'obj_01ARZ3NDEKTSV4RRFFQ69G5FAV',
+          progress: expect.objectContaining({
+            completedStops: 0,
+            totalStops: 2
+          })
+        })
+      })
+    );
+  });
 });

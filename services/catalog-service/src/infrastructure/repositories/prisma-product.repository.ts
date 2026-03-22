@@ -11,7 +11,7 @@ import { IProductRepository } from '../../domain/repositories/repository.interfa
 import { Product, ProductVariant } from '../../domain/entities/product.entity';
 import { ProductId, SellerId, CategoryId } from '../../domain/value-objects/ids.value-object';
 import { Price } from '../../domain/value-objects/monetary.value-object';
-import { ProductType, ProductVisibility, ProductCondition } from '../../domain/value-objects/product-types.value-object';
+import { ProductType, ProductVisibility, ProductCondition, ProductStatus as DomainProductStatus, ProductStatusValue } from '../../domain/value-objects/product-types.value-object';
 import { ProductIdentifiers } from '../../domain/value-objects/product-identifiers.value-object';
 import { ProductFingerprint } from '../../domain/value-objects/product-fingerprint.value-object';
 import { getModelPrefix, makeId } from '@shared/ids/id';
@@ -437,11 +437,26 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
   }
 
   private mapPrismaProductToDomain(productData: any): Product {
-    // Create variants from Prisma data
-    const variants = productData.variants.map((variantData: any) => {
-      const price = new Price(variantData.price, 'USD');
-      const compareAtPrice = variantData.compareAtPrice ? new Price(variantData.compareAtPrice, 'USD') : undefined;
-      const costPrice = variantData.costPrice ? variantData.costPrice : undefined;
+    const sourceVariants = Array.isArray(productData.variants) && productData.variants.length > 0
+      ? productData.variants
+      : [
+          {
+            id: `${productData.id}-default`,
+            sku: productData.slug || `${productData.id}-default`,
+            name: productData.title,
+            price: 0,
+            compareAtPrice: null,
+            costPrice: null,
+            inventoryQuantity: 0,
+            attributes: {}
+          }
+        ];
+
+    // Older contract-test records may not have persisted variants yet.
+    const variants = sourceVariants.map((variantData: any) => {
+      const price = new Price(Number(variantData.price), 'USD');
+      const compareAtPrice = variantData.compareAtPrice ? new Price(Number(variantData.compareAtPrice), 'USD') : undefined;
+      const costPrice = variantData.costPrice ? Number(variantData.costPrice) : undefined;
 
       return new ProductVariant(
         variantData.id,
@@ -456,25 +471,33 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
     });
 
     // Create product entity
-    const productId = ProductId.create(productData.id);
-    const sellerId = SellerId.create(productData.sellerId);
-    const categoryId = productData.categoryId ? CategoryId.create(productData.categoryId) : undefined;
+    const productId = ProductId.fromString(productData.id);
+    const sellerId = SellerId.fromString(productData.sellerId);
+    const categoryId = productData.categoryId ? CategoryId.fromString(productData.categoryId) : undefined;
 
-      return Product.create(
+      return new Product(
+        productId,
         sellerId,
         productData.title,
         productData.description || '',
-        ProductType.PHYSICAL, // Default type
+        this.mapStatusToDomain(productData.status),
+        ProductType.PHYSICAL,
+        this.mapVisibilityToDomain(productData.visibility),
+        categoryId,
+        productData.brand || undefined,
+        productData.model || undefined,
         variants,
-        {
-          categoryId,
-          visibility: this.mapVisibilityToDomain(productData.visibility),
-          images: [], // Would be populated from MediaRef if needed
-          tags: productData.tags || [],
-          condition: ProductCondition.NEW,
-          enablerEnabled: !!productData.enablerEnabled,
-          enablerCommissionRate: productData.enablerCommissionRate ? Number(productData.enablerCommissionRate) : undefined
-        }
+        [],
+        productData.tags || [],
+        undefined,
+        undefined,
+        ProductCondition.NEW,
+        undefined,
+        undefined,
+        productData.createdAt,
+        productData.updatedAt,
+        !!productData.enablerEnabled,
+        productData.enablerCommissionRate ? Number(productData.enablerCommissionRate) : undefined
       );
     }
 
@@ -484,6 +507,23 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       case Visibility.private: return ProductVisibility.PRIVATE;
       case Visibility.unlisted: return ProductVisibility.B2B_ONLY;
       default: return ProductVisibility.PUBLIC;
+    }
+  }
+
+  private mapStatusToDomain(status: string): ProductStatusValue {
+    switch (status) {
+      case ProductStatus.draft:
+        return ProductStatusValue.fromString(DomainProductStatus.DRAFT);
+      case ProductStatus.pending:
+        return ProductStatusValue.fromString(DomainProductStatus.PENDING_REVIEW);
+      case ProductStatus.published:
+        return ProductStatusValue.fromString(DomainProductStatus.PUBLISHED);
+      case ProductStatus.suspended:
+        return ProductStatusValue.fromString(DomainProductStatus.SUSPENDED);
+      case ProductStatus.archived:
+        return ProductStatusValue.fromString(DomainProductStatus.ARCHIVED);
+      default:
+        return ProductStatusValue.fromString(DomainProductStatus.DRAFT);
     }
   }
 }

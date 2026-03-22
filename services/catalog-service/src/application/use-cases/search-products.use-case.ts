@@ -180,6 +180,18 @@ export class SearchProductsUseCase {
   }
 
   private async performSearch(request: SearchProductsRequest): Promise<any[]> {
+    if (request.filters.category) {
+      try {
+        const category = await this.categoryRepository.findById(request.filters.category);
+        if (!category) {
+          return [];
+        }
+      } catch (error) {
+        console.warn('Category lookup failed during search, returning empty result set:', error);
+        return [];
+      }
+    }
+
     try {
       if (request.query && request.query.trim()) {
         const searchResults = await this.searchService.search(
@@ -201,7 +213,7 @@ export class SearchProductsUseCase {
           limit: request.pagination.limit,
           offset: (request.pagination.page - 1) * request.pagination.limit
         }
-      );
+      ).then((result) => this.normalizeRepositorySearchResults(result));
 
     } catch (error) {
       console.warn('Search service error, falling back to repository:', error);
@@ -211,8 +223,20 @@ export class SearchProductsUseCase {
           limit: request.pagination.limit,
           offset: (request.pagination.page - 1) * request.pagination.limit
         }
-      );
+      ).then((result) => this.normalizeRepositorySearchResults(result));
     }
+  }
+
+  private normalizeRepositorySearchResults(result: any): any[] {
+    if (Array.isArray(result)) {
+      return result;
+    }
+
+    if (Array.isArray(result?.products)) {
+      return result.products;
+    }
+
+    return [];
   }
 
   private buildSearchFilters(filters: SearchProductsRequest['filters']): any {

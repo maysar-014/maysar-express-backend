@@ -96,6 +96,11 @@ export class TransactionRepository implements ITransactionRepository {
     }
 
     private toDomain(record: Wallet_Transaction): Transaction {
+        const description = record.description || 'Legacy wallet transaction';
+        const correlationId = record.correlationId || `legacy-${record.id}`;
+        const initiatedBy = record.initiatedBy || record.userId || 'system';
+        const reason = record.reason || record.description || record.type || 'LEGACY_TRANSACTION';
+
         return new Transaction({
             id: record.id,
             walletId: record.walletId,
@@ -107,14 +112,14 @@ export class TransactionRepository implements ITransactionRepository {
             balanceAfter: Number(record.balanceAfter),
             frozenAmountBefore: Number(record.frozenAmountBefore),
             frozenAmountAfter: Number(record.frozenAmountAfter),
-            description: record.description || '',
+            description,
             metadata: (record.metadata as Record<string, unknown>) || undefined,
             createdAt: record.createdAt,
-            correlationId: record.correlationId || '',
+            correlationId,
             idempotencyKey: record.idempotencyKey || undefined,
-            initiatedBy: record.initiatedBy || '',
+            initiatedBy,
             initiatedByType: this.toActorType(record.initiatedByType),
-            reason: record.reason || '',
+            reason,
             isReversed: record.isReversed,
             reversalTransactionId: record.reversalTransactionId || undefined,
             expiresAt: record.expiresAt || undefined,

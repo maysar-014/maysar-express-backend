@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\generation\hypothesis\builder.py
+# hypothesis_version: 6.151.9
+
+[',', ', ', '/', '_components', '_serializers', '_template', 'additionalProperties', 'api_operation', 'application', 'are', 'as_strategy_kwargs', 'auth_storage', 'before_add_examples', 'binary', 'body', 'case', 'components', 'content-type', 'cookies', 'coverage', 'default', 'examples', 'false', 'format', 'fuzzing', 'given_args', 'given_kwargs', 'headers', 'hooks', 'ignore', 'in', 'invalid_regex', 'is', 'kwargs', 'media_type', 'minLength', 'modes', 'non_serializable', 'null', 'path', 'path_parameters', 'project', 'properties', 'query', 'querystring', 'required', 's', 'schema', 'seed', 'settings', 'start', 'string', 'true', 'type', 'value']

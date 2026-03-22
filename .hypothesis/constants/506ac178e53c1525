@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\engine\observations.py
+# hypothesis_version: 6.151.9
+
+['location', 'location_headers', 'status_code', 'value']

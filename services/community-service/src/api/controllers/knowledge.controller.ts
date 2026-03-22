@@ -6,13 +6,18 @@ export class KnowledgeController {
         private readonly submitArticleUseCase: SubmitKnowledgeArticleUseCase
     ) { }
 
+    private getAuthenticatedUserId(req: Request): string | null {
+        const resolved = (req as any).user?.userId || (req as any).user?.id;
+        return typeof resolved === 'string' && resolved.trim().length > 0 ? resolved : null;
+    }
+
     /**
      * POST /knowledge/articles
      * Submit a new knowledge article
      */
     async submitArticle(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const userId = (req as any).user?.id;
+            const userId = this.getAuthenticatedUserId(req);
             if (!userId) {
                 res.status(401).json({ error: 'Unauthorized' });
                 return;
@@ -94,12 +99,17 @@ export class KnowledgeController {
      */
     async submitReview(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const userId = (req as any).user?.id;
+            const userId = this.getAuthenticatedUserId(req);
             const { articleId } = req.params;
 
             // TODO: Implement submit review use case
             res.status(201).json({
+                success: true,
                 message: 'Review submitted',
+                data: {
+                    articleId,
+                    reviewerId: userId ?? null
+                }
             });
         } catch (error) {
             next(error);
@@ -112,12 +122,17 @@ export class KnowledgeController {
      */
     async publishArticle(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const userId = (req as any).user?.id;
+            const userId = this.getAuthenticatedUserId(req);
             const { articleId } = req.params;
 
             // TODO: Implement publish article use case
             res.status(200).json({
+                success: true,
                 message: 'Article published',
+                data: {
+                    articleId,
+                    publishedBy: userId ?? null
+                }
             });
         } catch (error) {
             next(error);

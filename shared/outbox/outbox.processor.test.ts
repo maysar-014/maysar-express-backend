@@ -39,6 +39,7 @@ describe('OutboxProcessor', () => {
     jest.useFakeTimers();
     jest.setSystemTime(fixedNow);
     jest.clearAllMocks();
+    delete process.env.ENABLE_OUTBOX_PROCESSOR;
 
     outbox = {
       getPendingEvents: jest.fn(),
@@ -61,7 +62,8 @@ describe('OutboxProcessor', () => {
         pollInterval: 1_000,
         batchSize: 50,
         maxRetries: 2,
-        retryDelayMs: 30_000
+        retryDelayMs: 30_000,
+        infrastructureBackoffMs: 60_000
       }
     );
   });
@@ -130,7 +132,9 @@ describe('OutboxProcessor', () => {
     processor.start();
     processor.start();
 
-    jest.advanceTimersByTime(2_500);
+    jest.advanceTimersByTime(1_000);
+    await Promise.resolve();
+    jest.advanceTimersByTime(1_000);
     await Promise.resolve();
 
     expect(runSpy).toHaveBeenCalledTimes(2);
@@ -140,5 +144,37 @@ describe('OutboxProcessor', () => {
     await Promise.resolve();
 
     expect(runSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not start when disabled via configuration', () => {
+    process.env.ENABLE_OUTBOX_PROCESSOR = 'false';
+    const runSpy = jest
+      .spyOn(processor as unknown as { runProcessingLoop: () => Promise<void> }, 'runProcessingLoop')
+      .mockResolvedValue();
+
+    processor.start();
+    jest.advanceTimersByTime(2_500);
+
+    expect(runSpy).not.toHaveBeenCalled();
+    expect(logger.info).toHaveBeenCalledWith('Outbox processor disabled via configuration');
+  });
+
+  it('pauses polling after infrastructure errors', async () => {
+    outbox.getPendingEvents.mockRejectedValue(Object.assign(new Error("Can't reach database server"), {
+      name: 'PrismaClientInitializationError'
+    }));
+
+    processor.start();
+    jest.advanceTimersByTime(1_000);
+    await Promise.resolve();
+    expect(outbox.getPendingEvents).toHaveBeenCalledTimes(1);
+
+    jest.advanceTimersByTime(5_000);
+    await Promise.resolve();
+    expect(outbox.getPendingEvents).toHaveBeenCalledTimes(1);
+
+    jest.advanceTimersByTime(60_000);
+    await Promise.resolve();
+    expect(outbox.getPendingEvents).toHaveBeenCalledTimes(2);
   });
 });

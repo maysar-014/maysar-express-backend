@@ -27,6 +27,7 @@ import { executeNotificationDeliverySaga } from './src/application/sagas/notific
 import { Notification } from './src/domain/entities/notification.entity';
 import { eventBus } from '../../shared/events/eventBus';
 import type { ISmsProvider } from './src/sms/infrastructure/providers/sms-provider.interface';
+import { requireAuth, requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 const notificationRepository = new PrismaNotificationRepository();
 const templateRepository = new PrismaTemplateRepository();
@@ -177,11 +178,11 @@ export const NotificationModule: Module = {
         router.use('/sms/health', smsHealthRoutes);
 
         // Mount notification API routes (previously unmounted)
-        router.use('/notifications', createNotificationRoutes(notificationController));
-        router.use('/templates', createTemplateRoutes(templateController));
-        router.use('/preferences', createPreferenceRoutes(preferenceController));
+        router.use('/notifications', requireAuth, createNotificationRoutes(notificationController));
+        router.use('/templates', requireAuth, createTemplateRoutes(templateController));
+        router.use('/preferences', requireAuth, createPreferenceRoutes(preferenceController));
         router.use('/health', notificationHealthRoutes);
-        router.use('/system/maintenance', createMaintenanceRoutes());
+        router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
 
         // Fallback health summary (kept for compatibility)
         router.get('/health-summary', (req, res) => {
@@ -212,3 +213,6 @@ export const NotificationModule: Module = {
         }
     }
 };
+
+
+

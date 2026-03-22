@@ -38,6 +38,7 @@ import { executeNotificationDeliverySaga } from './application/sagas/notificatio
 import { Notification } from './domain/entities/notification.entity';
 import type { ISmsProvider } from './sms/infrastructure/providers/sms-provider.interface';
 import { PushTokenController } from './api/controllers/push-token.controller';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 /**
  * Notification Service - Multi-channel notification microservice
@@ -169,7 +170,7 @@ class NotificationServiceApplication {
     this.app.use('/api/v1/templates', createTemplateRoutes(templateController));
     this.app.use('/api/v1/preferences', createPreferenceRoutes(preferenceController));
     this.app.use('/api/v1/sms', createSmsRouter());
-    this.app.use('/api/v1/system/maintenance', createMaintenanceRoutes());
+    this.app.use('/api/v1/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
 
     this.app.get('/', (_req, res) => {
       res.json({
@@ -310,3 +311,5 @@ if (require.main === module) {
 }
 
 export default application;
+
+

@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\core\loaders.py
+# hypothesis_version: 6.151.9
+
+[0.05, 400, 403, 404, 500, '//', '://', 'Unknown', 'User-Agent', 'headers', 'timeout', 'user-agent']

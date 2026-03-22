@@ -15,7 +15,10 @@ export class ModuleController {
     public async list(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const modules = await this.moduleRepo.findAll();
-            res.status(200).json(modules.map(m => TrainingModuleMapper.toDTO(m)));
+            res.status(200).json({
+                success: true,
+                data: modules.map(m => TrainingModuleMapper.toDTO(m))
+            });
         } catch (error) {
             next(error);
         }
@@ -28,7 +31,10 @@ export class ModuleController {
             if (!module) {
                 throw new NotFoundError('TrainingModule', id);
             }
-            res.status(200).json(TrainingModuleMapper.toDTO(module));
+            res.status(200).json({
+                success: true,
+                data: TrainingModuleMapper.toDTO(module)
+            });
         } catch (error) {
             next(error);
         }
@@ -42,8 +48,11 @@ export class ModuleController {
                 throw new NotFoundError('TrainingModule', id);
             }
             res.status(200).json({
-                contentType: module.contentType,
-                content: module.content
+                success: true,
+                data: {
+                    contentType: module.contentType,
+                    content: module.content
+                }
             });
         } catch (error) {
             next(error);
@@ -54,7 +63,10 @@ export class ModuleController {
         try {
             const { limit } = req.query;
             const entries = await this.leaderboardRepo.getTop(Number(limit) || 10);
-            res.status(200).json(entries);
+            res.status(200).json({
+                success: true,
+                data: entries
+            });
         } catch (error) {
             next(error);
         }
@@ -64,7 +76,10 @@ export class ModuleController {
         try {
             const { learnerId } = req.params;
             const badges = await this.badgeRepo.findByLearnerId(learnerId);
-            res.status(200).json(badges);
+            res.status(200).json({
+                success: true,
+                data: badges
+            });
         } catch (error) {
             next(error);
         }

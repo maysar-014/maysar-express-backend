@@ -123,6 +123,23 @@ describe('BusinessController', () => {
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
+  it('uses the business owner for contract-test updates', async () => {
+    const controller = makeController();
+    const req = {
+      params: { id: 'biz-ct' },
+      headers: { 'x-user-id': 'usr_test_0001', 'x-contract-test': '1' },
+      body: {}
+    } as unknown as Request;
+    const res = createResponse();
+    businessRepository.findById.mockResolvedValue({ id: 'biz-ct', ownerId: 'owner-ct' });
+    updateBusinessUseCase.execute.mockResolvedValue({ id: 'biz-ct' });
+
+    await controller.updateBusiness(req, res);
+
+    expect(updateBusinessUseCase.execute).toHaveBeenCalledWith('biz-ct', {}, 'owner-ct');
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
   it('deletes business only when it exists', async () => {
     const controller = makeController();
     const req = { params: { id: 'biz-30' } } as unknown as Request;

@@ -1,0 +1,3861 @@
+{
+  "generatedAt": "2026-03-22T13:44:01.293Z",
+  "openApiPath": "C:\\Users\\abdal\\Desktop\\maysar-express-backend\\openapi.yaml",
+  "totalOperations": 450,
+  "requestExampleCoverage": {
+    "operationsWithRequestInput": 307,
+    "operationsWithoutRequestInput": 143,
+    "withExamples": 307,
+    "authoredExamples": 138,
+    "generatedExamples": 169,
+    "missingExamples": 0,
+    "operations": [],
+    "noInputOperations": [
+      {
+        "method": "GET",
+        "path": "/health",
+        "operationId": null,
+        "summary": "Health check",
+        "description": "Fast health check to verify service is running",
+        "tags": [
+          "Health"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/ready",
+        "operationId": null,
+        "summary": "Readiness check",
+        "description": "Checks if service and dependencies are ready",
+        "tags": [
+          "Health"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/logout",
+        "operationId": null,
+        "summary": "User logout",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/refresh",
+        "operationId": null,
+        "summary": "Refresh access token",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/verify",
+        "operationId": null,
+        "summary": "Verify session/token validity",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/admin/health",
+        "operationId": null,
+        "summary": "Auth admin health",
+        "description": null,
+        "tags": [
+          "Admin"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/admin/stats",
+        "operationId": null,
+        "summary": "Auth admin stats",
+        "description": null,
+        "tags": [
+          "Admin"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/profile",
+        "operationId": null,
+        "summary": "Get current user profile",
+        "description": null,
+        "tags": [
+          "Users"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/catalog/v1/products/bulk",
+        "operationId": null,
+        "summary": "Bulk delete products",
+        "description": null,
+        "tags": [
+          "Products"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/search/popular",
+        "operationId": null,
+        "summary": "Get popular searches",
+        "description": null,
+        "tags": [
+          "Search"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/pricing/rules",
+        "operationId": null,
+        "summary": "Get pricing rules",
+        "description": null,
+        "tags": [
+          "Pricing"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/api/catalog/v1/pricing/rules",
+        "operationId": null,
+        "summary": "Create pricing rule",
+        "description": null,
+        "tags": [
+          "Pricing"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/pricing/analytics",
+        "operationId": null,
+        "summary": "Get pricing analytics",
+        "description": null,
+        "tags": [
+          "Pricing"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/search/analytics",
+        "operationId": null,
+        "summary": "Get search analytics",
+        "description": null,
+        "tags": [
+          "Search"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/match/pending",
+        "operationId": null,
+        "summary": "Get pending match confirmations",
+        "description": null,
+        "tags": [
+          "Products"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/order/orders/analytics/stats",
+        "operationId": null,
+        "summary": "Get order analytics",
+        "description": null,
+        "tags": [
+          "Orders"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/routes",
+        "operationId": null,
+        "summary": "Get routes",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/couriers",
+        "operationId": null,
+        "summary": "Get couriers",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/analytics",
+        "operationId": null,
+        "summary": "Get logistics analytics",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/analytics/performance",
+        "operationId": null,
+        "summary": "Get performance metrics",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/earnings",
+        "operationId": null,
+        "summary": "Get earnings",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/notification/notifications",
+        "operationId": null,
+        "summary": "List notifications",
+        "description": null,
+        "tags": [
+          "Notifications"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/api/notification/notifications/bulk",
+        "operationId": null,
+        "summary": "Bulk send notifications",
+        "description": null,
+        "tags": [
+          "Notifications"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/api/notification/sms/retry/failed",
+        "operationId": null,
+        "summary": "Retry failed SMS messages",
+        "description": null,
+        "tags": [
+          "Notifications"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/notification/sms/statistics",
+        "operationId": null,
+        "summary": "SMS statistics",
+        "description": null,
+        "tags": [
+          "Notifications"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/notification/health",
+        "operationId": null,
+        "summary": "Notification service health",
+        "description": null,
+        "tags": [
+          "Notifications"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/notification/health/ready",
+        "operationId": null,
+        "summary": "Notification readiness",
+        "description": null,
+        "tags": [
+          "Notifications"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/notification/health/live",
+        "operationId": null,
+        "summary": "Notification liveness",
+        "description": null,
+        "tags": [
+          "Notifications"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/notification/sms/health",
+        "operationId": null,
+        "summary": "SMS service health",
+        "description": null,
+        "tags": [
+          "Notifications"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/notification/sms/health/ready",
+        "operationId": null,
+        "summary": "SMS readiness",
+        "description": null,
+        "tags": [
+          "Notifications"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/notification/sms/health/live",
+        "operationId": null,
+        "summary": "SMS liveness",
+        "description": null,
+        "tags": [
+          "Notifications"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/notification/health-summary",
+        "operationId": null,
+        "summary": "Notification health summary",
+        "description": null,
+        "tags": [
+          "Notifications"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/health",
+        "operationId": null,
+        "summary": "Analytics service health",
+        "description": null,
+        "tags": [
+          "Analytics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/metrics",
+        "operationId": null,
+        "summary": "Analytics service metrics",
+        "description": null,
+        "tags": [
+          "Analytics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/seller-profitability/dashboard",
+        "operationId": null,
+        "summary": "Seller profitability dashboard",
+        "description": null,
+        "tags": [
+          "Analytics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/seller-profitability/revenue-health",
+        "operationId": null,
+        "summary": "Revenue health",
+        "description": null,
+        "tags": [
+          "Analytics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/seller-profitability/growth-indicators",
+        "operationId": null,
+        "summary": "Growth indicators",
+        "description": null,
+        "tags": [
+          "Analytics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/seller-profitability/retention",
+        "operationId": null,
+        "summary": "Retention metrics",
+        "description": null,
+        "tags": [
+          "Analytics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/seller-profitability/financial",
+        "operationId": null,
+        "summary": "Financial metrics",
+        "description": null,
+        "tags": [
+          "Analytics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/seller-profitability/happiness",
+        "operationId": null,
+        "summary": "Happiness signals",
+        "description": null,
+        "tags": [
+          "Analytics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/admin/dashboard/red-flags",
+        "operationId": null,
+        "summary": "Admin red flags dashboard",
+        "description": null,
+        "tags": [
+          "Analytics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/community/discover",
+        "operationId": null,
+        "summary": "Get personalized content recommendations",
+        "description": null,
+        "tags": [
+          "Community"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/community/challenges",
+        "operationId": null,
+        "summary": "List business challenges",
+        "description": null,
+        "tags": [
+          "Community"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/community/knowledge/articles",
+        "operationId": null,
+        "summary": "List knowledge articles",
+        "description": null,
+        "tags": [
+          "Community"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/community/posts/published",
+        "operationId": null,
+        "summary": "Get published posts (global feed)",
+        "description": null,
+        "tags": [
+          "Community"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/community/posts/trending",
+        "operationId": null,
+        "summary": "Get trending topics",
+        "description": null,
+        "tags": [
+          "Community"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/training/api/v1/training/available",
+        "operationId": null,
+        "summary": "Get available training modules",
+        "description": null,
+        "tags": [
+          "Training"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/tickets",
+        "operationId": null,
+        "summary": "List tickets",
+        "description": null,
+        "tags": [
+          "Support"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/enabler/hub/products",
+        "operationId": null,
+        "summary": "Browse enabler hub products",
+        "description": null,
+        "tags": [
+          "Enabler"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/events",
+        "operationId": null,
+        "summary": "GET /api/analytics/events",
+        "description": null,
+        "tags": [
+          "Analytics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/2fa/health",
+        "operationId": null,
+        "summary": "GET /api/auth/2fa/health",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/2fa/health/live",
+        "operationId": null,
+        "summary": "GET /api/auth/2fa/health/live",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/2fa/health/ready",
+        "operationId": null,
+        "summary": "GET /api/auth/2fa/health/ready",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/2fa/status",
+        "operationId": null,
+        "summary": "GET /api/auth/2fa/status",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/admin/audit",
+        "operationId": null,
+        "summary": "GET /api/auth/admin/audit",
+        "description": null,
+        "tags": [
+          "Admin"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/admin/security-events",
+        "operationId": null,
+        "summary": "GET /api/auth/admin/security-events",
+        "description": null,
+        "tags": [
+          "Admin"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/health",
+        "operationId": null,
+        "summary": "GET /api/auth/health",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/health/circuit-breaker",
+        "operationId": null,
+        "summary": "GET /api/auth/health/circuit-breaker",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/health/detailed",
+        "operationId": null,
+        "summary": "GET /api/auth/health/detailed",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/health/discovery",
+        "operationId": null,
+        "summary": "GET /api/auth/health/discovery",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/health/live",
+        "operationId": null,
+        "summary": "GET /api/auth/health/live",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/health/metrics",
+        "operationId": null,
+        "summary": "GET /api/auth/health/metrics",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/health/ready",
+        "operationId": null,
+        "summary": "GET /api/auth/health/ready",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/metrics",
+        "operationId": null,
+        "summary": "GET /api/auth/metrics",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/middleware/health",
+        "operationId": null,
+        "summary": "GET /api/auth/middleware/health",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/oauth/initiate",
+        "operationId": null,
+        "summary": "GET /api/auth/oauth/initiate",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/sessions",
+        "operationId": null,
+        "summary": "GET /api/auth/sessions",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/sessions/health",
+        "operationId": null,
+        "summary": "GET /api/auth/sessions/health",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/sessions/health/live",
+        "operationId": null,
+        "summary": "GET /api/auth/sessions/health/live",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/sessions/health/ready",
+        "operationId": null,
+        "summary": "GET /api/auth/sessions/health/ready",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/stats",
+        "operationId": null,
+        "summary": "GET /api/auth/stats",
+        "description": null,
+        "tags": [
+          "Auth"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/business-registry/businesses/search",
+        "operationId": null,
+        "summary": "GET /api/business-registry/businesses/search",
+        "description": null,
+        "tags": [
+          "Business"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/business-registry/health",
+        "operationId": null,
+        "summary": "GET /api/business-registry/health",
+        "description": null,
+        "tags": [
+          "Business"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/business-registry/health/live",
+        "operationId": null,
+        "summary": "GET /api/business-registry/health/live",
+        "description": null,
+        "tags": [
+          "Business"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/business-registry/health/ready",
+        "operationId": null,
+        "summary": "GET /api/business-registry/health/ready",
+        "description": null,
+        "tags": [
+          "Business"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/campaigns",
+        "operationId": null,
+        "summary": "GET /api/catalog/campaigns",
+        "description": null,
+        "tags": [
+          "Products"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/health",
+        "operationId": null,
+        "summary": "GET /api/catalog/health",
+        "description": null,
+        "tags": [
+          "Products"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/health/live",
+        "operationId": null,
+        "summary": "GET /api/catalog/health/live",
+        "description": null,
+        "tags": [
+          "Products"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/health/ready",
+        "operationId": null,
+        "summary": "GET /api/catalog/health/ready",
+        "description": null,
+        "tags": [
+          "Products"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/pricing/health",
+        "operationId": null,
+        "summary": "GET /api/catalog/pricing/health",
+        "description": null,
+        "tags": [
+          "Pricing"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/pricing/health/live",
+        "operationId": null,
+        "summary": "GET /api/catalog/pricing/health/live",
+        "description": null,
+        "tags": [
+          "Pricing"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/pricing/health/ready",
+        "operationId": null,
+        "summary": "GET /api/catalog/pricing/health/ready",
+        "description": null,
+        "tags": [
+          "Pricing"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/checkout/health",
+        "operationId": null,
+        "summary": "GET /api/checkout/health",
+        "description": null,
+        "tags": [
+          "Checkout"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/checkout/health/live",
+        "operationId": null,
+        "summary": "GET /api/checkout/health/live",
+        "description": null,
+        "tags": [
+          "Checkout"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/checkout/health/ready",
+        "operationId": null,
+        "summary": "GET /api/checkout/health/ready",
+        "description": null,
+        "tags": [
+          "Checkout"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/checkout/metrics",
+        "operationId": null,
+        "summary": "GET /api/checkout/metrics",
+        "description": null,
+        "tags": [
+          "Checkout"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/commission/health",
+        "operationId": null,
+        "summary": "GET /api/commission/health",
+        "description": null,
+        "tags": [
+          "Commission"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/commission/health/live",
+        "operationId": null,
+        "summary": "GET /api/commission/health/live",
+        "description": null,
+        "tags": [
+          "Commission"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/commission/health/ready",
+        "operationId": null,
+        "summary": "GET /api/commission/health/ready",
+        "description": null,
+        "tags": [
+          "Commission"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/community/discussions",
+        "operationId": null,
+        "summary": "GET /api/community/discussions",
+        "description": null,
+        "tags": [
+          "Community"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/community/health",
+        "operationId": null,
+        "summary": "GET /api/community/health",
+        "description": null,
+        "tags": [
+          "Community"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/community/metrics",
+        "operationId": null,
+        "summary": "GET /api/community/metrics",
+        "description": null,
+        "tags": [
+          "Community"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/compliance/audit",
+        "operationId": null,
+        "summary": "GET /api/compliance/audit",
+        "description": null,
+        "tags": [
+          "Compliance"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/compliance/manual-review/pending",
+        "operationId": null,
+        "summary": "GET /api/compliance/manual-review/pending",
+        "description": null,
+        "tags": [
+          "Compliance"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/compliance/metrics",
+        "operationId": null,
+        "summary": "GET /api/compliance/metrics",
+        "description": null,
+        "tags": [
+          "Compliance"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/inventory/health",
+        "operationId": null,
+        "summary": "GET /api/inventory/health",
+        "description": null,
+        "tags": [
+          "Inventory"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/inventory/health/live",
+        "operationId": null,
+        "summary": "GET /api/inventory/health/live",
+        "description": null,
+        "tags": [
+          "Inventory"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/inventory/health/ready",
+        "operationId": null,
+        "summary": "GET /api/inventory/health/ready",
+        "description": null,
+        "tags": [
+          "Inventory"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/courier",
+        "operationId": null,
+        "summary": "GET /api/logistics/api/courier",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/couriers/stats",
+        "operationId": null,
+        "summary": "GET /api/logistics/api/v1/couriers/stats",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/earnings/summary",
+        "operationId": null,
+        "summary": "GET /api/logistics/api/v1/earnings/summary",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/engines/status",
+        "operationId": null,
+        "summary": "GET /api/logistics/api/v1/engines/status",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/health",
+        "operationId": null,
+        "summary": "GET /api/logistics/api/v1/health",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/metrics",
+        "operationId": null,
+        "summary": "GET /api/logistics/api/v1/metrics",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/qa/architecture",
+        "operationId": null,
+        "summary": "GET /api/logistics/api/v1/qa/architecture",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/qa/dashboard",
+        "operationId": null,
+        "summary": "GET /api/logistics/api/v1/qa/dashboard",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/qa/performance",
+        "operationId": null,
+        "summary": "GET /api/logistics/api/v1/qa/performance",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/qa/security",
+        "operationId": null,
+        "summary": "GET /api/logistics/api/v1/qa/security",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/stats/performance",
+        "operationId": null,
+        "summary": "GET /api/logistics/api/v1/stats/performance",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/test/all-engines",
+        "operationId": null,
+        "summary": "GET /api/logistics/api/v1/test/all-engines",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/health",
+        "operationId": null,
+        "summary": "GET /api/logistics/health",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/health/live",
+        "operationId": null,
+        "summary": "GET /api/logistics/health/live",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/health/ready",
+        "operationId": null,
+        "summary": "GET /api/logistics/health/ready",
+        "description": null,
+        "tags": [
+          "Logistics"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/maps/health",
+        "operationId": null,
+        "summary": "GET /api/maps/health",
+        "description": null,
+        "tags": [
+          "Maps"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/maps/health/live",
+        "operationId": null,
+        "summary": "GET /api/maps/health/live",
+        "description": null,
+        "tags": [
+          "Maps"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/maps/health/ready",
+        "operationId": null,
+        "summary": "GET /api/maps/health/ready",
+        "description": null,
+        "tags": [
+          "Maps"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/order/health",
+        "operationId": null,
+        "summary": "GET /api/order/health",
+        "description": null,
+        "tags": [
+          "Orders"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/order/health/circuit-breakers",
+        "operationId": null,
+        "summary": "GET /api/order/health/circuit-breakers",
+        "description": null,
+        "tags": [
+          "Orders"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/order/health/detailed",
+        "operationId": null,
+        "summary": "GET /api/order/health/detailed",
+        "description": null,
+        "tags": [
+          "Orders"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/order/health/live",
+        "operationId": null,
+        "summary": "GET /api/order/health/live",
+        "description": null,
+        "tags": [
+          "Orders"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/order/health/metrics",
+        "operationId": null,
+        "summary": "GET /api/order/health/metrics",
+        "description": null,
+        "tags": [
+          "Orders"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/order/health/ping",
+        "operationId": null,
+        "summary": "GET /api/order/health/ping",
+        "description": null,
+        "tags": [
+          "Orders"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/order/health/ready",
+        "operationId": null,
+        "summary": "GET /api/order/health/ready",
+        "description": null,
+        "tags": [
+          "Orders"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/payment/health",
+        "operationId": null,
+        "summary": "GET /api/payment/health",
+        "description": null,
+        "tags": [
+          "Payments"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/payment/health/live",
+        "operationId": null,
+        "summary": "GET /api/payment/health/live",
+        "description": null,
+        "tags": [
+          "Payments"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/payment/health/ready",
+        "operationId": null,
+        "summary": "GET /api/payment/health/ready",
+        "description": null,
+        "tags": [
+          "Payments"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/payment/metrics",
+        "operationId": null,
+        "summary": "GET /api/payment/metrics",
+        "description": null,
+        "tags": [
+          "Payments"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/payout/payouts",
+        "operationId": null,
+        "summary": "GET /api/payout/payouts",
+        "description": null,
+        "tags": [
+          "Payouts"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "BearerAuth"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/training/api/health",
+        "operationId": null,
+        "summary": "GET /api/training/api/health",
+        "description": null,
+        "tags": [
+          "Training"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/training/api/v1/modules",
+        "operationId": null,
+        "summary": "GET /api/training/api/v1/modules",
+        "description": null,
+        "tags": [
+          "Training"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/training/api/v1/modules/leaderboard",
+        "operationId": null,
+        "summary": "GET /api/training/api/v1/modules/leaderboard",
+        "description": null,
+        "tags": [
+          "Training"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/training/metrics",
+        "operationId": null,
+        "summary": "GET /api/training/metrics",
+        "description": null,
+        "tags": [
+          "Training"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/health",
+        "operationId": null,
+        "summary": "GET /api/user/health",
+        "description": null,
+        "tags": [
+          "Users"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/health/live",
+        "operationId": null,
+        "summary": "GET /api/user/health/live",
+        "description": null,
+        "tags": [
+          "Users"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/health/metrics",
+        "operationId": null,
+        "summary": "GET /api/user/health/metrics",
+        "description": null,
+        "tags": [
+          "Users"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/health/ping",
+        "operationId": null,
+        "summary": "GET /api/user/health/ping",
+        "description": null,
+        "tags": [
+          "Users"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/health/ready",
+        "operationId": null,
+        "summary": "GET /api/user/health/ready",
+        "description": null,
+        "tags": [
+          "Users"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/lookup",
+        "operationId": null,
+        "summary": "GET /api/user/lookup",
+        "description": null,
+        "tags": [
+          "Users"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [
+            "InternalCall"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/search",
+        "operationId": null,
+        "summary": "GET /api/user/search",
+        "description": null,
+        "tags": [
+          "Users"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [
+            "InternalCall"
+          ],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": false,
+          "isProtected": true
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/health",
+        "operationId": null,
+        "summary": "GET /api/wallet/health",
+        "description": null,
+        "tags": [
+          "Wallet"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/health/live",
+        "operationId": null,
+        "summary": "GET /api/wallet/health/live",
+        "description": null,
+        "tags": [
+          "Wallet"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/health/ready",
+        "operationId": null,
+        "summary": "GET /api/wallet/health/ready",
+        "description": null,
+        "tags": [
+          "Wallet"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": true,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/debug-sentry",
+        "operationId": null,
+        "summary": "GET /debug-sentry",
+        "description": null,
+        "tags": [
+          "Health"
+        ],
+        "hasRequestInput": false,
+        "hasExamples": false,
+        "hasGeneratedExamples": false,
+        "hasRequestSchema": true,
+        "hasSuccessResponse": true,
+        "missingResponseSchemas": [],
+        "hasSafeMethodRequestBody": false,
+        "looksLikelyPublic": false,
+        "security": {
+          "effectiveSchemes": [],
+          "inheritedRootSecurity": false,
+          "hasExplicitOperationSecurity": true,
+          "hasExplicitPathSecurity": false,
+          "isExplicitPublic": true,
+          "isProtected": false
+        }
+      }
+    ]
+  },
+  "requestSchemaCoverage": {
+    "missingSchemas": 0,
+    "operations": []
+  },
+  "responseCoverage": {
+    "operationsWithoutSuccessResponse": 0,
+    "operationsWithoutSuccessResponseList": [],
+    "responsesMissingSchemas": 0,
+    "responsesMissingSchemasList": [],
+    "safeMethodRequestBodies": 0,
+    "safeMethodRequestBodiesList": []
+  },
+  "authCoverage": {
+    "rootSecuritySchemes": [],
+    "explicitlyPublicOperations": 160,
+    "explicitlyProtectedOperations": 290,
+    "operationsWithoutExplicitSecurity": 0,
+    "operationsWithoutExplicitSecurityList": [],
+    "inheritedSecurityOperations": 0,
+    "likelyPublicOperationsWithInheritedSecurity": 0,
+    "likelyPublicOperationsWithInheritedSecurityList": [],
+    "globalSecurityIncludesTestBypass": false,
+    "globalSecurityIncludesServiceKey": false
+  },
+  "duplicateKeys": []
+}

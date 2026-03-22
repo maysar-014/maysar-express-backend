@@ -34,6 +34,7 @@ import { OutboxRepository } from '@shared/outbox/outbox.repository';
 import { healthRoutes } from './api/routes/health.routes';
 import { adminRoutes } from './api/routes/admin.routes';
 import { createMaintenanceRoutes } from './api/routes/maintenance.routes';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 // 2FA Imports
 import { EncryptionService } from './2fa/infrastructure/services/encryption.service';
@@ -129,7 +130,7 @@ const authOutboxRepository = new OutboxRepository(authPrisma, 'sharedOutboxEvent
 const authEventPublisher = new AuthEventPublisher(authOutboxRepository);
 const userRepository = new PrismaUserRepository(authPrisma);
 const registerUserUseCase = new RegisterUserUseCase(userRepository);
-const authenticateUserUseCase = new AuthenticateUserUseCase(undefined, authEventPublisher);
+const authenticateUserUseCase = new AuthenticateUserUseCase(userRepository, authEventPublisher);
 const authController = new AuthController(registerUserUseCase, authenticateUserUseCase);
 const authRoutes = createAuthRoutes(authController);
 
@@ -138,8 +139,8 @@ userSyncHandlers.registerHandlers();
 
 // API routes
 app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/admin', adminRoutes);
-app.use('/api/v1/system/maintenance', createMaintenanceRoutes(authPrisma));
+app.use('/api/v1/admin', requireRoleOrService(['admin', 'system']), adminRoutes);
+app.use('/api/v1/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(authPrisma));
 
 // Wire up 2FA
 const encryptionService = new EncryptionService(process.env.TWO_FACTOR_ENCRYPTION_KEY || 'default-two-factor-encryption-key-32-chars!!');

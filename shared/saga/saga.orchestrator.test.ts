@@ -348,6 +348,32 @@ describe('DistributedSagaOrchestrator', () => {
     expect(executeSpy).toHaveBeenCalledWith('saga-7', { orderId: 'ord-8' }, 1);
   });
 
+  it('resumes STARTED saga from START at the first step', async () => {
+    const repo = createSagaLogRepository();
+    repo.getById.mockResolvedValue({
+      sagaId: 'saga-7-start',
+      sagaType: 'TestSaga',
+      status: SagaStatus.STARTED,
+      currentStep: 'START',
+      payload: { orderId: 'ord-8-start' },
+      context: {},
+      createdAt: new Date(),
+      updatedAt: new Date()
+    } as SagaLogEntry);
+
+    const saga = createSaga([createStep('step1'), createStep('step2')], repo);
+    const executeSpy = jest
+      .spyOn(
+        saga as unknown as { executeNextStep: (id: string, payload: TestPayload, idx: number) => Promise<void> },
+        'executeNextStep'
+      )
+      .mockResolvedValue(undefined);
+
+    await saga.resume('saga-7-start');
+
+    expect(executeSpy).toHaveBeenCalledWith('saga-7-start', { orderId: 'ord-8-start' }, 0);
+  });
+
   it('resumes COMPENSATING saga and marks compensated when no active steps remain', async () => {
     const repo = createSagaLogRepository();
     repo.getById.mockResolvedValue({

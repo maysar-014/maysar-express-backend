@@ -28,6 +28,9 @@ app.use(csrfValidationMiddleware);  // Validates header on POST/PUT/DELETE/PATCH
 
 CSRF token is set as an `httpOnly: false` cookie (`csrf-token`) so frontend JS can read it and send it back as `X-CSRF-Token`. Uses `crypto.timingSafeEqual` for constant-time comparison.
 
+For full implementation details (token flow, endpoints, test bypass), see:
+- `C:\Users\abdal\Desktop\maysar-express-backend\docs\security\CSRF.md`
+
 ### Idempotency
 
 ```typescript

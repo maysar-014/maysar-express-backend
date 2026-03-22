@@ -125,17 +125,23 @@ export class UpdateUserUseCase {
           input.updates.notificationsEnabled !== undefined) {
 
         const currentPrefs = await this.userRepository.getUserPreferences(user.id);
-        const updatedPrefs: Partial<UserPreferences> = { ...currentPrefs };
+        const updatedPrefs: Partial<UserPreferences> = {};
 
-        if (input.updates.language !== undefined) {
+        if (input.updates.language !== undefined && input.updates.language !== currentPrefs.language) {
+          oldValues.language = currentPrefs.language;
+          newValues.language = input.updates.language;
           updatedPrefs.language = input.updates.language;
         }
-        if (input.updates.timezone !== undefined) {
+        if (input.updates.timezone !== undefined && input.updates.timezone !== currentPrefs.timezone) {
+          oldValues.timezone = currentPrefs.timezone;
+          newValues.timezone = input.updates.timezone;
           updatedPrefs.timezone = input.updates.timezone;
         }
 
-        await this.userRepository.updateUserPreferences(user.id, updatedPrefs);
-        changes.push('preferences');
+        if (Object.keys(updatedPrefs).length > 0) {
+          await this.userRepository.updateUserPreferences(user.id, updatedPrefs);
+          changes.push('preferences');
+        }
       }
 
       // Save the updated user

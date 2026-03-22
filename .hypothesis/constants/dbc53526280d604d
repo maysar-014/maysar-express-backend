@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\specs\openapi\types\common.py
+# hypothesis_version: 6.151.9
+
+['$ref', 'Reference', 'SchemaObject', '_SecurityTypeKey']

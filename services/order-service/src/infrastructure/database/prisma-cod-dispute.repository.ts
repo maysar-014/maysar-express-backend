@@ -3,6 +3,7 @@ import { databaseManager } from '../../config/database.config';
 
 interface CODDisputeDelegate {
   findUnique(args: Record<string, unknown>): Promise<Record<string, unknown> | null>;
+  findFirst?(args: Record<string, unknown>): Promise<Record<string, unknown> | null>;
   create(args: Record<string, unknown>): Promise<Record<string, unknown>>;
   update(args: Record<string, unknown>): Promise<Record<string, unknown>>;
 }
@@ -21,7 +22,10 @@ export class PrismaCODDisputeRepository implements ICODDisputeRepository {
 
   async findById(id: string): Promise<CODDispute | null> {
     try {
-      const dispute = await this.delegate.findUnique({ where: { id } });
+      let dispute = await this.delegate.findUnique({ where: { id } });
+      if (!dispute && this.delegate.findFirst) {
+        dispute = await this.delegate.findFirst({ where: { orderId: id } });
+      }
       if (!dispute) {
         return null;
       }

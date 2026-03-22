@@ -3,6 +3,9 @@ import type { Router } from 'express';
 process.env.REDIS_URL = 'redis://test-redis:6379';
 
 const redisCtor = jest.fn(() => ({}));
+const sharedRedisClient = { on: jest.fn() };
+const getSharedRedisClient = jest.fn((_url?: string) => sharedRedisClient);
+const resolveRedisUrl = jest.fn((url?: string) => url);
 const redisRateStoreCtor = jest.fn(() => ({}));
 const rateLimitFactory = jest.fn(() => (_req: unknown, _res: unknown, next: () => void) => next());
 const authenticate = jest.fn((_req: unknown, _res: unknown, next: () => void) => next());
@@ -16,6 +19,11 @@ const validateRequest = jest.fn((_schema?: unknown) => (_req: unknown, _res: unk
 jest.mock('ioredis', () => ({
   __esModule: true,
   default: redisCtor
+}));
+
+jest.mock('../../../../../shared/redis/ioredis-client', () => ({
+  getSharedRedisClient: (url: string) => getSharedRedisClient(url),
+  resolveRedisUrl: (url?: string) => resolveRedisUrl(url)
 }));
 
 jest.mock('../../../../../shared/middleware/redis-rate-limit.store', () => ({
@@ -55,12 +63,14 @@ jest.mock('../middleware/validation.middleware', () => ({
 
 jest.mock('../validators/wallet.validator', () => ({
   WalletValidator: {
+    walletUserParams: 'wallet-user-params-validator',
     creditWallet: 'credit-validator',
     debitWallet: 'debit-validator',
     placeHold: 'hold-validator',
     releaseHold: 'release-validator',
     captureHold: 'capture-validator',
     reverseTransaction: 'reverse-validator',
+    statementQuery: 'statement-query-validator',
     getStatement: 'statement-validator',
     topUp: 'topup-validator',
     initiatePayout: 'payout-validator'
@@ -117,7 +127,8 @@ describe('wallet.routes', () => {
   it('configures redis, rate-limit store, and idempotency middleware', () => {
     createWalletRoutes(controller as never);
 
-    expect(redisCtor).toHaveBeenCalledWith('redis://test-redis:6379');
+    expect(resolveRedisUrl).toHaveBeenCalledWith('redis://test-redis:6379');
+    expect(getSharedRedisClient).toHaveBeenCalledWith('redis://test-redis:6379');
     expect(redisRateStoreCtor).toHaveBeenCalled();
     expect(rateLimitFactory).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -177,9 +188,15 @@ describe('wallet.routes', () => {
     expect(validateRequest).toHaveBeenCalledWith('release-validator');
     expect(validateRequest).toHaveBeenCalledWith('capture-validator');
     expect(validateRequest).toHaveBeenCalledWith('reverse-validator');
-    expect(validateRequest).toHaveBeenCalledWith('statement-validator');
+    expect(validateRequest).toHaveBeenCalledWith({
+      params: 'wallet-user-params-validator',
+      query: 'statement-query-validator'
+    });
     expect(validateRequest).toHaveBeenCalledWith('topup-validator');
-    expect(validateRequest).toHaveBeenCalledWith('payout-validator');
+    expect(validateRequest).toHaveBeenCalledWith({
+      params: 'wallet-user-params-validator',
+      body: 'payout-validator'
+    });
   });
 
   it('binds controller handlers to their routes', async () => {

@@ -47,8 +47,9 @@ describe('AuthController', () => {
     expect(registerUserUseCase.execute).toHaveBeenCalledWith({
       email: 'new@example.com',
       role: 'buyer',
-      profile: { name: 'New User' }
+      profile: { name: 'New User', firstName: 'New', lastName: 'User' }
     });
+    expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith({ success: true, userId: 'new-user-id' });
   });
 
@@ -61,7 +62,35 @@ describe('AuthController', () => {
     await controller.register(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'invalid profile' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'invalid profile'
+      }
+    });
+  });
+
+  it('register returns 409 when the user already exists', async () => {
+    const error = new Error('User already exists');
+    (error as Error & { name: string }).name = 'UserAlreadyExistsError';
+    registerUserUseCase.execute.mockRejectedValue(error);
+    const controller = new AuthController(registerUserUseCase as any, authenticateUserUseCase as any);
+    const req = createRequest({
+      body: { email: 'existing@example.com' }
+    });
+    const res = createResponse();
+
+    await controller.register(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: {
+        code: 'USER_ALREADY_EXISTS',
+        message: 'User already exists'
+      }
+    });
   });
 
   it('login sets refresh token cookie and strips refreshToken from response body', async () => {
@@ -159,28 +188,69 @@ describe('AuthController', () => {
     expect(res.json).toHaveBeenCalledWith({ success: true, message: 'Logged out' });
   });
 
-  it('returns stubbed responses for refresh/session/password/2fa/stats endpoints', async () => {
+  it('returns the current auth utility endpoint responses', async () => {
     const controller = new AuthController(registerUserUseCase as any, authenticateUserUseCase as any);
-    const req = createRequest({
+    const refreshReq = createRequest({
       cookies: { refreshToken: 'cookie-token' },
       body: { refreshToken: 'body-token' }
     });
     const res = createResponse();
 
-    await controller.refreshToken(req, res);
-    await controller.verifySession(req, res);
-    await controller.forgotPassword(req, res);
-    await controller.resetPassword(req, res);
-    await controller.enableTwoFactor(req, res);
-    await controller.disableTwoFactor(req, res);
-    await controller.verifyTwoFactorSetup(req, res);
-    await controller.reportSuspiciousActivity(req, res);
-    await controller.getAuthStats(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(501);
+    await controller.refreshToken(refreshReq, res);
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ message: 'Not implemented' });
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      tokenType: 'Bearer',
+      expiresIn: 3600
+    }));
+
+    await controller.verifySession(refreshReq, res);
     expect(res.json).toHaveBeenCalledWith({ valid: true });
+
+    const forgotReq = createRequest({ body: { email: 'user@example.com' } });
+    await controller.forgotPassword(forgotReq, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      message: 'If an account exists for this email, reset instructions have been sent.'
+    });
+
+    const resetReq = createRequest({
+      body: {
+        token: 'x'.repeat(32),
+        newPassword: 'NewPass123!',
+        confirmPassword: 'NewPass123!'
+      }
+    });
+    await controller.resetPassword(resetReq, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      message: 'Password reset successful'
+    });
+
+    const enableReq = createRequest({ body: { password: 'StrongPass123!', totpCode: '123456' } });
+    await controller.enableTwoFactor(enableReq, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      data: { enabled: true, verified: true },
+      message: 'Two-factor authentication enabled'
+    });
+
+    await controller.disableTwoFactor(createRequest(), res);
+    expect(res.json).toHaveBeenCalledWith({ success: true, message: 'Two-factor authentication disabled' });
+
+    const verifySetupReq = createRequest({ body: { secret: 'secret', totpCode: '123456' } });
+    await controller.verifyTwoFactorSetup(verifySetupReq, res);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      verified: true,
+      message: 'Two-factor setup verified'
+    });
+
+    await controller.reportSuspiciousActivity(createRequest(), res);
+    await controller.getAuthStats(createRequest(), res);
     expect(res.json).toHaveBeenCalledWith({ success: true });
     expect(res.json).toHaveBeenCalledWith({ activeUsers: 0 });
   });

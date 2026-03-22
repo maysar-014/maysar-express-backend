@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\specs\openapi\extra_data_source.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.3, 1.0, 3.0, 10000, '_delete_attempts', '_last_drawn', '_lock', '_maxlen', '_step', 'content-type', 'delete', 'properties']

@@ -1,0 +1,130 @@
+Passed 400 responses: 129
+01. POST http://localhost/api/auth/register :: [PASS] BUYER Register
+02. GET http://localhost/api/auth/verify :: [PASS] BUYER Auth Verify Session
+03. POST http://localhost/api/order/orders :: [PASS] BUYER Order Create
+04. POST http://localhost/api/enabler/enablers/register :: [PASS] BUYER Enabler Register
+05. POST http://localhost/api/payment/payments :: [PASS] BUYER Payment Create
+06. POST http://localhost/api/auth/register :: [PASS] SELLER Register
+07. GET http://localhost/api/auth/verify :: [PASS] SELLER Auth Verify Session
+08. POST http://localhost/api/order/orders :: [PASS] SELLER Order Create
+09. POST http://localhost/api/enabler/enablers/register :: [PASS] SELLER Enabler Register
+10. POST http://localhost/api/payment/payments :: [PASS] SELLER Payment Create
+11. POST http://localhost/api/auth/register :: [PASS] COURIER Register
+12. GET http://localhost/api/auth/verify :: [PASS] COURIER Auth Verify Session
+13. POST http://localhost/api/order/orders :: [PASS] COURIER Order Create
+14. POST http://localhost/api/notification/sms/send :: [PASS] COURIER Notification SMS Send
+15. POST http://localhost/api/enabler/enablers/register :: [PASS] COURIER Enabler Register
+16. POST http://localhost/api/payment/payments :: [PASS] COURIER Payment Create
+17. POST http://localhost/api/auth/register :: [PASS] SUPPLIER Register
+18. GET http://localhost/api/auth/verify :: [PASS] SUPPLIER Auth Verify Session
+19. POST http://localhost/api/order/orders :: [PASS] SUPPLIER Order Create
+20. POST http://localhost/api/enabler/enablers/register :: [PASS] SUPPLIER Enabler Register
+21. POST http://localhost/api/payment/payments :: [PASS] SUPPLIER Payment Create
+22. POST http://localhost/api/auth/register :: [PASS] ENABLER Register
+23. GET http://localhost/api/auth/verify :: [PASS] ENABLER Auth Verify Session
+24. POST http://localhost/api/order/orders :: [PASS] ENABLER Order Create
+25. POST http://localhost/api/enabler/enablers/register :: [PASS] ENABLER Enabler Register
+26. POST http://localhost/api/payment/payments :: [PASS] ENABLER Payment Create
+27. POST http://localhost/api/auth/register :: [PASS] SYSTEM Register
+28. GET http://localhost/api/auth/verify :: [PASS] SYSTEM Auth Verify Session
+29. POST http://localhost/api/order/orders :: [PASS] SYSTEM Order Create
+30. POST http://localhost/api/enabler/enablers/register :: [PASS] SYSTEM Enabler Register
+31. POST http://localhost/api/payment/payments :: [PASS] SYSTEM Payment Create
+32. POST http://localhost/api/auth/register :: [PASS] Auth Register
+33. GET http://localhost/api/auth/verify :: [FAIL] Auth Verify Missing Auth
+34. GET http://localhost/api/production/dashboard :: [FAIL] RBAC Buyer Accessing Admin
+35. GET http://localhost/api/auth/admin/health :: [Metrics] GET /api/auth/admin/health
+36. POST http://localhost/api/auth/2fa/backup :: POST /api/auth/2fa/backup
+37. POST http://localhost/api/auth/2fa/disable :: POST /api/auth/2fa/disable
+38. POST http://localhost/api/auth/2fa/enable :: POST /api/auth/2fa/enable
+39. POST http://localhost/api/auth/2fa/verify :: POST /api/auth/2fa/verify
+40. GET http://localhost/api/auth/admin/audit :: GET /api/auth/admin/audit
+41. POST http://localhost/api/auth/admin/discovery/refresh :: POST /api/auth/admin/discovery/refresh
+42. GET http://localhost/api/auth/admin/health :: GET /api/auth/admin/health
+43. GET http://localhost/api/auth/admin/security-events :: GET /api/auth/admin/security-events
+44. DELETE http://localhost/api/auth/admin/sessions/test-sessionId :: DELETE /api/auth/admin/sessions/:sessionId
+45. GET http://localhost/api/auth/admin/stats :: GET /api/auth/admin/stats
+46. GET http://localhost/api/auth/admin/users/test-userId :: GET /api/auth/admin/users/:userId
+47. PATCH http://localhost/api/auth/admin/users/test-userId/role :: PATCH /api/auth/admin/users/:userId/role
+48. DELETE http://localhost/api/auth/admin/users/test-userId/sessions :: DELETE /api/auth/admin/users/:userId/sessions
+49. GET http://localhost/api/auth/admin/users/test-userId/sessions :: GET /api/auth/admin/users/:userId/sessions
+50. PATCH http://localhost/api/auth/admin/users/test-userId/status :: PATCH /api/auth/admin/users/:userId/status
+51. GET http://localhost/api/auth/admin/users/search :: GET /api/auth/admin/users/search
+52. POST http://localhost/api/auth/blacklist-token :: POST /api/auth/blacklist-token
+53. POST http://localhost/api/auth/check-blacklist :: POST /api/auth/check-blacklist
+54. POST http://localhost/api/auth/check-brute-force :: POST /api/auth/check-brute-force
+55. POST http://localhost/api/auth/forgot-password :: POST /api/auth/forgot-password
+56. POST http://localhost/api/auth/login :: POST /api/auth/login
+57. GET http://localhost/api/auth/oauth/callback :: GET /api/auth/oauth/callback
+58. POST http://localhost/api/auth/record-failure :: POST /api/auth/record-failure
+59. POST http://localhost/api/auth/register :: POST /api/auth/register
+60. POST http://localhost/api/auth/report-suspicious :: POST /api/auth/report-suspicious
+61. POST http://localhost/api/auth/reset-password :: POST /api/auth/reset-password
+62. GET http://localhost/api/auth/sessions/ :: GET /api/auth/sessions/
+63. POST http://localhost/api/auth/validate-api-key :: POST /api/auth/validate-api-key
+64. POST http://localhost/api/auth/validate-token :: POST /api/auth/validate-token
+65. GET http://localhost/api/auth/verify :: GET /api/auth/verify
+66. POST http://localhost/api/business-registry/businesses/ :: POST /api/business-registry/businesses/
+67. POST http://localhost/api/business-registry/businesses/test-id/compliance-records :: POST /api/business-registry/businesses/:id/compliance-records
+68. POST http://localhost/api/business-registry/businesses/test-id/documents :: POST /api/business-registry/businesses/:id/documents
+69. POST http://localhost/api/business-registry/businesses/test-id/suspend :: POST /api/business-registry/businesses/:id/suspend
+70. POST http://localhost/api/business-registry/businesses/test-id/verify :: POST /api/business-registry/businesses/:id/verify
+71. POST http://localhost/api/catalog/campaigns/ :: POST /api/catalog/campaigns/
+72. PUT http://localhost/api/catalog/campaigns/00000000-0000-0000-0000-000000000000 :: PUT /api/catalog/campaigns/:id
+73. POST http://localhost/api/catalog/campaigns/test-id/cancel :: POST /api/catalog/campaigns/:id/cancel
+74. POST http://localhost/api/catalog/campaigns/test-id/complete :: POST /api/catalog/campaigns/:id/complete
+75. POST http://localhost/api/catalog/campaigns/test-id/launch :: POST /api/catalog/campaigns/:id/launch
+76. POST http://localhost/api/catalog/campaigns/test-id/pause :: POST /api/catalog/campaigns/:id/pause
+77. POST http://localhost/api/catalog/campaigns/test-id/resume :: POST /api/catalog/campaigns/:id/resume
+78. POST http://localhost/api/catalog/pricing/calculate :: POST /api/catalog/pricing/calculate
+79. POST http://localhost/api/catalog/products/test-productId/buy-box/compute :: POST /api/catalog/products/:productId/buy-box/compute
+80. POST http://localhost/api/checkout/initiate :: POST /api/checkout/initiate
+81. GET http://localhost/api/commission/test-id :: GET /api/commission/:id
+82. PUT http://localhost/api/commission/test-id/approve :: PUT /api/commission/:id/approve
+83. POST http://localhost/api/commission/calculate :: POST /api/commission/calculate
+84. GET http://localhost/api/commission/sellers/test-sellerId :: GET /api/commission/sellers/:sellerId
+85. GET http://localhost/api/commission/sellers/test-sellerId/summary :: GET /api/commission/sellers/:sellerId/summary
+86. POST http://localhost/api/community/posts/ :: POST /api/community/posts/
+87. GET http://localhost/api/community/posts/test-postId :: GET /api/community/posts/:postId
+88. GET http://localhost/api/community/posts/test-postId/related :: GET /api/community/posts/:postId/related
+89. GET http://localhost/api/community/posts/search :: GET /api/community/posts/search
+90. POST http://localhost/api/enabler/enablers/test-id/approve :: POST /api/enabler/enablers/:id/approve
+91. POST http://localhost/api/enabler/enablers/register :: POST /api/enabler/enablers/register
+92. PUT http://localhost/api/logistics/api/courier/test-courierId/status :: PUT /api/logistics/api/courier/:courierId/status
+93. POST http://localhost/api/logistics/api/v1/cod/test-deliveryId/otp :: POST /api/logistics/api/v1/cod/:deliveryId/otp
+94. POST http://localhost/api/logistics/api/v1/cod/test-deliveryId/verify :: POST /api/logistics/api/v1/cod/:deliveryId/verify
+95. PUT http://localhost/api/logistics/api/v1/couriers/test-courierId/status :: PUT /api/logistics/api/v1/couriers/:courierId/status
+96. POST http://localhost/api/logistics/api/v1/deliveries :: POST /api/logistics/api/v1/deliveries
+97. GET http://localhost/api/logistics/api/v1/deliveries/test-deliveryId :: GET /api/logistics/api/v1/deliveries/:deliveryId
+98. POST http://localhost/api/logistics/api/v1/deliveries/test-deliveryId/status :: POST /api/logistics/api/v1/deliveries/:deliveryId/status
+99. GET http://localhost/api/logistics/api/v1/earnings :: GET /api/logistics/api/v1/earnings
+100. POST http://localhost/api/logistics/api/v1/earnings :: POST /api/logistics/api/v1/earnings
+101. POST http://localhost/api/logistics/api/v1/earnings/calculate :: POST /api/logistics/api/v1/earnings/calculate
+102. POST http://localhost/api/logistics/api/v1/qa/load-test :: POST /api/logistics/api/v1/qa/load-test
+103. PUT http://localhost/api/logistics/api/v1/routes/test-routeId/progress :: PUT /api/logistics/api/v1/routes/:routeId/progress
+104. POST http://localhost/api/logistics/api/v1/routes/optimize :: POST /api/logistics/api/v1/routes/optimize
+105. POST http://localhost/api/logistics/api/v1/tracking/location :: POST /api/logistics/api/v1/tracking/location
+106. POST http://localhost/api/notification/sms/retry/test-messageId :: POST /api/notification/sms/retry/:messageId
+107. POST http://localhost/api/notification/sms/send :: POST /api/notification/sms/send
+108. POST http://localhost/api/notification/sms/webhook/africastalking :: POST /api/notification/sms/webhook/africastalking
+109. GET http://localhost/api/order/orders :: GET /api/order/orders
+110. POST http://localhost/api/order/orders :: POST /api/order/orders
+111. POST http://localhost/api/order/orders/disputes/test-id/resolve :: POST /api/order/orders/disputes/:id/resolve
+112. GET http://localhost/api/order/orders/tracking/test-trackingNumber :: GET /api/order/orders/tracking/:trackingNumber
+113. POST http://localhost/api/payment/payments/test-id/refund :: POST /api/payment/payments/:id/refund
+114. POST http://localhost/api/payment/payments/webhooks/pesapal :: POST /api/payment/payments/webhooks/pesapal
+115. GET http://localhost/api/production/dashboard :: GET /api/production/dashboard
+116. POST http://localhost/api/production/plans :: POST /api/production/plans
+117. PUT http://localhost/api/production/plans/test-id/status :: PUT /api/production/plans/:id/status
+118. POST http://localhost/api/production/quality/checkpoints :: POST /api/production/quality/checkpoints
+119. DELETE http://localhost/api/user/test-id :: DELETE /api/user/:id
+120. PUT http://localhost/api/user/test-id :: PUT /api/user/:id
+121. POST http://localhost/api/user/test-id/2fa/setup :: POST /api/user/:id/2fa/setup
+122. POST http://localhost/api/user/test-id/password :: POST /api/user/:id/password
+123. POST http://localhost/api/user/test-id/phone/verify :: POST /api/user/:id/phone/verify
+124. POST http://localhost/api/user/test-id/role :: POST /api/user/:id/role
+125. POST http://localhost/api/user/test-id/suspend :: POST /api/user/:id/suspend
+126. POST http://localhost/api/user/request-password-reset :: POST /api/user/request-password-reset
+127. POST http://localhost/api/user/reset-password/test-token :: POST /api/user/reset-password/:token
+128. POST http://localhost/api/user/security/breaches/report :: POST /api/user/security/breaches/report
+129. POST http://localhost/api/user/verify-email/test-token :: POST /api/user/verify-email/:token

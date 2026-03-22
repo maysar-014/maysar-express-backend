@@ -1,4 +1,4 @@
-import { getModelPrefix, makeId } from '@shared/ids/id';
+import { getModelPrefix, isSystemId, makeId } from '@shared/ids/id';
 import { prisma } from '../../infrastructure/database/prisma-client';
 import { logger } from '../../infrastructure/services/logger.service';
 
@@ -19,6 +19,12 @@ export class AuditService {
     details: any;
   }): Promise<void> {
     try {
+      const auditLogDelegate = (prisma as any).auditLog;
+      if (!auditLogDelegate || typeof auditLogDelegate.create !== 'function') {
+        logger.warn('AuditService.logAuditEvent skipped: auditLog delegate unavailable');
+        return;
+      }
+
       const details = event.details || {};
       const ipAddress = details.ipAddress || details.ip || 'system';
       const userAgent = details.userAgent || 'system';
@@ -27,10 +33,11 @@ export class AuditService {
         details
       };
 
-      await prisma.auditLog.create({
+      const userId = isSystemId(event.userId) ? event.userId : undefined;
+      await auditLogDelegate.create({
         data: {
           id: makeId(auditIdPrefix),
-          userId: event.userId,
+          userId,
           email: details.email,
           action: event.action,
           ipAddress,
@@ -42,7 +49,6 @@ export class AuditService {
       });
     } catch (error) {
       logger.error('AuditService.logAuditEvent error', { error, event });
-      throw error;
     }
   }
 
@@ -58,6 +64,12 @@ export class AuditService {
     offset?: number;
   }): Promise<{ logs: any[]; total: number }> {
     try {
+      const auditLogDelegate = (prisma as any).auditLog;
+      if (!auditLogDelegate || typeof auditLogDelegate.findMany !== 'function') {
+        logger.warn('AuditService.getAuditLogs skipped: auditLog delegate unavailable');
+        return { logs: [], total: 0 };
+      }
+
       const where: any = {};
       if (params.userId) {
         where.userId = params.userId;
@@ -79,13 +91,13 @@ export class AuditService {
       const offset = params.offset ?? 0;
 
       const [logs, total] = await prisma.$transaction([
-        prisma.auditLog.findMany({
+        auditLogDelegate.findMany({
           where,
           orderBy: { timestamp: 'desc' },
           take: limit,
           skip: offset
         }),
-        prisma.auditLog.count({ where })
+        auditLogDelegate.count({ where })
       ]);
 
       return {

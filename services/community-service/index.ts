@@ -27,6 +27,7 @@ import { HttpTrainingServiceClient } from './src/infrastructure/clients/training
 import { HttpBusinessRegistryClient } from './src/infrastructure/clients/business-registry-client';
 import { createPrismaClient } from '@shared/database/prisma-client';
 import { getModelPrefix, makeId } from '@shared/ids/id';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 let outboxProcessor: OutboxProcessor | null = null;
 const prisma = createPrismaClient();
@@ -338,7 +339,7 @@ export const CommunityModule: Module = {
             res.end(await metricsRegistry.metrics());
         });
 
-        router.use('/system/maintenance', createMaintenanceRoutes(prisma));
+        router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(prisma));
 
         router.use('/knowledge', createKnowledgeRouter(communityWiring.knowledgeController as never));
         router.use('/', createCommunityRouter(communityWiring.communityController as never));
@@ -354,3 +355,5 @@ export const CommunityModule: Module = {
         }
     }
 };
+
+

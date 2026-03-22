@@ -355,13 +355,16 @@ export function validateRequest<T>(
   source: 'body' | 'query' | 'params' = 'body'
 ) {
   if (!(schema instanceof z.ZodType)) {
-    return validateLegacyRequest(schema, { sanitize: true, allowUnknown: true, stripUnknown: false });
+    return validateLegacyRequest(schema, { sanitize: true, allowUnknown: false, stripUnknown: false });
   }
 
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = req[source];
-      const validatedData = schema.parse(data);
+      const parser = typeof (schema as z.ZodSchema<T> & { strict?: () => z.ZodSchema<T> }).strict === 'function'
+        ? (schema as z.ZodSchema<T> & { strict: () => z.ZodSchema<T> }).strict()
+        : schema;
+      const validatedData = parser.parse(data);
 
       // Replace the original data with validated/sanitized data
       req[source] = validatedData;
@@ -404,6 +407,12 @@ function validateLegacyRequest(
           Object.keys(sourceData).forEach((key) => {
             if (!sectionSchema[key]) {
               delete sourceData[key];
+            }
+          });
+        } else if (!options.allowUnknown) {
+          Object.keys(sourceData).forEach((key) => {
+            if (!sectionSchema[key]) {
+              details.push(`${key} is not allowed`);
             }
           });
         }
@@ -614,7 +623,7 @@ export function createValidator(options: LegacyValidatorOptions = {}) {
   return (schema: LegacyRequestSchema) =>
     validateLegacyRequest(schema, {
       sanitize: options.sanitize ?? true,
-      allowUnknown: options.allowUnknown ?? true,
+      allowUnknown: options.allowUnknown ?? false,
       stripUnknown: options.stripUnknown ?? false
     });
 }

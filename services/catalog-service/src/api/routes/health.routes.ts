@@ -119,21 +119,6 @@ export function createHealthRoutes(
     }
   );
 
-  // 404 handler for unknown routes
-  router.use((req, res) => {
-    res.status(404).json({
-      success: false,
-      error: {
-        code: 'NOT_FOUND',
-        message: `Route ${req.method} ${req.path} not found`
-      },
-      meta: {
-        timestamp: new Date().toISOString(),
-        request: { method: req.method, path: req.path }
-      }
-    });
-  });
-
   return router;
 }
 

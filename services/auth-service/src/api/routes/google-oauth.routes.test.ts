@@ -56,11 +56,11 @@ describe('google-oauth.routes', () => {
     expect(callbackRes.status).toBe(200);
     expect(callbackRes.body.handler).toBe('handleCallback');
 
-    const refreshRes = await request(app).post('/oauth/refresh');
+    const refreshRes = await request(app).post('/oauth/refresh').send({ refreshToken: 'refresh-token' });
     expect(refreshRes.status).toBe(200);
     expect(refreshRes.body.handler).toBe('refreshToken');
 
-    const revokeRes = await request(app).post('/oauth/revoke');
+    const revokeRes = await request(app).post('/oauth/revoke').send({ token: 'access-token' });
     expect(revokeRes.status).toBe(200);
     expect(revokeRes.body.handler).toBe('revokeAccess');
   });

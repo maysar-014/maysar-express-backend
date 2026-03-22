@@ -5,6 +5,7 @@ import { createModuleRoutes } from './src/api/routes/module.routes';
 import { createHealthRoutes } from './src/api/routes/health.routes';
 import { register as metricsRegistry } from './src/infrastructure/monitoring/metrics';
 import { Container } from './src/infrastructure/container';
+import { errorHandlerMiddleware } from './src/api/middleware/error-handler.middleware';
 
 export const TrainingModule: Module = {
     name: 'training-service',
@@ -23,6 +24,7 @@ export const TrainingModule: Module = {
         router.use('/api/v1/training', createTrainingRoutes(container.trainingController));
         router.use('/api/v1/modules', createModuleRoutes(container.moduleController));
         router.use('/api/health', createHealthRoutes(container.healthController));
+        router.use(errorHandlerMiddleware);
 
         return router;
     })(),

@@ -2,6 +2,7 @@ import rateLimit from 'express-rate-limit';
 import { Request, Response, NextFunction } from 'express';
 import { RedisRateLimitStore } from '../../../../shared/middleware/redis-rate-limit.store';
 import { getSharedRedisClient, resolveRedisUrl } from '@shared/redis/ioredis-client';
+import { shouldBypassRateLimit } from '@shared/middleware/rate-limit.util';
 
 const redisClient = getSharedRedisClient(resolveRedisUrl(process.env.REDIS_URL));
 
@@ -38,6 +39,7 @@ export class RateLimitingMiddleware {
       legacyHeaders: false, // Disable the `X-RateLimit-*` headers
       passOnStoreError: true,
       skip: (req: Request) => {
+        if (shouldBypassRateLimit(req)) return true;
         // Skip rate limiting for health checks
         return req.path === '/health' || req.path === '/health/ready' || req.path === '/health/live' || req.path === '/health/detailed';
       },
@@ -62,6 +64,7 @@ export class RateLimitingMiddleware {
       standardHeaders: true,
       legacyHeaders: false,
       passOnStoreError: true,
+      skip: shouldBypassRateLimit,
       handler: (req: Request, res: Response) => {
         res.status(429).json({
           error: 'Too many requests',
@@ -85,6 +88,7 @@ export class RateLimitingMiddleware {
       passOnStoreError: true,
       skipSuccessfulRequests: true, // Don't count successful logins
       skipFailedRequests: false, // Count failed attempts
+      skip: shouldBypassRateLimit,
       handler: (req: Request, res: Response) => {
         res.status(429).json({
           error: 'Too many login attempts',
@@ -106,6 +110,7 @@ export class RateLimitingMiddleware {
       standardHeaders: true,
       legacyHeaders: false,
       passOnStoreError: true,
+      skip: shouldBypassRateLimit,
       handler: (req: Request, res: Response) => {
         res.status(429).json({
           error: 'Too many resources created',
@@ -127,6 +132,7 @@ export class RateLimitingMiddleware {
       standardHeaders: true,
       legacyHeaders: false,
       passOnStoreError: true,
+      skip: shouldBypassRateLimit,
       handler: (req: Request, res: Response) => {
         res.status(429).json({
           error: 'Too many payment attempts',
@@ -148,6 +154,7 @@ export class RateLimitingMiddleware {
       standardHeaders: true,
       legacyHeaders: false,
       passOnStoreError: true,
+      skip: shouldBypassRateLimit,
       handler: (req: Request, res: Response) => {
         res.status(429).json({
           error: 'Too many admin requests',

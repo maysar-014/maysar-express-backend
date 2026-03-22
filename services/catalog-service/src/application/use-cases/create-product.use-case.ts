@@ -206,20 +206,32 @@ export class CreateProductUseCase {
         message: 'Product created successfully',
       };
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+
       if (error instanceof DomainError) {
         return {
           productId: '',
           status: 'business_rule_violation',
-          message: error.message,
-          violations: [error.message],
+          message,
+          violations: [message],
         };
       }
+
+      if (message.includes('Unique constraint failed') && message.includes('slug')) {
+        return {
+          productId: '',
+          status: 'business_rule_violation',
+          message: 'Product slug already exists',
+          violations: [message],
+        };
+      }
+
       console.error('CreateProductUseCase error:', error);
       return {
         productId: '',
         status: 'validation_error',
         message: 'Internal error occurred',
-        violations: [(error as Error).message],
+        violations: [message],
       };
     }
   }

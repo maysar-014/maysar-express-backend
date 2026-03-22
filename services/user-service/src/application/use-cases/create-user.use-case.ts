@@ -66,7 +66,14 @@ export class CreateUserUseCase {
       );
 
       await this.eventPublisher.publish(event);
-      await sagaEventHandler.handleUserRegisteredEvent(event, this.emailService, this.notificationClient);
+      try {
+        await sagaEventHandler.handleUserRegisteredEvent(event, this.emailService, this.notificationClient);
+      } catch (error) {
+        // Best-effort in-process integration: do not block registration on downstream failures
+        console.warn('User registration saga handling failed', {
+          error: error instanceof Error ? error.message : error
+        });
+      }
 
       // Issue email verification token
       const verificationToken = uuidv4();
@@ -77,7 +84,14 @@ export class CreateUserUseCase {
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
       });
 
-      await this.emailService.sendVerificationEmail(persistedUser.email.getValue(), verificationToken);
+      try {
+        await this.emailService.sendVerificationEmail(persistedUser.email.getValue(), verificationToken);
+      } catch (error) {
+        // Avoid failing user creation when email delivery is unavailable
+        console.warn('Verification email delivery failed', {
+          error: error instanceof Error ? error.message : error
+        });
+      }
 
       return persistedUser;
     } catch (error) {
@@ -85,9 +99,13 @@ export class CreateUserUseCase {
         throw error;
       }
       if (error instanceof Error) {
-        throw new UserValidationError(`Failed to create user: ${error.message}`);
+        const wrapped = new Error(`Failed to create user: ${error.message}`);
+        wrapped.name = 'UserInternalError';
+        throw wrapped;
       }
-      throw new UserValidationError('Failed to create user: Unknown error occurred');
+      const wrapped = new Error('Failed to create user: Unknown error occurred');
+      wrapped.name = 'UserInternalError';
+      throw wrapped;
     }
   }
 

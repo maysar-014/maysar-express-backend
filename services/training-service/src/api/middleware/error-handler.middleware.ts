@@ -4,7 +4,9 @@ import { NotFoundError, BusinessRuleError, ValidationError } from '../../domain/
 export function errorHandlerMiddleware(err: Error, req: Request, res: Response, _next: NextFunction): void {
     // Log error for debugging
 
-    let status = 500;
+    let status = (err as { status?: number; statusCode?: number }).status
+        ?? (err as { status?: number; statusCode?: number }).statusCode
+        ?? 500;
     const message = err.message || 'Internal Server Error';
     let errors: string[] | undefined = undefined;
 

@@ -35,6 +35,7 @@ import { authorizeEnabler } from './api/middleware/enabler-authorization.middlew
 import enablerRoutes from './api/routes/enabler.routes';
 import hubRoutes from './api/routes/hub.routes';
 import { createMaintenanceRoutes } from './api/routes/maintenance.routes';
+import { requireAuth, requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 /**
  * Enabler Service Main Application
@@ -189,10 +190,10 @@ class EnablerService {
         apiRouter.get('/enablers/:enablerId/orders', authorizeEnabler, (req, res) => orderController.getOrders(req, res));
 
         // Hub Routes
-        apiRouter.get('/hub/products', (req, res) => listingController.getHubProducts(req, res));
+        apiRouter.get('/hub/products', requireAuth, (req, res) => listingController.getHubProducts(req, res));
 
         // Maintenance routes (service-key protected)
-        this.app.use('/api/v1/system/maintenance', createMaintenanceRoutes());
+        this.app.use('/api/v1/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
 
         this.app.use('/api/v1', apiRouter);
     }
@@ -227,3 +228,5 @@ service.start().catch((err) => {
     console.error('Failed to start service:', err);
     process.exit(1);
 });
+
+

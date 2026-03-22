@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\core\jsonschema\bundler.py
+# hypothesis_version: 6.151.9
+
+['#', '#/definitions/', '$ref', '/', 'components', 'counter', 'name_to_uri', 'schema', 'schemas', 'x-bundled']

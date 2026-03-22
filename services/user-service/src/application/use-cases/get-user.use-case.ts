@@ -9,6 +9,7 @@ import { logger } from '../../infrastructure/services/logger.service';
 export interface GetUserInput {
   userId: string;
   requestingUserId?: string; // For authorization checks
+  requestingUserRoles?: string[]; // Optional upstream auth roles
   fields?: string[]; // Optional field selection
 }
 
@@ -46,7 +47,7 @@ export class GetUserUseCase {
       }
 
       // Authorization check
-      const canAccess = this.checkAccessPermission(user, input.requestingUserId);
+      const canAccess = await this.checkAccessPermission(user, input.requestingUserId, input.requestingUserRoles);
       if (!canAccess.allowed) {
         return {
           user: null,
@@ -83,15 +84,29 @@ export class GetUserUseCase {
   /**
    * Check if requesting user can access target user data
    */
-  private checkAccessPermission(targetUser: User, requestingUserId?: string): { allowed: boolean; reason?: string } {
+  private async checkAccessPermission(
+    targetUser: User,
+    requestingUserId?: string,
+    requestingUserRoles: string[] = []
+  ): Promise<{ allowed: boolean; reason?: string }> {
     // Users can always access their own data
     if (requestingUserId && requestingUserId === targetUser.id) {
       return { allowed: true };
     }
 
-    // Check business rules for accessing other users' data
-    const canSearch = UserPolicies.canSearchUsers(targetUser, { id: requestingUserId });
-    return canSearch;
+    const normalizedRoles = requestingUserRoles.map((role) => String(role).toLowerCase());
+    if (normalizedRoles.some((role) => ['admin', 'system'].includes(role))) {
+      return { allowed: true };
+    }
+
+    if (requestingUserId) {
+      const requestingUser = await this.userRepository.findById(requestingUserId);
+      if (requestingUser) {
+        return UserPolicies.canSearchUsers(requestingUser, { id: targetUser.id });
+      }
+    }
+
+    return { allowed: false, reason: 'Insufficient permissions to search users' };
   }
 
   /**

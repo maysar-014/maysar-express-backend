@@ -1,0 +1,156 @@
+POST /api/auth/register :: 8 :: [PASS] BUYER Register
+  body: {
+  "email": "buyer.1773841133985@example.com",
+  "role": "buyer",
+  "profile": {
+    "name": "BUYER User 1773841133985"
+  },
+  "password": "SecurePassword123!",
+  "phoneNumber": "+255740764185"
+}
+GET /api/auth/verify :: 8 :: [PASS] BUYER Auth Verify Session
+POST /api/order/orders :: 7 :: [PASS] BUYER Order Create
+  body: {
+  "buyerId": "",
+  "sellerId": "seller-001",
+  "items": [
+    {
+      "productId": "prod-1",
+      "quantity": 1,
+      "price": {
+        "amount": 1000,
+        "currency": "TZS"
+      },
+      "weight": 1
+    }
+  ],
+  "currency": "TZS",
+  "deliveryAddress": {
+    "street": "A",
+    "city": "B",
+POST /api/enabler/enablers/register :: 7 :: [PASS] BUYER Enabler Register
+  body: {
+  "userId": "",
+  "businessName": "QA Business 1773841133985",
+  "contactEmail": "buyer.1773841133985@example.com",
+  "contactPhone": "+255740764185",
+  "businessDescription": "QA Enabler 1773841133985",
+  "yearsInBusiness": 1,
+  "hasBusinessLicense": true,
+  "salesExperience": 1
+}
+POST /api/payment/payments :: 6 :: [PASS] BUYER Payment Create
+  body: {
+  "orderId": "00000000-0000-0000-0000-000000000000",
+  "amount": 1000,
+  "currency": "TZS",
+  "method": "MPESA",
+  "phoneNumber": "+255740764185",
+  "customerEmail": "test.user@example.com"
+}
+POST /api/notification/sms/send :: 2 :: [PASS] COURIER Notification SMS Send
+  body: {
+  "phoneNumber": "+255722740606",
+  "message": "Role COURIER flow message"
+}
+GET /api/production/dashboard :: 2 :: [FAIL] RBAC Buyer Accessing Admin
+GET /api/auth/admin/health :: 2 :: [Metrics] GET /api/auth/admin/health
+POST /api/auth/2fa/backup :: 1 :: POST /api/auth/2fa/backup
+POST /api/auth/2fa/disable :: 1 :: POST /api/auth/2fa/disable
+POST /api/auth/2fa/enable :: 1 :: POST /api/auth/2fa/enable
+POST /api/auth/2fa/verify :: 1 :: POST /api/auth/2fa/verify
+GET /api/auth/admin/audit :: 1 :: GET /api/auth/admin/audit
+POST /api/auth/admin/discovery/refresh :: 1 :: POST /api/auth/admin/discovery/refresh
+GET /api/auth/admin/security-events :: 1 :: GET /api/auth/admin/security-events
+DELETE /api/auth/admin/sessions/test-sessionId :: 1 :: DELETE /api/auth/admin/sessions/:sessionId
+GET /api/auth/admin/stats :: 1 :: GET /api/auth/admin/stats
+GET /api/auth/admin/users/test-userId :: 1 :: GET /api/auth/admin/users/:userId
+PATCH /api/auth/admin/users/test-userId/role :: 1 :: PATCH /api/auth/admin/users/:userId/role
+DELETE /api/auth/admin/users/test-userId/sessions :: 1 :: DELETE /api/auth/admin/users/:userId/sessions
+GET /api/auth/admin/users/test-userId/sessions :: 1 :: GET /api/auth/admin/users/:userId/sessions
+PATCH /api/auth/admin/users/test-userId/status :: 1 :: PATCH /api/auth/admin/users/:userId/status
+GET /api/auth/admin/users/search :: 1 :: GET /api/auth/admin/users/search
+POST /api/auth/blacklist-token :: 1 :: POST /api/auth/blacklist-token
+POST /api/auth/check-blacklist :: 1 :: POST /api/auth/check-blacklist
+POST /api/auth/check-brute-force :: 1 :: POST /api/auth/check-brute-force
+POST /api/auth/forgot-password :: 1 :: POST /api/auth/forgot-password
+POST /api/auth/login :: 1 :: POST /api/auth/login
+GET /api/auth/oauth/callback :: 1 :: GET /api/auth/oauth/callback
+POST /api/auth/record-failure :: 1 :: POST /api/auth/record-failure
+POST /api/auth/report-suspicious :: 1 :: POST /api/auth/report-suspicious
+POST /api/auth/reset-password :: 1 :: POST /api/auth/reset-password
+GET /api/auth/sessions :: 1 :: GET /api/auth/sessions/
+POST /api/auth/validate-api-key :: 1 :: POST /api/auth/validate-api-key
+POST /api/auth/validate-token :: 1 :: POST /api/auth/validate-token
+POST /api/business-registry/businesses :: 1 :: POST /api/business-registry/businesses/
+POST /api/business-registry/businesses/test-id/compliance-records :: 1 :: POST /api/business-registry/businesses/:id/compliance-records
+POST /api/business-registry/businesses/test-id/documents :: 1 :: POST /api/business-registry/businesses/:id/documents
+POST /api/business-registry/businesses/test-id/suspend :: 1 :: POST /api/business-registry/businesses/:id/suspend
+POST /api/business-registry/businesses/test-id/verify :: 1 :: POST /api/business-registry/businesses/:id/verify
+POST /api/catalog/campaigns :: 1 :: POST /api/catalog/campaigns/
+  body: {
+  "name": "Spring Promo",
+  "description": "E2E smoke campaign",
+  "type": "PROMOTIONAL",
+  "startDate": "2026-01-01T00:00:00.000Z",
+  "endDate": "2026-12-31T23:59:59.000Z",
+  "timezone": "Africa/Dar_es_Salaam",
+  "pricingRules": [
+    {
+      "type": "PERCENTAGE",
+      "value": 10,
+      "priori
+PUT /api/catalog/campaigns/00000000-0000-0000-0000-000000000000 :: 1 :: PUT /api/catalog/campaigns/:id
+POST /api/catalog/campaigns/test-id/cancel :: 1 :: POST /api/catalog/campaigns/:id/cancel
+POST /api/catalog/campaigns/test-id/complete :: 1 :: POST /api/catalog/campaigns/:id/complete
+POST /api/catalog/campaigns/test-id/launch :: 1 :: POST /api/catalog/campaigns/:id/launch
+POST /api/catalog/campaigns/test-id/pause :: 1 :: POST /api/catalog/campaigns/:id/pause
+POST /api/catalog/campaigns/test-id/resume :: 1 :: POST /api/catalog/campaigns/:id/resume
+POST /api/catalog/pricing/calculate :: 1 :: POST /api/catalog/pricing/calculate
+POST /api/catalog/products/test-productId/buy-box/compute :: 1 :: POST /api/catalog/products/:productId/buy-box/compute
+POST /api/checkout/initiate :: 1 :: POST /api/checkout/initiate
+GET /api/commission/test-id :: 1 :: GET /api/commission/:id
+PUT /api/commission/test-id/approve :: 1 :: PUT /api/commission/:id/approve
+POST /api/commission/calculate :: 1 :: POST /api/commission/calculate
+GET /api/commission/sellers/test-sellerId :: 1 :: GET /api/commission/sellers/:sellerId
+GET /api/commission/sellers/test-sellerId/summary :: 1 :: GET /api/commission/sellers/:sellerId/summary
+POST /api/community/posts :: 1 :: POST /api/community/posts/
+GET /api/community/posts/test-postId :: 1 :: GET /api/community/posts/:postId
+GET /api/community/posts/test-postId/related :: 1 :: GET /api/community/posts/:postId/related
+GET /api/community/posts/search :: 1 :: GET /api/community/posts/search
+POST /api/enabler/enablers/test-id/approve :: 1 :: POST /api/enabler/enablers/:id/approve
+PUT /api/logistics/api/courier/test-courierId/status :: 1 :: PUT /api/logistics/api/courier/:courierId/status
+POST /api/logistics/api/v1/cod/test-deliveryId/otp :: 1 :: POST /api/logistics/api/v1/cod/:deliveryId/otp
+POST /api/logistics/api/v1/cod/test-deliveryId/verify :: 1 :: POST /api/logistics/api/v1/cod/:deliveryId/verify
+PUT /api/logistics/api/v1/couriers/test-courierId/status :: 1 :: PUT /api/logistics/api/v1/couriers/:courierId/status
+POST /api/logistics/api/v1/deliveries :: 1 :: POST /api/logistics/api/v1/deliveries
+GET /api/logistics/api/v1/deliveries/test-deliveryId :: 1 :: GET /api/logistics/api/v1/deliveries/:deliveryId
+POST /api/logistics/api/v1/deliveries/test-deliveryId/status :: 1 :: POST /api/logistics/api/v1/deliveries/:deliveryId/status
+GET /api/logistics/api/v1/earnings :: 1 :: GET /api/logistics/api/v1/earnings
+POST /api/logistics/api/v1/earnings :: 1 :: POST /api/logistics/api/v1/earnings
+POST /api/logistics/api/v1/earnings/calculate :: 1 :: POST /api/logistics/api/v1/earnings/calculate
+POST /api/logistics/api/v1/qa/load-test :: 1 :: POST /api/logistics/api/v1/qa/load-test
+PUT /api/logistics/api/v1/routes/test-routeId/progress :: 1 :: PUT /api/logistics/api/v1/routes/:routeId/progress
+POST /api/logistics/api/v1/routes/optimize :: 1 :: POST /api/logistics/api/v1/routes/optimize
+POST /api/logistics/api/v1/tracking/location :: 1 :: POST /api/logistics/api/v1/tracking/location
+POST /api/notification/sms/retry/test-messageId :: 1 :: POST /api/notification/sms/retry/:messageId
+POST /api/notification/sms/webhook/africastalking :: 1 :: POST /api/notification/sms/webhook/africastalking
+GET /api/order/orders :: 1 :: GET /api/order/orders
+POST /api/order/orders/disputes/test-id/resolve :: 1 :: POST /api/order/orders/disputes/:id/resolve
+GET /api/order/orders/tracking/test-trackingNumber :: 1 :: GET /api/order/orders/tracking/:trackingNumber
+POST /api/payment/payments/test-id/refund :: 1 :: POST /api/payment/payments/:id/refund
+POST /api/payment/payments/webhooks/pesapal :: 1 :: POST /api/payment/payments/webhooks/pesapal
+POST /api/production/plans :: 1 :: POST /api/production/plans
+PUT /api/production/plans/test-id/status :: 1 :: PUT /api/production/plans/:id/status
+POST /api/production/quality/checkpoints :: 1 :: POST /api/production/quality/checkpoints
+DELETE /api/user/test-id :: 1 :: DELETE /api/user/:id
+PUT /api/user/test-id :: 1 :: PUT /api/user/:id
+POST /api/user/test-id/2fa/setup :: 1 :: POST /api/user/:id/2fa/setup
+POST /api/user/test-id/password :: 1 :: POST /api/user/:id/password
+POST /api/user/test-id/phone/verify :: 1 :: POST /api/user/:id/phone/verify
+POST /api/user/test-id/role :: 1 :: POST /api/user/:id/role
+POST /api/user/test-id/suspend :: 1 :: POST /api/user/:id/suspend
+POST /api/user/request-password-reset :: 1 :: POST /api/user/request-password-reset
+POST /api/user/reset-password/test-token :: 1 :: POST /api/user/reset-password/:token
+POST /api/user/security/breaches/report :: 1 :: POST /api/user/security/breaches/report
+POST /api/user/verify-email/test-token :: 1 :: POST /api/user/verify-email/:token

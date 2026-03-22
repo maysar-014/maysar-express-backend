@@ -6,12 +6,34 @@ import { config } from '../../config';
  * Singleton instance with connection pooling and error handling
  */
 
+const isLocalHost = (hostname: string): boolean =>
+  hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+
+const normalizeDatabaseUrl = (url?: string): { url?: string; disableSsl?: boolean } => {
+  if (!url) return { url };
+  try {
+    const parsed = new URL(url);
+    if (isLocalHost(parsed.hostname) && !parsed.searchParams.has('sslmode')) {
+      parsed.searchParams.set('sslmode', 'disable');
+      return { url: parsed.toString(), disableSsl: true };
+    }
+    return { url: parsed.toString() };
+  } catch {
+    return { url };
+  }
+};
+
 // Extend PrismaClient for custom methods
 class ExtendedPrismaClient extends PrismaClient {
   constructor() {
+    const { url, disableSsl } = normalizeDatabaseUrl(config.database.url ?? process.env.DATABASE_URL);
+    if (disableSsl && !process.env.PGSSLMODE) {
+      process.env.PGSSLMODE = 'disable';
+    }
     super({
       log: config.database.prisma.log as any,
       errorFormat: config.database.prisma.errorFormat as any,
+      ...(url ? { datasources: { db: { url } } } : {})
     });
   }
 

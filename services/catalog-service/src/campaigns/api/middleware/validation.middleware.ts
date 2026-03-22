@@ -13,7 +13,10 @@ export function validateRequest<T>(
     return (req: Request, res: Response, next: NextFunction) => {
         try {
             const data = req[source];
-            const validatedData = schema.parse(data);
+            const parser = typeof (schema as z.ZodSchema<T> & { strict?: () => z.ZodSchema<T> }).strict === 'function'
+                ? (schema as z.ZodSchema<T> & { strict: () => z.ZodSchema<T> }).strict()
+                : schema;
+            const validatedData = parser.parse(data);
             req[source] = validatedData;
             next();
         } catch (error) {

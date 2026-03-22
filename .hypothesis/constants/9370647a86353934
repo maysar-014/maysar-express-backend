@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\engine\run\stateful\_executor.py
+# hypothesis_version: 6.151.9
+
+['auth', 'config', 'cookies', 'deadline', 'default', 'headers', 'override', 'path_parameters', 'phases', 'query', 'stateful', 'stateful_step_count', 'transport_kwargs', 'verify']

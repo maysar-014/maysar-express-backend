@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\core\media_types.py
+# hypothesis_version: 6.151.9
+
+['"', '*', '+json', '+xml', '/', ';', '=', '\\', '\\"', '\\\\', 'application', 'application/x-yaml', 'application/yaml', 'event-stream', 'json', 'plain', 'text', 'text/vnd.yaml', 'text/x-yaml', 'text/yaml', 'xml']

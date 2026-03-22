@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\generation\hypothesis\__init__.py
+# hypothesis_version: 6.151.9
+
+[2048, 4096, 8192, '"$ref"', '$ref', '__from_schema', '_is_patched', '_validator', 'dict', 'dict_with_bundle', 'encoded', 'from_object_schema', 'json', 'not', 'schema', 'serialized']

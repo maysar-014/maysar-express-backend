@@ -3,6 +3,7 @@ import Redis from 'ioredis';
 import { createHash } from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import { getSharedRedisClient, resolveRedisUrl } from '../redis/ioredis-client';
+import { getModelPrefix, makeId } from '../ids/id';
 
 interface IdempotencyConfig {
   ttlSeconds: number;
@@ -48,7 +49,7 @@ export class IdempotencyMiddleware {
         });
       }
 
-      const cacheKey = `${this.config.keyPrefix}${idempotencyKey}`;
+      const cacheKey = this.buildCacheKey(req, idempotencyKey);
       const lockKey = `${cacheKey}:lock`;
       
       try {
@@ -95,10 +96,12 @@ export class IdempotencyMiddleware {
           return originalSend.call(res, body);
         };
 
-        res.on('close', () => {
-          // Ensure abandoned requests don't leave a stale in-flight lock behind
-          void this.redis.del(lockKey);
-        });
+        if (typeof res.on === 'function') {
+          res.on('close', () => {
+            // Ensure abandoned requests don't leave a stale in-flight lock behind
+            void this.redis.del(lockKey);
+          });
+        }
 
         next();
       } catch (error) {
@@ -161,6 +164,157 @@ export class IdempotencyMiddleware {
 
     return null;
   }
+
+  private buildCacheKey(req: Request, idempotencyKey: string): string {
+    const scopedPath = `${req.baseUrl || ''}${req.path}`;
+    const cacheScope = `${req.method.toUpperCase()}:${scopedPath}`;
+    const requesterScope = this.getRequesterScope(req);
+    const requestFingerprint = this.hashValue(this.serializeRequestFingerprint(req));
+    return `${this.config.keyPrefix}${cacheScope}:${requesterScope}:${idempotencyKey}:${requestFingerprint}`;
+  }
+
+  private serializeRequestFingerprint(req: Request): string {
+    const fingerprint = {
+      params: this.normalizeValue(req.params || {}),
+      query: this.normalizeValue(req.query || {}),
+      body: this.normalizeValue(req.body ?? {})
+    };
+
+    return JSON.stringify(fingerprint);
+  }
+
+  private normalizeValue(value: unknown): unknown {
+    if (value === null || value === undefined) {
+      return value ?? null;
+    }
+
+    if (Buffer.isBuffer(value)) {
+      return value.toString('utf8');
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((entry) => this.normalizeValue(entry));
+    }
+
+    if (typeof value === 'object') {
+      return Object.keys(value as Record<string, unknown>)
+        .sort()
+        .reduce<Record<string, unknown>>((acc, key) => {
+          acc[key] = this.normalizeValue((value as Record<string, unknown>)[key]);
+          return acc;
+        }, {});
+    }
+
+    if (typeof value === 'number' && !Number.isFinite(value)) {
+      return String(value);
+    }
+
+    return value;
+  }
+
+  private getRequesterScope(req: Request): string {
+    const resolvedScope = this.getResolvedRequesterScope(req);
+    if (resolvedScope) {
+      return resolvedScope;
+    }
+
+    const fallbackScope = this.getHeaderRequesterScope(req);
+    if (fallbackScope) {
+      return fallbackScope;
+    }
+
+    return 'anonymous';
+  }
+
+  private getResolvedRequesterScope(req: Request): string | null {
+    const user = (req as any).user as { userId?: string; roles?: unknown } | undefined;
+    const service = (req as any).service as { serviceId?: string; serviceKey?: string } | undefined;
+
+    if (!user && !service) {
+      return null;
+    }
+
+    const parts: string[] = ['principal'];
+    const userId = typeof user?.userId === 'string' ? user.userId : '';
+    const userRoles = this.normalizeRoles(user?.roles);
+    const serviceId = typeof service?.serviceId === 'string' ? service.serviceId : '';
+    const serviceKey = typeof service?.serviceKey === 'string' ? service.serviceKey : '';
+
+    if (userId) {
+      parts.push(`user:${userId}`);
+    }
+
+    if (userRoles.length) {
+      parts.push(`roles:${userRoles.join(',')}`);
+    }
+
+    if (serviceId || serviceKey) {
+      parts.push(`service:${serviceId || this.hashValue(serviceKey)}`);
+    }
+
+    return parts.join(':');
+  }
+
+  private getHeaderRequesterScope(req: Request): string | null {
+    const parts: string[] = [];
+    const userId = this.getHeaderValue(req.headers['x-user-id']);
+    const roles = this.normalizeRoles(this.getHeaderValue(req.headers['x-user-roles'])?.split(','));
+    const authorization = this.getHeaderValue(req.headers.authorization);
+    const serviceKey = this.getHeaderValue(req.headers['x-service-key']);
+    const contractTest = this.getHeaderValue(req.headers['x-contract-test']);
+
+    if (userId) {
+      parts.push(`user:${userId}`);
+    }
+
+    if (roles.length) {
+      parts.push(`roles:${roles.join(',')}`);
+    }
+
+    if (authorization) {
+      parts.push(`authorization:${this.hashValue(authorization)}`);
+    }
+
+    if (serviceKey) {
+      parts.push(`service:${this.hashValue(serviceKey)}`);
+    }
+
+    if (contractTest) {
+      parts.push(`contract:${contractTest}`);
+    }
+
+    if (!parts.length) {
+      return null;
+    }
+
+    return `header:${parts.join(':')}`;
+  }
+
+  private getHeaderValue(value: unknown): string | undefined {
+    if (Array.isArray(value)) {
+      return typeof value[0] === 'string' ? value[0] : undefined;
+    }
+
+    return typeof value === 'string' ? value : undefined;
+  }
+
+  private normalizeRoles(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((role) => String(role).trim().toLowerCase())
+      .filter(Boolean)
+      .sort();
+  }
+
+  private hashValue(value: string): string {
+    return createHash('sha256')
+      .update(value)
+      .digest('hex')
+      .substring(0, 16);
+  }
 }
 
 // Event consumer idempotency
@@ -216,7 +370,7 @@ export class EventIdempotency {
 
     const dbWrite = this.prisma
       ? this.prisma.eventLog.create({
-          data: { eventId, consumerName }
+          data: { id: makeId(getModelPrefix('EventLog')), eventId, consumerName }
         }).catch((error: any) => {
           // Ignore unique constraint violations (race condition / duplicate)
           if (error?.code === 'P2002') {
@@ -266,7 +420,7 @@ export class EventIdempotency {
     if (this.prisma) {
       try {
         await this.prisma.eventLog.create({
-          data: { eventId, consumerName }
+          data: { id: makeId(getModelPrefix('EventLog')), eventId, consumerName }
         });
       } catch (error: any) {
         if (error?.code === 'P2002') {
@@ -317,7 +471,7 @@ export function generateIdempotencyKey(req: Request): string {
     method: req.method,
     path: req.path,
     body: req.body,
-    userId: req.user?.userId || 'anonymous'
+    userId: (req as any).user?.userId || 'anonymous'
   };
   
   return createHash('sha256')

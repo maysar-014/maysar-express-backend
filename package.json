@@ -5,6 +5,18 @@
   "main": "server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only -r dotenv/config -r tsconfig-paths/register src/main.ts",
+    "postman:generate": "node scripts/postman/generate-monolith-e2e-collection.js",
+    "postman:inventory": "node scripts/generate-postman-route-inventory.js",
+    "contract:sync": "node scripts/contract/sync-openapi.js",
+    "test:contract": "cross-env SCHEMATHESIS_AUTH_MODE=strict node scripts/testing/run-contract-tests.js",
+    "test:contract:examples": "cross-env SCHEMATHESIS_PHASES=examples SCHEMATHESIS_ALLOW_EXAMPLES_ONLY=1 SCHEMATHESIS_AUTH_MODE=strict node scripts/testing/run-contract-tests.js",
+    "test:contract:coverage": "cross-env SCHEMATHESIS_PHASES=examples,coverage SCHEMATHESIS_AUTH_MODE=strict node scripts/testing/run-contract-tests.js",
+    "test:contract:strict": "cross-env SCHEMATHESIS_PHASES=examples,coverage,fuzzing SCHEMATHESIS_AUTH_MODE=strict node scripts/testing/run-contract-tests.js",
+    "test:contract:bypass": "cross-env SCHEMATHESIS_PHASES=examples,coverage,fuzzing SCHEMATHESIS_AUTH_MODE=bypass node scripts/testing/run-contract-tests.js",
+    "test:integration:module": "cross-env NODE_ENV=test jest tests/integration --runInBand --reporters=default",
+    "test:e2e:cypress": "cypress run",
+    "test:perf:k6": "k6 run tests/performance/k6-smoke.js",
+    "test:all": "npm run test:contract && npm run test:integration:module && npm run test:e2e:cypress",
     "build": "tsc && tsc-alias && node scripts/copy-locales.js",
     "lockfile:scrub-funding": "node scripts/scrub-lockfile-funding.js",
     "postinstall": "npm run lockfile:scrub-funding",
@@ -218,6 +230,7 @@
     "retry": "^0.13.1",
     "sharp": "^0.33.0",
     "speakeasy": "^2.0.0",
+    "ts-morph": "^27.0.2",
     "ts-node": "^10.9.2",
     "uuid": "^9.0.1",
     "winston": "^3.19.0",
@@ -244,12 +257,14 @@
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "cross-env": "^10.1.0",
+    "cypress": "^15.12.0",
+    "dredd": "^14.1.0",
     "eslint": "^8.57.1",
     "glob": "^13.0.6",
-    "husky": "^4.3.8",
     "jest": "^29.7.0",
     "jest-junit": "^16.0.0",
     "lint-staged": "^15.2.0",
+    "newman": "^6.2.2",
     "prettier": "^3.3.0",
     "prisma": "^5.22.0",
     "supertest": "^7.1.4",
@@ -286,10 +301,5 @@
     "*.{json,md}": [
       "prettier --write"
     ]
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged && sh scripts/pre-commit-secrets-scan.sh"
-    }
   }
 }

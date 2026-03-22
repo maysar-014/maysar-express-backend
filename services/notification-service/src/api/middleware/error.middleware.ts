@@ -1,5 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../../infrastructure/services/logger.service';
+import {
+  InvalidPhoneNumberError,
+  MessageTooLongError,
+  MessageNotFoundError,
+  RateLimitExceededError,
+  ProviderNotAvailableError,
+  ProviderError,
+  InvalidStateTransitionError,
+  MaxRetriesExceededError
+} from '../../sms/domain/errors/sms.errors';
 
 export class APIError extends Error {
   public readonly statusCode: number;
@@ -35,6 +45,30 @@ export const errorHandler = (
     statusCode = error.statusCode;
     message = error.message;
     code = error.code;
+  } else if (error instanceof MessageNotFoundError) {
+    statusCode = 404;
+    message = error.message;
+    code = 'SMS_NOT_FOUND';
+  } else if (error instanceof InvalidPhoneNumberError || error instanceof MessageTooLongError || error instanceof InvalidStateTransitionError) {
+    statusCode = 400;
+    message = error.message;
+    code = 'SMS_VALIDATION_ERROR';
+  } else if (error instanceof RateLimitExceededError) {
+    statusCode = 429;
+    message = error.message;
+    code = 'SMS_RATE_LIMIT';
+  } else if (error instanceof ProviderNotAvailableError) {
+    statusCode = 503;
+    message = error.message;
+    code = 'SMS_PROVIDER_UNAVAILABLE';
+  } else if (error instanceof ProviderError) {
+    statusCode = 502;
+    message = error.message;
+    code = 'SMS_PROVIDER_ERROR';
+  } else if (error instanceof MaxRetriesExceededError) {
+    statusCode = 409;
+    message = error.message;
+    code = 'SMS_MAX_RETRIES';
   } else if (error.name === 'ValidationError') {
     statusCode = 400;
     message = 'Validation failed';

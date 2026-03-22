@@ -94,7 +94,11 @@ jest.mock('../../infrastructure/services/logger.service', () => ({
   }
 }));
 
-import { createBusinessRoutes } from './business.routes';
+jest.mock('@shared/middleware/auth-context.middleware', () => ({
+  requireAuth: noOpMiddleware
+}));
+
+import { createBusinessRoutes, createLegacyBusinessRoutes } from './business.routes';
 
 describe('business.routes', () => {
   beforeEach(() => {
@@ -142,5 +146,24 @@ describe('business.routes', () => {
     const reactivateRes = await request(app).post('/businesses/biz-1/reactivate').send({ reactivatedBy: 'admin' });
     expect(reactivateRes.status).toBe(200);
     expect(reactivateRes.body.action).toBe('reactivateBusiness');
+  });
+
+  it('creates legacy alias routes without the create endpoint', () => {
+    const router = createLegacyBusinessRoutes();
+    const endpoints = router.stack
+      .filter(layer => (layer as { route?: { path: string } }).route)
+      .map(layer => (layer as { route: { path: string } }).route.path);
+
+    expect(endpoints).toEqual(
+      expect.arrayContaining([
+        '/search',
+        '/owner/:ownerId',
+        '/:id',
+        '/:id/verify',
+        '/:id/suspend',
+        '/:id/reactivate'
+      ])
+    );
+    expect(endpoints).not.toContain('/');
   });
 });

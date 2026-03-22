@@ -138,8 +138,14 @@ export const isSystemId = (value: string): boolean => {
   return cuidRegex.test(value);
 };
 
-export const registerModelIds = (models: ReadonlyArray<{ name: string }>): void => {
-  models.forEach(model => modelHasId.add(model.name));
+export const registerModelIds = (models: ReadonlyArray<{ name: string; fields?: Array<{ name?: string }> }>): void => {
+  models.forEach(model => {
+    const fields = Array.isArray(model.fields) ? model.fields : [];
+    const hasIdField = fields.some(field => field?.name === 'id');
+    if (hasIdField) {
+      modelHasId.add(model.name);
+    }
+  });
 };
 
 export const modelSupportsId = (modelName?: string | null): boolean => {

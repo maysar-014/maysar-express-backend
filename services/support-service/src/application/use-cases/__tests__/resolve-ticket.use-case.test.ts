@@ -36,6 +36,7 @@ describe('ResolveTicketUseCase', () => {
 
         mockAgentRepo = {
             findById: jest.fn().mockResolvedValue(mockAgent),
+            findByUserId: jest.fn().mockResolvedValue(null),
             update: jest.fn(),
         };
 
@@ -67,8 +68,17 @@ describe('ResolveTicketUseCase', () => {
 
     it('should fail when agent not found', async () => {
         mockAgentRepo.findById.mockResolvedValue(null);
+        mockAgentRepo.findByUserId.mockResolvedValue(null);
 
         await expect(useCase.execute(validDto)).rejects.toThrow('Agent not found');
+    });
+
+    it('falls back to agent lookup by user ID', async () => {
+        mockAgentRepo.findById.mockResolvedValue(null);
+        mockAgentRepo.findByUserId.mockResolvedValue(mockAgent);
+
+        await expect(useCase.execute({ ...validDto, agentId: 'user-1' })).resolves.toBeDefined();
+        expect(mockAgentRepo.findByUserId).toHaveBeenCalledWith('user-1');
     });
 
     it('should record resolution time', async () => {

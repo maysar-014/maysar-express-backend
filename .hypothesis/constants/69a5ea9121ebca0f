@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\config\_error.py
+# hypothesis_version: 6.151.9
+
+[0.6, '$defs', ', ', 'AuthConfig', 'OperationConfig', 'a boolean', 'a number', 'a string', 'additionalProperties', 'an array', 'an integer', 'an object', 'anyOf', 'api_key', 'array', 'auth', 'bearer', 'boolean', 'enum', 'integer', 'minProperties', 'minimum', 'null', 'number', 'object', 'oneOf', 'openapi', 'password', 'properties', 'required', 'root', 'string', 'type', 'username', 'value', 'workers']

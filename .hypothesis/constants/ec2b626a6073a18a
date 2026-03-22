@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\core\failures.py
+# hypothesis_version: 6.151.9
+
+[413, 414, 416, 422, '\n    <BINARY>', '\n    <EMPTY>', '\n    <NO RESPONSE>', 'Content Too Large', 'Server error', 'URI Too Long', 'Unknown', 'case_id', 'colno', 'curl', 'deadline', 'document', 'elapsed', 'exception', 'expected_statuses', 'failure', 'lineno', 'message', 'operation', 'origin', 'position', 's', 'severity', 'status', 'status_code', 'title', 'validation_message']

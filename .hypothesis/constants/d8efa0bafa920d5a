@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\transport\prepare.py
+# hypothesis_version: 6.151.9
+
+['&', '/', '=', 'User-Agent', 'cookies', 'headers', 'http', 'localhost', 'params', 'query', 'url']

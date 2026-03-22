@@ -43,6 +43,8 @@ const requireServiceKey = (req: Request, res: Response, next: NextFunction): voi
 
 export const createMaintenanceRoutes = (prisma: PrismaClient): Router => {
   const router = Router();
+  const outboxModel = () => (prisma as any).wallet_OutboxEvent;
+  const idempotencyModel = () => (prisma as any).wallet_IdempotencyRecord;
 
   router.use(requireServiceKey);
 
@@ -59,16 +61,40 @@ export const createMaintenanceRoutes = (prisma: PrismaClient): Router => {
 
     const processedStatuses = ['SENT', 'PROCESSED'];
     const failedStatuses = ['FAILED'];
+    const outbox = outboxModel();
+    if (!outbox) {
+      return res.status(200).json({
+        success: true,
+        batchSize,
+        retentionDays: {
+          sent: sentRetentionDays,
+          failed: failedRetentionDays
+        },
+        cutoffs: {
+          sent: sentCutoff,
+          failed: failedCutoff
+        },
+        counts: {
+          processed: 0,
+          failed: 0
+        },
+        estimatedBatches: {
+          processed: 0,
+          failed: 0
+        },
+        durationMs: Date.now() - start
+      });
+    }
 
     try {
       const [processedCount, failedCount] = await Promise.all([
-        prisma.wallet_OutboxEvent.count({
+        outbox.count({
           where: {
             status: { in: processedStatuses },
             createdAt: { lt: sentCutoff }
           }
         }),
-        prisma.wallet_OutboxEvent.count({
+        outbox.count({
           where: {
             status: { in: failedStatuses },
             createdAt: { lt: failedCutoff }
@@ -125,6 +151,29 @@ export const createMaintenanceRoutes = (prisma: PrismaClient): Router => {
 
     const processedStatuses = ['SENT', 'PROCESSED'];
     const failedStatuses = ['FAILED'];
+    const outbox = outboxModel();
+    if (!outbox) {
+      return res.status(200).json({
+        success: true,
+        dryRun,
+        batchSize,
+        maxRuntimeMs,
+        sleepMs,
+        retentionDays: {
+          sent: sentRetentionDays,
+          failed: failedRetentionDays
+        },
+        cutoffs: {
+          sent: sentCutoff,
+          failed: failedCutoff
+        },
+        results: {
+          processed: { deleted: 0, batches: 0 },
+          failed: { deleted: 0, batches: 0 }
+        },
+        durationMs: Date.now() - start
+      });
+    }
 
     const shouldStop = () => Date.now() - start >= maxRuntimeMs;
 
@@ -136,7 +185,7 @@ export const createMaintenanceRoutes = (prisma: PrismaClient): Router => {
       let batches = 0;
 
       while (!shouldStop()) {
-        const rows = await prisma.wallet_OutboxEvent.findMany({
+        const rows = await outbox.findMany({
           where: {
             status: { in: statuses },
             createdAt: { lt: cutoff }
@@ -152,7 +201,7 @@ export const createMaintenanceRoutes = (prisma: PrismaClient): Router => {
         const ids = rows.map(row => row.id);
 
         if (!dryRun) {
-          const result = await prisma.wallet_OutboxEvent.deleteMany({
+          const result = await outbox.deleteMany({
             where: { id: { in: ids } }
           });
           deleted += result.count || 0;
@@ -207,9 +256,21 @@ export const createMaintenanceRoutes = (prisma: PrismaClient): Router => {
     const batchSize = parseEnvInt('CLEANUP_BATCH_SIZE', 1000);
     const retentionDays = parseEnvInt('WALLET_IDEMPOTENCY_RETENTION_DAYS', 1);
     const cutoff = new Date(Date.now() - retentionDays * DAY_MS);
+    const idempotency = idempotencyModel();
+    if (!idempotency) {
+      return res.status(200).json({
+        success: true,
+        batchSize,
+        retentionDays,
+        cutoff,
+        count: 0,
+        estimatedBatches: 0,
+        durationMs: Date.now() - start
+      });
+    }
 
     try {
-      const count = await prisma.wallet_IdempotencyRecord.count({
+      const count = await idempotency.count({
         where: { expiresAt: { lt: cutoff } }
       });
 
@@ -241,6 +302,20 @@ export const createMaintenanceRoutes = (prisma: PrismaClient): Router => {
 
     const retentionDays = parseEnvInt('WALLET_IDEMPOTENCY_RETENTION_DAYS', 1);
     const cutoff = new Date(Date.now() - retentionDays * DAY_MS);
+    const idempotency = idempotencyModel();
+    if (!idempotency) {
+      return res.status(200).json({
+        success: true,
+        dryRun,
+        batchSize,
+        maxRuntimeMs,
+        sleepMs,
+        retentionDays,
+        cutoff,
+        result: { deleted: 0, batches: 0 },
+        durationMs: Date.now() - start
+      });
+    }
 
     const shouldStop = () => Date.now() - start >= maxRuntimeMs;
 
@@ -249,7 +324,7 @@ export const createMaintenanceRoutes = (prisma: PrismaClient): Router => {
       let batches = 0;
 
       while (!shouldStop()) {
-        const rows = await prisma.wallet_IdempotencyRecord.findMany({
+        const rows = await idempotency.findMany({
           where: { expiresAt: { lt: cutoff } },
           select: { key: true },
           orderBy: { expiresAt: 'asc' },
@@ -262,7 +337,7 @@ export const createMaintenanceRoutes = (prisma: PrismaClient): Router => {
         const keys = rows.map(row => row.key);
 
         if (!dryRun) {
-          const result = await prisma.wallet_IdempotencyRecord.deleteMany({
+          const result = await idempotency.deleteMany({
             where: { key: { in: keys } }
           });
           deleted += result.count || 0;

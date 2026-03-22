@@ -18,6 +18,7 @@ import { logger } from './infrastructure/services/logger.service';
 import { Container } from './container';
 import { i18next, i18nextMiddleware } from '@shared/i18n/i18n';
 import { createMaintenanceRoutes } from './api/routes/maintenance.routes';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 export function createApp(): Express {
     const app = express();
@@ -43,7 +44,7 @@ export function createApp(): Express {
 
     // Routes
     app.use('/api/payments', createPaymentRoutes(container.paymentController));
-    app.use('/api/v1/system/maintenance', createMaintenanceRoutes());
+    app.use('/api/v1/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
 
     // Prometheus metrics
     app.get('/metrics', async (req, res) => {
@@ -66,3 +67,5 @@ export function createApp(): Express {
 
     return app;
 }
+
+

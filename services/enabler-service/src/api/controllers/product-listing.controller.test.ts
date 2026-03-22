@@ -48,8 +48,10 @@ describe('ProductListingController', () => {
 
     const hubRes = makeRes();
     await controller.getHubProducts({} as never, hubRes);
-    expect(hubRes.status).toHaveBeenCalledWith(200);
-    expect(hubRes.json).toHaveBeenCalledWith({ message: 'Hub products endpoint' });
+    expect(hubRes.status).toHaveBeenCalledWith(501);
+    expect(hubRes.json).toHaveBeenCalledWith({
+      error: 'NOT_IMPLEMENTED',
+      message: 'Hub product browsing is not implemented.'
+    });
   });
 });
-

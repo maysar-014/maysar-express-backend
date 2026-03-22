@@ -40,6 +40,15 @@ export function errorHandler(
   if (error.name === 'ValidationError') {
     statusCode = 400;
     message = error.message;
+  } else if (error.name === 'UserValidationError') {
+    statusCode = 422;
+    message = error.message;
+  } else if (error.name === 'UserAlreadyExistsError') {
+    statusCode = 409;
+    message = error.message;
+  } else if (error.name === 'UserNotFoundError') {
+    statusCode = 404;
+    message = error.message;
   } else if (error.name === 'UnauthorizedError') {
     statusCode = 401;
     message = 'Unauthorized';

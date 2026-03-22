@@ -9,6 +9,11 @@ export function createModuleRoutes(controller: ModuleController): Router {
     router.get('/', controller.list.bind(controller));
 
     router.get(
+        '/leaderboard',
+        controller.getLeaderboard.bind(controller)
+    );
+
+    router.get(
         '/:id',
         validationMiddleware(TrainingValidator.validateIdParam, 'params'),
         controller.get.bind(controller)
@@ -18,11 +23,6 @@ export function createModuleRoutes(controller: ModuleController): Router {
         '/:id/content',
         validationMiddleware(TrainingValidator.validateIdParam, 'params'),
         controller.getContent.bind(controller)
-    );
-
-    router.get(
-        '/leaderboard',
-        controller.getLeaderboard.bind(controller)
     );
 
     router.get(

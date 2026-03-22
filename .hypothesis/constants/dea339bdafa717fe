@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\specs\openapi\schemas.py
+# hypothesis_version: 6.151.9
+
+['$ref', ', ', '/', '2.0', '3.1', '3.2', '_parent', '_path', '_path_item', '_resolver', '_scope', 'application/json', 'before_process_path', 'content-type', 'delete', 'get', 'head', 'in', 'info', 'latin-1', 'name', 'openapi', 'operationId', 'operationRef', 'options', 'parameters', 'patch', 'paths', 'post', 'put', 'query', 'responses', 'swagger', 'tags', 'trace', 'utf-8', '~', '~0', '~1']

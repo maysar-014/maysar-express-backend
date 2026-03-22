@@ -3,6 +3,7 @@ import expressRateLimit from 'express-rate-limit';
 import { logger } from '../../infrastructure/services/logger.service';
 import { RedisRateLimitStore } from '@shared/middleware/redis-rate-limit.store';
 import { getSharedRedisClient, resolveRedisUrl } from '@shared/redis/ioredis-client';
+import { shouldBypassRateLimit } from '@shared/middleware/rate-limit.util';
 
 const redisClient = getSharedRedisClient(resolveRedisUrl(process.env.REDIS_URL));
 
@@ -10,6 +11,7 @@ export const generalLimiter = expressRateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: 'Too many requests, please try again later.',
+  skip: shouldBypassRateLimit,
   store: new RedisRateLimitStore(redisClient, 'rl:general:'),
   passOnStoreError: true
 });
@@ -18,6 +20,7 @@ export const strictLimiter = expressRateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: 'Too many requests, please try again later.',
+  skip: shouldBypassRateLimit,
   store: new RedisRateLimitStore(redisClient, 'rl:strict:'),
   passOnStoreError: true
 });
@@ -26,6 +29,7 @@ export const loginLimiter = expressRateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: 'Too many login attempts, please try again later.',
+  skip: shouldBypassRateLimit,
   store: new RedisRateLimitStore(redisClient, 'rl:login:'),
   passOnStoreError: true
 });
@@ -61,6 +65,7 @@ export function rateLimit(options: RateLimitOptions) {
     message,
     skipFailedRequests,
     skipSuccessfulRequests,
+    skip: shouldBypassRateLimit,
     store: new RedisRateLimitStore(redisClient, prefix),
     passOnStoreError: true
   });

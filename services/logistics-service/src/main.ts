@@ -26,6 +26,7 @@ import { tracingService } from '../../../shared/tracing/openTelemetry';
 import { PrismaSagaLogRepository } from '@shared/saga/saga-log.repository';
 import { metricsRegistry } from './infrastructure/monitoring/metrics';
 import { SagaFactory } from '@shared/saga/saga-factory';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 class LogisticsService {
   private app: express.Application;
@@ -68,7 +69,7 @@ class LogisticsService {
 
   private setupRoutes(): void {
     // Maintenance routes (service-key protected)
-    this.app.use('/api/v1/system/maintenance', createMaintenanceRoutes());
+    this.app.use('/api/v1/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
 
     // Use the comprehensive logistics API
     this.app.use('/api/v1', logisticsRoutes);
@@ -242,4 +243,6 @@ service.start().catch((error) => {
 });
 
 export default service;
+
+
 

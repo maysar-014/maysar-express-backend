@@ -94,11 +94,6 @@ export interface IPaymentProvider {
     handleWebhook(payload: WebhookPayload): Promise<void>;
 
     /**
-     * Verify webhook signature
-     */
-    verifyWebhookSignature(payload: string, signature: string): boolean;
-
-    /**
      * Get provider name
      */
     getProviderName(): string;

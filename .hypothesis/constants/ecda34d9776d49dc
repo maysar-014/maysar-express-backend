@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\specs\graphql\scalars.py
+# hypothesis_version: 6.151.9
+
+['%sZ', 'BigInt', 'Date', 'DateTime', 'IP', 'IPv4', 'IPv6', 'Long', 'T', 'Time', 'UUID']

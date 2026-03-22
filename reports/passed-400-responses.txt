@@ -1,0 +1,284 @@
+POST /api/auth/register :: [PASS] BUYER Register
+{"success":false,"error":"Failed to create user: B4110000:error:0A00010B:SSL routines:ssl3_get_record:wrong version number:c:\\ws\\deps\\openssl\\openssl\\ssl\\record\\ssl3_record.c:355:\n"}
+
+GET /api/auth/verify :: [PASS] BUYER Auth Verify Session
+{"success":false,"message":"Validation failed","errors":["\"authorization\" with value \"Bearer\" fails to match the required pattern: /^Bearer\\s+/"]}
+
+POST /api/order/orders :: [PASS] BUYER Order Create
+{"error":"ORDER_CREATION_FAILED","message":"COD Ineligible: Buyer must have at least 3 successful orders to unlock COD privilege"}
+
+POST /api/enabler/enablers/register :: [PASS] BUYER Enabler Register
+{"error":"User is already registered as an enabler"}
+
+POST /api/payment/payments :: [PASS] BUYER Payment Create
+{"success":false,"error":"errors.validation","message":"User ID is required"}
+
+POST /api/notification/sms/send :: [PASS] COURIER Notification SMS Send
+{"success":false,"messageId":"sms_mes_01KM0JQP9ECRPAJVJWSAJDYBVK","status":"FAILED","segmentCount":1,"message":"InvalidPhoneNumber"}
+
+GET /api/production/dashboard :: [FAIL] RBAC Buyer Accessing Admin
+{"error":"Supplier ID required"}
+
+GET /api/auth/admin/health :: [Metrics] GET /api/auth/admin/health
+{"success":false,"error":{"code":"INVALID_REQUEST","message":"\n\u001b[31mInvalid \u001b[1m`auditLogDelegate.create()`\u001b[22m invocation in\u001b[39m\n\u001b[4mC:\\Users\\abdal\\Desktop\\maysar-express-backend\\services\\auth-service\\src\\application\\services\\audit.service.ts:36:30\u001b[24m\n\n  \u001b[2m\u001b[90m33\u001b[39m   details\u001b[22m\n  \u001b[2m\u001b[90m34\u001b[39m \u001b[34m}\u001b[39m\u001b[34m;\u001b[39m\u001b[22m\n  \u001b[2m\u001b[90m35\u001b[39m \u001b[22m\n\u001b[1m\u001b[31m→\u001b[39m\u001b[22m \u001b[2m\u001b[90m36\u001b[39m \u001b[36mawait\u001b[39m auditLogDelegate\u001b[34m.\u001b[39m\u001b[36mcreate\u001b[39m\u001b[34m(\u001b[39m\u001b[22m\nForeign key constraint violated: `auth_audit_logs_userId_fkey (index)`"}}
+
+POST /api/auth/2fa/backup :: POST /api/auth/2fa/backup
+{"success":false,"error":"User ID and code are required"}
+
+POST /api/auth/2fa/disable :: POST /api/auth/2fa/disable
+{"success":false,"message":"Validation failed","errors":["\"password\" is required"]}
+
+POST /api/auth/2fa/enable :: POST /api/auth/2fa/enable
+{"success":false,"message":"Validation failed","errors":["\"password\" is required","\"totpCode\" is required"]}
+
+POST /api/auth/2fa/verify :: POST /api/auth/2fa/verify
+{"success":false,"message":"Validation failed","errors":["\"secret\" is required","\"totpCode\" is required"]}
+
+GET /api/auth/admin/audit :: GET /api/auth/admin/audit
+{"success":false,"error":{"code":"INVALID_REQUEST","message":"\n\u001b[31mInvalid \u001b[1m`auditLogDelegate.create()`\u001b[22m invocation in\u001b[39m\n\u001b[4mC:\\Users\\abdal\\Desktop\\maysar-express-backend\\services\\auth-service\\src\\application\\services\\audit.service.ts:36:30\u001b[24m\n\n  \u001b[2m\u001b[90m33\u001b[39m   details\u001b[22m\n  \u001b[2m\u001b[90m34\u001b[39m \u001b[34m}\u001b[39m\u001b[34m;\u001b[39m\u001b[22m\n  \u001b[2m\u001b[90m35\u001b[39m \u001b[22m\n\u001b[1m\u001b[31m→\u001b[39m\u001b[22m \u001b[2m\u001b[90m36\u001b[39m \u001b[36mawait\u001b[39m auditLogDelegate\u001b[34m.\u001b[39m\u001b[36mcreate\u001b[39m\u001b[34m(\u001b[39m\u001b[22m\nForeign key constraint violated: `auth_audit_logs_userId_fkey (index)`"}}
+
+POST /api/auth/admin/discovery/refresh :: POST /api/auth/admin/discovery/refresh
+{"success":false,"error":{"code":"INVALID_REQUEST","message":"\n\u001b[31mInvalid \u001b[1m`auditLogDelegate.create()`\u001b[22m invocation in\u001b[39m\n\u001b[4mC:\\Users\\abdal\\Desktop\\maysar-express-backend\\services\\auth-service\\src\\application\\services\\security.service.ts:37:30\u001b[24m\n\n  \u001b[2m\u001b[90m34\u001b[39m   details\u001b[34m:\u001b[39m event\u001b[34m.\u001b[39mdetails\u001b[22m\n  \u001b[2m\u001b[90m35\u001b[39m \u001b[34m}\u001b[39m\u001b[34m;\u001b[39m\u001b[22m\n  \u001b[2m\u001b[90m36\u001b[39m \u001b[22m\n\u001b[1m\u001b[31m→\u001b[39m\u001b[22m \u001b[2m\u001b[90m37\u001b[39m \u001b[36mawait\u001b[39m auditLogDelegate\u001b[34m.\u001b[39m\u001b[36mcreate\u001b[39m\u001b[34m(\u001b[39m\u001b[22m\nForeign key constraint violated: `auth_audit_logs_userId
+
+GET /api/auth/admin/security-events :: GET /api/auth/admin/security-events
+{"success":false,"error":{"code":"INVALID_REQUEST","message":"\n\u001b[31mInvalid \u001b[1m`auditLogDelegate.create()`\u001b[22m invocation in\u001b[39m\n\u001b[4mC:\\Users\\abdal\\Desktop\\maysar-express-backend\\services\\auth-service\\src\\application\\services\\audit.service.ts:36:30\u001b[24m\n\n  \u001b[2m\u001b[90m33\u001b[39m   details\u001b[22m\n  \u001b[2m\u001b[90m34\u001b[39m \u001b[34m}\u001b[39m\u001b[34m;\u001b[39m\u001b[22m\n  \u001b[2m\u001b[90m35\u001b[39m \u001b[22m\n\u001b[1m\u001b[31m→\u001b[39m\u001b[22m \u001b[2m\u001b[90m36\u001b[39m \u001b[36mawait\u001b[39m auditLogDelegate\u001b[34m.\u001b[39m\u001b[36mcreate\u001b[39m\u001b[34m(\u001b[39m\u001b[22m\nForeign key constraint violated: `auth_audit_logs_userId_fkey (index)`"}}
+
+DELETE /api/auth/admin/sessions/test-sessionId :: DELETE /api/auth/admin/sessions/:sessionId
+{"success":false,"error":{"code":"INVALID_ID","message":"sessionId must be a valid ID"}}
+
+GET /api/auth/admin/stats :: GET /api/auth/admin/stats
+{"success":false,"error":{"code":"INVALID_REQUEST","message":"\n\u001b[31mInvalid \u001b[1m`auditLogDelegate.create()`\u001b[22m invocation in\u001b[39m\n\u001b[4mC:\\Users\\abdal\\Desktop\\maysar-express-backend\\services\\auth-service\\src\\application\\services\\audit.service.ts:36:30\u001b[24m\n\n  \u001b[2m\u001b[90m33\u001b[39m   details\u001b[22m\n  \u001b[2m\u001b[90m34\u001b[39m \u001b[34m}\u001b[39m\u001b[34m;\u001b[39m\u001b[22m\n  \u001b[2m\u001b[90m35\u001b[39m \u001b[22m\n\u001b[1m\u001b[31m→\u001b[39m\u001b[22m \u001b[2m\u001b[90m36\u001b[39m \u001b[36mawait\u001b[39m auditLogDelegate\u001b[34m.\u001b[39m\u001b[36mcreate\u001b[39m\u001b[34m(\u001b[39m\u001b[22m\nForeign key constraint violated: `auth_audit_logs_userId_fkey (index)`"}}
+
+GET /api/auth/admin/users/test-userId :: GET /api/auth/admin/users/:userId
+{"success":false,"error":{"code":"INVALID_ID","message":"userId must be a valid ID"}}
+
+PATCH /api/auth/admin/users/test-userId/role :: PATCH /api/auth/admin/users/:userId/role
+{"success":false,"error":{"code":"INVALID_ID","message":"userId must be a valid ID"}}
+
+DELETE /api/auth/admin/users/test-userId/sessions :: DELETE /api/auth/admin/users/:userId/sessions
+{"success":false,"error":{"code":"INVALID_ID","message":"userId must be a valid ID"}}
+
+GET /api/auth/admin/users/test-userId/sessions :: GET /api/auth/admin/users/:userId/sessions
+{"success":false,"error":{"code":"INVALID_ID","message":"userId must be a valid ID"}}
+
+PATCH /api/auth/admin/users/test-userId/status :: PATCH /api/auth/admin/users/:userId/status
+{"success":false,"error":{"code":"INVALID_ID","message":"userId must be a valid ID"}}
+
+GET /api/auth/admin/users/search :: GET /api/auth/admin/users/search
+{"success":false,"error":{"code":"INVALID_REQUEST","message":"\n\u001b[31mInvalid \u001b[1m`auditLogDelegate.create()`\u001b[22m invocation in\u001b[39m\n\u001b[4mC:\\Users\\abdal\\Desktop\\maysar-express-backend\\services\\auth-service\\src\\application\\services\\audit.service.ts:36:30\u001b[24m\n\n  \u001b[2m\u001b[90m33\u001b[39m   details\u001b[22m\n  \u001b[2m\u001b[90m34\u001b[39m \u001b[34m}\u001b[39m\u001b[34m;\u001b[39m\u001b[22m\n  \u001b[2m\u001b[90m35\u001b[39m \u001b[22m\n\u001b[1m\u001b[31m→\u001b[39m\u001b[22m \u001b[2m\u001b[90m36\u001b[39m \u001b[36mawait\u001b[39m auditLogDelegate\u001b[34m.\u001b[39m\u001b[36mcreate\u001b[39m\u001b[34m(\u001b[39m\u001b[22m\nForeign key constraint violated: `auth_audit_logs_userId_fkey (index)`"}}
+
+POST /api/auth/blacklist-token :: POST /api/auth/blacklist-token
+{"success":false,"message":"Validation failed","errors":["\"token\" is required"]}
+
+POST /api/auth/check-blacklist :: POST /api/auth/check-blacklist
+{"success":false,"message":"Validation failed","errors":["\"token\" is required"]}
+
+POST /api/auth/check-brute-force :: POST /api/auth/check-brute-force
+{"success":false,"message":"Validation failed","errors":["\"identifier\" is required","\"type\" is required"]}
+
+POST /api/auth/forgot-password :: POST /api/auth/forgot-password
+{"success":false,"message":"Validation failed","errors":["\"email\" is required"]}
+
+POST /api/auth/login :: POST /api/auth/login
+{"success":false,"message":"Validation failed","errors":["\"email\" is required","\"password\" is required"]}
+
+GET /api/auth/oauth/callback :: GET /api/auth/oauth/callback
+{"success":false,"message":"Authorization code is required"}
+
+POST /api/auth/record-failure :: POST /api/auth/record-failure
+{"success":false,"message":"Validation failed","errors":["\"identifier\" is required","\"type\" is required"]}
+
+POST /api/auth/report-suspicious :: POST /api/auth/report-suspicious
+{"success":false,"message":"Validation failed","errors":["\"activity\" is required"]}
+
+POST /api/auth/reset-password :: POST /api/auth/reset-password
+{"success":false,"message":"Validation failed","errors":["\"token\" is required","\"newPassword\" is required","\"confirmPassword\" is required"]}
+
+GET /api/auth/sessions :: GET /api/auth/sessions/
+{"error":"userId is required"}
+
+POST /api/auth/validate-api-key :: POST /api/auth/validate-api-key
+{"success":false,"message":"Validation failed","errors":["\"apiKey\" is required"]}
+
+POST /api/auth/validate-token :: POST /api/auth/validate-token
+{"success":false,"message":"Validation failed","errors":["\"token\" is required"]}
+
+POST /api/business-registry/businesses :: POST /api/business-registry/businesses/
+{"success":false,"error":{"code":"VALIDATION_ERROR","message":"\"name\" is required"}}
+
+POST /api/business-registry/businesses/test-id/compliance-records :: POST /api/business-registry/businesses/:id/compliance-records
+{"success":false,"error":{"code":"VALIDATION_ERROR","message":"\"type\" is required"}}
+
+POST /api/business-registry/businesses/test-id/documents :: POST /api/business-registry/businesses/:id/documents
+{"success":false,"error":{"code":"VALIDATION_ERROR","message":"\"type\" is required"}}
+
+POST /api/business-registry/businesses/test-id/suspend :: POST /api/business-registry/businesses/:id/suspend
+{"success":false,"error":{"code":"VALIDATION_ERROR","message":"\"suspendedBy\" is required"}}
+
+POST /api/business-registry/businesses/test-id/verify :: POST /api/business-registry/businesses/:id/verify
+{"success":false,"error":{"code":"VALIDATION_ERROR","message":"\"verifiedBy\" is required"}}
+
+POST /api/catalog/campaigns :: POST /api/catalog/campaigns/
+{"error":"\nInvalid `tx.campaign_Campaign.upsert()` invocation in\nC:\\Users\\abdal\\Desktop\\maysar-express-backend\\services\\catalog-service\\src\\campaigns\\infrastructure\\repositories\\prisma-campaign.repository.ts:38:40\n\n  35 const campaignId = campaign.getId();\n  36 \n  37 // Upsert campaign\n→ 38 await tx.campaign_Campaign.upsert({\n       where: {\n         id: \"cam_01KM0JRTSMDKW48DDQWJP3KMJR\"\n       },\n       update: {\n         name: \"Spring Promo\",\n         description: \"E2E smoke campaign\",\n         type: \"PROMOTIONAL\",\n         status: \"DRAFT\",\n         startDate: \"2026-01-01T00:00:00.000Z\",\n         endDate: \"2026-12-31T23:59:59.000Z\",\n         timezone: \"Africa/Dar_es_Salaam\",\n         metadata: {},\n         updatedAt: new Date(\"2026-03-18T13:
+
+PUT /api/catalog/campaigns/00000000-0000-0000-0000-000000000000 :: PUT /api/catalog/campaigns/:id
+{"error":"Campaign with ID 00000000-0000-0000-0000-000000000000 not found"}
+
+POST /api/catalog/campaigns/test-id/cancel :: POST /api/catalog/campaigns/:id/cancel
+{"error":"Campaign with ID test-id not found"}
+
+POST /api/catalog/campaigns/test-id/complete :: POST /api/catalog/campaigns/:id/complete
+{"error":"Campaign with ID test-id not found"}
+
+POST /api/catalog/campaigns/test-id/launch :: POST /api/catalog/campaigns/:id/launch
+{"error":"Campaign with ID test-id not found"}
+
+POST /api/catalog/campaigns/test-id/pause :: POST /api/catalog/campaigns/:id/pause
+{"error":"Campaign with ID test-id not found"}
+
+POST /api/catalog/campaigns/test-id/resume :: POST /api/catalog/campaigns/:id/resume
+{"error":"Campaign with ID test-id not found"}
+
+POST /api/catalog/pricing/calculate :: POST /api/catalog/pricing/calculate
+{"success":false,"error":{"code":"VALIDATION_ERROR","message":"cost: Required"}}
+
+POST /api/catalog/products/test-productId/buy-box/compute :: POST /api/catalog/products/:productId/buy-box/compute
+{"error":"listings array is required"}
+
+POST /api/checkout/initiate :: POST /api/checkout/initiate
+{"success":false,"error":{"code":"VALIDATION_ERROR","message":"Checkout validation failed","details":{"cartId":"Cart ID is required","userId":"User ID is required","shippingAddressId":"Shipping address is required","billingAddressId":"Billing address is required","shippingMethodId":"Shipping method is required","shippingCost":"Shipping cost must be non-negative"}},"timestamp":"2026-03-18T13:39:44.947Z"}
+
+GET /api/commission/test-id :: GET /api/commission/:id
+{"success":false,"error":"Validation error","details":["Error code \"custom\" is not defined, your custom type is missing the correct messages definition"]}
+
+PUT /api/commission/test-id/approve :: PUT /api/commission/:id/approve
+{"success":false,"error":"Validation error","details":["Error code \"custom\" is not defined, your custom type is missing the correct messages definition"]}
+
+POST /api/commission/calculate :: POST /api/commission/calculate
+{"success":false,"error":"Validation error","details":["\"orderId\" is required"]}
+
+GET /api/commission/sellers/test-sellerId :: GET /api/commission/sellers/:sellerId
+{"success":false,"error":"Validation error","details":["Error code \"custom\" is not defined, your custom type is missing the correct messages definition"]}
+
+GET /api/commission/sellers/test-sellerId/summary :: GET /api/commission/sellers/:sellerId/summary
+{"success":false,"error":"Validation error","details":["Error code \"custom\" is not defined, your custom type is missing the correct messages definition"]}
+
+POST /api/community/posts :: POST /api/community/posts/
+{"error":"ValidationError","message":"Missing required fields: authorId, content, type"}
+
+GET /api/community/posts/test-postId :: GET /api/community/posts/:postId
+{"error":"ValidationError","message":"Post ID must be a valid ID"}
+
+GET /api/community/posts/test-postId/related :: GET /api/community/posts/:postId/related
+{"error":"ValidationError","message":"Post ID must be a valid ID"}
+
+GET /api/community/posts/search :: GET /api/community/posts/search
+{"error":"ValidationError","message":"Search query is required"}
+
+POST /api/enabler/enablers/test-id/approve :: POST /api/enabler/enablers/:id/approve
+{"error":"Enabler not found"}
+
+PUT /api/logistics/api/courier/test-courierId/status :: PUT /api/logistics/api/courier/:courierId/status
+{"success":false,"error":"Invalid courier status"}
+
+POST /api/logistics/api/v1/cod/test-deliveryId/otp :: POST /api/logistics/api/v1/cod/:deliveryId/otp
+{"success":false,"error":"Delivery test-deliveryId not found"}
+
+POST /api/logistics/api/v1/cod/test-deliveryId/verify :: POST /api/logistics/api/v1/cod/:deliveryId/verify
+{"success":false,"error":"Missing required verification data (otp, lat, lng)"}
+
+PUT /api/logistics/api/v1/couriers/test-courierId/status :: PUT /api/logistics/api/v1/couriers/:courierId/status
+{"success":false,"error":"Invalid courier status"}
+
+POST /api/logistics/api/v1/deliveries :: POST /api/logistics/api/v1/deliveries
+{"errors":[{"type":"field","msg":"Order ID is required","path":"orderId","location":"body"},{"type":"field","msg":"Order ID must be between 1 and 100 characters","path":"orderId","location":"body"},{"type":"field","msg":"Pickup address is required","path":"pickupAddress","location":"body"},{"type":"field","msg":"Pickup street is required","path":"pickupAddress.street","location":"body"},{"type":"field","msg":"Pickup street must be between 3 and 255 characters","path":"pickupAddress.street","location":"body"},{"type":"field","msg":"Pickup city is required","path":"pickupAddress.city","location":"body"},{"type":"field","msg":"Pickup city must be between 2 and 100 characters","path":"pickupAddress.city","location":"body"},{"type":"field","msg":"Pickup postal code is required","path":"pickupAd
+
+GET /api/logistics/api/v1/deliveries/test-deliveryId :: GET /api/logistics/api/v1/deliveries/:deliveryId
+{"errors":[{"type":"field","value":"test-deliveryId","msg":"Delivery ID must be a valid ID","path":"deliveryId","location":"params"}]}
+
+POST /api/logistics/api/v1/deliveries/test-deliveryId/status :: POST /api/logistics/api/v1/deliveries/:deliveryId/status
+{"errors":[{"type":"field","value":"test-deliveryId","msg":"Delivery ID must be a valid ID","path":"deliveryId","location":"params"},{"type":"field","msg":"Invalid delivery status","path":"status","location":"body"}]}
+
+GET /api/logistics/api/v1/earnings :: GET /api/logistics/api/v1/earnings
+{"errors":[{"type":"field","msg":"Courier ID must be a valid identifier","path":"courierId","location":"params"}]}
+
+POST /api/logistics/api/v1/earnings :: POST /api/logistics/api/v1/earnings
+{"errors":[{"type":"field","msg":"Courier ID must be a valid identifier","path":"courierId","location":"body"},{"type":"field","msg":"Delivery ID must be a valid identifier","path":"deliveryId","location":"body"},{"type":"field","msg":"Base fare must be non-negative","path":"baseFare","location":"body"},{"type":"field","msg":"Total earnings must be non-negative","path":"totalEarnings","location":"body"},{"type":"field","msg":"Commission must be non-negative","path":"commission","location":"body"},{"type":"field","msg":"Net earnings must be non-negative","path":"netEarnings","location":"body"},{"type":"field","msg":"Payment status must be pending, paid, or failed","path":"paymentStatus","location":"body"}]}
+
+POST /api/logistics/api/v1/earnings/calculate :: POST /api/logistics/api/v1/earnings/calculate
+{"errors":[{"type":"field","msg":"Deliveries must be an array with 1-100 items","path":"deliveries","location":"body"}]}
+
+POST /api/logistics/api/v1/qa/load-test :: POST /api/logistics/api/v1/qa/load-test
+{"success":false,"error":"Operation parameter is required","timestamp":"2026-03-18T13:39:55.205Z"}
+
+PUT /api/logistics/api/v1/routes/test-routeId/progress :: PUT /api/logistics/api/v1/routes/:routeId/progress
+{"success":false,"error":"Current location with valid lat/lng coordinates is required"}
+
+POST /api/logistics/api/v1/routes/optimize :: POST /api/logistics/api/v1/routes/optimize
+{"success":false,"error":"Deliveries array is required and must not be empty"}
+
+POST /api/logistics/api/v1/tracking/location :: POST /api/logistics/api/v1/tracking/location
+{"errors":[{"type":"field","msg":"Courier ID must be a valid identifier","path":"courierId","location":"body"},{"type":"field","msg":"Location is required","path":"location","location":"body"},{"type":"field","msg":"Invalid latitude","path":"location.latitude","location":"body"},{"type":"field","msg":"Invalid longitude","path":"location.longitude","location":"body"}]}
+
+POST /api/notification/sms/retry/test-messageId :: POST /api/notification/sms/retry/:messageId
+{"messageId":"test-messageId","success":false,"newStatus":"NOT_FOUND","retryCount":0,"message":"Message not found"}
+
+POST /api/notification/sms/webhook/africastalking :: POST /api/notification/sms/webhook/africastalking
+{"success":false,"error":"Invalid delivery report payload"}
+
+GET /api/order/orders :: GET /api/order/orders
+{"error":"MISSING_BUYER_ID","message":"buyerId query parameter is required"}
+
+POST /api/order/orders/disputes/test-id/resolve :: POST /api/order/orders/disputes/:id/resolve
+{"success":false,"error":"Missing resolution text or decision"}
+
+GET /api/order/orders/tracking/test-trackingNumber :: GET /api/order/orders/tracking/:trackingNumber
+{"error":"INVALID_TRACKING_NUMBER","message":"Tracking number format is invalid"}
+
+POST /api/payment/payments/test-id/refund :: POST /api/payment/payments/:id/refund
+{"success":false,"error":"Payment not found"}
+
+POST /api/payment/payments/webhooks/pesapal :: POST /api/payment/payments/webhooks/pesapal
+{"error":"Missing idempotency key","message":"Header 'x-webhook-idempotency-key' is required for POST requests"}
+
+POST /api/production/plans :: POST /api/production/plans
+{"error":"Production plan failed capacity validation"}
+
+PUT /api/production/plans/test-id/status :: PUT /api/production/plans/:id/status
+{"error":"Plan not found"}
+
+POST /api/production/quality/checkpoints :: POST /api/production/quality/checkpoints
+{"error":"Quality checkpoint delegate is not configured on prisma client"}
+
+DELETE /api/user/test-id :: DELETE /api/user/:id
+{"success":false,"message":"User not found"}
+
+PUT /api/user/test-id :: PUT /api/user/:id
+{"success":false,"error":{"code":"UPDATE_FAILED","message":"User not found"}}
+
+POST /api/user/test-id/2fa/setup :: POST /api/user/:id/2fa/setup
+{"success":false,"message":"User not found"}
+
+POST /api/user/test-id/password :: POST /api/user/:id/password
+{"success":false,"message":"User not found"}
+
+POST /api/user/test-id/phone/verify :: POST /api/user/:id/phone/verify
+{"success":false,"message":"User not found"}
+
+POST /api/user/test-id/role :: POST /api/user/:id/role
+{"success":false,"message":"User not found"}
+
+POST /api/user/test-id/suspend :: POST /api/user/:id/suspend
+{"success":false,"message":"User not found"}
+
+POST /api/user/request-password-reset :: POST /api/user/request-password-reset
+{"success":false,"error":{"code":"MISSING_EMAIL","message":"Email is required"}}
+
+POST /api/user/reset-password/test-token :: POST /api/user/reset-password/:token
+{"success":false,"error":{"code":"MISSING_FIELDS","message":"User ID, token, and new password are required"}}
+
+POST /api/user/security/breaches/report :: POST /api/user/security/breaches/report
+{"success":false,"message":"Failed to report security breach"}
+
+POST /api/user/verify-email/test-token :: POST /api/user/verify-email/:token
+{"success":false,"error":{"code":"MISSING_USER_ID","message":"User ID is required"}}

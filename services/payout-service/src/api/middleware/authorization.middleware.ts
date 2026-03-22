@@ -23,18 +23,22 @@ export class AuthorizationMiddleware {
                 });
             }
 
-            const userRole = user.role ? user.role.toLowerCase() : '';
-            const isAuthorized = allowedRoles.some(role => role.toLowerCase() === userRole);
+            const userRoles: string[] = Array.isArray(user.roles)
+                ? user.roles.map((role: string) => role.toLowerCase())
+                : user.role
+                    ? [String(user.role).toLowerCase()]
+                    : [];
+            const isAuthorized = allowedRoles.some(role => userRoles.includes(role.toLowerCase()));
 
             if (!isAuthorized) {
                 return res.status(403).json({
                     success: false,
                     error: {
                         code: 'FORBIDDEN',
-                        message: `Role ${user.role} is not authorized for this operation`,
+                        message: `Role ${user.role || user.roles} is not authorized for this operation`,
                         details: {
                             requiredRoles: allowedRoles,
-                            userRole: user.role
+                            userRole: user.role || user.roles
                         }
                     }
                 });

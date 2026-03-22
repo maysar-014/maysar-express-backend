@@ -8,6 +8,7 @@ import { container } from './src/infrastructure/container';
 import { TYPES } from './src/types';
 import type { DistributedSagaOrchestrator } from '../../shared/saga/saga.orchestrator';
 import { logger } from './src/infrastructure/services/logger.service';
+import { requireAuth, requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 export const SupportModule: Module = {
     name: 'support-service',
@@ -48,9 +49,9 @@ export const SupportModule: Module = {
     },
     routes: (() => {
         const router = Router();
-        router.use('/tickets', ticketRouter);
-        router.use('/agents', agentRouter);
-        router.use('/system/maintenance', createMaintenanceRoutes());
+        router.use('/tickets', requireAuth, ticketRouter);
+        router.use('/agents', requireAuth, agentRouter);
+        router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
         return router;
     })(),
     shutdown: async () => {
@@ -58,3 +59,6 @@ export const SupportModule: Module = {
         // Cleanup connections if needed
     }
 };
+
+
+

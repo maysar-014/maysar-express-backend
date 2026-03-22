@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { GoogleOAuthController } from '../controllers/google-oauth.controller';
+import { validateRequest } from '../middleware/validation.middleware';
 import { logger } from '../../infrastructure/services/logger.service';
 
 export class GoogleOAuthRoutes {
@@ -20,10 +21,26 @@ export class GoogleOAuthRoutes {
     this.router.get('/callback', this.controller.handleCallback.bind(this.controller));
 
     // Refresh OAuth token
-    this.router.post('/refresh', this.controller.refreshToken.bind(this.controller));
+    this.router.post(
+      '/refresh',
+      validateRequest({
+        body: {
+          refreshToken: { type: 'string', required: true, minLength: 1, pattern: /^[!-~]+$/ }
+        }
+      }),
+      this.controller.refreshToken.bind(this.controller)
+    );
 
     // Revoke OAuth access
-    this.router.post('/revoke', this.controller.revokeAccess.bind(this.controller));
+    this.router.post(
+      '/revoke',
+      validateRequest({
+        body: {
+          token: { type: 'string', required: true, minLength: 1, pattern: /^[!-~]+$/ }
+        }
+      }),
+      this.controller.revokeAccess.bind(this.controller)
+    );
 
     logger.info('Google OAuth routes initialized');
   }

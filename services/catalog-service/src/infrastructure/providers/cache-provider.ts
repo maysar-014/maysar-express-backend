@@ -392,6 +392,8 @@ export class RedisCacheProvider implements CacheService {
         },
         maxRetriesPerRequest: 3
       });
+      const { attachRedisErrorHandlers } = await import('@shared/redis/ioredis-client');
+      attachRedisErrorHandlers(this.redisClient, 'catalog-cache');
 
       await this.redisClient.connect();
       this.connected = true;

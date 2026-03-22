@@ -160,6 +160,10 @@ export class ProposeBusinessChallengeUseCase {
             deadline: request.deadline,
         });
 
+        // New challenges are immediately actionable in the current API flow.
+        // Persist them as OPEN because the backing Prisma enum does not include PROPOSED.
+        challenge.approve();
+
         // 8. Save challenge
         const savedChallenge = await this.challengeRepository.save(challenge);
 

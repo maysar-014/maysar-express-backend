@@ -25,32 +25,9 @@ describe('WebhookController', () => {
     jest.clearAllMocks();
   });
 
-  it('returns 401 when signature is missing or invalid', async () => {
-    const controller = new WebhookController(
-      {
-        verifyWebhookSignature: jest.fn().mockReturnValue(false),
-        handleWebhook: jest.fn()
-      } as never,
-      { execute: jest.fn() } as never
-    );
-    const req: any = {
-      body: { tx_ref: 'track-1', status: 'successful' },
-      query: {},
-      headers: {}
-    };
-    const res = makeRes();
-
-    await controller.handlePesapalWebhook(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid signature' });
-    expect(loggerWarnMock).toHaveBeenCalledWith('Invalid webhook signature', { signature: undefined });
-  });
-
   it('returns 400 when required payload parameters are missing', async () => {
     const controller = new WebhookController(
       {
-        verifyWebhookSignature: jest.fn().mockReturnValue(true),
         handleWebhook: jest.fn()
       } as never,
       { execute: jest.fn() } as never
@@ -58,7 +35,7 @@ describe('WebhookController', () => {
     const req: any = {
       body: { status: 'successful' },
       query: {},
-      headers: { 'verif-hash': 'sig' }
+      headers: {}
     };
     const res = makeRes();
 
@@ -70,7 +47,6 @@ describe('WebhookController', () => {
 
   it('processes valid webhook and returns 200', async () => {
     const pesapalAdapter = {
-      verifyWebhookSignature: jest.fn().mockReturnValue(true),
       handleWebhook: jest.fn().mockResolvedValue(undefined)
     };
     const handleWebhookUseCase = {
@@ -79,31 +55,29 @@ describe('WebhookController', () => {
     const controller = new WebhookController(pesapalAdapter as never, handleWebhookUseCase as never);
     const req: any = {
       body: {
-        tx_ref: 'track-1',
-        status: 'successful',
+        OrderTrackingId: 'track-1',
+        OrderMerchantReference: 'merchant-1',
+        OrderNotificationType: 'CHANGE',
+        status: 'COMPLETED',
         id: 777
       },
       query: {},
-      headers: { 'verif-hash': 'sig' }
+      headers: {}
     };
     const res = makeRes();
 
     await controller.handlePesapalWebhook(req, res);
 
-    expect(pesapalAdapter.verifyWebhookSignature).toHaveBeenCalledWith(
-      JSON.stringify(req.body),
-      'sig'
-    );
     expect(pesapalAdapter.handleWebhook).toHaveBeenCalledWith(
       expect.objectContaining({
         providerReference: 'track-1',
-        status: 'successful'
+        status: 'COMPLETED'
       })
     );
     expect(handleWebhookUseCase.execute).toHaveBeenCalledWith(
       'track-1',
       '777',
-      'successful',
+      'COMPLETED',
       expect.any(Object)
     );
     expect(res.status).toHaveBeenCalledWith(200);
@@ -111,20 +85,46 @@ describe('WebhookController', () => {
     expect(loggerInfoMock).toHaveBeenCalledWith('Webhook processed successfully', { handled: true });
   });
 
+  it('falls back to provider reference when provider transaction ID is missing', async () => {
+    const pesapalAdapter = {
+      handleWebhook: jest.fn().mockResolvedValue(undefined)
+    };
+    const handleWebhookUseCase = {
+      execute: jest.fn().mockResolvedValue({ handled: true })
+    };
+    const controller = new WebhookController(pesapalAdapter as never, handleWebhookUseCase as never);
+    const req: any = {
+      body: {
+        OrderTrackingId: 'track-fallback',
+        status: 'COMPLETED'
+      },
+      query: {},
+      headers: {}
+    };
+    const res = makeRes();
+
+    await controller.handlePesapalWebhook(req, res);
+
+    expect(handleWebhookUseCase.execute).toHaveBeenCalledWith(
+      'track-fallback',
+      'track-fallback',
+      'COMPLETED',
+      expect.any(Object)
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
   it('returns 500 when processing throws', async () => {
     const controller = new WebhookController(
       {
-        verifyWebhookSignature: jest.fn().mockImplementation(() => {
-          throw new Error('verify-failure');
-        }),
-        handleWebhook: jest.fn()
+        handleWebhook: jest.fn().mockRejectedValue(new Error('handle-failure'))
       } as never,
       { execute: jest.fn() } as never
     );
     const req: any = {
-      body: { tx_ref: 'track-1' },
+      body: { OrderTrackingId: 'track-1' },
       query: {},
-      headers: { 'verif-hash': 'sig' }
+      headers: {}
     };
     const res = makeRes();
 

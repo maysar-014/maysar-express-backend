@@ -375,7 +375,7 @@ describe('DeliveryController', () => {
 
     mockUpdateDeliveryStatusExecute.mockRejectedValueOnce(new Error('Invalid status transition'));
     await controller.updateDeliveryStatus(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.status).toHaveBeenCalledWith(409);
 
     mockUpdateDeliveryStatusExecute.mockRejectedValueOnce(new Error('delivery not found'));
     await controller.updateDeliveryStatus(req, res);

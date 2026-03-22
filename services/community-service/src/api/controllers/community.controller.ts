@@ -11,13 +11,18 @@ export class CommunityController {
         private readonly discoverContentUseCase: DiscoverContentUseCase
     ) { }
 
+    private getAuthenticatedUserId(req: Request): string | null {
+        const resolved = (req as any).user?.userId || (req as any).user?.id;
+        return typeof resolved === 'string' && resolved.trim().length > 0 ? resolved : null;
+    }
+
     /**
      * POST /challenges
      * Propose a new business challenge
      */
     async proposeChallenge(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const userId = (req as any).user?.id;
+            const userId = this.getAuthenticatedUserId(req);
             if (!userId) {
                 res.status(401).json({ error: 'Unauthorized' });
                 return;
@@ -52,7 +57,7 @@ export class CommunityController {
      */
     async validateExpertise(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const userId = (req as any).user?.id;
+            const userId = this.getAuthenticatedUserId(req);
             if (!userId) {
                 res.status(401).json({ error: 'Unauthorized' });
                 return;
@@ -84,7 +89,7 @@ export class CommunityController {
      */
     async discoverContent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const userId = (req as any).user?.id;
+            const userId = this.getAuthenticatedUserId(req);
             if (!userId) {
                 res.status(401).json({ error: 'Unauthorized' });
                 return;
@@ -136,7 +141,7 @@ export class CommunityController {
      */
     async submitSolution(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const userId = (req as any).user?.id;
+            const userId = this.getAuthenticatedUserId(req);
             const { challengeId } = req.params;
 
             // TODO: Implement submit solution use case

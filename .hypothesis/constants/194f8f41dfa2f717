@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\engine\run\stateful\__init__.py
+# hypothesis_version: 6.151.9
+
+[0.01, 'engine', 'event_queue', 'state_machine']

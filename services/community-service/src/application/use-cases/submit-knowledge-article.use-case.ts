@@ -184,7 +184,15 @@ export class SubmitKnowledgeArticleUseCase {
     }
 
     private combineArticleContent(sections: ArticleSection[]): string {
-        return sections.map(s => `${s.heading}\n${s.content}`).join('\n\n');
+        const validSections = Array.isArray(sections)
+            ? sections.filter((section): section is ArticleSection =>
+                Boolean(section)
+                && typeof section.heading === 'string'
+                && typeof section.content === 'string'
+            )
+            : [];
+
+        return validSections.map((section) => `${section.heading}\n${section.content}`).join('\n\n');
     }
 
     private generateId(): string {

@@ -134,12 +134,30 @@ describe('OrderController', () => {
 
     await controller.validateCODELigibility(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         eligible: false,
         error: 'ELIGIBILITY_CHECK_FAILED'
       })
     );
+  });
+
+  it('allows deleting orders with uppercase pending status', async () => {
+    const req = {
+      params: { id: 'ord-pending' },
+      query: {},
+      headers: { 'x-request-id': 'req-5' }
+    } as unknown as Request;
+    const res = createResponse();
+
+    mockOrderRepository.findById.mockResolvedValue({ id: 'ord-pending', status: 'PENDING' });
+
+    await controller.deleteOrder(req, res);
+
+    expect(mockOrderRepository.update).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'ord-pending', status: 'cancelled' })
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
   });
 });

@@ -1,3 +1,4 @@
+import './async-errors';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -10,8 +11,10 @@ import { correlationMiddleware } from '../shared/tracing/openTelemetry';
 import { appLogger } from '../shared/logger/logger';
 import { requestLoggingMiddleware, performanceMonitoringMiddleware} from '../services/order-service/src/middleware/logging.middleware';
 import { i18next, i18nextMiddleware } from '../shared/i18n/i18n';
-import { csrfTokenMiddleware } from '../shared/middleware/csrf.middleware';
+import { csrfTokenMiddleware, getOrCreateCsrfToken } from '../shared/middleware/csrf.middleware';
 import { pingSharedRedis } from '../shared/redis/ioredis-client';
+import { attachAuthContext } from '../shared/middleware/auth-context.middleware';
+import { methodNotAllowedMiddleware } from '../shared/middleware/method-not-allowed.middleware';
 
 export const createApp = () => {
     const app = express();
@@ -28,9 +31,66 @@ export const createApp = () => {
     app.use(requestLoggingMiddleware);
     app.use(performanceMonitoringMiddleware);
     app.use(cookieParser());
+
+    // Catch URIError thrown by Express router when path params contain invalid percent-encoding.
+    // Must be registered before routes so it intercepts the error before Express sends an empty 400.
+    app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
+        if (err instanceof URIError) {
+            res.status(400).json({ error: 'Bad Request', message: 'Invalid request path' });
+            return;
+        }
+        next(err);
+    });
+
+    // Reject non-standard methods early to avoid parser-level failures on unknown verbs.
+    const supportedMethods = new Set(['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT']);
+    app.use((req, res, next) => {
+        if (req.path.startsWith('/api/')) {
+            const method = req.method.toUpperCase();
+            if (!supportedMethods.has(method)) {
+                res.set('Allow', 'DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT');
+                res.status(405).json({ error: 'Method Not Allowed' });
+                return;
+            }
+        }
+        next();
+    });
+
+    app.use(attachAuthContext);
     app.use(csrfTokenMiddleware);
+
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
+
+    // Normalize malformed JSON / URI parse failures into stable JSON responses.
+    app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
+        const bodyParserError = err as { type?: string; status?: number; message?: string };
+        if (bodyParserError?.type === 'entity.parse.failed') {
+            res.status(400).json({
+                error: 'Bad Request',
+                message: 'Invalid JSON payload'
+            });
+            return;
+        }
+
+        if (err instanceof URIError || (bodyParserError as any)?.status === 400) {
+            res.status(400).json({
+                error: 'Bad Request',
+                message: 'Invalid request path'
+            });
+            return;
+        }
+
+        next(err);
+    });
+
+    // CSRF token endpoint (useful for automated tests and non-browser clients)
+    app.get('/csrf', (req, res) => {
+        const token = getOrCreateCsrfToken(req, res);
+        res.set('X-CSRF-Token', token);
+        res.set('Cache-Control', 'no-store');
+        res.json({ csrfToken: token });
+    });
 
     // Register module routes
     const modules = moduleRegistry.getModules();
@@ -91,9 +151,12 @@ export const createApp = () => {
         }
     });
 
-    // Sentry test endpoint
-    app.get('/debug-sentry', (_req, _res) => {
-        throw new Error('My first Sentry error!');
+    // Sentry test endpoint (disabled unless explicitly enabled)
+    app.get('/debug-sentry', (_req, res) => {
+        if (process.env.ENABLE_SENTRY_TEST === 'true') {
+            throw new Error('My first Sentry error!');
+        }
+        res.status(200).json({ status: 'disabled' });
     });
 
     // Sentry error handler (before global error handler)
@@ -101,9 +164,16 @@ export const createApp = () => {
         setupExpressErrorHandler(app);
     }
 
+    // 405 Handler (registered routes with unsupported methods)
+    app.use(methodNotAllowedMiddleware);
+
     // Global Error Handler
     app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
         appLogger.error('Global Error Handler', err);
+        if (res.headersSent) {
+            _next(err);
+            return;
+        }
         const status = (err as { status?: number; statusCode?: number }).status ?? (err as { status?: number; statusCode?: number }).statusCode ?? 500;
         const response: { error: string; message: string; stack?: string } = {
             error: 'Internal Server Error',

@@ -47,17 +47,40 @@ describe('HandlePesapalWebhookUseCase', () => {
     jest.clearAllMocks();
   });
 
-  it('throws when payment cannot be found by provider reference', async () => {
+  it('ignores webhook when payment cannot be found by provider reference or ID', async () => {
     const useCase = new HandlePesapalWebhookUseCase(
-      { findByProviderReference: jest.fn().mockResolvedValue(null) } as never,
+      {
+        findByProviderReference: jest.fn().mockResolvedValue(null),
+        findById: jest.fn().mockResolvedValue(null)
+      } as never,
       { checkPaymentStatus: jest.fn() } as never,
       { publish: jest.fn() } as never
     );
 
-    await expect(
-      useCase.execute('track-1', 'merchant-1', 'PENDING', payload)
-    ).rejects.toThrow('Payment not found: track-1');
+    await expect(useCase.execute('track-1', 'merchant-1', 'PENDING', payload)).resolves.toEqual({
+      handled: false,
+      paymentId: 'track-1',
+      status: 'IGNORED'
+    });
     expect(loggerWarnMock).toHaveBeenCalledWith('Payment not found for webhook', { providerReference: 'track-1' });
+  });
+
+  it('falls back to payment ID lookup when provider reference is not stored yet', async () => {
+    const payment = makePayment(PaymentStatus.PROCESSING);
+    const repo = {
+      findByProviderReference: jest.fn().mockResolvedValue(null),
+      findById: jest.fn().mockResolvedValue(payment),
+      update: jest.fn().mockResolvedValue(undefined)
+    };
+    const provider = { checkPaymentStatus: jest.fn().mockResolvedValue({ status: 'COMPLETED' }) };
+    const eventBus = { publish: jest.fn().mockResolvedValue(undefined) };
+    const useCase = new HandlePesapalWebhookUseCase(repo as never, provider as never, eventBus as never);
+
+    const result = await useCase.execute('pay-1', 'merchant-1', 'COMPLETED', payload);
+
+    expect(repo.findByProviderReference).toHaveBeenCalledWith('pay-1');
+    expect(repo.findById).toHaveBeenCalledWith('pay-1');
+    expect(result.status).toBe('COMPLETED');
   });
 
   it('returns early when payment already has terminal status', async () => {
@@ -96,6 +119,54 @@ describe('HandlePesapalWebhookUseCase', () => {
       expect.objectContaining({ source: 'payment-service', correlationId: 'pay-1' })
     );
     expect(result.status).toBe('COMPLETED');
+  });
+
+  it('transitions pending payments through processing before completion', async () => {
+    const payment = makePayment(PaymentStatus.PENDING);
+    const repo = { findByProviderReference: jest.fn().mockResolvedValue(payment), update: jest.fn().mockResolvedValue(undefined) };
+    const provider = { checkPaymentStatus: jest.fn().mockResolvedValue({ status: 'COMPLETED' }) };
+    const eventBus = { publish: jest.fn().mockResolvedValue(undefined) };
+    const useCase = new HandlePesapalWebhookUseCase(repo as never, provider as never, eventBus as never);
+
+    const result = await useCase.execute('track-1', 'provider-tx-1', 'COMPLETED', payload);
+
+    expect(payment.status).toBe(PaymentStatus.COMPLETED);
+    expect(repo.update).toHaveBeenCalledWith(payment);
+    expect(result.status).toBe('COMPLETED');
+  });
+
+  it('falls back to provider reference when provider transaction reference is missing', async () => {
+    const payment = makePayment(PaymentStatus.PENDING);
+    const repo = {
+      findByProviderReference: jest.fn().mockResolvedValue(payment),
+      update: jest.fn().mockResolvedValue(undefined)
+    };
+    const provider = { checkPaymentStatus: jest.fn().mockResolvedValue({ status: 'COMPLETED' }) };
+    const eventBus = { publish: jest.fn().mockResolvedValue(undefined) };
+    const webhookEvents = {
+      recordReceived: jest.fn().mockResolvedValue({ id: 'webhook-1' }),
+      markProcessed: jest.fn().mockResolvedValue(undefined),
+      markFailed: jest.fn().mockResolvedValue(undefined)
+    };
+    const useCase = new HandlePesapalWebhookUseCase(
+      repo as never,
+      provider as never,
+      eventBus as never,
+      webhookEvents as never
+    );
+
+    const result = await useCase.execute('track-1', '', 'COMPLETED', payload);
+
+    expect(webhookEvents.recordReceived).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventId: 'track-1',
+        payload: expect.objectContaining({
+          providerTransactionReference: 'track-1'
+        })
+      })
+    );
+    expect(result.status).toBe('COMPLETED');
+    expect(payment.metadata.providerTransactionId).toBe('track-1');
   });
 
   it('marks payment failed and publishes PaymentFailed event', async () => {

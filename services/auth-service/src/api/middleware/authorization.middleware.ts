@@ -10,7 +10,7 @@
 import { Request, Response, NextFunction } from 'express';
 import http from 'http';
 import https from 'https';
-import { getModelPrefix, makeId } from '@shared/ids/id';
+import { getModelPrefix, isSystemId, makeId } from '@shared/ids/id';
 import { resourceMappingManager } from '../../config/resource-mapping.config';
 import { prisma } from '../../infrastructure/database/prisma-client';
 import { serviceDiscovery } from '../../infrastructure/services/service-discovery.service';
@@ -1157,11 +1157,18 @@ export class AuthorizationMiddleware {
 
   private async persistAuthorizationAudit(auditEvent: AuditEvent, details: Record<string, any>): Promise<void> {
     try {
+      const auditLogDelegate = (prisma as any).auditLog;
+      if (!auditLogDelegate || typeof auditLogDelegate.create !== 'function') {
+        logger.warn('Authorization audit skipped: auditLog delegate unavailable');
+        return;
+      }
+
       const success = auditEvent.eventType === 'AUTHORIZATION_SUCCESS';
-      await prisma.auditLog.create({
+      const userId = isSystemId(auditEvent.userId) ? auditEvent.userId : undefined;
+      await auditLogDelegate.create({
         data: {
           id: makeId(auditLogPrefix),
-          userId: auditEvent.userId,
+          userId,
           email: auditEvent.details?.email || auditEvent.metadata?.email,
           action: `authorization:${auditEvent.eventType.toLowerCase()}`,
           ipAddress: auditEvent.ipAddress,

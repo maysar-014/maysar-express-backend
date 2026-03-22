@@ -25,6 +25,16 @@ Owns user identity, profile management, and COD reputation scoring. Central regi
 - **wallet-service**: Wallet creation on user registration
 - **order-service**: COD reputation updates
 
+## Internal Lookup Endpoint (Auth Integration)
+The user service exposes a minimal internal lookup route used by the auth service to resolve a user by email or phone without direct database coupling.
+
+- **Route:** `GET /api/user/lookup?email=...` or `?phoneNumber=...`
+- **Access:** Internal only. Requires header `x-internal-call: auth-service`
+- **Behavior:** Returns `user` or `null` (no search/scan, single record)
+- **Why:** Keeps auth decoupled from PII storage/encryption details while providing a reliable, low-latency identity resolution path.
+  - If in-process lookup fails or drifts, auth can fall back to this HTTP contract.
+  - Protects user data by restricting access and returning only a single record.
+
 ## Entry Point
 `services/user-service/src/index.ts`
 

@@ -110,37 +110,80 @@ export class GetProductUseCase {
   }
 
   private async buildProductDetails(product: any, request: GetProductRequest): Promise<ProductDetails> {
+    const normalizedProduct = this.normalizeProductRecord(product);
+
     const details: ProductDetails = {
-      id: product.id,
-      sellerId: product.sellerId,
-      name: product.name,
-      description: product.description,
+      id: normalizedProduct.id,
+      sellerId: normalizedProduct.sellerId,
+      name: normalizedProduct.name,
+      description: normalizedProduct.description,
       price: {
-        amount: product.price.amount,
-        currency: product.price.currency
+        amount: normalizedProduct.price.amount,
+        currency: normalizedProduct.price.currency
       },
-      categoryId: product.categoryId,
-      type: product.type,
-      tags: product.tags || [],
-      attributes: product.attributes || {},
-      status: product.status,
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt
+      categoryId: normalizedProduct.categoryId,
+      type: normalizedProduct.type,
+      tags: normalizedProduct.tags || [],
+      attributes: normalizedProduct.attributes || {},
+      status: normalizedProduct.status,
+      createdAt: normalizedProduct.createdAt,
+      updatedAt: normalizedProduct.updatedAt
     };
 
     // Include media if requested
     if (request.includeMedia) {
-      details.media = await this.loadProductMedia(product.id);
+      details.media = await this.loadProductMedia(normalizedProduct.id);
     }
 
 
 
     // Include recommendations if requested
     if (request.includeRecommendations && this.searchService) {
-      details.recommendations = await this.loadProductRecommendations(product);
+      details.recommendations = await this.loadProductRecommendations(normalizedProduct);
     }
 
     return details;
+  }
+
+  private normalizeProductRecord(product: any): ProductDetails {
+    if (product && typeof product.getId === 'function' && typeof product.getDefaultVariant === 'function') {
+      const defaultVariant = product.getDefaultVariant();
+      return {
+        id: String(product.getId().toString()),
+        sellerId: String(product.getSellerId().toString()),
+        name: product.getName(),
+        description: product.getDescription(),
+        price: {
+          amount: Number(defaultVariant.getPrice().toNumber()),
+          currency: defaultVariant.getPrice().getCurrency()
+        },
+        categoryId: String(product.getCategoryId()?.toString?.() || ''),
+        type: String(product.getType?.() || 'physical'),
+        tags: product.getTags?.() || [],
+        attributes: defaultVariant.getAttributes?.() || {},
+        status: String(product.getStatus().toString()),
+        createdAt: product.getCreatedAt(),
+        updatedAt: product.getUpdatedAt()
+      };
+    }
+
+    return {
+      id: String(product.id),
+      sellerId: String(product.sellerId),
+      name: product.name,
+      description: product.description,
+      price: {
+        amount: Number(product.price?.amount ?? product.price ?? 0),
+        currency: String(product.price?.currency ?? product.currency ?? 'USD')
+      },
+      categoryId: String(product.categoryId || ''),
+      type: String(product.type || 'physical'),
+      tags: product.tags || [],
+      attributes: product.attributes || {},
+      status: String(product.status || 'draft'),
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt
+    };
   }
 
   private async loadProductMedia(productId: string): Promise<Array<{
@@ -271,22 +314,59 @@ export class GetProductsBySellerUseCase {
   }
 
   private async buildBasicProductDetails(product: any): Promise<ProductDetails> {
+    const normalizedProduct =
+      product && typeof product.getId === 'function' && typeof product.getDefaultVariant === 'function'
+        ? {
+            id: String(product.getId().toString()),
+            sellerId: String(product.getSellerId().toString()),
+            name: product.getName(),
+            description: product.getDescription(),
+            price: {
+              amount: Number(product.getDefaultVariant().getPrice().toNumber()),
+              currency: product.getDefaultVariant().getPrice().getCurrency()
+            },
+            categoryId: String(product.getCategoryId()?.toString?.() || ''),
+            type: String(product.getType?.() || 'physical'),
+            tags: product.getTags?.() || [],
+            attributes: product.getDefaultVariant().getAttributes?.() || {},
+            status: String(product.getStatus().toString()),
+            createdAt: product.getCreatedAt(),
+            updatedAt: product.getUpdatedAt()
+          }
+        : {
+            id: String(product.id),
+            sellerId: String(product.sellerId),
+            name: product.name,
+            description: product.description,
+            price: {
+              amount: Number(product.price?.amount ?? product.price ?? 0),
+              currency: String(product.price?.currency ?? product.currency ?? 'USD')
+            },
+            categoryId: String(product.categoryId || ''),
+            type: String(product.type || 'physical'),
+            tags: product.tags || [],
+            attributes: product.attributes || {},
+            status: String(product.status || 'draft'),
+            createdAt: product.createdAt,
+            updatedAt: product.updatedAt
+          };
+
     return {
-      id: product.id,
-      sellerId: product.sellerId,
-      name: product.name,
-      description: product.description,
+      id: normalizedProduct.id,
+      sellerId: normalizedProduct.sellerId,
+      name: normalizedProduct.name,
+      description: normalizedProduct.description,
       price: {
-        amount: product.price.amount,
-        currency: product.price.currency
+        amount: normalizedProduct.price.amount,
+        currency: normalizedProduct.price.currency
       },
-      categoryId: product.categoryId,
-      type: product.type,
-      tags: product.tags || [],
-      attributes: product.attributes || {},
-      status: product.status,
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt
+      categoryId: normalizedProduct.categoryId,
+      type: normalizedProduct.type,
+      tags: normalizedProduct.tags || [],
+      attributes: normalizedProduct.attributes || {},
+      status: normalizedProduct.status,
+      createdAt: normalizedProduct.createdAt,
+      updatedAt: normalizedProduct.updatedAt
     };
   }
 }

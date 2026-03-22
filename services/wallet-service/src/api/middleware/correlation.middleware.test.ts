@@ -4,15 +4,16 @@ import { correlationMiddleware } from './correlation.middleware';
 describe('correlationMiddleware', () => {
   it('uses existing x-correlation-id header when provided', () => {
     const next = jest.fn();
+    const correlationId = '123e4567-e89b-42d3-a456-426614174000';
     const req = {
-      headers: { 'x-correlation-id': 'corr-123' },
+      headers: { 'x-correlation-id': correlationId },
       body: {}
     } as unknown as Request;
 
     correlationMiddleware(req, {} as Response, next as NextFunction);
 
-    expect(req.body.correlationId).toBe('corr-123');
-    expect(req.headers['x-correlation-id']).toBe('corr-123');
+    expect(req.body.correlationId).toBeUndefined();
+    expect(req.headers['x-correlation-id']).toBe(correlationId);
     expect(next).toHaveBeenCalledTimes(1);
   });
 
@@ -25,9 +26,24 @@ describe('correlationMiddleware', () => {
 
     correlationMiddleware(req, {} as Response, next as NextFunction);
 
-    expect(typeof req.body.correlationId).toBe('string');
-    expect((req.body.correlationId as string).length).toBeGreaterThan(0);
-    expect(req.headers['x-correlation-id']).toBe(req.body.correlationId);
+    expect(req.body.correlationId).toBeUndefined();
+    expect(typeof req.headers['x-correlation-id']).toBe('string');
+    expect((req.headers['x-correlation-id'] as string).length).toBeGreaterThan(0);
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not overwrite an explicitly invalid body correlation id', () => {
+    const next = jest.fn();
+    const req = {
+      headers: {},
+      body: { correlationId: '' }
+    } as unknown as Request;
+
+    correlationMiddleware(req, {} as Response, next as NextFunction);
+
+    expect(req.body.correlationId).toBe('');
+    expect(typeof req.headers['x-correlation-id']).toBe('string');
+    expect(req.headers['x-correlation-id']).not.toBe('');
     expect(next).toHaveBeenCalledTimes(1);
   });
 });

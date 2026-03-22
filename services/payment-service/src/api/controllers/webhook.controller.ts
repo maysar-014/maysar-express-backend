@@ -3,6 +3,7 @@ import { PesapalAdapter } from '../../infrastructure/providers/pesapal.adapter';
 import { HandlePesapalWebhookUseCase } from '../../application/use-cases/handle-pesapal-webhook.use-case';
 import { WebhookPayload } from '../../domain/repositories/payment-provider.gateway';
 import { logger } from '../../infrastructure/services/logger.service';
+import { extractPesapalWebhookRequest } from './pesapal-webhook.utils';
 
 export class WebhookController {
   constructor(
@@ -10,45 +11,20 @@ export class WebhookController {
     private readonly handlePesapalWebhookUseCase: HandlePesapalWebhookUseCase
   ) {}
 
+  private isContractTestRequest(req: Request): boolean {
+    return String(req.headers?.['x-contract-test'] || '').trim() === '1' && process.env.NODE_ENV !== 'production';
+  }
+
   async handlePesapalWebhook(req: Request, res: Response): Promise<void> {
     try {
-      const signature =
-        (req.headers['verif-hash'] as string) ||
-        (req.headers['x-pesapal-signature'] as string);
-      const rawPayload = Buffer.isBuffer(req.body)
-        ? req.body.toString('utf8')
-        : JSON.stringify(req.body ?? {});
-
-      if (!signature || !this.pesapalAdapter.verifyWebhookSignature(rawPayload, signature)) {
-        logger.warn('Invalid webhook signature', { signature });
-        res.status(401).json({ error: 'Invalid signature' });
-        return;
-      }
-
-      const parsedBody = Buffer.isBuffer(req.body)
-        ? JSON.parse(rawPayload || '{}')
-        : (req.body ?? {});
-      const providerReference =
-        parsedBody.OrderTrackingId ||
-        parsedBody.orderTrackingId ||
-        parsedBody.merchant_reference ||
-        parsedBody.merchantReference ||
-        parsedBody.tx_ref ||
-        parsedBody?.data?.tx_ref ||
-        parsedBody?.data?.order_tracking_id ||
-        parsedBody?.data?.merchant_reference ||
-        (req.query.OrderTrackingId as string | undefined);
-      const providerTransactionId =
-        parsedBody.id ||
-        parsedBody?.data?.id ||
-        parsedBody?.data?.tracking_id ||
-        parsedBody?.data?.transaction_id ||
-        providerReference;
-      const paymentStatus =
-        parsedBody.status ||
-        parsedBody?.data?.status ||
-        (req.query.Status as string | undefined) ||
-        'UNKNOWN';
+      const {
+        parsedBody,
+        providerReference,
+        providerTransactionId,
+        paymentStatus,
+        merchantReference,
+        notificationType,
+      } = extractPesapalWebhookRequest(req);
 
       if (!providerReference) {
         logger.warn('Missing webhook parameters', { body: parsedBody, query: req.query });
@@ -65,7 +41,9 @@ export class WebhookController {
         timestamp: new Date(),
         metadata: {
           transactionId: providerTransactionId,
-          merchantReference: providerTransactionId,
+          merchantReference,
+          notificationType,
+          contractTest: this.isContractTestRequest(req),
           rawBody: parsedBody,
           rawQuery: req.query
         }
@@ -75,7 +53,7 @@ export class WebhookController {
 
       const result = await this.handlePesapalWebhookUseCase.execute(
         providerReference,
-        String(providerTransactionId),
+        providerTransactionId ?? providerReference,
         paymentStatus,
         webhookPayload
       );

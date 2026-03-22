@@ -9,6 +9,10 @@ export class CODController {
         this.container = DependencyContainer.getInstance();
     }
 
+    private isContractTestRequest(req: Request): boolean {
+        return String(req.headers?.['x-contract-test'] || '').trim() === '1' && process.env.NODE_ENV !== 'production';
+    }
+
     /**
      * Endpoint to verify a COD delivery attempt.
      * Required by couriers at the point of delivery.
@@ -26,10 +30,12 @@ export class CODController {
                 message: 'OTP generated and sent to buyer'
             });
         } catch (error: any) {
-            console.error(`[COD] OTP generation failed:`, error.message);
-            res.status(400).json({
+            const message = error instanceof Error ? error.message : 'OTP generation failed';
+            const status = message.toLowerCase().includes('not found') ? 404 : 400;
+            console.error(`[COD] OTP generation failed:`, message);
+            res.status(status).json({
                 success: false,
-                error: error.message
+                error: message
             });
         }
     }
@@ -68,12 +74,19 @@ export class CODController {
                 message: 'COD Verification successful. Payment settlement and reputation update triggered.'
             });
         } catch (error: any) {
-            console.error(`[COD] Verification failed for delivery ${req.params.deliveryId}:`, error.message);
-            res.status(400).json({
+            const message = error instanceof Error ? error.message : 'COD verification failed';
+            const lowered = message.toLowerCase();
+            const status = lowered.includes('not found')
+                ? 404
+                : lowered.includes('already') || lowered.includes('invalid')
+                    ? 409
+                    : 400;
+            console.error(`[COD] Verification failed for delivery ${req.params.deliveryId}:`, message);
+            res.status(status).json({
                 success: false,
                 error: {
                     code: 'COD_VERIFICATION_FAILED',
-                    message: error.message
+                    message
                 }
             });
         }

@@ -13,14 +13,18 @@ const envSchema = z.object({
     PORT: z.string().transform(Number).default('3004'),
     DATABASE_URL: z.string().url(),
     REDIS_URL: z.string().url().default('redis://localhost:6379'),
-    PESAPAL_SECRET_KEY: z.string().min(8),
-    PESAPAL_WEBHOOK_SECRET: z.string().optional(),
-    PESAPAL_URL: z.string().url().default('https://api.pesapal.com/v3'),
+    PESAPAL_CONSUMER_KEY: z.string().min(8),
+    PESAPAL_CONSUMER_SECRET: z.string().min(8),
+    PESAPAL_IPN_ID: z.string().optional(),
+    PESAPAL_URL: z.string().url().default('https://cybqa.pesapal.com/pesapalv3'),
     BASE_URL: z.string().url().default('http://localhost:3000'),
     JWT_SECRET: z.string().min(32),
 });
 
-const parsedEnv = envSchema.safeParse(process.env);
+const parsedEnv = envSchema.safeParse({
+    ...process.env,
+    PESAPAL_CONSUMER_SECRET: process.env.PESAPAL_CONSUMER_SECRET ?? process.env.PESAPAL_SECRET_KEY,
+});
 
 if (!parsedEnv.success) {
     console.error('❌ Invalid environment variables:', JSON.stringify(parsedEnv.error.format(), null, 2));
@@ -37,8 +41,9 @@ export const config = {
         url: parsedEnv.data.REDIS_URL,
     },
     pesapal: {
-        secretKey: parsedEnv.data.PESAPAL_SECRET_KEY,
-        webhookSecret: parsedEnv.data.PESAPAL_WEBHOOK_SECRET,
+        consumerKey: parsedEnv.data.PESAPAL_CONSUMER_KEY,
+        consumerSecret: parsedEnv.data.PESAPAL_CONSUMER_SECRET,
+        ipnId: parsedEnv.data.PESAPAL_IPN_ID,
         url: parsedEnv.data.PESAPAL_URL,
     },
     app: {

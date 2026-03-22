@@ -261,10 +261,12 @@ export class KnowledgeDiscoveryEngine {
         userContext: UserContext
     ): string[] {
         const reasons: string[] = [];
+        const contentCategory = typeof content.category === 'string' ? content.category.toLowerCase() : '';
+        const contentTitle = typeof content.title === 'string' ? content.title.toLowerCase() : '';
 
         // Business goal alignment
         const matchingGoals = userContext.businessGoals.filter(goal =>
-            content.category.toLowerCase().includes(goal.category.toLowerCase())
+            typeof goal?.category === 'string' && contentCategory.includes(goal.category.toLowerCase())
         );
         if (matchingGoals.length > 0) {
             reasons.push(`Aligns with your ${matchingGoals[0].category} goals`);
@@ -272,17 +274,20 @@ export class KnowledgeDiscoveryEngine {
 
         // Learning objective alignment
         const matchingObjectives = userContext.learningObjectives.filter(obj =>
-            content.title.toLowerCase().includes(obj.topic.toLowerCase()) ||
-            content.category.toLowerCase().includes(obj.topic.toLowerCase())
+            typeof obj?.topic === 'string' && (
+                contentTitle.includes(obj.topic.toLowerCase()) ||
+                contentCategory.includes(obj.topic.toLowerCase())
+            )
         );
         if (matchingObjectives.length > 0) {
             reasons.push(`Part of your ${matchingObjectives[0].topic} learning path`);
         }
 
         // Expertise area match
-        if (userContext.expertiseAreas.some(area =>
-            content.category.toLowerCase().includes(area.toLowerCase())
-        )) {
+        const expertiseAreas = Array.isArray(userContext.expertiseAreas)
+            ? userContext.expertiseAreas.filter((area): area is string => typeof area === 'string')
+            : [];
+        if (expertiseAreas.some(area => contentCategory.includes(area.toLowerCase()))) {
             reasons.push('Matches your expertise areas');
         }
 

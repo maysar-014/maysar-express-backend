@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\specs\openapi\stateful\dependencies\inputs.py
+# hypothesis_version: 6.151.9
+
+['$ref', '/', 'array', 'body', 'content', 'description', 'id', 'items', 'message', 'object', 'post', 'properties', 'put', 'required', 'text', 'type', '{', '}']

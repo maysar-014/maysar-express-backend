@@ -1,0 +1,4 @@
+# file: C:\Users\abdal\AppData\Roaming\Python\Python313\site-packages\schemathesis\cli\ext\groups.py
+# hypothesis_version: 6.151.9
+
+[100, '--exclude-TYPE VALUE', '--force-color', '--include-TYPE VALUE', '--no-color', 'Commands', 'Filtering options', 'Global options', 'NO_COLOR', 'Options', 'choices_repr', 'cls', 'color', 'cyan', 'description', 'green', 'isatty', 'name', 'options', 'order']

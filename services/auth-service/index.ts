@@ -39,6 +39,7 @@ import { healthRoutes as sessionHealthRoutes } from './src/session/api/routes/he
 import { SessionEngine } from './src/domain/engines/session.engine';
 import { PrismaClient } from '@prisma/client';
 import { healthRoutes as twoFactorHealthRoutes } from './src/2fa/api/routes/health.routes';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 const authPrisma = createPrismaClient();
 const authOutboxRepository = new OutboxRepository(authPrisma, 'sharedOutboxEvent');
@@ -104,7 +105,7 @@ export const AuthModule: Module = {
             mainRouter.use('/', authMiddlewareRoutes);
             mainRouter.use('/oauth', googleOAuthRoutes);
             mainRouter.use('/health', authHealthRoutes);
-            mainRouter.use('/system/maintenance', createMaintenanceRoutes(authPrisma));
+            mainRouter.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(authPrisma));
 
             console.log('Consolidated 2FA and Session routes mounted successfully');
 
@@ -129,3 +130,5 @@ export const AuthModule: Module = {
         }
     }
 };
+
+
