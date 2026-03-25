@@ -1,7 +1,11 @@
 name: Deploy Staging
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
     branches:
       - staging
   workflow_dispatch:
@@ -17,109 +21,53 @@ env:
   NODE_VERSION: "20"
 
 jobs:
-  preflight:
-    name: Staging Preflight Checks
+  deploy:
+    name: Deploy to Railway Staging
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     environment: staging
+    if: |
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/staging') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'staging')
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Write staging env file
-        run: printf '%s' "$ENV_FILE" > .env.staging
+      - name: Validate Railway staging secrets
         env:
-          ENV_FILE: ${{ secrets.ENV_FILE }}
-
-      - name: Run staging preflight
-        run: npm run staging:preflight
-
-  deploy:
-    name: Deploy to Staging Server
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    needs: preflight
-    environment: staging
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Add SSH known host
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT: ${{ secrets.RAILWAY_ENVIRONMENT }}
+          RAILWAY_SERVICE: ${{ secrets.RAILWAY_SERVICE }}
         run: |
           set -euo pipefail
-          : "${SSH_HOST:?SSH_HOST secret is required}"
-          SSH_PORT="${SSH_PORT:-22}"
-          mkdir -p ~/.ssh
-          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
+          : "${RAILWAY_TOKEN:?RAILWAY_TOKEN secret is required}"
+          : "${RAILWAY_PROJECT_ID:?RAILWAY_PROJECT_ID secret is required}"
+          : "${RAILWAY_ENVIRONMENT:?RAILWAY_ENVIRONMENT secret is required}"
+          : "${RAILWAY_SERVICE:?RAILWAY_SERVICE secret is required}"
 
-      - name: Sync project files to staging host
+      - name: Deploy to Railway
         env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT: ${{ secrets.RAILWAY_ENVIRONMENT }}
+          RAILWAY_SERVICE: ${{ secrets.RAILWAY_SERVICE }}
         run: |
           set -euo pipefail
-          : "${SSH_HOST:?SSH_HOST secret is required}"
-          : "${SSH_USER:?SSH_USER secret is required}"
-          : "${DEPLOY_PATH:?DEPLOY_PATH secret is required}"
-          SSH_PORT="${SSH_PORT:-22}"
-
-          rsync -az \
-            --exclude ".git/" \
-            --exclude ".github/" \
-            --exclude "node_modules/" \
-            --exclude "coverage/" \
-            --exclude "reports/" \
-            --exclude "logs/" \
-            --exclude "uploads/" \
-            --exclude ".env" \
-            --exclude ".env.*" \
-            -e "ssh -p ${SSH_PORT}" \
-            ./ "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/"
-
-      - name: Deploy staging stack
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          ENV_FILE: ${{ secrets.ENV_FILE }}
-        run: |
-          set -euo pipefail
-          : "${SSH_HOST:?SSH_HOST secret is required}"
-          : "${SSH_USER:?SSH_USER secret is required}"
-          : "${DEPLOY_PATH:?DEPLOY_PATH secret is required}"
-          : "${ENV_FILE:?ENV_FILE secret is required}"
-          SSH_PORT="${SSH_PORT:-22}"
-
-          ENV_FILE_B64="$(printf '%s' "$ENV_FILE" | base64 -w0)"
-
-          ssh -p "$SSH_PORT" "${SSH_USER}@${SSH_HOST}" \
-            "set -euo pipefail;
-             mkdir -p '$DEPLOY_PATH';
-             printf '%s' '$ENV_FILE_B64' | base64 -d > '$DEPLOY_PATH/.env.staging';
-             cd '$DEPLOY_PATH';
-             bash scripts/deploy/remote-compose-deploy.sh staging"
+          npx --yes @railway/cli@latest up --ci \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT" \
+            --service "$RAILWAY_SERVICE"
 
       - name: Verify staging health
         env:
