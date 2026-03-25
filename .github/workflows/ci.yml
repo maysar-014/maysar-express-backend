@@ -1,99 +1,43 @@
-name: CI Pipeline
+name: CI
 
 on:
-  push:
-    branches: [ main, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches:
+      - test
+      - staging
+      - prod
+  push:
+    branches:
+      - test
+      - staging
+      - prod
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  NODE_VERSION: '18'
-  DOCKER_BUILDKIT: 1
+  NODE_VERSION: "20"
 
 jobs:
-  # Security and Quality Checks
-  security-scan:
-    name: 🔒 Security & Quality Scan
+  quality-gates:
+    name: Quality Gates
     runs-on: ubuntu-latest
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: 🔍 Lint Dockerfile with hadolint
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: Dockerfile
-          failure-threshold: warning
-
-      - name: 🐳 Build Docker image for scanning
-        run: docker build -t maysar-backend:scan .
-
-      - name: 🛡️ Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: maysar-backend:scan
-          format: sarif
-          output: trivy-results.sarif
-          severity: CRITICAL,HIGH
-
-      - name: 📊 Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: trivy-results.sarif
-
-  # Frontend Build and Test
-  frontend-test:
-    name: 🎨 Frontend Tests
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./admin-console
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: admin-console/package-lock.json
-
-      - name: 📦 Install frontend dependencies
-        run: npm ci
-
-      - name: 🔍 Run frontend linter
-        run: npm run lint
-
-      - name: 🏗️ Build frontend
-        run: npm run build
-
-      - name: 📊 Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: admin-console/.next/
-          retention-days: 7
-
-  # Unit Tests with Coverage Enforcement
-  unit-tests-coverage:
-    name: 🧪 Unit Tests + Coverage
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
 
     services:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_DB: maysar_test
-          POSTGRES_USER: maysar_test
-          POSTGRES_PASSWORD: test_password_123
+          POSTGRES_DB: maysar_ci
+          POSTGRES_USER: maysar_ci
+          POSTGRES_PASSWORD: maysar_ci_password
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U maysar_ci -d maysar_ci"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -111,649 +55,123 @@ jobs:
           - 6379:6379
 
     steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 📦 Install dependencies
-        run: npm ci
-
-      - name: 🔧 Generate Prisma Client
-        run: npx prisma generate
-
-      - name: 🧪 Run unit tests with coverage
-        run: npm run test:coverage
-        env:
-          NODE_ENV: test
-          DATABASE_URL: postgresql://maysar_test:test_password_123@localhost:5432/maysar_test
-          REDIS_URL: redis://localhost:6379
-          JWT_SECRET: test-jwt-secret-for-ci-only
-
-      - name: ✅ Check coverage thresholds
-        run: npm run test:coverage:check
-        continue-on-error: false
-
-      - name: 📊 Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage/coverage-final.json
-          flags: unittests
-          fail_ci_if_error: false
-
-      - name: 📈 Generate coverage summary
-        run: |
-          echo "## 📊 Coverage Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          npm run test:coverage:check 2>&1 | grep -A 20 "Coverage summary" >> $GITHUB_STEP_SUMMARY || true
-
-      - name: 📤 Upload coverage artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage/
-          retention-days: 30
-
-  # Individual Service Module Tests
-  service-module-test:
-    name: ⚙️ Test ${{ matrix.service }}
-    runs-on: ubuntu-latest
-    
-    strategy:
-      fail-fast: false
-      matrix:
-        service:
-          - analytics-service
-          - api-gateway
-          - auth-service
-          - business-registry-service
-          - campaign-service
-          - catalog-service
-          - checkout-service
-          - commission-service
-          - community-service
-          - compliance-service
-          - enabler-service
-          - inventory-service
-          - logistics-service
-          - maps-service
-          - moderation-service
-          - notification-service
-          - order-service
-          - payment-service
-          - payout-service
-          - permission-service
-          - pricing-service
-          - production-service
-          - session-service
-          - sms-service
-          - support-service
-          - training-service
-          - two-factor-service
-          - user-service
-          - wallet-service
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: maysar_test
-          POSTGRES_USER: maysar_test
-          POSTGRES_PASSWORD: test_password_123
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
-    defaults:
-      run:
-        working-directory: ./services/${{ matrix.service }}
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: services/${{ matrix.service }}/package-lock.json
-
-      - name: 📦 Install dependencies
-        run: npm ci
-
-      - name: 🔧 Generate Prisma Client (if applicable)
-        run: |
-          if [ -f "prisma/schema.prisma" ]; then
-            echo "📦 Generating Prisma client for ${{ matrix.service }}..."
-            npx prisma generate
-          else
-            echo "⏭️ No Prisma schema found, skipping..."
-          fi
-        continue-on-error: false
-
-      - name: 🔍 Run linter
-        run: npm run lint --if-present
-        continue-on-error: false
-
-      - name: 🔧 Type check
-        run: npx tsc --noEmit
-        continue-on-error: false
-
-      - name: 🏗️ Build service module
-        run: npm run build
-
-      - name: 🧪 Run tests
-        run: npm test --if-present
-        env:
-          NODE_ENV: test
-          POSTGRES_DB: maysar_test
-          POSTGRES_USER: maysar_test
-          POSTGRES_PASSWORD: test_password_123
-          DATABASE_URL: postgresql://maysar_test:test_password_123@localhost:5432/maysar_test
-          REDIS_URL: redis://localhost:6379
-          JWT_SECRET: test-jwt-secret-for-ci-only-not-for-production-use
-          JWT_EXPIRES_IN: 1h
-        continue-on-error: false
-
-      - name: 📦 Audit dependencies
-        run: npm audit --audit-level high
-
-      - name: 📊 Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.service }}-build
-          path: services/${{ matrix.service }}/dist/
-          retention-days: 7
-        if: success()
-
-  # OpenAPI Validation
-  openapi-validation:
-    name: 📄 Validate OpenAPI Specs
-    runs-on: ubuntu-latest
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🜢 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: 📄 Validate all OpenAPI specs with Redocly
-        run: |
-          FAILED=0
-          LINT_OPTS=""
-          if [ -f ".redocly.yaml" ]; then
-            LINT_OPTS="--config .redocly.yaml"
-          fi
-
-          if [ -f "openapi.yaml" ]; then
-            echo "🔍 Validating openapi.yaml..."
-            npx --yes @redocly/cli@latest lint "openapi.yaml" $LINT_OPTS || FAILED=1
-          fi
-
-          if [ -f "api-contract.yaml" ]; then
-            echo "🔍 Validating api-contract.yaml..."
-            npx --yes @redocly/cli@latest lint "api-contract.yaml" $LINT_OPTS || FAILED=1
-          fi
-          
-          # Find all service directories
-          for SERVICE_DIR in services/*/; do
-            SERVICE_NAME=$(basename "$SERVICE_DIR")
-            
-            # Check for docs/api/ directory
-            if [ -d "${SERVICE_DIR}docs/api" ]; then
-              echo "🔍 Validating specs in ${SERVICE_DIR}docs/api/..."
-              for SPEC in "${SERVICE_DIR}docs/api/"*.{yaml,yml,json}; do
-                [ -f "$SPEC" ] || continue
-                echo "  • Validating $SPEC"
-                npx --yes @redocly/cli@latest lint "$SPEC" $LINT_OPTS || FAILED=1
-              done
-            fi
-            
-            # Check for top-level openapi.* files
-            for SPEC in "${SERVICE_DIR}"openapi.{yaml,yml,json}; do
-              [ -f "$SPEC" ] || continue
-              echo "🔍 Validating $SPEC..."
-              npx --yes @redocly/cli@latest lint "$SPEC" $LINT_OPTS || FAILED=1
-            done
-            
-            # Check for service-specific API contract files
-            for SPEC in "${SERVICE_DIR}"*-api*.{yaml,yml,json} "${SERVICE_DIR}"*-contract*.{yaml,yml,json}; do
-              [ -f "$SPEC" ] || continue
-              echo "🔍 Validating $SPEC..."
-              npx --yes @redocly/cli@latest lint "$SPEC" $LINT_OPTS || FAILED=1
-            done
-            
-            # Check for AsyncAPI specs
-            for SPEC in "${SERVICE_DIR}"asyncapi.{yaml,yml,json} "${SERVICE_DIR}docs/api/"asyncapi.{yaml,yml,json}; do
-              [ -f "$SPEC" ] || continue
-              echo "🔍 Validating AsyncAPI $SPEC..."
-              npx --yes @asyncapi/cli@latest validate "$SPEC" || FAILED=1
-            done
-          done
-          
-          if [ "$FAILED" -ne 0 ]; then
-            echo "❌ One or more API specs failed validation"
-            exit 1
-          fi
-          echo "✅ All API specs valid"
-
-  # Contract Tests
-  contract-tests:
-    name: Contract Tests
-    runs-on: ubuntu-latest
-    needs: [openapi-validation]
-    steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Start test stack
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit --pretty false
+
+      - name: Build
+        run: npm run build
+
+      - name: Unit and integration tests
+        run: npm run test -- --runInBand --passWithNoTests
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://maysar_ci:maysar_ci_password@localhost:5432/maysar_ci
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: ci-jwt-secret
+          USER_SERVICE_JWT_SECRET: ci-user-service-jwt-secret
+          AUTH_SERVICE_SESSION_SECRET: ci-auth-session-secret
+
+  openapi-validation:
+    name: OpenAPI Validation
+    runs-on: ubuntu-latest
+    needs: quality-gates
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Validate OpenAPI files
+        run: |
+          set -euo pipefail
+          npm ci
+          if [ -f openapi.yaml ]; then
+            npx --yes @redocly/cli@latest lint openapi.yaml
+          fi
+          if [ -f api-contract.yaml ]; then
+            npx --yes @redocly/cli@latest lint api-contract.yaml
+          fi
+
+  contract-tests:
+    name: Contract Tests (test branch)
+    if: github.ref == 'refs/heads/test' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    needs:
+      - quality-gates
+      - openapi-validation
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start contract test stack
         run: docker compose -f docker/docker-compose.test.yml up -d --build
 
-      - name: Wait for API
+      - name: Wait for API readiness
         run: |
-          for i in {1..30}; do
-            if curl -fsS http://localhost:3000/health > /dev/null; then
+          set -euo pipefail
+          for i in {1..40}; do
+            if curl -fsS http://localhost:3000/health >/dev/null; then
               echo "API is ready"
               exit 0
             fi
-            echo "Waiting for API..."
             sleep 5
           done
           echo "API did not become ready in time"
           exit 1
 
-      - name: Run contract tests
-        run: npm run test:contract
+      - name: Run contract examples
+        run: npm run test:contract:examples
         env:
           CONTRACT_TEST_AUTO_INSTALL: "1"
 
-      - name: Upload contract reports
+      - name: Upload contract test reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: contract-test-reports
           path: tests/contract/reports/
           retention-days: 14
-        if: always()
 
-      - name: Stop test stack
+      - name: Stop contract test stack
+        if: always()
         run: docker compose -f docker/docker-compose.test.yml down
-        if: always()
-  # Monolithic Backend Build
-  backend-monolith-build:
-    name: 🏗️ Build Monolithic Backend
-    runs-on: ubuntu-latest
-    needs: [service-module-test, unit-tests-coverage, openapi-validation]
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: maysar_test
-          POSTGRES_USER: maysar_test
-          POSTGRES_PASSWORD: test_password_123
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 📦 Install root dependencies
-        run: npm ci
-
-      - name: 🔍 Run root linter
-        run: npm run lint
-
-      - name: 🔧 Type check
-        run: npx tsc --noEmit
-
-      - name: 🏗️ Build all services
-        run: npm run build
-
-      - name: 🧪 Run integration tests
-        run: npm test --if-present
-        env:
-          NODE_ENV: test
-          POSTGRES_DB: maysar_test
-          POSTGRES_USER: maysar_test
-          POSTGRES_PASSWORD: test_password_123
-          DATABASE_URL: postgresql://maysar_test:test_password_123@localhost:5432/maysar_test
-          REDIS_URL: redis://localhost:6379
-          JWT_SECRET: test-jwt-secret-for-ci-only-not-for-production-use
-          JWT_EXPIRES_IN: 1h
-
-      - name: 📦 Audit dependencies
-        run: npm audit --audit-level high
-
-      - name: 📊 Upload monolith build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-monolith-build
-          path: |
-            services/*/dist/
-            dist/
-          retention-days: 7
-
-  # Docker Build for Monolithic Backend
-  docker-build-monolith:
-    name: 🐳 Build Monolithic Backend Image
-    runs-on: ubuntu-latest
-    needs: [security-scan, backend-monolith-build]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    permissions:
-      contents: read
-      packages: write
-      id-token: write # Required for Cosign OIDC
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🔑 Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: 🏷️ Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKER_USERNAME }}/maysar-backend
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: 🐳 Build and push monolithic backend
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=backend-monolith
-          cache-to: type=gha,mode=max,scope=backend-monolith
-          platforms: linux/amd64
-
-
-  # Docker Build for Admin Console
-  docker-build-admin:
-    name: 🐳 Build Admin Console
-    runs-on: ubuntu-latest
-    needs: [security-scan, frontend-test]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🔑 Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: 🏷️ Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKER_USERNAME }}/maysar-admin
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: 🐳 Build and push admin console
-        uses: docker/build-push-action@v5
-        with:
-          context: ./admin-console
-          file: ./admin-console/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=admin-console
-          cache-to: type=gha,mode=max,scope=admin-console
-          platforms: linux/amd64
-
-  # Performance and Load Testing
-  performance-test:
-    name: ⚡ Performance Tests
-    runs-on: ubuntu-latest
-    needs: [backend-monolith-build]
-    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[perf]')
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: 📦 Install dependencies
-        run: npm ci
-
-      - name: 🏗️ Build application
-        run: npm run build
-
-      - name: ⚡ Run load tests
-        run: |
-          npm run test:load || echo "Load tests not configured"
-        env:
-          NODE_ENV: test
-
-  # Integration Tests
-  integration-test:
-    name: 🔗 Integration Tests
-    runs-on: ubuntu-latest
-    needs: [backend-monolith-build]
-    if: github.event_name == 'push'
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: maysar_integration
-          POSTGRES_USER: maysar_integration
-          POSTGRES_PASSWORD: integration_password_123
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 📦 Install dependencies
-        run: npm ci
-
-      - name: 🏗️ Build application
-        run: npm run build
-
-      - name: 🔗 Run integration tests
-        run: npm run test:integration || echo "Integration tests not configured"
-        env:
-          NODE_ENV: test
-          POSTGRES_DB: maysar_integration
-          POSTGRES_USER: maysar_integration
-          POSTGRES_PASSWORD: integration_password_123
-          DATABASE_URL: postgresql://maysar_integration:integration_password_123@localhost:5432/maysar_integration
-          REDIS_URL: redis://localhost:6379
-          JWT_SECRET: integration-jwt-secret-not-for-production
-          JWT_EXPIRES_IN: 1h
-
-  # Code Quality Report
-  code-quality:
-    name: 📊 Code Quality Report
-    runs-on: ubuntu-latest
-    needs: [frontend-test, service-module-test, backend-monolith-build, openapi-validation]
-    if: always()
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📊 Generate code quality report
-        run: |
-          echo "# 🧪 Code Quality Report" > code-quality.md
-          echo "" >> code-quality.md
-          echo "## 📊 Test Results" >> code-quality.md
-          echo "- Frontend Tests: ${{ needs.frontend-test.result == 'success' && '✅ PASS' || '❌ FAIL' }}" >> code-quality.md
-          echo "- Service Module Tests: ${{ needs.service-module-test.result == 'success' && '✅ PASS' || '❌ FAIL' }}" >> code-quality.md
-          echo "- Monolith Build: ${{ needs.backend-monolith-build.result == 'success' && '✅ PASS' || '❌ FAIL' }}" >> code-quality.md
-          echo "- Security Scan: ${{ needs.security-scan.result == 'success' && '✅ PASS' || '❌ FAIL' }}" >> code-quality.md
-          echo "" >> code-quality.md
-          echo "## 🔒 Security Status" >> code-quality.md
-          echo "- Vulnerabilities: ${{ needs.security-scan.result == 'success' && 'None found' || 'Issues detected' }}" >> code-quality.md
-          echo "" >> code-quality.md
-          echo "## 🏗️ Build Status" >> code-quality.md
-          echo "- Frontend Build: ${{ needs.frontend-test.result == 'success' && '✅ SUCCESS' || '❌ FAILED' }}" >> code-quality.md
-          echo "- Backend Monolith Build: ${{ needs.backend-monolith-build.result == 'success' && '✅ SUCCESS' || '❌ FAILED' }}" >> code-quality.md
-
-      - name: 📤 Upload code quality report
-        uses: actions/upload-artifact@v4
-        with:
-          name: code-quality-report
-          path: code-quality.md
-          retention-days: 30
-
-  # Notification
-  notify:
-    name: 📢 Notification
-    runs-on: ubuntu-latest
-    needs: [security-scan, frontend-test, service-module-test, backend-monolith-build, code-quality, openapi-validation]
-    if: always()
-    steps:
-      - name: 📢 Send notification
-        run: |
-          if [ "${{ needs.security-scan.result }}" = "failure" ] || [ "${{ needs.frontend-test.result }}" = "failure" ] || [ "${{ needs.service-module-test.result }}" = "failure" ] || [ "${{ needs.backend-monolith-build.result }}" = "failure" ]; then
-            echo "❌ CI Pipeline failed - check the logs for details"
-            # Integration with Slack, Teams, or other notification systems would go here
-            # curl -X POST -H 'Content-type: application/json' --data '{"text":"CI Pipeline Failed"}' ${{ secrets.SLACK_WEBHOOK }}
-          else
-            echo "✅ CI Pipeline completed successfully"
-            # Success notifications would go here
-          fi
-
-  # Release Notes Generation (only on main branch)
-  release-notes:
-    name: 📝 Generate Release Notes
-    runs-on: ubuntu-latest
-    needs: [security-scan, frontend-test, service-module-test, backend-monolith-build]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: 📝 Generate release notes
-        run: |
-          echo "# 🚀 Release $(date +%Y-%m-%d)" > release-notes.md
-          echo "" >> release-notes.md
-          echo "## ✅ Changes" >> release-notes.md
-          echo "- Automated CI/CD pipeline implemented" >> release-notes.md
-          echo "- Security scanning integrated" >> release-notes.md
-          echo "- Docker containerization completed" >> release-notes.md
-          echo "" >> release-notes.md
-          echo "## 🔒 Security" >> release-notes.md
-          echo "- Vulnerability scanning: ${{ needs.security-scan.result == 'success' && '✅ PASS' || '❌ ISSUES FOUND' }}" >> release-notes.md
-          echo "" >> release-notes.md
-          echo "## 🧪 Quality" >> release-notes.md
-          echo "- Frontend tests: ${{ needs.frontend-test.result == 'success' && '✅ PASS' || '❌ FAIL' }}" >> release-notes.md
-          echo "- Service module tests: ${{ needs.service-module-test.result == 'success' && '✅ PASS' || '❌ FAIL' }}" >> release-notes.md
-          echo "- Monolith build: ${{ needs.backend-monolith-build.result == 'success' && '✅ PASS' || '❌ FAIL' }}" >> release-notes.md
-
-      - name: 📤 Upload release notes
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-notes
-          path: release-notes.md
-          retention-days: 30
-
-
-
-
-

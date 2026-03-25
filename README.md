@@ -142,6 +142,7 @@ npm run staging:up                   # Start staging environment via Docker Comp
 | Document | Description |
 |----------|-------------|
 | [docs/README.md](docs/README.md) | Central documentation index |
+| [docs/github-actions-cicd.md](docs/github-actions-cicd.md) | Branching and CI/CD deployment runbook for test, staging, and prod |
 | [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) | Architecture, getting started, adding modules |
 | [docs/MODELING_QUICK_START.md](docs/MODELING_QUICK_START.md) | How to create Mermaid diagrams |
 | [docs/DIAGRAM_MAINTENANCE_GUIDE.md](docs/DIAGRAM_MAINTENANCE_GUIDE.md) | Diagram update workflow |

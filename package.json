@@ -24,6 +24,7 @@
     "lockfile:scrub-funding": "node scripts/scrub-lockfile-funding.js",
     "postinstall": "npm run lockfile:scrub-funding",
     "staging:preflight": "node scripts/staging/preflight-env.js .env.staging",
+    "production:preflight": "node scripts/production/preflight-env.js .env.production",
     "staging:up": "npm run staging:preflight && docker compose --env-file .env.staging -f docker-compose.yml -f docker-compose.staging.yml up -d --build",
     "staging:down": "docker compose --env-file .env.staging -f docker-compose.yml -f docker-compose.staging.yml down",
     "staging:logs": "docker compose --env-file .env.staging -f docker-compose.yml -f docker-compose.staging.yml logs -f --tail=200",
@@ -284,7 +285,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/AbdallahRahams/maysar-express-backend.git"
+    "url": "https://github.com/maysar-014/maysar-express-backend.git"
   },
   "keywords": [
     "e-commerce",

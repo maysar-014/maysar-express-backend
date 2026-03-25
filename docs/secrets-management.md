@@ -31,11 +31,13 @@ This document defines how secrets are classified, stored, and injected across al
 | `METRICS_ENABLED`             | Enable Prometheus metrics        | `[ENV VAR]`                   | Application runtime            |
 | `SERVICE_NAME`                | Service identifier               | `[ENV VAR]`                   | Application runtime            |
 | `SERVICE_VERSION`             | Application version              | `[ENV VAR]`                   | Application runtime            |
-| `DOCKER_USERNAME`             | Docker Hub username              | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml`     |
-| `OCI_USER_OCID`               | OCI user identifier              | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml`     |
-| `OCI_FINGERPRINT`             | OCI API key fingerprint          | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml`     |
-| `OCI_TENANCY_OCID`            | OCI tenancy identifier           | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml`     |
-| `OCI_PRIVATE_KEY`             | OCI API private key              | `[SECRETS MANAGER - CI only]` | `.github/workflows/ci.yml`     |
+| `SSH_HOST`                    | Deployment host/IP               | `[SECRETS MANAGER - CI/CD]`   | `deploy-staging.yml`, `deploy-production.yml` |
+| `SSH_PORT`                    | Deployment SSH port              | `[ENV VAR / SECRET]`          | `deploy-staging.yml`, `deploy-production.yml` |
+| `SSH_USER`                    | Deployment SSH user              | `[SECRETS MANAGER - CI/CD]`   | `deploy-staging.yml`, `deploy-production.yml` |
+| `SSH_PRIVATE_KEY`             | Deployment private key           | `[SECRETS MANAGER - CI/CD]`   | `deploy-staging.yml`, `deploy-production.yml` |
+| `DEPLOY_PATH`                 | Deployment target directory      | `[ENV VAR / SECRET]`          | `deploy-staging.yml`, `deploy-production.yml` |
+| `ENV_FILE`                    | Full environment file content    | `[SECRETS MANAGER - CI/CD]`   | `deploy-staging.yml`, `deploy-production.yml` |
+| `HEALTHCHECK_URL`             | Post-deploy health endpoint      | `[ENV VAR / SECRET]`          | `deploy-staging.yml`, `deploy-production.yml` |
 
 ---
 
@@ -118,8 +120,13 @@ Add these in **GitHub â†’ Settings â†’ Secrets and Variables â†’ 
 
 | Secret Name        | Description                      | Used In                                       |
 | ------------------ | -------------------------------- | --------------------------------------------- |
-| `DOCKER_USERNAME` | Docker Hub username | `docker-build-monolith`, `docker-build-admin` |
-| `DOCKER_PASSWORD` | Docker Hub password | `docker-build-monolith`, `docker-build-admin` |
+| `SSH_HOST` | Deployment server host/IP | `deploy-staging.yml`, `deploy-production.yml` |
+| `SSH_PORT` | Deployment SSH port (optional, defaults to 22) | `deploy-staging.yml`, `deploy-production.yml` |
+| `SSH_USER` | SSH login user | `deploy-staging.yml`, `deploy-production.yml` |
+| `SSH_PRIVATE_KEY` | Private SSH key used by GitHub Actions | `deploy-staging.yml`, `deploy-production.yml` |
+| `DEPLOY_PATH` | Absolute path where project is deployed on host | `deploy-staging.yml`, `deploy-production.yml` |
+| `ENV_FILE` | Full env file content for target environment | `deploy-staging.yml`, `deploy-production.yml` |
+| `HEALTHCHECK_URL` | Optional post-deploy health endpoint | `deploy-staging.yml`, `deploy-production.yml` |
 
 ### Workflow References
 

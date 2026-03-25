@@ -36,6 +36,7 @@ Central navigation for all Maysar platform documentation.
 
 - [Docker Orchestration](docker-orchestration.md)
 - [Staging Environment](staging-environment.md)
+- [GitHub Actions CI/CD](github-actions-cicd.md)
 - [Secrets Management](secrets-management.md)
 - [Disaster Recovery](disaster-recovery.md)
 - [Incident Playbook](incident-playbook.md)
