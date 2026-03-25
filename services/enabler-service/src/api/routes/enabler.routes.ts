@@ -3,6 +3,9 @@ import Joi from 'joi';
 import { EnablerController } from '../controllers/enabler.controller';
 import { ProductListingController } from '../controllers/product-listing.controller';
 import { EnablerOrderController } from '../controllers/enabler-order.controller';
+import { EnablerEarningsController } from '../controllers/enabler-earnings.controller';
+import { PromotionJobController } from '../controllers/promotion-job.controller';
+import { ReferralController } from '../controllers/referral.controller';
 import { authorizeEnabler } from '../middleware/enabler-authorization.middleware';
 import { requireAuth } from '@shared/middleware/auth-context.middleware';
 import { asyncHandler } from '@shared/middleware/async-handler';
@@ -14,13 +17,26 @@ import { PrismaEnablerRepository } from '../../infrastructure/repositories/prism
 import { PrismaProductListingRepository } from '../../infrastructure/repositories/prisma-product-listing.repository';
 import { PrismaEnablerOrderRepository } from '../../infrastructure/repositories/prisma-enabler-order.repository';
 import { PrismaEnablerAnalyticsRepository } from '../../infrastructure/repositories/prisma-enabler-analytics.repository';
+import { PrismaEnablerCommissionRepository } from '../../infrastructure/repositories/prisma-enabler-commission.repository';
+import { PrismaEnablerPromotionJobAssignmentRepository } from '../../infrastructure/repositories/prisma-enabler-promotion-job-assignment.repository';
 import { PrismaEnablerPolicyRepository } from '../../infrastructure/repositories/prisma-enabler-policy.repository';
 import { EnablerEventPublisher } from '../../infrastructure/messaging/enabler-event-publisher';
+import { PrismaPromotionJobRepository } from '../../infrastructure/repositories/prisma-promotion-job.repository';
 import { RegisterEnablerUseCase } from '../../application/use-cases/register-enabler.use-case';
 import { ApproveEnablerUseCase } from '../../application/use-cases/approve-enabler.use-case';
 import { ListProductUseCase } from '../../application/use-cases/list-product.use-case';
 import { FacilitateOrderUseCase } from '../../application/use-cases/facilitate-order.use-case';
 import { CalculateEnablerCommissionUseCase } from '../../application/use-cases/calculate-enabler-commission.use-case';
+import { AcceptPromotionJobUseCase } from '../../application/use-cases/accept-promotion-job.use-case';
+import { GetEnablerEarningsLedgerUseCase } from '../../application/use-cases/get-enabler-earnings-ledger.use-case';
+import { GetEnablerEarningsSummaryUseCase } from '../../application/use-cases/get-enabler-earnings-summary.use-case';
+import { GenerateEnablerReferralLinkUseCase } from '../../application/use-cases/generate-enabler-referral-link.use-case';
+import { GetEnablerReferralLinkUseCase } from '../../application/use-cases/get-enabler-referral-link.use-case';
+import { ListPromotionJobsUseCase } from '../../application/use-cases/list-promotion-jobs.use-case';
+import { TrackEnablerReferralEventUseCase } from '../../application/use-cases/track-enabler-referral-event.use-case';
+import { earningsQuerySchema } from '../validators/earnings.validator';
+import { acceptPromotionJobBodySchema, promotionJobsQuerySchema } from '../validators/promotion-job.validator';
+import { generateReferralBodySchema, referralQuerySchema, trackReferralEventBodySchema } from '../validators/referral.validator';
 
 const router = Router();
 router.use(requireAuth);
@@ -35,13 +51,23 @@ const enablerIdParamsSchema = Joi.object({
   enablerId: systemIdSchema.required(),
 }).unknown(false);
 
+const enablerOrderCommissionParamsSchema = Joi.object({
+  enablerId: systemIdSchema.required(),
+  orderId: systemIdSchema.required(),
+}).unknown(false);
+
+const promotionJobParamsSchema = Joi.object({
+  enablerId: systemIdSchema.required(),
+  jobId: systemIdSchema.required(),
+}).unknown(false);
+
 const idParamsSchema = Joi.object({
   id: systemIdSchema.required(),
 }).unknown(false);
 
 const registerBodySchema = Joi.object({
   userId: contractAwareUserIdSchema.required(),
-  businessName: Joi.string().trim().max(255).pattern(NON_BLANK_PATTERN).required(),
+  businessName: Joi.string().max(255).pattern(NON_BLANK_PATTERN).required(),
   contactEmail: Joi.string().email().min(14).max(76).pattern(EXAMPLE_DOT_COM_EMAIL_PATTERN).required(),
   contactPhone: Joi.string().pattern(/^\+255[67]\d{8}$/).optional(),
   businessDescription: Joi.string().max(1000).pattern(NON_BLANK_PATTERN).optional(),
@@ -80,6 +106,9 @@ const enablerRepo = new PrismaEnablerRepository();
 const listingRepo = new PrismaProductListingRepository();
 const orderRepo = new PrismaEnablerOrderRepository();
 const analyticsRepo = new PrismaEnablerAnalyticsRepository();
+const commissionRepo = new PrismaEnablerCommissionRepository();
+const promotionJobRepo = new PrismaPromotionJobRepository();
+const promotionJobAssignmentRepo = new PrismaEnablerPromotionJobAssignmentRepository();
 const policyRepo = new PrismaEnablerPolicyRepository();
 const publisher = new EnablerEventPublisher();
 
@@ -94,11 +123,26 @@ const approveUseCase = new ApproveEnablerUseCase(enablerRepo, publisher);
 const listProductUseCase = new ListProductUseCase(enablerRepo, listingRepo, catalogService, publisher);
 const facilitateOrderUseCase = new FacilitateOrderUseCase(enablerRepo, orderRepo, listingRepo, inventoryService, orderService, publisher);
 const calculateCommissionUseCase = new CalculateEnablerCommissionUseCase(enablerRepo, orderRepo);
+const getEnablerEarningsLedgerUseCase = new GetEnablerEarningsLedgerUseCase(enablerRepo, commissionRepo);
+const getEnablerEarningsSummaryUseCase = new GetEnablerEarningsSummaryUseCase(enablerRepo, commissionRepo);
+const listPromotionJobsUseCase = new ListPromotionJobsUseCase(enablerRepo, promotionJobRepo, promotionJobAssignmentRepo);
+const acceptPromotionJobUseCase = new AcceptPromotionJobUseCase(
+  enablerRepo,
+  promotionJobRepo,
+  promotionJobAssignmentRepo,
+  publisher
+);
+const getReferralLinkUseCase = new GetEnablerReferralLinkUseCase(enablerRepo, analyticsRepo);
+const generateReferralLinkUseCase = new GenerateEnablerReferralLinkUseCase(enablerRepo, analyticsRepo, getReferralLinkUseCase);
+const trackReferralEventUseCase = new TrackEnablerReferralEventUseCase(enablerRepo, analyticsRepo, getReferralLinkUseCase);
 
 // Controllers
 const enablerController = new EnablerController(registerUseCase, approveUseCase, enablerRepo);
 const listingController = new ProductListingController(listProductUseCase, listingRepo);
 const orderController = new EnablerOrderController(facilitateOrderUseCase, calculateCommissionUseCase, orderRepo);
+const earningsController = new EnablerEarningsController(getEnablerEarningsLedgerUseCase, getEnablerEarningsSummaryUseCase);
+const promotionJobController = new PromotionJobController(listPromotionJobsUseCase, acceptPromotionJobUseCase);
+const referralController = new ReferralController(generateReferralLinkUseCase, getReferralLinkUseCase, trackReferralEventUseCase);
 
 // Routes
 router.post(
@@ -131,6 +175,45 @@ router.post(
   '/:enablerId/orders',
   validateJoiRequest({ body: enablerOrderBodySchema }),
   asyncHandler((req, res) => orderController.createOrder(req, res))
+);
+router.get(
+  '/:enablerId/earnings/summary',
+  asyncHandler((req, res) => earningsController.getSummary(req, res))
+);
+router.get(
+  '/:enablerId/earnings',
+  validateJoiRequest({ query: earningsQuerySchema }),
+  asyncHandler((req, res) => earningsController.getLedger(req, res))
+);
+router.get(
+  '/:enablerId/promotion-jobs',
+  validateJoiRequest({ query: promotionJobsQuerySchema }),
+  asyncHandler((req, res) => promotionJobController.listJobs(req, res))
+);
+router.post(
+  '/:enablerId/promotion-jobs/:jobId/accept',
+  validateJoiRequest({ params: promotionJobParamsSchema, body: acceptPromotionJobBodySchema }),
+  asyncHandler((req, res) => promotionJobController.acceptJob(req, res))
+);
+router.get(
+  '/:enablerId/referral-link',
+  validateJoiRequest({ query: referralQuerySchema }),
+  asyncHandler((req, res) => referralController.getReferralLink(req, res))
+);
+router.post(
+  '/:enablerId/referral-link',
+  validateJoiRequest({ body: generateReferralBodySchema }),
+  asyncHandler((req, res) => referralController.generateReferralLink(req, res))
+);
+router.post(
+  '/:enablerId/referral-link/events',
+  validateJoiRequest({ body: trackReferralEventBodySchema }),
+  asyncHandler((req, res) => referralController.trackReferralEvent(req, res))
+);
+router.get(
+  '/:enablerId/orders/:orderId/commission',
+  validateJoiRequest({ params: enablerOrderCommissionParamsSchema }),
+  asyncHandler((req, res) => orderController.getCommissionBreakdown(req, res))
 );
 router.get('/:enablerId/orders', asyncHandler((req, res) => orderController.getOrders(req, res)));
 

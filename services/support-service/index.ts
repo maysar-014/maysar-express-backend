@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { Module } from '../../src/core/module.interface';
 import { ticketRouter } from './src/api/routes/ticket.routes';
 import { agentRouter } from './src/api/routes/agent.routes';
+import { disputeRouter } from './src/api/routes/dispute.routes';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { SupportEventSubscriber } from './src/infrastructure/messaging/support-event-subscriber';
 import { container } from './src/infrastructure/container';
@@ -50,6 +51,7 @@ export const SupportModule: Module = {
     routes: (() => {
         const router = Router();
         router.use('/tickets', requireAuth, ticketRouter);
+        router.use('/disputes', requireAuth, disputeRouter);
         router.use('/agents', requireAuth, agentRouter);
         router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
         return router;

@@ -23,6 +23,8 @@ export class Order {
   public totalAmount: Money;
   public totalWeight: number;
   public status: OrderStatus;
+  public cancelReason?: string;
+  public cancelledAt?: Date;
   public paymentMethod: 'cod' | 'card' | 'mobile_money';
   public deliveryAddress: Address;
   public createdAt: Date;
@@ -59,6 +61,8 @@ export class Order {
     this.totalAmount = new Money(data.totalAmount, data.currency || 'TZS');
     this.totalWeight = data.totalWeight;
     this.status = data.status || OrderStatus.PENDING;
+    this.cancelReason = data.cancelReason || data.cancellationReason;
+    if (data.cancelledAt) this.cancelledAt = new Date(data.cancelledAt);
     this.paymentMethod = data.paymentMethod;
     this.deliveryAddress = new Address(
       data.deliveryAddress.street,

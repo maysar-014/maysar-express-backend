@@ -138,7 +138,9 @@ export const isSystemId = (value: string): boolean => {
   return cuidRegex.test(value);
 };
 
-export const registerModelIds = (models: ReadonlyArray<{ name: string; fields?: Array<{ name?: string }> }>): void => {
+export const registerModelIds = (
+  models: ReadonlyArray<{ name: string; fields?: ReadonlyArray<{ name?: string }> }>
+): void => {
   models.forEach(model => {
     const fields = Array.isArray(model.fields) ? model.fields : [];
     const hasIdField = fields.some(field => field?.name === 'id');

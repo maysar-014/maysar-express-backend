@@ -10,6 +10,34 @@ import { CartData } from './cart.repository';
 export class PrismaCartRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
+  async getByUserId(userId: string): Promise<CartData | null> {
+    const cart = await this.prisma.checkout_Cart.findFirst({
+      where: {
+        userId,
+        status: 'active'
+      },
+      orderBy: {
+        updatedAt: 'desc'
+      },
+      include: { items: true }
+    });
+
+    if (!cart) return null;
+
+    return {
+      id: cart.id,
+      userId: cart.userId,
+      items: cart.items.map((item): CartItemVO => ({
+        productId: item.productId,
+        variantId: item.variantId ?? undefined,
+        quantity: item.quantity,
+        priceAtTime: Number(item.priceAtTime)
+      })),
+      createdAt: cart.createdAt,
+      updatedAt: cart.updatedAt
+    };
+  }
+
   async getCart(cartId: string): Promise<CartData | null> {
     const cart = await this.prisma.checkout_Cart.findUnique({
       where: { id: cartId },

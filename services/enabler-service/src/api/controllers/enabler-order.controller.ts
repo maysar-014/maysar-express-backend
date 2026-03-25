@@ -67,7 +67,13 @@ export class EnablerOrderController {
 
     async getCommissionBreakdown(req: Request, res: Response): Promise<void> {
         try {
-            const { orderId } = req.params;
+            const { enablerId, orderId } = req.params;
+            const order = await this.orderRepository.findByOrderId(orderId);
+            if (!order || order.enablerId !== enablerId) {
+                res.status(404).json({ error: 'Order not found' });
+                return;
+            }
+
             const result = await this.commissionUseCase.execute(orderId);
             res.status(200).json(result);
         } catch (error: any) {

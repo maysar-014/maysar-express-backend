@@ -11,6 +11,8 @@ export function createNotificationRoutes(controller: NotificationController): Ro
 
   router.post('/', asyncHandler((req: Request, res: Response) => controller.createNotification(req, res)));
   router.get('/', asyncHandler((req: Request, res: Response) => controller.listNotifications(req, res)));
+  router.get('/unread-count', asyncHandler((req: Request, res: Response) => controller.getUnreadCount(req, res)));
+  router.post('/mark-all-read', asyncHandler((req: Request, res: Response) => controller.markAllRead(req, res)));
   router.post('/bulk', asyncHandler((req: Request, res: Response) => controller.bulkSend(req, res)));
   router.get('/:id', asyncHandler((req: Request, res: Response) => controller.getNotification(req, res)));
   router.patch('/:id/status', asyncHandler((req: Request, res: Response) => controller.updateStatus(req, res)));

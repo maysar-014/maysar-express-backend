@@ -246,6 +246,53 @@ describe('Idempotency Infrastructure', () => {
       expect(secondResponse.status).not.toHaveBeenCalled();
     });
 
+    test('should avoid double-caching when res.json internally delegates to res.send', async () => {
+      const idempotencyKey = 'test-key-json-send';
+      const middleware = idempotencyMiddleware.middleware();
+
+      const request = {
+        method: 'POST',
+        baseUrl: '/api',
+        path: '/orders',
+        headers: { 'idempotency-key': idempotencyKey },
+        body: { sku: 'prod-1' }
+      } as unknown as Request;
+
+      const firstResponse: Partial<Response> & { send: jest.Mock; json: jest.Mock } = {
+        statusCode: 200,
+        status: jest.fn().mockReturnThis(),
+        on: jest.fn(),
+        send: jest.fn().mockReturnThis(),
+        json: jest.fn()
+      };
+      firstResponse.json.mockImplementation(function jsonImplementation(this: any, body: any) {
+        return this.send(JSON.stringify(body));
+      });
+
+      const next = jest.fn();
+      await middleware(request, firstResponse as Response, next);
+      expect(next).toHaveBeenCalledTimes(1);
+
+      const payload = { orderId: 'ord_1', status: 'created' };
+      firstResponse.json(payload);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const secondResponse = {
+        statusCode: 200,
+        json: jest.fn().mockReturnThis(),
+        status: jest.fn().mockReturnThis(),
+        on: jest.fn(),
+        send: jest.fn().mockReturnThis()
+      } as unknown as Response;
+      const nextSecond = jest.fn();
+
+      await middleware(request, secondResponse, nextSecond);
+
+      expect(nextSecond).not.toHaveBeenCalled();
+      expect((secondResponse as any).status).toHaveBeenCalledWith(200);
+      expect((secondResponse as any).json).toHaveBeenCalledWith(payload);
+    });
+
     test('should require idempotency key for non-GET requests', async () => {
       const req = {
         method: 'POST',

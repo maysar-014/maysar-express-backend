@@ -23,7 +23,7 @@ describe('Compliance Service Integration', () => {
 
     const app = createApp(prisma, publisher);
 
-    const response = await request(app).post('/api/compliance/monitor').send({
+    const response = await request(app).post('/monitor').send({
       complianceType: 'kyc',
       entityId: 'entity-1',
       operation: 'verify',

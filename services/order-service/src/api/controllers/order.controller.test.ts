@@ -147,16 +147,73 @@ describe('OrderController', () => {
     const req = {
       params: { id: 'ord-pending' },
       query: {},
+      user: { userId: 'buyer-1', roles: ['buyer'] },
       headers: { 'x-request-id': 'req-5' }
     } as unknown as Request;
     const res = createResponse();
 
-    mockOrderRepository.findById.mockResolvedValue({ id: 'ord-pending', status: 'PENDING' });
+    mockOrderRepository.findById.mockResolvedValue({ id: 'ord-pending', status: 'PENDING', buyerId: 'buyer-1' });
 
     await controller.deleteOrder(req, res);
 
     expect(mockOrderRepository.update).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'ord-pending', status: 'cancelled' })
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('rejects explicit cancel action for confirmed buyer order until seller consents', async () => {
+    const req = {
+      params: { id: 'ord-confirmed' },
+      body: { reason: 'Need to change address' },
+      user: { userId: 'buyer-1', roles: ['buyer'] },
+      headers: { 'x-request-id': 'req-6' }
+    } as unknown as Request;
+    const res = createResponse();
+
+    mockOrderRepository.findById.mockResolvedValue({
+      id: 'ord-confirmed',
+      status: 'CONFIRMED',
+      buyerId: 'buyer-1',
+      sellerId: 'seller-1'
+    });
+
+    await controller.cancelOrder(req, res);
+
+    expect(mockOrderRepository.update).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: 'ORDER_CANNOT_BE_CANCELLED',
+        message: 'Seller consent is required after the order is confirmed'
+      })
+    );
+  });
+
+  it('allows explicit cancel action for confirmed seller-issued cancellation', async () => {
+    const req = {
+      params: { id: 'ord-confirmed' },
+      body: { reason: 'Seller approved cancellation' },
+      user: { userId: 'seller-1', roles: ['seller'] },
+      headers: { 'x-request-id': 'req-7' }
+    } as unknown as Request;
+    const res = createResponse();
+
+    mockOrderRepository.findById.mockResolvedValue({
+      id: 'ord-confirmed',
+      status: 'CONFIRMED',
+      buyerId: 'buyer-1',
+      sellerId: 'seller-1'
+    });
+
+    await controller.cancelOrder(req, res);
+
+    expect(mockOrderRepository.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'ord-confirmed',
+        status: 'cancelled',
+        cancelReason: 'Seller approved cancellation'
+      })
     );
     expect(res.status).toHaveBeenCalledWith(200);
   });

@@ -43,6 +43,8 @@ export class PrismaOrderRepository implements OrderRepository {
           postalCode: order.deliveryAddress.postalCode,
           country: order.deliveryAddress.country
         } as any,
+        cancelledAt: order.cancelledAt,
+        cancellationReason: order.cancelReason,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         items: {
@@ -146,6 +148,8 @@ export class PrismaOrderRepository implements OrderRepository {
           postalCode: order.deliveryAddress.postalCode,
           country: order.deliveryAddress.country
         } as any,
+        cancelledAt: order.cancelledAt,
+        cancellationReason: order.cancelReason,
         updatedAt: new Date()
       };
 
@@ -189,6 +193,8 @@ export class PrismaOrderRepository implements OrderRepository {
       totalAmount: Number(prismaOrder.totalAmount),
       currency: prismaOrder.currency,
       totalWeight: prismaOrder.totalWeight,
+      cancelledAt: prismaOrder.cancelledAt,
+      cancellationReason: prismaOrder.cancellationReason,
       paymentMethod: this.toDomainPaymentMethod(prismaOrder.paymentMethod),
       deliveryAddress: {
         street: deliveryAddress.street,

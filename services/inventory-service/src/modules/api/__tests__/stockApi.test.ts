@@ -2,12 +2,22 @@ import { StockApi } from '../stockApi';
 import { StockManager } from '../../stock/stockManager';
 import { ReservationEngine } from '../../reservation/reservationEngine';
 import { WarehouseManager } from '../../warehouse/warehouseManager';
-import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
 
+jest.mock('@shared-events/eventBus', () => ({
+  eventBus: {
+    emit: jest.fn(),
+    publish: jest.fn(),
+    on: jest.fn()
+  }
+}), { virtual: true });
+
 describe('StockApi', () => {
+  const validVariantId = 'cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+  const validWarehouseId = 'inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+
   let api: StockApi;
-  let mockPrisma: jest.Mocked<PrismaClient>;
+  let mockPrisma: any;
   let mockStockManager: jest.Mocked<StockManager>;
   let mockReservationEngine: jest.Mocked<ReservationEngine>;
   let mockWarehouseManager: jest.Mocked<WarehouseManager>;
@@ -15,13 +25,13 @@ describe('StockApi', () => {
   let mockRes: Partial<Response>;
 
   beforeEach(() => {
-    mockPrisma = { inventoryCount: { create: jest.fn(), update: jest.fn() } } as any;
-    mockStockManager = { getStockLevel: jest.fn(), updateStock: jest.fn() } as any;
+    mockPrisma = { inventoryCount: { create: jest.fn(), update: jest.fn() }, stockItem: { findMany: jest.fn() } } as any;
+    mockStockManager = { getStockLevel: jest.fn(), updateStock: jest.fn(), updateStockConfiguration: jest.fn() } as any;
     mockReservationEngine = { reserveStock: jest.fn(), cancelReservations: jest.fn(), getActiveReservations: jest.fn() } as any;
     mockWarehouseManager = { getActiveWarehouses: jest.fn(), getWarehouseById: jest.fn() } as any;
     api = new StockApi(mockPrisma, mockStockManager, mockReservationEngine, mockWarehouseManager);
 
-    mockReq = { params: {}, query: {}, body: {}, user: { id: 'user-1' } };
+    mockReq = { params: {}, query: {}, body: {}, user: { userId: 'user-1', roles: ['supplier'] } as any };
     mockRes = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() };
   });
 
@@ -87,6 +97,97 @@ describe('StockApi', () => {
       await api.createReservation(mockReq as Request, mockRes as Response);
 
       expect(mockRes.status).toHaveBeenCalledWith(409);
+    });
+  });
+
+  describe('materials endpoints', () => {
+    it('should list materials with analytics metadata', async () => {
+      mockPrisma.stockItem.findMany.mockResolvedValue([
+        {
+          productVariantId: 'var-1',
+          warehouseId: 'wh-1',
+          quantityAvailable: 100,
+          quantityReserved: 10,
+          reorderPoint: 15,
+          maxStock: 250,
+          warehouse: { name: 'Main Warehouse' }
+        }
+      ]);
+
+      await api.listMaterials(mockReq as Request, mockRes as Response);
+
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+        materials: expect.arrayContaining([
+          expect.objectContaining({ variantId: 'var-1', reorderPoint: 15, maxStock: 250 })
+        ]),
+        total: 1
+      }));
+    });
+
+    it('should return material stock detail', async () => {
+      mockReq.params = { variantId: validVariantId };
+      mockPrisma.stockItem.findMany.mockResolvedValue([
+        {
+          productVariantId: validVariantId,
+          warehouseId: validWarehouseId,
+          quantityAvailable: 100,
+          quantityReserved: 10,
+          reorderPoint: 15,
+          maxStock: 250,
+          warehouse: { name: 'Main Warehouse' }
+        }
+      ]);
+
+      await api.getMaterialStock(mockReq as Request, mockRes as Response);
+
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+        variantId: validVariantId,
+        materials: expect.arrayContaining([
+          expect.objectContaining({ warehouseId: validWarehouseId, reorderPoint: 15 })
+        ])
+      }));
+    });
+
+    it('should update material inventory and configuration', async () => {
+      mockReq.params = { variantId: validVariantId, warehouseId: validWarehouseId };
+      mockReq.body = { quantity: 10, operation: 'add', reason: 'Restock', reorderPoint: 15, maxStock: 250 };
+      mockPrisma.stockItem.findMany.mockResolvedValue([
+        {
+          productVariantId: validVariantId,
+          warehouseId: validWarehouseId,
+          quantityAvailable: 110,
+          quantityReserved: 10,
+          reorderPoint: 15,
+          maxStock: 250,
+          warehouse: { name: 'Main Warehouse' }
+        }
+      ]);
+
+      await api.updateMaterialInventory(mockReq as Request, mockRes as Response);
+
+      expect(mockStockManager.updateStock).toHaveBeenCalled();
+      expect(mockStockManager.updateStockConfiguration).toHaveBeenCalledWith(expect.objectContaining({
+        variantId: validVariantId,
+        warehouseId: validWarehouseId,
+        reorderPoint: 15,
+        maxStock: 250
+      }));
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+        variantId: validVariantId,
+        warehouseId: validWarehouseId,
+        reorderPoint: 15,
+        maxStock: 250
+      }));
+    });
+
+    it('should reject null quantity for quantity updates', async () => {
+      mockReq.params = { variantId: validVariantId, warehouseId: validWarehouseId };
+      mockReq.body = { quantity: null, operation: 'add', reason: 'Restock' };
+
+      await api.updateMaterialInventory(mockReq as Request, mockRes as Response);
+
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockStockManager.updateStock).not.toHaveBeenCalled();
     });
   });
 

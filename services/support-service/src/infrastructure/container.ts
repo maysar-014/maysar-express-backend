@@ -35,6 +35,7 @@ import { SupportOutboxRepository } from './messaging/support-outbox.repository';
 // Controllers
 import { TicketController } from '../api/controllers/ticket.controller';
 import { AgentController } from '../api/controllers/agent.controller';
+import { DisputeController } from '../api/controllers/dispute.controller';
 
 const container = new Container();
 
@@ -76,5 +77,6 @@ container.bind<SupportEventSubscriber>(TYPES.SupportEventSubscriber).to(SupportE
 // Controllers
 container.bind<TicketController>(TYPES.TicketController).to(TicketController).inSingletonScope();
 container.bind<AgentController>(TYPES.AgentController).to(AgentController).inSingletonScope();
+container.bind<DisputeController>(TYPES.DisputeController).to(DisputeController).inSingletonScope();
 
 export { container };

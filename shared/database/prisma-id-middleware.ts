@@ -1,7 +1,21 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { getModelPrefix, makeId, registerModelIds, modelSupportsId } from '../ids/id';
 
-registerModelIds(Prisma.dmmf.datamodel.models);
+const prismaNamespace = Prisma as unknown as
+  | {
+      dmmf?: {
+        datamodel?: {
+          models?: ReadonlyArray<{ name: string; fields?: ReadonlyArray<{ name?: string }> }>;
+        };
+      };
+    }
+  | undefined;
+
+const prismaModels = prismaNamespace?.dmmf?.datamodel?.models;
+
+if (Array.isArray(prismaModels)) {
+  registerModelIds(prismaModels);
+}
 
 const ensureId = (modelName: string, data: Record<string, unknown>): void => {
   if (!modelSupportsId(modelName)) return;
@@ -11,6 +25,10 @@ const ensureId = (modelName: string, data: Record<string, unknown>): void => {
 };
 
 export const applyIdMiddleware = (prisma: PrismaClient): PrismaClient => {
+  if (typeof (prisma as PrismaClient & { $use?: unknown }).$use !== 'function') {
+    return prisma;
+  }
+
   prisma.$use(async (params, next) => {
     const modelName = params.model;
     if (!modelName) {

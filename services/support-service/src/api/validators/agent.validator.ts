@@ -9,11 +9,11 @@ const safeVisibleString = z.string().min(1).regex(SAFE_VISIBLE_STRING_PATTERN, {
 export const createAgentSchema = z.object({
     userId: zodId(),
     specializations: z.array(safeVisibleString).optional(),
-    maxConcurrentTickets: z.number().min(1).max(50).optional()
+    maxConcurrentTickets: z.number().int().min(1).max(50).optional()
 });
 
 export const updateAgentSchema = z.object({
     specializations: z.array(safeVisibleString).optional(),
-    maxConcurrentTickets: z.number().min(1).max(50).optional(),
+    maxConcurrentTickets: z.number().int().min(1).max(50).optional(),
     isAvailable: z.boolean().optional()
 });

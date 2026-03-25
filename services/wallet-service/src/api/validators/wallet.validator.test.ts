@@ -20,6 +20,7 @@ describe('wallet validator schemas', () => {
       userId: validUuid,
       amount: 50,
       currency: 'TZS',
+      description: 'purchase',
       reason: 'purchase',
       idempotencyKey: 'idem-2',
       correlationId: validUuid
@@ -41,6 +42,39 @@ describe('wallet validator schemas', () => {
     });
 
     expect(result.error).toBeDefined();
+  });
+
+  it('rejects debit payloads with unsupported currency codes', () => {
+    const result = WalletValidator.debitWallet.validate({
+      userId: validUuid,
+      amount: 50,
+      currency: 'AAA',
+      description: 'purchase',
+      reason: 'purchase',
+      idempotencyKey: 'idem-unsupported-currency',
+      correlationId: validUuid
+    });
+
+    expect(result.error).toBeDefined();
+  });
+
+  it('requires reason for hold release and capture payloads', () => {
+    const release = WalletValidator.releaseHold.validate({
+      userId: validUuid,
+      holdId: validUuid,
+      correlationId: validUuid,
+      idempotencyKey: 'release-1'
+    });
+    const capture = WalletValidator.captureHold.validate({
+      userId: validUuid,
+      holdId: validUuid,
+      amount: 100,
+      correlationId: validUuid,
+      idempotencyKey: 'capture-1'
+    });
+
+    expect(release.error).toBeDefined();
+    expect(capture.error).toBeDefined();
   });
 
   it('rejects top-up payloads with non-visible customer names', () => {

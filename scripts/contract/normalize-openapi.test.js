@@ -130,4 +130,95 @@ describe('normalizeOpenApiDocument', () => {
     expect(doc.paths['/api/logistics/api/v1/couriers/{courierId}'].get.requestBody).toBeUndefined();
     expect(doc.paths['/api/logistics/api/v1/couriers/{courierId}'].post.requestBody).toBeDefined();
   });
+
+  it('marks maintenance cleanup routes as service-key-only security', () => {
+    const doc = {
+      openapi: '3.0.3',
+      info: { title: 'Contract Test', version: '1.0.0' },
+      paths: {
+        '/api/payment/system/maintenance/cleanup/outbox': {
+          post: {
+            requestBody: {
+              required: false,
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                  },
+                },
+              },
+            },
+            responses: {
+              200: { description: 'OK' },
+            },
+          },
+        },
+      },
+    };
+
+    normalizeOpenApiDocument(doc);
+
+    expect(doc.paths['/api/payment/system/maintenance/cleanup/outbox'].post.security).toEqual([
+      { ServiceKey: [] },
+    ]);
+  });
+
+  it('applies parameter overrides to both path-level and operation-level parameters', () => {
+    const doc = {
+      openapi: '3.0.3',
+      info: { title: 'Contract Test', version: '1.0.0' },
+      paths: {
+        '/api/business-registry/{id}/verify': {
+          parameters: [
+            {
+              name: 'id',
+              in: 'path',
+              required: true,
+              schema: { type: 'string' },
+            },
+          ],
+          post: {
+            parameters: [
+              {
+                name: 'id',
+                in: 'path',
+                required: true,
+                schema: { type: 'string' },
+              },
+            ],
+            requestBody: {
+              required: true,
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['verifiedBy', 'documentTypes'],
+                    properties: {
+                      verifiedBy: { type: 'string' },
+                      documentTypes: {
+                        type: 'array',
+                        items: { type: 'string' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            responses: {
+              200: { description: 'OK' },
+            },
+          },
+        },
+      },
+    };
+
+    normalizeOpenApiDocument(doc);
+
+    expect(doc.paths['/api/business-registry/{id}/verify'].parameters[0].schema.enum).toEqual([
+      'biz_01ARZ3NDEKTSV4RRFFQ69G5FAV',
+    ]);
+    expect(doc.paths['/api/business-registry/{id}/verify'].post.parameters[0].schema.enum).toEqual([
+      'biz_01ARZ3NDEKTSV4RRFFQ69G5FAV',
+    ]);
+  });
 });

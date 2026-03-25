@@ -21,6 +21,15 @@ describe('agent.validator', () => {
     ).toThrow();
   });
 
+  it('rejects non-integer maxConcurrentTickets values', () => {
+    expect(() =>
+      createAgentSchema.parse({
+        userId: '550e8400-e29b-41d4-a716-446655440000',
+        maxConcurrentTickets: 1.9
+      })
+    ).toThrow();
+  });
+
   it('accepts partial update-agent payloads with optional fields', () => {
     const parsed = updateAgentSchema.parse({
       isAvailable: true

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Module } from '../../src/core/module.interface';
-import { createCheckoutRoutes } from './src/api/routes/checkout.routes';
+import { createCartRoutes, createCheckoutRoutes } from './src/api/routes/checkout.routes';
 import { healthRoutes } from './src/api/routes/health.routes';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { PrismaCartRepository } from './src/infrastructure/repositories/prisma-cart.repository';
@@ -43,6 +43,21 @@ export const CheckoutModule: Module = {
         router.use('/', createCheckoutRoutes(cartController, checkoutController));
 
         return router;
+    })(),
+    routeAliases: (() => {
+        const cartRepository = new PrismaCartRepository(prisma);
+        const cartController = new CartController(cartRepository);
+        const aliasRouter = Router();
+
+        aliasRouter.use(requireAuth);
+        aliasRouter.use('/', createCartRoutes(cartController));
+
+        return [
+            {
+                path: '/api/cart',
+                router: aliasRouter
+            }
+        ];
     })(),
     shutdown: async () => {
         console.log('Shutting down checkout-service module');

@@ -103,6 +103,13 @@ export const createApp = () => {
             app.use(routePath, module.routes);
             appLogger.info(`Mounted routes for ${module.name} at ${routePath}`);
         }
+
+        if (module.routeAliases?.length) {
+            module.routeAliases.forEach((alias) => {
+                app.use(alias.path, alias.router);
+                appLogger.info(`Mounted alias routes for ${module.name} at ${alias.path}`);
+            });
+        }
     });
 
     // Health Check (Liveness) - Fast, checks if process is running

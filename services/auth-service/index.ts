@@ -40,6 +40,9 @@ import { SessionEngine } from './src/domain/engines/session.engine';
 import { PrismaClient } from '@prisma/client';
 import { healthRoutes as twoFactorHealthRoutes } from './src/2fa/api/routes/health.routes';
 import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
+import { createSwitchRoleRouter } from './src/api/routes/switch-role.routes';
+import { createOtpVerificationRouter } from './src/api/routes/otp-verification.routes';
+import { createRoleRequestRouter } from './src/api/routes/role-request.routes';
 
 const authPrisma = createPrismaClient();
 const authOutboxRepository = new OutboxRepository(authPrisma, 'sharedOutboxEvent');
@@ -99,6 +102,9 @@ export const AuthModule: Module = {
             const sessionEngine = new SessionEngine();
             mainRouter.use('/sessions', createSessionRouter(sessionEngine));
             mainRouter.use('/sessions/health', sessionHealthRoutes);
+            mainRouter.use('/', createSwitchRoleRouter(sessionEngine));
+            mainRouter.use('/', createOtpVerificationRouter(verifyTwoFactorLoginUseCase));
+            mainRouter.use('/', createRoleRequestRouter(authPrisma));
 
             // Additional auth route groups (previously unmounted)
             mainRouter.use('/admin', adminRoutes);

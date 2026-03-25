@@ -710,6 +710,119 @@ paths:
       parameters: []
       security:
         - BearerAuth: []
+    post:
+      tags:
+        - Auth
+      summary: Verify OTP during authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - userId
+                - otp
+              properties:
+                userId:
+                  type: string
+                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                otp:
+                  type: string
+                  pattern: '^\d{6}$'
+            example:
+              userId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              otp: '123456'
+      responses:
+        '200':
+          description: OTP verified
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Invalid OTP
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters: []
+    parameters: []
+  /api/auth/verify-otp:
+    post:
+      tags:
+        - Auth
+      summary: Verify OTP during authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - userId
+                - otp
+              properties:
+                userId:
+                  type: string
+                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                otp:
+                  type: string
+                  pattern: '^\d{6}$'
+            example:
+              userId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              otp: '123456'
+      responses:
+        '200':
+          description: OTP verified
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Invalid OTP
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      parameters: []
+      security: []
     parameters: []
   /api/auth/forgot-password:
     post:
@@ -7819,6 +7932,83 @@ paths:
         schema:
           type: string
         example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/order/orders/{id}/cancel':
+    post:
+      tags:
+        - Orders
+      summary: Cancel order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                reason:
+                  type: string
+                  minLength: 1
+            example:
+              reason: Changed my mind
+      responses:
+        '200':
+          description: Order cancelled
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Order cannot be cancelled
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
   /api/order/orders/search:
     get:
       tags:
@@ -8096,6 +8286,583 @@ paths:
         schema:
           type: string
         example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  /api/cart/current:
+    get:
+      tags:
+        - Checkout
+      summary: Get current buyer cart
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - id
+                      - userId
+                      - items
+                      - totalItems
+                      - subtotal
+                    properties:
+                      id:
+                        type: string
+                      userId:
+                        type: string
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - productId
+                            - quantity
+                            - priceAtTime
+                          properties:
+                            productId:
+                              type: string
+                            variantId:
+                              type: string
+                              nullable: true
+                            quantity:
+                              type: integer
+                              minimum: 1
+                            priceAtTime:
+                              type: number
+                              minimum: 0
+                      totalItems:
+                        type: integer
+                        minimum: 0
+                      subtotal:
+                        type: number
+                        minimum: 0
+                  timestamp:
+                    type: string
+                    format: date-time
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters: []
+    parameters: []
+  '/api/cart/{cartId}':
+    get:
+      tags:
+        - Checkout
+      summary: Get buyer cart
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - id
+                      - userId
+                      - items
+                      - totalItems
+                      - subtotal
+                    properties:
+                      id:
+                        type: string
+                      userId:
+                        type: string
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - productId
+                            - quantity
+                            - priceAtTime
+                          properties:
+                            productId:
+                              type: string
+                            variantId:
+                              type: string
+                              nullable: true
+                            quantity:
+                              type: integer
+                              minimum: 1
+                            priceAtTime:
+                              type: number
+                              minimum: 0
+                      totalItems:
+                        type: integer
+                        minimum: 0
+                      subtotal:
+                        type: number
+                        minimum: 0
+                  timestamp:
+                    type: string
+                    format: date-time
+            text/plain:
+              schema: {}
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Cart not found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV
+    delete:
+      tags:
+        - Checkout
+      summary: Clear buyer cart
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                userId:
+                  type: string
+                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            example:
+              userId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            x-codex-generated-example: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV
+    parameters:
+      - name: cartId
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  /api/cart/items:
+    post:
+      tags:
+        - Checkout
+      summary: Add item to buyer cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - cartId
+                - userId
+                - productId
+                - quantity
+                - priceAtTime
+              properties:
+                cartId:
+                  type: string
+                  minLength: 1
+                userId:
+                  type: string
+                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                productId:
+                  type: string
+                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                variantId:
+                  type: string
+                  minLength: 1
+                quantity:
+                  type: integer
+                  minimum: 1
+                priceAtTime:
+                  type: number
+                  minimum: 0
+            example:
+              cartId: chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              userId: usr_test_0001
+              productId: cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              variantId: cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              quantity: 1
+              priceAtTime: 1000
+            x-codex-generated-example: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters: []
+    patch:
+      tags:
+        - Checkout
+      summary: Update buyer cart item quantity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - cartId
+                - productId
+                - quantity
+              properties:
+                cartId:
+                  type: string
+                  minLength: 1
+                userId:
+                  type: string
+                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                productId:
+                  type: string
+                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                variantId:
+                  type: string
+                  minLength: 1
+                quantity:
+                  type: integer
+                  minimum: 1
+            example:
+              cartId: chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              userId: usr_test_0001
+              productId: cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              variantId: cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              quantity: 2
+            x-codex-generated-example: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Cart not found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters: []
+    delete:
+      tags:
+        - Checkout
+      summary: Remove item from buyer cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - cartId
+                - productId
+              properties:
+                cartId:
+                  type: string
+                  minLength: 1
+                userId:
+                  type: string
+                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                productId:
+                  type: string
+                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                variantId:
+                  type: string
+                  minLength: 1
+            example:
+              cartId: chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              userId: usr_test_0001
+              productId: cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              variantId: cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            x-codex-generated-example: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Cart not found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters: []
+    parameters: []
+  /api/cart/merge:
+    post:
+      tags:
+        - Checkout
+      summary: Merge guest cart into buyer cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - sourceCartId
+                - targetCartId
+                - userId
+              properties:
+                sourceCartId:
+                  type: string
+                  minLength: 1
+                targetCartId:
+                  type: string
+                  minLength: 1
+                userId:
+                  type: string
+                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            example:
+              sourceCartId: chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAA
+              targetCartId: chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              userId: usr_test_0001
+            x-codex-generated-example: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Cart not found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters: []
+    parameters: []
   /api/checkout/initiate:
     post:
       tags:
@@ -9171,9 +9938,17 @@ paths:
             type: string
             minLength: 1
             example: webhook-contract-001
-          example: example-x-webhook-idempotency-key
+          example: webhook-contract-001
       security: []
-    parameters: []
+    parameters:
+      - name: x-webhook-idempotency-key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          example: webhook-contract-001
+        example: webhook-contract-001
   '/api/wallet/wallets/{userId}':
     get:
       tags:
@@ -9515,6 +10290,10 @@ paths:
           required: true
           schema:
             type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
           example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
       requestBody:
         required: true
@@ -9522,6 +10301,7 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               required:
                 - amount
                 - currency
@@ -9550,24 +10330,28 @@ paths:
                   minLength: 1
                 referenceType:
                   type: string
+                  minLength: 1
                 referenceId:
                   type: string
+                  minLength: 1
                 idempotencyKey:
                   type: string
                   minLength: 1
                 correlationId:
                   type: string
                   format: uuid
+                  pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'
+                  example: e3e70682-c209-4cac-629f-6fbed82c07cd
                 metadata:
                   type: object
-              additionalProperties: false
-              example:
-                amount: 500
-                currency: TZS
-                description: Contract test debit
-                reason: purchase
-                idempotencyKey: debit-001
-                correlationId: e3e70682-c209-4cac-629f-6fbed82c07cd
+            example:
+              amount: 1000
+              currency: TZS
+              description: Contract example
+              reason: Contract example
+              idempotencyKey: example
+              correlationId: e3e70682-c209-4cac-629f-6fbed82c07cd
+            x-codex-generated-example: true
       responses:
         '200':
           description: Success
@@ -9654,6 +10438,10 @@ paths:
         required: true
         schema:
           type: string
+          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          enum:
+            - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
         example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
   '/api/wallet/wallets/{userId}/hold':
     post:
@@ -9827,7 +10615,7 @@ paths:
             enum:
               - wal_hol_01ARZ3NDEKTSV4RRFFQ69G5FAV
             example: wal_hol_01ARZ3NDEKTSV4RRFFQ69G5FAV
-          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: wal_hol_01ARZ3NDEKTSV4RRFFQ69G5FAV
       requestBody:
         required: true
         content:
@@ -9836,15 +10624,18 @@ paths:
               type: object
               additionalProperties: false
               required:
+                - reason
                 - idempotencyKey
                 - correlationId
               properties:
                 reason:
                   type: string
                   minLength: 1
+                  pattern: '^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$'
                 idempotencyKey:
                   type: string
                   minLength: 1
+                  pattern: '^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$'
                 correlationId:
                   type: string
                   format: uuid
@@ -9955,7 +10746,7 @@ paths:
           enum:
             - wal_hol_01ARZ3NDEKTSV4RRFFQ69G5FAV
           example: wal_hol_01ARZ3NDEKTSV4RRFFQ69G5FAV
-        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: wal_hol_01ARZ3NDEKTSV4RRFFQ69G5FAV
   '/api/wallet/wallets/{userId}/hold/{holdId}/capture':
     post:
       tags:
@@ -9981,7 +10772,7 @@ paths:
             enum:
               - wal_hol_01ARZ3NDEKTSV4RRFFQ69G5FAV
             example: wal_hol_01ARZ3NDEKTSV4RRFFQ69G5FAV
-          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: wal_hol_01ARZ3NDEKTSV4RRFFQ69G5FAV
       requestBody:
         required: true
         content:
@@ -9990,6 +10781,7 @@ paths:
               type: object
               additionalProperties: false
               required:
+                - reason
                 - idempotencyKey
                 - correlationId
               properties:
@@ -10000,9 +10792,11 @@ paths:
                 reason:
                   type: string
                   minLength: 1
+                  pattern: '^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$'
                 idempotencyKey:
                   type: string
                   minLength: 1
+                  pattern: '^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$'
                 correlationId:
                   type: string
                   format: uuid
@@ -10114,7 +10908,7 @@ paths:
           enum:
             - wal_hol_01ARZ3NDEKTSV4RRFFQ69G5FAV
           example: wal_hol_01ARZ3NDEKTSV4RRFFQ69G5FAV
-        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: wal_hol_01ARZ3NDEKTSV4RRFFQ69G5FAV
   '/api/wallet/wallets/{userId}/statement':
     get:
       tags:
@@ -10586,13 +11380,13 @@ paths:
                       minimum: 10000
                     currency:
                       type: string
-                      minLength: 3
-                      maxLength: 3
-                      pattern: '^[A-Z]{3}$'
+                      enum:
+                        - TZS
                       example: TZS
                     idempotencyKey:
                       type: string
                       minLength: 1
+                      pattern: '^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$'
                     correlationId:
                       type: string
                       format: uuid
@@ -10615,12 +11409,14 @@ paths:
                         provider:
                           type: string
                           minLength: 1
+                          pattern: '^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$'
                         phoneNumber:
                           type: string
-                          pattern: '^\+?[1-9]\d{1,14}$'
+                          pattern: '^\+255[67]\d{8}$'
                         accountName:
                           type: string
                           minLength: 1
+                          pattern: '^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$'
                 - type: object
                   additionalProperties: false
                   required:
@@ -10636,13 +11432,13 @@ paths:
                       minimum: 10000
                     currency:
                       type: string
-                      minLength: 3
-                      maxLength: 3
-                      pattern: '^[A-Z]{3}$'
+                      enum:
+                        - TZS
                       example: TZS
                     idempotencyKey:
                       type: string
                       minLength: 1
+                      pattern: '^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$'
                     correlationId:
                       type: string
                       format: uuid
@@ -10666,18 +11462,23 @@ paths:
                         bankName:
                           type: string
                           minLength: 1
+                          pattern: '^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$'
                         bankCode:
                           type: string
                           minLength: 1
+                          pattern: '^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$'
                         accountNumber:
                           type: string
                           minLength: 1
+                          pattern: '^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$'
                         accountName:
                           type: string
                           minLength: 1
+                          pattern: '^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$'
                         branchCode:
                           type: string
                           minLength: 1
+                          pattern: '^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$'
                 - type: object
                   additionalProperties: false
                   required:
@@ -10692,13 +11493,13 @@ paths:
                       minimum: 10000
                     currency:
                       type: string
-                      minLength: 3
-                      maxLength: 3
-                      pattern: '^[A-Z]{3}$'
+                      enum:
+                        - TZS
                       example: TZS
                     idempotencyKey:
                       type: string
                       minLength: 1
+                      pattern: '^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$'
                     correlationId:
                       type: string
                       format: uuid
@@ -13254,6 +14055,88 @@ paths:
               schema: {}
         '501':
           description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      parameters: []
+      security:
+        - BearerAuth: []
+    parameters: []
+  /api/notification/notifications/unread-count:
+    get:
+      tags:
+        - Notifications
+      summary: Get unread notification count
+      responses:
+        '200':
+          description: Unread count
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      parameters: []
+      security:
+        - BearerAuth: []
+    parameters: []
+  /api/notification/notifications/mark-all-read:
+    post:
+      tags:
+        - Notifications
+      summary: Mark all notifications as read
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                userId:
+                  type: string
+                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            example:
+              userId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      responses:
+        '200':
+          description: Notifications marked as read
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
           content:
             application/json:
               schema: {}
@@ -20675,6 +21558,735 @@ paths:
       security:
         - BearerAuth: []
     parameters: []
+  /api/support/disputes:
+    post:
+      tags:
+        - Support
+      summary: Create dispute case
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - orderId
+                - reason
+                - description
+              properties:
+                orderId:
+                  type: string
+                  minLength: 1
+                reason:
+                  type: string
+                  minLength: 3
+                description:
+                  type: string
+                  minLength: 10
+                subject:
+                  type: string
+                  minLength: 5
+                priority:
+                  type: string
+                  enum:
+                    - LOW
+                    - MEDIUM
+                    - HIGH
+                    - URGENT
+                attachments:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - fileName
+                      - fileUrl
+                      - fileSize
+                      - mimeType
+                    properties:
+                      fileName:
+                        type: string
+                        minLength: 1
+                      fileUrl:
+                        type: string
+                        format: uri
+                      fileSize:
+                        type: integer
+                        minimum: 1
+                      mimeType:
+                        type: string
+                        minLength: 1
+            example:
+              orderId: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              reason: Wrong item delivered
+              description: The shipment does not match the ordered product and needs review.
+              priority: HIGH
+              attachments:
+                - fileName: evidence-photo.jpg
+                  fileUrl: 'https://example.com/evidence-photo.jpg'
+                  fileSize: 2048
+                  mimeType: image/jpeg
+            x-codex-generated-example: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - id
+                      - orderId
+                      - reason
+                      - description
+                      - status
+                      - priority
+                      - category
+                    properties:
+                      id:
+                        type: string
+                      orderId:
+                        type: string
+                      reason:
+                        type: string
+                      description:
+                        type: string
+                      status:
+                        type: string
+                      priority:
+                        type: string
+                      category:
+                        type: string
+                      attachments:
+                        type: array
+                        items:
+                          type: object
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      parameters: []
+      security:
+        - BearerAuth: []
+    get:
+      tags:
+        - Support
+      summary: List dispute cases
+      responses:
+        '200':
+          description: Disputes list
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - items
+                      - total
+                      - page
+                      - limit
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - OPEN
+              - IN_PROGRESS
+              - RESOLVED
+              - CLOSED
+          example: OPEN
+        - name: priority
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - LOW
+              - MEDIUM
+              - HIGH
+              - URGENT
+          example: HIGH
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          example: 20
+      security:
+        - BearerAuth: []
+    parameters: []
+  '/api/support/disputes/{id}':
+    get:
+      tags:
+        - Support
+      summary: Get dispute case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/support/disputes/{id}/escalate':
+    post:
+      tags:
+        - Support
+      summary: Escalate dispute case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                reason:
+                  type: string
+                  minLength: 3
+                priority:
+                  type: string
+                  enum:
+                    - HIGH
+                    - URGENT
+            example:
+              reason: Needs admin review because delivery evidence is contradictory.
+              priority: URGENT
+            x-codex-generated-example: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/support/disputes/{id}/evidence':
+    post:
+      tags:
+        - Support
+      summary: Attach evidence to dispute case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              anyOf:
+                - required:
+                    - note
+                - required:
+                    - attachments
+              properties:
+                note:
+                  type: string
+                  minLength: 1
+                attachments:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - fileName
+                      - fileUrl
+                      - fileSize
+                      - mimeType
+                    properties:
+                      fileName:
+                        type: string
+                        minLength: 1
+                      fileUrl:
+                        type: string
+                        format: uri
+                      fileSize:
+                        type: integer
+                        minimum: 1
+                      mimeType:
+                        type: string
+                        minLength: 1
+            example:
+              note: Uploading courier handoff photos and buyer chat screenshots.
+              attachments:
+                - fileName: handoff-photo.jpg
+                  fileUrl: 'https://example.com/handoff-photo.jpg'
+                  fileSize: 4096
+                  mimeType: image/jpeg
+            x-codex-generated-example: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - disputeId
+                      - attachments
+                    properties:
+                      disputeId:
+                        type: string
+                      message:
+                        type: object
+                        nullable: true
+                      attachments:
+                        type: array
+                        items:
+                          type: object
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV
   /api/support/tickets:
     post:
       tags:
@@ -22034,6 +23646,1355 @@ paths:
         schema:
           type: string
         example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/enabler/enablers/{enablerId}/referral-link':
+    get:
+      tags:
+        - Enabler
+      summary: Get enabler referral link
+      parameters:
+        - name: includeQR
+          in: query
+          required: false
+          schema:
+            type: boolean
+          example: false
+        - name: enablerId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      responses:
+        '200':
+          description: Enabler referral link
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - success
+                  - data
+                  - meta
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - enablerId
+                      - code
+                      - shortCode
+                      - shareUrl
+                      - shortUrl
+                      - landingPath
+                      - generatedAt
+                      - updatedAt
+                      - tracking
+                    properties:
+                      enablerId:
+                        type: string
+                        pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                        enum:
+                          - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                      code:
+                        type: string
+                        pattern: '^ENB-[A-Z0-9]{6}$'
+                        example: ENB-Q69G5F
+                      shortCode:
+                        type: string
+                        pattern: '^E[A-Z0-9]{6}$'
+                        example: EQ69G5F
+                      shareUrl:
+                        type: string
+                        format: uri
+                        example: 'https://maysar.co.tz/?enablerCode=ENB-Q69G5F'
+                      shortUrl:
+                        type: string
+                        format: uri
+                        example: 'https://maysar.co.tz/?enablerCode=EQ69G5F'
+                      landingPath:
+                        type: string
+                        pattern: '^/[A-Za-z0-9\-._~/?=&%]*$'
+                        example: /
+                      campaignName:
+                        type: string
+                        minLength: 1
+                        pattern: ^(?=.*\S).+$
+                        example: Ramadan Promo
+                      generatedAt:
+                        type: string
+                        format: date-time
+                        example: '2026-03-23T10:00:00.000Z'
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        example: '2026-03-23T10:00:00.000Z'
+                      qrCode:
+                        type: string
+                        pattern: '^data:image/png;base64,.+$'
+                      tracking:
+                        type: object
+                        additionalProperties: false
+                        required:
+                          - clicks
+                          - signUps
+                          - checkouts
+                          - conversions
+                          - ordersAttributed
+                          - revenueAttributed
+                          - commissionEarned
+                          - conversionRate
+                        properties:
+                          clicks:
+                            type: integer
+                            minimum: 0
+                          signUps:
+                            type: integer
+                            minimum: 0
+                          checkouts:
+                            type: integer
+                            minimum: 0
+                          conversions:
+                            type: integer
+                            minimum: 0
+                          ordersAttributed:
+                            type: integer
+                            minimum: 0
+                          revenueAttributed:
+                            type: number
+                            minimum: 0
+                          commissionEarned:
+                            type: number
+                            minimum: 0
+                          conversionRate:
+                            type: number
+                            minimum: 0
+                          lastTrackedAt:
+                            type: string
+                            format: date-time
+                  meta:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - timestamp
+                    properties:
+                      timestamp:
+                        type: string
+                        format: date-time
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+    post:
+      tags:
+        - Enabler
+      summary: Generate enabler referral link
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                includeQR:
+                  type: boolean
+                landingPath:
+                  type: string
+                  pattern: '^/[A-Za-z0-9\-._~/?=&%]*$'
+                campaignName:
+                  type: string
+                  maxLength: 120
+                  minLength: 1
+                  pattern: ^(?=.*\S).+$
+            example:
+              includeQR: false
+              landingPath: /discover
+              campaignName: Ramadan Promo
+            x-codex-generated-example: true
+      responses:
+        '200':
+          description: Enabler referral link generated
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - success
+                  - data
+                  - meta
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - enablerId
+                      - code
+                      - shortCode
+                      - shareUrl
+                      - shortUrl
+                      - landingPath
+                      - generatedAt
+                      - updatedAt
+                      - tracking
+                    properties:
+                      enablerId:
+                        type: string
+                        pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                        enum:
+                          - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                      code:
+                        type: string
+                        pattern: '^ENB-[A-Z0-9]{6}$'
+                        example: ENB-Q69G5F
+                      shortCode:
+                        type: string
+                        pattern: '^E[A-Z0-9]{6}$'
+                        example: EQ69G5F
+                      shareUrl:
+                        type: string
+                        format: uri
+                        example: 'https://maysar.co.tz/discover?enablerCode=ENB-Q69G5F'
+                      shortUrl:
+                        type: string
+                        format: uri
+                        example: 'https://maysar.co.tz/discover?enablerCode=EQ69G5F'
+                      landingPath:
+                        type: string
+                        pattern: '^/[A-Za-z0-9\-._~/?=&%]*$'
+                        example: /discover
+                      campaignName:
+                        type: string
+                        minLength: 1
+                        pattern: ^(?=.*\S).+$
+                        example: Ramadan Promo
+                      generatedAt:
+                        type: string
+                        format: date-time
+                        example: '2026-03-23T10:00:00.000Z'
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        example: '2026-03-23T10:00:00.000Z'
+                      qrCode:
+                        type: string
+                        pattern: '^data:image/png;base64,.+$'
+                      tracking:
+                        type: object
+                        additionalProperties: false
+                        required:
+                          - clicks
+                          - signUps
+                          - checkouts
+                          - conversions
+                          - ordersAttributed
+                          - revenueAttributed
+                          - commissionEarned
+                          - conversionRate
+                        properties:
+                          clicks:
+                            type: integer
+                            minimum: 0
+                          signUps:
+                            type: integer
+                            minimum: 0
+                          checkouts:
+                            type: integer
+                            minimum: 0
+                          conversions:
+                            type: integer
+                            minimum: 0
+                          ordersAttributed:
+                            type: integer
+                            minimum: 0
+                          revenueAttributed:
+                            type: number
+                            minimum: 0
+                          commissionEarned:
+                            type: number
+                            minimum: 0
+                          conversionRate:
+                            type: number
+                            minimum: 0
+                          lastTrackedAt:
+                            type: string
+                            format: date-time
+                  meta:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - timestamp
+                    properties:
+                      timestamp:
+                        type: string
+                        format: date-time
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: enablerId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+    parameters:
+      - name: enablerId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          enum:
+            - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/enabler/enablers/{enablerId}/referral-link/events':
+    post:
+      tags:
+        - Enabler
+      summary: Track enabler referral event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - eventType
+              properties:
+                eventType:
+                  type: string
+                  enum:
+                    - click
+                    - signup
+                    - checkout
+                    - conversion
+            example:
+              eventType: click
+            x-codex-generated-example: true
+      responses:
+        '200':
+          description: Enabler referral tracking updated
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - success
+                  - data
+                  - meta
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - enablerId
+                      - code
+                      - shortCode
+                      - shareUrl
+                      - shortUrl
+                      - landingPath
+                      - generatedAt
+                      - updatedAt
+                      - tracking
+                    properties:
+                      enablerId:
+                        type: string
+                        pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                        enum:
+                          - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                      code:
+                        type: string
+                        pattern: '^ENB-[A-Z0-9]{6}$'
+                        example: ENB-Q69G5F
+                      shortCode:
+                        type: string
+                        pattern: '^E[A-Z0-9]{6}$'
+                        example: EQ69G5F
+                      shareUrl:
+                        type: string
+                        format: uri
+                        example: 'https://maysar.co.tz/?enablerCode=ENB-Q69G5F'
+                      shortUrl:
+                        type: string
+                        format: uri
+                        example: 'https://maysar.co.tz/?enablerCode=EQ69G5F'
+                      landingPath:
+                        type: string
+                        pattern: '^/[A-Za-z0-9\-._~/?=&%]*$'
+                        example: /
+                      campaignName:
+                        type: string
+                        minLength: 1
+                        pattern: ^(?=.*\S).+$
+                        example: Ramadan Promo
+                      generatedAt:
+                        type: string
+                        format: date-time
+                        example: '2026-03-23T10:00:00.000Z'
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        example: '2026-03-23T10:00:00.000Z'
+                      tracking:
+                        type: object
+                        additionalProperties: false
+                        required:
+                          - clicks
+                          - signUps
+                          - checkouts
+                          - conversions
+                          - ordersAttributed
+                          - revenueAttributed
+                          - commissionEarned
+                          - conversionRate
+                        properties:
+                          clicks:
+                            type: integer
+                            minimum: 0
+                          signUps:
+                            type: integer
+                            minimum: 0
+                          checkouts:
+                            type: integer
+                            minimum: 0
+                          conversions:
+                            type: integer
+                            minimum: 0
+                          ordersAttributed:
+                            type: integer
+                            minimum: 0
+                          revenueAttributed:
+                            type: number
+                            minimum: 0
+                          commissionEarned:
+                            type: number
+                            minimum: 0
+                          conversionRate:
+                            type: number
+                            minimum: 0
+                          lastTrackedAt:
+                            type: string
+                            format: date-time
+                  meta:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - timestamp
+                    properties:
+                      timestamp:
+                        type: string
+                        format: date-time
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: enablerId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+    parameters:
+      - name: enablerId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          enum:
+            - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/enabler/enablers/{enablerId}/promotion-jobs':
+    get:
+      tags:
+        - Enabler
+      summary: List enabler promotion jobs
+      parameters:
+        - name: view
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - available
+              - accepted
+              - all
+          example: available
+        - name: sellerId
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - ACTIVE
+              - SCHEDULED
+          example: ACTIVE
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          example: 20
+        - name: enablerId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      responses:
+        '200':
+          description: Promotion jobs loaded
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - success
+                  - data
+                  - meta
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - items
+                      - pagination
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          additionalProperties: false
+                          required:
+                            - jobId
+                            - campaignId
+                            - title
+                            - sellerId
+                            - type
+                            - status
+                            - startsAt
+                            - timezone
+                            - productIds
+                            - categoryIds
+                            - pricingRuleCount
+                            - channels
+                            - acceptanceStatus
+                          properties:
+                            jobId:
+                              type: string
+                              pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                              enum:
+                                - cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                              example: cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                            campaignId:
+                              type: string
+                              pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                              enum:
+                                - cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                              example: cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                            title:
+                              type: string
+                              minLength: 1
+                              pattern: ^(?=.*\S).+$
+                              example: Ramadan Promotion Boost
+                            description:
+                              type: string
+                              minLength: 1
+                              pattern: ^(?=.*\S).+$
+                              example: Help drive seasonal sales for featured marketplace products.
+                            sellerId:
+                              type: string
+                              pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                              enum:
+                                - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                              example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                            type:
+                              type: string
+                              enum:
+                                - PROMOTION
+                              example: PROMOTION
+                            status:
+                              type: string
+                              enum:
+                                - ACTIVE
+                                - SCHEDULED
+                              example: ACTIVE
+                            startsAt:
+                              type: string
+                              format: date-time
+                              example: '2026-03-20T00:00:00.000Z'
+                            endsAt:
+                              type: string
+                              format: date-time
+                              nullable: true
+                              example: '2026-03-30T00:00:00.000Z'
+                            timezone:
+                              type: string
+                              minLength: 1
+                              pattern: ^(?=.*\S).+$
+                              example: Africa/Dar_es_Salaam
+                            productIds:
+                              type: array
+                              items:
+                                type: string
+                                pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                                enum:
+                                  - cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                                example: cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                            categoryIds:
+                              type: array
+                              items:
+                                type: string
+                                pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                                enum:
+                                  - obj_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                                example: obj_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                            pricingRuleCount:
+                              type: integer
+                              minimum: 0
+                              example: 1
+                            brief:
+                              type: string
+                              minLength: 1
+                              pattern: ^(?=.*\S).+$
+                              example: Promote seasonal marketplace offers across your referral channels.
+                            channels:
+                              type: array
+                              items:
+                                type: string
+                                minLength: 1
+                                pattern: ^(?=.*\S).+$
+                              example:
+                                - marketplace
+                                - social
+                            rewardEstimate:
+                              type: number
+                              minimum: 0
+                              nullable: true
+                              example: 25000
+                            acceptanceStatus:
+                              type: string
+                              enum:
+                                - AVAILABLE
+                                - ACCEPTED
+                              example: AVAILABLE
+                            acceptedAt:
+                              type: string
+                              format: date-time
+                              nullable: true
+                              example: null
+                            acceptedByUserId:
+                              type: string
+                              nullable: true
+                              example: null
+                            note:
+                              type: string
+                              nullable: true
+                              example: null
+                      pagination:
+                        type: object
+                        additionalProperties: false
+                        required:
+                          - page
+                          - limit
+                          - total
+                          - totalPages
+                        properties:
+                          page:
+                            type: integer
+                            minimum: 1
+                            example: 1
+                          limit:
+                            type: integer
+                            minimum: 1
+                            maximum: 100
+                            example: 20
+                          total:
+                            type: integer
+                            minimum: 0
+                            example: 1
+                          totalPages:
+                            type: integer
+                            minimum: 0
+                            example: 1
+                  meta:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - timestamp
+                    properties:
+                      timestamp:
+                        type: string
+                        format: date-time
+              example:
+                success: true
+                data:
+                  items:
+                    - jobId: cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                      campaignId: cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                      title: Ramadan Promotion Boost
+                      description: Help drive seasonal sales for featured marketplace products.
+                      sellerId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                      type: PROMOTION
+                      status: ACTIVE
+                      startsAt: '2026-03-20T00:00:00.000Z'
+                      endsAt: '2026-03-30T00:00:00.000Z'
+                      timezone: Africa/Dar_es_Salaam
+                      productIds:
+                        - cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                      categoryIds:
+                        - obj_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                      pricingRuleCount: 1
+                      brief: Promote seasonal marketplace offers across your referral channels.
+                      channels:
+                        - marketplace
+                        - social
+                      rewardEstimate: 25000
+                      acceptanceStatus: AVAILABLE
+                      acceptedAt: null
+                      acceptedByUserId: null
+                      note: null
+                  pagination:
+                    page: 1
+                    limit: 20
+                    total: 1
+                    totalPages: 1
+                meta:
+                  timestamp: '2026-03-23T10:00:00.000Z'
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+    parameters:
+      - name: enablerId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          enum:
+            - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/enabler/enablers/{enablerId}/promotion-jobs/{jobId}/accept':
+    post:
+      tags:
+        - Enabler
+      summary: Accept promotion job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                note:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                  pattern: '^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$'
+            example:
+              note: Ready to take this campaign
+            x-codex-generated-example: true
+      responses:
+        '201':
+          description: Promotion job accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - success
+                  - data
+                  - meta
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - jobId
+                      - campaignId
+                      - title
+                      - sellerId
+                      - type
+                      - status
+                      - startsAt
+                      - timezone
+                      - productIds
+                      - categoryIds
+                      - pricingRuleCount
+                      - channels
+                      - acceptanceStatus
+                    properties:
+                      jobId:
+                        type: string
+                        pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                        enum:
+                          - cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                        example: cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                      campaignId:
+                        type: string
+                        pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                        enum:
+                          - cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                        example: cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                      title:
+                        type: string
+                        minLength: 1
+                        pattern: ^(?=.*\S).+$
+                        example: Ramadan Promotion Boost
+                      description:
+                        type: string
+                        minLength: 1
+                        pattern: ^(?=.*\S).+$
+                        example: Help drive seasonal sales for featured marketplace products.
+                      sellerId:
+                        type: string
+                        pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                        enum:
+                          - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                      type:
+                        type: string
+                        enum:
+                          - PROMOTION
+                        example: PROMOTION
+                      status:
+                        type: string
+                        enum:
+                          - ACTIVE
+                          - SCHEDULED
+                        example: ACTIVE
+                      startsAt:
+                        type: string
+                        format: date-time
+                        example: '2026-03-20T00:00:00.000Z'
+                      endsAt:
+                        type: string
+                        format: date-time
+                        nullable: true
+                        example: '2026-03-30T00:00:00.000Z'
+                      timezone:
+                        type: string
+                        minLength: 1
+                        pattern: ^(?=.*\S).+$
+                        example: Africa/Dar_es_Salaam
+                      productIds:
+                        type: array
+                        items:
+                          type: string
+                          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                          enum:
+                            - cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                          example: cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                      categoryIds:
+                        type: array
+                        items:
+                          type: string
+                          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                          enum:
+                            - obj_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                          example: obj_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                      pricingRuleCount:
+                        type: integer
+                        minimum: 0
+                        example: 1
+                      brief:
+                        type: string
+                        minLength: 1
+                        pattern: ^(?=.*\S).+$
+                        example: Promote seasonal marketplace offers across your referral channels.
+                      channels:
+                        type: array
+                        items:
+                          type: string
+                          minLength: 1
+                          pattern: ^(?=.*\S).+$
+                        example:
+                          - marketplace
+                          - social
+                      rewardEstimate:
+                        type: number
+                        minimum: 0
+                        nullable: true
+                        example: 25000
+                      acceptanceStatus:
+                        type: string
+                        enum:
+                          - AVAILABLE
+                          - ACCEPTED
+                        example: ACCEPTED
+                      acceptedAt:
+                        type: string
+                        format: date-time
+                        nullable: true
+                        example: '2026-03-23T10:00:00.000Z'
+                      acceptedByUserId:
+                        type: string
+                        nullable: true
+                        example: usr_test_0001
+                      note:
+                        type: string
+                        nullable: true
+                        example: Ready to take this campaign
+                  meta:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - timestamp
+                    properties:
+                      timestamp:
+                        type: string
+                        format: date-time
+              example:
+                success: true
+                data:
+                  jobId: cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                  campaignId: cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                  title: Ramadan Promotion Boost
+                  description: Help drive seasonal sales for featured marketplace products.
+                  sellerId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                  type: PROMOTION
+                  status: ACTIVE
+                  startsAt: '2026-03-20T00:00:00.000Z'
+                  endsAt: '2026-03-30T00:00:00.000Z'
+                  timezone: Africa/Dar_es_Salaam
+                  productIds:
+                    - cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                  categoryIds:
+                    - obj_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                  pricingRuleCount: 1
+                  brief: Promote seasonal marketplace offers across your referral channels.
+                  channels:
+                    - marketplace
+                    - social
+                  rewardEstimate: 25000
+                  acceptanceStatus: ACCEPTED
+                  acceptedAt: '2026-03-23T10:00:00.000Z'
+                  acceptedByUserId: usr_test_0001
+                  note: Ready to take this campaign
+                meta:
+                  timestamp: '2026-03-23T10:00:00.000Z'
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: enablerId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+    parameters:
+      - name: enablerId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          enum:
+            - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      - name: jobId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          enum:
+            - cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: cam_01ARZ3NDEKTSV4RRFFQ69G5FAV
   '/api/enabler/enablers/{enablerId}/listings':
     post:
       tags:
@@ -22485,6 +25446,620 @@ paths:
             - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
           example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
         example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/enabler/enablers/{enablerId}/earnings':
+    get:
+      tags:
+        - Enabler
+      summary: Get enabler earnings ledger
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - pending
+              - approved
+              - paid
+              - on_hold
+              - disputed
+              - forfeited
+          example: paid
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+        - name: enablerId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      responses:
+        '200':
+          description: Enabler earnings ledger
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - success
+                  - data
+                  - meta
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          additionalProperties: false
+                          properties:
+                            id:
+                              type: string
+                              example: enb_com_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                            enablerId:
+                              type: string
+                              example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                            enablerOrderId:
+                              type: string
+                              example: enb_ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                            orderId:
+                              type: string
+                              example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                              nullable: true
+                            commissionId:
+                              type: string
+                              example: com_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                              nullable: true
+                            status:
+                              type: string
+                              enum:
+                                - pending
+                                - approved
+                                - paid
+                                - on_hold
+                                - disputed
+                                - forfeited
+                            baseCommission:
+                              type: number
+                              minimum: 0
+                            tierBonus:
+                              type: number
+                              minimum: 0
+                            performanceBonus:
+                              type: number
+                              minimum: 0
+                            totalCommission:
+                              type: number
+                              minimum: 0
+                            protectionStatus:
+                              type: string
+                            fraudCheckStatus:
+                              type: string
+                            approvedAt:
+                              type: string
+                              format: date-time
+                              nullable: true
+                            holdUntil:
+                              type: string
+                              format: date-time
+                              nullable: true
+                            paidAt:
+                              type: string
+                              format: date-time
+                              nullable: true
+                            payoutId:
+                              type: string
+                              nullable: true
+                            paymentMethod:
+                              type: string
+                              nullable: true
+                            createdAt:
+                              type: string
+                              format: date-time
+                            updatedAt:
+                              type: string
+                              format: date-time
+                      summary:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          currency:
+                            type: string
+                            enum:
+                              - TZS
+                          totalCommission:
+                            type: number
+                            minimum: 0
+                          totalPaid:
+                            type: number
+                            minimum: 0
+                          totalPending:
+                            type: number
+                            minimum: 0
+                          totalApproved:
+                            type: number
+                            minimum: 0
+                          totalOnHold:
+                            type: number
+                            minimum: 0
+                          totalDisputed:
+                            type: number
+                            minimum: 0
+                          totalForfeited:
+                            type: number
+                            minimum: 0
+                          totalOutstanding:
+                            type: number
+                            minimum: 0
+                          counts:
+                            type: object
+                            additionalProperties: false
+                            properties:
+                              all:
+                                type: integer
+                                minimum: 0
+                              pending:
+                                type: integer
+                                minimum: 0
+                              approved:
+                                type: integer
+                                minimum: 0
+                              paid:
+                                type: integer
+                                minimum: 0
+                              onHold:
+                                type: integer
+                                minimum: 0
+                              disputed:
+                                type: integer
+                                minimum: 0
+                              forfeited:
+                                type: integer
+                                minimum: 0
+                          lastPaidAt:
+                            type: string
+                            format: date-time
+                            nullable: true
+                      pagination:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          page:
+                            type: integer
+                            minimum: 1
+                          limit:
+                            type: integer
+                            minimum: 1
+                          total:
+                            type: integer
+                            minimum: 0
+                          totalPages:
+                            type: integer
+                            minimum: 0
+                  meta:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      timestamp:
+                        type: string
+                        format: date-time
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+    parameters:
+      - name: enablerId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          enum:
+            - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/enabler/enablers/{enablerId}/earnings/summary':
+    get:
+      tags:
+        - Enabler
+      summary: Get enabler earnings summary
+      responses:
+        '200':
+          description: Enabler earnings summary
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - success
+                  - data
+                  - meta
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      currency:
+                        type: string
+                        enum:
+                          - TZS
+                      totalCommission:
+                        type: number
+                        minimum: 0
+                      totalPaid:
+                        type: number
+                        minimum: 0
+                      totalPending:
+                        type: number
+                        minimum: 0
+                      totalApproved:
+                        type: number
+                        minimum: 0
+                      totalOnHold:
+                        type: number
+                        minimum: 0
+                      totalDisputed:
+                        type: number
+                        minimum: 0
+                      totalForfeited:
+                        type: number
+                        minimum: 0
+                      totalOutstanding:
+                        type: number
+                        minimum: 0
+                      counts:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          all:
+                            type: integer
+                            minimum: 0
+                          pending:
+                            type: integer
+                            minimum: 0
+                          approved:
+                            type: integer
+                            minimum: 0
+                          paid:
+                            type: integer
+                            minimum: 0
+                          onHold:
+                            type: integer
+                            minimum: 0
+                          disputed:
+                            type: integer
+                            minimum: 0
+                          forfeited:
+                            type: integer
+                            minimum: 0
+                      lastPaidAt:
+                        type: string
+                        format: date-time
+                        nullable: true
+                  meta:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      timestamp:
+                        type: string
+                        format: date-time
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: enablerId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+    parameters:
+      - name: enablerId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          enum:
+            - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/enabler/enablers/{enablerId}/orders/{orderId}/commission':
+    get:
+      tags:
+        - Enabler
+      summary: Get enabler order commission breakdown
+      responses:
+        '200':
+          description: Enabler order commission breakdown
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  baseCommission:
+                    type: number
+                    minimum: 0
+                  tierBonus:
+                    type: number
+                    minimum: 0
+                  performanceBonus:
+                    type: number
+                    minimum: 0
+                  totalCommission:
+                    type: number
+                    minimum: 0
+                  commissionRate:
+                    type: number
+                    minimum: 0
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: enablerId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+    parameters:
+      - name: enablerId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          enum:
+            - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          enum:
+            - ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
   '/api/catalog/sellers/{sellerId}/storefront':
     get:
       tags:
@@ -26110,6 +29685,233 @@ paths:
         schema:
           type: string
         example: obj_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  /api/auth/switch-role:
+    post:
+      tags:
+        - Auth
+      summary: Switch authenticated role context
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - role
+              properties:
+                role:
+                  type: string
+                  enum:
+                    - buyer
+                    - seller
+                    - supplier
+                    - courier
+                    - enabler
+                    - admin
+                    - system
+                    - user
+                deviceInfo:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+            example:
+              role: seller
+              deviceInfo: Chrome on Windows
+            x-codex-generated-example: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                  - message
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - sessionId
+                      - selectedRole
+                      - availableRoles
+                    properties:
+                      sessionId:
+                        type: string
+                      selectedRole:
+                        type: string
+                      availableRoles:
+                        type: array
+                        items:
+                          type: string
+                  message:
+                    type: string
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Requested role is not assigned to the authenticated user
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters: []
+    parameters: []
+  /api/auth/role-requests:
+    post:
+      tags:
+        - Auth
+      summary: Submit an additional role request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - role
+              properties:
+                role:
+                  type: string
+                  enum:
+                    - seller
+                    - supplier
+                    - courier
+                    - enabler
+                justification:
+                  type: string
+                  minLength: 10
+                  maxLength: 1000
+            example:
+              role: seller
+              justification: I need seller access to manage my shop.
+      responses:
+        '201':
+          description: Role request created
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Duplicate role request or already assigned
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters: []
+    get:
+      tags:
+        - Auth
+      summary: List role requests for the authenticated user
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - PENDING
+              - APPROVED
+              - REJECTED
+              - WITHDRAWN
+          example: PENDING
+        - name: userId
+          in: query
+          schema:
+            type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      responses:
+        '200':
+          description: Role requests list
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+    parameters: []
   /api/auth/sessions:
     get:
       tags:
@@ -26771,7 +30573,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/auth/system/maintenance/cleanup/auth/report:
@@ -26863,7 +30664,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/auth/system/maintenance/cleanup/outbox:
@@ -26955,7 +30755,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/auth/system/maintenance/cleanup/outbox/report:
@@ -27047,7 +30846,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/auth/track-device:
@@ -29072,7 +32870,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/business-registry/system/maintenance/cleanup/outbox/report:
@@ -29164,7 +32961,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/catalog/campaigns:
@@ -30803,7 +34599,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/catalog/system/maintenance/cleanup/event-store/report:
@@ -30895,7 +34690,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/catalog/system/maintenance/cleanup/outbox:
@@ -30987,7 +34781,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/catalog/system/maintenance/cleanup/outbox/report:
@@ -31079,7 +34872,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/checkout/health:
@@ -31487,7 +35279,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/checkout/system/maintenance/cleanup/checkout-sessions/report:
@@ -31579,7 +35370,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/commission/health:
@@ -32910,7 +36700,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/community/system/maintenance/cleanup/outbox/report:
@@ -33002,7 +36791,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/compliance/aml-record:
@@ -33754,6 +37542,585 @@ paths:
       security:
         - BearerAuth: []
     parameters: []
+  /api/compliance/kyc/submissions:
+    post:
+      tags:
+        - Compliance
+      summary: POST /api/compliance/kyc/submissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - userId
+                - documentType
+              anyOf:
+                - required:
+                    - documentUrl
+                - required:
+                    - fileUrl
+              properties:
+                userId:
+                  type: string
+                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                documentType:
+                  type: string
+                  enum:
+                    - national_id
+                    - passport
+                    - drivers_license
+                    - proof_of_address
+                documentUrl:
+                  type: string
+                  format: uri
+                fileUrl:
+                  type: string
+                  format: uri
+                fileName:
+                  type: string
+                  minLength: 1
+                mimeType:
+                  type: string
+                  minLength: 1
+                fileSizeBytes:
+                  type: integer
+                  minimum: 1
+                issuingCountry:
+                  type: string
+                  pattern: '^[A-Za-z]{2,3}$'
+                documentNumber:
+                  type: string
+                  minLength: 3
+                issuedAt:
+                  type: string
+                  format: date-time
+                expiresAt:
+                  type: string
+                  format: date-time
+                metadata:
+                  type: object
+            example:
+              userId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              documentType: national_id
+              fileUrl: 'https://example.com/kyc/contract-kyc-document.pdf'
+              fileName: contract-kyc-document.pdf
+              mimeType: application/pdf
+            x-codex-generated-example: true
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - userId
+                - documentType
+                - file
+                - mimeType
+              properties:
+                userId:
+                  type: string
+                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                documentType:
+                  type: string
+                  enum:
+                    - national_id
+                    - passport
+                    - drivers_license
+                    - proof_of_address
+                file:
+                  type: string
+                  format: binary
+                fileName:
+                  type: string
+                  minLength: 1
+                mimeType:
+                  type: string
+                  minLength: 1
+                fileSizeBytes:
+                  type: integer
+                  minimum: 1
+                issuingCountry:
+                  type: string
+                  pattern: '^[A-Za-z]{2,3}$'
+                documentNumber:
+                  type: string
+                  minLength: 3
+                issuedAt:
+                  type: string
+                  format: date-time
+                expiresAt:
+                  type: string
+                  format: date-time
+                metadata:
+                  type: object
+            example:
+              userId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              documentType: national_id
+              file: contract-kyc-document.pdf
+              fileName: contract-kyc-document.pdf
+              mimeType: application/pdf
+            x-codex-generated-example: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - submissionId
+                  - verificationId
+                  - status
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                  submissionId:
+                    type: string
+                  verificationId:
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                      - pending
+                      - under_review
+                      - approved
+                      - rejected
+                  data:
+                    type: object
+                    required:
+                      - userId
+                      - documentType
+                      - documentUrl
+                      - submittedAt
+                      - verificationStatus
+                    properties:
+                      userId:
+                        type: string
+                      documentType:
+                        type: string
+                      documentUrl:
+                        type: string
+                        format: uri
+                      fileName:
+                        type: string
+                        nullable: true
+                      mimeType:
+                        type: string
+                        nullable: true
+                      fileSizeBytes:
+                        type: integer
+                        nullable: true
+                      documentAccessUrl:
+                        type: string
+                      storageProvider:
+                        type: string
+                        enum:
+                          - local
+                          - s3
+                          - cloudflare
+                        nullable: true
+                      submittedAt:
+                        type: string
+                        format: date-time
+                      verificationStatus:
+                        type: string
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      parameters: []
+      security:
+        - BearerAuth: []
+    parameters: []
+  /api/compliance/kyc/documents:
+    post:
+      tags:
+        - Compliance
+      summary: POST /api/compliance/kyc/documents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - userId
+                - documentType
+              anyOf:
+                - required:
+                    - documentUrl
+                - required:
+                    - fileUrl
+              properties:
+                userId:
+                  type: string
+                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                documentType:
+                  type: string
+                  enum:
+                    - national_id
+                    - passport
+                    - drivers_license
+                    - proof_of_address
+                documentUrl:
+                  type: string
+                  format: uri
+                fileUrl:
+                  type: string
+                  format: uri
+                fileName:
+                  type: string
+                  minLength: 1
+                mimeType:
+                  type: string
+                  minLength: 1
+                fileSizeBytes:
+                  type: integer
+                  minimum: 1
+                issuingCountry:
+                  type: string
+                  pattern: '^[A-Za-z]{2,3}$'
+                documentNumber:
+                  type: string
+                  minLength: 3
+                issuedAt:
+                  type: string
+                  format: date-time
+                expiresAt:
+                  type: string
+                  format: date-time
+                metadata:
+                  type: object
+            example:
+              userId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              documentType: national_id
+              fileUrl: 'https://example.com/kyc/contract-kyc-document.pdf'
+              fileName: contract-kyc-document.pdf
+              mimeType: application/pdf
+            x-codex-generated-example: true
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - userId
+                - documentType
+                - file
+                - mimeType
+              properties:
+                userId:
+                  type: string
+                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+                documentType:
+                  type: string
+                  enum:
+                    - national_id
+                    - passport
+                    - drivers_license
+                    - proof_of_address
+                file:
+                  type: string
+                  format: binary
+                fileName:
+                  type: string
+                  minLength: 1
+                mimeType:
+                  type: string
+                  minLength: 1
+                fileSizeBytes:
+                  type: integer
+                  minimum: 1
+                issuingCountry:
+                  type: string
+                  pattern: '^[A-Za-z]{2,3}$'
+                documentNumber:
+                  type: string
+                  minLength: 3
+                issuedAt:
+                  type: string
+                  format: date-time
+                expiresAt:
+                  type: string
+                  format: date-time
+                metadata:
+                  type: object
+            example:
+              userId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              documentType: national_id
+              file: contract-kyc-document.pdf
+              fileName: contract-kyc-document.pdf
+              mimeType: application/pdf
+            x-codex-generated-example: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - submissionId
+                  - verificationId
+                  - status
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                  submissionId:
+                    type: string
+                  verificationId:
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                      - pending
+                      - under_review
+                      - approved
+                      - rejected
+                  data:
+                    type: object
+                    required:
+                      - userId
+                      - documentType
+                      - documentUrl
+                      - submittedAt
+                      - verificationStatus
+                    properties:
+                      userId:
+                        type: string
+                      documentType:
+                        type: string
+                      documentUrl:
+                        type: string
+                        format: uri
+                      fileName:
+                        type: string
+                        nullable: true
+                      mimeType:
+                        type: string
+                        nullable: true
+                      fileSizeBytes:
+                        type: integer
+                        nullable: true
+                      documentAccessUrl:
+                        type: string
+                      storageProvider:
+                        type: string
+                        enum:
+                          - local
+                          - s3
+                          - cloudflare
+                        nullable: true
+                      submittedAt:
+                        type: string
+                        format: date-time
+                      verificationStatus:
+                        type: string
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters: []
+    parameters: []
+  '/api/compliance/kyc/documents/{verificationId}/content':
+    get:
+      tags:
+        - Compliance
+      summary: 'GET /api/compliance/kyc/documents/{verificationId}/content'
+      responses:
+        '200':
+          description: Document content
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+            text/plain:
+              schema: {}
+        '302':
+          description: Redirect to signed document URL
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      parameters:
+        - in: path
+          name: verificationId
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - kyc_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: kyc_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: kyc_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      security:
+        - BearerAuth: []
+    parameters:
+      - name: verificationId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          enum:
+            - kyc_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: kyc_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: kyc_01ARZ3NDEKTSV4RRFFQ69G5FAV
   '/api/compliance/kyc-status/{userId}':
     get:
       tags:
@@ -35007,7 +39374,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/enabler/system/maintenance/cleanup/outbox/report:
@@ -35099,9 +39465,397 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
+  /api/inventory/materials:
+    get:
+      tags:
+        - Inventory
+      summary: List supplier materials inventory
+      parameters:
+        - name: warehouseId
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        - name: lowStockOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+          example: false
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - materials
+                  - total
+                  - lowStockCount
+                  - outOfStockCount
+                  - generatedAt
+                properties:
+                  materials:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - variantId
+                        - warehouseId
+                        - warehouseName
+                        - available
+                        - reserved
+                        - status
+                      properties:
+                        variantId:
+                          type: string
+                        warehouseId:
+                          type: string
+                        warehouseName:
+                          type: string
+                        available:
+                          type: integer
+                          minimum: 0
+                        reserved:
+                          type: integer
+                          minimum: 0
+                        reorderPoint:
+                          type: integer
+                          nullable: true
+                        maxStock:
+                          type: integer
+                          nullable: true
+                        status:
+                          type: string
+                          enum:
+                            - in_stock
+                            - low_stock
+                            - out_of_stock
+                        utilizationRate:
+                          type: number
+                          nullable: true
+                  total:
+                    type: integer
+                    minimum: 0
+                  lowStockCount:
+                    type: integer
+                    minimum: 0
+                  outOfStockCount:
+                    type: integer
+                    minimum: 0
+                  generatedAt:
+                    type: string
+                    format: date-time
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+    parameters: []
+  '/api/inventory/materials/{variantId}':
+    get:
+      tags:
+        - Inventory
+      summary: Get supplier material inventory detail
+      parameters:
+        - name: warehouseId
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        - name: variantId
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - variantId
+                  - warehouseId
+                  - materials
+                  - totalAvailable
+                  - totalReserved
+                  - lastUpdated
+                properties:
+                  variantId:
+                    type: string
+                  warehouseId:
+                    type: string
+                  materials:
+                    type: array
+                    items:
+                      type: object
+                  totalAvailable:
+                    type: integer
+                    minimum: 0
+                  totalReserved:
+                    type: integer
+                    minimum: 0
+                  lastUpdated:
+                    type: string
+                    format: date-time
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Material not found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+    parameters:
+      - name: variantId
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      - name: warehouseId
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+            - inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/inventory/materials/{variantId}/warehouses/{warehouseId}':
+    put:
+      tags:
+        - Inventory
+      summary: Update supplier material inventory and thresholds
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              anyOf:
+                - required:
+                    - quantity
+                    - operation
+                    - reason
+                - required:
+                    - reorderPoint
+                - required:
+                    - maxStock
+              properties:
+                quantity:
+                  type: number
+                  minimum: 0
+                operation:
+                  type: string
+                  enum:
+                    - add
+                    - subtract
+                    - set
+                reason:
+                  type: string
+                  minLength: 1
+                reorderPoint:
+                  type: integer
+                  minimum: 0
+                maxStock:
+                  type: integer
+                  minimum: 1
+                  nullable: true
+            example:
+              quantity: 50
+              operation: add
+              reason: Monthly replenishment
+              reorderPoint: 20
+              maxStock: 200
+            x-codex-generated-example: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - variantId
+                  - warehouseId
+                  - available
+                  - reserved
+                  - status
+                  - reason
+                  - updatedAt
+                properties:
+                  variantId:
+                    type: string
+                  warehouseId:
+                    type: string
+                  available:
+                    type: integer
+                    minimum: 0
+                  reserved:
+                    type: integer
+                    minimum: 0
+                  reorderPoint:
+                    type: integer
+                    nullable: true
+                  maxStock:
+                    type: integer
+                    nullable: true
+                  status:
+                    type: string
+                    enum:
+                      - in_stock
+                      - low_stock
+                      - out_of_stock
+                  performedBy:
+                    type: string
+                  operation:
+                    type: string
+                    nullable: true
+                  quantity:
+                    type: number
+                    nullable: true
+                  reason:
+                    type: string
+                  updatedAt:
+                    type: string
+                    format: date-time
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Material not found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: variantId
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        - name: warehouseId
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV
+    parameters:
+      - name: variantId
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      - name: warehouseId
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV
   /api/inventory/health:
     get:
       tags:
@@ -35428,7 +40182,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/inventory/system/maintenance/cleanup/outbox/report:
@@ -35520,7 +40273,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/logistics/api/courier:
@@ -37545,7 +42297,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/logistics/system/maintenance/cleanup/outbox/report:
@@ -37637,7 +42388,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/maps/health:
@@ -37966,7 +42716,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/notification/system/maintenance/cleanup/sms/report:
@@ -38058,7 +42807,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/order/health:
@@ -38703,7 +43451,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/order/system/maintenance/cleanup/outbox/report:
@@ -38795,7 +43542,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/payment/health:
@@ -39203,7 +43949,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/payment/system/maintenance/cleanup/outbox/report:
@@ -39295,7 +44040,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/payment/webhooks/pesapal:
@@ -39406,9 +44150,17 @@ paths:
             type: string
             minLength: 1
             example: webhook-contract-001
-          example: example-x-webhook-idempotency-key
+          example: webhook-contract-001
       security: []
-    parameters: []
+    parameters:
+      - name: x-webhook-idempotency-key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          example: webhook-contract-001
+        example: webhook-contract-001
   /api/payout/payouts:
     get:
       tags:
@@ -39898,7 +44650,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/payout/system/maintenance/cleanup/outbox/report:
@@ -39990,7 +44741,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/production/capacity:
@@ -40003,7 +44753,51 @@ paths:
           description: Success
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - supplierId
+                      - date
+                      - maxCapacity
+                      - usedCapacity
+                      - reservedCapacity
+                      - availableCapacity
+                      - utilizationRate
+                      - unit
+                      - updatedAt
+                    properties:
+                      supplierId:
+                        type: string
+                      date:
+                        type: string
+                        format: date-time
+                      maxCapacity:
+                        type: number
+                      usedCapacity:
+                        type: number
+                      reservedCapacity:
+                        type: number
+                      availableCapacity:
+                        type: number
+                      utilizationRate:
+                        type: number
+                      unit:
+                        type: string
+                      adjustedBy:
+                        type: string
+                      reason:
+                        type: string
+                      updatedAt:
+                        type: string
+                        format: date-time
             text/plain:
               schema: {}
         '400':
@@ -40072,14 +44866,636 @@ paths:
       parameters:
         - name: supplierId
           in: query
-          required: true
+          required: false
           schema:
             type: string
             minLength: 1
           example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          example: '2026-03-23T00:00:00.000Z'
+      security:
+        - BearerAuth: []
+    put:
+      tags:
+        - Production
+      summary: PUT /api/production/capacity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - maxCapacity
+                - usedCapacity
+                - reservedCapacity
+                - unit
+              properties:
+                supplierId:
+                  type: string
+                  minLength: 1
+                date:
+                  type: string
+                  format: date-time
+                maxCapacity:
+                  type: number
+                  minimum: 0
+                usedCapacity:
+                  type: number
+                  minimum: 0
+                reservedCapacity:
+                  type: number
+                  minimum: 0
+                unit:
+                  type: string
+                  minLength: 1
+                reason:
+                  type: string
+                  minLength: 1
+            example:
+              supplierId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              date: '2026-03-23T00:00:00.000Z'
+              maxCapacity: 12000
+              usedCapacity: 3500
+              reservedCapacity: 1500
+              unit: units
+              reason: Planner override for seasonal demand
+            x-codex-generated-example: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      parameters: []
       security:
         - BearerAuth: []
     parameters: []
+  /api/production/bulk-orders:
+    get:
+      tags:
+        - Production
+      summary: GET /api/production/bulk-orders
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      parameters:
+        - name: supplierId
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - OPEN
+              - UNDER_REVIEW
+              - QUOTED
+              - AWARDED
+              - CLOSED
+          example: OPEN
+      security:
+        - BearerAuth: []
+    post:
+      tags:
+        - Production
+      summary: POST /api/production/bulk-orders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - supplierId
+                - title
+                - description
+                - quantity
+                - unit
+                - currency
+                - requiredBy
+              properties:
+                supplierId:
+                  type: string
+                  minLength: 1
+                buyerId:
+                  type: string
+                  minLength: 1
+                title:
+                  type: string
+                  minLength: 3
+                description:
+                  type: string
+                  minLength: 10
+                productId:
+                  type: string
+                  minLength: 1
+                quantity:
+                  type: integer
+                  minimum: 1
+                unit:
+                  type: string
+                  minLength: 1
+                currency:
+                  type: string
+                  pattern: '^[A-Z]{3}$'
+                targetUnitPrice:
+                  type: number
+                  minimum: 0.01
+                requiredBy:
+                  type: string
+                  format: date-time
+                deliveryAddress:
+                  type: string
+                  minLength: 3
+                notes:
+                  type: string
+                  minLength: 1
+                metadata:
+                  type: object
+                  additionalProperties: true
+            example:
+              supplierId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              title: 'Bulk order for 5,000 woven bags'
+              description: 'Buyer is sourcing 5,000 branded woven bags for an April campaign rollout.'
+              productId: cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              quantity: 5000
+              unit: bags
+              currency: TZS
+              targetUnitPrice: 4200
+              requiredBy: '2026-04-15T09:00:00.000Z'
+              deliveryAddress: 'Mbezi Industrial Area, Dar es Salaam'
+              notes: Include branding setup cost in the quote notes if applicable.
+            x-codex-generated-example: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      parameters: []
+      security:
+        - BearerAuth: []
+    parameters: []
+  '/api/production/bulk-orders/{id}':
+    get:
+      tags:
+        - Production
+      summary: 'GET /api/production/bulk-orders/{id}'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - prd_bulord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: prd_bulord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: prd_bulord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      security:
+        - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          enum:
+            - prd_bulord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: prd_bulord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: prd_bulord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/production/bulk-orders/{id}/quotes':
+    post:
+      tags:
+        - Production
+      summary: 'POST /api/production/bulk-orders/{id}/quotes'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - unitPrice
+                - currency
+                - leadTimeDays
+                - validUntil
+              properties:
+                supplierId:
+                  type: string
+                  minLength: 1
+                unitPrice:
+                  type: number
+                  minimum: 0.01
+                currency:
+                  type: string
+                  pattern: '^[A-Z]{3}$'
+                leadTimeDays:
+                  type: integer
+                  minimum: 1
+                minimumOrderQuantity:
+                  type: integer
+                  minimum: 1
+                validUntil:
+                  type: string
+                  format: date-time
+                notes:
+                  type: string
+                  minLength: 1
+                paymentTerms:
+                  type: string
+                  minLength: 1
+            example:
+              supplierId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              unitPrice: 3900
+              currency: TZS
+              leadTimeDays: 12
+              minimumOrderQuantity: 1000
+              validUntil: '2026-04-01T09:00:00.000Z'
+              notes: Includes packaging and standard branding setup.
+              paymentTerms: '50% upfront, 50% before dispatch'
+            x-codex-generated-example: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - prd_bulord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: prd_bulord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: prd_bulord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      security:
+        - BearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          enum:
+            - prd_bulord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: prd_bulord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: prd_bulord_01ARZ3NDEKTSV4RRFFQ69G5FAV
   /api/production/dashboard:
     get:
       tags:
@@ -40568,7 +45984,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/support/system/maintenance/cleanup/outbox/report:
@@ -40660,7 +46075,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/training/api/health:
@@ -42458,7 +47872,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/user/system/maintenance/cleanup/outbox/report:
@@ -42550,7 +47963,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/wallet/health:
@@ -42879,7 +48291,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/wallet/system/maintenance/cleanup/idempotency/report:
@@ -42971,7 +48382,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/wallet/system/maintenance/cleanup/outbox:
@@ -43063,7 +48473,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   /api/wallet/system/maintenance/cleanup/outbox/report:
@@ -43155,7 +48564,6 @@ paths:
               schema: {}
       parameters: []
       security:
-        - BearerAuth: []
         - ServiceKey: []
     parameters: []
   '/api/wallet/wallets/{userId}/freeze':

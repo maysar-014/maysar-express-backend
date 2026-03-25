@@ -154,7 +154,7 @@ export const createMaintenanceRoutes = (prisma: PrismaClient): Router => {
         if (rows.length === 0) break;
 
         batches += 1;
-        const ids = rows.map(row => row.id);
+        const ids = rows.map((row: { id: string }) => row.id);
 
         if (!dryRun) {
           const result = await delegate.deleteMany({

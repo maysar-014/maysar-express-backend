@@ -156,6 +156,7 @@ npm run staging:up                   # Start staging environment via Docker Comp
 
 - [infra/README.md](infra/README.md) — Terraform modules, Prometheus config
 - [docker-compose.yml](docker-compose.yml) — Local development stack
+- [docs/postgres-portable-setup.md](docs/postgres-portable-setup.md) — Portable PostgreSQL with persistent storage, daily backups, and restore verification
 - [Dockerfile](Dockerfile) — Multi-stage production image
 
 ## Contributing

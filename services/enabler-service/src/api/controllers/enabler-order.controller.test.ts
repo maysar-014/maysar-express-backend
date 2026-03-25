@@ -40,7 +40,10 @@ describe('EnablerOrderController', () => {
     const orderRepository = {
       findByEnablerId: jest.fn().mockResolvedValue([
         { toPlainObject: () => ({ id: 'o1' }) }
-      ])
+      ]),
+      findByOrderId: jest.fn().mockResolvedValue({
+        enablerId: 'en-2'
+      })
     };
     const commissionUseCase = {
       execute: jest.fn().mockResolvedValue({ totalCommission: 1000 })
@@ -57,10 +60,9 @@ describe('EnablerOrderController', () => {
     expect(ordersRes.json).toHaveBeenCalledWith([{ id: 'o1' }]);
 
     const commissionRes = makeRes();
-    await controller.getCommissionBreakdown({ params: { orderId: 'ord-1' } } as never, commissionRes);
+    await controller.getCommissionBreakdown({ params: { enablerId: 'en-2', orderId: 'ord-1' } } as never, commissionRes);
     expect(commissionUseCase.execute).toHaveBeenCalledWith('ord-1');
     expect(commissionRes.status).toHaveBeenCalledWith(200);
     expect(commissionRes.json).toHaveBeenCalledWith({ totalCommission: 1000 });
   });
 });
-

@@ -7,81 +7,59 @@ describe('CancellationPolicy', () => {
         policy = new CancellationPolicy();
     });
 
-    const mockOrder = (status: string = 'pending', createdAt: number = Date.now(), paymentMethod: string = 'COD', totalAmount: number = 10000) => ({
+    const mockOrder = (status: string = 'pending') => ({
         id: 'order-123',
+        buyerId: 'buyer-123',
+        sellerId: 'seller-456',
         status,
-        createdAt: new Date(createdAt),
-        paymentMethod,
-        totalAmount
+        createdAt: new Date()
     });
 
     describe('canCancelOrder', () => {
         it('should return error if order not found', async () => {
-            jest.spyOn(policy as any, 'getOrder').mockResolvedValue(null);
-            const result = await policy.canCancelOrder('order-123', 'buyer');
+            const result = policy.canCancelOrder({ order: null, requestedBy: 'buyer', requesterUserId: 'buyer-123' });
             expect(result.allowed).toBe(false);
             expect(result.reason).toBe('Order not found');
         });
 
         it('should allow system to always cancel', async () => {
-            jest.spyOn(policy as any, 'getOrder').mockResolvedValue(mockOrder());
-            const result = await policy.canCancelOrder('order-123', 'system');
+            const result = policy.canCancelOrder({ order: mockOrder(), requestedBy: 'system' });
             expect(result.allowed).toBe(true);
         });
 
         it('should not allow cancellation if status is not pending or confirmed', async () => {
-            jest.spyOn(policy as any, 'getOrder').mockResolvedValue(mockOrder('shipped'));
-            const result = await policy.canCancelOrder('order-123', 'buyer');
+            const result = policy.canCancelOrder({ order: mockOrder('shipped'), requestedBy: 'buyer', requesterUserId: 'buyer-123' });
             expect(result.allowed).toBe(false);
             expect(result.reason).toContain('current status');
         });
 
-        it('should not allow cancellation if window expired for confirmed order', async () => {
-            const oldTime = Date.now() - (31 * 60 * 1000); // 31 mins ago
-            jest.spyOn(policy as any, 'getOrder').mockResolvedValue(mockOrder('confirmed', oldTime));
+        it('should allow buyer to cancel only before seller confirms', async () => {
+            const result = policy.canCancelOrder({ order: mockOrder('pending'), requestedBy: 'buyer', requesterUserId: 'buyer-123' });
+            expect(result.allowed).toBe(true);
+        });
 
-            const result = await policy.canCancelOrder('order-123', 'buyer');
+        it('should require seller consent after the order is confirmed', async () => {
+            const result = policy.canCancelOrder({ order: mockOrder('confirmed'), requestedBy: 'buyer', requesterUserId: 'buyer-123' });
             expect(result.allowed).toBe(false);
-            expect(result.reason).toBe('Cancellation window expired');
+            expect(result.reason).toBe('Seller consent is required after the order is confirmed');
+            expect(result.requiresSellerConsent).toBe(true);
         });
 
-        it('should allow cancellation for pending order even if old', async () => {
-            const oldTime = Date.now() - (60 * 60 * 1000); // 1 hour ago
-            jest.spyOn(policy as any, 'getOrder').mockResolvedValue(mockOrder('pending', oldTime));
-
-            const result = await policy.canCancelOrder('order-123', 'buyer');
+        it('should allow the seller to issue cancellation after confirmation', async () => {
+            const result = policy.canCancelOrder({ order: mockOrder('confirmed'), requestedBy: 'seller', requesterUserId: 'seller-456' });
             expect(result.allowed).toBe(true);
         });
 
-        it('should allow buyer to cancel COD order without penalty', async () => {
-            jest.spyOn(policy as any, 'getOrder').mockResolvedValue(mockOrder('pending', Date.now(), 'COD'));
-            const result = await policy.canCancelOrder('order-123', 'buyer');
-            expect(result.allowed).toBe(true);
-            expect(result.penalty).toBeUndefined();
+        it('should reject cancellation when buyer identity does not match the order creator', async () => {
+            const result = policy.canCancelOrder({ order: mockOrder('pending'), requestedBy: 'buyer', requesterUserId: 'buyer-999' });
+            expect(result.allowed).toBe(false);
+            expect(result.reason).toBe('Only the buyer who created the order can cancel it');
         });
 
-        it('should apply penalty for buyer cancelling paid order', async () => {
-            jest.spyOn(policy as any, 'getOrder').mockResolvedValue(mockOrder('pending', Date.now(), 'CARD', 10000));
-            const result = await policy.canCancelOrder('order-123', 'buyer');
-            expect(result.allowed).toBe(true);
-            expect(result.penalty).toBe(200); // 2% of 10000
-        });
-
-        it('should apply penalty for seller cancellation', async () => {
-            jest.spyOn(policy as any, 'getOrder').mockResolvedValue(mockOrder('pending', Date.now(), 'COD', 10000));
-
-            const result = await policy.canCancelOrder('order-123', 'seller');
-            expect(result.allowed).toBe(true);
-            expect(result.penalty).toBe(500); // 5% of 10000
-        });
-
-        it('should cap seller penalty at 10000', async () => {
-            jest.spyOn(policy as any, 'getOrder').mockResolvedValue(mockOrder('pending', Date.now(), 'COD', 1000000));
-            // 5% of 1,000,000 is 50,000. Cap is 10,000.
-
-            const result = await policy.canCancelOrder('order-123', 'seller');
-            expect(result.allowed).toBe(true);
-            expect(result.penalty).toBe(10000);
+        it('should reject cancellation when seller identity does not match the order seller', async () => {
+            const result = policy.canCancelOrder({ order: mockOrder('confirmed'), requestedBy: 'seller', requesterUserId: 'seller-999' });
+            expect(result.allowed).toBe(false);
+            expect(result.reason).toBe('Only the seller assigned to the order can issue this cancellation');
         });
     });
 });

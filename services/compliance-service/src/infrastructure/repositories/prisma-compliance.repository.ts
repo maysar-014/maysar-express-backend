@@ -1,10 +1,18 @@
 import { Prisma, PrismaClient } from '@prisma/client';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 
 const toNullableJson = (value: unknown): Prisma.InputJsonValue | typeof Prisma.DbNull | undefined => {
   if (value === undefined) return undefined;
   if (value === null) return Prisma.DbNull;
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 };
+
+const toJson = (value: unknown): Prisma.InputJsonValue | undefined => {
+  if (value === undefined || value === null) return undefined;
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+};
+
+const createRecordId = (modelName: string): string => makeId(getModelPrefix(modelName));
 
 export class PrismaComplianceRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -22,15 +30,16 @@ export class PrismaComplianceRepository {
         sanctionsStatus: data.sanctionsStatus,
         pepStatus: data.pepStatus,
         riskScore: data.riskScore,
-        flags: data.flags ?? undefined,
+        flags: toJson(data.flags),
         lastCheckAt: new Date()
       },
       create: {
+        id: createRecordId('Compliance_AMLRecord'),
         userId: data.userId,
         sanctionsStatus: data.sanctionsStatus,
         pepStatus: data.pepStatus,
         riskScore: data.riskScore,
-        flags: data.flags ?? undefined,
+        flags: toJson(data.flags),
         lastCheckAt: new Date()
       }
     });
@@ -46,10 +55,11 @@ export class PrismaComplianceRepository {
   }): Promise<string> {
     const record = await this.prisma.compliance_SubjectRightsRequest.create({
       data: {
+        id: createRecordId('Compliance_SubjectRightsRequest'),
         userId: data.userId,
         requestType: data.requestType,
         reason: data.reason ?? null,
-        data: data.payload ?? undefined
+        data: toJson(data.payload)
       }
     });
 
@@ -65,6 +75,7 @@ export class PrismaComplianceRepository {
   }): Promise<string> {
     const record = await this.prisma.compliance_DataDeletionLog.create({
       data: {
+        id: createRecordId('Compliance_DataDeletionLog'),
         userId: data.userId,
         dataType: data.dataType,
         recordsDeleted: data.recordsDeleted,
@@ -105,6 +116,7 @@ export class PrismaComplianceRepository {
 
     const created = await this.prisma.compliance_DataRetentionPolicy.create({
       data: {
+        id: createRecordId('Compliance_DataRetentionPolicy'),
         dataType: data.dataType,
         retentionPeriod: data.retentionPeriod,
         legalBasis: data.legalBasis,
@@ -127,11 +139,12 @@ export class PrismaComplianceRepository {
   }): Promise<string> {
     const record = await this.prisma.compliance_DataProcessingRecord.create({
       data: {
+        id: createRecordId('Compliance_DataProcessingRecord'),
         purpose: data.purpose,
-        categories: data.categories,
-        recipients: data.recipients,
+        categories: toJson(data.categories) ?? Prisma.JsonNull,
+        recipients: toJson(data.recipients) ?? Prisma.JsonNull,
         retentionPeriod: data.retentionPeriod,
-        securityMeasures: data.securityMeasures
+        securityMeasures: toJson(data.securityMeasures) ?? Prisma.JsonNull
       }
     });
 
@@ -148,11 +161,12 @@ export class PrismaComplianceRepository {
   }): Promise<string> {
     const record = await this.prisma.compliance_PrivacyImpactAssessment.create({
       data: {
+        id: createRecordId('Compliance_PrivacyImpactAssessment'),
         projectName: data.projectName,
         assessor: data.assessor,
         riskLevel: data.riskLevel,
-        findings: data.findings ?? undefined,
-        recommendations: data.recommendations ?? undefined,
+        findings: toJson(data.findings),
+        recommendations: toJson(data.recommendations),
         status: data.status ?? 'in_progress'
       }
     });
@@ -191,6 +205,7 @@ export class PrismaComplianceRepository {
 
     const created = await this.prisma.compliance_TCRARecord.create({
       data: {
+        id: createRecordId('Compliance_TCRARecord'),
         userId: data.userId,
         licenseNumber: data.licenseNumber ?? null,
         status: data.status ?? 'pending',
@@ -223,6 +238,7 @@ export class PrismaComplianceRepository {
         updatedAt: new Date()
       },
       create: {
+        id: createRecordId('Compliance_TRARecord'),
         userId: data.userId,
         tin: data.tin,
         vrn: data.vrn ?? null,
@@ -262,6 +278,7 @@ export class PrismaComplianceRepository {
 
     const created = await this.prisma.compliance_MarketRecord.create({
       data: {
+        id: createRecordId('Compliance_MarketRecord'),
         sellerId: data.sellerId,
         ethicalScore: data.ethicalScore ?? null,
         qualityStatus: data.qualityStatus ?? 'pending',

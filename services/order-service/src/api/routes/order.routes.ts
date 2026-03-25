@@ -62,6 +62,14 @@ const disputeResolveBodySchema = Joi.object({
   decision: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
 }).unknown(false);
 
+const cancelOrderParamsSchema = Joi.object({
+  id: Joi.string().min(1).required(),
+}).unknown(false);
+
+const cancelOrderBodySchema = Joi.object({
+  reason: Joi.string().trim().pattern(NON_BLANK_PATTERN).optional(),
+}).unknown(false);
+
 const router = Router();
 
 const ORDER_CACHE_TAGS = [
@@ -94,6 +102,7 @@ export const setupOrderRoutes = (orderController: OrderController, codDisputeCon
         { method: 'POST', path: /^\/orders$/, tags: ORDER_CACHE_TAGS },
         { method: 'PUT', path: /^\/orders\/[^/]+$/, tags: ORDER_CACHE_TAGS },
         { method: 'POST', path: /^\/orders\/[^/]+\/status$/, tags: ORDER_CACHE_TAGS },
+        { method: 'POST', path: /^\/orders\/[^/]+\/cancel$/, tags: ORDER_CACHE_TAGS },
         { method: 'DELETE', path: /^\/orders\/[^/]+$/, tags: ORDER_CACHE_TAGS },
         { method: 'POST', path: /^\/orders\/disputes\/[^/]+\/resolve$/, tags: ORDER_CACHE_TAGS }
       ]
@@ -139,6 +148,13 @@ export const setupOrderRoutes = (orderController: OrderController, codDisputeCon
 
   // Update order status
   router.post('/orders/:id/status', asyncHandler((req, res) => orderController.updateOrderStatus(req, res)));
+
+  // Cancel order as an explicit business action
+  router.post(
+    '/orders/:id/cancel',
+    validateJoiRequest({ params: cancelOrderParamsSchema, body: cancelOrderBodySchema }),
+    asyncHandler((req, res) => orderController.cancelOrder(req, res))
+  );
 
   // Cancel/delete order
   router.delete('/orders/:id', asyncHandler((req, res) => orderController.deleteOrder(req, res)));

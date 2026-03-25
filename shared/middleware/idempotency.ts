@@ -58,7 +58,7 @@ export class IdempotencyMiddleware {
         
         if (cachedResponse) {
           const { statusCode, body } = JSON.parse(cachedResponse);
-          return res.status(statusCode).json(body);
+          return this.replayCachedResponse(res, statusCode, body);
         }
 
         const lockAcquired = await this.redis.set(
@@ -72,7 +72,7 @@ export class IdempotencyMiddleware {
         if (!lockAcquired) {
           const delayedResponse = await this.waitForCachedResponse(cacheKey);
           if (delayedResponse) {
-            return res.status(delayedResponse.statusCode).json(delayedResponse.body);
+            return this.replayCachedResponse(res, delayedResponse.statusCode, delayedResponse.body);
           }
 
           return res.status(409).json({
@@ -84,15 +84,23 @@ export class IdempotencyMiddleware {
         // Store original response methods
         const originalSend = res.send;
         const originalJson = res.json;
+        let responseCached = false;
+        const cacheResponseOnce = (body: any) => {
+          if (responseCached) {
+            return;
+          }
+          responseCached = true;
+          void this.cacheResponse(cacheKey, lockKey, res.statusCode, body);
+        };
         
         // Intercept response
         res.json = (body: any) => {
-          this.cacheResponse(cacheKey, lockKey, res.statusCode, body);
+          cacheResponseOnce(body);
           return originalJson.call(res, body);
         };
 
         res.send = (body: any) => {
-          this.cacheResponse(cacheKey, lockKey, res.statusCode, body);
+          cacheResponseOnce(body);
           return originalSend.call(res, body);
         };
 
@@ -163,6 +171,14 @@ export class IdempotencyMiddleware {
     }
 
     return null;
+  }
+
+  private replayCachedResponse(res: Response, statusCode: number, body: any) {
+    if (typeof body === 'string' || Buffer.isBuffer(body)) {
+      return res.status(statusCode).send(body);
+    }
+
+    return res.status(statusCode).json(body);
   }
 
   private buildCacheKey(req: Request, idempotencyKey: string): string {

@@ -15,8 +15,10 @@ import {
   validateUpdateBusiness,
   validateVerifyBusiness,
   validateSuspendBusiness,
+  validateReactivateBusiness,
   validateCreateBusinessDocument,
-  validateCreateComplianceRecord
+  validateCreateComplianceRecord,
+  validateBusinessIdParam
 } from '../middleware/validation.middleware';
 import { SagaEventHandler } from '../../application/sagas/saga-event-handler';
 import { MailerAdapter, ComplianceAdapter, CapabilityAdapter } from '../../infrastructure/adapters';
@@ -96,27 +98,29 @@ function createConfiguredBusinessRoutes(mode: BusinessRouteMode): Router {
 
   router.get('/search', (req, res, next) => controller.searchBusinesses(req, res).catch(next));
   router.get('/owner/:ownerId', (req, res, next) => controller.getBusinessesByOwner(req, res).catch(next));
-  router.get('/:id', (req, res, next) => controller.getBusinessById(req, res).catch(next));
-  router.put('/:id', validateUpdateBusiness, (req, res, next) => controller.updateBusiness(req, res).catch(next));
-  router.delete('/:id', (req, res, next) => controller.deleteBusiness(req, res).catch(next));
-  router.post('/:id/verify', validateVerifyBusiness, (req, res, next) =>
+  router.get('/:id', validateBusinessIdParam, (req, res, next) => controller.getBusinessById(req, res).catch(next));
+  router.put('/:id', validateBusinessIdParam, validateUpdateBusiness, (req, res, next) => controller.updateBusiness(req, res).catch(next));
+  router.delete('/:id', validateBusinessIdParam, (req, res, next) => controller.deleteBusiness(req, res).catch(next));
+  router.post('/:id/verify', validateBusinessIdParam, validateVerifyBusiness, (req, res, next) =>
     controller.verifyBusiness(req, res).catch(next)
   );
-  router.post('/:id/suspend', validateSuspendBusiness, (req, res, next) =>
+  router.post('/:id/suspend', validateBusinessIdParam, validateSuspendBusiness, (req, res, next) =>
     controller.suspendBusiness(req, res).catch(next)
   );
-  router.post('/:id/reactivate', (req, res, next) => controller.reactivateBusiness(req, res).catch(next));
+  router.post('/:id/reactivate', validateBusinessIdParam, validateReactivateBusiness, (req, res, next) =>
+    controller.reactivateBusiness(req, res).catch(next)
+  );
 
   if (mode === 'default') {
-    router.post('/:id/documents', validateCreateBusinessDocument, (req, res, next) =>
+    router.post('/:id/documents', validateBusinessIdParam, validateCreateBusinessDocument, (req, res, next) =>
       controller.addDocument(req, res).catch(next)
     );
-    router.get('/:id/documents', (req, res, next) => controller.listDocuments(req, res).catch(next));
+    router.get('/:id/documents', validateBusinessIdParam, (req, res, next) => controller.listDocuments(req, res).catch(next));
 
-    router.post('/:id/compliance-records', validateCreateComplianceRecord, (req, res, next) =>
+    router.post('/:id/compliance-records', validateBusinessIdParam, validateCreateComplianceRecord, (req, res, next) =>
       controller.addComplianceRecord(req, res).catch(next)
     );
-    router.get('/:id/compliance-records', (req, res, next) => controller.listComplianceRecords(req, res).catch(next));
+    router.get('/:id/compliance-records', validateBusinessIdParam, (req, res, next) => controller.listComplianceRecords(req, res).catch(next));
   }
 
   return router;

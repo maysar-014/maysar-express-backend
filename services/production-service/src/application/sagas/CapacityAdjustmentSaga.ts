@@ -1,6 +1,16 @@
 
 import { CapacityManagementEngine } from '../../domain/engines/CapacityManagementEngine';
 import { IEventBus } from '../../domain/interfaces/IEventBus';
+import { CapacitySnapshotResponseDto } from '../dto/capacity.dto';
+
+export interface CapacityAdjustmentPayload {
+    supplierId: string;
+    date: Date;
+    adjustedBy?: string;
+    reason?: string;
+    previousCapacity?: CapacitySnapshotResponseDto | null;
+    currentCapacity: CapacitySnapshotResponseDto;
+}
 
 export class CapacityAdjustmentSaga {
     constructor(
@@ -8,14 +18,10 @@ export class CapacityAdjustmentSaga {
         private readonly eventBus: IEventBus
     ) { }
 
-    async adjustCapacity(supplierId: string, date: Date, adjustment: number): Promise<void> {
-        // 1. Validate if adjustment is possible (not already over-allocated)
-        // 2. Update capacity
-        // 3. Reschedule affected orders if capacity reduced
-
+    async adjustCapacity(payload: CapacityAdjustmentPayload): Promise<void> {
         await this.eventBus.publish({
             type: 'CapacityUpdated',
-            payload: { supplierId, date, adjustment }
+            payload
         });
     }
 }

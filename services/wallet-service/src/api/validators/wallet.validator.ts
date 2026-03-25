@@ -4,6 +4,7 @@ import { joiId } from '@shared/validation/id';
 const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$/u;
 const EXAMPLE_DOT_COM_EMAIL_PATTERN = /^[A-Za-z][A-Za-z0-9._-]{1,63}@example\.com$/;
 const TANZANIA_MOBILE_PATTERN = /^\+255[67]\d{8}$/;
+const SUPPORTED_WALLET_CURRENCIES = ['TZS', 'USD', 'EUR', 'GBP', 'KES', 'UGX'] as const;
 const safeVisibleString = Joi.string().min(1).pattern(SAFE_VISIBLE_STRING_PATTERN);
 const MOBILE_MONEY_METHODS = ['MOBILE_MONEY', 'MPESA', 'AIRTEL_MONEY', 'TIGO_PESA', 'HALOPESA'] as const;
 
@@ -27,8 +28,8 @@ export class WalletValidator {
     static debitWallet = Joi.object({
         userId: joiId().required(),
         amount: Joi.number().positive().required(),
-        currency: Joi.string().length(3).uppercase().required(),
-        description: Joi.string().optional(),
+        currency: Joi.string().valid(...SUPPORTED_WALLET_CURRENCIES).required(),
+        description: safeVisibleString.required(),
         reason: Joi.string().required(),
         referenceType: Joi.string().optional(),
         referenceId: Joi.string().optional(),
@@ -51,7 +52,7 @@ export class WalletValidator {
     static releaseHold = Joi.object({
         userId: joiId().required(),
         holdId: joiId().required(),
-        reason: safeVisibleString.optional(),
+        reason: safeVisibleString.required(),
         correlationId: Joi.string().uuid().required(),
         idempotencyKey: safeVisibleString.required()
     });
@@ -60,7 +61,7 @@ export class WalletValidator {
         userId: joiId().required(),
         holdId: joiId().required(),
         amount: Joi.number().positive().optional(), // Optional: partial capture
-        reason: safeVisibleString.optional(),
+        reason: safeVisibleString.required(),
         correlationId: Joi.string().uuid().required(),
         idempotencyKey: safeVisibleString.required()
     });

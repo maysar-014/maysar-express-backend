@@ -1,62 +1,64 @@
 export interface CancellationResult {
   allowed: boolean;
   reason?: string;
-  penalty?: number;
+  requiresSellerConsent?: boolean;
+}
+
+export type CancellationRequester = 'buyer' | 'seller' | 'system';
+
+export interface CancellationCandidateOrder {
+  id: string;
+  buyerId?: string;
+  sellerId?: string;
+  status: string;
+  createdAt?: Date;
 }
 
 export class CancellationPolicy {
-  async canCancelOrder(orderId: string, requestedBy: 'buyer' | 'seller' | 'system'): Promise<CancellationResult> {
-    const order = await this.getOrder(orderId);
-    
+  canCancelOrder(params: {
+    order: CancellationCandidateOrder | null | undefined;
+    requestedBy: CancellationRequester;
+    requesterUserId?: string;
+  }): CancellationResult {
+    const { order, requestedBy, requesterUserId } = params;
+
     if (!order) {
       return { allowed: false, reason: 'Order not found' };
     }
 
-    // System can always cancel
     if (requestedBy === 'system') {
       return { allowed: true };
     }
 
-    // Check order status
-    if (!['pending', 'confirmed'].includes(order.status)) {
+    const normalizedStatus = String(order.status || '').trim().toLowerCase();
+    if (!['pending', 'confirmed'].includes(normalizedStatus)) {
       return { allowed: false, reason: 'Order cannot be cancelled in current status' };
     }
 
-    // Time-based restrictions
-    const orderAge = Date.now() - order.createdAt.getTime();
-    const maxCancellationTime = 30 * 60 * 1000; // 30 minutes
-
-    if (orderAge > maxCancellationTime && order.status === 'confirmed') {
-      return { allowed: false, reason: 'Cancellation window expired' };
-    }
-
-    // Buyer cancellation rules
     if (requestedBy === 'buyer') {
-      if (order.paymentMethod === 'COD') {
-        return { allowed: true };
-      } else {
-        // Digital payment may have processing fees
-        return { allowed: true, penalty: order.totalAmount * 0.02 };
+      if (requesterUserId && order.buyerId && requesterUserId !== order.buyerId) {
+        return { allowed: false, reason: 'Only the buyer who created the order can cancel it' };
       }
+
+      if (normalizedStatus === 'pending') {
+        return { allowed: true };
+      }
+
+      return {
+        allowed: false,
+        reason: 'Seller consent is required after the order is confirmed',
+        requiresSellerConsent: true
+      };
     }
 
-    // Seller cancellation rules
     if (requestedBy === 'seller') {
-      const penalty = this.calculateSellerCancellationPenalty(order);
-      return { allowed: true, penalty };
+      if (requesterUserId && order.sellerId && requesterUserId !== order.sellerId) {
+        return { allowed: false, reason: 'Only the seller assigned to the order can issue this cancellation' };
+      }
+
+      return { allowed: true };
     }
 
     return { allowed: false, reason: 'Invalid cancellation request' };
-  }
-
-  private calculateSellerCancellationPenalty(order: any): number {
-    // Seller penalty based on order value and timing
-    const basePenalty = Math.min(order.totalAmount * 0.05, 10000); // 5% or max 10,000 TZS
-    return basePenalty;
-  }
-
-  private async getOrder(orderId: string): Promise<any> {
-    // Integration with order repository
-    return null; // Placeholder
   }
 }

@@ -4,7 +4,13 @@
  * Tests: Input validation, business rules, edge cases
  */
 
-import { validateCheckoutRequest, validateCartRequest, validateDiscountRequest, Validator } from '../shared/validators';
+import {
+  validateCartRemoveRequest,
+  validateCartRequest,
+  validateCheckoutRequest,
+  validateDiscountRequest,
+  Validator
+} from '../shared/validators';
 import { ValidationError } from '../shared/errors/app.error';
 
 describe('Validator Class', () => {
@@ -155,11 +161,15 @@ describe('Checkout Request Validation', () => {
 });
 
 describe('Cart Request Validation', () => {
+  const validCartId = 'chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+  const validUserId = 'usr_test_0001';
+  const validProductId = 'cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+
   it('should accept valid cart request', () => {
     expect(() => validateCartRequest({
-      cartId: 'cart-1',
-      userId: 'user-1',
-      productId: 'prod-1',
+      cartId: validCartId,
+      userId: validUserId,
+      productId: validProductId,
       quantity: 1,
       priceAtTime: 50
     })).not.toThrow();
@@ -167,9 +177,9 @@ describe('Cart Request Validation', () => {
 
   it('should reject zero quantity', () => {
     expect(() => validateCartRequest({
-      cartId: 'cart-1',
-      userId: 'user-1',
-      productId: 'prod-1',
+      cartId: validCartId,
+      userId: validUserId,
+      productId: validProductId,
       quantity: 0,
       priceAtTime: 50
     })).toThrow(ValidationError);
@@ -177,9 +187,9 @@ describe('Cart Request Validation', () => {
 
   it('should reject negative quantity', () => {
     expect(() => validateCartRequest({
-      cartId: 'cart-1',
-      userId: 'user-1',
-      productId: 'prod-1',
+      cartId: validCartId,
+      userId: validUserId,
+      productId: validProductId,
       quantity: -5,
       priceAtTime: 50
     })).toThrow(ValidationError);
@@ -187,11 +197,41 @@ describe('Cart Request Validation', () => {
 
   it('should reject negative price', () => {
     expect(() => validateCartRequest({
-      cartId: 'cart-1',
-      userId: 'user-1',
-      productId: 'prod-1',
+      cartId: validCartId,
+      userId: validUserId,
+      productId: validProductId,
       quantity: 1,
       priceAtTime: -50
+    })).toThrow(ValidationError);
+  });
+
+  it('should reject empty-string price', () => {
+    expect(() => validateCartRequest({
+      cartId: validCartId,
+      userId: validUserId,
+      productId: validProductId,
+      quantity: 1,
+      priceAtTime: ''
+    })).toThrow(ValidationError);
+  });
+});
+
+describe('Cart Remove Request Validation', () => {
+  const validCartId = 'chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+  const validProductId = 'cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+
+  it('should accept cart remove request without userId', () => {
+    expect(() => validateCartRemoveRequest({
+      cartId: validCartId,
+      productId: validProductId
+    })).not.toThrow();
+  });
+
+  it('should reject invalid userId when provided', () => {
+    expect(() => validateCartRemoveRequest({
+      cartId: validCartId,
+      productId: validProductId,
+      userId: ''
     })).toThrow(ValidationError);
   });
 });

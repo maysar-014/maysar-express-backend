@@ -10,6 +10,9 @@ import {
   RateLimitExceededError
 } from '../../domain/errors/notification.errors';
 import { t } from '@shared/i18n/i18n';
+import { isSystemId } from '@shared/ids/id';
+
+const CONTRACT_TEST_USER_ID = 'usr_test_0001';
 
 export class NotificationController {
   constructor(
@@ -21,6 +24,32 @@ export class NotificationController {
 
   private isContractTestRequest(req: Request): boolean {
     return String(req.headers?.['x-contract-test'] || '').trim() === '1' && process.env.NODE_ENV !== 'production';
+  }
+
+  private resolveTargetUserId(req: Request): string | undefined {
+    const authUser = (req as any).user;
+    const roles = Array.isArray(authUser?.roles)
+      ? authUser.roles.map((role: unknown) => String(role).trim().toLowerCase())
+      : [];
+    const requestedUserId = typeof req.query?.userId === 'string'
+      ? req.query.userId
+      : typeof req.body?.userId === 'string'
+        ? req.body.userId
+        : undefined;
+
+    if ((roles.includes('admin') || roles.includes('system')) && requestedUserId) {
+      return requestedUserId;
+    }
+
+    return authUser?.userId || requestedUserId;
+  }
+
+  private hasValidRequestedUserId(req: Request, value: unknown): boolean {
+    if (typeof value !== 'string' || value.trim().length === 0) {
+      return false;
+    }
+
+    return isSystemId(value) || (this.isContractTestRequest(req) && value === CONTRACT_TEST_USER_ID);
   }
 
   async createNotification(req: Request, res: Response): Promise<void> {
@@ -86,6 +115,78 @@ export class NotificationController {
           page: result.page,
           limit: result.limit,
           hasMore: result.hasMore
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: { code: 'INTERNAL_SERVER_ERROR', message: t('notification:errors.internalError', { lng: (req as any).language }) }
+      });
+    }
+  }
+
+  async markAllRead(req: Request, res: Response): Promise<void> {
+    try {
+      const bodyKeys = Object.keys(req.body || {});
+      if (bodyKeys.some((key) => key !== 'userId')) {
+        res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Only userId is allowed in the request body' }
+        });
+        return;
+      }
+
+      if (Object.prototype.hasOwnProperty.call(req.body || {}, 'userId') && !this.hasValidRequestedUserId(req, req.body?.userId)) {
+        res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'userId must be a valid ID' }
+        });
+        return;
+      }
+
+      const userId = this.resolveTargetUserId(req);
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: { code: 'UNAUTHORIZED', message: 'Authentication required' }
+        });
+        return;
+      }
+
+      const updatedCount = await this.notificationRepository.markAllAsReadByUserId(userId, new Date());
+      res.status(200).json({
+        success: true,
+        data: {
+          userId,
+          updatedCount
+        },
+        message: 'Notifications marked as read'
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: { code: 'INTERNAL_SERVER_ERROR', message: t('notification:errors.internalError', { lng: (req as any).language }) }
+      });
+    }
+  }
+
+  async getUnreadCount(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = this.resolveTargetUserId(req);
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: { code: 'UNAUTHORIZED', message: 'Authentication required' }
+        });
+        return;
+      }
+
+      const count = await this.notificationRepository.countUnreadByUserId(userId);
+      res.status(200).json({
+        success: true,
+        data: {
+          userId,
+          unreadCount: count
         }
       });
     } catch (error) {

@@ -17,6 +17,7 @@ describe('CartController E2E', () => {
     mockRepository = {
       save: jest.fn().mockResolvedValue(undefined),
       getById: jest.fn().mockResolvedValue({ items: [] }),
+      getByUserId: jest.fn().mockResolvedValue(null),
       delete: jest.fn().mockResolvedValue(undefined)
     };
     controller = new CartController(mockRepository);
@@ -72,6 +73,25 @@ describe('CartController E2E', () => {
     );
   });
 
+  it('should update item quantity', async () => {
+    mockRequest.body = {
+      cartId: 'cart-1',
+      userId: 'user-1',
+      productId: 'prod-1',
+      quantity: 5
+    };
+    mockRepository.getById.mockResolvedValueOnce({
+      userId: 'user-1',
+      items: [{ productId: 'prod-1', quantity: 1, priceAtTime: 50 }]
+    });
+
+    await controller.updateCartItem(mockRequest as Request, mockResponse as Response);
+
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true })
+    );
+  });
+
   it('should get cart', async () => {
     mockRequest.params = { cartId: 'cart-1' };
     (mockRequest as any).userId = 'user-1';
@@ -92,6 +112,47 @@ describe('CartController E2E', () => {
       expect.objectContaining({ success: true })
     );
   });
+
+  it('should resolve current cart for authenticated user', async () => {
+    (mockRequest as any).user = { userId: 'user-1' };
+    mockRepository.getByUserId.mockResolvedValueOnce({
+      id: 'chk_cart_existing',
+      userId: 'user-1',
+      items: [{ productId: 'prod-1', quantity: 1, priceAtTime: 50 }]
+    });
+
+    await controller.getCurrentCart(mockRequest as Request, mockResponse as Response);
+
+    expect(mockRepository.getByUserId).toHaveBeenCalledWith('user-1');
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true })
+    );
+  });
+
+  it('should merge guest cart into target cart', async () => {
+    mockRequest.body = {
+      sourceCartId: 'guest-cart-1',
+      targetCartId: 'user-cart-1',
+      userId: 'user-1'
+    };
+    mockRepository.getById
+      .mockResolvedValueOnce({
+        userId: 'guest-user',
+        items: [{ productId: 'prod-1', quantity: 2, priceAtTime: 50 }]
+      })
+      .mockResolvedValueOnce({
+        userId: 'user-1',
+        items: [{ productId: 'prod-2', quantity: 1, priceAtTime: 100 }]
+      });
+
+    await controller.mergeCarts(mockRequest as Request, mockResponse as Response);
+
+    expect(mockRepository.save).toHaveBeenCalled();
+    expect(mockRepository.delete).toHaveBeenCalledWith('guest-cart-1');
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true })
+    );
+  });
 });
 
 describe('CheckoutController E2E', () => {
@@ -102,9 +163,26 @@ describe('CheckoutController E2E', () => {
   let mockResponse: Partial<Response>;
 
   beforeEach(() => {
+    const sessionFixture = {
+      id: 'session-1',
+      cartId: 'cart-1',
+      userId: 'user-1',
+      enablerId: undefined,
+      enablerCode: undefined,
+      status: 'initiated',
+      shippingAddressId: 'addr-1',
+      billingAddressId: 'addr-2',
+      shippingMethodId: 'ship-1',
+      shippingCost: 10,
+      totalAmount: 110,
+      expiresAt: new Date('2026-03-23T12:00:00.000Z'),
+      createdAt: new Date('2026-03-23T11:00:00.000Z'),
+      updatedAt: new Date('2026-03-23T11:30:00.000Z')
+    };
+
     mockCheckoutRepository = {
       saveCheckoutSession: jest.fn().mockResolvedValue(undefined),
-      getSession: jest.fn().mockResolvedValue({ id: 'session-1', status: 'initiated' }),
+      getSession: jest.fn().mockResolvedValue(sessionFixture),
       saveSession: jest.fn().mockResolvedValue(undefined)
     };
     mockEventBus = {

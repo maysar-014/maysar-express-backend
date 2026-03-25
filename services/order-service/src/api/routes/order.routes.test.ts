@@ -34,6 +34,7 @@ const buildOrderController = () => ({
   getOrder: jest.fn(async (_req: Request, res: Response) => res.status(200).json({ action: 'getOrder' })),
   updateOrder: jest.fn(async (_req: Request, res: Response) => res.status(200).json({ action: 'updateOrder' })),
   updateOrderStatus: jest.fn(async (_req: Request, res: Response) => res.status(200).json({ action: 'updateOrderStatus' })),
+  cancelOrder: jest.fn(async (_req: Request, res: Response) => res.status(200).json({ action: 'cancelOrder' })),
   deleteOrder: jest.fn(async (_req: Request, res: Response) => res.status(200).json({ action: 'deleteOrder' })),
   searchOrders: jest.fn(async (_req: Request, res: Response) => res.status(200).json({ action: 'searchOrders' })),
   getOrderAnalytics: jest.fn(async (_req: Request, res: Response) => res.status(200).json({ action: 'getOrderAnalytics' }))
@@ -84,6 +85,7 @@ describe('setupOrderRoutes', () => {
         'GET /orders/:id',
         'PUT /orders/:id',
         'POST /orders/:id/status',
+        'POST /orders/:id/cancel',
         'DELETE /orders/:id',
         'GET /orders/search',
         'GET /orders/analytics/stats',
@@ -107,10 +109,16 @@ describe('setupOrderRoutes', () => {
       .post('/api/orders/disputes/dispute-1/resolve')
       .set(contractHeaders)
       .send({ resolution: 'Approved refund', decision: 'approved' });
+    const cancelRes = await request(app)
+      .post('/api/orders/order-1/cancel')
+      .set(contractHeaders)
+      .send({ reason: 'Changed my mind' });
 
     expect(createRes.status).toBe(201);
     expect(createRes.body.action).toBe('placeOrder');
     expect(resolveRes.status).toBe(200);
     expect(resolveRes.body.action).toBe('resolveDispute');
+    expect(cancelRes.status).toBe(200);
+    expect(cancelRes.body.action).toBe('cancelOrder');
   });
 });

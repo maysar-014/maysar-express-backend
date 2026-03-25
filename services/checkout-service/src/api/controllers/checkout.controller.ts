@@ -172,6 +172,8 @@ export class CheckoutController {
   async confirmCheckout(req: Request, res: Response): Promise<void> {
     const correlationId = req.headers['x-correlation-id'] as string;
     const idempotencyKey = req.headers['idempotency-key'] as string;
+    const params = req.params ?? {};
+    const body = req.body ?? {};
 
     try {
       // Check idempotency
@@ -184,8 +186,8 @@ export class CheckoutController {
         }
       }
 
-      const sessionId = (req.params.id || req.body.sessionId) as string | undefined;
-      const { paymentMethodId } = req.body;
+      const sessionId = (params.id || body.sessionId) as string | undefined;
+      const { paymentMethodId } = body;
 
       if (!sessionId) {
         res.status(400).json({
@@ -232,7 +234,7 @@ export class CheckoutController {
       res.json(response);
     } catch (error) {
       const statusCode = error instanceof AppError ? error.statusCode : 500;
-      logger.error('Error confirming checkout', error as Error, { sessionId: req.body.sessionId }, correlationId);
+      logger.error('Error confirming checkout', error as Error, { sessionId: body.sessionId }, correlationId);
       res.status(statusCode).json({
         success: false,
         error: {

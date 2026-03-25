@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
-import { AnyZodObject, ZodError } from 'zod';
+import { ZodError, ZodTypeAny } from 'zod';
 
-const withStrictObject = (schema: AnyZodObject): AnyZodObject =>
-    typeof (schema as AnyZodObject & { strict?: () => AnyZodObject }).strict === 'function'
-        ? (schema as AnyZodObject & { strict: () => AnyZodObject }).strict()
+const withStrictObject = (schema: ZodTypeAny): ZodTypeAny =>
+    typeof (schema as ZodTypeAny & { strict?: () => ZodTypeAny }).strict === 'function'
+        ? (schema as ZodTypeAny & { strict: () => ZodTypeAny }).strict()
         : schema;
 
-export const validate = (schema: AnyZodObject) => async (req: Request, res: Response, next: NextFunction) => {
+export const validate = (schema: ZodTypeAny) => async (req: Request, res: Response, next: NextFunction) => {
     try {
         await withStrictObject(schema).parseAsync(req.body);
         return next();
@@ -28,9 +28,9 @@ export const validate = (schema: AnyZodObject) => async (req: Request, res: Resp
     }
 };
 
-export const validateQuery = (schema: AnyZodObject) => async (req: Request, res: Response, next: NextFunction) => {
+export const validateQuery = (schema: ZodTypeAny) => async (req: Request, res: Response, next: NextFunction) => {
     try {
-        await withStrictObject(schema).parseAsync(req.query);
+        req.query = await withStrictObject(schema).parseAsync(req.query);
         return next();
     } catch (error) {
         if (error instanceof ZodError) {

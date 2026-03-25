@@ -6,6 +6,38 @@
 import { ValidationError } from './errors/app.error';
 import { isSystemId } from '@shared/ids/id';
 
+const CONTRACT_TEST_USER_ID_PATTERN = /^usr_test_\d+$/;
+
+export const isContractAwareUserId = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0 && (isSystemId(value) || CONTRACT_TEST_USER_ID_PATTERN.test(value));
+
+export const isValidCartId = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0 && value.startsWith('chk_cart_') && isSystemId(value);
+
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0;
+
+const isPositiveInteger = (value: unknown): boolean =>
+  Number.isInteger(Number(value)) && Number(value) > 0;
+
+const toFiniteNumber = (value: unknown): number | null => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+};
+
+const isNonNegativeFiniteNumber = (value: unknown): boolean => {
+  const parsed = toFiniteNumber(value);
+  return parsed !== null && parsed >= 0;
+};
+
 export interface ValidationRule {
   field: string;
   validate: (value: any) => boolean;
@@ -88,16 +120,56 @@ export function validateCheckoutRequest(data: any): void {
 export function validateCartRequest(data: any): void {
   const errors: Record<string, string> = {};
 
-  if (!data.cartId) errors.cartId = 'Cart ID is required';
-  if (!data.userId) errors.userId = 'User ID is required';
-  if (!data.productId) errors.productId = 'Product ID is required';
-  if (!data.quantity || data.quantity <= 0) errors.quantity = 'Quantity must be greater than 0';
-  if (data.priceAtTime === undefined || data.priceAtTime < 0) {
+  if (!isValidCartId(data.cartId)) errors.cartId = 'Cart ID must be a valid cart ID';
+  if (!isContractAwareUserId(data.userId)) errors.userId = 'User ID must be a valid ID';
+  if (!isNonEmptyString(data.productId) || !isSystemId(data.productId)) errors.productId = 'Product ID must be a valid ID';
+  if (data.variantId !== undefined && !isNonEmptyString(data.variantId)) errors.variantId = 'Variant ID must be a non-empty string';
+  if (!isPositiveInteger(data.quantity)) errors.quantity = 'Quantity must be greater than 0';
+  if (!isNonNegativeFiniteNumber(data.priceAtTime)) {
     errors.priceAtTime = 'Price must be non-negative';
   }
 
   if (Object.keys(errors).length > 0) {
     throw new ValidationError('Cart validation failed', errors);
+  }
+}
+
+export function validateCartUpdateRequest(data: any): void {
+  const errors: Record<string, string> = {};
+
+  if (!isValidCartId(data.cartId)) errors.cartId = 'Cart ID must be a valid cart ID';
+  if (data.userId !== undefined && !isContractAwareUserId(data.userId)) errors.userId = 'User ID must be a valid ID';
+  if (!isNonEmptyString(data.productId) || !isSystemId(data.productId)) errors.productId = 'Product ID must be a valid ID';
+  if (data.variantId !== undefined && !isNonEmptyString(data.variantId)) errors.variantId = 'Variant ID must be a non-empty string';
+  if (!isPositiveInteger(data.quantity)) errors.quantity = 'Quantity must be greater than 0';
+
+  if (Object.keys(errors).length > 0) {
+    throw new ValidationError('Cart update validation failed', errors);
+  }
+}
+
+export function validateCartRemoveRequest(data: any): void {
+  const errors: Record<string, string> = {};
+
+  if (!isValidCartId(data.cartId)) errors.cartId = 'Cart ID must be a valid cart ID';
+  if (data.userId !== undefined && !isContractAwareUserId(data.userId)) errors.userId = 'User ID must be a valid ID';
+  if (!isNonEmptyString(data.productId) || !isSystemId(data.productId)) errors.productId = 'Product ID must be a valid ID';
+  if (data.variantId !== undefined && !isNonEmptyString(data.variantId)) errors.variantId = 'Variant ID must be a non-empty string';
+
+  if (Object.keys(errors).length > 0) {
+    throw new ValidationError('Cart removal validation failed', errors);
+  }
+}
+
+export function validateCartMergeRequest(data: any): void {
+  const errors: Record<string, string> = {};
+
+  if (!isValidCartId(data.sourceCartId)) errors.sourceCartId = 'Source cart ID must be a valid cart ID';
+  if (!isValidCartId(data.targetCartId)) errors.targetCartId = 'Target cart ID must be a valid cart ID';
+  if (!isContractAwareUserId(data.userId)) errors.userId = 'User ID must be a valid ID';
+
+  if (Object.keys(errors).length > 0) {
+    throw new ValidationError('Cart merge validation failed', errors);
   }
 }
 

@@ -1,10 +1,39 @@
 import { NotificationController } from '../notification.controller';
 import { Request, Response } from 'express';
+import { NotificationValidationError } from '../../../domain/errors/notification.errors';
 
 const mockSendUseCase = { execute: jest.fn() } as any;
 const mockGetHistoryUseCase = { execute: jest.fn() } as any;
 const mockRetryUseCase = { execute: jest.fn() } as any;
-const mockRepository = { findById: jest.fn(), update: jest.fn(), delete: jest.fn() } as any;
+const mockRepository = {
+    findById: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    markAllAsReadByUserId: jest.fn(),
+    countUnreadByUserId: jest.fn()
+} as any;
+
+const buildNotification = (overrides: Record<string, unknown> = {}) => ({
+    id: 'n1',
+    userId: 'usr_test_0001',
+    type: 'email',
+    channel: 'email',
+    status: 'sent',
+    priority: 'medium',
+    subject: 'Subject',
+    content: { getValue: () => 'Body' },
+    metadata: { toObject: () => ({}) },
+    scheduledAt: null,
+    sentAt: null,
+    deliveredAt: null,
+    readAt: null,
+    retryCount: 0,
+    maxRetries: 3,
+    lastError: null,
+    createdAt: new Date('2026-03-23T10:00:00.000Z'),
+    updatedAt: new Date('2026-03-23T10:00:00.000Z'),
+    ...overrides
+});
 
 describe('NotificationController', () => {
     let controller: NotificationController;
@@ -43,11 +72,7 @@ describe('NotificationController', () => {
     it('returns contract-test success for non-cancellable notifications', async () => {
         req.params = { id: 'n1' };
         req.headers = { 'x-contract-test': '1' } as any;
-        mockRepository.findById.mockResolvedValue({
-            id: 'n1',
-            status: 'sent',
-            scheduledAt: null
-        });
+        mockRepository.findById.mockResolvedValue(buildNotification({ status: 'sent', scheduledAt: null }));
 
         await controller.cancelScheduled(req as Request, res as Response);
 
@@ -58,12 +83,32 @@ describe('NotificationController', () => {
     it('returns contract-test success for already-retried notifications', async () => {
         req.params = { id: 'n1' };
         req.headers = { 'x-contract-test': '1' } as any;
-        mockRetryUseCase.execute.mockRejectedValue({ name: 'NotificationValidationError', message: 'Notification cannot be retried' });
-        mockRepository.findById.mockResolvedValue({ id: 'n1', status: 'failed' });
+        mockRetryUseCase.execute.mockRejectedValue(new NotificationValidationError('Notification cannot be retried'));
+        mockRepository.findById.mockResolvedValue(buildNotification({ status: 'failed' }));
 
         await controller.retryFailed(req as Request, res as Response);
 
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
+    it('marks all notifications as read for the authenticated user', async () => {
+        req.user = { userId: 'usr_test_0001', roles: ['buyer'] } as any;
+        mockRepository.markAllAsReadByUserId.mockResolvedValue(3);
+
+        await controller.markAllRead(req as Request, res as Response);
+
+        expect(mockRepository.markAllAsReadByUserId).toHaveBeenCalledWith('usr_test_0001', expect.any(Date));
+        expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('returns unread count for the authenticated user', async () => {
+        req.user = { userId: 'usr_test_0001', roles: ['buyer'] } as any;
+        mockRepository.countUnreadByUserId.mockResolvedValue(5);
+
+        await controller.getUnreadCount(req as Request, res as Response);
+
+        expect(mockRepository.countUnreadByUserId).toHaveBeenCalledWith('usr_test_0001');
+        expect(res.status).toHaveBeenCalledWith(200);
     });
 });

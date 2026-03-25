@@ -24,6 +24,8 @@ describe('createNotificationRoutes', () => {
     const controller = {
       createNotification: jest.fn(),
       listNotifications: jest.fn(),
+      getUnreadCount: jest.fn(),
+      markAllRead: jest.fn(),
       bulkSend: jest.fn(),
       getNotification: jest.fn(),
       updateStatus: jest.fn(),
@@ -37,6 +39,8 @@ describe('createNotificationRoutes', () => {
       expect.arrayContaining([
         'POST /',
         'GET /',
+        'GET /unread-count',
+        'POST /mark-all-read',
         'POST /bulk',
         'GET /:id',
         'PATCH /:id/status',

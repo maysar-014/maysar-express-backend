@@ -1,12 +1,16 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { eventBus, EventBus } from '@shared-events/eventBus';
 import { t } from '@shared/i18n/i18n';
 import { i18next, i18nextMiddleware } from '@shared/i18n/i18n';
 import { z } from 'zod';
 import { isSystemId } from '@shared/validation/id';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 import { PrismaComplianceRepository } from './infrastructure/repositories/prisma-compliance.repository';
 import { createPrismaClient } from '@shared/database/prisma-client';
+import { DocumentStorageService, StoredDocumentMetadata } from '@shared/storage/document-storage';
+
+const Busboy = require('busboy');
 
 const parseOrRespond = (schema: z.ZodSchema, data: any, res: express.Response) => {
   const result = schema.safeParse(data);
@@ -25,34 +29,103 @@ const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F]+$/u;
 const safeVisibleStringSchema = z.string().min(1).regex(SAFE_VISIBLE_STRING_PATTERN, {
   message: 'Expected a non-empty printable string'
 });
+const documentTypeSchema = z.enum(['national_id', 'passport', 'drivers_license', 'proof_of_address']);
+const optionalSagaIdSchema = safeVisibleStringSchema.optional();
+const metadataSchema = z.preprocess((value) => {
+  if (value === undefined) {
+    return undefined;
+  }
 
-const verifyDocumentSchema = z.object({
+  if (value === null) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  }
+
+  return value;
+}, z.record(z.any()).optional());
+
+const requireDocumentUrlOrFileUrl = (
+  value: { documentUrl?: string; fileUrl?: string },
+  ctx: z.RefinementCtx
+) => {
+  if (!value.documentUrl && !value.fileUrl) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'documentUrl or fileUrl is required',
+      path: ['documentUrl']
+    });
+  }
+};
+
+const kycDocumentFieldsSchema = z.object({
   userId: supportedIdSchema,
-  documentType: z.enum(['national_id', 'passport', 'drivers_license', 'proof_of_address']),
-  documentUrl: z.string().url()
+  documentType: documentTypeSchema,
+  fileName: safeVisibleStringSchema.optional(),
+  mimeType: safeVisibleStringSchema.optional(),
+  fileSizeBytes: z.coerce.number().int().positive().optional(),
+  issuingCountry: z.string().trim().regex(/^[A-Za-z]{2,3}$/).optional(),
+  documentNumber: safeVisibleStringSchema.min(3).optional(),
+  issuedAt: z.string().datetime().optional(),
+  expiresAt: z.string().datetime().optional(),
+  metadata: metadataSchema
 });
+
+const kycDocumentSubmissionObjectSchema = kycDocumentFieldsSchema.extend({
+  documentUrl: z.string().url().optional(),
+  fileUrl: z.string().url().optional()
+}).strict();
+
+const kycDocumentSubmissionSchema = kycDocumentSubmissionObjectSchema.superRefine(requireDocumentUrlOrFileUrl);
+
+const verifyDocumentSchema = kycDocumentSubmissionObjectSchema.extend({
+  sagaId: optionalSagaIdSchema
+}).strict().superRefine(requireDocumentUrlOrFileUrl);
+type KycDocumentSubmissionInput = z.infer<typeof kycDocumentSubmissionSchema>;
+const kycMultipartUploadSchema = z.object({
+  userId: supportedIdSchema,
+  documentType: documentTypeSchema,
+  fileName: safeVisibleStringSchema.optional(),
+  mimeType: safeVisibleStringSchema,
+  fileSizeBytes: z.coerce.number().int().positive().optional(),
+  issuingCountry: z.string().trim().regex(/^[A-Za-z]{2,3}$/).optional(),
+  documentNumber: safeVisibleStringSchema.min(3).optional(),
+  issuedAt: z.string().datetime().optional(),
+  expiresAt: z.string().datetime().optional(),
+  metadata: z.record(z.any()).optional()
+}).strict();
 
 const manualReviewSchema = z.object({
   userId: supportedIdSchema,
   decision: z.enum(['approved', 'rejected', 'under_review']),
-  reviewerId: supportedIdSchema
+  reviewerId: supportedIdSchema,
+  sagaId: optionalSagaIdSchema
 });
 
 const riskAssessmentSchema = z.object({
   userId: supportedIdSchema,
-  assessmentType: safeVisibleStringSchema
+  assessmentType: safeVisibleStringSchema,
+  sagaId: optionalSagaIdSchema
 }).strict();
 
 const monitorSchema = z.object({
   complianceType: z.literal('kyc'),
   entityId: z.string(),
-  operation: z.string()
+  operation: z.string(),
+  sagaId: optionalSagaIdSchema
 });
 
 const generateReportSchema = z.object({
   reportType: z.literal('kyc'),
   period: safeVisibleStringSchema,
-  requestedBy: safeVisibleStringSchema
+  requestedBy: safeVisibleStringSchema,
+  sagaId: optionalSagaIdSchema
 }).strict();
 
 const auditLogSchema = z.object({
@@ -60,11 +133,16 @@ const auditLogSchema = z.object({
   action: safeVisibleStringSchema,
   resource: safeVisibleStringSchema,
   resourceId: safeVisibleStringSchema,
-  details: z.record(z.any()).optional()
+  details: z.record(z.any()).optional(),
+  sagaId: optionalSagaIdSchema
 }).strict();
 
 const kycStatusParamSchema = z.object({
   userId: supportedIdSchema
+});
+
+const kycDocumentContentParamSchema = z.object({
+  verificationId: supportedIdSchema
 });
 
 const amlRecordSchema = z.object({
@@ -72,14 +150,16 @@ const amlRecordSchema = z.object({
   sanctionsStatus: z.string().min(1).optional(),
   pepStatus: z.boolean().optional(),
   riskScore: z.number().min(0).max(100).optional(),
-  flags: z.record(z.any()).optional()
+  flags: z.record(z.any()).optional(),
+  sagaId: optionalSagaIdSchema
 });
 
 const subjectRightsRequestSchema = z.object({
   userId: supportedIdSchema,
   requestType: z.enum(['access', 'delete', 'portability', 'rectification']),
   reason: z.string().optional(),
-  payload: z.record(z.any()).optional()
+  payload: z.record(z.any()).optional(),
+  sagaId: optionalSagaIdSchema
 });
 
 const dataDeletionLogSchema = z.object({
@@ -87,7 +167,8 @@ const dataDeletionLogSchema = z.object({
   dataType: z.string().min(1),
   recordsDeleted: z.number().int().nonnegative(),
   requestedBy: supportedIdSchema,
-  reason: z.string().min(1)
+  reason: z.string().min(1),
+  sagaId: optionalSagaIdSchema
 });
 
 const dataRetentionPolicySchema = z.object({
@@ -96,7 +177,8 @@ const dataRetentionPolicySchema = z.object({
   legalBasis: safeVisibleStringSchema,
   applicableLaw: safeVisibleStringSchema,
   autoDelete: z.boolean().default(true),
-  nextReviewDate: z.string().datetime().transform((value) => new Date(value))
+  nextReviewDate: z.string().datetime().transform((value) => new Date(value)),
+  sagaId: optionalSagaIdSchema
 }).strict();
 
 const dataProcessingRecordSchema = z.object({
@@ -104,7 +186,8 @@ const dataProcessingRecordSchema = z.object({
   categories: z.record(z.any()),
   recipients: z.record(z.any()),
   retentionPeriod: z.string().min(1),
-  securityMeasures: z.record(z.any())
+  securityMeasures: z.record(z.any()),
+  sagaId: optionalSagaIdSchema
 });
 
 const privacyImpactAssessmentSchema = z.object({
@@ -113,7 +196,8 @@ const privacyImpactAssessmentSchema = z.object({
   riskLevel: z.enum(['low', 'medium', 'high', 'critical']),
   findings: z.record(z.any()).optional(),
   recommendations: z.record(z.any()).optional(),
-  status: z.enum(['in_progress', 'completed', 'requires_action']).optional()
+  status: z.enum(['in_progress', 'completed', 'requires_action']).optional(),
+  sagaId: optionalSagaIdSchema
 });
 
 const tcraRecordSchema = z.object({
@@ -123,7 +207,8 @@ const tcraRecordSchema = z.object({
   registrationAt: z.coerce.date().optional(),
   expiryDate: z.coerce.date().optional(),
   lastAuditAt: z.coerce.date().optional(),
-  auditFindings: z.record(z.any()).optional()
+  auditFindings: z.record(z.any()).optional(),
+  sagaId: optionalSagaIdSchema
 });
 
 const traRecordSchema = z.object({
@@ -132,7 +217,8 @@ const traRecordSchema = z.object({
   vrn: z.string().optional(),
   taxComplianceStatus: z.string().optional(),
   lastFiscalCheck: z.coerce.date().optional(),
-  efdStatus: z.string().optional()
+  efdStatus: z.string().optional(),
+  sagaId: optionalSagaIdSchema
 });
 
 const marketRecordSchema = z.object({
@@ -140,40 +226,552 @@ const marketRecordSchema = z.object({
   ethicalScore: z.number().min(0).max(100).optional(),
   qualityStatus: z.string().optional(),
   certifications: z.record(z.any()).optional(),
-  lastAuditAt: z.coerce.date().optional()
+  lastAuditAt: z.coerce.date().optional(),
+  sagaId: optionalSagaIdSchema
 });
 
-export const createApp = (prisma: PrismaClient, eventBus: EventBus) => {
+const compactObject = (value: Record<string, unknown>): Record<string, unknown> =>
+  Object.fromEntries(Object.entries(value).filter(([, entryValue]) => entryValue !== undefined));
+
+const isMultipartRequest = (req: express.Request): boolean => Boolean(req.is('multipart/form-data') || req.is('multipart/*'));
+
+interface UploadedMultipartFile {
+  buffer: Buffer;
+  originalname: string;
+  mimetype: string;
+  size: number;
+}
+
+const MULTIPART_PARSE_TIMEOUT_MS = (() => {
+  const raw = Number(process.env.KYC_MULTIPART_PARSE_TIMEOUT_MS || '10000');
+  return Number.isFinite(raw) && raw > 0 ? raw : 10000;
+})();
+
+const normalizeMultipartError = (error: unknown): Error => {
+  if (error instanceof Error) {
+    const message = error.message.trim();
+    if ((error as any).code === 'LIMIT_FILE_SIZE') {
+      return new Error('Uploaded file exceeds the maximum allowed size');
+    }
+    if ((error as any).code === 'LIMIT_FILE_COUNT') {
+      return new Error('Only one file upload is allowed');
+    }
+    if (/unexpected end of form/i.test(message) || /multipart/i.test(message) || /boundary/i.test(message)) {
+      return new Error('Malformed multipart form data');
+    }
+    return error;
+  }
+
+  if (typeof error === 'string') {
+    if (/unexpected end of form/i.test(error) || /multipart/i.test(error) || /boundary/i.test(error)) {
+      return new Error('Malformed multipart form data');
+    }
+    return new Error(error);
+  }
+
+  return new Error('Malformed multipart form data');
+};
+
+const hasPrivilegedKycAccess = (roles: string[] = []): boolean => {
+  const normalizedRoles = roles.map(role => role.toLowerCase());
+  return normalizedRoles.includes('admin')
+    || normalizedRoles.includes('system')
+    || normalizedRoles.includes('compliance');
+};
+
+const assertKycDocumentAccess = (req: express.Request, res: express.Response, userId: string): boolean => {
+  const service = (req as any).service;
+  if (service) return true;
+
+  const user = (req as any).user as { userId?: string; roles?: string[] } | undefined;
+  if (!user) return true;
+
+  if (user.userId === userId || hasPrivilegedKycAccess(user.roles)) {
+    return true;
+  }
+
+  res.status(403).json({
+    success: false,
+    error: 'Forbidden'
+  });
+  return false;
+};
+
+const buildKycDocumentAccessUrl = (req: express.Request, verificationId: string): string =>
+  `${req.baseUrl || ''}/kyc/documents/${verificationId}/content`;
+
+const extractStoredDocumentMetadata = (value: unknown): StoredDocumentMetadata | null => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  const url = candidate.url;
+  if (typeof url !== 'string') {
+    return null;
+  }
+
+  return {
+    provider: (candidate.storageProvider as StoredDocumentMetadata['provider']) || 'local',
+    key: typeof candidate.storageKey === 'string' ? candidate.storageKey : undefined,
+    bucket: typeof candidate.storageBucket === 'string' ? candidate.storageBucket : undefined,
+    url,
+    fileName: typeof candidate.fileName === 'string' ? candidate.fileName : 'document',
+    mimeType: typeof candidate.mimeType === 'string' ? candidate.mimeType : 'application/octet-stream',
+    fileSizeBytes: typeof candidate.fileSizeBytes === 'number' ? candidate.fileSizeBytes : 0,
+    checksumSha256: typeof candidate.checksumSha256 === 'string' ? candidate.checksumSha256 : '',
+    uploadedAt: typeof candidate.uploadedAt === 'string' ? candidate.uploadedAt : new Date().toISOString()
+  };
+};
+
+const resolveAcceptedUploadMimeType = (
+  uploadedMimeType: string | undefined,
+  declaredMimeType: string | undefined,
+  allowedMimeTypes: string[]
+): string => {
+  const normalizedDeclared = declaredMimeType?.trim();
+  if (normalizedDeclared && allowedMimeTypes.includes(normalizedDeclared)) {
+    return normalizedDeclared;
+  }
+
+  const normalizedUploaded = uploadedMimeType?.trim();
+  if (normalizedUploaded && allowedMimeTypes.includes(normalizedUploaded)) {
+    return normalizedUploaded;
+  }
+
+  throw new Error(`Unsupported document MIME type: ${normalizedDeclared || normalizedUploaded || 'unknown'}`);
+};
+
+const normalizeKycDocumentSubmission = (
+  validated: KycDocumentSubmissionInput,
+  storedDocument?: StoredDocumentMetadata
+) => {
+  const normalizedUrl = validated.documentUrl ?? validated.fileUrl!;
+  const documentPayload = compactObject({
+    type: validated.documentType,
+    url: normalizedUrl,
+    fileName: validated.fileName,
+    mimeType: validated.mimeType,
+    fileSizeBytes: validated.fileSizeBytes,
+    issuingCountry: validated.issuingCountry?.toUpperCase(),
+    documentNumber: validated.documentNumber,
+    issuedAt: validated.issuedAt,
+    expiresAt: validated.expiresAt,
+    metadata: validated.metadata,
+    storageProvider: storedDocument?.provider,
+    storageBucket: storedDocument?.bucket,
+    storageKey: storedDocument?.key,
+    checksumSha256: storedDocument?.checksumSha256,
+    uploadedAt: storedDocument?.uploadedAt
+  });
+
+  return {
+    normalizedUrl,
+    expiryDate: validated.expiresAt ? new Date(validated.expiresAt) : undefined,
+    documentPayload
+  };
+};
+
+const createKycSubmission = async (
+  prisma: PrismaClient,
+  eventBus: EventBus,
+  validated: KycDocumentSubmissionInput,
+  sagaId?: string,
+  storedDocument?: StoredDocumentMetadata
+) => {
+  const { userId, documentType } = validated;
+  const { normalizedUrl, expiryDate, documentPayload } = normalizeKycDocumentSubmission(validated, storedDocument);
+
+  const verification = await prisma.compliance_KYCRecord.create({
+    data: {
+      id: makeId(getModelPrefix('Compliance_KYCRecord')),
+      userId,
+      documents: documentPayload as Prisma.InputJsonValue,
+      verificationStatus: 'pending',
+      expiryDate
+    }
+  });
+
+  await eventBus.publish('DocumentUploadValidationStarted.v1', {
+    userId,
+    documentType,
+    documentUrl: normalizedUrl,
+    sagaId
+  });
+
+  const validationResult = { confidence: 0.85, extractedData: { name: 'John Doe' } };
+
+  await eventBus.publish('AutomatedValidationCompleted.v1', {
+    userId,
+    documentType,
+    documentUrl: normalizedUrl,
+    validationResult,
+    sagaId
+  });
+
+  return {
+    verification,
+    normalizedUrl,
+    documentPayload
+  };
+};
+
+const respondWithKycSubmission = async (
+  prisma: PrismaClient,
+  eventBus: EventBus,
+  validated: KycDocumentSubmissionInput,
+  req: express.Request,
+  res: express.Response,
+  successStatusCode: number,
+  storedDocument?: StoredDocumentMetadata
+) => {
+  const { verification, normalizedUrl, documentPayload } = await createKycSubmission(
+    prisma,
+    eventBus,
+    validated,
+    undefined,
+    storedDocument
+  );
+
+  res.status(successStatusCode).json({
+    success: true,
+    submissionId: verification.id,
+    verificationId: verification.id,
+    status: verification.verificationStatus ?? 'pending',
+    data: {
+      userId: validated.userId,
+      documentType: validated.documentType,
+      documentUrl: normalizedUrl,
+      fileName: documentPayload.fileName ?? null,
+      mimeType: documentPayload.mimeType ?? null,
+      fileSizeBytes: documentPayload.fileSizeBytes ?? null,
+      documentAccessUrl: buildKycDocumentAccessUrl(req, verification.id),
+      storageProvider: documentPayload.storageProvider ?? null,
+      submittedAt: verification.submittedAt ?? new Date(),
+      verificationStatus: verification.verificationStatus ?? 'pending'
+    }
+  });
+};
+
+interface ComplianceAppDependencies {
+  documentStorage?: DocumentStorageService;
+}
+
+export const createApp = (
+  prisma: PrismaClient,
+  eventBus: EventBus,
+  dependencies: ComplianceAppDependencies = {}
+) => {
 const app = express();
 const complianceRepository = new PrismaComplianceRepository(prisma);
+const documentStorage = dependencies.documentStorage ?? new DocumentStorageService();
+const uploadConstraints = documentStorage.getConstraints();
+const runDocumentUpload = (req: express.Request) => new Promise<void>((resolve, reject) => {
+  let settled = false;
+  let uploadedFile: UploadedMultipartFile | undefined;
+  const fields: Record<string, string> = {};
+  let timeoutHandle: NodeJS.Timeout | undefined;
+
+  const parser = Busboy({
+    headers: req.headers,
+    limits: {
+      files: 1,
+      fileSize: uploadConstraints.maxFileSizeBytes
+    }
+  });
+
+  const cleanup = () => {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+      timeoutHandle = undefined;
+    }
+    req.off('aborted', onAborted);
+    req.off('error', onRequestError);
+    req.socket?.off('error', onSocketError);
+    try {
+      req.unpipe(parser);
+    } catch {}
+  };
+
+  const finish = (error?: unknown) => {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    if (error) {
+      reject(normalizeMultipartError(error));
+      return;
+    }
+    resolve();
+  };
+
+  const onAborted = () => finish(new Error('Malformed multipart form data'));
+  const onRequestError = (error: unknown) => finish(error);
+  const onSocketError = (error: unknown) => finish(error);
+
+  req.once('aborted', onAborted);
+  req.once('error', onRequestError);
+  req.socket?.once('error', onSocketError);
+  timeoutHandle = setTimeout(() => {
+    try {
+      req.unpipe(parser);
+    } catch {}
+    try {
+      req.resume();
+    } catch {}
+    if (typeof (parser as { destroy?: (error?: Error) => void }).destroy === 'function') {
+      try {
+        (parser as { destroy?: (error?: Error) => void }).destroy?.(new Error('Multipart upload timed out'));
+      } catch {}
+    }
+    finish(new Error('Multipart upload timed out'));
+  }, MULTIPART_PARSE_TIMEOUT_MS);
+
+  try {
+    parser.on('field', (name: string, value: string, info: { nameTruncated?: boolean; valueTruncated?: boolean }) => {
+      if (settled) return;
+      if (info?.nameTruncated || info?.valueTruncated) {
+        finish(new Error('Malformed multipart form data'));
+        return;
+      }
+      fields[name] = value;
+    });
+
+    parser.on('file', (
+      name: string,
+      stream: NodeJS.ReadableStream & { truncated?: boolean },
+      info: { filename?: string; mimeType?: string; mime?: string }
+    ) => {
+      if (settled) {
+        stream.resume();
+        return;
+      }
+
+      if (name !== 'file') {
+        stream.resume();
+        return;
+      }
+
+      const chunks: Buffer[] = [];
+      let size = 0;
+      let truncated = false;
+
+      stream.on('data', (chunk: Buffer) => {
+        chunks.push(chunk);
+        size += chunk.length;
+      });
+
+      stream.on('limit', () => {
+        truncated = true;
+      });
+
+      stream.on('error', (error: unknown) => finish(error));
+
+      stream.on('end', () => {
+        if (truncated || stream.truncated) {
+          finish(new Error('Uploaded file exceeds the maximum allowed size'));
+          return;
+        }
+
+        uploadedFile = {
+          buffer: Buffer.concat(chunks),
+          originalname: info.filename || 'upload',
+          mimetype: info.mimeType || info.mime || 'application/octet-stream',
+          size
+        };
+      });
+    });
+
+    parser.on('filesLimit', () => finish(new Error('Only one file upload is allowed')));
+    parser.on('error', (error: unknown) => {
+      if (settled) {
+        return;
+      }
+      finish(error);
+    });
+    parser.on('finish', () => {
+      if (settled) return;
+      (req as any).body = fields;
+      if (uploadedFile) {
+        (req as any).file = uploadedFile;
+      }
+      finish();
+    });
+
+    req.pipe(parser);
+  } catch (error) {
+    finish(error);
+  }
+});
 
 app.use(express.json());
 app.use(i18nextMiddleware.handle(i18next));
 
+const handleKycSubmissionRequest = async (req: express.Request, res: express.Response) => {
+  let validated: KycDocumentSubmissionInput | null = null;
+  let storedDocument: StoredDocumentMetadata | undefined;
+
+  if (isMultipartRequest(req)) {
+    await runDocumentUpload(req);
+
+    const uploadInput = parseOrRespond(kycMultipartUploadSchema, req.body, res);
+    if (!uploadInput) return;
+    if (!assertKycDocumentAccess(req, res, uploadInput.userId)) return;
+
+    const uploadedFile = (req as any).file as {
+      buffer: Buffer;
+      originalname: string;
+      mimetype: string;
+      size: number;
+    } | undefined;
+
+    if (!uploadedFile) {
+      res.status(422).json({
+        success: false,
+        errors: [{
+          message: 'file is required',
+          path: ['file']
+        }]
+      });
+      return;
+    }
+
+    const effectiveMimeType = resolveAcceptedUploadMimeType(
+      uploadedFile.mimetype,
+      uploadInput.mimeType,
+      uploadConstraints.allowedMimeTypes
+    );
+
+    if (uploadInput.fileSizeBytes !== undefined && uploadInput.fileSizeBytes !== uploadedFile.size) {
+      res.status(422).json({
+        success: false,
+        errors: [{
+          message: 'fileSizeBytes must match uploaded file size',
+          path: ['fileSizeBytes']
+        }]
+      });
+      return;
+    }
+
+    storedDocument = await documentStorage.storeDocument({
+      userId: uploadInput.userId,
+      documentType: uploadInput.documentType,
+      buffer: uploadedFile.buffer,
+      originalFileName: uploadInput.fileName ?? uploadedFile.originalname,
+      mimeType: effectiveMimeType,
+      metadata: uploadInput.metadata
+    });
+
+    validated = {
+      ...uploadInput,
+      documentUrl: storedDocument.url,
+      fileUrl: storedDocument.url,
+      fileName: uploadInput.fileName ?? storedDocument.fileName,
+      mimeType: effectiveMimeType,
+      fileSizeBytes: uploadInput.fileSizeBytes ?? storedDocument.fileSizeBytes,
+      metadata: {
+        ...(uploadInput.metadata || {}),
+        storage: compactObject({
+          provider: storedDocument.provider,
+          bucket: storedDocument.bucket,
+          key: storedDocument.key,
+          checksumSha256: storedDocument.checksumSha256
+        })
+      }
+    };
+  } else {
+    validated = parseOrRespond(kycDocumentSubmissionSchema, req.body, res);
+    if (!validated) return;
+    if (!assertKycDocumentAccess(req, res, validated.userId)) return;
+  }
+
+  if (!validated) return;
+  await respondWithKycSubmission(prisma, eventBus, validated, req, res, 201, storedDocument);
+};
+
 // KYC Document Verification
+app.post('/kyc/submissions', async (req, res) => {
+  try {
+    await handleKycSubmissionRequest(req, res);
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/kyc/documents', async (req, res) => {
+  try {
+    await handleKycSubmissionRequest(req, res);
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
 app.post('/verify-document', async (req, res) => {
   const validated = parseOrRespond(verifyDocumentSchema, req.body, res);
   if (!validated) return;
+  if (!assertKycDocumentAccess(req, res, validated.userId)) return;
 
-  const { userId, documentType, documentUrl } = validated;
-  const { sagaId } = req.body;
+  const { sagaId } = validated;
 
   try {
-    const verification = await prisma.compliance_KYCRecord.create({
-      data: { userId, documents: { type: documentType, url: documentUrl }, verificationStatus: 'pending' }
+    const { verification, normalizedUrl, documentPayload } = await createKycSubmission(
+      prisma,
+      eventBus,
+      validated,
+      sagaId
+    );
+
+    res.json({
+      success: true,
+      verificationId: verification.id,
+      submissionId: verification.id,
+      status: verification.verificationStatus ?? 'pending',
+      data: {
+        userId: validated.userId,
+        documentType: validated.documentType,
+        documentUrl: normalizedUrl,
+        fileName: documentPayload.fileName ?? null,
+        mimeType: documentPayload.mimeType ?? null,
+        fileSizeBytes: documentPayload.fileSizeBytes ?? null,
+        documentAccessUrl: buildKycDocumentAccessUrl(req, verification.id),
+        storageProvider: documentPayload.storageProvider ?? null,
+        submittedAt: verification.submittedAt ?? new Date(),
+        verificationStatus: verification.verificationStatus ?? 'pending'
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/kyc/documents/:verificationId/content', async (req, res) => {
+  const validated = parseOrRespond(kycDocumentContentParamSchema, req.params, res);
+  if (!validated) return;
+
+  try {
+    const record = await prisma.compliance_KYCRecord.findFirst({
+      where: { id: validated.verificationId }
     });
 
-    await eventBus.publish('DocumentUploadValidationStarted.v1', {
-      userId, documentType, documentUrl, sagaId
-    });
+    if (!record) {
+      return res.status(404).json({ success: false, error: 'KYC record not found' });
+    }
 
-    const validationResult = { confidence: 0.85, extractedData: { name: 'John Doe' } };
+    if (!assertKycDocumentAccess(req, res, record.userId)) return;
 
-    await eventBus.publish('AutomatedValidationCompleted.v1', {
-      userId, documentType, validationResult, sagaId
-    });
+    const storedDocument = extractStoredDocumentMetadata(record.documents);
+    if (!storedDocument) {
+      return res.status(404).json({ success: false, error: 'Stored document metadata not found' });
+    }
 
-    res.json({ success: true, verificationId: verification.id });
+    const access = await documentStorage.resolveDocumentAccess(storedDocument);
+    if (access.kind === 'redirect') {
+      return res.redirect(302, access.url);
+    }
+
+    res.setHeader('Content-Type', access.mimeType);
+    res.setHeader('Content-Length', access.size.toString());
+    res.setHeader('Content-Disposition', `inline; filename=\"${access.fileName}\"`);
+    res.status(200).send(access.buffer);
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }
@@ -184,8 +782,7 @@ app.post('/manual-review', async (req, res) => {
   const validated = parseOrRespond(manualReviewSchema, req.body, res);
   if (!validated) return;
 
-  const { userId, decision, reviewerId } = validated;
-  const { sagaId } = req.body;
+  const { userId, decision, reviewerId, sagaId } = validated;
 
   try {
     const eligibleStatuses = ['pending', 'under_review'] as const;
@@ -231,8 +828,7 @@ app.post('/risk-assessment', async (req, res) => {
   const validated = parseOrRespond(riskAssessmentSchema, req.body, res);
   if (!validated) return;
 
-  const { userId } = validated;
-  const { sagaId } = req.body;
+  const { userId, sagaId } = validated;
 
   try {
     const kycRecord = await prisma.compliance_KYCRecord.findFirst({
@@ -300,8 +896,7 @@ app.post('/monitor', async (req, res) => {
   const validated = parseOrRespond(monitorSchema, req.body, res);
   if (!validated) return;
 
-  const { complianceType, entityId, operation } = validated;
-  const { sagaId } = req.body;
+  const { complianceType, entityId, operation, sagaId } = validated;
 
   try {
     const complianceResult = { status: 'compliant', score: 95.5 };
@@ -325,8 +920,7 @@ app.post('/generate-report', async (req, res) => {
   const validated = parseOrRespond(generateReportSchema, req.body, res);
   if (!validated) return;
 
-  const { reportType, requestedBy } = validated;
-  const { sagaId } = req.body;
+  const { reportType, requestedBy, sagaId } = validated;
 
   try {
     const totalCount = await prisma.compliance_KYCRecord.count();
@@ -377,16 +971,16 @@ app.post('/audit-log', async (req, res) => {
   const validated = parseOrRespond(auditLogSchema, req.body, res);
   if (!validated) return;
 
-  const { userId, action, resource, resourceId } = validated;
-  const { details, sagaId } = req.body;
+  const { userId, action, resource, resourceId, details, sagaId } = validated;
 
   try {
     const auditLog = await prisma.compliance_ComplianceAuditLog.create({
       data: {
+        id: makeId(getModelPrefix('Compliance_ComplianceAuditLog')),
         userId,
         action,
         resource,
-        details: details ? JSON.parse(JSON.stringify(details)) : undefined
+        details: details ? (JSON.parse(JSON.stringify(details)) as Prisma.InputJsonValue) : undefined
       }
     });
 
@@ -409,8 +1003,7 @@ app.post('/aml-record', async (req, res) => {
   const validated = parseOrRespond(amlRecordSchema, req.body, res);
   if (!validated) return;
 
-  const { userId, sanctionsStatus, pepStatus, riskScore, flags } = validated;
-  const { sagaId } = req.body;
+  const { userId, sanctionsStatus, pepStatus, riskScore, flags, sagaId } = validated;
 
   try {
     const amlRecordId = await complianceRepository.upsertAmlRecord({
@@ -438,8 +1031,7 @@ app.post('/subject-rights-request', async (req, res) => {
   const validated = parseOrRespond(subjectRightsRequestSchema, req.body, res);
   if (!validated) return;
 
-  const { userId, requestType, reason, payload } = validated;
-  const { sagaId } = req.body;
+  const { userId, requestType, reason, payload, sagaId } = validated;
 
   try {
     const requestId = await complianceRepository.createSubjectRightsRequest({
@@ -467,8 +1059,7 @@ app.post('/data-deletion-log', async (req, res) => {
   const validated = parseOrRespond(dataDeletionLogSchema, req.body, res);
   if (!validated) return;
 
-  const { userId, dataType, recordsDeleted, requestedBy, reason } = validated;
-  const { sagaId } = req.body;
+  const { userId, dataType, recordsDeleted, requestedBy, reason, sagaId } = validated;
 
   try {
     const logId = await complianceRepository.createDataDeletionLog({
@@ -498,8 +1089,7 @@ app.post('/data-retention-policy', async (req, res) => {
   const validated = parseOrRespond(dataRetentionPolicySchema, req.body, res);
   if (!validated) return;
 
-  const { dataType, retentionPeriod, legalBasis, applicableLaw, autoDelete, nextReviewDate } = validated;
-  const { sagaId } = req.body;
+  const { dataType, retentionPeriod, legalBasis, applicableLaw, autoDelete, nextReviewDate, sagaId } = validated;
 
   try {
     const policyId = await complianceRepository.upsertDataRetentionPolicy({
@@ -528,8 +1118,7 @@ app.post('/data-processing-record', async (req, res) => {
   const validated = parseOrRespond(dataProcessingRecordSchema, req.body, res);
   if (!validated) return;
 
-  const { purpose, categories, recipients, retentionPeriod, securityMeasures } = validated;
-  const { sagaId } = req.body;
+  const { purpose, categories, recipients, retentionPeriod, securityMeasures, sagaId } = validated;
 
   try {
     const recordId = await complianceRepository.createDataProcessingRecord({
@@ -557,8 +1146,7 @@ app.post('/privacy-impact-assessment', async (req, res) => {
   const validated = parseOrRespond(privacyImpactAssessmentSchema, req.body, res);
   if (!validated) return;
 
-  const { projectName, assessor, riskLevel, findings, recommendations, status } = validated;
-  const { sagaId } = req.body;
+  const { projectName, assessor, riskLevel, findings, recommendations, status, sagaId } = validated;
 
   try {
     const assessmentId = await complianceRepository.createPrivacyImpactAssessment({
@@ -588,8 +1176,7 @@ app.post('/tcra-record', async (req, res) => {
   const validated = parseOrRespond(tcraRecordSchema, req.body, res);
   if (!validated) return;
 
-  const { userId, licenseNumber, status, registrationAt, expiryDate, lastAuditAt, auditFindings } = validated;
-  const { sagaId } = req.body;
+  const { userId, licenseNumber, status, registrationAt, expiryDate, lastAuditAt, auditFindings, sagaId } = validated;
 
   try {
     const recordId = await complianceRepository.upsertTcraRecord({
@@ -619,8 +1206,7 @@ app.post('/tra-record', async (req, res) => {
   const validated = parseOrRespond(traRecordSchema, req.body, res);
   if (!validated) return;
 
-  const { userId, tin, vrn, taxComplianceStatus, lastFiscalCheck, efdStatus } = validated;
-  const { sagaId } = req.body;
+  const { userId, tin, vrn, taxComplianceStatus, lastFiscalCheck, efdStatus, sagaId } = validated;
 
   try {
     const recordId = await complianceRepository.upsertTraRecord({
@@ -649,8 +1235,7 @@ app.post('/market-record', async (req, res) => {
   const validated = parseOrRespond(marketRecordSchema, req.body, res);
   if (!validated) return;
 
-  const { sellerId, ethicalScore, qualityStatus, certifications, lastAuditAt } = validated;
-  const { sagaId } = req.body;
+  const { sellerId, ethicalScore, qualityStatus, certifications, lastAuditAt, sagaId } = validated;
 
   try {
     const recordId = await complianceRepository.upsertMarketRecord({

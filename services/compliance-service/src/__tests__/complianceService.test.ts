@@ -6,6 +6,9 @@ import { EventBus } from '@shared-events/eventBus';
 jest.mock('@prisma/client');
 jest.mock('@shared-events/eventBus');
 
+const validUserId = 'usr_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const validReviewerId = 'usr_01BX5ZZKBKACTAV9WEVGEMMVRZ';
+
 describe('KYC ComplianceService API', () => {
     let prismaMock: any;
     let eventBusMock: any;
@@ -32,14 +35,14 @@ describe('KYC ComplianceService API', () => {
         app = createApp(prismaMock, eventBusMock);
     });
 
-    describe('POST /api/compliance/verify-document', () => {
+    describe('POST /verify-document', () => {
         it('should create KYC verification and return success', async () => {
             prismaMock.compliance_KYCRecord.create.mockResolvedValue({ id: 'v-1' });
 
             const res = await request(app)
-                .post('/api/compliance/verify-document')
+                .post('/verify-document')
                 .send({
-                    userId: 'cltest123456789',
+                    userId: validUserId,
                     documentType: 'passport',
                     documentUrl: 'https://docs.com/p.jpg',
                     sagaId: 's-1'
@@ -52,7 +55,7 @@ describe('KYC ComplianceService API', () => {
 
         it('should reject invalid userId', async () => {
             const res = await request(app)
-                .post('/api/compliance/verify-document')
+                .post('/verify-document')
                 .send({
                     userId: 'invalid',
                     documentType: 'passport',
@@ -64,7 +67,29 @@ describe('KYC ComplianceService API', () => {
         });
     });
 
-    describe('POST /api/compliance/manual-review', () => {
+    describe('POST /kyc/documents', () => {
+        it('should mirror KYC submission behavior on the documents alias', async () => {
+            prismaMock.compliance_KYCRecord.create.mockResolvedValue({
+                id: 'v-2',
+                verificationStatus: 'pending',
+                submittedAt: new Date('2026-03-23T10:00:00.000Z')
+            });
+
+            const res = await request(app)
+                .post('/kyc/documents')
+                .send({
+                    userId: validUserId,
+                    documentType: 'passport',
+                    fileUrl: 'https://docs.com/p.jpg'
+                });
+
+            expect(res.status).toBe(201);
+            expect(res.body.success).toBe(true);
+            expect(res.body.data.documentUrl).toBe('https://docs.com/p.jpg');
+        });
+    });
+
+    describe('POST /manual-review', () => {
         it('should approve a pending record via admin manual review', async () => {
             prismaMock.compliance_KYCRecord.findFirst.mockResolvedValue({
                 id: 'kyc-record-1',
@@ -73,11 +98,11 @@ describe('KYC ComplianceService API', () => {
             prismaMock.compliance_KYCRecord.updateMany.mockResolvedValue({ count: 1 });
 
             const res = await request(app)
-                .post('/api/compliance/manual-review')
+                .post('/manual-review')
                 .send({
-                    userId: 'cltest123456789',
+                    userId: validUserId,
                     decision: 'approved',
-                    reviewerId: 'clreview12345678',
+                    reviewerId: validReviewerId,
                     sagaId: 's-1'
                 });
 
@@ -87,7 +112,7 @@ describe('KYC ComplianceService API', () => {
                     where: { id: 'kyc-record-1' },
                     data: expect.objectContaining({
                         verificationStatus: 'approved',
-                        verifiedBy: 'clreview12345678'
+                        verifiedBy: validReviewerId
                     })
                 })
             );
@@ -105,11 +130,11 @@ describe('KYC ComplianceService API', () => {
             prismaMock.compliance_KYCRecord.updateMany.mockResolvedValue({ count: 1 });
 
             const res = await request(app)
-                .post('/api/compliance/manual-review')
+                .post('/manual-review')
                 .send({
-                    userId: 'cltest123456789',
+                    userId: validUserId,
                     decision: 'approved',
-                    reviewerId: 'clreview12345678',
+                    reviewerId: validReviewerId,
                     sagaId: 's-1'
                 });
 
@@ -122,11 +147,11 @@ describe('KYC ComplianceService API', () => {
             prismaMock.compliance_KYCRecord.updateMany.mockResolvedValue({ count: 0 });
 
             const res = await request(app)
-                .post('/api/compliance/manual-review')
+                .post('/manual-review')
                 .send({
-                    userId: 'cltest123456789',
+                    userId: validUserId,
                     decision: 'approved',
-                    reviewerId: 'clreview12345678'
+                    reviewerId: validReviewerId
                 });
 
             expect(res.status).toBe(404);
@@ -134,10 +159,10 @@ describe('KYC ComplianceService API', () => {
         });
     });
 
-    describe('POST /api/compliance/monitor', () => {
+    describe('POST /monitor', () => {
         it('should only accept KYC compliance type', async () => {
             const res = await request(app)
-                .post('/api/compliance/monitor')
+                .post('/monitor')
                 .send({
                     complianceType: 'kyc',
                     entityId: 'entity-1',
@@ -151,7 +176,7 @@ describe('KYC ComplianceService API', () => {
 
         it('should reject non-KYC compliance types', async () => {
             const res = await request(app)
-                .post('/api/compliance/monitor')
+                .post('/monitor')
                 .send({
                     complianceType: 'gdpr',
                     entityId: 'entity-1',
@@ -164,7 +189,7 @@ describe('KYC ComplianceService API', () => {
         });
     });
 
-    describe('POST /api/compliance/generate-report', () => {
+    describe('POST /generate-report', () => {
         it('should generate KYC report with real DB data', async () => {
             prismaMock.compliance_KYCRecord.count.mockResolvedValue(100);
             prismaMock.compliance_KYCRecord.groupBy.mockResolvedValue([
@@ -174,7 +199,7 @@ describe('KYC ComplianceService API', () => {
             ]);
 
             const res = await request(app)
-                .post('/api/compliance/generate-report')
+                .post('/generate-report')
                 .send({
                     reportType: 'kyc',
                     period: '2023-Q4',
@@ -189,7 +214,7 @@ describe('KYC ComplianceService API', () => {
 
         it('should reject non-KYC report types', async () => {
             const res = await request(app)
-                .post('/api/compliance/generate-report')
+                .post('/generate-report')
                 .send({
                     reportType: 'gdpr',
                     period: '2023-Q4',
@@ -202,10 +227,10 @@ describe('KYC ComplianceService API', () => {
         });
     });
 
-    describe('GET /api/compliance/kyc-status/:userId', () => {
+    describe('GET /kyc-status/:userId', () => {
         it('should return KYC status with tier mapping', async () => {
             prismaMock.compliance_KYCRecord.findFirst.mockResolvedValue({
-                userId: 'cltest123456789',
+                userId: validUserId,
                 verificationStatus: 'approved',
                 riskLevel: 'low',
                 submittedAt: new Date(),
@@ -214,7 +239,7 @@ describe('KYC ComplianceService API', () => {
             });
 
             const res = await request(app)
-                .get('/api/compliance/kyc-status/cltest123456789');
+                .get(`/kyc-status/${validUserId}`);
 
             expect(res.status).toBe(200);
             expect(res.body.success).toBe(true);
@@ -225,14 +250,14 @@ describe('KYC ComplianceService API', () => {
             prismaMock.compliance_KYCRecord.findFirst.mockResolvedValue(null);
 
             const res = await request(app)
-                .get('/api/compliance/kyc-status/cltest123456789');
+                .get(`/kyc-status/${validUserId}`);
 
             expect(res.status).toBe(404);
         });
 
         it('should reject invalid userId', async () => {
             const res = await request(app)
-                .get('/api/compliance/kyc-status/invalid');
+                .get('/kyc-status/invalid');
 
             expect(res.status).toBe(422);
         });

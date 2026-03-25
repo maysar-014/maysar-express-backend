@@ -10,6 +10,7 @@ const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'
 
 const PUBLIC_SECURITY = [];
 const BEARER_SECURITY = [{ BearerAuth: [] }];
+const SERVICE_KEY_SECURITY = [{ ServiceKey: [] }];
 const BEARER_OR_SERVICE_SECURITY = [{ BearerAuth: [] }, { ServiceKey: [] }];
 const INTERNAL_CALL_SECURITY = [{ InternalCall: [] }];
 
@@ -97,11 +98,19 @@ const PAYMENT_ID = 'pay_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const PAYOUT_ID = 'pyo_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const DELIVERY_ID = 'obj_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const PRODUCT_ID = 'cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const PRODUCT_VARIANT_ID = 'cat_var_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const CATEGORY_ID = 'obj_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const MODULE_ID = 'trn_mod_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const TICKET_ID = 'sup_tik_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const DISPUTE_TICKET_ID = 'sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const ENABLER_LISTING_ID = 'enb_lst_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const WALLET_HOLD_ID = 'wal_hol_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const CHECKOUT_CART_ID = 'chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const GUEST_CHECKOUT_CART_ID = 'chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAA';
+const KYC_RECORD_ID = 'kyc_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const BULK_ORDER_REQUEST_ID = 'prd_bulord_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const PROMOTION_JOB_ID = 'cam_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const WAREHOUSE_ID = 'inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const API_KEY_EXAMPLE = 'sk_test_contract_api_key_1234567890';
 const BUSINESS_REGISTRATION_NUMBER = 'TZ-DAR-134695';
 const TAX_ID_EXAMPLE = '900134695';
@@ -114,6 +123,7 @@ const UUID_EXAMPLE = 'e3e70682-c209-4cac-629f-6fbed82c07cd';
 const SYSTEM_ID_PATTERN = '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$';
 const UUID_PATTERN = '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$';
 const NON_BLANK_PATTERN = '^(?=.*\\S).+$';
+const SAFE_VISIBLE_STRING_PATTERN = '^(?=.*\\S)[^\\u0000-\\u001F\\u007F-\\u009F]+$';
 const SAFE_EXAMPLE_EMAIL_PATTERN = '^[A-Za-z][A-Za-z0-9._-]{1,63}@example\\.com$';
 const TANZANIA_MOBILE_PATTERN = '^\\+255[67]\\d{8}$';
 const AUTH_PHONE_PATTERN = '^\\+?[\\d\\s().-]{7,20}$';
@@ -133,6 +143,11 @@ const systemIdSchema = (example) => ({
 const exactSystemIdSchema = (example) => ({
   type: 'string',
   pattern: SYSTEM_ID_PATTERN,
+  enum: [example],
+  example,
+});
+const exactStringSchema = (example) => ({
+  type: 'string',
   enum: [example],
   example,
 });
@@ -233,10 +248,11 @@ const buildWalletPayoutBaseProperties = () => ({
     type: 'number',
     minimum: 10000,
   },
-  currency: currencyCodeSchema('TZS'),
+  currency: exactStringSchema('TZS'),
   idempotencyKey: {
     type: 'string',
     minLength: 1,
+    pattern: SAFE_VISIBLE_STRING_PATTERN,
   },
   correlationId: uuidSchema(),
   metadata: {
@@ -473,6 +489,20 @@ const REQUEST_EXAMPLE_OVERRIDES = {
     documentType: 'national_id',
     documentUrl: 'https://example.com/document.pdf'
   },
+  'POST /api/compliance/kyc/submissions': {
+    userId: PRIMARY_USER_ID,
+    documentType: 'national_id',
+    fileUrl: 'https://example.com/kyc/contract-kyc-document.pdf',
+    fileName: 'contract-kyc-document.pdf',
+    mimeType: 'application/pdf'
+  },
+  'POST /api/compliance/kyc/documents': {
+    userId: PRIMARY_USER_ID,
+    documentType: 'national_id',
+    fileUrl: 'https://example.com/kyc/contract-kyc-document.pdf',
+    fileName: 'contract-kyc-document.pdf',
+    mimeType: 'application/pdf'
+  },
   'POST /api/enabler/enablers/register': {
     userId: PRIMARY_USER_ID,
     businessName: 'Contract Test Enabler',
@@ -493,6 +523,32 @@ const REQUEST_EXAMPLE_OVERRIDES = {
     listingId: ENABLER_LISTING_ID,
     buyerId: CONTRACT_USER_ID,
     quantity: 1
+  },
+  'POST /api/cart/items': {
+    cartId: CHECKOUT_CART_ID,
+    userId: CONTRACT_USER_ID,
+    productId: PRODUCT_ID,
+    variantId: PRODUCT_VARIANT_ID,
+    quantity: 1,
+    priceAtTime: 1000
+  },
+  'PATCH /api/cart/items': {
+    cartId: CHECKOUT_CART_ID,
+    userId: CONTRACT_USER_ID,
+    productId: PRODUCT_ID,
+    variantId: PRODUCT_VARIANT_ID,
+    quantity: 2
+  },
+  'DELETE /api/cart/items': {
+    cartId: CHECKOUT_CART_ID,
+    userId: CONTRACT_USER_ID,
+    productId: PRODUCT_ID,
+    variantId: PRODUCT_VARIANT_ID
+  },
+  'POST /api/cart/merge': {
+    sourceCartId: GUEST_CHECKOUT_CART_ID,
+    targetCartId: CHECKOUT_CART_ID,
+    userId: CONTRACT_USER_ID
   },
   'POST /api/logistics/api/v1/deliveries': {
     orderId: ORDER_ID,
@@ -669,6 +725,16 @@ const REQUEST_EXAMPLE_OVERRIDES = {
     notes: 'Contract quality checkpoint',
     images: ['https://example.com/inspection.png']
   },
+  'POST /api/production/bulk-orders/{id}/quotes': {
+    supplierId: PRIMARY_USER_ID,
+    unitPrice: 3900,
+    currency: 'TZS',
+    leadTimeDays: 12,
+    minimumOrderQuantity: 1000,
+    validUntil: '2026-04-01T09:00:00.000Z',
+    notes: 'Includes packaging and standard branding setup.',
+    paymentTerms: '50% upfront, 50% before dispatch'
+  },
   'POST /api/support/agents': {
     userId: PRIMARY_USER_ID,
     specializations: ['GENERAL', 'ORDERS'],
@@ -789,6 +855,27 @@ const REQUEST_EXAMPLE_OVERRIDES = {
     correlationId: UUID_EXAMPLE,
     metadata: {
       source: 'contract-test'
+    }
+  }
+};
+
+const REQUEST_MEDIA_TYPE_EXAMPLE_OVERRIDES = {
+  'POST /api/compliance/kyc/submissions': {
+    'multipart/form-data': {
+      userId: PRIMARY_USER_ID,
+      documentType: 'national_id',
+      file: 'contract-kyc-document.pdf',
+      fileName: 'contract-kyc-document.pdf',
+      mimeType: 'application/pdf'
+    }
+  },
+  'POST /api/compliance/kyc/documents': {
+    'multipart/form-data': {
+      userId: PRIMARY_USER_ID,
+      documentType: 'national_id',
+      file: 'contract-kyc-document.pdf',
+      fileName: 'contract-kyc-document.pdf',
+      mimeType: 'application/pdf'
     }
   }
 };
@@ -1375,7 +1462,7 @@ const REQUEST_SCHEMA_OVERRIDES = {
   'POST /api/wallet/wallets/{userId}/hold/{holdId}/capture': {
     type: 'object',
     additionalProperties: false,
-    required: ['idempotencyKey', 'correlationId'],
+    required: ['reason', 'idempotencyKey', 'correlationId'],
     properties: {
       amount: {
         type: 'number',
@@ -1385,10 +1472,12 @@ const REQUEST_SCHEMA_OVERRIDES = {
       reason: {
         type: 'string',
         minLength: 1,
+        pattern: SAFE_VISIBLE_STRING_PATTERN,
       },
       idempotencyKey: {
         type: 'string',
         minLength: 1,
+        pattern: SAFE_VISIBLE_STRING_PATTERN,
       },
       correlationId: uuidSchema(),
     },
@@ -1396,9 +1485,59 @@ const REQUEST_SCHEMA_OVERRIDES = {
   'POST /api/wallet/wallets/{userId}/hold/{holdId}/release': {
     type: 'object',
     additionalProperties: false,
-    required: ['idempotencyKey', 'correlationId'],
+    required: ['reason', 'idempotencyKey', 'correlationId'],
     properties: {
       reason: {
+        type: 'string',
+        minLength: 1,
+        pattern: SAFE_VISIBLE_STRING_PATTERN,
+      },
+      idempotencyKey: {
+        type: 'string',
+        minLength: 1,
+        pattern: SAFE_VISIBLE_STRING_PATTERN,
+      },
+      correlationId: uuidSchema(),
+    },
+  },
+  'POST /api/enabler/enablers/{enablerId}/promotion-jobs/{jobId}/accept': {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      note: {
+        type: 'string',
+        minLength: 1,
+        maxLength: 500,
+        pattern: SAFE_VISIBLE_STRING_PATTERN,
+      },
+    },
+  },
+  'POST /api/wallet/wallets/{userId}/debit': {
+    type: 'object',
+    additionalProperties: false,
+    required: ['amount', 'currency', 'description', 'reason', 'idempotencyKey', 'correlationId'],
+    properties: {
+      amount: {
+        type: 'integer',
+        minimum: 1,
+      },
+      currency: {
+        type: 'string',
+        enum: ['TZS', 'USD', 'EUR', 'GBP', 'KES', 'UGX'],
+      },
+      description: {
+        type: 'string',
+        minLength: 1,
+      },
+      reason: {
+        type: 'string',
+        minLength: 1,
+      },
+      referenceType: {
+        type: 'string',
+        minLength: 1,
+      },
+      referenceId: {
         type: 'string',
         minLength: 1,
       },
@@ -1407,6 +1546,9 @@ const REQUEST_SCHEMA_OVERRIDES = {
         minLength: 1,
       },
       correlationId: uuidSchema(),
+      metadata: {
+        type: 'object',
+      },
     },
   },
   'POST /api/wallet/wallets/{userId}/topup': {
@@ -1530,14 +1672,16 @@ const REQUEST_SCHEMA_OVERRIDES = {
               provider: {
                 type: 'string',
                 minLength: 1,
+                pattern: SAFE_VISIBLE_STRING_PATTERN,
               },
               phoneNumber: {
                 type: 'string',
-                pattern: TOPUP_PHONE_PATTERN,
+                pattern: TANZANIA_MOBILE_PATTERN,
               },
               accountName: {
                 type: 'string',
                 minLength: 1,
+                pattern: SAFE_VISIBLE_STRING_PATTERN,
               },
             },
           },
@@ -1561,22 +1705,27 @@ const REQUEST_SCHEMA_OVERRIDES = {
               bankName: {
                 type: 'string',
                 minLength: 1,
+                pattern: SAFE_VISIBLE_STRING_PATTERN,
               },
               bankCode: {
                 type: 'string',
                 minLength: 1,
+                pattern: SAFE_VISIBLE_STRING_PATTERN,
               },
               accountNumber: {
                 type: 'string',
                 minLength: 1,
+                pattern: SAFE_VISIBLE_STRING_PATTERN,
               },
               accountName: {
                 type: 'string',
                 minLength: 1,
+                pattern: SAFE_VISIBLE_STRING_PATTERN,
               },
               branchCode: {
                 type: 'string',
                 minLength: 1,
+                pattern: SAFE_VISIBLE_STRING_PATTERN,
               },
             },
           },
@@ -2248,6 +2397,152 @@ const PARAMETER_SCHEMA_OVERRIDES = {
       schema: exactSystemIdSchema(PRIMARY_USER_ID),
     },
   },
+  'GET /api/enabler/enablers/{enablerId}/referral-link': {
+    enablerId: {
+      in: 'path',
+      required: true,
+      schema: exactSystemIdSchema(PRIMARY_USER_ID),
+    },
+  },
+  'POST /api/enabler/enablers/{enablerId}/referral-link': {
+    enablerId: {
+      in: 'path',
+      required: true,
+      schema: exactSystemIdSchema(PRIMARY_USER_ID),
+    },
+  },
+  'POST /api/enabler/enablers/{enablerId}/referral-link/events': {
+    enablerId: {
+      in: 'path',
+      required: true,
+      schema: exactSystemIdSchema(PRIMARY_USER_ID),
+    },
+  },
+  'GET /api/enabler/enablers/{enablerId}/promotion-jobs': {
+    enablerId: {
+      in: 'path',
+      required: true,
+      schema: exactSystemIdSchema(PRIMARY_USER_ID),
+    },
+  },
+  'POST /api/enabler/enablers/{enablerId}/promotion-jobs/{jobId}/accept': {
+    enablerId: {
+      in: 'path',
+      required: true,
+      schema: exactSystemIdSchema(PRIMARY_USER_ID),
+    },
+    jobId: {
+      in: 'path',
+      required: true,
+      schema: exactSystemIdSchema(PROMOTION_JOB_ID),
+    },
+  },
+  'GET /api/enabler/enablers/{enablerId}/earnings': {
+    enablerId: {
+      in: 'path',
+      required: true,
+      schema: exactSystemIdSchema(PRIMARY_USER_ID),
+    },
+  },
+  'GET /api/enabler/enablers/{enablerId}/earnings/summary': {
+    enablerId: {
+      in: 'path',
+      required: true,
+      schema: exactSystemIdSchema(PRIMARY_USER_ID),
+    },
+  },
+  'GET /api/enabler/enablers/{enablerId}/orders/{orderId}/commission': {
+    enablerId: {
+      in: 'path',
+      required: true,
+      schema: exactSystemIdSchema(PRIMARY_USER_ID),
+    },
+    orderId: {
+      in: 'path',
+      required: true,
+      schema: exactSystemIdSchema(ORDER_ID),
+    },
+  },
+  'GET /api/compliance/kyc/documents/{verificationId}/content': {
+    verificationId: {
+      in: 'path',
+      required: true,
+      schema: exactSystemIdSchema(KYC_RECORD_ID),
+    },
+  },
+  'GET /api/production/bulk-orders/{id}': {
+    id: {
+      in: 'path',
+      required: true,
+      schema: exactSystemIdSchema(BULK_ORDER_REQUEST_ID),
+    },
+  },
+  'POST /api/production/bulk-orders/{id}/quotes': {
+    id: {
+      in: 'path',
+      required: true,
+      schema: exactSystemIdSchema(BULK_ORDER_REQUEST_ID),
+    },
+  },
+  'GET /api/support/disputes/{id}': {
+    id: {
+      in: 'path',
+      required: true,
+      schema: exactStringSchema(DISPUTE_TICKET_ID),
+    },
+  },
+  'POST /api/support/disputes/{id}/escalate': {
+    id: {
+      in: 'path',
+      required: true,
+      schema: exactStringSchema(DISPUTE_TICKET_ID),
+    },
+  },
+  'POST /api/support/disputes/{id}/evidence': {
+    id: {
+      in: 'path',
+      required: true,
+      schema: exactStringSchema(DISPUTE_TICKET_ID),
+    },
+  },
+  'GET /api/inventory/materials/{variantId}': {
+    variantId: {
+      in: 'path',
+      required: true,
+      schema: exactStringSchema(PRODUCT_VARIANT_ID),
+    },
+    warehouseId: {
+      in: 'query',
+      required: false,
+      schema: exactStringSchema(WAREHOUSE_ID),
+    },
+  },
+  'PUT /api/inventory/materials/{variantId}/warehouses/{warehouseId}': {
+    variantId: {
+      in: 'path',
+      required: true,
+      schema: exactStringSchema(PRODUCT_VARIANT_ID),
+    },
+    warehouseId: {
+      in: 'path',
+      required: true,
+      schema: exactStringSchema(WAREHOUSE_ID),
+    },
+  },
+  'GET /api/cart/{cartId}': {
+    cartId: {
+      in: 'path',
+      required: true,
+      schema: exactStringSchema(CHECKOUT_CART_ID),
+    },
+  },
+  'DELETE /api/cart/{cartId}': {
+    cartId: {
+      in: 'path',
+      required: true,
+      schema: exactStringSchema(CHECKOUT_CART_ID),
+    },
+  },
   'POST /api/wallet/wallets/{userId}/hold/{holdId}/capture': {
     userId: {
       in: 'path',
@@ -2258,6 +2553,13 @@ const PARAMETER_SCHEMA_OVERRIDES = {
       in: 'path',
       required: true,
       schema: exactSystemIdSchema(WALLET_HOLD_ID),
+    },
+  },
+  'POST /api/wallet/wallets/{userId}/debit': {
+    userId: {
+      in: 'path',
+      required: true,
+      schema: exactSystemIdSchema(PRIMARY_USER_ID),
     },
   },
   'POST /api/wallet/wallets/{userId}/hold/{holdId}/release': {
@@ -2472,12 +2774,38 @@ const ensureRequestMediaType = (operation) => {
   return operation.requestBody.content['application/json'];
 };
 
-const patchNamedParameter = (params, name, override) => {
-  if (!Array.isArray(params)) return false;
+const resolveParameterExample = (override = {}) => {
+  if (override.example !== undefined) {
+    return deepClone(override.example);
+  }
 
+  if (!isPlainObject(override.schema)) {
+    return undefined;
+  }
+
+  if (override.schema.example !== undefined) {
+    return deepClone(override.schema.example);
+  }
+
+  if (Array.isArray(override.schema.enum) && override.schema.enum.length > 0) {
+    return deepClone(override.schema.enum[0]);
+  }
+
+  if (override.schema.const !== undefined) {
+    return deepClone(override.schema.const);
+  }
+
+  return undefined;
+};
+
+const upsertNamedParameter = (params, name, override) => {
+  const normalizedParams = Array.isArray(params) ? [...params] : [];
+  const targetIn = override.in || 'path';
+  const resolvedExample = resolveParameterExample(override);
   let patched = false;
-  for (const param of params) {
-    if (!isPlainObject(param) || param.$ref || param.name !== name || param.in !== (override.in || 'path')) {
+
+  for (const param of normalizedParams) {
+    if (!isPlainObject(param) || param.$ref || param.name !== name || param.in !== targetIn) {
       continue;
     }
 
@@ -2485,13 +2813,26 @@ const patchNamedParameter = (params, name, override) => {
     if (override.schema) {
       param.schema = deepClone(override.schema);
     }
-    if (override.example !== undefined) {
-      param.example = deepClone(override.example);
+    delete param.examples;
+    if (resolvedExample !== undefined) {
+      param.example = deepClone(resolvedExample);
+    } else {
+      delete param.example;
     }
     patched = true;
   }
 
-  return patched;
+  if (!patched) {
+    normalizedParams.push({
+      name,
+      in: targetIn,
+      required: targetIn === 'path' ? true : Boolean(override.required),
+      schema: deepClone(override.schema || { type: 'string' }),
+      ...(resolvedExample !== undefined ? { example: deepClone(resolvedExample) } : {}),
+    });
+  }
+
+  return normalizedParams;
 };
 
 const setGeneratedExample = (mediaType, example) => {
@@ -2788,9 +3129,22 @@ const applyRequestExampleOverrides = (doc) => {
     if (!isPlainObject(operation)) continue;
 
     const mediaType = ensureRequestMediaType(operation);
-
     if (setGeneratedExample(mediaType, example)) {
       backfilled += 1;
+    }
+  }
+
+  for (const [operationKey, mediaTypeExamples] of Object.entries(REQUEST_MEDIA_TYPE_EXAMPLE_OVERRIDES)) {
+    const [method, ...pathParts] = operationKey.split(' ');
+    const routePath = pathParts.join(' ');
+    const operation = doc.paths?.[routePath]?.[method.toLowerCase()];
+    if (!isPlainObject(operation) || !isPlainObject(operation.requestBody?.content)) continue;
+
+    for (const [mediaTypeName, example] of Object.entries(mediaTypeExamples || {})) {
+      const mediaType = operation.requestBody.content[mediaTypeName];
+      if (isPlainObject(mediaType) && setGeneratedExample(mediaType, example)) {
+        backfilled += 1;
+      }
     }
   }
 
@@ -2818,21 +3172,8 @@ const applyParameterSchemaOverrides = (doc) => {
     if (!isPlainObject(pathItem) || !isPlainObject(operation)) continue;
 
     for (const [name, override] of Object.entries(overrides || {})) {
-      const patched = [
-        patchNamedParameter(pathItem.parameters, name, override),
-        patchNamedParameter(operation.parameters, name, override),
-      ].some(Boolean);
-
-      if (patched) continue;
-
-      operation.parameters = Array.isArray(operation.parameters) ? operation.parameters : [];
-      operation.parameters.push({
-        name,
-        in: override.in || 'path',
-        required: (override.in || 'path') === 'path' ? true : Boolean(override.required),
-        schema: deepClone(override.schema || { type: 'string' }),
-        ...(override.example !== undefined ? { example: deepClone(override.example) } : {}),
-      });
+      pathItem.parameters = upsertNamedParameter(pathItem.parameters, name, override);
+      operation.parameters = upsertNamedParameter(operation.parameters, name, override);
     }
   }
 };
@@ -2944,11 +3285,14 @@ const hasPathPrefix = (routePath, prefix) => routePath === prefix || routePath.s
 const usesMethod = (method, expected) => method === expected.toUpperCase();
 
 const classifyAuthSecurity = (method, routePath) => {
-  if (hasPathPrefix(routePath, '/api/auth/system/maintenance')) return BEARER_OR_SERVICE_SECURITY;
+  if (hasPathPrefix(routePath, '/api/auth/system/maintenance')) return SERVICE_KEY_SECURITY;
   if (hasPathPrefix(routePath, '/api/auth/sessions/health')) return PUBLIC_SECURITY;
   if (hasPathPrefix(routePath, '/api/auth/health')) return PUBLIC_SECURITY;
   if (hasPathPrefix(routePath, '/api/auth/oauth')) return PUBLIC_SECURITY;
   if (hasPathPrefix(routePath, '/api/auth/2fa')) return PUBLIC_SECURITY;
+  if (routePath === '/api/auth/verify-otp') return PUBLIC_SECURITY;
+  if (routePath === '/api/auth/switch-role') return BEARER_SECURITY;
+  if (routePath === '/api/auth/role-requests') return BEARER_SECURITY;
   if (hasPathPrefix(routePath, '/api/auth/admin')) return BEARER_SECURITY;
   if (routePath === '/api/auth/sessions' || hasPathPrefix(routePath, '/api/auth/sessions')) return BEARER_SECURITY;
   if (routePath === '/api/auth/verify') return BEARER_SECURITY;
@@ -2957,7 +3301,7 @@ const classifyAuthSecurity = (method, routePath) => {
 };
 
 const classifyCatalogSecurity = (method, routePath) => {
-  if (hasPathPrefix(routePath, '/api/catalog/system/maintenance')) return BEARER_OR_SERVICE_SECURITY;
+  if (hasPathPrefix(routePath, '/api/catalog/system/maintenance')) return SERVICE_KEY_SECURITY;
   if (hasPathPrefix(routePath, '/api/catalog/health')) return PUBLIC_SECURITY;
   if (hasPathPrefix(routePath, '/api/catalog/pricing/health')) return PUBLIC_SECURITY;
   if (hasPathPrefix(routePath, '/api/catalog/campaigns')) return PUBLIC_SECURITY;
@@ -2971,7 +3315,7 @@ const classifyCatalogSecurity = (method, routePath) => {
 };
 
 const classifyCommunitySecurity = (method, routePath) => {
-  if (hasPathPrefix(routePath, '/api/community/system/maintenance')) return BEARER_OR_SERVICE_SECURITY;
+  if (hasPathPrefix(routePath, '/api/community/system/maintenance')) return SERVICE_KEY_SECURITY;
   if (routePath === '/api/community/health' || routePath === '/api/community/metrics') return PUBLIC_SECURITY;
   if (usesMethod(method, 'GET') && COMMUNITY_PUBLIC_GET_PATHS.has(routePath)) return PUBLIC_SECURITY;
 
@@ -2992,7 +3336,7 @@ const classifyCommunitySecurity = (method, routePath) => {
 };
 
 const classifyNotificationSecurity = (routePath) => {
-  if (hasPathPrefix(routePath, '/api/notification/system/maintenance')) return BEARER_OR_SERVICE_SECURITY;
+  if (hasPathPrefix(routePath, '/api/notification/system/maintenance')) return SERVICE_KEY_SECURITY;
   if (routePath === '/api/notification/health-summary') return PUBLIC_SECURITY;
   if (hasPathPrefix(routePath, '/api/notification/health')) return PUBLIC_SECURITY;
   if (hasPathPrefix(routePath, '/api/notification/sms/health')) return PUBLIC_SECURITY;
@@ -3009,7 +3353,7 @@ const classifyNotificationSecurity = (routePath) => {
 };
 
 const classifyPaymentSecurity = (routePath) => {
-  if (hasPathPrefix(routePath, '/api/payment/system/maintenance')) return BEARER_OR_SERVICE_SECURITY;
+  if (hasPathPrefix(routePath, '/api/payment/system/maintenance')) return SERVICE_KEY_SECURITY;
   if (hasPathPrefix(routePath, '/api/payment/health')) return PUBLIC_SECURITY;
   if (routePath === '/api/payment/metrics') return PUBLIC_SECURITY;
   if (PAYMENT_PUBLIC_PREFIXES.some((prefix) => hasPathPrefix(routePath, prefix))) return PUBLIC_SECURITY;
@@ -3028,7 +3372,7 @@ const classifyTrainingSecurity = (method, routePath) => {
 };
 
 const classifyUserSecurity = (method, routePath) => {
-  if (hasPathPrefix(routePath, '/api/user/system/maintenance')) return BEARER_OR_SERVICE_SECURITY;
+  if (hasPathPrefix(routePath, '/api/user/system/maintenance')) return SERVICE_KEY_SECURITY;
   if (hasPathPrefix(routePath, '/api/user/health')) return PUBLIC_SECURITY;
   if (routePath === '/api/user/lookup' || routePath === '/api/user/search') return INTERNAL_CALL_SECURITY;
   if (usesMethod(method, 'POST') && routePath === '/api/user') return PUBLIC_SECURITY;
@@ -3050,7 +3394,7 @@ const classifyServiceSecurity = (method, routePath) => {
   if (hasPathPrefix(routePath, '/api/auth')) return classifyAuthSecurity(method, routePath);
 
   if (hasPathPrefix(routePath, '/api/business-registry')) {
-    if (hasPathPrefix(routePath, '/api/business-registry/system/maintenance')) return BEARER_OR_SERVICE_SECURITY;
+    if (hasPathPrefix(routePath, '/api/business-registry/system/maintenance')) return SERVICE_KEY_SECURITY;
     if (hasPathPrefix(routePath, '/api/business-registry/health')) return PUBLIC_SECURITY;
     return BEARER_SECURITY;
   }
@@ -3058,8 +3402,12 @@ const classifyServiceSecurity = (method, routePath) => {
   if (hasPathPrefix(routePath, '/api/catalog')) return classifyCatalogSecurity(method, routePath);
 
   if (hasPathPrefix(routePath, '/api/checkout')) {
-    if (hasPathPrefix(routePath, '/api/checkout/system/maintenance')) return BEARER_OR_SERVICE_SECURITY;
+    if (hasPathPrefix(routePath, '/api/checkout/system/maintenance')) return SERVICE_KEY_SECURITY;
     if (hasPathPrefix(routePath, '/api/checkout/health') || routePath === '/api/checkout/metrics') return PUBLIC_SECURITY;
+    return BEARER_SECURITY;
+  }
+
+  if (hasPathPrefix(routePath, '/api/cart')) {
     return BEARER_SECURITY;
   }
 
@@ -3076,18 +3424,18 @@ const classifyServiceSecurity = (method, routePath) => {
   }
 
   if (hasPathPrefix(routePath, '/api/enabler')) {
-    if (hasPathPrefix(routePath, '/api/enabler/system/maintenance')) return BEARER_OR_SERVICE_SECURITY;
+    if (hasPathPrefix(routePath, '/api/enabler/system/maintenance')) return SERVICE_KEY_SECURITY;
     return BEARER_SECURITY;
   }
 
   if (hasPathPrefix(routePath, '/api/inventory')) {
-    if (hasPathPrefix(routePath, '/api/inventory/system/maintenance')) return BEARER_OR_SERVICE_SECURITY;
+    if (hasPathPrefix(routePath, '/api/inventory/system/maintenance')) return SERVICE_KEY_SECURITY;
     if (hasPathPrefix(routePath, '/api/inventory/health')) return PUBLIC_SECURITY;
-    return null;
+    return BEARER_SECURITY;
   }
 
   if (hasPathPrefix(routePath, '/api/logistics')) {
-    if (hasPathPrefix(routePath, '/api/logistics/system/maintenance')) return BEARER_OR_SERVICE_SECURITY;
+    if (hasPathPrefix(routePath, '/api/logistics/system/maintenance')) return SERVICE_KEY_SECURITY;
     if (hasPathPrefix(routePath, '/api/logistics/health')) return PUBLIC_SECURITY;
     return BEARER_SECURITY;
   }
@@ -3100,7 +3448,7 @@ const classifyServiceSecurity = (method, routePath) => {
   if (hasPathPrefix(routePath, '/api/notification')) return classifyNotificationSecurity(routePath);
 
   if (hasPathPrefix(routePath, '/api/order')) {
-    if (hasPathPrefix(routePath, '/api/order/system/maintenance')) return BEARER_OR_SERVICE_SECURITY;
+    if (hasPathPrefix(routePath, '/api/order/system/maintenance')) return SERVICE_KEY_SECURITY;
     if (hasPathPrefix(routePath, '/api/order/health')) return PUBLIC_SECURITY;
     return BEARER_SECURITY;
   }
@@ -3108,7 +3456,7 @@ const classifyServiceSecurity = (method, routePath) => {
   if (hasPathPrefix(routePath, '/api/payment')) return classifyPaymentSecurity(routePath);
 
   if (hasPathPrefix(routePath, '/api/payout')) {
-    if (hasPathPrefix(routePath, '/api/payout/system/maintenance')) return BEARER_OR_SERVICE_SECURITY;
+    if (hasPathPrefix(routePath, '/api/payout/system/maintenance')) return SERVICE_KEY_SECURITY;
     return BEARER_SECURITY;
   }
 
@@ -3117,7 +3465,7 @@ const classifyServiceSecurity = (method, routePath) => {
   }
 
   if (hasPathPrefix(routePath, '/api/support')) {
-    if (hasPathPrefix(routePath, '/api/support/system/maintenance')) return BEARER_OR_SERVICE_SECURITY;
+    if (hasPathPrefix(routePath, '/api/support/system/maintenance')) return SERVICE_KEY_SECURITY;
     return BEARER_SECURITY;
   }
 
@@ -3126,7 +3474,7 @@ const classifyServiceSecurity = (method, routePath) => {
   if (hasPathPrefix(routePath, '/api/user')) return classifyUserSecurity(method, routePath);
 
   if (hasPathPrefix(routePath, '/api/wallet')) {
-    if (hasPathPrefix(routePath, '/api/wallet/system/maintenance')) return BEARER_OR_SERVICE_SECURITY;
+    if (hasPathPrefix(routePath, '/api/wallet/system/maintenance')) return SERVICE_KEY_SECURITY;
     if (hasPathPrefix(routePath, '/api/wallet/health')) return PUBLIC_SECURITY;
     return BEARER_SECURITY;
   }

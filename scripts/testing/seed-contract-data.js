@@ -1,5 +1,8 @@
 const path = require('path');
+const fs = require('fs');
 const dotenv = require('dotenv');
+const crypto = require('crypto');
+const { pathToFileURL } = require('url');
 const { PrismaClient } = require('@prisma/client');
 
 dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
@@ -87,12 +90,14 @@ const MATCH_AUDIT_ID = process.env.CONTRACT_TEST_MATCH_AUDIT_ID || 'cat_mta_01AR
 
 const CHECKOUT_ID = process.env.CONTRACT_TEST_CHECKOUT_ID || GENERIC_OBJECT_ID;
 const CHECKOUT_CART_ID = process.env.CONTRACT_TEST_CHECKOUT_CART_ID || 'chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const GUEST_CHECKOUT_CART_ID = process.env.CONTRACT_TEST_GUEST_CHECKOUT_CART_ID || 'chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAA';
 const CHECKOUT_ITEM_ID = process.env.CONTRACT_TEST_CHECKOUT_ITEM_ID || 'chk_item_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const GUEST_CHECKOUT_ITEM_ID = process.env.CONTRACT_TEST_GUEST_CHECKOUT_ITEM_ID || 'chk_item_01ARZ3NDEKTSV4RRFFQ69G5FAA';
 
 const CONTRACT_WALLET_ID = process.env.CONTRACT_TEST_WALLET_ID || 'wal_contract_test_0001';
 const OPENAPI_WALLET_ID = process.env.CONTRACT_TEST_OPENAPI_WALLET_ID || 'wal_contract_test_0002';
 const WALLET_TRANSACTION_ID = process.env.CONTRACT_TEST_WALLET_TRANSACTION_ID || 'wal_tra_01ARZ3NDEKTSV4RRFFQ69G5FAV';
-const WALLET_HOLD_ID = process.env.CONTRACT_TEST_WALLET_HOLD_ID || OPENAPI_USER_ID;
+const WALLET_HOLD_ID = process.env.CONTRACT_TEST_WALLET_HOLD_ID || 'wal_hol_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 
 const NOTIFICATION_TEMPLATE_ID = process.env.CONTRACT_TEST_NOTIFICATION_TEMPLATE_ID || GENERIC_OBJECT_ID;
 const NOTIFICATION_ID = process.env.CONTRACT_TEST_NOTIFICATION_ID || GENERIC_OBJECT_ID;
@@ -103,16 +108,26 @@ const TRAINING_MODULE_ID = process.env.CONTRACT_TEST_TRAINING_MODULE_ID || 'trn_
 const TRAINING_RECORD_ID = process.env.CONTRACT_TEST_TRAINING_RECORD_ID || GENERIC_OBJECT_ID;
 
 const SUPPORT_TICKET_ID = process.env.CONTRACT_TEST_SUPPORT_TICKET_ID || 'sup_tik_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const SUPPORT_DISPUTE_TICKET_ID = process.env.CONTRACT_TEST_SUPPORT_DISPUTE_TICKET_ID || 'sup_tik_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const SUPPORT_AGENT_ID = process.env.CONTRACT_TEST_SUPPORT_AGENT_ID || GENERIC_OBJECT_ID;
 const SUPPORT_MESSAGE_ID = process.env.CONTRACT_TEST_SUPPORT_MESSAGE_ID || 'sup_msg_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const SUPPORT_STATUS_HISTORY_ID = process.env.CONTRACT_TEST_SUPPORT_STATUS_HISTORY_ID || 'sup_hist_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const SUPPORT_DISPUTE_MESSAGE_ID = process.env.CONTRACT_TEST_SUPPORT_DISPUTE_MESSAGE_ID || 'sup_msg_dis_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 
 const CAMPAIGN_ID = process.env.CONTRACT_TEST_CAMPAIGN_ID || GENERIC_OBJECT_ID;
 const CAMPAIGN_RULE_ID = process.env.CONTRACT_TEST_CAMPAIGN_RULE_ID || 'cmp_rule_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const CAMPAIGN_CATEGORY_ID = process.env.CONTRACT_TEST_CAMPAIGN_CATEGORY_LINK_ID || 'cmp_cat_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const CAMPAIGN_PRODUCT_ID = process.env.CONTRACT_TEST_CAMPAIGN_PRODUCT_LINK_ID || 'cmp_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const CAMPAIGN_METRICS_ID = process.env.CONTRACT_TEST_CAMPAIGN_METRICS_ID || 'cmp_met_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const PROMOTION_JOB_ID = process.env.CONTRACT_TEST_PROMOTION_JOB_ID || 'cam_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const PROMOTION_JOB_RULE_ID = process.env.CONTRACT_TEST_PROMOTION_JOB_RULE_ID || 'cmp_prr_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const PROMOTION_JOB_CATEGORY_ID = process.env.CONTRACT_TEST_PROMOTION_JOB_CATEGORY_LINK_ID || 'cmp_pcg_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const PROMOTION_JOB_PRODUCT_ID = process.env.CONTRACT_TEST_PROMOTION_JOB_PRODUCT_LINK_ID || 'cmp_ppd_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const PROMOTION_JOB_METRICS_ID = process.env.CONTRACT_TEST_PROMOTION_JOB_METRICS_ID || 'cmp_pmt_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const PRODUCTION_PLAN_ID = process.env.CONTRACT_TEST_PRODUCTION_PLAN_ID || PRODUCT_ID;
+const BULK_ORDER_REQUEST_ID = process.env.CONTRACT_TEST_BULK_ORDER_REQUEST_ID || 'prd_bulord_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const BULK_ORDER_QUOTE_ID = process.env.CONTRACT_TEST_BULK_ORDER_QUOTE_ID || 'prd_bulquo_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const CAPACITY_SNAPSHOT_ID = process.env.CONTRACT_TEST_CAPACITY_SNAPSHOT_ID || 'prd_capsna_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 
 const COMMUNITY_POST_ID = process.env.CONTRACT_TEST_COMMUNITY_POST_ID || GENERIC_OBJECT_ID;
 const COMMUNITY_THREAD_ID = process.env.CONTRACT_TEST_COMMUNITY_THREAD_ID || GENERIC_OBJECT_ID;
@@ -122,6 +137,10 @@ const COMMUNITY_CONTRACT_PROFILE_ID = process.env.CONTRACT_TEST_COMMUNITY_CONTRA
 
 const COURIER_ID = process.env.CONTRACT_TEST_COURIER_ID || OPENAPI_USER_ID;
 const DELIVERY_ID = process.env.CONTRACT_TEST_DELIVERY_ID || GENERIC_OBJECT_ID;
+const INVENTORY_WAREHOUSE_ID = process.env.CONTRACT_TEST_INVENTORY_WAREHOUSE_ID || 'inv_war_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const INVENTORY_STOCK_ITEM_ID = process.env.CONTRACT_TEST_INVENTORY_STOCK_ITEM_ID || 'inv_stk_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const ENABLER_ORDER_ID = process.env.CONTRACT_TEST_ENABLER_ORDER_ID || 'enb_ord_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const ENABLER_COMMISSION_LEDGER_ID = process.env.CONTRACT_TEST_ENABLER_COMMISSION_LEDGER_ID || 'enb_com_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 
 const AUTH_SESSION_ID = process.env.CONTRACT_TEST_AUTH_SESSION_ID || GENERIC_OBJECT_ID;
 const AUTH_SESSION_TOKEN = process.env.CONTRACT_TEST_AUTH_SESSION_TOKEN || 'contract-auth-session-token';
@@ -132,16 +151,25 @@ const EMAIL_VERIFICATION_TOKEN_ID = process.env.CONTRACT_TEST_EMAIL_VERIFICATION
 const AUTH_PASSWORD_RESET_TOKEN_ID = process.env.CONTRACT_TEST_AUTH_PASSWORD_RESET_TOKEN_ID || 'apr_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const AUTH_EMAIL_VERIFICATION_TOKEN_ID = process.env.CONTRACT_TEST_AUTH_EMAIL_VERIFICATION_TOKEN_ID || 'aev_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const KYC_RECORD_ID = process.env.CONTRACT_TEST_KYC_RECORD_ID || 'kyc_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const KYC_SEED_STORAGE_KEY = 'seed/contract-kyc-document.pdf';
 
 const CATEGORY_SLUG = `contract-test-category-${CATEGORY_ID.slice(-8).toLowerCase()}`;
 const PRODUCT_SLUG = `contract-test-product-${PRODUCT_ID.slice(-8).toLowerCase()}`;
 const PRODUCT_SKU = `CT-${PRODUCT_VARIANT_ID.replace(/[^A-Za-z0-9]/g, '').slice(-10).toUpperCase()}`;
-const ENABLER_CODE = `ENB${ENABLER_ID.replace(/[^A-Za-z0-9]/g, '').slice(-8).toUpperCase()}`;
-const ENABLER_CODE_SHORT = `E${ENABLER_ID.replace(/[^A-Za-z0-9]/g, '').slice(-5).toUpperCase()}`;
+const ENABLER_CODE_SUFFIX = ENABLER_ID.replace(/[^A-Za-z0-9]/g, '').slice(-6).toUpperCase().padStart(6, 'A');
+const ENABLER_CODE = `ENB-${ENABLER_CODE_SUFFIX}`;
+const ENABLER_CODE_SHORT = `E${ENABLER_CODE_SUFFIX}`;
 const TEMPLATE_NAME = `contract-template-${NOTIFICATION_TEMPLATE_ID.slice(-8).toLowerCase()}`;
 const COMMUNITY_USERNAME = `contract_${OPENAPI_USER_ID.slice(-8).toLowerCase()}`;
 const CONTRACT_CHALLENGE_TITLE = 'How can we reduce failed doorstep deliveries in dense city zones?';
 const CONTRACT_KNOWLEDGE_ARTICLE_TITLE = 'Reducing failed deliveries with earlier buyer confirmation';
+const rootDir = path.join(__dirname, '..', '..');
+const kycUploadDestination = path.resolve(
+  process.env.KYC_DOCUMENT_UPLOAD_DESTINATION
+    || process.env.UPLOAD_DESTINATION
+    || path.join(rootDir, 'uploads', 'kyc')
+);
+const kycSeedFilePath = path.join(kycUploadDestination, KYC_SEED_STORAGE_KEY);
 
 const prisma = new PrismaClient({
   datasources: {
@@ -152,6 +180,30 @@ const prisma = new PrismaClient({
 });
 
 const futureDate = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+const normalizeDayUtc = (value = new Date()) =>
+  new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
+const ensureSeedFile = (absolutePath, contents) => {
+  fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
+  fs.writeFileSync(absolutePath, contents);
+};
+
+const buildSeededKycDocumentPayload = () => {
+  const fileBuffer = Buffer.from('%PDF-1.4\n% Contract test KYC document\n');
+  ensureSeedFile(kycSeedFilePath, fileBuffer);
+
+  return {
+    type: 'national_id',
+    url: pathToFileURL(kycSeedFilePath).toString(),
+    fileName: path.basename(kycSeedFilePath),
+    mimeType: 'application/pdf',
+    fileSizeBytes: fileBuffer.length,
+    storageProvider: 'local',
+    storageKey: KYC_SEED_STORAGE_KEY.replace(/\\/g, '/'),
+    checksumSha256: crypto.createHash('sha256').update(fileBuffer).digest('hex'),
+    uploadedAt: new Date().toISOString(),
+    status: 'approved'
+  };
+};
 
 const upsertById = async (delegate, id, data) => {
   await delegate.upsert({
@@ -166,6 +218,28 @@ const upsertOptionalById = async (delegate, id, data) => {
     return;
   }
   await upsertById(delegate, id, data);
+};
+
+const upsertCheckoutCartItem = async (id, data) => {
+  await prisma.checkout_CartItem.upsert({
+    where: {
+      cartId_productId_variantId: {
+        cartId: data.cartId,
+        productId: data.productId,
+        variantId: data.variantId ?? null
+      }
+    },
+    update: {
+      id,
+      quantity: data.quantity,
+      priceAtTime: data.priceAtTime
+    },
+    create: {
+      id,
+      ...data,
+      variantId: data.variantId ?? null
+    }
+  });
 };
 
 const upsertAuthUser = async (id, role, email, phoneNumber) => {
@@ -498,10 +572,47 @@ const upsertPaymentAndPayoutRecords = async () => {
 
 const upsertCheckoutAndCommissionRecords = async () => {
   await upsertById(prisma.checkout_Cart, CHECKOUT_CART_ID, { userId: CONTRACT_USER_ID, status: 'active' });
-  await upsertById(prisma.checkout_CartItem, CHECKOUT_ITEM_ID, { cartId: CHECKOUT_CART_ID, productId: PRODUCT_ID, variantId: PRODUCT_VARIANT_ID, quantity: 1, priceAtTime: 1000 });
+  await upsertCheckoutCartItem(CHECKOUT_ITEM_ID, { cartId: CHECKOUT_CART_ID, productId: PRODUCT_ID, variantId: PRODUCT_VARIANT_ID, quantity: 1, priceAtTime: 1000 });
+  await upsertById(prisma.checkout_Cart, GUEST_CHECKOUT_CART_ID, { userId: CONTRACT_USER_ID, status: 'active' });
+  await upsertCheckoutCartItem(GUEST_CHECKOUT_ITEM_ID, { cartId: GUEST_CHECKOUT_CART_ID, productId: PRODUCT_ID, variantId: PRODUCT_VARIANT_ID, quantity: 1, priceAtTime: 1000 });
   await upsertById(prisma.checkout_CheckoutSession, CHECKOUT_ID, { cartId: CHECKOUT_CART_ID, userId: CONTRACT_USER_ID, enablerId: ENABLER_ID, enablerCode: ENABLER_CODE, status: 'initiated', subtotal: 1000, shippingCost: 100, taxAmount: 0, discountAmount: 0, totalAmount: 1100, paymentStatus: 'pending', metadata: { items: [{ productId: PRODUCT_ID, variantId: PRODUCT_VARIANT_ID, quantity: 1, unitPrice: 1000 }] }, expiresAt: futureDate(1) });
   await upsertById(prisma.commission, COMMISSION_ID, { orderId: ORDER_ID, sellerId: OPENAPI_USER_ID, amount: 50, rate: 0.05, type: 'sale', status: 'pending', payoutId: PAYOUT_ID, metadata: { source: 'contract-test-seed' } });
   await upsertById(prisma.commission, BUSINESS_COMPLIANCE_ID, { orderId: ORDER_ID, sellerId: OPENAPI_USER_ID, amount: 50, rate: 0.05, type: 'sale', status: 'pending', payoutId: PAYOUT_ID, metadata: { source: 'contract-test-seed', exampleId: 'commission-approve' } });
+  await upsertById(prisma.enabler_Order, ENABLER_ORDER_ID, {
+    enablerId: ENABLER_ID,
+    orderId: ORDER_ID,
+    sellerId: OPENAPI_USER_ID,
+    buyerId: CONTRACT_USER_ID,
+    productListingId: ENABLER_LISTING_ID,
+    status: 'COMPLETED',
+    orderAmount: 1000,
+    productAmount: 950,
+    enablerCommission: 50,
+    platformFee: 0,
+    commissionRate: 0.05,
+    tierBonus: 0,
+    performanceBonus: 0,
+    settlementStatus: 'paid',
+    disputeStatus: 'none',
+    metadata: { source: 'contract-test-seed' }
+  });
+  await upsertById(prisma.enabler_Commission, ENABLER_COMMISSION_LEDGER_ID, {
+    enablerId: ENABLER_ID,
+    enablerOrderId: ENABLER_ORDER_ID,
+    commissionId: COMMISSION_ID,
+    baseCommission: 50,
+    tierBonus: 0,
+    performanceBonus: 0,
+    totalCommission: 50,
+    status: 'paid',
+    protectionStatus: 'protected',
+    fraudCheckStatus: 'clear',
+    payoutId: PAYOUT_ID,
+    paidAt: new Date(),
+    paymentMethod: 'MOBILE_MONEY',
+    calculationDetails: { source: 'contract-test-seed' },
+    metadata: { source: 'contract-test-seed' }
+  });
 };
 
 const upsertCatalogMatchingRecords = async () => {
@@ -573,8 +684,56 @@ const upsertTrainingRecords = async () => {
 const upsertSupportRecords = async () => {
   await upsertById(prisma.support_SupportAgent, SUPPORT_AGENT_ID, { userId: CONTRACT_USER_ID, specializations: ['GENERAL', 'ORDERS'], maxConcurrentTickets: 5, currentTicketCount: 1, isAvailable: true, totalTicketsResolved: 0 });
   await upsertById(prisma.support_Ticket, SUPPORT_TICKET_ID, { subject: 'Contract Test Support Ticket', description: 'Auto-seeded for contract testing', status: 'OPEN', priority: 'MEDIUM', category: 'GENERAL', userId: OPENAPI_USER_ID, assignedAgentId: SUPPORT_AGENT_ID });
+  await upsertById(prisma.support_Ticket, SUPPORT_DISPUTE_TICKET_ID, {
+    subject: 'Order dispute for seeded contract order',
+    description: `Order ID: ${ORDER_ID}\nReason: Delivery issue\n\nSeeded dispute ticket for contract tests`,
+    status: 'OPEN',
+    priority: 'HIGH',
+    category: 'order_dispute',
+    userId: OPENAPI_USER_ID,
+    assignedAgentId: SUPPORT_AGENT_ID
+  });
   await upsertById(prisma.support_TicketMessage, SUPPORT_MESSAGE_ID, { ticketId: SUPPORT_TICKET_ID, senderId: CONTRACT_USER_ID, senderType: 'AGENT', content: 'Seeded support reply for contract tests', isInternal: false });
+  await upsertById(prisma.support_TicketMessage, SUPPORT_DISPUTE_MESSAGE_ID, { ticketId: SUPPORT_DISPUTE_TICKET_ID, senderId: OPENAPI_USER_ID, senderType: 'USER', content: 'Seeded dispute evidence note for contract tests', isInternal: false });
   await upsertById(prisma.support_TicketStatusHistory, SUPPORT_STATUS_HISTORY_ID, { ticketId: SUPPORT_TICKET_ID, fromStatus: 'OPEN', toStatus: 'IN_PROGRESS', changedBy: CONTRACT_USER_ID, reason: 'Seeded transition for contract tests' });
+};
+
+const upsertInventoryRecords = async () => {
+  await upsertById(prisma.Inventory_Warehouse || prisma.inventory_Warehouse, INVENTORY_WAREHOUSE_ID, {
+    code: 'CT-WH-01',
+    name: 'Contract Test Warehouse',
+    address: {
+      street: 'Nyerere Road',
+      city: 'Dar es Salaam',
+      region: 'Dar es Salaam',
+      country: 'TZ'
+    },
+    type: 'central',
+    status: 'active',
+    capacity: {
+      unit: 'units',
+      max: 50000
+    },
+    operatingHours: {
+      timezone: 'Africa/Dar_es_Salaam',
+      weekdays: '08:00-18:00'
+    }
+  });
+
+  await upsertById(prisma.Inventory_StockItem || prisma.inventory_StockItem, INVENTORY_STOCK_ITEM_ID, {
+    productVariantId: PRODUCT_VARIANT_ID,
+    warehouseId: INVENTORY_WAREHOUSE_ID,
+    sku: PRODUCT_SKU,
+    quantityAvailable: 125,
+    quantityReserved: 5,
+    quantityDamaged: 0,
+    quantityOnOrder: 20,
+    reorderPoint: 20,
+    maxStock: 500,
+    unitCost: 750,
+    status: 'active',
+    metadata: { source: 'contract-test-seed' }
+  });
 };
 
 const upsertCampaignRecords = async () => {
@@ -591,6 +750,64 @@ const upsertCampaignRecords = async () => {
     create: { id: CAMPAIGN_PRODUCT_ID, campaignId: CAMPAIGN_ID, productId: PRODUCT_ID, originalPrice: { amount: 1000, currency: 'TZS' }, campaignPrice: { amount: 900, currency: 'TZS' }, appliedAt: new Date() }
   });
   await upsertById(prisma.campaign_Metrics, CAMPAIGN_METRICS_ID, { campaignId: CAMPAIGN_ID, views: 10, conversions: 1, revenue: 900, totalProductsAffected: 1, totalRevenueImpact: 100, averageDiscountPercent: 10 });
+
+  await upsertById(prisma.campaign_Campaign, PROMOTION_JOB_ID, {
+    name: 'Ramadan Promotion Boost',
+    description: 'Help drive seasonal sales for featured marketplace products.',
+    type: 'PROMOTION',
+    status: 'ACTIVE',
+    startDate: new Date(Date.now() - 60 * 60 * 1000),
+    endDate: futureDate(7),
+    timezone: 'Africa/Dar_es_Salaam',
+    autoApply: false,
+    autoRevert: false,
+    sellerId: OPENAPI_USER_ID,
+    createdBy: CONTRACT_USER_ID,
+    metadata: {
+      source: 'contract-test-seed',
+      brief: 'Promote seasonal marketplace offers across your referral channels.',
+      channels: ['marketplace', 'social'],
+      rewardEstimate: 25000
+    }
+  });
+  await upsertById(prisma.campaign_PricingRule, PROMOTION_JOB_RULE_ID, {
+    campaignId: PROMOTION_JOB_ID,
+    ruleType: 'FIXED_DISCOUNT',
+    value: 100,
+    priority: 1,
+    conditions: { minQuantity: 1 }
+  });
+  await prisma.campaign_Category.upsert({
+    where: { campaignId_categoryId: { campaignId: PROMOTION_JOB_ID, categoryId: CATEGORY_ID } },
+    update: { id: PROMOTION_JOB_CATEGORY_ID },
+    create: { id: PROMOTION_JOB_CATEGORY_ID, campaignId: PROMOTION_JOB_ID, categoryId: CATEGORY_ID }
+  });
+  await prisma.campaign_Product.upsert({
+    where: { campaignId_productId: { campaignId: PROMOTION_JOB_ID, productId: PRODUCT_ID } },
+    update: {
+      id: PROMOTION_JOB_PRODUCT_ID,
+      originalPrice: { amount: 1000, currency: 'TZS' },
+      campaignPrice: { amount: 900, currency: 'TZS' },
+      appliedAt: new Date()
+    },
+    create: {
+      id: PROMOTION_JOB_PRODUCT_ID,
+      campaignId: PROMOTION_JOB_ID,
+      productId: PRODUCT_ID,
+      originalPrice: { amount: 1000, currency: 'TZS' },
+      campaignPrice: { amount: 900, currency: 'TZS' },
+      appliedAt: new Date()
+    }
+  });
+  await upsertById(prisma.campaign_Metrics, PROMOTION_JOB_METRICS_ID, {
+    campaignId: PROMOTION_JOB_ID,
+    views: 25,
+    conversions: 2,
+    revenue: 1800,
+    totalProductsAffected: 1,
+    totalRevenueImpact: 250,
+    averageDiscountPercent: 10
+  });
 };
 
 const upsertProductionRecords = async () => {
@@ -605,6 +822,46 @@ const upsertProductionRecords = async () => {
     actualQuantity: 0,
     version: 1
   });
+
+  await upsertOptionalById(prisma.production_BulkOrderRequest, BULK_ORDER_REQUEST_ID, {
+    supplierId: OPENAPI_USER_ID,
+    buyerId: CONTRACT_USER_ID,
+    title: 'Bulk order for 5,000 woven bags',
+    description: 'Buyer is sourcing 5,000 branded woven bags for an April campaign rollout and needs a supplier quote with delivery lead time.',
+    productId: PRODUCT_ID,
+    quantity: 5000,
+    unit: 'bags',
+    currency: 'TZS',
+    targetUnitPrice: 4200,
+    requiredBy: futureDate(21),
+    deliveryAddress: 'Mbezi Industrial Area, Dar es Salaam',
+    notes: 'Include branding setup cost in the quote notes if applicable.',
+    status: 'OPEN',
+    metadata: {
+      requestedByChannel: 'supplier-portal',
+      priority: 'HIGH'
+    }
+  });
+
+  await upsertOptionalById(prisma.production_CapacitySnapshot, CAPACITY_SNAPSHOT_ID, {
+    supplierId: OPENAPI_USER_ID,
+    date: normalizeDayUtc(),
+    maxCapacity: 10000,
+    usedCapacity: 3500,
+    reservedCapacity: 1500,
+    unit: 'units',
+    adjustedBy: OPENAPI_USER_ID,
+    reason: 'Initial production planning baseline'
+  });
+
+  if (prisma.production_BulkOrderQuote?.upsert) {
+    await prisma.production_BulkOrderQuote.deleteMany({
+      where: {
+        requestId: BULK_ORDER_REQUEST_ID,
+        NOT: { id: BULK_ORDER_QUOTE_ID }
+      }
+    });
+  }
 };
 
 const upsertCommunityRecords = async () => {
@@ -718,7 +975,16 @@ const upsertCommunityRecords = async () => {
 };
 
 const upsertComplianceRecords = async () => {
-  await upsertById(prisma.compliance_KYCRecord, KYC_RECORD_ID, { userId: OPENAPI_USER_ID, verificationStatus: 'approved', submittedAt: new Date(), verifiedAt: new Date(), verifiedBy: CONTRACT_USER_ID, documents: [{ type: 'national_id', status: 'approved' }], expiryDate: futureDate(365), riskLevel: 'low' });
+  await upsertById(prisma.compliance_KYCRecord, KYC_RECORD_ID, {
+    userId: OPENAPI_USER_ID,
+    verificationStatus: 'approved',
+    submittedAt: new Date(),
+    verifiedAt: new Date(),
+    verifiedBy: CONTRACT_USER_ID,
+    documents: buildSeededKycDocumentPayload(),
+    expiryDate: futureDate(365),
+    riskLevel: 'low'
+  });
 };
 
 const upsertAuthArtifacts = async () => {
@@ -793,6 +1059,7 @@ const main = async () => {
 
   await upsertCategory();
   await upsertProduct();
+  await upsertInventoryRecords();
   await upsertBuyBox();
   await upsertAnalyticsSellerRecords();
   await upsertEnablerProfile();

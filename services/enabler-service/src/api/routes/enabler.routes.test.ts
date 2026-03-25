@@ -31,6 +31,14 @@ describe('enabler.routes', () => {
         'POST /:enablerId/listings',
         'GET /:enablerId/listings',
         'POST /:enablerId/orders',
+        'GET /:enablerId/earnings/summary',
+        'GET /:enablerId/earnings',
+        'GET /:enablerId/promotion-jobs',
+        'POST /:enablerId/promotion-jobs/:jobId/accept',
+        'GET /:enablerId/referral-link',
+        'POST /:enablerId/referral-link',
+        'POST /:enablerId/referral-link/events',
+        'GET /:enablerId/orders/:orderId/commission',
         'GET /:enablerId/orders'
       ])
     );

@@ -33,5 +33,6 @@ export const TYPES = {
 
     // Controllers
     TicketController: Symbol.for('TicketController'),
-    AgentController: Symbol.for('AgentController')
+    AgentController: Symbol.for('AgentController'),
+    DisputeController: Symbol.for('DisputeController')
 };

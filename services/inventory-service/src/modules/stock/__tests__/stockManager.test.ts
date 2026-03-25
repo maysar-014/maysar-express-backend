@@ -8,7 +8,13 @@ import {
 import { EventBus } from '@shared-events/eventBus';
 
 jest.mock('@prisma/client');
-jest.mock('../../../../../shared/events/eventBus');
+jest.mock('@shared-events/eventBus', () => ({
+  eventBus: {
+    emit: jest.fn(),
+    publish: jest.fn(),
+    on: jest.fn()
+  }
+}), { virtual: true });
 
 describe('StockManager', () => {
   type MockStockManagerPrisma = {
@@ -250,15 +256,7 @@ describe('StockManager', () => {
         },
       ];
 
-      await stockManager.updateStock(updates);
-
-      expect(mockPrisma.stockItem.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            quantityAvailable: 0,
-          }),
-        })
-      );
+      await expect(stockManager.updateStock(updates)).rejects.toThrow('Cannot reduce stock below reserved quantity');
     });
 
     it('should record inventory movement', async () => {
@@ -316,7 +314,8 @@ describe('StockManager', () => {
               operation: 'add',
             }),
           ]),
-        })
+        }),
+        undefined
       );
     });
 
@@ -351,9 +350,9 @@ describe('StockManager', () => {
     });
 
     it('should emit low stock alert when below reorder point', async () => {
-      const lowStockItem = { ...mockStockItem, quantityAvailable: 5, reorderPoint: 10 };
+      const lowStockItem = { ...mockStockItem, quantityAvailable: 100, quantityReserved: 0, reorderPoint: 10 };
       mockPrisma.stockItem.findUnique.mockResolvedValue(lowStockItem as any);
-      mockPrisma.stockItem.update.mockResolvedValue(lowStockItem as any);
+      mockPrisma.stockItem.update.mockResolvedValue({ ...lowStockItem, quantityAvailable: 5 } as any);
 
       const updates: StockUpdate[] = [
         {
@@ -375,7 +374,8 @@ describe('StockManager', () => {
           currentStock: 5,
           reorderPoint: 10,
           urgency: expect.any(String),
-        })
+        }),
+        undefined
       );
     });
 
@@ -577,6 +577,75 @@ describe('StockManager', () => {
           reason: 'Order fulfillment',
         }),
       });
+    });
+  });
+
+  describe('updateStockConfiguration', () => {
+    beforeEach(() => {
+      mockPrisma.stockItem.findUnique.mockResolvedValue({
+        id: 'stock-1',
+        productVariantId: 'var-1',
+        warehouseId: 'wh-1',
+        quantityAvailable: 100,
+        quantityReserved: 20,
+        reorderPoint: 10,
+        maxStock: 1000,
+        unitCost: 50,
+        updatedAt: new Date(),
+      } as any);
+      mockPrisma.stockItem.update.mockResolvedValue({
+        id: 'stock-1',
+        productVariantId: 'var-1',
+        warehouseId: 'wh-1',
+        quantityAvailable: 100,
+        quantityReserved: 20,
+        reorderPoint: 15,
+        maxStock: 250,
+        unitCost: 50,
+        updatedAt: new Date(),
+      } as any);
+      mockPrisma.inventoryMovement.create.mockResolvedValue({} as any);
+    });
+
+    it('should update reorder configuration with an audit movement', async () => {
+      await stockManager.updateStockConfiguration({
+        variantId: 'var-1',
+        warehouseId: 'wh-1',
+        reorderPoint: 15,
+        maxStock: 250,
+        performedBy: 'usr_01ARZ3NDEKTSV4RRFFQ69G5FAV'
+      });
+
+      expect(mockPrisma.stockItem.update).toHaveBeenCalledWith({
+        where: {
+          productVariantId_warehouseId: {
+            productVariantId: 'var-1',
+            warehouseId: 'wh-1',
+          },
+        },
+        data: {
+          reorderPoint: 15,
+          maxStock: 250,
+          updatedAt: expect.any(Date),
+        },
+      });
+      expect(mockPrisma.inventoryMovement.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          movementType: 'adjustment',
+          quantity: 0,
+          referenceType: 'material_configuration',
+        }),
+      });
+      expect(mockEventBus.emit).toHaveBeenCalledWith('InventoryUpdated.v1', expect.any(Object), undefined);
+    });
+
+    it('should reject impossible configuration', async () => {
+      await expect(stockManager.updateStockConfiguration({
+        variantId: 'var-1',
+        warehouseId: 'wh-1',
+        reorderPoint: 500,
+        maxStock: 100
+      })).rejects.toThrow('Maximum stock must be greater than or equal to reorder point');
     });
   });
 });

@@ -5,15 +5,18 @@ import { OrderRepository } from '../../domain/repositories/order.repository';
 import { PrismaOrderRepository } from '../../infrastructure/database/prisma-order.repository';
 import { OrderStatus } from '../../domain/entities/order.entity';
 import { IdGeneratorService } from '../../infrastructure/services/id-generator.service';
+import { CancellationPolicy, CancellationRequester } from '../../domain/policies/cancellation.policy';
 
 export class OrderController {
   private orderRepository: OrderRepository;
+  private cancellationPolicy: CancellationPolicy;
 
   constructor(
     private readonly placeOrderUseCase: PlaceOrderUseCase,
     private readonly checkCODEligibilityUseCase: CheckCODEligibilityUseCase
   ) {
     this.orderRepository = new PrismaOrderRepository();
+    this.cancellationPolicy = new CancellationPolicy();
   }
 
   private isContractTestRequest(req: Request): boolean {
@@ -30,6 +33,85 @@ export class OrderController {
       return { status: 422, message };
     }
     return { status: 500, message };
+  }
+
+  private resolveCancellationRequester(req: Request, order: { buyerId?: string; sellerId?: string }): {
+    actor: CancellationRequester | null;
+    requesterUserId?: string;
+  } {
+    const authUser = (req as any).user;
+    const userId = authUser?.userId || authUser?.id;
+    const roles = Array.isArray(authUser?.roles)
+      ? authUser.roles.map((role: unknown) => String(role).trim().toLowerCase())
+      : [];
+
+    if (roles.includes('admin') || roles.includes('system')) {
+      return { actor: 'system', requesterUserId: userId };
+    }
+
+    if (userId && order.buyerId && userId === order.buyerId) {
+      return { actor: 'buyer', requesterUserId: userId };
+    }
+
+    if (userId && order.sellerId && userId === order.sellerId) {
+      return { actor: 'seller', requesterUserId: userId };
+    }
+
+    return { actor: null, requesterUserId: userId };
+  }
+
+  private async cancelOrderInternal(req: Request, res: Response, reasonInput?: unknown): Promise<void> {
+    const { id } = req.params;
+    const fallbackReason = typeof req.query?.reason === 'string' ? req.query.reason : 'customer_request';
+    const reason = typeof reasonInput === 'string' && reasonInput.trim() ? reasonInput.trim() : fallbackReason;
+
+    const existingOrder = await this.orderRepository.findById(id);
+    if (!existingOrder) {
+      res.status(404).json({
+        error: 'ORDER_NOT_FOUND',
+        message: `Order with ID ${id} not found`,
+        requestId: req.headers['x-request-id'] as string
+      });
+      return;
+    }
+
+    const { actor, requesterUserId } = this.resolveCancellationRequester(req, existingOrder);
+
+    if (!actor) {
+      res.status(403).json({
+        error: 'FORBIDDEN',
+        message: 'You are not allowed to cancel this order',
+        requestId: req.headers['x-request-id'] as string
+      });
+      return;
+    }
+
+    const decision = this.cancellationPolicy.canCancelOrder({
+      order: existingOrder as any,
+      requestedBy: actor,
+      requesterUserId
+    });
+
+    if (!this.isContractTestRequest(req) && !decision.allowed) {
+      res.status(403).json({
+        error: 'ORDER_CANNOT_BE_CANCELLED',
+        message: decision.reason || 'Order cannot be cancelled at this stage',
+        requestId: req.headers['x-request-id'] as string
+      });
+      return;
+    }
+
+    existingOrder.status = 'cancelled' as OrderStatus;
+    existingOrder.cancelReason = reason;
+    existingOrder.cancelledAt = new Date();
+    await this.orderRepository.update(existingOrder);
+
+    res.status(200).json({
+      id,
+      status: 'cancelled',
+      cancelledAt: new Date().toISOString(),
+      reason
+    });
   }
 
   async placeOrder(req: Request, res: Response): Promise<void> {
@@ -206,40 +288,19 @@ export class OrderController {
 
   async deleteOrder(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      const { reason = 'customer_request' } = req.query;
-
-      // Find existing order
-      const existingOrder = await this.orderRepository.findById(id);
-      if (!existingOrder) {
-        res.status(404).json({
-          error: 'ORDER_NOT_FOUND',
-          message: `Order with ID ${id} not found`,
-          requestId: req.headers['x-request-id'] as string
-        });
-        return;
-      }
-
-      // Check if order can be cancelled (simplified check)
-      if (!this.isContractTestRequest(req) && String(existingOrder.status).toLowerCase() !== 'pending') {
-        res.status(403).json({
-          error: 'ORDER_CANNOT_BE_CANCELLED',
-          message: 'Order cannot be cancelled at this stage',
-          requestId: req.headers['x-request-id'] as string
-        });
-        return;
-      }
-
-      // Update status to cancelled
-      existingOrder.status = 'cancelled' as OrderStatus;
-      await this.orderRepository.update(existingOrder);
-
-      res.status(200).json({
-        id,
-        status: 'cancelled',
-        cancelledAt: new Date().toISOString(),
-        reason
+      await this.cancelOrderInternal(req, res);
+    } catch (error: any) {
+      res.status(500).json({
+        error: 'INTERNAL_ERROR',
+        message: 'Failed to cancel order',
+        requestId: req.headers['x-request-id'] as string
       });
+    }
+  }
+
+  async cancelOrder(req: Request, res: Response): Promise<void> {
+    try {
+      await this.cancelOrderInternal(req, res, req.body?.reason);
     } catch (error: any) {
       res.status(500).json({
         error: 'INTERNAL_ERROR',

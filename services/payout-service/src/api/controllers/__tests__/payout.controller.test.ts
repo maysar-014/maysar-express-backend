@@ -48,6 +48,18 @@ describe('PayoutController', () => {
         expect(res.status).toHaveBeenCalledWith(200);
     });
 
+    it('should prefer an eligible payout role from multi-role auth context', async () => {
+        (req as any).user = { userId: 'usr_123', roles: ['admin', 'agent', 'seller'] };
+        req.query = { limit: '10' };
+        mockPayoutRepository.findByUserIdAndRole.mockResolvedValue([{ id: 'p1' }]);
+
+        await controller.list(req as Request, res as Response);
+
+        expect(mockPayoutRepository.findByUserIdAndRole).toHaveBeenCalledWith('usr_123', 'seller', 10);
+        expect(mockPayoutRepository.findByUserId).not.toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(200);
+    });
+
     it('should get payout details by id', async () => {
         req.params = { id: 'p1' };
         mockPayoutRepository.findById.mockResolvedValue({ id: 'p1' });

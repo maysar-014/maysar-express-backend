@@ -85,6 +85,15 @@ export interface StockUpdate {
   performedBy?: string;
 }
 
+export interface StockConfigurationUpdate {
+  variantId: string;
+  warehouseId: string;
+  reorderPoint?: number | null;
+  maxStock?: number | null;
+  performedBy?: string;
+  reason?: string;
+}
+
 export class StockManager {
   constructor(
     private prisma: StockManagerPrisma,
@@ -206,6 +215,86 @@ export class StockManager {
         operation: u.operation
       })),
       timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Update reorder and capacity settings for a stock item with audit metadata.
+   */
+  async updateStockConfiguration(update: StockConfigurationUpdate): Promise<StockItemRecord> {
+    return this.prisma.$transaction(async (tx: StockManagerTxClient) => {
+      const stockItemDelegate = this.getStockItemDelegate(tx);
+      const movementDelegate = this.getInventoryMovementDelegate(tx);
+      const currentStock = await stockItemDelegate.findUnique({
+        where: {
+          productVariantId_warehouseId: {
+            productVariantId: update.variantId,
+            warehouseId: update.warehouseId
+          }
+        }
+      });
+
+      if (!currentStock) {
+        throw new Error(`Stock item not found: ${update.variantId} in warehouse ${update.warehouseId}`);
+      }
+
+      const nextReorderPoint = update.reorderPoint ?? currentStock.reorderPoint ?? 0;
+      const nextMaxStock = update.maxStock ?? currentStock.maxStock ?? null;
+
+      if (nextReorderPoint < 0) {
+        throw new Error('Reorder point cannot be negative');
+      }
+
+      if (nextMaxStock !== null && nextMaxStock <= 0) {
+        throw new Error('Maximum stock must be greater than zero');
+      }
+
+      if (nextMaxStock !== null && nextMaxStock < nextReorderPoint) {
+        throw new Error('Maximum stock must be greater than or equal to reorder point');
+      }
+
+      const updatedStock = await stockItemDelegate.update({
+        where: {
+          productVariantId_warehouseId: {
+            productVariantId: update.variantId,
+            warehouseId: update.warehouseId
+          }
+        },
+        data: {
+          reorderPoint: nextReorderPoint,
+          maxStock: nextMaxStock,
+          updatedAt: new Date()
+        }
+      });
+
+      await movementDelegate.create({
+        data: {
+          productVariantId: update.variantId,
+          warehouseId: update.warehouseId,
+          movementType: 'adjustment',
+          quantity: 0,
+          referenceType: 'material_configuration',
+          referenceId: update.variantId,
+          reason: update.reason || 'Material inventory configuration updated',
+          performedBy: update.performedBy,
+          unitCost: currentStock.unitCost
+        }
+      });
+
+      await this.emitEvent('InventoryUpdated.v1', {
+        updates: [
+          {
+            variantId: update.variantId,
+            warehouseId: update.warehouseId,
+            operation: 'configure',
+            reorderPoint: nextReorderPoint,
+            maxStock: nextMaxStock
+          }
+        ],
+        timestamp: new Date().toISOString()
+      });
+
+      return updatedStock;
     });
   }
 

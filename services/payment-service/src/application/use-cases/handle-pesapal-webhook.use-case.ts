@@ -12,6 +12,10 @@ interface HandleWebhookResult {
   status: string;
 }
 
+interface WebhookRecordRef {
+  id: string;
+}
+
 export class HandlePesapalWebhookUseCase {
   constructor(
     private readonly paymentRepository: IPaymentRepository,
@@ -39,27 +43,18 @@ export class HandlePesapalWebhookUseCase {
       timestamp: webhookPayload.timestamp
     });
 
-    const webhookRecord = this.webhookEvents
-      ? await this.webhookEvents.recordReceived({
-          provider: this.paymentProvider.getProviderName?.() || 'unknown',
-          eventType: webhookPayload.eventType,
-          eventId: normalizedProviderTransactionReference,
-          payload: {
-            ...webhookPayload,
-            providerReference,
-            providerTransactionReference: normalizedProviderTransactionReference,
-            paymentStatus
-          }
-        })
-      : null;
+    const webhookRecord = await this.recordWebhookEventSafely(
+      normalizedProviderTransactionReference,
+      providerReference,
+      paymentStatus,
+      webhookPayload
+    );
 
     try {
       const payment = await this.findPayment(providerReference);
       if (!payment) {
         logger.warn('Payment not found for webhook', { providerReference });
-        if (webhookRecord) {
-          await this.webhookEvents?.markProcessed(webhookRecord.id);
-        }
+        await this.markWebhookProcessedSafely(webhookRecord);
         return {
           handled: false,
           paymentId: providerReference,
@@ -67,14 +62,12 @@ export class HandlePesapalWebhookUseCase {
         };
       }
 
-      if (payment.status === PaymentStatus.COMPLETED || payment.status === PaymentStatus.FAILED) {
+      if (this.isTerminalStatus(payment.status)) {
         logger.info('Payment already in terminal state, skipping update', { 
           paymentId: payment.id, 
           currentStatus: payment.status 
         });
-        if (webhookRecord) {
-          await this.webhookEvents?.markProcessed(webhookRecord.id);
-        }
+        await this.markWebhookProcessedSafely(webhookRecord);
         return {
           handled: true,
           paymentId: payment.id,
@@ -95,9 +88,7 @@ export class HandlePesapalWebhookUseCase {
         this.markPaymentCompleted(payment, normalizedProviderTransactionReference);
         const updateApplied = await this.tryUpdatePayment(payment);
         if (!updateApplied) {
-          if (webhookRecord) {
-            await this.webhookEvents?.markProcessed(webhookRecord.id);
-          }
+          await this.markWebhookProcessedSafely(webhookRecord);
           return {
             handled: true,
             paymentId: payment.id,
@@ -117,9 +108,7 @@ export class HandlePesapalWebhookUseCase {
         payment.markAsFailed(statusResponse.failureReason || 'Payment failed at provider');
         const updateApplied = await this.tryUpdatePayment(payment);
         if (!updateApplied) {
-          if (webhookRecord) {
-            await this.webhookEvents?.markProcessed(webhookRecord.id);
-          }
+          await this.markWebhookProcessedSafely(webhookRecord);
           return {
             handled: true,
             paymentId: payment.id,
@@ -138,9 +127,7 @@ export class HandlePesapalWebhookUseCase {
         logger.info('Payment marked as failed', { paymentId: payment.id });
       }
 
-      if (webhookRecord) {
-        await this.webhookEvents?.markProcessed(webhookRecord.id);
-      }
+      await this.markWebhookProcessedSafely(webhookRecord);
 
       return {
         handled: true,
@@ -148,9 +135,7 @@ export class HandlePesapalWebhookUseCase {
         status: statusResponse.status
       };
     } catch (error: any) {
-      if (webhookRecord) {
-        await this.webhookEvents?.markFailed(webhookRecord.id, error?.message || 'Webhook processing failed');
-      }
+      await this.markWebhookFailedSafely(webhookRecord, error?.message || 'Webhook processing failed');
       throw error;
     }
   }
@@ -206,6 +191,68 @@ export class HandlePesapalWebhookUseCase {
     }
   }
 
+  private async recordWebhookEventSafely(
+    normalizedProviderTransactionReference: string,
+    providerReference: string,
+    paymentStatus: string,
+    webhookPayload: WebhookPayload
+  ): Promise<WebhookRecordRef | null> {
+    if (!this.webhookEvents) {
+      return null;
+    }
+
+    try {
+      return await this.webhookEvents.recordReceived({
+        provider: this.paymentProvider.getProviderName?.() || 'unknown',
+        eventType: webhookPayload.eventType,
+        eventId: normalizedProviderTransactionReference,
+        payload: {
+          ...webhookPayload,
+          providerReference,
+          providerTransactionReference: normalizedProviderTransactionReference,
+          paymentStatus
+        }
+      });
+    } catch (error) {
+      logger.warn('Failed to persist webhook receipt; continuing with webhook processing', {
+        providerReference,
+        providerTransactionReference: normalizedProviderTransactionReference,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return null;
+    }
+  }
+
+  private async markWebhookProcessedSafely(webhookRecord: WebhookRecordRef | null): Promise<void> {
+    if (!webhookRecord || !this.webhookEvents) {
+      return;
+    }
+
+    try {
+      await this.webhookEvents.markProcessed(webhookRecord.id);
+    } catch (error) {
+      logger.warn('Failed to mark webhook receipt as processed', {
+        webhookRecordId: webhookRecord.id,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  private async markWebhookFailedSafely(webhookRecord: WebhookRecordRef | null, message: string): Promise<void> {
+    if (!webhookRecord || !this.webhookEvents) {
+      return;
+    }
+
+    try {
+      await this.webhookEvents.markFailed(webhookRecord.id, message);
+    } catch (error) {
+      logger.warn('Failed to mark webhook receipt as failed', {
+        webhookRecordId: webhookRecord.id,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
   private async resolvePaymentStatus(
     paymentId: string,
     amount: number,
@@ -252,6 +299,16 @@ export class HandlePesapalWebhookUseCase {
     }
 
     payment.markAsCompleted(providerTransactionReference);
+  }
+
+  private isTerminalStatus(status: PaymentStatus): boolean {
+    return [
+      PaymentStatus.COMPLETED,
+      PaymentStatus.FAILED,
+      PaymentStatus.CANCELLED,
+      PaymentStatus.REFUNDED,
+      PaymentStatus.PARTIALLY_REFUNDED
+    ].includes(status);
   }
 }
 

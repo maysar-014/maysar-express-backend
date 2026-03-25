@@ -32,3 +32,14 @@ export class CommissionEarnedEvent {
         public readonly timestamp: Date = new Date()
     ) { }
 }
+
+export class TaskAssignedEvent {
+    constructor(
+        public readonly taskId: string,
+        public readonly enablerId: string,
+        public readonly sellerId: string,
+        public readonly taskType: string,
+        public readonly value: number,
+        public readonly timestamp: Date = new Date()
+    ) { }
+}

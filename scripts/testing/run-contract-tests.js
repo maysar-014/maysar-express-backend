@@ -14,7 +14,7 @@ const reportsDir = path.join(root, 'tests', 'contract', 'reports');
 const schemathesisHooksPath = path.join(root, 'scripts', 'testing', 'schemathesis-hooks.py');
 const schemathesisBaseUrl = String(process.env.SCHEMATHESIS_BASE_URL || 'http://localhost:3000').trim().replace(/\/+$/, '');
 const contractUserId = process.env.SCHEMATHESIS_USER_ID || process.env.CONTRACT_TEST_USER_ID || 'usr_test_0001';
-const contractUserRoles = process.env.SCHEMATHESIS_USER_ROLES || process.env.CONTRACT_TEST_USER_ROLES || 'admin,agent,seller,buyer,enabler';
+const contractUserRoles = process.env.SCHEMATHESIS_USER_ROLES || process.env.CONTRACT_TEST_USER_ROLES || 'admin,agent,seller,buyer,enabler,supplier';
 const shouldSeedContractData = !['0', 'false'].includes(String(
   process.env.SCHEMATHESIS_SEED ?? process.env.CONTRACT_TEST_SEED ?? '1'
 ).toLowerCase());
@@ -34,7 +34,7 @@ const hasCommand = (cmd, args = ['--version']) => {
 };
 
 const quoteShellArg = (value) => {
-  if (!/\s/.test(value)) return value;
+  if (!/[\s()^|&<>]/.test(value)) return value;
   return `"${String(value).replace(/"/g, '\\"')}"`;
 };
 
@@ -252,6 +252,25 @@ const mergeCsvOption = (...values) => {
   return merged.join(',');
 };
 
+const escapeRegex = (value) => String(value).replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
+
+const buildPathPrefixRegex = (value) => {
+  const prefixes = parseCsvOption(value);
+  if (prefixes.length === 0) return undefined;
+  return `^(?:${prefixes.map((prefix) => `${escapeRegex(prefix)}(?:/.*)?`).join('|')})$`;
+};
+
+const mergeRegexOption = (...values) => {
+  const parts = values
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .map((value) => `(?:${value})`);
+
+  if (parts.length === 0) return undefined;
+  if (parts.length === 1) return parts[0].slice(3, -1);
+  return parts.join('|');
+};
+
 if (!fs.existsSync(openApiPath)) {
   console.error('openapi.yaml not found at:', openApiPath);
   process.exit(1);
@@ -284,11 +303,19 @@ const runSchemathesis = async () => {
   const timeoutMs = Number(process.env.SCHEMATHESIS_TIMEOUT_MS || '0');
   const excludeChecks = process.env.SCHEMATHESIS_EXCLUDE_CHECKS ?? 'unsupported_method';
   const checks = process.env.SCHEMATHESIS_CHECKS || 'all';
+  const warnings = process.env.SCHEMATHESIS_WARNINGS;
   const maxFailures = process.env.SCHEMATHESIS_MAX_FAILURES;
+  const requestTimeoutSeconds = process.env.SCHEMATHESIS_REQUEST_TIMEOUT_SECONDS;
+  const maxResponseTimeSeconds = process.env.SCHEMATHESIS_MAX_RESPONSE_TIME_SECONDS;
   const uniqueInputs = toBool(process.env.SCHEMATHESIS_UNIQUE_INPUTS, true);
   const phases = process.env.SCHEMATHESIS_PHASES || process.env.SCHEMATHESIS_DEFAULT_PHASES || 'examples,coverage,fuzzing';
   const mode = process.env.SCHEMATHESIS_MODE || 'all';
   const authMode = String(process.env.SCHEMATHESIS_AUTH_MODE || 'strict').trim().toLowerCase();
+  const globalIncludePathRegex = mergeRegexOption(
+    process.env.SCHEMATHESIS_INCLUDE_PATH_REGEX,
+    buildPathPrefixRegex(process.env.SCHEMATHESIS_INCLUDE_PATH_PREFIXES)
+  );
+  const globalExcludePathRegex = process.env.SCHEMATHESIS_EXCLUDE_PATH_REGEX;
 
   if (!['strict', 'bypass'].includes(authMode)) {
     console.error(`Unsupported SCHEMATHESIS_AUTH_MODE: "${authMode}". Use "strict" or "bypass".`);
@@ -373,13 +400,18 @@ const runSchemathesis = async () => {
       pushHeaderArg(args, `Authorization:${authorizationHeader}`);
     }
     if (checks) args.push('--checks', checks);
+    if (warnings) args.push('--warnings', warnings);
     if (excludeChecksOverride) args.push('--exclude-checks', excludeChecksOverride);
     if (maxFailures) args.push('--max-failures', String(maxFailures));
+    if (requestTimeoutSeconds) args.push('--request-timeout', String(requestTimeoutSeconds));
+    if (maxResponseTimeSeconds) args.push('--max-response-time', String(maxResponseTimeSeconds));
     if (uniqueInputs) args.push('--generation-unique-inputs');
     if (phases) args.push('--phases', phases);
     if (mode) args.push('--mode', mode);
-    if (includePathRegex) args.push('--include-path-regex', includePathRegex);
-    if (excludePathRegex) args.push('--exclude-path-regex', excludePathRegex);
+    const effectiveIncludePathRegex = mergeRegexOption(globalIncludePathRegex, includePathRegex);
+    const effectiveExcludePathRegex = mergeRegexOption(globalExcludePathRegex, excludePathRegex);
+    if (effectiveIncludePathRegex) args.push('--include-path-regex', quoteShellArg(effectiveIncludePathRegex));
+    if (effectiveExcludePathRegex) args.push('--exclude-path-regex', quoteShellArg(effectiveExcludePathRegex));
     return args;
   };
 

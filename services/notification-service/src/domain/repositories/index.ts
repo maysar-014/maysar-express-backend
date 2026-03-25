@@ -24,6 +24,8 @@ export interface INotificationRepository {
   markAsSent(id: string, sentAt: Date): Promise<void>;
   markAsDelivered(id: string, deliveredAt: Date): Promise<void>;
   markAsRead(id: string, readAt: Date): Promise<void>;
+  markAllAsReadByUserId(userId: string, readAt: Date): Promise<number>;
+  countUnreadByUserId(userId: string): Promise<number>;
   recordFailure(id: string, error: string): Promise<void>;
   getSentCountLastHour(userId: string, channel: string): Promise<number>;
 }

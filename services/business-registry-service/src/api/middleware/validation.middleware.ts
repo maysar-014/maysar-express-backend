@@ -6,20 +6,8 @@ import { joiId } from '@shared/validation/id';
 const isContractTestRequest = (req: Request): boolean =>
   String(req.headers['x-contract-test'] || '').trim() === '1' && process.env.NODE_ENV !== 'production';
 
-const CONTRACT_TEST_FALLBACK_USER_ID = 'usr_01ARZ3NDEKTSV4RRFFQ69G5FAV';
 const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F]+$/u;
 const safeVisibleString = Joi.string().min(1).pattern(SAFE_VISIBLE_STRING_PATTERN);
-
-const getHeaderUserId = (req: Request): string | undefined => {
-  const authenticatedUserId = (req as Request & { user?: { userId?: string } }).user?.userId;
-  if (typeof authenticatedUserId === 'string' && authenticatedUserId.trim().length > 0) {
-    return authenticatedUserId;
-  }
-
-  const value = req.headers['x-user-id'];
-  if (Array.isArray(value)) return value[0];
-  return typeof value === 'string' ? value : undefined;
-};
 
 const createBusinessSchema = Joi.object({
   name: safeVisibleString.min(2).max(200).required(),
@@ -82,6 +70,10 @@ const suspendBusinessSchema = Joi.object({
   reason: Joi.string().max(500).optional()
 });
 
+const reactivateBusinessSchema = Joi.object({
+  reactivatedBy: joiId().optional()
+});
+
 const createBusinessDocumentSchema = Joi.object({
   type: Joi.string().required(),
   fileName: Joi.string().min(1).required(),
@@ -94,6 +86,10 @@ const createComplianceRecordSchema = Joi.object({
   status: Joi.string().required(),
   expiresAt: Joi.date().iso().optional(),
   notes: Joi.string().max(1000).optional()
+});
+
+const businessIdParamSchema = Joi.object({
+  id: joiId().required()
 });
 
 const normalizeContractUpdateBusinessPayload = (body: unknown) => {
@@ -158,23 +154,7 @@ export function validateUpdateBusiness(req: Request, res: Response, next: NextFu
 }
 
 export function validateVerifyBusiness(req: Request, res: Response, next: NextFunction): void {
-  const payload = isContractTestRequest(req)
-    ? (() => {
-        const source = req.body && typeof req.body === 'object' ? req.body as Record<string, unknown> : {};
-        return {
-          ...source,
-          verifiedBy: typeof source.verifiedBy === 'string' && source.verifiedBy.trim().length > 0
-            ? source.verifiedBy
-            : getHeaderUserId(req) || CONTRACT_TEST_FALLBACK_USER_ID,
-          documentTypes: Array.isArray(source.documentTypes) && source.documentTypes.every((value) => typeof value === 'string' && value.trim().length > 0)
-            ? source.documentTypes
-            : ['TAX_CERTIFICATE']
-        };
-      })()
-    : req.body;
-  const { error, value } = verifyBusinessSchema.validate(payload, {
-    stripUnknown: isContractTestRequest(req)
-  });
+  const { error, value } = verifyBusinessSchema.validate(req.body);
   if (error) {
     res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.details[0]?.message } });
     return;
@@ -184,19 +164,18 @@ export function validateVerifyBusiness(req: Request, res: Response, next: NextFu
 }
 
 export function validateSuspendBusiness(req: Request, res: Response, next: NextFunction): void {
-  const payload = isContractTestRequest(req)
-    ? (() => {
-        const source = req.body && typeof req.body === 'object' ? req.body as Record<string, unknown> : {};
-        return {
-          ...source,
-          suspendedBy: typeof source.suspendedBy === 'string' && source.suspendedBy.trim().length > 0
-            ? source.suspendedBy
-            : getHeaderUserId(req) || CONTRACT_TEST_FALLBACK_USER_ID,
-          reason: typeof source.reason === 'string' ? source.reason : 'Contract test suspension reason'
-        };
-      })()
-    : req.body;
-  const { error, value } = suspendBusinessSchema.validate(payload);
+  const { error, value } = suspendBusinessSchema.validate(req.body);
+  if (error) {
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.details[0]?.message } });
+    return;
+  }
+  req.body = value;
+  next();
+}
+
+export function validateReactivateBusiness(req: Request, res: Response, next: NextFunction): void {
+  const payload = req.body === undefined ? {} : req.body;
+  const { error, value } = reactivateBusinessSchema.validate(payload);
   if (error) {
     res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.details[0]?.message } });
     return;
@@ -206,16 +185,7 @@ export function validateSuspendBusiness(req: Request, res: Response, next: NextF
 }
 
 export function validateCreateBusinessDocument(req: Request, res: Response, next: NextFunction): void {
-  const payload = isContractTestRequest(req)
-    ? {
-        type: 'TAX_CERTIFICATE',
-        fileName: 'contract-document.pdf',
-        fileUrl: 'https://example.com/contract-document.pdf',
-        status: 'PENDING',
-        ...(req.body && typeof req.body === 'object' ? req.body : {})
-      }
-    : req.body;
-  const { error, value } = createBusinessDocumentSchema.validate(payload);
+  const { error, value } = createBusinessDocumentSchema.validate(req.body);
   if (error) {
     res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.details[0]?.message } });
     return;
@@ -224,15 +194,18 @@ export function validateCreateBusinessDocument(req: Request, res: Response, next
   next();
 }
 
+export function validateBusinessIdParam(req: Request, res: Response, next: NextFunction): void {
+  const { error, value } = businessIdParamSchema.validate(req.params);
+  if (error) {
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.details[0]?.message } });
+    return;
+  }
+  req.params = value;
+  next();
+}
+
 export function validateCreateComplianceRecord(req: Request, res: Response, next: NextFunction): void {
-  const payload = isContractTestRequest(req)
-    ? {
-        type: 'TAX_COMPLIANCE',
-        status: 'UNDER_REVIEW',
-        ...(req.body && typeof req.body === 'object' ? req.body : {})
-      }
-    : req.body;
-  const { error, value } = createComplianceRecordSchema.validate(payload);
+  const { error, value } = createComplianceRecordSchema.validate(req.body);
   if (error) {
     res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.details[0]?.message } });
     return;

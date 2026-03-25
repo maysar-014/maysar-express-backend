@@ -212,6 +212,7 @@ model User {
   auditLogs               AuditLog[]
   emailVerificationTokens Auth_EmailVerificationToken[]
   passwordResetTokens     Auth_PasswordResetToken[]
+  roleRequests            Auth_RoleRequest[]
   sessions                Session[]
   twoFactorAuth           User_TwoFactorAuth?
 
@@ -305,6 +306,25 @@ model AuditLog {
   @@index([userId])
   @@index([timestamp])
   @@map("auth_audit_logs")
+}
+
+model Auth_RoleRequest {
+  id            String   @id @db.VarChar(64)
+  userId        String   @db.VarChar(64)
+  requestedRole String   @db.VarChar(32)
+  status        String   @default("PENDING") @db.VarChar(32)
+  justification String?
+  metadata      Json?
+  reviewedAt    DateTime?
+  reviewedBy    String?  @db.VarChar(64)
+  reviewNotes   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([requestedRole, status])
+  @@map("auth_role_requests")
 }
 
 model Auth_UserIndex {
@@ -1287,6 +1307,72 @@ model Inventory_OutboxEvent {
   @@map("inventory_outbox_events")
 }
 
+model Production_BulkOrderRequest {
+  id              String                      @id @db.VarChar(64)
+  supplierId      String                      @db.VarChar(64)
+  buyerId         String                      @db.VarChar(64)
+  title           String                      @db.VarChar(255)
+  description     String
+  productId       String?                     @db.VarChar(64)
+  quantity        Decimal                     @db.Decimal(12, 2)
+  unit            String                      @db.VarChar(64)
+  currency        String                      @db.VarChar(8)
+  targetUnitPrice Decimal?                    @db.Decimal(12, 2)
+  requiredBy      DateTime                    @db.Timestamp(6)
+  deliveryAddress String?
+  notes           String?
+  status          String                      @db.VarChar(32)
+  metadata        Json?
+  createdAt       DateTime                    @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime                    @updatedAt @db.Timestamp(6)
+  quotes          Production_BulkOrderQuote[]
+
+  @@index([supplierId, status])
+  @@index([buyerId])
+  @@index([requiredBy])
+  @@map("production_bulk_order_requests")
+}
+
+model Production_BulkOrderQuote {
+  id                   String                      @id @db.VarChar(64)
+  requestId            String                      @db.VarChar(64)
+  supplierId           String                      @db.VarChar(64)
+  unitPrice            Decimal                     @db.Decimal(12, 2)
+  currency             String                      @db.VarChar(8)
+  leadTimeDays         Int
+  minimumOrderQuantity Decimal?                    @db.Decimal(12, 2)
+  validUntil           DateTime                    @db.Timestamp(6)
+  notes                String?
+  paymentTerms         String?
+  status               String                      @db.VarChar(32)
+  createdAt            DateTime                    @default(now()) @db.Timestamp(6)
+  updatedAt            DateTime                    @updatedAt @db.Timestamp(6)
+  request              Production_BulkOrderRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, supplierId])
+  @@index([supplierId, status])
+  @@index([validUntil])
+  @@map("production_bulk_order_quotes")
+}
+
+model Production_CapacitySnapshot {
+  id               String   @id @db.VarChar(64)
+  supplierId       String   @db.VarChar(64)
+  date             DateTime @db.Timestamp(6)
+  maxCapacity      Decimal  @db.Decimal(12, 2)
+  usedCapacity     Decimal  @db.Decimal(12, 2)
+  reservedCapacity Decimal  @db.Decimal(12, 2)
+  unit             String   @db.VarChar(32)
+  adjustedBy       String?  @db.VarChar(64)
+  reason           String?
+  createdAt        DateTime @default(now()) @db.Timestamp(6)
+  updatedAt        DateTime @updatedAt @db.Timestamp(6)
+
+  @@unique([supplierId, date])
+  @@index([supplierId, updatedAt])
+  @@map("production_capacity_snapshots")
+}
+
 model Logistics_Courier {
   id                  String                      @id @db.VarChar(64)
   name                String
@@ -1527,6 +1613,8 @@ model Order_Order {
   codProofGpsLng         Float?
   codProofTimestamp      DateTime?
   codCommitmentHoldId    String?
+  cancelledAt            DateTime?
+  cancellationReason     String?
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
   version                Int                 @default(0)
@@ -2340,6 +2428,7 @@ model Enabler_Profile {
   orders                Enabler_Order[]
   policies              Enabler_Policy[]
   productListings       Enabler_ProductListing[]
+  tasks                 Enabler_Task[]
 
   @@index([userId])
   @@index([status])
@@ -2496,6 +2585,42 @@ model Enabler_Analytics {
 
   @@index([enablerId])
   @@map("enabler_analytics")
+}
+
+model Enabler_Task {
+  id               String          @id @db.VarChar(64)
+  enablerId        String          @db.VarChar(64)
+  sellerId         String          @db.VarChar(64)
+  taskType         String          @db.VarChar(64)
+  status           String          @db.VarChar(32)
+  sourceType       String          @db.VarChar(64)
+  sourceId         String          @db.VarChar(64)
+  sourceStatus     String          @db.VarChar(32)
+  campaignId       String?         @db.VarChar(64)
+  title            String          @db.VarChar(255)
+  description      String?
+  startsAt         DateTime        @db.Timestamp(6)
+  endsAt           DateTime?       @db.Timestamp(6)
+  timezone         String          @db.VarChar(64)
+  productIds       String[]
+  categoryIds      String[]
+  pricingRuleCount Int             @default(0)
+  brief            String?
+  channels         String[]
+  rewardEstimate   Decimal?        @db.Decimal(12, 2)
+  acceptedAt       DateTime        @db.Timestamp(6)
+  acceptedByUserId String?         @db.VarChar(64)
+  note             String?
+  metadata         Json?
+  createdAt        DateTime        @default(now()) @db.Timestamp(6)
+  updatedAt        DateTime        @updatedAt @db.Timestamp(6)
+  enabler          Enabler_Profile @relation(fields: [enablerId], references: [id], onDelete: Cascade)
+
+  @@unique([enablerId, sourceType, sourceId])
+  @@index([enablerId, status])
+  @@index([sellerId])
+  @@index([taskType, status])
+  @@map("enabler_tasks")
 }
 
 model Enabler_OutboxEvent {

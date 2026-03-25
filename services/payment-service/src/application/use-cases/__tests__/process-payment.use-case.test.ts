@@ -168,6 +168,8 @@ describe('ProcessPaymentUseCase', () => {
 
         expect(result.success).toBe(true);
         expect(mockProvider.processPayment).toHaveBeenCalled();
+        expect(mockFraudEngine.assessTransaction).not.toHaveBeenCalled();
+        expect(mockFraudPolicy.getActionForRiskLevel).not.toHaveBeenCalled();
         process.env.NODE_ENV = originalNodeEnv;
     });
 

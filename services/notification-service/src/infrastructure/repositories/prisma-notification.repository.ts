@@ -147,6 +147,33 @@ export class PrismaNotificationRepository implements INotificationRepository {
     });
   }
 
+  async markAllAsReadByUserId(userId: string, _readAt: Date): Promise<number> {
+    const result = await prisma.notification.updateMany({
+      where: {
+        userId,
+        status: {
+          not: NotificationStatusMapper.toPrisma('read')
+        }
+      },
+      data: {
+        status: NotificationStatusMapper.toPrisma('read')
+      }
+    });
+
+    return result.count;
+  }
+
+  async countUnreadByUserId(userId: string): Promise<number> {
+    return prisma.notification.count({
+      where: {
+        userId,
+        status: {
+          not: NotificationStatusMapper.toPrisma('read')
+        }
+      }
+    });
+  }
+
   async recordFailure(id: string, error: string): Promise<void> {
     const n = await this.findById(id);
     if (!n) return;

@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
 import { ProductionPlanRepository } from './src/infrastructure/repositories/ProductionPlanRepository';
 import { ProductionOrderRepository } from './src/infrastructure/repositories/ProductionOrderRepository';
+import { BulkOrderRepository } from './src/infrastructure/repositories/BulkOrderRepository';
+import { CapacityRepository } from './src/infrastructure/repositories/CapacityRepository';
 import { QualityCheckpointRepository } from './src/infrastructure/repositories/QualityCheckpointRepository';
 import { ProductionMetricsRepository } from './src/infrastructure/repositories/ProductionMetricsRepository';
 import { createPrismaClient } from '@shared/database/prisma-client';
@@ -28,8 +30,14 @@ import { RecordQualityCheckpoint } from './src/application/use-cases/RecordQuali
 import { CompleteProduction } from './src/application/use-cases/CompleteProduction';
 import { GetProductionDashboard } from './src/application/use-cases/GetProductionDashboard';
 import { CalculateProductionCapacity } from './src/application/use-cases/CalculateProductionCapacity';
+import { UpdateProductionCapacity } from './src/application/use-cases/UpdateProductionCapacity';
+import { CreateBulkOrderRequest } from './src/application/use-cases/CreateBulkOrderRequest';
+import { ListBulkOrderRequests } from './src/application/use-cases/ListBulkOrderRequests';
+import { GetBulkOrderRequest } from './src/application/use-cases/GetBulkOrderRequest';
+import { SubmitBulkOrderQuote } from './src/application/use-cases/SubmitBulkOrderQuote';
 
 import { ProductionPlanSaga } from './src/application/sagas/ProductionPlanSaga';
+import { CapacityAdjustmentSaga } from './src/application/sagas/CapacityAdjustmentSaga';
 import { ProductionController } from './src/api/controllers/ProductionController';
 import { createProductionRoutes } from './src/api/routes/productionRoutes';
 import { OrderEventHandler } from './src/infrastructure/events/OrderEventHandler';
@@ -59,6 +67,8 @@ export const ProductionModule: Module = {
         // 2. Repositories
         const planRepo = new ProductionPlanRepository(prisma);
         const orderRepo = new ProductionOrderRepository(prisma);
+        const bulkOrderRepo = new BulkOrderRepository(prisma);
+        const capacityRepo = new CapacityRepository(prisma);
         const qualityRepo = new QualityCheckpointRepository(prisma);
         const metricsRepo = new ProductionMetricsRepository(prisma);
 
@@ -80,7 +90,13 @@ export const ProductionModule: Module = {
         const recordQualityUseCase = new RecordQualityCheckpoint(qualityRepo, qualityEngine);
         const completeProductionUseCase = new CompleteProduction(orderRepo, inventoryService, localEventBus);
         const getDashboardUseCase = new GetProductionDashboard(planRepo, orderRepo);
-        const calculateCapacityUseCase = new CalculateProductionCapacity();
+        const calculateCapacityUseCase = new CalculateProductionCapacity(capacityRepo);
+        const capacityAdjustmentSaga = new CapacityAdjustmentSaga(capacityEngine, localEventBus);
+        const updateCapacityUseCase = new UpdateProductionCapacity(capacityRepo, capacityAdjustmentSaga);
+        const createBulkOrderRequestUseCase = new CreateBulkOrderRequest(bulkOrderRepo);
+        const listBulkOrderRequestsUseCase = new ListBulkOrderRequests(bulkOrderRepo);
+        const getBulkOrderRequestUseCase = new GetBulkOrderRequest(bulkOrderRepo);
+        const submitBulkOrderQuoteUseCase = new SubmitBulkOrderQuote(bulkOrderRepo);
 
         // 5. Sagas
         const planningSaga = new ProductionPlanSaga(planRepo, orderRepo, orderService, inventoryService, planningEngine, localEventBus);
@@ -91,7 +107,12 @@ export const ProductionModule: Module = {
             updateStatusUseCase,
             recordQualityUseCase,
             getDashboardUseCase,
-            calculateCapacityUseCase
+            calculateCapacityUseCase,
+            updateCapacityUseCase,
+            createBulkOrderRequestUseCase,
+            listBulkOrderRequestsUseCase,
+            getBulkOrderRequestUseCase,
+            submitBulkOrderQuoteUseCase
         );
 
         // 7. Routes

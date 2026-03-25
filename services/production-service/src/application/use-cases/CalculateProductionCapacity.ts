@@ -1,14 +1,11 @@
 
-import { ProductionCapacity } from '../../domain/value-objects/production-capacity.value-object';
+import { CapacitySnapshotResponseDto } from '../dto/capacity.dto';
+import { ICapacityRepository } from '../interfaces/ICapacityRepository';
 
 export class CalculateProductionCapacity {
-    async execute(_supplierId: string, _date: Date): Promise<ProductionCapacity> {
-        // Graceful fallback until full capacity engine wiring is completed.
-        return new ProductionCapacity({
-            maxCapacity: 0,
-            usedCapacity: 0,
-            reservedCapacity: 0,
-            unit: 'units'
-        });
+    constructor(private readonly repository: ICapacityRepository) { }
+
+    async execute(supplierId: string, date: Date): Promise<CapacitySnapshotResponseDto> {
+        return this.repository.getSnapshot(supplierId, date);
     }
 }

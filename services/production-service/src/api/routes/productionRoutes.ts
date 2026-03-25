@@ -4,7 +4,13 @@ import { ZodError, ZodSchema } from 'zod';
 import { ProductionController } from '../controllers/ProductionController';
 import { createProductionPlanSchema, updateProductionStatusSchema } from '../validators/production-plan.validator';
 import { recordQualityCheckpointSchema } from '../validators/quality.validator';
-import { checkCapacitySchema } from '../validators/capacity.validator';
+import { checkCapacitySchema, updateCapacitySchema } from '../validators/capacity.validator';
+import {
+    createBulkOrderRequestSchema,
+    getBulkOrderRequestSchema,
+    listBulkOrderRequestsSchema,
+    submitBulkOrderQuoteSchema
+} from '../validators/bulk-order.validator';
 import { requireAuth } from '@shared/middleware/auth-context.middleware';
 
 export const createProductionRoutes = (controller: ProductionController): Router => {
@@ -47,6 +53,34 @@ export const createProductionRoutes = (controller: ProductionController): Router
     };
 
     router.post(
+        '/bulk-orders',
+        requireAuth,
+        validate(createBulkOrderRequestSchema),
+        (req, res) => controller.createBulkOrder(req, res)
+    );
+
+    router.get(
+        '/bulk-orders',
+        requireAuth,
+        validate(listBulkOrderRequestsSchema),
+        (req, res) => controller.listBulkOrders(req, res)
+    );
+
+    router.get(
+        '/bulk-orders/:id',
+        requireAuth,
+        validate(getBulkOrderRequestSchema),
+        (req, res) => controller.getBulkOrder(req, res)
+    );
+
+    router.post(
+        '/bulk-orders/:id/quotes',
+        requireAuth,
+        validate(submitBulkOrderQuoteSchema),
+        (req, res) => controller.submitBulkOrderQuote(req, res)
+    );
+
+    router.post(
         '/plans',
         requireAuth,
         validate(createProductionPlanSchema),
@@ -78,6 +112,13 @@ export const createProductionRoutes = (controller: ProductionController): Router
         requireAuth,
         validate(checkCapacitySchema),
         (req, res) => controller.getCapacity(req, res)
+    );
+
+    router.put(
+        '/capacity',
+        requireAuth,
+        validate(updateCapacitySchema),
+        (req, res) => controller.updateCapacity(req, res)
     );
 
     return router;

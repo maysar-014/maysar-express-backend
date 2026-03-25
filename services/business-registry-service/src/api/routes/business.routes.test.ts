@@ -65,8 +65,10 @@ jest.mock('../middleware/validation.middleware', () => ({
   validateUpdateBusiness: noOpMiddleware,
   validateVerifyBusiness: noOpMiddleware,
   validateSuspendBusiness: noOpMiddleware,
+  validateReactivateBusiness: noOpMiddleware,
   validateCreateBusinessDocument: noOpMiddleware,
-  validateCreateComplianceRecord: noOpMiddleware
+  validateCreateComplianceRecord: noOpMiddleware,
+  validateBusinessIdParam: noOpMiddleware
 }));
 
 jest.mock('../../application/sagas/saga-event-handler', () => ({

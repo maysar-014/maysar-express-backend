@@ -7,7 +7,8 @@ describe('CancelOrderUseCase', () => {
 
     const mockOrder = {
         id: 'order-1',
-        userId: 'user-1',
+        buyerId: 'user-1',
+        sellerId: 'seller-1',
         status: 'PENDING',
         items: [],
         total: 200,
@@ -49,7 +50,7 @@ describe('CancelOrderUseCase', () => {
     it('should fail when order is shipped', async () => {
         mockRepository.findById.mockResolvedValue({ ...mockOrder, status: 'SHIPPED' });
 
-        await expect(useCase.execute(validDto)).rejects.toThrow('Cannot cancel shipped order');
+        await expect(useCase.execute(validDto)).rejects.toThrow('Order cannot be cancelled in current status');
     });
 
     it('should allow cancellation of PENDING orders', async () => {
@@ -60,10 +61,16 @@ describe('CancelOrderUseCase', () => {
         expect(result.status).toBe('CANCELLED');
     });
 
-    it('should allow cancellation of CONFIRMED orders', async () => {
+    it('should reject buyer cancellation of CONFIRMED orders until seller consents', async () => {
         mockRepository.findById.mockResolvedValue({ ...mockOrder, status: 'CONFIRMED' });
 
-        const result = await useCase.execute(validDto);
+        await expect(useCase.execute(validDto)).rejects.toThrow('Seller consent is required after the order is confirmed');
+    });
+
+    it('should allow seller-issued cancellation of CONFIRMED orders', async () => {
+        mockRepository.findById.mockResolvedValue({ ...mockOrder, status: 'CONFIRMED' });
+
+        const result = await useCase.execute({ ...validDto, userId: 'seller-1', requestedBy: 'seller' });
 
         expect(result.status).toBe('CANCELLED');
     });
@@ -78,6 +85,7 @@ describe('CancelOrderUseCase', () => {
 
         for (const reason of reasons) {
             jest.clearAllMocks();
+            mockRepository.findById.mockResolvedValue({ ...mockOrder, status: 'PENDING' });
             const result = await useCase.execute({ ...validDto, reason });
             expect(result.cancelReason).toBe(reason);
         }

@@ -100,6 +100,31 @@ describe('HandlePesapalWebhookUseCase', () => {
     });
   });
 
+  it('returns early when payment is already partially refunded', async () => {
+    const payment = makePayment(PaymentStatus.PARTIALLY_REFUNDED);
+    const repo = {
+      findByProviderReference: jest.fn().mockResolvedValue(payment),
+      update: jest.fn()
+    };
+    const provider = { checkPaymentStatus: jest.fn() };
+    const eventBus = { publish: jest.fn() };
+    const useCase = new HandlePesapalWebhookUseCase(
+      repo as never,
+      provider as never,
+      eventBus as never
+    );
+
+    const result = await useCase.execute('track-1', 'merchant-1', 'COMPLETED', payload);
+
+    expect(result).toEqual({
+      handled: true,
+      paymentId: 'pay-1',
+      status: PaymentStatus.PARTIALLY_REFUNDED
+    });
+    expect(repo.update).not.toHaveBeenCalled();
+    expect(provider.checkPaymentStatus).not.toHaveBeenCalled();
+  });
+
   it('marks payment completed and publishes PaymentCompleted event', async () => {
     const payment = makePayment(PaymentStatus.PROCESSING);
     const repo = { findByProviderReference: jest.fn().mockResolvedValue(payment), update: jest.fn().mockResolvedValue(undefined) };
@@ -167,6 +192,33 @@ describe('HandlePesapalWebhookUseCase', () => {
     );
     expect(result.status).toBe('COMPLETED');
     expect(payment.metadata.providerTransactionId).toBe('track-1');
+  });
+
+  it('continues processing when webhook receipt persistence fails', async () => {
+    const payment = makePayment(PaymentStatus.PROCESSING);
+    const repo = {
+      findByProviderReference: jest.fn().mockResolvedValue(payment),
+      update: jest.fn().mockResolvedValue(undefined)
+    };
+    const provider = { checkPaymentStatus: jest.fn().mockResolvedValue({ status: 'COMPLETED' }) };
+    const eventBus = { publish: jest.fn().mockResolvedValue(undefined) };
+    const webhookEvents = {
+      recordReceived: jest.fn().mockRejectedValue(new Error('table missing')),
+      markProcessed: jest.fn(),
+      markFailed: jest.fn()
+    };
+    const useCase = new HandlePesapalWebhookUseCase(
+      repo as never,
+      provider as never,
+      eventBus as never,
+      webhookEvents as never
+    );
+
+    const result = await useCase.execute('track-1', 'provider-tx-1', 'COMPLETED', payload);
+
+    expect(result.status).toBe('COMPLETED');
+    expect(repo.update).toHaveBeenCalledWith(payment);
+    expect(webhookEvents.markProcessed).not.toHaveBeenCalled();
   });
 
   it('marks payment failed and publishes PaymentFailed event', async () => {

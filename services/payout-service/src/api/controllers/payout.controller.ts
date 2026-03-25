@@ -3,6 +3,8 @@ import { InitiatePayoutUseCase } from '../../application/use-cases/initiate-payo
 import { CompletePayoutUseCase } from '../../application/use-cases/complete-payout.use-case';
 import { CancelPayoutUseCase } from '../../application/use-cases/cancel-payout.use-case';
 
+const ELIGIBLE_PAYOUT_ROLES = new Set(['seller', 'supplier', 'courier', 'enabler', 'system']);
+
 export class PayoutController {
     constructor(
         private readonly initiatePayoutUseCase: InitiatePayoutUseCase,
@@ -13,8 +15,23 @@ export class PayoutController {
 
     private resolveUserRole(user: any): string | undefined {
         if (!user) return undefined;
-        if (typeof user.role === 'string' && user.role.trim().length) return user.role;
-        if (Array.isArray(user.roles) && user.roles.length) return String(user.roles[0]);
+
+        if (typeof user.role === 'string' && user.role.trim().length) {
+            const normalizedRole = user.role.trim().toLowerCase();
+            if (ELIGIBLE_PAYOUT_ROLES.has(normalizedRole)) {
+                return normalizedRole;
+            }
+        }
+
+        if (Array.isArray(user.roles) && user.roles.length) {
+            const eligibleRole = user.roles
+                .map((role: unknown) => String(role).trim().toLowerCase())
+                .find((role: string) => ELIGIBLE_PAYOUT_ROLES.has(role));
+            if (eligibleRole) {
+                return eligibleRole;
+            }
+        }
+
         return undefined;
     }
 
