@@ -1169,7 +1169,7 @@ export class AuthorizationMiddleware {
         data: {
           id: makeId(auditLogPrefix),
           userId,
-          email: auditEvent.details?.email || auditEvent.metadata?.email,
+          email: (auditEvent.details as any)?.email || (auditEvent.metadata as any)?.email,
           action: `authorization:${auditEvent.eventType.toLowerCase()}`,
           ipAddress: auditEvent.ipAddress,
           userAgent: auditEvent.userAgent,

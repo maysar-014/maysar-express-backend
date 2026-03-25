@@ -127,11 +127,12 @@ export class PrismaOrderSagaLogRepository implements ISagaLogRepository {
     return records.map(record => this.toSagaStepLog(record as OrderSagaStepRecord));
   }
 
-  async findStuck(statuses: SagaStatus[], olderThanMs: number): Promise<SagaLogEntry[]> {
+  async findStuck(statuses: SagaStatus[], olderThanMs: number, sagaTypes?: string[]): Promise<SagaLogEntry[]> {
     const cutoff = new Date(Date.now() - olderThanMs);
     const records = await this.prisma.order_SagaLog.findMany({
       where: {
         status: { in: statuses },
+        ...(sagaTypes && sagaTypes.length > 0 ? { sagaType: { in: sagaTypes } } : {}),
         updatedAt: { lt: cutoff }
       },
       orderBy: { updatedAt: 'asc' }

@@ -19,7 +19,7 @@ app.use(express.json());
 // Wire Dependencies
 const userRepository = new PrismaUserRepository(prisma);
 const registerUserUseCase = new RegisterUserUseCase(userRepository);
-const authenticateUserUseCase = new AuthenticateUserUseCase(userRepository, authEventPublisher);
+const authenticateUserUseCase = new AuthenticateUserUseCase(userRepository as any, authEventPublisher);
 const authController = new AuthController(registerUserUseCase, authenticateUserUseCase);
 const eventHandlers = new AuthEventHandlers(userRepository);
 const userSyncHandlers = new UserSyncEventHandlers(prisma);

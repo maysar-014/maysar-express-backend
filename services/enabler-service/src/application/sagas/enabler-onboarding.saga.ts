@@ -29,7 +29,16 @@ export class EnablerOnboardingSaga {
 
             // 3. Auto-Approval (if eligible)
             if (enabler.tier === 'BRONZE') {
-                await this.approveUseCase.execute(enabler.id, 'SYSTEM_AUTO_APPROVE');
+                const completenessEvents = Array.isArray(registrationData.completenessEvents) &&
+                    registrationData.completenessEvents.length > 0
+                    ? registrationData.completenessEvents
+                    : ['registration_submitted', 'business_verified'];
+
+                await this.approveUseCase.execute(
+                    enabler.id,
+                    'SYSTEM_AUTO_APPROVE',
+                    completenessEvents
+                );
             }
 
             // 4. Setup Wallet

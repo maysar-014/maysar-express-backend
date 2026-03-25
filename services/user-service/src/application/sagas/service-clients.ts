@@ -20,35 +20,35 @@ class UnconfiguredServiceClientError extends Error {
 }
 
 export class NotificationServiceClientUnavailable implements NotificationServiceClient {
-  async sendEmail(): Promise<void> {
+  async sendEmail(_userId: string, _template: string, _data: Record<string, unknown>): Promise<void> {
     throw new UnconfiguredServiceClientError('NotificationServiceClient');
   }
 
-  async sendSMS(): Promise<void> {
+  async sendSMS(_userId: string, _message: string): Promise<void> {
     throw new UnconfiguredServiceClientError('NotificationServiceClient');
   }
 
-  async sendPushNotification(): Promise<void> {
+  async sendPushNotification(_userId: string, _title: string, _body: string): Promise<void> {
     throw new UnconfiguredServiceClientError('NotificationServiceClient');
   }
 }
 
 export class AuditServiceClientUnavailable implements AuditServiceClient {
-  async recordEvent(): Promise<void> {
+  async recordEvent(_userId: string, _action: string, _metadata: Record<string, unknown>): Promise<void> {
     throw new UnconfiguredServiceClientError('AuditServiceClient');
   }
 }
 
 export class SessionServiceClientUnavailable implements SessionServiceClient {
-  async invalidateUserSessions(): Promise<void> {
+  async invalidateUserSessions(_userId: string, _reason: string): Promise<void> {
     throw new UnconfiguredServiceClientError('SessionServiceClient');
   }
 
-  async invalidateSession(): Promise<void> {
+  async invalidateSession(_sessionId: string): Promise<void> {
     throw new UnconfiguredServiceClientError('SessionServiceClient');
   }
 }
 
-export const notificationClient = new NotificationServiceClientUnavailable();
-export const auditClient = new AuditServiceClientUnavailable();
-export const sessionClient = new SessionServiceClientUnavailable();
+export const notificationClient: NotificationServiceClient = new NotificationServiceClientUnavailable();
+export const auditClient: AuditServiceClient = new AuditServiceClientUnavailable();
+export const sessionClient: SessionServiceClient = new SessionServiceClientUnavailable();

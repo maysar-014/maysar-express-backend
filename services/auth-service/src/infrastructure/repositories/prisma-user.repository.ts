@@ -24,4 +24,9 @@ export class PrismaUserRepository implements IUserRepository {
         const user = await this.prisma.user.findUnique({ where: { email } });
         return user ? UserMapper.toDomain(user) : null;
     }
+
+    async emailExists(email: string): Promise<boolean> {
+        const count = await this.prisma.user.count({ where: { email } });
+        return count > 0;
+    }
 }

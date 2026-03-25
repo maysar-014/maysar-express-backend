@@ -284,7 +284,7 @@ export class S3CDNProvider {
         this.recordMetrics('list', listTime);
 
         return {
-          files: result.Contents?.map(item => ({
+          files: result.Contents?.map((item: any) => ({
             key: item.Key!,
             size: item.Size!,
             lastModified: item.LastModified!,

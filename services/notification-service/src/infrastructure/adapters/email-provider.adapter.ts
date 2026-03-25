@@ -1,7 +1,7 @@
 import nodemailer, { Transporter, SentMessageInfo } from 'nodemailer';
 import { createLogger } from '../../../../../shared/logger/logger';
 
-const logger = createLogger('EmailProviderAdapter');
+const logger = createLogger('EmailProviderAdapter', 'notification-service');
 
 export interface IEmailProvider {
   send(to: string, subject: string, body: string, html?: string): Promise<void>;

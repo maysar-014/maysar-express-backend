@@ -84,7 +84,7 @@ export class PrismaAuditRepository implements IAuditRepository {
       take: limit
     });
 
-    return records.map(record => ({
+    return records.map((record: any) => ({
       id: record.id,
       timestamp: record.timestamp,
       action: record.action,
@@ -116,7 +116,7 @@ export class PrismaAuditRepository implements IAuditRepository {
       orderBy: { timestamp: 'desc' }
     });
 
-    return records.map(record => ({
+    return records.map((record: any) => ({
       id: record.id,
       timestamp: record.timestamp,
       userId: record.userId || undefined,

@@ -28,9 +28,10 @@ export class PrismaLeaderboardRepository implements ILeaderboardRepository {
                 learnerId,
                 totalScore: 0,
                 modulesCount: 0,
-                badgesCount: 0
+                badgesCount: 0,
+                updatedAt: new Date()
             };
-            this.fallbackEntries.set(learnerId, { ...existing, ...data, learnerId });
+            this.fallbackEntries.set(learnerId, { ...existing, ...data, learnerId, updatedAt: data.updatedAt ?? new Date() });
             return;
         }
 
@@ -52,9 +53,10 @@ export class PrismaLeaderboardRepository implements ILeaderboardRepository {
                     learnerId,
                     totalScore: 0,
                     modulesCount: 0,
-                    badgesCount: 0
+                    badgesCount: 0,
+                    updatedAt: new Date()
                 };
-                this.fallbackEntries.set(learnerId, { ...existing, ...data, learnerId });
+                this.fallbackEntries.set(learnerId, { ...existing, ...data, learnerId, updatedAt: data.updatedAt ?? new Date() });
                 return;
             }
             throw error;

@@ -130,7 +130,7 @@ const authOutboxRepository = new OutboxRepository(authPrisma, 'sharedOutboxEvent
 const authEventPublisher = new AuthEventPublisher(authOutboxRepository);
 const userRepository = new PrismaUserRepository(authPrisma);
 const registerUserUseCase = new RegisterUserUseCase(userRepository);
-const authenticateUserUseCase = new AuthenticateUserUseCase(userRepository, authEventPublisher);
+const authenticateUserUseCase = new AuthenticateUserUseCase(userRepository as any, authEventPublisher);
 const authController = new AuthController(registerUserUseCase, authenticateUserUseCase);
 const authRoutes = createAuthRoutes(authController);
 

@@ -379,7 +379,6 @@ export class ElasticsearchProvider {
 
   constructor(config: SearchConfig) {
     this.config = {
-      provider: config.provider,
       timeout: 30000,
       maxRetries: 3,
       batchSize: 1000,
@@ -860,12 +859,15 @@ export class SearchHealthMonitor {
     const clusterHealth = await this.provider.getClusterHealth();
     const responseTime = Date.now() - start;
 
-    const indexStats = await this.provider.getIndexStats(this.provider.defaultIndex);
+    const indexStats = await this.provider.getIndexStats(this.provider.defaultIndex) as {
+      indices?: Record<string, { total?: { docs?: { count?: number } } }>
+    };
     const indices = indexStats?.indices || {};
     const indexCount = Object.keys(indices).length;
+    const firstIndexStats = Object.values(indices)[0];
     const documentCount =
       indices[this.provider.defaultIndex]?.total?.docs?.count ??
-      Object.values(indices)[0]?.total?.docs?.count ??
+      firstIndexStats?.total?.docs?.count ??
       0;
 
     const cluster = clusterHealth.status as 'green' | 'yellow' | 'red';

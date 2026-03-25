@@ -169,8 +169,9 @@ export class GoogleOAuthService {
   }
 
   private createJWTToken(payload: any): string {
+    const expiresIn = (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'];
     return jwt.sign(payload, process.env.JWT_SECRET!, {
-      expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+      expiresIn
     });
   }
 

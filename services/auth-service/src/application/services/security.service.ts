@@ -91,7 +91,7 @@ export class SecurityService {
         take: limit
       });
 
-      return records.map(record => {
+      return records.map((record: any) => {
         const metadata = (record.metadata as any) || {};
         const securityType = String(record.action || '').replace(/^security:/, '');
         return {

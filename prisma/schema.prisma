@@ -61,7 +61,7 @@ model Analytics_SellerMetrics {
 }
 
 model Analytics_SellerDailySales {
-  id            String                  @id @db.VarChar(64)
+  id            String                  @id @default(cuid()) @db.VarChar(64)
   sellerId      String @db.VarChar(64)
   date          DateTime
   revenue       Decimal                 @db.Decimal(12, 2)
@@ -75,7 +75,7 @@ model Analytics_SellerDailySales {
 }
 
 model Analytics_SellerProductPerformance {
-  id             String                  @id @db.VarChar(64)
+  id             String                  @id @default(cuid()) @db.VarChar(64)
   sellerId       String @db.VarChar(64)
   productId      String @db.VarChar(64)
   views          Int                     @default(0)
@@ -91,7 +91,7 @@ model Analytics_SellerProductPerformance {
 }
 
 model Analytics_SellerInventoryHealth {
-  id                String                  @id @db.VarChar(64)
+  id                String                  @id @default(cuid()) @db.VarChar(64)
   sellerId          String @db.VarChar(64)
   productId         String @db.VarChar(64)
   currentStock      Int
@@ -107,7 +107,7 @@ model Analytics_SellerInventoryHealth {
 }
 
 model Analytics_SellerActionItem {
-  id            String                  @id @db.VarChar(64)
+  id            String                  @id @default(cuid()) @db.VarChar(64)
   sellerId      String @db.VarChar(64)
   type          String
   priority      String
@@ -124,7 +124,7 @@ model Analytics_SellerActionItem {
 }
 
 model Analytics_SalesAnalytics {
-  id        String   @id @db.VarChar(64)
+  id        String   @id @default(cuid()) @db.VarChar(64)
   sellerId  String @db.VarChar(64)
   date      DateTime
   insights  String?
@@ -163,7 +163,7 @@ model Analytics_CourierAnalytics {
 }
 
 model Analytics_Metric {
-  id         String   @id @db.VarChar(64)
+  id         String   @id @default(cuid()) @db.VarChar(64)
   metricType String
   value      Float
   dimension  String
@@ -177,7 +177,7 @@ model Analytics_Metric {
 }
 
 model Analytics_Event {
-  id          String   @id @db.VarChar(64)
+  id          String   @id @default(cuid()) @db.VarChar(64)
   type        String
   data        Json
   timestamp   DateTime
@@ -192,7 +192,7 @@ model Analytics_Event {
 }
 
 model User {
-  id                      String                        @id @db.VarChar(64)
+  id                      String                        @id @default(cuid()) @db.VarChar(64)
   publicCode              String?                       @unique @db.VarChar(16)
   email                   String                        @unique
   passwordHash            String
@@ -220,7 +220,7 @@ model User {
 }
 
 model Auth_User {
-  id               String          @id @db.VarChar(64)
+  id               String          @id @default(cuid()) @db.VarChar(64)
   publicCode       String?         @unique @db.VarChar(16)
   email            String          @unique
   passwordHash     String
@@ -235,7 +235,7 @@ model Auth_User {
 }
 
 model User_TwoFactorAuth {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   userId      String    @unique @db.VarChar(64)
   method      String
   secret      String
@@ -252,7 +252,7 @@ model User_TwoFactorAuth {
 }
 
 model Session {
-  id        String   @id @db.VarChar(64)
+  id        String   @id @default(cuid()) @db.VarChar(64)
   userId    String @db.VarChar(64)
   token     String   @unique
   ipAddress String
@@ -267,7 +267,7 @@ model Session {
 }
 
 model Auth_PasswordResetToken {
-  id        String   @id @db.VarChar(64)
+  id        String   @id @default(cuid()) @db.VarChar(64)
   userId    String @db.VarChar(64)
   token     String   @unique
   expiresAt DateTime
@@ -279,7 +279,7 @@ model Auth_PasswordResetToken {
 }
 
 model Auth_EmailVerificationToken {
-  id        String   @id @db.VarChar(64)
+  id        String   @id @default(cuid()) @db.VarChar(64)
   userId    String @db.VarChar(64)
   token     String   @unique
   expiresAt DateTime
@@ -291,7 +291,7 @@ model Auth_EmailVerificationToken {
 }
 
 model AuditLog {
-  id        String   @id @db.VarChar(64)
+  id        String   @id @default(cuid()) @db.VarChar(64)
   userId    String? @db.VarChar(64)
   email     String?
   action    String
@@ -309,7 +309,7 @@ model AuditLog {
 }
 
 model Auth_RoleRequest {
-  id            String   @id @db.VarChar(64)
+  id            String   @id @default(cuid()) @db.VarChar(64)
   userId        String   @db.VarChar(64)
   requestedRole String   @db.VarChar(32)
   status        String   @default("PENDING") @db.VarChar(32)
@@ -338,7 +338,7 @@ model Auth_UserIndex {
 }
 
 model Business {
-  id                 String                              @id @db.VarChar(64)
+  id                 String                              @id @default(cuid()) @db.VarChar(64)
   name               String
   businessType       BusinessRegistry_BusinessType
   registrationNumber String                              @unique
@@ -365,7 +365,7 @@ model Business {
 }
 
 model BusinessAddress {
-  id         String                       @id @db.VarChar(64)
+  id         String                       @id @default(cuid()) @db.VarChar(64)
   businessId String @db.VarChar(64)
   type       BusinessRegistry_AddressType @default(MAIN)
   street     String
@@ -382,7 +382,7 @@ model BusinessAddress {
 }
 
 model BusinessDocument {
-  id         String                          @id @db.VarChar(64)
+  id         String                          @id @default(cuid()) @db.VarChar(64)
   businessId String @db.VarChar(64)
   type       BusinessRegistry_DocumentType
   fileName   String
@@ -396,7 +396,7 @@ model BusinessDocument {
 }
 
 model BusinessRegistry_ComplianceRecord {
-  id         String                            @id @db.VarChar(64)
+  id         String                            @id @default(cuid()) @db.VarChar(64)
   businessId String @db.VarChar(64)
   type       BusinessRegistry_ComplianceType
   status     BusinessRegistry_ComplianceStatus
@@ -409,7 +409,7 @@ model BusinessRegistry_ComplianceRecord {
 }
 
 model OutboxEvent {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   eventId     String    @unique
   eventType   String
   eventData   Json
@@ -426,7 +426,7 @@ model OutboxEvent {
 }
 
 model EventStore {
-  id          String   @id @db.VarChar(64)
+  id          String   @id @default(cuid()) @db.VarChar(64)
   eventId     String   @unique
   eventType   String
   aggregateId String
@@ -443,7 +443,7 @@ model EventStore {
 }
 
 model Category {
-  id           String              @id @db.VarChar(64)
+  id           String              @id @default(cuid()) @db.VarChar(64)
   parentId     String?             @db.VarChar(64)
   name         String              @db.VarChar(255)
   slug         String              @unique @db.VarChar(255)
@@ -462,7 +462,7 @@ model Category {
 }
 
 model Product {
-  id                    String                @id @db.VarChar(64)
+  id                    String                @id @default(cuid()) @db.VarChar(64)
   sellerId              String                @db.VarChar(64)
   title                 String                @db.VarChar(255)
   description           String?
@@ -501,7 +501,7 @@ model Product {
 }
 
 model BuyBox {
-  id              String                      @id @db.VarChar(64)
+  id              String                      @id @default(cuid()) @db.VarChar(64)
   productId       String                      @unique @db.VarChar(64)
   primarySellerId String                      @db.VarChar(64)
   primaryScore    Decimal                     @db.Decimal(6, 2)
@@ -514,7 +514,7 @@ model BuyBox {
 }
 
 model Catalog_BuyBoxAlternative {
-  id       String  @id @db.VarChar(64)
+  id       String  @id @default(cuid()) @db.VarChar(64)
   buyBoxId String  @db.VarChar(64)
   sellerId String  @db.VarChar(64)
   score    Decimal @db.Decimal(6, 2)
@@ -526,7 +526,7 @@ model Catalog_BuyBoxAlternative {
 }
 
 model ProductVariant {
-  id              String                  @id @db.VarChar(64)
+  id              String                  @id @default(cuid()) @db.VarChar(64)
   productId       String                  @db.VarChar(64)
   sku             String                  @unique @db.VarChar(100)
   name            String?                 @db.VarChar(255)
@@ -548,7 +548,7 @@ model ProductVariant {
 }
 
 model MediaRef {
-  id           String   @id @db.VarChar(64)
+  id           String   @id @default(cuid()) @db.VarChar(64)
   entityType   String   @db.VarChar(50)
   entityId     String   @db.VarChar(64)
   mediaType    String   @db.VarChar(50)
@@ -564,7 +564,7 @@ model MediaRef {
 }
 
 model Catalog_ProductMatchAudit {
-  id                 String                 @id @db.VarChar(64)
+  id                 String                 @id @default(cuid()) @db.VarChar(64)
   candidateProductId String                 @db.VarChar(64)
   matchedProductId   String?                @db.VarChar(64)
   matchLevel         Catalog_MatchLevel
@@ -583,7 +583,7 @@ model Catalog_ProductMatchAudit {
 }
 
 model Catalog_MatchConfirmation {
-  id                String                     @id @db.VarChar(64)
+  id                String                     @id @default(cuid()) @db.VarChar(64)
   auditId           String                     @db.VarChar(64)
   sellerId          String                     @db.VarChar(64)
   candidateProducts Json
@@ -599,7 +599,7 @@ model Catalog_MatchConfirmation {
 }
 
 model CategoryAttribute {
-  id           String             @id @db.VarChar(64)
+  id           String             @id @default(cuid()) @db.VarChar(64)
   categoryId   String             @db.VarChar(64)
   name         String             @db.VarChar(100)
   displayLabel String             @db.VarChar(150)
@@ -617,7 +617,7 @@ model CategoryAttribute {
 }
 
 model ProductAttribute {
-  id          String            @id @db.VarChar(64)
+  id          String            @id @default(cuid()) @db.VarChar(64)
   productId   String            @db.VarChar(64)
   attributeId String            @db.VarChar(64)
   value       String
@@ -631,7 +631,7 @@ model ProductAttribute {
 }
 
 model CatalogOutboxEvent {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   eventId     String    @unique
   eventType   String
   eventData   Json
@@ -648,7 +648,7 @@ model CatalogOutboxEvent {
 }
 
 model Checkout_Cart {
-  id        String              @id @db.VarChar(64)
+  id        String              @id @default(cuid()) @db.VarChar(64)
   userId    String              @db.VarChar(64)
   status    String              @default("active")
   createdAt DateTime            @default(now())
@@ -662,7 +662,7 @@ model Checkout_Cart {
 }
 
 model Checkout_CartItem {
-  id          String        @id @db.VarChar(64)
+  id          String        @id @default(cuid()) @db.VarChar(64)
   cartId      String @db.VarChar(64)
   productId   String        @db.VarChar(64)
   variantId   String?       @db.VarChar(64)
@@ -677,7 +677,7 @@ model Checkout_CartItem {
 }
 
 model Checkout_CheckoutSession {
-  id                String   @id @db.VarChar(64)
+  id                String   @id @default(cuid()) @db.VarChar(64)
   cartId            String @db.VarChar(64)
   userId            String   @db.VarChar(64)
   enablerId         String?  @db.VarChar(64)
@@ -706,7 +706,7 @@ model Checkout_CheckoutSession {
 }
 
 model Checkout_Order {
-  id                String               @id @db.VarChar(64)
+  id                String               @id @default(cuid()) @db.VarChar(64)
   checkoutSessionId String
   userId            String               @db.VarChar(64)
   status            String               @default("pending")
@@ -733,7 +733,7 @@ model Checkout_Order {
 }
 
 model Checkout_OrderItem {
-  id         String         @id @db.VarChar(64)
+  id         String         @id @default(cuid()) @db.VarChar(64)
   orderId    String @db.VarChar(64)
   productId  String         @db.VarChar(64)
   variantId  String?        @db.VarChar(64)
@@ -747,7 +747,7 @@ model Checkout_OrderItem {
 }
 
 model Checkout_InventoryReservation {
-  id         String   @id @db.VarChar(64)
+  id         String   @id @default(cuid()) @db.VarChar(64)
   checkoutId String
   productId  String   @db.VarChar(64)
   variantId  String?  @db.VarChar(64)
@@ -764,7 +764,7 @@ model Checkout_InventoryReservation {
 }
 
 model Checkout_AppliedDiscount {
-  id            String   @id @db.VarChar(64)
+  id            String   @id @default(cuid()) @db.VarChar(64)
   checkoutId    String
   discountCode  String?
   discountType  String
@@ -778,7 +778,7 @@ model Checkout_AppliedDiscount {
 }
 
 model Commission {
-  id        String                      @id @db.VarChar(64)
+  id        String                      @id @default(cuid()) @db.VarChar(64)
   orderId   String                      @db.VarChar(64)
   sellerId  String                      @db.VarChar(64)
   amount    Decimal                     @db.Decimal(10, 2)
@@ -794,7 +794,7 @@ model Commission {
 }
 
 model Commission_Referral {
-  id           String                    @id @db.VarChar(64)
+  id           String                    @id @default(cuid()) @db.VarChar(64)
   referrerId   String                    @db.VarChar(64)
   refereeId    String                    @db.VarChar(64)
   referralCode String                    @unique @db.VarChar(50)
@@ -810,7 +810,7 @@ model Commission_Referral {
 }
 
 model Commission_Reward {
-  id          String                  @id @db.VarChar(64)
+  id          String                  @id @default(cuid()) @db.VarChar(64)
   userId      String                  @db.VarChar(64)
   type        Commission_RewardType
   amount      Decimal                 @db.Decimal(8, 2)
@@ -825,7 +825,7 @@ model Commission_Reward {
 }
 
 model CommissionPayout {
-  id            String                  @id @db.VarChar(64)
+  id            String                  @id @default(cuid()) @db.VarChar(64)
   recipientId   String                  @db.VarChar(64)
   recipientType String
   amount        Decimal                 @db.Decimal(10, 2)
@@ -840,7 +840,7 @@ model CommissionPayout {
 }
 
 model Commission_EventStore {
-  id           String   @id @db.VarChar(64)
+  id           String   @id @default(cuid()) @db.VarChar(64)
   aggregateId  String
   eventType    String
   eventData    Json
@@ -852,7 +852,7 @@ model Commission_EventStore {
 }
 
 model Post {
-  id               String               @id @db.VarChar(64)
+  id               String               @id @default(cuid()) @db.VarChar(64)
   authorId         String               @db.VarChar(64)
   title            String?              @db.VarChar(255)
   content          String
@@ -883,7 +883,7 @@ model Post {
 }
 
 model CommunityUser {
-  id             String               @id @db.VarChar(64)
+  id             String               @id @default(cuid()) @db.VarChar(64)
   username       String               @unique @db.VarChar(50)
   displayName    String               @db.VarChar(100)
   avatarUrl      String?              @db.VarChar(500)
@@ -910,7 +910,7 @@ model CommunityUser {
 }
 
 model Comment {
-  id               String                  @id @db.VarChar(64)
+  id               String                  @id @default(cuid()) @db.VarChar(64)
   postId           String                  @db.VarChar(64)
   authorId         String                  @db.VarChar(64)
   parentId         String?                 @db.VarChar(64)
@@ -933,7 +933,7 @@ model Comment {
 }
 
 model Community_Like {
-  id        String             @id @db.VarChar(64)
+  id        String             @id @default(cuid()) @db.VarChar(64)
   userId    String             @db.VarChar(64)
   postId    String?            @db.VarChar(64)
   commentId String?            @db.VarChar(64)
@@ -949,7 +949,7 @@ model Community_Like {
 }
 
 model Community_Share {
-  id        String        @id @db.VarChar(64)
+  id        String        @id @default(cuid()) @db.VarChar(64)
   userId    String        @db.VarChar(64)
   postId    String        @db.VarChar(64)
   platform  String?       @db.VarChar(50)
@@ -962,7 +962,7 @@ model Community_Share {
 }
 
 model Community_Follow {
-  id          String                 @id @db.VarChar(64)
+  id          String                 @id @default(cuid()) @db.VarChar(64)
   followerId  String                 @db.VarChar(64)
   followingId String                 @db.VarChar(64)
   status      Community_FollowStatus @default(accepted)
@@ -975,7 +975,7 @@ model Community_Follow {
 }
 
 model Community_Report {
-  id          String                 @id @db.VarChar(64)
+  id          String                 @id @default(cuid()) @db.VarChar(64)
   reporterId  String                 @db.VarChar(64)
   entityType  String                 @db.VarChar(50)
   entityId    String                 @db.VarChar(64)
@@ -991,7 +991,7 @@ model Community_Report {
 }
 
 model Community_Hashtag {
-  id            String   @id @db.VarChar(64)
+  id            String   @id @default(cuid()) @db.VarChar(64)
   name          String   @unique @db.VarChar(100)
   usageCount    Int      @default(0)
   trendingScore Decimal  @default(0) @db.Decimal(5, 2)
@@ -1002,7 +1002,7 @@ model Community_Hashtag {
 }
 
 model Community_Bookmark {
-  id        String        @id @db.VarChar(64)
+  id        String        @id @default(cuid()) @db.VarChar(64)
   userId    String        @db.VarChar(64)
   postId    String        @db.VarChar(64)
   createdAt DateTime      @default(now()) @db.Timestamp(6)
@@ -1014,7 +1014,7 @@ model Community_Bookmark {
 }
 
 model Compliance_SubjectRightsRequest {
-  id          String                                @id @db.VarChar(64)
+  id          String                                @id @default(cuid()) @db.VarChar(64)
   userId      String @db.VarChar(64)
   requestType Compliance_SubjectRightsRequestType
   status      Compliance_SubjectRightsRequestStatus @default(pending)
@@ -1027,7 +1027,7 @@ model Compliance_SubjectRightsRequest {
 }
 
 model Compliance_TCRARecord {
-  id             String    @id @db.VarChar(64)
+  id             String    @id @default(cuid()) @db.VarChar(64)
   userId         String @db.VarChar(64)
   licenseNumber  String?
   status         String    @default("pending")
@@ -1042,7 +1042,7 @@ model Compliance_TCRARecord {
 }
 
 model Compliance_TRARecord {
-  id                  String    @id @db.VarChar(64)
+  id                  String    @id @default(cuid()) @db.VarChar(64)
   userId              String @db.VarChar(64)
   tin                 String    @unique
   vrn                 String?
@@ -1056,7 +1056,7 @@ model Compliance_TRARecord {
 }
 
 model Compliance_AMLRecord {
-  id              String   @id @db.VarChar(64)
+  id              String   @id @default(cuid()) @db.VarChar(64)
   userId          String   @unique @db.VarChar(64)
   sanctionsStatus String   @default("clear")
   pepStatus       Boolean  @default(false)
@@ -1070,7 +1070,7 @@ model Compliance_AMLRecord {
 }
 
 model Compliance_MarketRecord {
-  id             String    @id @db.VarChar(64)
+  id             String    @id @default(cuid()) @db.VarChar(64)
   sellerId       String @db.VarChar(64)
   ethicalScore   Float?
   qualityStatus  String    @default("pending")
@@ -1083,7 +1083,7 @@ model Compliance_MarketRecord {
 }
 
 model Compliance_DataRetentionPolicy {
-  id              String   @id @db.VarChar(64)
+  id              String   @id @default(cuid()) @db.VarChar(64)
   dataType        String
   retentionPeriod Int
   legalBasis      String
@@ -1096,7 +1096,7 @@ model Compliance_DataRetentionPolicy {
 }
 
 model Compliance_DataDeletionLog {
-  id             String   @id @db.VarChar(64)
+  id             String   @id @default(cuid()) @db.VarChar(64)
   userId         String @db.VarChar(64)
   dataType       String
   recordsDeleted Int
@@ -1108,7 +1108,7 @@ model Compliance_DataDeletionLog {
 }
 
 model Compliance_KYCRecord {
-  id                 String                  @id @db.VarChar(64)
+  id                 String                  @id @default(cuid()) @db.VarChar(64)
   userId             String @db.VarChar(64)
   verificationStatus Compliance_KYCStatus    @default(pending)
   submittedAt        DateTime                @default(now())
@@ -1123,7 +1123,7 @@ model Compliance_KYCRecord {
 }
 
 model Compliance_ComplianceAuditLog {
-  id        String   @id @db.VarChar(64)
+  id        String   @id @default(cuid()) @db.VarChar(64)
   action    String
   resource  String
   userId    String @db.VarChar(64)
@@ -1136,7 +1136,7 @@ model Compliance_ComplianceAuditLog {
 }
 
 model Compliance_DataProcessingRecord {
-  id               String   @id @db.VarChar(64)
+  id               String   @id @default(cuid()) @db.VarChar(64)
   purpose          String
   categories       Json
   recipients       Json
@@ -1148,7 +1148,7 @@ model Compliance_DataProcessingRecord {
 }
 
 model Compliance_PrivacyImpactAssessment {
-  id              String                      @id @db.VarChar(64)
+  id              String                      @id @default(cuid()) @db.VarChar(64)
   projectName     String
   assessmentDate  DateTime                    @default(now())
   assessor        String
@@ -1161,7 +1161,7 @@ model Compliance_PrivacyImpactAssessment {
 }
 
 model Inventory_Warehouse {
-  id                 String                        @id @db.VarChar(64)
+  id                 String                        @id @default(cuid()) @db.VarChar(64)
   code               String                        @unique @db.VarChar(50)
   name               String                        @db.VarChar(255)
   address            Json
@@ -1180,7 +1180,7 @@ model Inventory_Warehouse {
 }
 
 model Inventory_StockItem {
-  id                  String                         @id @db.VarChar(64)
+  id                  String                         @id @default(cuid()) @db.VarChar(64)
   productVariantId    String                         @db.VarChar(64)
   warehouseId         String                         @db.VarChar(64)
   sku                 String                         @unique @db.VarChar(100)
@@ -1210,7 +1210,7 @@ model Inventory_StockItem {
 }
 
 model Inventory_Reservation {
-  id               String                      @id @db.VarChar(64)
+  id               String                      @id @default(cuid()) @db.VarChar(64)
   orderId          String                      @db.VarChar(64)
   orderItemId      String                      @db.VarChar(64)
   productVariantId String                      @db.VarChar(64)
@@ -1232,7 +1232,7 @@ model Inventory_Reservation {
 }
 
 model Inventory_InventoryMovement {
-  id               String                 @id @db.VarChar(64)
+  id               String                 @id @default(cuid()) @db.VarChar(64)
   productVariantId String                 @db.VarChar(64)
   warehouseId      String                 @db.VarChar(64)
   movementType     Inventory_MovementType
@@ -1253,7 +1253,7 @@ model Inventory_InventoryMovement {
 }
 
 model Inventory_InventoryCount {
-  id                  String                         @id @db.VarChar(64)
+  id                  String                         @id @default(cuid()) @db.VarChar(64)
   warehouseId         String                         @db.VarChar(64)
   productVariantId    String?                        @db.VarChar(64)
   countedBy           String                         @db.VarChar(64)
@@ -1275,7 +1275,7 @@ model Inventory_InventoryCount {
 }
 
 model Inventory_InventoryCountItem {
-  id               String                   @id @db.VarChar(64)
+  id               String                   @id @default(cuid()) @db.VarChar(64)
   inventoryCountId String                   @db.VarChar(64)
   productVariantId String                   @db.VarChar(64)
   warehouseId      String                   @db.VarChar(64)
@@ -1291,7 +1291,7 @@ model Inventory_InventoryCountItem {
 }
 
 model Inventory_OutboxEvent {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   eventId     String    @unique
   eventType   String
   eventData   Json
@@ -1308,7 +1308,7 @@ model Inventory_OutboxEvent {
 }
 
 model Production_BulkOrderRequest {
-  id              String                      @id @db.VarChar(64)
+  id              String                      @id @default(cuid()) @db.VarChar(64)
   supplierId      String                      @db.VarChar(64)
   buyerId         String                      @db.VarChar(64)
   title           String                      @db.VarChar(255)
@@ -1334,7 +1334,7 @@ model Production_BulkOrderRequest {
 }
 
 model Production_BulkOrderQuote {
-  id                   String                      @id @db.VarChar(64)
+  id                   String                      @id @default(cuid()) @db.VarChar(64)
   requestId            String                      @db.VarChar(64)
   supplierId           String                      @db.VarChar(64)
   unitPrice            Decimal                     @db.Decimal(12, 2)
@@ -1356,7 +1356,7 @@ model Production_BulkOrderQuote {
 }
 
 model Production_CapacitySnapshot {
-  id               String   @id @db.VarChar(64)
+  id               String   @id @default(cuid()) @db.VarChar(64)
   supplierId       String   @db.VarChar(64)
   date             DateTime @db.Timestamp(6)
   maxCapacity      Decimal  @db.Decimal(12, 2)
@@ -1374,7 +1374,7 @@ model Production_CapacitySnapshot {
 }
 
 model Logistics_Courier {
-  id                  String                      @id @db.VarChar(64)
+  id                  String                      @id @default(cuid()) @db.VarChar(64)
   name                String
   phone               String                      @unique
   email               String                      @unique
@@ -1402,7 +1402,7 @@ model Logistics_Courier {
 }
 
 model Logistics_Delivery {
-  id                    String             @id @db.VarChar(64)
+  id                    String             @id @default(cuid()) @db.VarChar(64)
   orderId               String @db.VarChar(64)
   courierId             String? @db.VarChar(64)
   status                String             @default("pending")
@@ -1450,7 +1450,7 @@ model Logistics_Delivery {
 }
 
 model Logistics_LocationHistory {
-  id        String            @id @db.VarChar(64)
+  id        String            @id @default(cuid()) @db.VarChar(64)
   courierId String @db.VarChar(64)
   latitude  Float
   longitude Float
@@ -1464,7 +1464,7 @@ model Logistics_LocationHistory {
 }
 
 model Logistics_Earning {
-  id            String            @id @db.VarChar(64)
+  id            String            @id @default(cuid()) @db.VarChar(64)
   courierId     String @db.VarChar(64)
   date          DateTime          @db.Date
   baseEarnings  Float             @default(0)
@@ -1477,7 +1477,7 @@ model Logistics_Earning {
 }
 
 model Logistics_OutboxEvent {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   eventId     String    @unique
   eventType   String
   eventData   Json
@@ -1494,7 +1494,7 @@ model Logistics_OutboxEvent {
 }
 
 model NotificationTemplate {
-  id            String                        @id @db.VarChar(64)
+  id            String                        @id @default(cuid()) @db.VarChar(64)
   name          String                        @unique @db.VarChar(100)
   type          Notification_NotificationType
   subject       String?                       @db.VarChar(255)
@@ -1511,7 +1511,7 @@ model NotificationTemplate {
 }
 
 model Notification {
-  id            String                            @id @db.VarChar(64)
+  id            String                            @id @default(cuid()) @db.VarChar(64)
   userId        String                            @db.VarChar(64)
   templateId    String?                           @db.VarChar(64)
   type          Notification_NotificationType
@@ -1539,7 +1539,7 @@ model Notification {
 }
 
 model Notification_DeliveryLog {
-  id                String                      @id @db.VarChar(64)
+  id                String                      @id @default(cuid()) @db.VarChar(64)
   notificationId    String                      @db.VarChar(64)
   provider          String                      @db.VarChar(50)
   providerMessageId String?                     @db.VarChar(255)
@@ -1557,7 +1557,7 @@ model Notification_DeliveryLog {
 }
 
 model NotificationPreference {
-  id         String   @id @db.VarChar(64)
+  id         String   @id @default(cuid()) @db.VarChar(64)
   userId     String   @db.VarChar(64)
   channel    String   @db.VarChar(20)
   enabled    Boolean  @default(true)
@@ -1573,7 +1573,7 @@ model NotificationPreference {
 }
 
 model Notification_DeviceToken {
-  id         String   @id @db.VarChar(64)
+  id         String   @id @default(cuid()) @db.VarChar(64)
   userId     String   @db.VarChar(64)
   token      String   @unique @db.Text
   platform   String?  @db.VarChar(20)
@@ -1589,7 +1589,7 @@ model Notification_DeviceToken {
 }
 
 model Order_Order {
-  id                     String              @id @db.VarChar(64)
+  id                     String              @id @default(cuid()) @db.VarChar(64)
   trackingNumber         String?             @unique @db.VarChar(32)
   buyerId                String
   sellerId               String @db.VarChar(64)
@@ -1631,7 +1631,7 @@ model Order_Order {
 }
 
 model Order_CODDispute {
-  id          String      @id @db.VarChar(64)
+  id          String      @id @default(cuid()) @db.VarChar(64)
   orderId     String @db.VarChar(64)
   disputeType String
   raisedBy    String
@@ -1649,7 +1649,7 @@ model Order_CODDispute {
 }
 
 model Order_OrderItem {
-  id        String      @id @db.VarChar(64)
+  id        String      @id @default(cuid()) @db.VarChar(64)
   orderId   String @db.VarChar(64)
   productId String @db.VarChar(64)
   quantity  Int
@@ -1664,7 +1664,7 @@ model Order_OrderItem {
 }
 
 model Order_Payment {
-  id            String              @id @db.VarChar(64)
+  id            String              @id @default(cuid()) @db.VarChar(64)
   orderId       String @db.VarChar(64)
   amount        Decimal
   currency      String              @default("TZS")
@@ -1683,7 +1683,7 @@ model Order_Payment {
 }
 
 model Order_Settlement {
-  id                 String                 @id @db.VarChar(64)
+  id                 String                 @id @default(cuid()) @db.VarChar(64)
   orderId            String @db.VarChar(64)
   settlementId       String                 @unique
   sellerPayout       Decimal
@@ -1702,7 +1702,7 @@ model Order_Settlement {
 }
 
 model Order_OutboxEvent {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   eventId     String    @unique
   eventType   String
   eventData   Json
@@ -1719,7 +1719,7 @@ model Order_OutboxEvent {
 }
 
 model Order_SagaLog {
-  id          String              @id @db.VarChar(64)
+  id          String              @id @default(cuid()) @db.VarChar(64)
   sagaId      String              @unique @db.VarChar(64)
   sagaType    String
   status      String              @default("STARTED")
@@ -1737,7 +1737,7 @@ model Order_SagaLog {
 }
 
 model Order_SagaStepLog {
-  id          String        @id @db.VarChar(64)
+  id          String        @id @default(cuid()) @db.VarChar(64)
   sagaId      String @db.VarChar(64)
   stepName    String
   status      String        @default("PENDING")
@@ -1751,7 +1751,7 @@ model Order_SagaStepLog {
 }
 
 model Payment_Payment {
-  id             String                @id @db.VarChar(64)
+  id             String                @id @default(cuid()) @db.VarChar(64)
   orderId        String                @db.VarChar(64)
   userId         String                @db.VarChar(64)
   amount         Decimal               @db.Decimal(10, 2)
@@ -1779,7 +1779,7 @@ model Payment_Payment {
 }
 
 model Payment_Refund {
-  id            String               @id @db.VarChar(64)
+  id            String               @id @default(cuid()) @db.VarChar(64)
   paymentId     String               @db.VarChar(64)
   orderId       String               @db.VarChar(64)
   userId        String               @db.VarChar(64)
@@ -1805,7 +1805,7 @@ model Payment_Refund {
 }
 
 model Payment_WebhookEvent {
-  id           String    @id @db.VarChar(64)
+  id           String    @id @default(cuid()) @db.VarChar(64)
   provider     String    @db.VarChar(50)
   eventType    String    @db.VarChar(100)
   eventId      String    @db.VarChar(255)
@@ -1821,7 +1821,7 @@ model Payment_WebhookEvent {
 }
 
 model Payment_OutboxEvent {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   eventId     String    @unique
   eventType   String
   eventData   Json
@@ -1838,7 +1838,7 @@ model Payment_OutboxEvent {
 }
 
 model Payment_FraudAssessment {
-  id             String   @id @db.VarChar(64)
+  id             String   @id @default(cuid()) @db.VarChar(64)
   transactionId  String   @unique
   riskScore      Int
   riskLevel      String
@@ -1853,7 +1853,7 @@ model Payment_FraudAssessment {
 }
 
 model Payout {
-  id                 String              @id @db.VarChar(64)
+  id                 String              @id @default(cuid()) @db.VarChar(64)
   userId             String              @db.VarChar(64)
   userRole           String              @db.VarChar(50)
   amount             Decimal             @db.Decimal(10, 2)
@@ -1878,7 +1878,7 @@ model Payout {
 }
 
 model PayoutOutboxEvent {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   eventId     String    @unique
   eventType   String
   eventData   Json
@@ -1895,7 +1895,7 @@ model PayoutOutboxEvent {
 }
 
 model Training_TrainingRecord {
-  id          String                  @id @db.VarChar(64)
+  id          String                  @id @default(cuid()) @db.VarChar(64)
   learnerId   String
   learnerRole String
   moduleId    String @db.VarChar(64)
@@ -1928,7 +1928,7 @@ model Training_CertificationRequirement {
 }
 
 model Training_TrainingModule {
-  id              String                    @id @db.VarChar(64)
+  id              String                    @id @default(cuid()) @db.VarChar(64)
   name            String
   description     String
   contentType     Training_ContentType      @default(TEXT)
@@ -1945,7 +1945,7 @@ model Training_TrainingModule {
 }
 
 model Training_Badge {
-  id        String   @id @db.VarChar(64)
+  id        String   @id @default(cuid()) @db.VarChar(64)
   learnerId String
   type      String
   reason    String
@@ -1967,7 +1967,7 @@ model Training_LeaderboardEntry {
 }
 
 model User_User {
-  id                      String                        @id @db.VarChar(64)
+  id                      String                        @id @default(cuid()) @db.VarChar(64)
   publicCode              String?                       @unique @db.VarChar(16)
   email                   String                        @unique
   passwordHash            String
@@ -2013,7 +2013,7 @@ model User_User {
 }
 
 model User_CODHistory {
-  id               String    @id @db.VarChar(64)
+  id               String    @id @default(cuid()) @db.VarChar(64)
   userId           String @db.VarChar(64)
   orderId          String @db.VarChar(64)
   action           String
@@ -2028,7 +2028,7 @@ model User_CODHistory {
 }
 
 model User_UserAddress {
-  id         String           @id @db.VarChar(64)
+  id         String           @id @default(cuid()) @db.VarChar(64)
   userId     String @db.VarChar(64)
   type       User_AddressType @default(HOME)
   street     String
@@ -2045,7 +2045,7 @@ model User_UserAddress {
 }
 
 model User_Session {
-  id        String    @id @db.VarChar(64)
+  id        String    @id @default(cuid()) @db.VarChar(64)
   userId    String @db.VarChar(64)
   token     String    @unique
   ipAddress String
@@ -2058,7 +2058,7 @@ model User_Session {
 }
 
 model User_PasswordResetToken {
-  id        String    @id @db.VarChar(64)
+  id        String    @id @default(cuid()) @db.VarChar(64)
   userId    String @db.VarChar(64)
   token     String    @unique
   expiresAt DateTime
@@ -2070,7 +2070,7 @@ model User_PasswordResetToken {
 }
 
 model User_EmailVerificationToken {
-  id        String    @id @db.VarChar(64)
+  id        String    @id @default(cuid()) @db.VarChar(64)
   userId    String @db.VarChar(64)
   token     String    @unique
   expiresAt DateTime
@@ -2082,7 +2082,7 @@ model User_EmailVerificationToken {
 }
 
 model User_AuditLog {
-  id        String     @id @db.VarChar(64)
+  id        String     @id @default(cuid()) @db.VarChar(64)
   userId    String? @db.VarChar(64)
   email     String?
   action    String
@@ -2108,7 +2108,7 @@ model User_UserIndex {
 }
 
 model User_OutboxEvent {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   eventId     String    @unique
   eventType   String
   eventData   Json
@@ -2125,7 +2125,7 @@ model User_OutboxEvent {
 }
 
 model Wallet_Wallet {
-  id                 String               @id @db.VarChar(64)
+  id                 String               @id @default(cuid()) @db.VarChar(64)
   userId             String               @db.VarChar(64)
   balance            Decimal              @default(0) @db.Decimal(10, 2)
   currency           String               @default("TZS") @db.VarChar(3)
@@ -2147,7 +2147,7 @@ model Wallet_Wallet {
 }
 
 model Wallet_Transaction {
-  id                      String                 @id @db.VarChar(64)
+  id                      String                 @id @default(cuid()) @db.VarChar(64)
   walletId                String                 @db.VarChar(64)
   userId                  String                 @db.VarChar(64)
   type                    Wallet_TransactionType
@@ -2183,7 +2183,7 @@ model Wallet_Transaction {
 }
 
 model Wallet_Hold {
-  id         String            @id @db.VarChar(64)
+  id         String            @id @default(cuid()) @db.VarChar(64)
   walletId   String            @db.VarChar(64)
   userId     String            @db.VarChar(64)
   amount     Decimal           @db.Decimal(10, 2)
@@ -2215,7 +2215,7 @@ model Wallet_IdempotencyRecord {
 }
 
 model Wallet_AuditLog {
-  id         String   @id @db.VarChar(64)
+  id         String   @id @default(cuid()) @db.VarChar(64)
   entityId   String   @db.VarChar(64)
   entityType String
   action     String
@@ -2230,7 +2230,7 @@ model Wallet_AuditLog {
 }
 
 model Wallet_OutboxEvent {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   eventId     String    @unique
   eventType   String
   eventData   Json
@@ -2247,7 +2247,7 @@ model Wallet_OutboxEvent {
 }
 
 model Support_Ticket {
-  id              String                        @id @db.VarChar(64)
+  id              String                        @id @default(cuid()) @db.VarChar(64)
   subject         String
   description     String
   status          Support_TicketStatus          @default(OPEN)
@@ -2275,7 +2275,7 @@ model Support_Ticket {
 }
 
 model Support_TicketMessage {
-  id          String                     @id @db.VarChar(64)
+  id          String                     @id @default(cuid()) @db.VarChar(64)
   ticketId    String @db.VarChar(64)
   senderId    String
   senderType  Support_SenderType
@@ -2292,7 +2292,7 @@ model Support_TicketMessage {
 }
 
 model Support_TicketAttachment {
-  id         String                 @id @db.VarChar(64)
+  id         String                 @id @default(cuid()) @db.VarChar(64)
   ticketId   String @db.VarChar(64)
   messageId  String? @db.VarChar(64)
   fileName   String
@@ -2310,7 +2310,7 @@ model Support_TicketAttachment {
 }
 
 model Support_TicketStatusHistory {
-  id         String               @id @db.VarChar(64)
+  id         String               @id @default(cuid()) @db.VarChar(64)
   ticketId   String @db.VarChar(64)
   fromStatus Support_TicketStatus
   toStatus   Support_TicketStatus
@@ -2325,7 +2325,7 @@ model Support_TicketStatusHistory {
 }
 
 model Support_SupportAgent {
-  id                    String           @id @db.VarChar(64)
+  id                    String           @id @default(cuid()) @db.VarChar(64)
   userId                String           @unique @db.VarChar(64)
   specializations       String[]
   maxConcurrentTickets  Int              @default(5)
@@ -2344,7 +2344,7 @@ model Support_SupportAgent {
 }
 
 model SharedOutboxEvent {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   eventId     String    @unique
   eventType   String
   eventData   Json
@@ -2361,7 +2361,7 @@ model SharedOutboxEvent {
 }
 
 model Global_OutboxEvent {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   eventId     String    @unique
   eventType   String
   eventData   Json
@@ -2378,7 +2378,7 @@ model Global_OutboxEvent {
 }
 
 model Support_OutboxEvent {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   eventId     String    @unique
   eventType   String
   eventData   Json
@@ -2395,7 +2395,7 @@ model Support_OutboxEvent {
 }
 
 model Enabler_Profile {
-  id                    String                   @id @db.VarChar(64)
+  id                    String                   @id @default(cuid()) @db.VarChar(64)
   userId                String                   @unique @db.VarChar(64)
   enablerCode           String?                  @unique @db.VarChar(16)
   enablerCodeShort      String?                  @unique @db.VarChar(12)
@@ -2437,7 +2437,7 @@ model Enabler_Profile {
 }
 
 model Enabler_ProductListing {
-  id               String                @id @db.VarChar(64)
+  id               String                @id @default(cuid()) @db.VarChar(64)
   enablerId        String                @db.VarChar(64)
   productId        String                @db.VarChar(64)
   sellerId         String                @db.VarChar(64)
@@ -2467,7 +2467,7 @@ model Enabler_ProductListing {
 }
 
 model Enabler_Order {
-  id                 String              @id @db.VarChar(64)
+  id                 String              @id @default(cuid()) @db.VarChar(64)
   enablerId          String              @db.VarChar(64)
   orderId            String              @unique @db.VarChar(64)
   sellerId           String              @db.VarChar(64)
@@ -2503,7 +2503,7 @@ model Enabler_Order {
 }
 
 model Enabler_Commission {
-  id                 String          @id @db.VarChar(64)
+  id                 String          @id @default(cuid()) @db.VarChar(64)
   enablerId          String          @db.VarChar(64)
   enablerOrderId     String          @unique @db.VarChar(64)
   commissionId       String?         @unique @db.VarChar(64)
@@ -2535,7 +2535,7 @@ model Enabler_Commission {
 }
 
 model Enabler_Policy {
-  id             String           @id @db.VarChar(64)
+  id             String           @id @default(cuid()) @db.VarChar(64)
   enablerId      String?          @db.VarChar(64)
   policyType     String           @db.VarChar(100)
   policyName     String           @db.VarChar(255)
@@ -2559,7 +2559,7 @@ model Enabler_Policy {
 }
 
 model Enabler_Analytics {
-  id                 String          @id @db.VarChar(64)
+  id                 String          @id @default(cuid()) @db.VarChar(64)
   enablerId          String          @unique @db.VarChar(64)
   totalSales         Decimal         @default(0) @db.Decimal(12, 2)
   totalOrders        Int             @default(0)
@@ -2588,7 +2588,7 @@ model Enabler_Analytics {
 }
 
 model Enabler_Task {
-  id               String          @id @db.VarChar(64)
+  id               String          @id @default(cuid()) @db.VarChar(64)
   enablerId        String          @db.VarChar(64)
   sellerId         String          @db.VarChar(64)
   taskType         String          @db.VarChar(64)
@@ -2624,7 +2624,7 @@ model Enabler_Task {
 }
 
 model Enabler_OutboxEvent {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   eventId     String    @unique
   eventType   String
   eventData   Json
@@ -2641,7 +2641,7 @@ model Enabler_OutboxEvent {
 }
 
 model Campaign_Campaign {
-  id           String                 @id @db.VarChar(64)
+  id           String                 @id @default(cuid()) @db.VarChar(64)
   name         String
   description  String?
   type         Campaign_Type
@@ -2669,7 +2669,7 @@ model Campaign_Campaign {
 }
 
 model Campaign_PricingRule {
-  id         String            @id @db.VarChar(64)
+  id         String            @id @default(cuid()) @db.VarChar(64)
   campaignId String @db.VarChar(64)
   ruleType   Campaign_RuleType
   value      Decimal           @db.Decimal(10, 2)
@@ -2683,7 +2683,7 @@ model Campaign_PricingRule {
 }
 
 model Campaign_Condition {
-  id         String                 @id @db.VarChar(64)
+  id         String                 @id @default(cuid()) @db.VarChar(64)
   campaignId String @db.VarChar(64)
   type       Campaign_ConditionType
   operator   String
@@ -2696,7 +2696,7 @@ model Campaign_Condition {
 }
 
 model Campaign_Product {
-  id            String            @id @db.VarChar(64)
+  id            String            @id @default(cuid()) @db.VarChar(64)
   campaignId    String @db.VarChar(64)
   productId     String            @db.VarChar(64)
   originalPrice Json
@@ -2711,7 +2711,7 @@ model Campaign_Product {
 }
 
 model Campaign_Category {
-  id         String            @id @db.VarChar(64)
+  id         String            @id @default(cuid()) @db.VarChar(64)
   campaignId String @db.VarChar(64)
   categoryId String            @db.VarChar(64)
   createdAt  DateTime          @default(now())
@@ -2722,7 +2722,7 @@ model Campaign_Category {
 }
 
 model Campaign_Metrics {
-  id                     String            @id @db.VarChar(64)
+  id                     String            @id @default(cuid()) @db.VarChar(64)
   campaignId             String            @unique @db.VarChar(64)
   views                  Int               @default(0)
   conversions            Int               @default(0)
@@ -2737,7 +2737,7 @@ model Campaign_Metrics {
 }
 
 model Campaign_OutboxEvent {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   eventId     String    @unique
   eventType   String
   eventData   Json
@@ -2754,7 +2754,7 @@ model Campaign_OutboxEvent {
 }
 
 model Community_DiscussionThread {
-  id                  String                   @id @db.VarChar(64)
+  id                  String                   @id @default(cuid()) @db.VarChar(64)
   authorId            String @db.VarChar(64)
   topic               String
   content             String
@@ -2776,7 +2776,7 @@ model Community_DiscussionThread {
 }
 
 model Community_ThreadAnswer {
-  id           String                     @id @db.VarChar(64)
+  id           String                     @id @default(cuid()) @db.VarChar(64)
   threadId     String @db.VarChar(64)
   authorId     String @db.VarChar(64)
   content      String
@@ -2793,7 +2793,7 @@ model Community_ThreadAnswer {
 }
 
 model Community_BusinessProfile {
-  id                     String                   @id @db.VarChar(64)
+  id                     String                   @id @default(cuid()) @db.VarChar(64)
   userId                 String                   @unique @db.VarChar(64)
   businessId             String? @db.VarChar(64)
   expertiseAreas         Json
@@ -2815,7 +2815,7 @@ model Community_BusinessProfile {
 }
 
 model Community_KnowledgeArticle {
-  id               String                    @id @db.VarChar(64)
+  id               String                    @id @default(cuid()) @db.VarChar(64)
   authorId         String @db.VarChar(64)
   title            String
   summary          String
@@ -2839,7 +2839,7 @@ model Community_KnowledgeArticle {
 }
 
 model Community_ArticleReview {
-  id         String                     @id @db.VarChar(64)
+  id         String                     @id @default(cuid()) @db.VarChar(64)
   articleId  String @db.VarChar(64)
   reviewerId String
   score      Int
@@ -2854,7 +2854,7 @@ model Community_ArticleReview {
 }
 
 model Community_BusinessChallenge {
-  id                 String                        @id @db.VarChar(64)
+  id                 String                        @id @default(cuid()) @db.VarChar(64)
   proposerId         String
   title              String
   description        String
@@ -2878,7 +2878,7 @@ model Community_BusinessChallenge {
 }
 
 model Community_ChallengeSolution {
-  id             String                      @id @db.VarChar(64)
+  id             String                      @id @default(cuid()) @db.VarChar(64)
   challengeId    String @db.VarChar(64)
   authorId       String @db.VarChar(64)
   solution       String
@@ -2896,7 +2896,7 @@ model Community_ChallengeSolution {
 }
 
 model Community_EngagementQuota {
-  id              String   @id @db.VarChar(64)
+  id              String   @id @default(cuid()) @db.VarChar(64)
   userId          String @db.VarChar(64)
   quotaType       String
   dailyLimit      Int
@@ -2917,7 +2917,7 @@ model Community_EngagementQuota {
 }
 
 model Community_ContributionHistory {
-  id           String   @id @db.VarChar(64)
+  id           String   @id @default(cuid()) @db.VarChar(64)
   userId       String @db.VarChar(64)
   actionType   String
   contentId    String
@@ -2932,7 +2932,7 @@ model Community_ContributionHistory {
 }
 
 model Community_UserInteraction {
-  id              String   @id @db.VarChar(64)
+  id              String   @id @default(cuid()) @db.VarChar(64)
   userId          String @db.VarChar(64)
   contentId       String
   contentType     String
@@ -2946,7 +2946,7 @@ model Community_UserInteraction {
 }
 
 model Community_PeerEndorsement {
-  id            String   @id @db.VarChar(64)
+  id            String   @id @default(cuid()) @db.VarChar(64)
   endorserId    String
   endorseeId    String
   expertiseArea String
@@ -2959,7 +2959,7 @@ model Community_PeerEndorsement {
 }
 
 model Community_OutboxEvent {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   eventId     String    @unique
   eventType   String
   eventData   Json
@@ -2991,7 +2991,7 @@ model SagaLog {
 }
 
 model SagaStepLog {
-  id          String    @id @db.VarChar(64)
+  id          String    @id @default(cuid()) @db.VarChar(64)
   sagaId      String @db.VarChar(64)
   stepName    String
   status      String
@@ -3004,7 +3004,7 @@ model SagaStepLog {
 }
 
 model SagaDeadLetter {
-  id        String   @id @db.VarChar(64)
+  id        String   @id @default(cuid()) @db.VarChar(64)
   sagaId    String   @unique @db.VarChar(64)
   sagaType  String
   payload   Json
@@ -3016,7 +3016,7 @@ model SagaDeadLetter {
 }
 
 model EventLog {
-  id           String   @id @db.VarChar(64)
+  id           String   @id @default(cuid()) @db.VarChar(64)
   eventId      String
   consumerName String
   processedAt  DateTime @default(now())
@@ -3028,7 +3028,7 @@ model EventLog {
 }
 
 model Sms_Message {
-  id                String     @id @db.VarChar(64)
+  id                String     @id @default(cuid()) @db.VarChar(64)
   phoneNumber       String
   content           String
   status            Sms_Status @default(QUEUED)
@@ -3712,3 +3712,4 @@ enum Sms_Status {
   FAILED
   CANCELLED
 }
+

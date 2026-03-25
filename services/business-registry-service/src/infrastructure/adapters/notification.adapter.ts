@@ -14,6 +14,15 @@ export class NotificationAdapter implements INotificationAdapter {
     deliveryAddress?: string;
     metadata?: Record<string, string | number | boolean>;
   }): Promise<void> {
+    const deliveryAddressType: 'email' | 'phone' | 'device_token' | undefined =
+      params.channel === 'email'
+        ? 'email'
+        : params.channel === 'push'
+          ? 'device_token'
+          : params.deliveryAddress
+            ? 'phone'
+            : undefined;
+
     const body = {
       userId: params.userId,
       type: params.channel,
@@ -22,7 +31,7 @@ export class NotificationAdapter implements INotificationAdapter {
       content: params.content,
       contentHtml: params.contentHtml,
       deliveryAddress: params.deliveryAddress,
-      deliveryAddressType: params.deliveryAddress?.includes('@') ? 'email' : 'phone',
+      deliveryAddressType,
       metadata: params.metadata ?? {}
     };
 

@@ -1,6 +1,6 @@
 import { IDeliveryRepository } from '../../domain/repositories';
 
-export type DeliveryStatus = 'assigned' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled' | 'failed';
+export type DeliveryStatus = 'pending' | 'assigned' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled' | 'failed';
 
 export interface UpdateDeliveryStatusInput {
   deliveryId: string;
@@ -91,6 +91,7 @@ export class UpdateDeliveryStatusUseCase {
       ? 'assigned'
       : currentStatus;
     const validTransitions: Record<DeliveryStatus, DeliveryStatus[]> = {
+      'pending': ['assigned', 'cancelled', 'failed'],
       'assigned': ['picked_up', 'cancelled', 'failed'],
       'picked_up': ['in_transit', 'cancelled', 'failed'],
       'in_transit': ['delivered', 'cancelled', 'failed'],

@@ -7,7 +7,7 @@ const layer = require('express/lib/router/layer');
 
 const wrapAsync = (fn: any) => {
   if (typeof fn !== 'function') return fn;
-  return function asyncWrapper(...args: any[]) {
+  return function asyncWrapper(this: unknown, ...args: any[]) {
     const next = args[args.length - 1];
     try {
       const result = fn.apply(this, args);

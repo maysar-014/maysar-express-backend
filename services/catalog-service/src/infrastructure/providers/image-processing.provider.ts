@@ -378,8 +378,7 @@ export class SharpImageProvider {
       if (options.watermark.image) {
         pipeline = pipeline.composite([{
           input: options.watermark.image,
-          gravity: gravityMap[options.watermark.position] || 'southeast',
-          opacity: options.watermark.opacity
+          gravity: gravityMap[options.watermark.position] || 'southeast'
         }]);
       } else if (options.watermark.text) {
         const svg = Buffer.from(

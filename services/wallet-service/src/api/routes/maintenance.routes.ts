@@ -198,7 +198,7 @@ export const createMaintenanceRoutes = (prisma: PrismaClient): Router => {
         if (rows.length === 0) break;
 
         batches += 1;
-        const ids = rows.map(row => row.id);
+        const ids = rows.map((row: { id: string }) => row.id);
 
         if (!dryRun) {
           const result = await outbox.deleteMany({
@@ -334,7 +334,7 @@ export const createMaintenanceRoutes = (prisma: PrismaClient): Router => {
         if (rows.length === 0) break;
 
         batches += 1;
-        const keys = rows.map(row => row.key);
+        const keys = rows.map((row: { key: string }) => row.key);
 
         if (!dryRun) {
           const result = await idempotency.deleteMany({
