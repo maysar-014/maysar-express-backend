@@ -132,7 +132,6 @@ Add these in **GitHub â†’ Settings â†’ Secrets and Variables â†’ 
 
 See `.github/workflows/ci.yml`:
 
-- Lines 407â€“413: Docker Hub login
 - CI checks run for branch flow: `dev`, `staging`, `prod`
 - Staging deployment workflow: `.github/workflows/deploy-staging.yml`
 - Production deployment workflow: `.github/workflows/deploy-production.yml`
