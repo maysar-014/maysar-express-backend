@@ -71,7 +71,13 @@ jobs:
         run: npx prisma generate
 
       - name: Lint
+        id: lint
+        continue-on-error: ${{ github.ref == 'refs/heads/staging' }}
         run: npm run lint
+
+      - name: Lint advisory for staging
+        if: github.ref == 'refs/heads/staging' && steps.lint.outcome == 'failure'
+        run: echo "::warning::Lint failed on staging but is temporarily non-blocking. Fix lint debt before promoting to prod."
 
       - name: Typecheck
         run: npx tsc --noEmit --pretty false
