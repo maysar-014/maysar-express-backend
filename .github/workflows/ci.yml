@@ -3,12 +3,12 @@ name: CI
 on:
   pull_request:
     branches:
-      - test
+      - dev
       - staging
       - prod
   push:
     branches:
-      - test
+      - dev
       - staging
       - prod
   workflow_dispatch:
@@ -117,8 +117,8 @@ jobs:
           fi
 
   contract-tests:
-    name: Contract Tests (test branch)
-    if: github.ref == 'refs/heads/test' && github.event_name == 'push'
+    name: Contract Tests (dev branch)
+    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
     runs-on: ubuntu-latest
     needs:
       - quality-gates

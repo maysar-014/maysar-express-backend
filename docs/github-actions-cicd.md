@@ -1,17 +1,17 @@
-# GitHub Actions CI/CD Runbook (test / staging / prod)
+# GitHub Actions CI/CD Runbook (dev / staging / prod)
 
 This runbook defines the branch strategy and GitHub Actions pipelines for controlled promotion from testing to production.
 
 ## 1. Branch Strategy
 
 Environment branches:
-- `test`
+- `dev`
 - `staging`
 - `prod`
 
 Promotion flow:
-1. Push feature work to `test` (or PR into `test`).
-2. After validation, merge `test` -> `staging`.
+1. Push feature work to `dev` (or PR into `dev`).
+2. After validation, merge `dev` -> `staging`.
 3. After staging verification, merge `staging` -> `prod`.
 
 Recommended branch protections:
@@ -26,8 +26,8 @@ Recommended branch protections:
 Path: `.github/workflows/ci.yml`
 
 Triggers:
-- `push` on `test`, `staging`, `prod`
-- `pull_request` targeting `test`, `staging`, `prod`
+- `push` on `dev`, `staging`, `prod`
+- `pull_request` targeting `dev`, `staging`, `prod`
 - manual dispatch
 
 Main checks:
@@ -37,7 +37,7 @@ Main checks:
 - Build
 - Test (Postgres + Redis service containers)
 - OpenAPI validation
-- Contract examples (only on push to `test`)
+- Contract examples (only on push to `dev`)
 
 ### `Deploy Staging` workflow
 Path: `.github/workflows/deploy-staging.yml`
@@ -112,7 +112,7 @@ The workflow sync excludes:
 
 ## 5. First-Time Setup Checklist
 
-1. Create and protect branches: `test`, `staging`, `prod`.
+1. Create and protect branches: `dev`, `staging`, `prod`.
 2. Configure GitHub environments and secrets.
 3. On each server, ensure `DEPLOY_PATH` parent exists and has proper permissions.
 4. Merge a small change into `staging` to test `Deploy Staging`.
