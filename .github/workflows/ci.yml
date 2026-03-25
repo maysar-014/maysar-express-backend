@@ -91,9 +91,9 @@ jobs:
           NODE_ENV: test
           DATABASE_URL: postgresql://maysar_ci:maysar_ci_password@localhost:5432/maysar_ci
           REDIS_URL: redis://localhost:6379
-          JWT_SECRET: ci-jwt-secret
-          USER_SERVICE_JWT_SECRET: ci-user-service-jwt-secret
-          AUTH_SERVICE_SESSION_SECRET: ci-auth-session-secret
+          JWT_SECRET: TEST_JWT_SECRET
+          USER_SERVICE_JWT_SECRET: TEST_USER_SERVICE_JWT_SECRET
+          AUTH_SERVICE_SESSION_SECRET: TEST_AUTH_SESSION_SECRET
 
   openapi-validation:
     name: OpenAPI Validation
