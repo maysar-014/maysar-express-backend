@@ -6,6 +6,7 @@ type SentMessage = {
     message: string;
     sentAt: Date;
     status: 'sent' | 'delivered';
+    deliveredAt?: Date;
 };
 
 /**

@@ -90,7 +90,7 @@ export interface RequestContext {
  * Application Event DTOs
  * Data structures for application-level events
  */
-export interface ApplicationEvent<T = unknown> {
+export interface ApplicationEventDto<T = unknown> {
   eventId: string;
   eventType: string;
   aggregateId: string;

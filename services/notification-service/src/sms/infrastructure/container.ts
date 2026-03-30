@@ -27,12 +27,6 @@ import { GetStatisticsUseCase } from '../application/use-cases/get-statistics.us
 // Controllers
 import { SmsController } from '../api/controllers/sms.controller';
 
-declare global {
-    interface GlobalThis {
-        __smsEnvLogged?: boolean;
-    }
-}
-
 export const container = new Container();
 
 // Core dependencies
@@ -69,8 +63,9 @@ const resolvedUsername = process.env.AFRICASTALKING_USERNAME || process.env.SMS_
 const apiKeyStatus = (process.env.AFRICASTALKING_API_KEY || process.env.SMS_SERVICE_API_KEY) ? 'set' : 'missing';
 const hasBaseUrlOverride = Boolean(process.env.AFRICASTALKING_BASE_URL);
 // One-time startup log to verify env resolution (no secrets).
-if (!globalThis.__smsEnvLogged) {
-    globalThis.__smsEnvLogged = true;
+const smsGlobal = globalThis as typeof globalThis & { __smsEnvLogged?: boolean };
+if (!smsGlobal.__smsEnvLogged) {
+    smsGlobal.__smsEnvLogged = true;
     process.stdout.write(
         `[sms] provider=${smsProviderName} env=${africasTalkingEnv} baseUrl=${resolvedBaseUrl} ` +
         `baseUrlOverride=${hasBaseUrlOverride ? 'yes' : 'no'} username=${resolvedUsername} ` +

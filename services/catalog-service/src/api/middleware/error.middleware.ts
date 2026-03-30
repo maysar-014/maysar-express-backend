@@ -6,7 +6,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 
-type AsyncHandler = (req: Request, res: Response, next: NextFunction) => unknown;
+type AsyncHandler = (req: Request, res: Response, next: NextFunction) => void | Promise<unknown>;
 
 // =====================================================================================
 // ERROR CONFIGURATION
@@ -192,7 +192,7 @@ export function errorHandler(config: Partial<ErrorConfig> = {}) {
 export function asyncErrorHandler(fn: AsyncHandler) {
   return (req: Request, res: Response, next: NextFunction) => {
     const result = fn(req, res, next);
-    if (result && typeof result.catch === 'function') {
+    if (result instanceof Promise) {
       result.catch(next);
     }
   };

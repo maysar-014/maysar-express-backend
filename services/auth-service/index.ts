@@ -126,14 +126,7 @@ export const AuthModule: Module = {
     routes: Router(),
     shutdown: async () => {
         console.log('Shutting down auth-service module');
-        try {
-            const { TwoFactorServiceModule } = await import('./src/2fa/index');
-            if (TwoFactorServiceModule && TwoFactorServiceModule.shutdown) {
-                await TwoFactorServiceModule.shutdown();
-            }
-        } catch (e) {
-            console.warn('Two-factor shutdown error:', e);
-        }
+        // 2FA is merged into auth-service now, so there is no separate module teardown path.
     }
 };
 

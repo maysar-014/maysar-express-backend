@@ -1,4 +1,5 @@
 import { Product } from '../entities/product.entity';
+import { BuyBoxResult } from '../value-objects/buy-box-result.value-object';
 import { ProductIdentifiers } from '../value-objects/product-identifiers.value-object';
 
 export interface IProductRepository {
@@ -22,6 +23,12 @@ export interface IMatchConfirmationRepository {
     findPendingBySeller(sellerId: string): Promise<MatchConfirmation[]>;
     updateStatus(id: string, status: string, sellerChoice?: string): Promise<void>;
     findExpired(): Promise<MatchConfirmation[]>;
+}
+
+export interface IBuyBoxRepository {
+    save(result: BuyBoxResult): Promise<void>;
+    findByProductId(productId: string): Promise<BuyBoxResult | null>;
+    deleteByProductId(productId: string): Promise<void>;
 }
 
 // Domain models for audit and confirmation (simplified for now)
