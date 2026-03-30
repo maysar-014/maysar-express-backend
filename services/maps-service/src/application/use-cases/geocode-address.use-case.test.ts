@@ -1,4 +1,4 @@
-import { GeocodeAddressUseCase } from '../geocode-address.use-case';
+import { GeocodeAddressUseCase } from './geocode-address.use-case';
 
 const mockAdapter = {
   geocode: jest.fn()

@@ -57,6 +57,12 @@ const getRouteSignatures = (routes: Router): string[] => {
 };
 
 describe('sellerProfitabilityRoutes', () => {
+  const authHeaders = {
+    'x-contract-test': 'true',
+    'x-user-id': 'usr_profitability-test',
+    'x-user-roles': 'seller'
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -81,7 +87,9 @@ describe('sellerProfitabilityRoutes', () => {
     const app = express();
     app.use('/api', router);
 
-    const response = await request(app).get('/api/seller-profitability/financial');
+    const response = await request(app)
+      .get('/api/seller-profitability/financial')
+      .set(authHeaders);
     expect(response.status).toBe(200);
     expect(response.body.section).toBe('financial');
     expect(mockGetFinancialMetrics).toHaveBeenCalledTimes(1);

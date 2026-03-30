@@ -1,5 +1,5 @@
 import { UserMapper } from '../user.mapper';
-import { User, UserRole, UserStatus } from '../../domain/entities/user.entity';
+import { User, UserRole, UserStatus } from '../../../domain/entities/user.entity';
 
 describe('UserMapper', () => {
     const rawData = {

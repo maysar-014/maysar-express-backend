@@ -23,30 +23,52 @@
  */
 
 import { MessageBus, MessageBusFactory, ProcessingStages, RoutingRules } from '../message-bus';
-import { BaseEventPublisher } from '../event-publisher';
+import { BaseEventPublisher, EventTransport, PublishingStrategy } from '../event-publisher';
 import { DomainEvent } from '../../../domain/interfaces';
+
+class MockEventPublisher extends BaseEventPublisher {
+  publish = jest.fn<Promise<void>, [DomainEvent]>();
+  publishAll = jest.fn<Promise<void>, [DomainEvent[]]>();
+  close = jest.fn<Promise<void>, []>();
+
+  constructor() {
+    super(
+      {
+        strategy: PublishingStrategy.IMMEDIATE,
+        transport: EventTransport.IN_MEMORY,
+        batchSize: 1,
+        batchTimeout: 0,
+        retryAttempts: 0,
+        retryDelay: 0,
+        enablePersistence: false,
+        enableMetrics: false,
+        enableTracing: false
+      },
+      { generate: () => 'mock-event-id', validate: () => true },
+      {
+        now: () => new Date(),
+        timestamp: () => Date.now(),
+        add: (date: Date, amount: number, _unit: string) => new Date(date.getTime() + amount),
+        isPast: (date: Date) => date.getTime() < Date.now(),
+        format: (date: Date) => date.toISOString()
+      }
+    );
+  }
+}
 
 describe('Message Bus', () => {
   let messageBus: MessageBus;
-  let mockEventPublisher: BaseEventPublisher;
+  let mockEventPublisher: MockEventPublisher;
   let mockEventSubscriber: any;
 
   beforeEach(() => {
-    mockEventPublisher = {
-      publish: jest.fn(),
-      publishBatch: jest.fn(),
-      subscribe: jest.fn(),
-      unsubscribe: jest.fn(),
-      isConnected: jest.fn().mockReturnValue(true),
-      getHealthStatus: jest.fn().mockReturnValue({ connected: true, isHealthy: true }),
-      getProcessingMetrics: jest.fn().mockReturnValue({ totalPublished: 0, totalFailed: 0, averageProcessingTime: 0 })
-    };
+    mockEventPublisher = new MockEventPublisher();
 
     mockEventSubscriber = {
-      subscribe: jest.fn(),
-      unsubscribe: jest.fn(),
-      start: jest.fn(),
-      stop: jest.fn(),
+      subscribe: jest.fn().mockResolvedValue('subscription-1'),
+      unsubscribe: jest.fn().mockResolvedValue(undefined),
+      start: jest.fn().mockResolvedValue(undefined),
+      stop: jest.fn().mockResolvedValue(undefined),
       getHealthStatus: jest.fn().mockReturnValue({ status: 'healthy', subscriptions: 0, activeSubscriptions: 0, totalProcessed: 0, failedProcessing: 0 }),
       getProcessingStats: jest.fn().mockReturnValue({ totalProcessed: 0, successful: 0, failed: 0, averageProcessingTime: 0, averageRetries: 0, recentResults: [] })
     };

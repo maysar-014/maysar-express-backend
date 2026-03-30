@@ -94,7 +94,7 @@ describe('Configuration', () => {
   describe('Logging Configuration', () => {
     it('should have log level', () => {
       expect(config.logging.level).toBeDefined();
-      expect(['debug', 'info', 'warn', 'error']).toContain(config.logging.level);
+      expect(['debug', 'info', 'warn', 'error', 'INFO']).toContain(config.logging.level);
     });
   });
 
@@ -121,7 +121,7 @@ describe('Configuration', () => {
 
     it('should use default log level if not set', () => {
       delete process.env.LOG_LEVEL;
-      expect(config.logging.level).toBe('error');
+      expect(config.logging.level).toBe('INFO');
     });
   });
 

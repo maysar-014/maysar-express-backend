@@ -11,7 +11,7 @@ describe('CourierAnalyticsSaga', () => {
     let eventBus: jest.Mocked<IEventBus>;
     let engine: jest.Mocked<CourierAnalyticsEngine>;
     let repository: jest.Mocked<CourierAnalyticsRepository>;
-    let handlers: { [key: string]: Function } = {};
+    let handlers: Record<string, (...args: unknown[]) => unknown> = {};
 
     beforeEach(() => {
         jest.clearAllMocks();

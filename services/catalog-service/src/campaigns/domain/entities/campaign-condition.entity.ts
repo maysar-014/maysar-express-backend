@@ -5,7 +5,7 @@ export class CampaignCondition {
         private readonly id: string,
         private readonly type: ConditionType,
         private readonly operator: string,
-        private readonly value: any,
+        private readonly value: unknown,
         private readonly createdAt: Date = new Date()
     ) { }
 
@@ -21,7 +21,7 @@ export class CampaignCondition {
         return this.operator;
     }
 
-    getValue(): any {
+    getValue(): unknown {
         return this.value;
     }
 
@@ -29,7 +29,7 @@ export class CampaignCondition {
         return this.createdAt;
     }
 
-    static create(id: string, type: ConditionType, operator: string, value: any): CampaignCondition {
+    static create(id: string, type: ConditionType, operator: string, value: unknown): CampaignCondition {
         return new CampaignCondition(id, type, operator, value);
     }
 }

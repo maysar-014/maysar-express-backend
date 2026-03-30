@@ -127,7 +127,7 @@ export const AuthModule: Module = {
     shutdown: async () => {
         console.log('Shutting down auth-service module');
         try {
-            const { TwoFactorServiceModule } = require('./src/2fa/index');
+            const { TwoFactorServiceModule } = await import('./src/2fa/index');
             if (TwoFactorServiceModule && TwoFactorServiceModule.shutdown) {
                 await TwoFactorServiceModule.shutdown();
             }

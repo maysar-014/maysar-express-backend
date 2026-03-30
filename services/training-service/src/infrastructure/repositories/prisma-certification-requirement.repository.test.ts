@@ -26,7 +26,7 @@ describe('PrismaCertificationRequirementRepository', () => {
     expect(mandatory[0].mandatory).toBe(true);
   });
 
-  it('returns null for unknown module and throws if delegate missing', async () => {
+  it('returns null for unknown module and uses fallback when delegate is missing', async () => {
     const repoWithNull = new PrismaCertificationRequirementRepository({
       certificationRequirement: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -37,8 +37,9 @@ describe('PrismaCertificationRequirementRepository', () => {
     await expect(repoWithNull.findByModule('missing-module')).resolves.toBeNull();
 
     const repoWithoutDelegate = new PrismaCertificationRequirementRepository({} as never);
-    await expect(repoWithoutDelegate.findAll()).rejects.toThrow(
-      'Certification requirement delegate is not configured on prisma client'
-    );
+    const fallback = await repoWithoutDelegate.findAll();
+    expect(fallback).toHaveLength(1);
+    expect(fallback[0].module).toBe('module-default');
+    expect(fallback[0].minimumScore).toBe(50);
   });
 });

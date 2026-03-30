@@ -14,6 +14,7 @@ jest.mock('../../../infrastructure/services/logger.service');
 
 const MockAuthServiceClient = AuthServiceClient as jest.MockedClass<typeof AuthServiceClient>;
 const mockAuthServiceClient = new MockAuthServiceClient() as jest.Mocked<AuthServiceClient>;
+MockAuthServiceClient.mockImplementation(() => mockAuthServiceClient);
 
 const mockLogger = logger as jest.Mocked<typeof logger>;
 
@@ -24,7 +25,6 @@ describe('AuthenticationMiddleware', () => {
   let mockNext: NextFunction;
 
   beforeEach(() => {
-    middleware = new AuthenticationMiddleware();
     mockRequest = {
       headers: {},
       ip: '127.0.0.1',
@@ -39,11 +39,19 @@ describe('AuthenticationMiddleware', () => {
 
     // Reset mocks
     jest.clearAllMocks();
+    middleware = new AuthenticationMiddleware();
+
+    mockAuthServiceClient.checkTokenBlacklist.mockResolvedValue({ isBlacklisted: false });
+    mockAuthServiceClient.validateApiKey.mockResolvedValue({
+      valid: true,
+      serviceId: 'service-123',
+      permissions: ['read', 'write']
+    });
   });
 
   describe('authenticate()', () => {
     it('should authenticate valid JWT token', async () => {
-      const validToken = 'valid-jwt-token';
+      const validToken = 'valid.jwt.token';
       const mockPayload = {
         userId: 'user-123',
         email: 'test@example.com',
@@ -77,10 +85,10 @@ describe('AuthenticationMiddleware', () => {
         sessionId: 'session-123',
         deviceId: expect.any(String),
         ipAddress: '127.0.0.1',
-        userAgent: undefined,
+        userAgent: 'unknown',
         issuedAt: mockPayload.iat * 1000,
         expiresAt: mockPayload.exp * 1000,
-        geoLocation: expect.any(Object)
+        geoLocation: undefined
       });
     });
 
@@ -172,7 +180,7 @@ describe('AuthenticationMiddleware', () => {
     });
 
     it('should authenticate valid token in optional mode', async () => {
-      const validToken = 'valid-jwt-token';
+      const validToken = 'valid.jwt.token';
       const mockPayload = {
         userId: 'user-123',
         email: 'test@example.com',
@@ -204,10 +212,10 @@ describe('AuthenticationMiddleware', () => {
         sessionId: 'session-123',
         deviceId: expect.any(String),
         ipAddress: '127.0.0.1',
-        userAgent: undefined,
+        userAgent: 'unknown',
         issuedAt: mockPayload.iat * 1000,
         expiresAt: mockPayload.exp * 1000,
-        geoLocation: expect.any(Object)
+        geoLocation: undefined
       });
       expect(mockNext).toHaveBeenCalled();
     });
@@ -237,7 +245,7 @@ describe('AuthenticationMiddleware', () => {
         permissions: ['read', 'write'],
         timestamp: expect.any(Number),
         ipAddress: '127.0.0.1',
-        userAgent: undefined
+        userAgent: 'unknown'
       });
       expect(mockNext).toHaveBeenCalled();
     });
@@ -267,7 +275,7 @@ describe('AuthenticationMiddleware', () => {
 
       mockAuthServiceClient.validateApiKey.mockResolvedValue({
         valid: false,
-        error: 'API key is invalid'
+        error: 'Invalid API key'
       });
 
       const authenticateApiKeyMiddleware = middleware.authenticateApiKey();
@@ -279,7 +287,7 @@ describe('AuthenticationMiddleware', () => {
         success: false,
         error: {
           code: 'INVALID_API_KEY',
-          message: 'API key is invalid'
+          message: 'Invalid API key'
         }
       });
       expect(mockNext).not.toHaveBeenCalled();
@@ -301,12 +309,12 @@ describe('AuthenticationMiddleware', () => {
       await authenticateServiceMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect((mockRequest as any).service).toEqual({
-        serviceId: 'valid-service-key',
+        serviceId: 'valid-se',
         serviceKey: expect.any(String),
         permissions: ['read', 'write', 'admin'],
         timestamp: expect.any(Number),
         ipAddress: '127.0.0.1',
-        userAgent: undefined
+        userAgent: 'unknown'
       });
       expect(mockNext).toHaveBeenCalled();
     });
@@ -352,7 +360,7 @@ describe('AuthenticationMiddleware', () => {
 
   describe('authenticateCombined()', () => {
     it('should authenticate with JWT token when both token and API key are provided', async () => {
-      const validToken = 'valid-jwt-token';
+      const validToken = 'valid.jwt.token';
       const mockPayload = {
         userId: 'user-123',
         email: 'test@example.com',

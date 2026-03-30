@@ -4,6 +4,7 @@ import { UserServiceRepository } from '../../infrastructure/repositories/user-se
 import { getUserServiceClient } from '../../infrastructure/services/service-discovery';
 import { logger } from '../../infrastructure/services/logger.service';
 import { AuthEventPublisher } from '../../infrastructure/messaging/auth-event-publisher';
+import * as speakeasy from 'speakeasy';
 import jwt from 'jsonwebtoken';
 
 /**
@@ -250,6 +251,19 @@ export class AuthenticateUserUseCase {
    * In production, this would use proper password hashing from User Service
    */
   private async verifyPassword(_password: string, _user: AuthUser): Promise<boolean> {
+    const user = _user as AuthUser & {
+      password?: string;
+      passwordHash?: { verifyPassword?: (password: string) => Promise<boolean> | boolean };
+    };
+
+    if (typeof user.password === 'string') {
+      return user.password === _password;
+    }
+
+    if (user.passwordHash && typeof user.passwordHash.verifyPassword === 'function') {
+      return await user.passwordHash.verifyPassword(_password);
+    }
+
     const bypass =
       process.env.AUTH_BYPASS_PASSWORD === 'true' ||
       process.env.NODE_ENV !== 'production';
@@ -265,7 +279,6 @@ export class AuthenticateUserUseCase {
    */
   private verifyTotpCode(secret: string, code: string): boolean {
     try {
-      const speakeasy = require('speakeasy');
       return speakeasy.totp.verify({
         secret: secret,
         encoding: 'base32',

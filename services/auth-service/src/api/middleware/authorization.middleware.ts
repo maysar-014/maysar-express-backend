@@ -8,6 +8,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import * as crypto from 'crypto';
 import http from 'http';
 import https from 'https';
 import { getModelPrefix, isSystemId, makeId } from '@shared/ids/id';
@@ -623,6 +624,10 @@ export class AuthorizationMiddleware {
       }
     }
 
+    if (requiredRoles.length === 0) {
+      return { authorized: true, reason: 'Role context validated' };
+    }
+
     // Check role inheritance
     const hasRequiredRole = await this.checkRoleInheritance(user.roles, requiredRoles, config);
     if (!hasRequiredRole) {
@@ -886,7 +891,6 @@ export class AuthorizationMiddleware {
   }
 
   private generatePermissionCacheKey(userId: string, permissions: Permission[]): string {
-    const crypto = require('crypto');
     const permHash = crypto.createHash('md5')
       .update(JSON.stringify(permissions))
       .digest('hex');
@@ -962,7 +966,6 @@ export class AuthorizationMiddleware {
   }
 
   private getDeviceFingerprint(req: Request): string {
-    const crypto = require('crypto');
     const userAgent = req.get('User-Agent') || '';
     const acceptLanguage = req.get('Accept-Language') || '';
     const acceptEncoding = req.get('Accept-Encoding') || '';
@@ -988,7 +991,7 @@ export class AuthorizationMiddleware {
 
   private logAuthorizationEvent(
     eventType: AuditEvent['eventType'],
-    user: UserContext,
+    user: UserContext | undefined,
     req: Request,
     details: Record<string, any>
   ): void {
@@ -997,8 +1000,8 @@ export class AuthorizationMiddleware {
     const auditEvent: AuditEvent = {
       timestamp: new Date(),
       eventType,
-      userId: user.userId,
-      sessionId: user.sessionInfo?.sessionId || 'unknown',
+      userId: user?.userId || 'anonymous',
+      sessionId: user?.sessionInfo?.sessionId || 'unknown',
       resource: req.originalUrl || req.url || 'unknown',
       action: req.method || 'unknown',
       ipAddress: this.getClientIP(req),

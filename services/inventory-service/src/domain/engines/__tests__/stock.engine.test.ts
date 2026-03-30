@@ -1,31 +1,41 @@
 import { StockEngine } from '../stock.engine';
 
-const mockRedis = {
-    get: jest.fn(),
-    setex: jest.fn(),
-    hgetall: jest.fn(),
-    hincrby: jest.fn(),
-    incrby: jest.fn(),
-    decrby: jest.fn(),
-    zadd: jest.fn(),
-    zrem: jest.fn(),
-    del: jest.fn(),
-    lpush: jest.fn(),
-    ltrim: jest.fn(),
-    keys: jest.fn(),
-    zrangebyscore: jest.fn(),
-    zremrangebyscore: jest.fn(),
-    lrange: jest.fn(),
-    pipeline: jest.fn().mockReturnThis(),
+const createPipeline = () => ({
+    hgetall: jest.fn().mockReturnThis(),
+    get: jest.fn().mockReturnThis(),
     exec: jest.fn()
-};
+});
 
 describe('StockEngine', () => {
     let engine: StockEngine;
+    let mockRedis: any;
+    let mockRedisLock: any;
+    let mockPipeline: any;
 
     beforeEach(() => {
-        engine = new StockEngine();
-        (engine as any).redis = mockRedis;
+        mockPipeline = createPipeline();
+        mockRedis = {
+            get: jest.fn(),
+            setex: jest.fn(),
+            hgetall: jest.fn().mockResolvedValue({ totalStock: '0', reorderLevel: '0' }),
+            hincrby: jest.fn(),
+            incrby: jest.fn(),
+            decrby: jest.fn(),
+            zadd: jest.fn(),
+            zrem: jest.fn(),
+            del: jest.fn(),
+            lpush: jest.fn(),
+            ltrim: jest.fn(),
+            keys: jest.fn(),
+            zrangebyscore: jest.fn(),
+            zremrangebyscore: jest.fn(),
+            lrange: jest.fn(),
+            pipeline: jest.fn(() => mockPipeline)
+        };
+        mockRedisLock = {
+            withLock: jest.fn(async (_key: string, fn: () => Promise<any>) => fn())
+        };
+        engine = new StockEngine(mockRedis, mockRedisLock);
         jest.clearAllMocks();
     });
 
@@ -150,7 +160,7 @@ describe('StockEngine', () => {
 
     describe('bulkCheckAvailability', () => {
         it('should check multiple products', async () => {
-            mockRedis.exec.mockResolvedValue([
+            mockPipeline.exec.mockResolvedValue([
                 [null, { totalStock: '100', reorderLevel: '10' }],
                 [null, '20'],
                 [null, { totalStock: '50', reorderLevel: '5' }],
@@ -172,9 +182,13 @@ describe('StockEngine', () => {
         it('should cleanup expired reservations', async () => {
             mockRedis.keys.mockResolvedValue(['reservations:prod-1']);
             mockRedis.zrangebyscore.mockResolvedValue(['res-1', 'res-2']);
-            mockRedis.get
-                .mockResolvedValueOnce(JSON.stringify({ reservationId: 'res-1', productVariantId: 'prod-1', quantity: 5, status: 'active' }))
-                .mockResolvedValueOnce(JSON.stringify({ reservationId: 'res-2', productVariantId: 'prod-1', quantity: 3, status: 'active' }));
+            mockRedis.get.mockImplementation((key: string) => {
+                const reservations: Record<string, string> = {
+                    'reservation:res-1': JSON.stringify({ reservationId: 'res-1', productVariantId: 'prod-1', quantity: 5, status: 'active' }),
+                    'reservation:res-2': JSON.stringify({ reservationId: 'res-2', productVariantId: 'prod-1', quantity: 3, status: 'active' })
+                };
+                return Promise.resolve(reservations[key] || null);
+            });
 
             const count = await engine.cleanupExpiredReservations();
 

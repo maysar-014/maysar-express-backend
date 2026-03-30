@@ -12,6 +12,7 @@ const createBusiness = (overrides: Partial<Parameters<typeof Business.register>[
     registrationNumber: RegistrationNumber.create('TZ-DAR-12345'),
     taxId: TaxId.create('123456789'),
     ownerId: 'owner-1',
+    industry: ['retail'],
     ...overrides
   });
 

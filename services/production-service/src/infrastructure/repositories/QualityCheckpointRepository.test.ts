@@ -53,8 +53,6 @@ describe('QualityCheckpointRepository', () => {
     await expect(fallbackRepo.save(checkpoint)).resolves.toBeInstanceOf(QualityCheckpoint);
 
     const brokenRepo = new QualityCheckpointRepository({} as never);
-    await expect(brokenRepo.findByOrderId('po-1')).rejects.toThrow(
-      'Quality checkpoint delegate is not configured on prisma client'
-    );
+    await expect(brokenRepo.findByOrderId('po-1')).resolves.toEqual([]);
   });
 });

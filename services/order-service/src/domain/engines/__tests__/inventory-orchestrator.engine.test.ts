@@ -16,6 +16,19 @@ describe('InventoryOrchestrator', () => {
 
     describe('processInventoryRequest', () => {
         it('should process valid request successfully', async () => {
+            const mockInventoryOutput = {
+                success: true,
+                confidence: 99.9,
+                available: 50,
+                reserved: 0,
+                allocated: 0,
+                stockStatus: { level: 'in_stock' as const, lastUpdated: new Date() }
+            };
+
+            (orchestrator as any).inventoryEngine = {
+                processInventoryRequest: jest.fn().mockResolvedValue(mockInventoryOutput)
+            };
+
             const result = await orchestrator.processInventoryRequest(validRequest);
 
             expect(result.success).toBe(true);

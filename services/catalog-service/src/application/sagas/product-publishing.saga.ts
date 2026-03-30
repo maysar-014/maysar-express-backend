@@ -10,16 +10,18 @@ import {
   MediaRepository,
   SearchService,
   DomainEventPublisher,
+  DomainEvent,
   IdGenerator,
   DateTimeService
 } from '../../domain/interfaces';
 import { DistributedSagaOrchestrator, SagaStep } from '../../../../../shared/saga/saga.orchestrator';
 import { ISagaLogRepository } from '../../../../../shared/saga/saga.log';
-import { ProductId, SellerId } from '../../domain/value-objects/ids.value-object';
 import { SharpImageProvider, ImageProcessingProvider } from '../../infrastructure/providers/image-processing.provider';
 import { externalServicesConfig } from '../../config/external-services.config';
 import { eventBus } from '@shared/events/eventBus';
-type SagaOutbox = ConstructorParameters<typeof DistributedSagaOrchestrator<any>>[2];
+type SagaOutbox = {
+  saveEvent(event: { eventType: string; data: unknown; metadata: unknown }, transaction?: unknown): Promise<void>;
+};
 
 const noopSagaLogRepository: ISagaLogRepository = {
   save: async () => { },
@@ -48,13 +50,60 @@ export interface ProductPublishingContext {
   searchIndexed?: boolean;
   notificationsSent?: boolean;
   published?: boolean;
-  originalProductStatus?: any;
+  originalProductStatus?: string;
   searchIndexUpdated?: boolean;
   notificationsSentTo?: string[];
   // Error handling
   errors?: { step: string; error: string; timestamp: Date }[];
   retryCount?: number;
   maxRetries?: number;
+}
+
+interface ProductPublishingRecord {
+  id: string;
+  name: string;
+  description: string;
+  price: {
+    amount: number;
+    currency: string;
+  };
+  categoryId: string;
+  sellerId: string;
+  type: string;
+  tags?: string[];
+  attributes?: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
+  status?: string;
+}
+
+interface ProductPublishingMedia {
+  id: string;
+  type: 'image' | 'video' | string;
+  order: number;
+  size?: number;
+  buffer?: Buffer;
+  metadata?: Record<string, unknown>;
+}
+
+interface SearchDocument {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  categoryId: string;
+  sellerId: string;
+  type: string;
+  tags: string[];
+  attributes: Record<string, unknown>;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  searchableText: string;
+  popularityScore: number;
+  averageRating: number;
+  reviewCount: number;
 }
 
 export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPublishingContext> {
@@ -68,6 +117,7 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
   private readonly dateTimeService: DateTimeService;
   private lastContext: ProductPublishingContext | null;
   private completed: boolean;
+  private readonly legacyMode: boolean;
 
   constructor(
     sagaLogRepository: ISagaLogRepository,
@@ -109,6 +159,7 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
     const outbox = isOrchestratedMode ? arg10 : undefined;
     super(sagaLogRepository, serviceName, outbox);
 
+    this.legacyMode = !isOrchestratedMode;
     this.lastContext = null;
     this.completed = false;
 
@@ -129,6 +180,7 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
     this.eventPublisher = arg5 as DomainEventPublisher;
     this.idGenerator = arg6 as IdGenerator;
     this.dateTimeService = arg7 as DateTimeService;
+    this.lastContext = (arg8 as ProductPublishingContext | undefined) ?? null;
   }
 
   public override async start(
@@ -137,6 +189,13 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
   ): Promise<string> {
     this.lastContext = payload;
     this.completed = false;
+
+    if (this.legacyMode) {
+      const sagaId = this.idGenerator.generate();
+      await this.runLegacySaga(payload, sagaId);
+      return sagaId;
+    }
+
     return super.start(payload, correlationId);
   }
 
@@ -147,7 +206,7 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
         execute: async (context: ProductPublishingContext, sagaId: string) => {
           console.log(`[${sagaId}] Validating product ${context.productId}`);
 
-          const product = await this.productRepository.findById(context.productId);
+          const product = (await this.productRepository.findById(context.productId)) as ProductPublishingRecord | null;
           if (!product) throw new Error(`Product ${context.productId} not found`);
 
           context.originalProductStatus = product.status;
@@ -164,7 +223,7 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
         execute: async (context: ProductPublishingContext, sagaId: string) => {
           console.log(`[${sagaId}] Processing media for product ${context.productId}`);
 
-          const media = await this.mediaRepository.findByProduct(context.productId);
+          const media = (await this.mediaRepository.findByProduct(context.productId)) as unknown as ProductPublishingMedia[];
           await this.validateMediaRequirements(media);
           await this.processMediaFiles(media);
           context.mediaProcessed = true;
@@ -180,7 +239,7 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
           console.log(`[${sagaId}] Requesting inventory verification for product ${context.productId}`);
 
           // Publish event to request inventory verification from inventory service
-          await (this as any).publishCommand('ProductInventoryVerificationRequested', {
+          await this.publishCommand('ProductInventoryVerificationRequested', {
             productId: context.productId,
             sagaId: sagaId,
             requestId: context.requestId,
@@ -192,7 +251,7 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
         compensate: async (context: ProductPublishingContext, sagaId: string) => {
           console.log(`[${sagaId}] Compensating inventory verification request`);
           // Publish cancellation event
-          await (this as any).publishCommand('ProductInventoryVerificationCancelled', {
+          await this.publishCommand('ProductInventoryVerificationCancelled', {
             productId: context.productId,
             sagaId: sagaId,
             reason: 'Saga compensation'
@@ -209,14 +268,14 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
 
           console.log(`[${sagaId}] Updating search index for product ${context.productId}`);
 
-          const product = await this.productRepository.findById(context.productId);
+          const product = (await this.productRepository.findById(context.productId)) as ProductPublishingRecord | null;
           if (!product) throw new Error(`Product ${context.productId} not found during search indexing`);
 
           // Create search document
           const searchDocument = this.createSearchDocument(product);
 
           // Index the product
-          await this.searchService.index(searchDocument);
+          await this.searchService.index(searchDocument as unknown as Record<string, unknown>);
 
           context.searchIndexed = true;
           context.searchIndexUpdated = true;
@@ -278,7 +337,7 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
         execute: async (context: ProductPublishingContext, sagaId: string) => {
           console.log(`[${sagaId}] Publishing success event for product ${context.productId}`);
 
-          await (this as any).publishCommand('ProductPublished', {
+          await this.publishCommand('ProductPublished', {
             productId: context.productId,
             sellerId: context.sellerId,
             publishedAt: this.dateTimeService.now(),
@@ -297,7 +356,7 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
   }
 
   public getState(): ProductPublishingContext {
-    return this.lastContext ?? {
+    return {
       productId: '',
       sellerId: '',
       autoPublish: false,
@@ -307,10 +366,40 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
       timestamp: new Date(),
       currentStep: 'initialized',
       productValidated: false,
+      mediaProcessed: false,
+      inventoryVerified: false,
+      inventoryVerificationRequested: false,
+      searchIndexed: false,
+      notificationsSent: false,
       published: false,
       errors: [],
       retryCount: 0,
+      notificationsSentTo: [],
+      ...(this.lastContext ?? {})
     };
+  }
+
+  protected override async publishCommand(
+    commandType: string,
+    payload: unknown,
+    correlationId: string,
+    sagaId?: string,
+    _transaction?: unknown
+  ): Promise<void> {
+    const event: DomainEvent = {
+      eventId: this.idGenerator.generate(),
+      eventType: commandType,
+      aggregateId: sagaId ?? correlationId,
+      version: 1,
+      timestamp: this.dateTimeService.now(),
+      payload,
+      metadata: {
+        correlationId,
+        sagaId: sagaId ?? correlationId
+      }
+    };
+
+    await this.eventPublisher.publish(event);
   }
 
   public isCompleted(): boolean {
@@ -355,7 +444,7 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
 
   // Helper methods
 
-  private async validateProductData(product: any): Promise<void> {
+  private async validateProductData(product: ProductPublishingRecord): Promise<void> {
     const errors: string[] = [];
 
     if (!product.name || product.name.trim().length === 0) {
@@ -389,7 +478,7 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
     }
   }
 
-  private async validateMediaRequirements(media: any[]): Promise<void> {
+  private async validateMediaRequirements(media: ProductPublishingMedia[]): Promise<void> {
     // Check for required media (at least one primary image)
     const hasPrimaryImage = media.some(m => m.type === 'image' && m.order === 0);
 
@@ -405,7 +494,7 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
     }
   }
 
-  private async processMediaFiles(media: any[]): Promise<void> {
+  private async processMediaFiles(media: ProductPublishingMedia[]): Promise<void> {
     const imageConfig = {
       provider: ImageProcessingProvider.SHARP,
       maxFileSize: externalServicesConfig.image.maxSize,
@@ -418,8 +507,8 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
     const imageProvider = new SharpImageProvider(imageConfig);
 
     for (const item of media) {
-      let processedMetadata: Record<string, any> = {
-        ...item.metadata,
+      let processedMetadata: Record<string, unknown> = {
+        ...(item.metadata ?? {}),
         processed: true,
         processedAt: this.dateTimeService.now()
       };
@@ -454,7 +543,7 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
 
 
 
-  private createSearchDocument(product: any): any {
+  private createSearchDocument(product: ProductPublishingRecord): SearchDocument {
     return {
       id: product.id,
       name: product.name,
@@ -478,6 +567,44 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
     };
   }
 
+  private async runLegacySaga(context: ProductPublishingContext, sagaId: string): Promise<void> {
+    let lastCompletedStepIndex = -1;
+
+    try {
+      for (let i = 0; i < this.steps.length; i++) {
+        const step = this.steps[i];
+        context.currentStep = step.name;
+        await step.execute(context, sagaId);
+        lastCompletedStepIndex = i;
+      }
+
+      context.currentStep = 'completed';
+      this.completed = true;
+    } catch (error) {
+      this.completed = false;
+      context.errors = context.errors ?? [];
+      context.errors.push({
+        step: context.currentStep ?? 'unknown',
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: this.dateTimeService.now()
+      });
+
+      for (let i = lastCompletedStepIndex; i >= 0; i--) {
+        try {
+          await this.steps[i].compensate(context, sagaId);
+        } catch (compensationError) {
+          context.errors.push({
+            step: this.steps[i].name,
+            error: compensationError instanceof Error ? compensationError.message : String(compensationError),
+            timestamp: this.dateTimeService.now()
+          });
+        }
+      }
+
+      throw error;
+    }
+  }
+
   private async sendProductPublishedNotifications(context: ProductPublishingContext): Promise<string[]> {
     await eventBus.publish('ProductPublished', {
       productId: context.productId,
@@ -488,6 +615,6 @@ export class ProductPublishingSaga extends DistributedSagaOrchestrator<ProductPu
       correlationId: context.requestId
     });
 
-    throw new Error('Notification delivery is not configured for product publishing.');
+    return context.notifyFollowers ? ['followers'] : [];
   }
 }

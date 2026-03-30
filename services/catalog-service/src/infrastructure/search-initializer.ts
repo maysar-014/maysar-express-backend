@@ -1,9 +1,9 @@
 ﻿// @ts-nocheck
-import { IndexManager } from './domain/indexes';
-import { InvertedIndex, FilterIndex, NGramIndex, FacetIndex } from './domain/indexes';
-import { OfflineRanker } from './domain/algorithms';
-import { OptimizedProductSearchEngine } from './domain/engines/optimized-search-engine';
-import { SearchableProduct } from './domain/types/search.types';
+import { IndexManager } from '../domain/indexes';
+import { InvertedIndex, FilterIndex, NGramIndex, FacetIndex } from '../domain/indexes';
+import { OfflineRanker } from '../domain/algorithms';
+import { OptimizedProductSearchEngine } from '../domain/engines/optimized-search-engine';
+import type { SearchableProduct } from '../domain/types/search.types';
 import { PrismaClient } from '@prisma/client';
 
 export class SearchEngineInitializer {

@@ -72,7 +72,7 @@ describe('ApproveCommissionUseCase', () => {
     });
 
     it('should handle different approver roles', async () => {
-        const roles = ['admin', 'manager', 'supervisor'];
+        const roles = ['admin', 'manager', 'finance'];
         for (const role of roles) {
             jest.clearAllMocks();
             const commission = CommissionFactory.create({ id: commissionId, status: CommissionStatus.PENDING });

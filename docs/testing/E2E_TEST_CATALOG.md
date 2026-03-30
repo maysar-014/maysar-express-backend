@@ -526,7 +526,7 @@
 ## Environment Requirements
 
 ### Services
-- All microservices running
+- All required modules running
 - PostgreSQL database
 - Redis cache
 - Jaeger tracing

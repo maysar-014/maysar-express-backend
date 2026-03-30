@@ -6,7 +6,7 @@ import { joiId } from '@shared/validation/id';
  * Validation middleware using Joi schemas
  */
 
-const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$/u;
+const SAFE_VISIBLE_STRING_PATTERN = new RegExp('^(?=.*\\S)[^\\u0000-\\u001F\\u007F-\\u009F]+$', 'u');
 const safeVisibleString = Joi.string().min(1).pattern(SAFE_VISIBLE_STRING_PATTERN);
 
 // Create Post Validation Schema

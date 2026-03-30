@@ -27,6 +27,12 @@ import { GetStatisticsUseCase } from '../application/use-cases/get-statistics.us
 // Controllers
 import { SmsController } from '../api/controllers/sms.controller';
 
+declare global {
+    interface GlobalThis {
+        __smsEnvLogged?: boolean;
+    }
+}
+
 export const container = new Container();
 
 // Core dependencies
@@ -53,7 +59,6 @@ const allowLiveInDev = (process.env.SMS_ALLOW_LIVE_IN_DEV || '').toLowerCase() =
 const africasTalkingEnvRaw = (process.env.AFRICASTALKING_ENV || (isProduction ? 'live' : 'sandbox')).toLowerCase();
 const isLiveRequested = africasTalkingEnvRaw === 'live';
 const africasTalkingEnv = isLiveRequested && (isProduction || allowLiveInDev) ? 'live' : 'sandbox';
-const isSandboxEnv = africasTalkingEnv === 'sandbox';
 const perUserLimitPerHour = parseOptionalInt(process.env.SMS_RATE_LIMIT_PER_USER_PER_HOUR);
 const perPhoneNumberLimitPerDay = parseOptionalInt(process.env.SMS_RATE_LIMIT_PER_PHONE_NUMBER_PER_DAY);
 const resolvedBaseUrl = (process.env.AFRICASTALKING_BASE_URL ||
@@ -64,17 +69,13 @@ const resolvedUsername = process.env.AFRICASTALKING_USERNAME || process.env.SMS_
 const apiKeyStatus = (process.env.AFRICASTALKING_API_KEY || process.env.SMS_SERVICE_API_KEY) ? 'set' : 'missing';
 const hasBaseUrlOverride = Boolean(process.env.AFRICASTALKING_BASE_URL);
 // One-time startup log to verify env resolution (no secrets).
-if (!(globalThis as any).__smsEnvLogged) {
-    (globalThis as any).__smsEnvLogged = true;
-    console.info('[sms] provider=%s env=%s baseUrl=%s baseUrlOverride=%s username=%s apiKey=%s allowLiveInDev=%s node_env=%s',
-        smsProviderName,
-        africasTalkingEnv,
-        resolvedBaseUrl,
-        hasBaseUrlOverride ? 'yes' : 'no',
-        resolvedUsername,
-        apiKeyStatus,
-        allowLiveInDev ? 'true' : 'false',
-        process.env.NODE_ENV || 'development'
+if (!globalThis.__smsEnvLogged) {
+    globalThis.__smsEnvLogged = true;
+    process.stdout.write(
+        `[sms] provider=${smsProviderName} env=${africasTalkingEnv} baseUrl=${resolvedBaseUrl} ` +
+        `baseUrlOverride=${hasBaseUrlOverride ? 'yes' : 'no'} username=${resolvedUsername} ` +
+        `apiKey=${apiKeyStatus} allowLiveInDev=${allowLiveInDev ? 'true' : 'false'} ` +
+        `node_env=${process.env.NODE_ENV || 'development'}\n`
     );
 }
 if (smsProviderName !== 'africastalking') {

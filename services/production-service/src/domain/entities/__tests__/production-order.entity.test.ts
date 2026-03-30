@@ -4,7 +4,7 @@ import { ProductionSchedule } from '../../value-objects/production-schedule.valu
 describe('ProductionOrder Entity', () => {
     const mockSchedule = new ProductionSchedule({
         startTime: new Date(),
-        endTime: new Date()
+        endTime: new Date(Date.now() + 60 * 60 * 1000)
     });
 
     const createOrder = (props: Partial<any> = {}) => new ProductionOrder({

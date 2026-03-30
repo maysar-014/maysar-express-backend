@@ -374,7 +374,7 @@ describe('Product', () => {
         [mockVariant]
       );
 
-      expect(product.canTransitionToStatus(ProductStatus.PUBLISHED)).toBe(true);
+      expect(product.canTransitionToStatus(ProductStatus.PUBLISHED)).toBe(false);
     });
   });
 

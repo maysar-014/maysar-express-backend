@@ -361,10 +361,7 @@ export function validateRequest<T>(
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = req[source];
-      const parser = typeof (schema as z.ZodSchema<T> & { strict?: () => z.ZodSchema<T> }).strict === 'function'
-        ? (schema as z.ZodSchema<T> & { strict: () => z.ZodSchema<T> }).strict()
-        : schema;
-      const validatedData = parser.parse(data);
+      const validatedData = schema.parse(data);
 
       // Replace the original data with validated/sanitized data
       req[source] = validatedData;

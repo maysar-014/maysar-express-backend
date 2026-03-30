@@ -6,16 +6,10 @@
 import { SearchMapper } from '../search-mapper';
 import {
   ProductSearchRequestDto,
-  ProductSearchResponseDto,
-  ProductSearchResultDto,
-  SearchFacetDto,
-  SearchSuggestionDto,
-  SearchAnalyticsDto,
   AdvancedSearchRequestDto,
   SearchTemplateDto,
   SearchConfigurationDto,
   SearchValidationRequestDto,
-  SearchValidationResponseDto
 } from '../../dto/search-dto';
 
 describe('SearchMapper', () => {
@@ -58,7 +52,14 @@ describe('SearchMapper', () => {
         }
       };
 
-      const domainQuery = SearchMapper.searchRequestToDomain(dto);
+      const domainQuery = SearchMapper.searchRequestToDomain(dto) as {
+        query?: string;
+        filters: Record<string, unknown>;
+        sorting: Record<string, unknown>;
+        pagination: typeof dto.pagination;
+        searchOptions: typeof dto.searchOptions;
+        context?: typeof dto.context;
+      };
 
       expect(domainQuery.query).toBe('smartphone');
       expect(domainQuery.filters).toEqual(dto.filters);
@@ -85,7 +86,14 @@ describe('SearchMapper', () => {
         }
       };
 
-      const domainQuery = SearchMapper.searchRequestToDomain(dto);
+      const domainQuery = SearchMapper.searchRequestToDomain(dto) as {
+        query?: string;
+        filters: Record<string, unknown>;
+        sorting: Record<string, unknown>;
+        pagination: typeof dto.pagination;
+        searchOptions: typeof dto.searchOptions;
+        context?: typeof dto.context;
+      };
 
       expect(domainQuery.query).toBeUndefined();
       expect(domainQuery.filters).toEqual({});
@@ -119,7 +127,14 @@ describe('SearchMapper', () => {
         }
       };
 
-      const domainQuery = SearchMapper.searchRequestToDomain(dto);
+      const domainQuery = SearchMapper.searchRequestToDomain(dto) as {
+        query?: string;
+        filters: Record<string, unknown>;
+        sorting: Record<string, unknown>;
+        pagination: typeof dto.pagination;
+        searchOptions: typeof dto.searchOptions;
+        context?: typeof dto.context;
+      };
 
       expect(domainQuery.filters.location).toEqual({
         latitude: 40.7128,
@@ -211,7 +226,7 @@ describe('SearchMapper', () => {
         }
       };
 
-      const dto = SearchMapper.searchResultsToDto(domainResults);
+      const dto = SearchMapper.searchResultsToDto(domainResults as unknown as Parameters<typeof SearchMapper.searchResultsToDto>[0]);
 
       expect(dto.results).toHaveLength(1);
       expect(dto.results[0].productId).toBe('product-1');
@@ -267,7 +282,7 @@ describe('SearchMapper', () => {
         }
       };
 
-      const dto = SearchMapper.searchResultsToDto(domainResults);
+      const dto = SearchMapper.searchResultsToDto(domainResults as unknown as Parameters<typeof SearchMapper.searchResultsToDto>[0]);
 
       expect(dto.results).toHaveLength(1);
       expect(dto.results[0].productId).toBe('product-simple');
@@ -307,7 +322,7 @@ describe('SearchMapper', () => {
         updatedAt: new Date('2023-06-15')
       };
 
-      const dto = SearchMapper.searchResultToDto(domainResult);
+      const dto = SearchMapper.searchResultToDto(domainResult as unknown as Parameters<typeof SearchMapper.searchResultToDto>[0]);
 
       expect(dto.productId).toBe('result-123');
       expect(dto.name).toBe('Test Product');
@@ -591,7 +606,18 @@ describe('SearchMapper', () => {
         tags: ['electronics', 'template']
       };
 
-      const domainTemplate = SearchMapper.searchTemplateToDomain(dto);
+      const domainTemplate = SearchMapper.searchTemplateToDomain(dto) as {
+        templateId: string;
+        name: string;
+        description?: string;
+        operationType: string;
+        baseQuery: typeof dto.baseQuery;
+        variables: Array<{ name: string; type: string; required: boolean }>;
+        isActive: boolean;
+        usageCount: number;
+        createdBy: string;
+        tags?: string[];
+      };
 
       expect(domainTemplate.templateId).toBe('template-123');
       expect(domainTemplate.name).toBe('Electronics Template');
@@ -637,7 +663,7 @@ describe('SearchMapper', () => {
         tags: ['books', 'literature']
       };
 
-      const dto = SearchMapper.searchTemplateToDto(domainTemplate);
+      const dto = SearchMapper.searchTemplateToDto(domainTemplate as unknown as Parameters<typeof SearchMapper.searchTemplateToDto>[0]);
 
       expect(dto.templateId).toBe('domain-template-123');
       expect(dto.name).toBe('Domain Template');
@@ -712,7 +738,12 @@ describe('SearchMapper', () => {
         }
       };
 
-      const domainConfig = SearchMapper.searchConfigurationToDomain(dto);
+      const domainConfig = SearchMapper.searchConfigurationToDomain(dto) as {
+        searchEngine: { type: string; version: string; endpoints: string[] };
+        indexSettings: { name: string };
+        searchSettings: { defaultStrategy: string; fuzzyMatching: { enabled: boolean } };
+        monitoring: { metricsEnabled: boolean };
+      };
 
       expect(domainConfig.searchEngine.type).toBe('elasticsearch');
       expect(domainConfig.searchEngine.version).toBe('8.5.0');
@@ -819,7 +850,7 @@ describe('SearchMapper', () => {
         }
       ];
 
-      const dtos = SearchMapper.searchResultsToDtoBatch(domainResults);
+      const dtos = SearchMapper.searchResultsToDtoBatch(domainResults as unknown as Parameters<typeof SearchMapper.searchResultsToDtoBatch>[0]);
 
       expect(dtos).toHaveLength(2);
       expect(dtos[0].productId).toBe('result-1');
@@ -890,12 +921,12 @@ describe('SearchMapper', () => {
         searchOptions: { strategy: 'hybrid', scope: 'products' }
       };
 
-      const invalidDto: any = {
+      const invalidDto = {
         filters: {},
         sorting: { field: 'invalid', direction: 'invalid' },
         pagination: { page: 0, limit: 0 },
         searchOptions: {}
-      };
+      } as unknown as Parameters<typeof SearchMapper.validateSearchRequest>[0];
 
       expect(SearchMapper.validateSearchRequest(validDto)).toBe(true);
       expect(SearchMapper.validateSearchRequest(invalidDto)).toBe(false);
@@ -923,7 +954,7 @@ describe('SearchMapper', () => {
         }
       };
 
-      const invalidDto: any = {
+      const invalidDto = {
         filters: {},
         sorting: { field: 'relevance', direction: 'desc' },
         pagination: { page: 1, limit: 20 },
@@ -931,7 +962,7 @@ describe('SearchMapper', () => {
         queryOptions: {},
         resultOptions: {},
         personalization: {}
-      };
+      } as Parameters<typeof SearchMapper.validateAdvancedSearchRequest>[0];
 
       expect(SearchMapper.validateAdvancedSearchRequest(validDto)).toBe(true);
       expect(SearchMapper.validateAdvancedSearchRequest(invalidDto)).toBe(false);
@@ -956,7 +987,7 @@ describe('SearchMapper', () => {
         updatedAt: new Date('2023-06-15')
       };
 
-      const invalidDto: any = {
+      const invalidDto = {
         templateId: '',
         name: '',
         category: 'invalid',
@@ -967,7 +998,7 @@ describe('SearchMapper', () => {
         createdBy: '',
         createdAt: 'not date',
         updatedAt: 'not date'
-      };
+      } as unknown as Parameters<typeof SearchMapper.validateSearchTemplate>[0];
 
       expect(SearchMapper.validateSearchTemplate(validDto)).toBe(true);
       expect(SearchMapper.validateSearchTemplate(invalidDto)).toBe(false);
@@ -977,36 +1008,36 @@ describe('SearchMapper', () => {
   describe('error handling', () => {
     it('should handle null DTO gracefully', () => {
       expect(() => {
-        SearchMapper.searchRequestToDomain(null as any);
+        SearchMapper.searchRequestToDomain(null as unknown as Parameters<typeof SearchMapper.searchRequestToDomain>[0]);
       }).toThrow();
 
       expect(() => {
-        SearchMapper.searchResultsToDto(null as any);
+        SearchMapper.searchResultsToDto(null as unknown as Parameters<typeof SearchMapper.searchResultsToDto>[0]);
       }).toThrow();
 
       expect(() => {
-        SearchMapper.searchResultToDto(null as any);
+        SearchMapper.searchResultToDto(null as unknown as Parameters<typeof SearchMapper.searchResultToDto>[0]);
       }).toThrow();
 
       expect(() => {
-        SearchMapper.facetToDto(null as any);
+        SearchMapper.facetToDto(null as unknown as Parameters<typeof SearchMapper.facetToDto>[0]);
       }).toThrow();
     });
 
     it('should handle undefined DTO gracefully', () => {
       expect(() => {
-        SearchMapper.searchRequestToDomain(undefined as any);
+        SearchMapper.searchRequestToDomain(undefined as unknown as Parameters<typeof SearchMapper.searchRequestToDomain>[0]);
       }).toThrow();
 
       expect(() => {
-        SearchMapper.searchResultsToDto(undefined as any);
+        SearchMapper.searchResultsToDto(undefined as unknown as Parameters<typeof SearchMapper.searchResultsToDto>[0]);
       }).toThrow();
     });
 
     it('should handle invalid domain objects', () => {
       const invalidDomain = {
         // Missing required fields
-      } as any;
+      } as Parameters<typeof SearchMapper.searchResultToDto>[0];
 
       expect(() => {
         SearchMapper.searchResultToDto(invalidDomain);
@@ -1050,7 +1081,7 @@ describe('SearchMapper', () => {
         }
       };
 
-      const domainQuery = SearchMapper.searchRequestToDomain(originalDto);
+      SearchMapper.searchRequestToDomain(originalDto);
       const roundtripDto = SearchMapper.searchResultsToDto({
         results: [],
         total: 0,
@@ -1100,7 +1131,7 @@ describe('SearchMapper', () => {
         updatedAt: new Date('2023-06-15T14:30:00Z')
       };
 
-      const dto = SearchMapper.searchResultToDto(originalResult);
+      const dto = SearchMapper.searchResultToDto(originalResult as unknown as Parameters<typeof SearchMapper.searchResultToDto>[0]);
 
       expect(dto.productId).toBe('integrity-result');
       expect(dto.name).toBe('Integrity Test Product');

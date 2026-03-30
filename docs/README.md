@@ -1,6 +1,6 @@
 # Documentation Index
 
-Central navigation for all Maysar platform documentation.
+Central navigation for all Maysar platform documentation. These pages describe the current module-based monolith unless a document is explicitly marked historical.
 
 ## Getting Started
 

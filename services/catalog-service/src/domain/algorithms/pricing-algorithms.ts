@@ -397,8 +397,9 @@ export class MarginOptimizationAlgorithm {
     optimalPrice = Math.max(optimalPrice, minMarginPrice);
 
     // Consider competitor pricing
+    let marketCapApplied = false;
     if (marketConstraints.competitorPrices.length > 0) {
-      const avgCompetitorPrice = marketConstraints.competitorPrices.reduce((a, b) => a + b, 0) /
+      const avgCompetitorPrice = marketConstraints.competitorPrices.reduce((a, b) => a + b, 0) / 
                                  marketConstraints.competitorPrices.length;
 
       // If target price is too far from market, adjust
@@ -409,17 +410,28 @@ export class MarginOptimizationAlgorithm {
         // If within reasonable range, use competitor-based pricing
         optimalPrice = avgCompetitorPrice * 1.02; // Position 2% above market for margin
       }
+
+      if (optimalPrice > marketConstraints.maxPrice) {
+        optimalPrice = marketConstraints.minPrice;
+        marketCapApplied = true;
+      }
     }
 
-    // Calculate final margins
-    const grossMargin = (optimalPrice - baseCost) / optimalPrice;
     const totalCost = baseCost + totalVariableCost;
-    const netMargin = (optimalPrice - totalCost) / optimalPrice;
 
-    // Ensure minimum margin constraints are met
-    if (netMargin < 0.05) { // Less than 5% margin
-      optimalPrice = totalCost * 1.05; // Ensure 5% minimum margin
+    // Ensure minimum margin constraints are met when the market cap allows it.
+    if (!marketCapApplied) {
+      const netMargin = (optimalPrice - totalCost) / optimalPrice;
+      if (netMargin < 0.05) { // Less than 5% margin
+        optimalPrice = totalCost * 1.05; // Ensure 5% minimum margin
+      }
     }
+
+    optimalPrice = Math.max(marketConstraints.minPrice, Math.min(marketConstraints.maxPrice, optimalPrice));
+
+    // Calculate final margins after all constraints are applied
+    const grossMargin = (optimalPrice - baseCost) / optimalPrice;
+    const netMargin = (optimalPrice - totalCost) / optimalPrice;
 
     // Determine strategy
     let recommendedStrategy = 'Standard margin optimization';

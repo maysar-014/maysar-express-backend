@@ -17,7 +17,7 @@ const getCookieToken = (req: Request): string | undefined => {
         return cookieValue;
     }
 
-    const headerCookie = req.headers.cookie;
+    const headerCookie = req.headers?.cookie;
     const rawCookie = Array.isArray(headerCookie)
         ? headerCookie.join('; ')
         : typeof headerCookie === 'string'
@@ -99,7 +99,7 @@ export const csrfValidationMiddleware = (req: Request, res: Response, next: Next
 
     if (!cookieToken || !headerToken) {
         if (process.env.CSRF_DEBUG === '1') {
-            const cookieHeader = req.headers.cookie;
+            const cookieHeader = req.headers?.cookie;
             const rawCookie = Array.isArray(cookieHeader)
                 ? cookieHeader.join('; ')
                 : typeof cookieHeader === 'string'

@@ -18,6 +18,75 @@ import {
   SearchValidationResponseDto
 } from '../dto/search-dto';
 
+type SearchDomainRecord = {
+  query?: string;
+  filters?: unknown;
+  sorting?: unknown;
+  pagination?: {
+    page?: number;
+    limit?: number;
+    [key: string]: unknown;
+  };
+  searchOptions?: unknown;
+  context?: unknown;
+  results?: SearchDomainRecord[];
+  total?: number;
+  facets?: SearchDomainRecord[];
+  suggestions?: SearchDomainRecord[];
+  analytics?: SearchDomainRecord;
+  searchMetadata?: unknown;
+  productId?: string;
+  name?: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  seller?: unknown;
+  type?: string;
+  tags?: string[];
+  status?: string;
+  relevanceScore?: number;
+  matchReasons?: unknown;
+  highlights?: unknown;
+  media?: unknown;
+  inventory?: unknown;
+  rating?: unknown;
+  distance?: number;
+  personalizedScore?: number;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  field?: string;
+  label?: string;
+  values?: unknown;
+  ranges?: unknown;
+  metadata?: Record<string, unknown>;
+  queryAnalysis?: unknown;
+  performance?: unknown;
+  userBehavior?: unknown;
+  searchPatterns?: unknown;
+  templateId?: string;
+  operationType?: string;
+  baseQuery?: string;
+  variables?: unknown[];
+  isActive?: boolean;
+  usageCount?: number;
+  createdBy?: string;
+  queryOptions?: Record<string, unknown>;
+  resultOptions?: {
+    fields?: unknown[];
+    [key: string]: unknown;
+  };
+  personalization?: {
+    enablePersonalization?: boolean;
+    [key: string]: unknown;
+  };
+  options?: unknown;
+  warnings?: unknown;
+  errors?: unknown;
+  isValid?: boolean;
+  corrections?: unknown;
+  [key: string]: unknown;
+};
+
 /**
  * Search Mapper
  * Handles transformations between search domain objects and DTOs
@@ -27,7 +96,7 @@ export class SearchMapper {
   /**
    * Map search request DTO to domain search query
    */
-  static searchRequestToDomain(dto: ProductSearchRequestDto): any {
+  static searchRequestToDomain(dto: ProductSearchRequestDto): SearchDomainRecord {
     return {
       query: dto.query,
       filters: dto.filters,
@@ -41,22 +110,34 @@ export class SearchMapper {
   /**
    * Map domain search results to search response DTO
    */
-  static searchResultsToDto(domain: any): ProductSearchResponseDto {
+  static searchResultsToDto(domain: SearchDomainRecord): ProductSearchResponseDto {
     return {
-      results: domain.results.map((result: any) => this.searchResultToDto(result)),
+      results: domain.results?.map((result: SearchDomainRecord) => this.searchResultToDto(result)) ?? [],
       total: domain.total,
-      facets: domain.facets?.map((facet: any) => this.facetToDto(facet)),
-      suggestions: domain.suggestions?.map((suggestion: any) => this.suggestionToDto(suggestion)),
+      facets: domain.facets?.map((facet: SearchDomainRecord) => this.facetToDto(facet)),
+      suggestions: domain.suggestions?.map((suggestion: SearchDomainRecord) => this.suggestionToDto(suggestion)),
       analytics: domain.analytics ? this.analyticsToDto(domain.analytics) : undefined,
       pagination: domain.pagination,
       searchMetadata: domain.searchMetadata
-    };
+    } as unknown as ProductSearchResponseDto;
   }
 
   /**
    * Map individual search result to DTO
    */
-  static searchResultToDto(domain: any): ProductSearchResultDto {
+  static searchResultToDto(domain: SearchDomainRecord): ProductSearchResultDto {
+    if (!domain || typeof domain !== 'object') {
+      throw new Error('Invalid search result domain object');
+    }
+
+    const requiredFields = ['productId', 'name', 'price'];
+    const missingField = requiredFields.find(
+      field => domain[field] === undefined || domain[field] === null
+    );
+    if (missingField) {
+      throw new Error(`Invalid search result domain object: missing ${missingField}`);
+    }
+
     return {
       productId: domain.productId,
       name: domain.name,
@@ -78,13 +159,13 @@ export class SearchMapper {
       personalizedScore: domain.personalizedScore,
       createdAt: domain.createdAt,
       updatedAt: domain.updatedAt
-    };
+    } as unknown as ProductSearchResultDto;
   }
 
   /**
    * Map search facet to DTO
    */
-  static facetToDto(domain: any): SearchFacetDto {
+  static facetToDto(domain: SearchDomainRecord): SearchFacetDto {
     return {
       field: domain.field,
       label: domain.label,
@@ -92,13 +173,13 @@ export class SearchMapper {
       values: domain.values,
       ranges: domain.ranges,
       metadata: domain.metadata
-    };
+    } as unknown as SearchFacetDto;
   }
 
   /**
    * Map search suggestion to DTO
    */
-  static suggestionToDto(domain: any): SearchSuggestionDto {
+  static suggestionToDto(domain: SearchDomainRecord): SearchSuggestionDto {
     return {
       type: domain.type,
       value: domain.value,
@@ -106,25 +187,25 @@ export class SearchMapper {
       relevance: domain.relevance,
       reason: domain.reason,
       metadata: domain.metadata
-    };
+    } as unknown as SearchSuggestionDto;
   }
 
   /**
    * Map search analytics to DTO
    */
-  static analyticsToDto(domain: any): SearchAnalyticsDto {
+  static analyticsToDto(domain: SearchDomainRecord): SearchAnalyticsDto {
     return {
       queryAnalysis: domain.queryAnalysis,
       performance: domain.performance,
       userBehavior: domain.userBehavior,
       searchPatterns: domain.searchPatterns
-    };
+    } as unknown as SearchAnalyticsDto;
   }
 
   /**
    * Map advanced search request to domain
    */
-  static advancedSearchRequestToDomain(dto: AdvancedSearchRequestDto): any {
+  static advancedSearchRequestToDomain(dto: AdvancedSearchRequestDto): SearchDomainRecord {
     return {
       ...this.searchRequestToDomain(dto),
       queryOptions: dto.queryOptions,
@@ -136,7 +217,7 @@ export class SearchMapper {
   /**
    * Map search template to domain
    */
-  static searchTemplateToDomain(dto: SearchTemplateDto): any {
+  static searchTemplateToDomain(dto: SearchTemplateDto): SearchDomainRecord {
     return {
       templateId: dto.templateId,
       name: dto.name,
@@ -150,13 +231,13 @@ export class SearchMapper {
       createdAt: dto.createdAt,
       updatedAt: dto.updatedAt,
       tags: dto.tags
-    };
+    } as unknown as SearchDomainRecord;
   }
 
   /**
    * Map domain search template to DTO
    */
-  static searchTemplateToDto(domain: any): SearchTemplateDto {
+  static searchTemplateToDto(domain: SearchDomainRecord): SearchTemplateDto {
     return {
       templateId: domain.templateId,
       name: domain.name,
@@ -170,48 +251,48 @@ export class SearchMapper {
       createdAt: domain.createdAt,
       updatedAt: domain.updatedAt,
       tags: domain.tags
-    };
+    } as unknown as SearchTemplateDto;
   }
 
   /**
    * Map search configuration to domain
    */
-  static searchConfigurationToDomain(dto: SearchConfigurationDto): any {
+  static searchConfigurationToDomain(dto: SearchConfigurationDto): SearchDomainRecord {
     return {
       searchEngine: dto.searchEngine,
       indexSettings: dto.indexSettings,
       searchSettings: dto.searchSettings,
       monitoring: dto.monitoring
-    };
+    } as unknown as SearchDomainRecord;
   }
 
   /**
    * Map domain search configuration to DTO
    */
-  static searchConfigurationToDto(domain: any): SearchConfigurationDto {
+  static searchConfigurationToDto(domain: SearchDomainRecord): SearchConfigurationDto {
     return {
       searchEngine: domain.searchEngine,
       indexSettings: domain.indexSettings,
       searchSettings: domain.searchSettings,
       monitoring: domain.monitoring
-    };
+    } as unknown as SearchConfigurationDto;
   }
 
   /**
    * Map search validation request to domain
    */
-  static validationRequestToDomain(dto: SearchValidationRequestDto): any {
+  static validationRequestToDomain(dto: SearchValidationRequestDto): SearchDomainRecord {
     return {
       query: dto.query,
       filters: dto.filters,
       options: dto.options
-    };
+    } as unknown as SearchDomainRecord;
   }
 
   /**
    * Map search validation response to DTO
    */
-  static validationResponseToDto(domain: any): SearchValidationResponseDto {
+  static validationResponseToDto(domain: SearchDomainRecord): SearchValidationResponseDto {
     return {
       isValid: domain.isValid,
       errors: domain.errors,
@@ -219,27 +300,27 @@ export class SearchMapper {
       suggestions: domain.suggestions,
       performance: domain.performance,
       corrections: domain.corrections
-    };
+    } as unknown as SearchValidationResponseDto;
   }
 
   /**
    * Batch mapping for search results
    */
-  static searchResultsToDtoBatch(domainResults: any[]): ProductSearchResultDto[] {
+  static searchResultsToDtoBatch(domainResults: SearchDomainRecord[]): ProductSearchResultDto[] {
     return domainResults.map(result => this.searchResultToDto(result));
   }
 
   /**
    * Batch mapping for search facets
    */
-  static facetsToDtoBatch(domainFacets: any[]): SearchFacetDto[] {
+  static facetsToDtoBatch(domainFacets: SearchDomainRecord[]): SearchFacetDto[] {
     return domainFacets.map(facet => this.facetToDto(facet));
   }
 
   /**
    * Batch mapping for search suggestions
    */
-  static suggestionsToDtoBatch(domainSuggestions: any[]): SearchSuggestionDto[] {
+  static suggestionsToDtoBatch(domainSuggestions: SearchDomainRecord[]): SearchSuggestionDto[] {
     return domainSuggestions.map(suggestion => this.suggestionToDto(suggestion));
   }
 
@@ -265,8 +346,11 @@ export class SearchMapper {
   static validateAdvancedSearchRequest(dto: AdvancedSearchRequestDto): boolean {
     return this.validateSearchRequest(dto) && !!(
       dto.queryOptions &&
+      Object.keys(dto.queryOptions).length > 0 &&
       dto.resultOptions &&
-      dto.personalization
+      Array.isArray(dto.resultOptions.fields) &&
+      dto.personalization &&
+      typeof dto.personalization.enablePersonalization === 'boolean'
     );
   }
 

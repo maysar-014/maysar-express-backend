@@ -1,3 +1,4 @@
+import { IUserRepository } from '../../domain/repositories';
 import { GetCODReputationUseCase } from './get-cod-reputation.use-case';
 
 describe('GetCODReputationUseCase', () => {
@@ -8,7 +9,7 @@ describe('GetCODReputationUseCase', () => {
         codEnabled: true,
         codReputationScore: 77
       })
-    };
+    } as unknown as IUserRepository;
     const useCase = new GetCODReputationUseCase(repo);
 
     const result = await useCase.execute('user-1');
@@ -30,7 +31,7 @@ describe('GetCODReputationUseCase', () => {
   it('throws when user does not exist', async () => {
     const useCase = new GetCODReputationUseCase({
       findById: jest.fn().mockResolvedValue(null)
-    });
+    } as unknown as IUserRepository);
 
     await expect(useCase.execute('missing')).rejects.toThrow('User missing not found');
   });

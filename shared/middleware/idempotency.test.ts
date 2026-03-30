@@ -1,33 +1,214 @@
-import { IdempotencyMiddleware, EventIdempotency } from './idempotency';
+const sharedRedisStores = new Map<string, Map<string, string>>();
+
+const getSharedStore = (url: string): Map<string, string> => {
+  const existing = sharedRedisStores.get(url);
+  if (existing) {
+    return existing;
+  }
+
+  const store = new Map<string, string>();
+  sharedRedisStores.set(url, store);
+  return store;
+};
+
+jest.mock('ioredis', () => {
+  class MockRedis {
+    private readonly store: Map<string, string>;
+
+    constructor(private readonly url: string) {
+      this.store = getSharedStore(url);
+    }
+
+    on(): this {
+      return this;
+    }
+
+    async get(key: string): Promise<string | null> {
+      return this.store.has(key) ? this.store.get(key) ?? null : null;
+    }
+
+    async set(key: string, value: string, ...args: Array<string | number>): Promise<'OK' | null> {
+      const isNx = args.includes('NX');
+      if (isNx && this.store.has(key)) {
+        return null;
+      }
+
+      this.store.set(key, value);
+      return 'OK';
+    }
+
+    async setex(key: string, _ttlSeconds: number, value: string): Promise<'OK'> {
+      this.store.set(key, value);
+      return 'OK';
+    }
+
+    async del(...keys: string[]): Promise<number> {
+      let deleted = 0;
+      for (const key of keys) {
+        if (this.store.delete(key)) {
+          deleted++;
+        }
+      }
+      return deleted;
+    }
+
+    multi() {
+      const store = this.store;
+      const operations: Array<() => void> = [];
+
+      return {
+        setex(key: string, _ttlSeconds: number, value: string) {
+          operations.push(() => {
+            store.set(key, value);
+          });
+          return this;
+        },
+        del(key: string) {
+          operations.push(() => {
+            store.delete(key);
+          });
+          return this;
+        },
+        async exec() {
+          operations.forEach((operation) => operation());
+          return [];
+        }
+      };
+    }
+
+    async flushdb(): Promise<'OK'> {
+      this.store.clear();
+      return 'OK';
+    }
+
+    async quit(): Promise<'OK'> {
+      return 'OK';
+    }
+  }
+
+  return {
+    __esModule: true,
+    default: MockRedis
+  };
+});
+
+jest.mock('../redis/ioredis-client', () => {
+  class MockRedisClient {
+    private readonly store: Map<string, string>;
+
+    constructor(private readonly url: string) {
+      this.store = getSharedStore(url);
+    }
+
+    on(): this {
+      return this;
+    }
+
+    async get(key: string): Promise<string | null> {
+      return this.store.has(key) ? this.store.get(key) ?? null : null;
+    }
+
+    async set(key: string, value: string, ...args: Array<string | number>): Promise<'OK' | null> {
+      const isNx = args.includes('NX');
+      if (isNx && this.store.has(key)) {
+        return null;
+      }
+
+      this.store.set(key, value);
+      return 'OK';
+    }
+
+    async setex(key: string, _ttlSeconds: number, value: string): Promise<'OK'> {
+      this.store.set(key, value);
+      return 'OK';
+    }
+
+    async del(...keys: string[]): Promise<number> {
+      let deleted = 0;
+      for (const key of keys) {
+        if (this.store.delete(key)) {
+          deleted++;
+        }
+      }
+      return deleted;
+    }
+
+    multi() {
+      const store = this.store;
+      const operations: Array<() => void> = [];
+
+      return {
+        setex(key: string, _ttlSeconds: number, value: string) {
+          operations.push(() => {
+            store.set(key, value);
+          });
+          return this;
+        },
+        del(key: string) {
+          operations.push(() => {
+            store.delete(key);
+          });
+          return this;
+        },
+        async exec() {
+          operations.forEach((operation) => operation());
+          return [];
+        }
+      };
+    }
+  }
+
+  return {
+    getSharedRedisClient: (url?: string) => new MockRedisClient(url || 'redis://mock'),
+    resolveRedisUrl: (url?: string) => url || 'redis://mock'
+  };
+});
+
 import { Request, Response } from 'express';
-import { GenericContainer, StartedTestContainer } from 'testcontainers';
 import Redis from 'ioredis';
+import { IdempotencyMiddleware, EventIdempotency } from './idempotency';
+
+type MockRequest = {
+  method: string;
+  headers: Record<string, string | string[] | undefined>;
+  baseUrl?: string;
+  path?: string;
+  body?: Record<string, unknown>;
+  params?: Record<string, string>;
+  query?: Record<string, unknown>;
+  user?: {
+    userId?: string;
+    roles?: string[];
+  };
+  service?: {
+    serviceId?: string;
+    serviceKey?: string;
+  };
+};
+
+type MockResponse = {
+  statusCode: number;
+  json: jest.Mock;
+  send: jest.Mock;
+  status: jest.Mock;
+  on: jest.Mock;
+};
 
 describe('Idempotency Infrastructure', () => {
-  let redisContainer: StartedTestContainer;
   let redis: Redis;
   let idempotencyMiddleware: IdempotencyMiddleware;
   let eventIdempotency: EventIdempotency;
   let redisUrl: string;
 
   beforeAll(async () => {
-    // Start Redis container for isolated testing
-    redisContainer = await new GenericContainer('redis:7-alpine')
-      .withExposedPorts(6379)
-      .start();
-
-    const host = redisContainer.getHost();
-    const port = redisContainer.getMappedPort(6379);
-    redisUrl = `redis://${host}:${port}`;
-
+    redisUrl = 'redis://memory-idempotency';
     redis = new Redis(redisUrl);
     idempotencyMiddleware = new IdempotencyMiddleware(redisUrl);
     eventIdempotency = new EventIdempotency(redisUrl);
-  }, 60000); // Increased timeout for container startup
+  });
 
   afterAll(async () => {
     await redis.quit();
-    await redisContainer.stop();
   });
 
   beforeEach(async () => {
@@ -38,27 +219,27 @@ describe('Idempotency Infrastructure', () => {
     test('should return cached response for duplicate requests', async () => {
       const idempotencyKey = 'test-key-123';
 
-      const req = {
+      const req: MockRequest = {
         method: 'POST',
         headers: { 'idempotency-key': idempotencyKey },
         baseUrl: '/api',
         path: '/orders',
         body: { test: 'data' }
-      } as unknown as Request;
+      };
 
-      const res = {
+      const res: MockResponse = {
         statusCode: 200,
         json: jest.fn().mockReturnThis(),
         send: jest.fn().mockReturnThis(),
         status: jest.fn().mockReturnThis(),
         on: jest.fn()
-      } as unknown as Response;
+      };
 
       const next = jest.fn();
       const middleware = idempotencyMiddleware.middleware();
 
       // First request
-      await middleware(req, res, next);
+      await middleware(req as Request, res as unknown as Response, next);
       expect(next).toHaveBeenCalledTimes(1);
 
       // Simulate successful response
@@ -66,16 +247,17 @@ describe('Idempotency Infrastructure', () => {
       res.json(responseBody);
 
       // Second request with same idempotency key
-      const req2 = { ...req } as Request;
-      const res2 = {
+      const req2 = { ...req } as MockRequest;
+      const res2: MockResponse = {
         statusCode: 200,
         json: jest.fn().mockReturnThis(),
+        send: jest.fn().mockReturnThis(),
         status: jest.fn().mockReturnThis(),
         on: jest.fn()
-      } as unknown as Response;
+      };
       const next2 = jest.fn();
 
-      await middleware(req2 as Request, res2, next2);
+      await middleware(req2 as Request, res2 as unknown as Response, next2);
 
       // Should return cached response, not call next
       expect(next2).not.toHaveBeenCalled();
@@ -86,7 +268,7 @@ describe('Idempotency Infrastructure', () => {
     test('should isolate cached responses by auth scope', async () => {
       const idempotencyKey = 'test-key-123';
 
-      const authenticatedRequest = {
+      const authenticatedRequest: MockRequest = {
         method: 'POST',
         baseUrl: '/api',
         path: '/orders',
@@ -95,43 +277,43 @@ describe('Idempotency Infrastructure', () => {
           authorization: 'Bearer token-one'
         },
         body: { test: 'data' }
-      } as unknown as Request;
+      };
 
-      const authenticatedResponse = {
+      const authenticatedResponse: MockResponse = {
         statusCode: 200,
         json: jest.fn().mockReturnThis(),
         send: jest.fn().mockReturnThis(),
         status: jest.fn().mockReturnThis(),
         on: jest.fn()
-      } as unknown as Response;
+      };
 
       const middleware = idempotencyMiddleware.middleware();
       const next = jest.fn();
 
-      await middleware(authenticatedRequest, authenticatedResponse, next);
+      await middleware(authenticatedRequest as Request, authenticatedResponse as unknown as Response, next);
       expect(next).toHaveBeenCalledTimes(1);
 
       authenticatedResponse.json({ ok: true });
 
-      const anonymousRequest = {
+      const anonymousRequest: MockRequest = {
         method: 'POST',
         baseUrl: '/api',
         path: '/orders',
         headers: { 'idempotency-key': idempotencyKey },
         body: { test: 'data' }
-      } as unknown as Request;
+      };
 
-      const anonymousResponse = {
+      const anonymousResponse: MockResponse = {
         statusCode: 200,
         json: jest.fn().mockReturnThis(),
         send: jest.fn().mockReturnThis(),
         status: jest.fn().mockReturnThis(),
         on: jest.fn()
-      } as unknown as Response;
+      };
 
       const nextAnonymous = jest.fn();
 
-      await middleware(anonymousRequest, anonymousResponse, nextAnonymous);
+      await middleware(anonymousRequest as Request, anonymousResponse as unknown as Response, nextAnonymous);
 
       expect(nextAnonymous).toHaveBeenCalledTimes(1);
       expect(anonymousResponse.status).not.toHaveBeenCalled();
@@ -141,7 +323,7 @@ describe('Idempotency Infrastructure', () => {
       const idempotencyKey = 'test-key-456';
       const middleware = idempotencyMiddleware.middleware();
 
-      const firstRequest = {
+      const firstRequest: MockRequest = {
         method: 'POST',
         baseUrl: '/api',
         path: '/orders',
@@ -154,24 +336,24 @@ describe('Idempotency Infrastructure', () => {
           roles: ['ADMIN']
         },
         body: { test: 'data' }
-      } as unknown as Request;
+      };
 
-      const firstResponse = {
+      const firstResponse: MockResponse = {
         statusCode: 200,
         json: jest.fn().mockReturnThis(),
         send: jest.fn().mockReturnThis(),
         status: jest.fn().mockReturnThis(),
         on: jest.fn()
-      } as unknown as Response;
+      };
 
       const next = jest.fn();
-      await middleware(firstRequest, firstResponse, next);
+      await middleware(firstRequest as Request, firstResponse as unknown as Response, next);
       expect(next).toHaveBeenCalledTimes(1);
 
       const responseBody = { orderId: '123', status: 'created' };
       firstResponse.json(responseBody);
 
-      const secondRequest = {
+      const secondRequest: MockRequest = {
         method: 'POST',
         baseUrl: '/api',
         path: '/orders',
@@ -184,17 +366,18 @@ describe('Idempotency Infrastructure', () => {
           roles: ['admin']
         },
         body: { test: 'data' }
-      } as unknown as Request;
+      };
 
-      const secondResponse = {
+      const secondResponse: MockResponse = {
         statusCode: 200,
         json: jest.fn().mockReturnThis(),
         status: jest.fn().mockReturnThis(),
+        send: jest.fn().mockReturnThis(),
         on: jest.fn()
-      } as unknown as Response;
+      };
 
       const nextSecond = jest.fn();
-      await middleware(secondRequest, secondResponse, nextSecond);
+      await middleware(secondRequest as Request, secondResponse as unknown as Response, nextSecond);
 
       expect(nextSecond).not.toHaveBeenCalled();
       expect(secondResponse.status).toHaveBeenCalledWith(200);
@@ -205,42 +388,42 @@ describe('Idempotency Infrastructure', () => {
       const idempotencyKey = 'test-key-fingerprint';
       const middleware = idempotencyMiddleware.middleware();
 
-      const firstRequest = {
+      const firstRequest: MockRequest = {
         method: 'POST',
         baseUrl: '/api',
         path: '/orders',
         headers: { 'idempotency-key': idempotencyKey },
         body: { quantity: 1 }
-      } as unknown as Request;
+      };
 
-      const firstResponse = {
+      const firstResponse: MockResponse = {
         statusCode: 200,
         json: jest.fn().mockReturnThis(),
         send: jest.fn().mockReturnThis(),
         status: jest.fn().mockReturnThis(),
         on: jest.fn()
-      } as unknown as Response;
+      };
 
       const next = jest.fn();
-      await middleware(firstRequest, firstResponse, next);
+      await middleware(firstRequest as Request, firstResponse as unknown as Response, next);
       expect(next).toHaveBeenCalledTimes(1);
       firstResponse.json({ ok: true, quantity: 1 });
 
-      const secondRequest = {
+      const secondRequest: MockRequest = {
         ...firstRequest,
         body: { quantity: 2 }
-      } as unknown as Request;
+      };
 
-      const secondResponse = {
+      const secondResponse: MockResponse = {
         statusCode: 200,
         json: jest.fn().mockReturnThis(),
         send: jest.fn().mockReturnThis(),
         status: jest.fn().mockReturnThis(),
         on: jest.fn()
-      } as unknown as Response;
+      };
 
       const nextSecond = jest.fn();
-      await middleware(secondRequest, secondResponse, nextSecond);
+      await middleware(secondRequest as Request, secondResponse as unknown as Response, nextSecond);
 
       expect(nextSecond).toHaveBeenCalledTimes(1);
       expect(secondResponse.status).not.toHaveBeenCalled();
@@ -250,65 +433,68 @@ describe('Idempotency Infrastructure', () => {
       const idempotencyKey = 'test-key-json-send';
       const middleware = idempotencyMiddleware.middleware();
 
-      const request = {
+      const request: MockRequest = {
         method: 'POST',
         baseUrl: '/api',
         path: '/orders',
         headers: { 'idempotency-key': idempotencyKey },
         body: { sku: 'prod-1' }
-      } as unknown as Request;
+      };
 
-      const firstResponse: Partial<Response> & { send: jest.Mock; json: jest.Mock } = {
+      const firstResponse: MockResponse = {
         statusCode: 200,
         status: jest.fn().mockReturnThis(),
         on: jest.fn(),
         send: jest.fn().mockReturnThis(),
         json: jest.fn()
       };
-      firstResponse.json.mockImplementation(function jsonImplementation(this: any, body: any) {
-        return this.send(JSON.stringify(body));
+      firstResponse.json.mockImplementation((body: unknown) => {
+        return firstResponse.send(JSON.stringify(body));
       });
 
       const next = jest.fn();
-      await middleware(request, firstResponse as Response, next);
+      await middleware(request as Request, firstResponse as unknown as Response, next);
       expect(next).toHaveBeenCalledTimes(1);
 
       const payload = { orderId: 'ord_1', status: 'created' };
       firstResponse.json(payload);
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      const secondResponse = {
+      const secondResponse: MockResponse = {
         statusCode: 200,
         json: jest.fn().mockReturnThis(),
         status: jest.fn().mockReturnThis(),
         on: jest.fn(),
         send: jest.fn().mockReturnThis()
-      } as unknown as Response;
+      };
       const nextSecond = jest.fn();
 
-      await middleware(request, secondResponse, nextSecond);
+      await middleware(request as Request, secondResponse as unknown as Response, nextSecond);
 
       expect(nextSecond).not.toHaveBeenCalled();
-      expect((secondResponse as any).status).toHaveBeenCalledWith(200);
-      expect((secondResponse as any).json).toHaveBeenCalledWith(payload);
+      expect(secondResponse.status).toHaveBeenCalledWith(200);
+      expect(secondResponse.json).toHaveBeenCalledWith(payload);
     });
 
     test('should require idempotency key for non-GET requests', async () => {
-      const req = {
+      const req: MockRequest = {
         method: 'POST',
         headers: {},
         body: { test: 'data' }
-      } as unknown as Request;
+      } as MockRequest;
 
-      const res = {
+      const res: MockResponse = {
         status: jest.fn().mockReturnThis(),
-        json: jest.fn().mockReturnThis()
-      } as unknown as Response;
+        json: jest.fn().mockReturnThis(),
+        send: jest.fn().mockReturnThis(),
+        statusCode: 200,
+        on: jest.fn()
+      };
 
       const next = jest.fn();
       const middleware = idempotencyMiddleware.middleware();
 
-      await middleware(req, res, next);
+      await middleware(req as Request, res as unknown as Response, next);
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
@@ -319,16 +505,16 @@ describe('Idempotency Infrastructure', () => {
     });
 
     test('should allow GET requests without idempotency key', async () => {
-      const req = {
+      const req: MockRequest = {
         method: 'GET',
         headers: {}
-      } as Request;
+      } as MockRequest;
 
       const res = {} as Response;
       const next = jest.fn();
       const middleware = idempotencyMiddleware.middleware();
 
-      await middleware(req, res, next);
+      await middleware(req as Request, res, next);
 
       expect(next).toHaveBeenCalledTimes(1);
     });
@@ -409,14 +595,14 @@ describe('Idempotency Infrastructure', () => {
         method: 'POST',
         headers: { 'idempotency-key': 'test-key' },
         body: { test: 'data' }
-      } as unknown as Request;
+      } as MockRequest;
 
       const res = {} as Response;
       const next = jest.fn();
       const middleware = badMiddleware.middleware();
 
       // Should not throw, should call next
-      await middleware(req, res, next);
+      await middleware(req as Request, res, next);
       expect(next).toHaveBeenCalledTimes(1);
     });
   });

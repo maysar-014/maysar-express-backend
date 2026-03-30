@@ -1,57 +1,123 @@
+import { Business, BusinessStatus } from '../../../domain/entities/business.entity';
+import { BusinessValidationService } from '../../../domain/services/business-validation.service';
+import { BusinessType } from '../../../domain/types/business.types';
 import { RegisterBusinessUseCase } from '../register-business.use-case';
 
-const mockRepository = { save: jest.fn(), findByRegistrationNumber: jest.fn() } as any;
-const mockEventBus = { publish: jest.fn() } as any;
-
 describe('RegisterBusinessUseCase', () => {
-    let useCase: RegisterBusinessUseCase;
+  const mockRepository = {
+    findByRegistrationNumber: jest.fn(),
+    findByTaxId: jest.fn(),
+    findByOwnerId: jest.fn(),
+    create: jest.fn()
+  };
 
-    beforeEach(() => {
-        jest.clearAllMocks();
-        useCase = new RegisterBusinessUseCase(mockRepository, mockEventBus);
-    });
+  const mockValidationService = {
+    validateBusiness: jest.fn()
+  };
 
-    it('should register business successfully', async () => {
-        mockRepository.findByRegistrationNumber.mockResolvedValue(null);
-        const result = await useCase.execute({ 
-            name: 'Test Business', 
-            registrationNumber: 'REG123',
-            ownerId: 'user-1'
-        });
-        expect(result.id).toBeDefined();
-        expect(mockRepository.save).toHaveBeenCalled();
-        expect(mockEventBus.publish).toHaveBeenCalledWith('BusinessRegistered.v1', expect.any(Object));
-    });
+  const mockSagaEventHandler = {
+    handleBusinessRegisteredEvent: jest.fn().mockResolvedValue(undefined)
+  };
 
-    it('should fail if registration number exists', async () => {
-        mockRepository.findByRegistrationNumber.mockResolvedValue({ id: 'existing' });
-        await expect(useCase.execute({ 
-            name: 'Test Business', 
-            registrationNumber: 'REG123',
-            ownerId: 'user-1'
-        })).rejects.toThrow('Business already registered');
-    });
+  const createUseCase = () =>
+    new RegisterBusinessUseCase(
+      mockRepository as never,
+      mockValidationService as unknown as BusinessValidationService,
+      mockSagaEventHandler as never
+    );
 
-    it('should validate required fields', async () => {
-        await expect(useCase.execute({ name: '', registrationNumber: 'REG123', ownerId: 'user-1' }))
-            .rejects.toThrow('Business name is required');
-    });
+  const validDto = {
+    name: 'Test Business',
+    businessType: BusinessType.SOLE_PROPRIETORSHIP,
+    registrationNumber: 'TZ-DAR-1234',
+    ownerId: 'user-1',
+    industry: ['retail', 'wholesale']
+  };
 
-    it('should validate registration number format', async () => {
-        await expect(useCase.execute({ name: 'Test', registrationNumber: '', ownerId: 'user-1' }))
-            .rejects.toThrow('Registration number is required');
-    });
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
-    it('should handle repository save failure', async () => {
-        mockRepository.findByRegistrationNumber.mockResolvedValue(null);
-        mockRepository.save.mockRejectedValue(new Error('Save failed'));
-        await expect(useCase.execute({ name: 'Test', registrationNumber: 'REG123', ownerId: 'user-1' }))
-            .rejects.toThrow('Save failed');
-    });
+  it('registers business successfully', async () => {
+    mockRepository.findByRegistrationNumber.mockResolvedValue(null);
+    mockRepository.findByTaxId.mockResolvedValue(null);
+    mockRepository.findByOwnerId.mockResolvedValue([]);
+    mockRepository.create.mockImplementation(async (business: Business) => business);
 
-    it('should set initial status to pending', async () => {
-        mockRepository.findByRegistrationNumber.mockResolvedValue(null);
-        await useCase.execute({ name: 'Test', registrationNumber: 'REG123', ownerId: 'user-1' });
-        expect(mockRepository.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'PENDING' }));
-    });
+    const useCase = createUseCase();
+    const result = await useCase.execute(validDto);
+
+    expect(result.status).toBe(BusinessStatus.PENDING);
+    expect(mockValidationService.validateBusiness).toHaveBeenCalledWith(expect.any(Business));
+    expect(mockRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Test Business',
+        ownerId: 'user-1',
+        businessType: BusinessType.SOLE_PROPRIETORSHIP,
+        industry: ['retail', 'wholesale']
+      })
+    );
+    expect(mockSagaEventHandler.handleBusinessRegisteredEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        aggregateId: result.id,
+        ownerId: 'user-1',
+        businessType: BusinessType.SOLE_PROPRIETORSHIP,
+        registrationNumber: 'TZ-DAR-1234',
+        metadata: expect.objectContaining({
+          industries: ['retail', 'wholesale']
+        })
+      })
+    );
+  });
+
+  it('throws if registration number already exists', async () => {
+    mockRepository.findByRegistrationNumber.mockResolvedValue({ id: 'existing' });
+
+    const useCase = createUseCase();
+    await expect(useCase.execute(validDto)).rejects.toThrow(
+      'Business with this registration number already exists'
+    );
+  });
+
+  it('validates required fields', async () => {
+    const useCase = createUseCase();
+    await expect(
+      useCase.execute({
+        ...validDto,
+        name: ''
+      })
+    ).rejects.toThrow('Business name must be at least 2 characters');
+  });
+
+  it('validates registration number format', async () => {
+    const useCase = createUseCase();
+    await expect(
+      useCase.execute({
+        ...validDto,
+        registrationNumber: 'REG123'
+      })
+    ).rejects.toThrow('Invalid registration number format');
+  });
+
+  it('propagates repository create failures', async () => {
+    mockRepository.findByRegistrationNumber.mockResolvedValue(null);
+    mockRepository.findByTaxId.mockResolvedValue(null);
+    mockRepository.findByOwnerId.mockResolvedValue([]);
+    mockRepository.create.mockRejectedValue(new Error('Save failed'));
+
+    const useCase = createUseCase();
+    await expect(useCase.execute(validDto)).rejects.toThrow('Save failed');
+  });
+
+  it('sets the initial status to pending', async () => {
+    mockRepository.findByRegistrationNumber.mockResolvedValue(null);
+    mockRepository.findByTaxId.mockResolvedValue(null);
+    mockRepository.findByOwnerId.mockResolvedValue([]);
+    mockRepository.create.mockImplementation(async (business: Business) => business);
+
+    const useCase = createUseCase();
+    const result = await useCase.execute(validDto);
+
+    expect(result.status).toBe(BusinessStatus.PENDING);
+  });
 });

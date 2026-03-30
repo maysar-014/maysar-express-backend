@@ -4,7 +4,7 @@
  * Validates RBAC, ABAC, resource ownership, and security policies
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { Response } from 'express';
 import {
   authorize,
   authorizePermissions,
@@ -14,7 +14,10 @@ import {
   AuthorizationMiddlewareFactory,
   Permission,
   PermissionCondition,
-  AuthzResult
+  DEFAULT_AUTHZ_CONFIG,
+  checkPermissionMatch,
+  evaluateCondition,
+  getNestedValue
 } from '../authorization.middleware';
 
 // Mock Express objects
@@ -28,10 +31,17 @@ const mockResponse = () => {
 };
 
 const mockNext = jest.fn();
+type GlobalAuthzMocks = typeof globalThis & {
+  checkUserPermissions?: jest.Mock;
+  checkResourceOwnership?: jest.Mock;
+};
+const globalAuthz = globalThis as GlobalAuthzMocks;
 
 describe('Authorization Middleware', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    globalAuthz.checkUserPermissions = jest.fn();
+    globalAuthz.checkResourceOwnership = jest.fn();
   });
 
   describe('authorize (Role-Based)', () => {
@@ -69,7 +79,11 @@ describe('Authorization Middleware', () => {
     });
 
     it('should allow access when user has inherited role', async () => {
-      const middleware = authorize('user');
+      const middleware = authorize('user', {
+        roleHierarchy: {
+          admin: ['user']
+        }
+      });
       const req = {
         user: {
           userId: 'user-123',
@@ -196,7 +210,7 @@ describe('Authorization Middleware', () => {
 
     it('should allow access when user has required permission', async () => {
       // Mock the permission check to return true
-      (global as any).checkUserPermissions.mockResolvedValue(true);
+      globalAuthz.checkUserPermissions = jest.fn().mockResolvedValue(true);
 
       const middleware = authorizePermissions(mockPermission);
       const req = {
@@ -216,8 +230,8 @@ describe('Authorization Middleware', () => {
 
     it('should allow access when user has wildcard permission', async () => {
       // Mock checkUserPermissions to return true
-      const originalCheckUserPermissions = (global as any).checkUserPermissions;
-      (global as any).checkUserPermissions = jest.fn().mockResolvedValue(true);
+      const originalCheckUserPermissions = globalAuthz.checkUserPermissions;
+      globalAuthz.checkUserPermissions = jest.fn().mockResolvedValue(true);
 
       const middleware = authorizePermissions(mockPermission, { enablePermissionCaching: false });
       const req = {
@@ -235,11 +249,11 @@ describe('Authorization Middleware', () => {
       expect(mockNext).toHaveBeenCalled();
 
       // Restore original function
-      (global as any).checkUserPermissions = originalCheckUserPermissions;
+      globalAuthz.checkUserPermissions = originalCheckUserPermissions;
     });
 
     it('should deny access when user lacks required permission', async () => {
-      const middleware = authorizePermissions(mockPermission);
+      const middleware = authorizePermissions(mockPermission, { enablePermissionCaching: false });
       const req = {
         user: {
           userId: 'user-123',
@@ -268,8 +282,8 @@ describe('Authorization Middleware', () => {
 
     it('should handle ABAC conditions', async () => {
       // Mock checkUserPermissions to return true
-      const originalCheckUserPermissions = (global as any).checkUserPermissions;
-      (global as any).checkUserPermissions = jest.fn().mockResolvedValue(true);
+      const originalCheckUserPermissions = globalAuthz.checkUserPermissions;
+      globalAuthz.checkUserPermissions = jest.fn().mockResolvedValue(true);
 
       const condition: PermissionCondition = {
         attribute: 'department',
@@ -301,7 +315,7 @@ describe('Authorization Middleware', () => {
       expect(mockNext).toHaveBeenCalled();
 
       // Restore original function
-      (global as any).checkUserPermissions = originalCheckUserPermissions;
+      globalAuthz.checkUserPermissions = originalCheckUserPermissions;
     });
 
     it('should deny access when ABAC conditions are not met', async () => {
@@ -338,8 +352,8 @@ describe('Authorization Middleware', () => {
 
     it('should support multiple permissions', async () => {
       // Mock checkUserPermissions to return true
-      const originalCheckUserPermissions = (global as any).checkUserPermissions;
-      (global as any).checkUserPermissions = jest.fn().mockResolvedValue(true);
+      const originalCheckUserPermissions = globalAuthz.checkUserPermissions;
+      globalAuthz.checkUserPermissions = jest.fn().mockResolvedValue(true);
 
       const permissions: Permission[] = [
         { resource: 'products', action: 'create' },
@@ -362,16 +376,16 @@ describe('Authorization Middleware', () => {
       expect(mockNext).toHaveBeenCalled();
 
       // Restore original function
-      (global as any).checkUserPermissions = originalCheckUserPermissions;
+      globalAuthz.checkUserPermissions = originalCheckUserPermissions;
     });
   });
 
   describe('authorizeResourceOwnership', () => {
     it('should allow access when user owns the resource', async () => {
       // Ensure the global mock returns true for this test
-      (global as any).checkResourceOwnership.mockReturnValue(true);
+      globalAuthz.checkResourceOwnership = jest.fn().mockReturnValue(true);
 
-      const middleware = authorizeResourceOwnership('products', 'id');
+      const middleware = authorizeResourceOwnership('products', 'id', { enableResourceOwnership: true });
       const req = {
         params: { id: 'prod-123' },
         user: {
@@ -388,7 +402,7 @@ describe('Authorization Middleware', () => {
     });
 
     it('should allow access when user is admin', async () => {
-      const middleware = authorizeResourceOwnership('products', 'id');
+      const middleware = authorizeResourceOwnership('products', 'id', { enableResourceOwnership: true });
       const req = {
         params: { id: 'prod-123' },
         user: {
@@ -406,10 +420,10 @@ describe('Authorization Middleware', () => {
 
     it('should deny access when user does not own the resource', async () => {
       // Mock checkResourceOwnership to return false
-      const originalCheckOwnership = (global as any).checkResourceOwnership;
-      (global as any).checkResourceOwnership = jest.fn().mockReturnValue(false);
+      const originalCheckOwnership = globalAuthz.checkResourceOwnership;
+      globalAuthz.checkResourceOwnership = jest.fn().mockReturnValue(false);
 
-      const middleware = authorizeResourceOwnership('products', 'id');
+      const middleware = authorizeResourceOwnership('products', 'id', { enableResourceOwnership: true });
       const req = {
         params: { id: 'prod-123' },
         user: {
@@ -432,11 +446,11 @@ describe('Authorization Middleware', () => {
       });
 
       // Restore original function
-      (global as any).checkResourceOwnership = originalCheckOwnership;
+      globalAuthz.checkResourceOwnership = originalCheckOwnership;
     });
 
     it('should deny access when resource ID parameter is missing', async () => {
-      const middleware = authorizeResourceOwnership('products', 'id');
+      const middleware = authorizeResourceOwnership('products', 'id', { enableResourceOwnership: true });
       const req = {
         params: {},
         user: {
@@ -628,8 +642,10 @@ describe('Authorization Middleware', () => {
         const requiredPerm: Permission = { resource: 'products', action: 'create' };
         const user = { userId: 'user-123' };
 
-        // Access private function for testing
-        const result = (global as any).checkPermissionMatch(userPerm, requiredPerm, user, { enableABAC: false });
+        const result = checkPermissionMatch(userPerm, requiredPerm, user, {
+          ...DEFAULT_AUTHZ_CONFIG,
+          enableABAC: false
+        });
 
         expect(result).toBe(true);
       });
@@ -639,7 +655,10 @@ describe('Authorization Middleware', () => {
         const requiredPerm: Permission = { resource: 'products', action: 'create' };
         const user = { userId: 'user-123' };
 
-        const result = (global as any).checkPermissionMatch(userPerm, requiredPerm, user, { enableABAC: false });
+        const result = checkPermissionMatch(userPerm, requiredPerm, user, {
+          ...DEFAULT_AUTHZ_CONFIG,
+          enableABAC: false
+        });
 
         expect(result).toBe(true);
       });
@@ -649,7 +668,10 @@ describe('Authorization Middleware', () => {
         const requiredPerm: Permission = { resource: 'products', action: 'create', scope: 'own' };
         const user = { userId: 'user-123' };
 
-        const result = (global as any).checkPermissionMatch(userPerm, requiredPerm, user, { enableABAC: false });
+        const result = checkPermissionMatch(userPerm, requiredPerm, user, {
+          ...DEFAULT_AUTHZ_CONFIG,
+          enableABAC: false
+        });
 
         expect(result).toBe(true);
       });
@@ -659,7 +681,10 @@ describe('Authorization Middleware', () => {
         const requiredPerm: Permission = { resource: 'orders', action: 'create' };
         const user = { userId: 'user-123' };
 
-        const result = (global as any).checkPermissionMatch(userPerm, requiredPerm, user, { enableABAC: false });
+        const result = checkPermissionMatch(userPerm, requiredPerm, user, {
+          ...DEFAULT_AUTHZ_CONFIG,
+          enableABAC: false
+        });
 
         expect(result).toBe(false);
       });
@@ -674,7 +699,7 @@ describe('Authorization Middleware', () => {
         };
         const user = { department: 'engineering' };
 
-        const result = (global as any).evaluateCondition(condition, user);
+        const result = evaluateCondition(condition, user);
 
         expect(result).toBe(true);
       });
@@ -687,7 +712,7 @@ describe('Authorization Middleware', () => {
         };
         const user = { department: 'engineering' };
 
-        const result = (global as any).evaluateCondition(condition, user);
+        const result = evaluateCondition(condition, user);
 
         expect(result).toBe(true);
       });
@@ -700,7 +725,7 @@ describe('Authorization Middleware', () => {
         };
         const user = { clearanceLevel: 'top-secret' };
 
-        const result = (global as any).evaluateCondition(condition, user);
+        const result = evaluateCondition(condition, user);
 
         expect(result).toBe(true);
       });
@@ -713,7 +738,7 @@ describe('Authorization Middleware', () => {
         };
         const user = { email: 'user@company.com' };
 
-        const result = (global as any).evaluateCondition(condition, user);
+        const result = evaluateCondition(condition, user);
 
         expect(result).toBe(true);
       });
@@ -726,7 +751,7 @@ describe('Authorization Middleware', () => {
         };
         const user = { profile: { level: 5 } };
 
-        const result = (global as any).evaluateCondition(condition, user);
+        const result = evaluateCondition(condition, user);
 
         expect(result).toBe(true);
       });
@@ -737,7 +762,7 @@ describe('Authorization Middleware', () => {
         const obj = { user: { profile: { level: 5 } } };
         const path = 'user.profile.level';
 
-        const result = (global as any).getNestedValue(obj, path);
+        const result = getNestedValue(obj, path);
 
         expect(result).toBe(5);
       });
@@ -746,7 +771,7 @@ describe('Authorization Middleware', () => {
         const obj = { user: { profile: { level: 5 } } };
         const path = 'user.settings.theme';
 
-        const result = (global as any).getNestedValue(obj, path);
+        const result = getNestedValue(obj, path);
 
         expect(result).toBeUndefined();
       });
@@ -803,8 +828,8 @@ describe('Authorization Middleware', () => {
       const res = mockResponse();
 
       // Mock permission check to throw error
-      const originalCheckUserPermissions = (global as any).checkUserPermissions;
-      (global as any).checkUserPermissions = jest.fn().mockRejectedValue(new Error('Database error'));
+      const originalCheckUserPermissions = globalAuthz.checkUserPermissions;
+      globalAuthz.checkUserPermissions = jest.fn().mockRejectedValue(new Error('Database error'));
 
       await middleware(req, res, mockNext);
 
@@ -818,7 +843,7 @@ describe('Authorization Middleware', () => {
       });
 
       // Restore original function
-      (global as any).checkUserPermissions = originalCheckUserPermissions;
+      globalAuthz.checkUserPermissions = originalCheckUserPermissions;
     });
 
     it('should provide detailed error information', async () => {

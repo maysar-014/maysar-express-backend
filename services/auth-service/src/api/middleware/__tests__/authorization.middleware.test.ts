@@ -3,20 +3,20 @@ import { AuthorizationMiddleware, AuthorizationMiddlewareFactory } from '../auth
 import { DEFAULT_AUTHZ_CONFIG } from '../authorization.middleware';
 import { logger } from '../../../infrastructure/services/logger.service';
 
-const prismaAuditLogCreateMock = jest.fn();
-const serviceDiscoveryGetUrlMock = jest.fn();
-
 jest.mock('../../../infrastructure/database/prisma-client', () => ({
   prisma: {
     auditLog: {
-      create: prismaAuditLogCreateMock
+      create: jest.fn()
+    },
+    product: {
+      findFirst: jest.fn()
     }
   }
 }));
 
 jest.mock('../../../infrastructure/services/service-discovery.service', () => ({
   serviceDiscovery: {
-    getServiceUrl: (...args: unknown[]) => serviceDiscoveryGetUrlMock(...args)
+    getServiceUrl: jest.fn()
   }
 }));
 
@@ -28,6 +28,23 @@ jest.mock('../../../infrastructure/services/logger.service', () => ({
     warn: jest.fn()
   }
 }));
+
+const prismaClientMock = jest.requireMock('../../../infrastructure/database/prisma-client') as {
+  prisma: {
+    auditLog: {
+      create: jest.Mock;
+    };
+    product: {
+      findFirst: jest.Mock;
+    };
+  };
+};
+
+const serviceDiscoveryMock = jest.requireMock('../../../infrastructure/services/service-discovery.service') as {
+  serviceDiscovery: {
+    getServiceUrl: jest.Mock;
+  };
+};
 
 describe('AuthorizationMiddleware', () => {
   let middleware: AuthorizationMiddleware;
@@ -73,8 +90,9 @@ describe('AuthorizationMiddleware', () => {
 
     // Reset mocks
     jest.clearAllMocks();
-    serviceDiscoveryGetUrlMock.mockReturnValue('http://catalog');
-    prismaAuditLogCreateMock.mockResolvedValue(undefined);
+    serviceDiscoveryMock.serviceDiscovery.getServiceUrl.mockReturnValue('http://catalog');
+    prismaClientMock.prisma.auditLog.create.mockResolvedValue(undefined);
+    prismaClientMock.prisma.product.findFirst.mockResolvedValue(null);
   });
 
   describe('Role-Based Authorization', () => {
@@ -97,7 +115,7 @@ describe('AuthorizationMiddleware', () => {
         success: false,
         error: {
           code: 'INSUFFICIENT_PERMISSIONS',
-          message: 'Insufficient permissions for this operation',
+          message: 'Insufficient role permissions',
           details: {
             requiredRoles: ['admin'],
             userRoles: ['user'],
@@ -145,7 +163,7 @@ describe('AuthorizationMiddleware', () => {
         action: 'read',
         scope: 'public'
       };
-      mockRequest.user!.permissions = ['products:read:public'];
+      mockRequest.user!.permissions = [permission as unknown as string];
       const permissionMiddleware = middleware.authorizePermissions(permission);
 
       await permissionMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
@@ -168,7 +186,7 @@ describe('AuthorizationMiddleware', () => {
         success: false,
         error: {
           code: 'INSUFFICIENT_PERMISSIONS',
-          message: 'Insufficient permissions for this operation',
+          message: 'Insufficient permissions',
           details: {
             requiredPermissions: [permission],
             userPermissions: [],
@@ -184,7 +202,13 @@ describe('AuthorizationMiddleware', () => {
         action: 'read',
         scope: 'public'
       };
-      mockRequest.user!.permissions = ['*:*:*'];
+      mockRequest.user!.permissions = [
+        {
+          resource: '*',
+          action: '*',
+          scope: '*'
+        } as unknown as string
+      ];
       const permissionMiddleware = middleware.authorizePermissions(permission);
 
       await permissionMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
@@ -205,7 +229,7 @@ describe('AuthorizationMiddleware', () => {
           scope: 'own'
         }
       ];
-      mockRequest.user!.permissions = ['products:read:public', 'orders:read:own'];
+      mockRequest.user!.permissions = permissions as unknown as string[];
       const permissionMiddleware = middleware.authorizePermissions(permissions);
 
       await permissionMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
@@ -217,10 +241,7 @@ describe('AuthorizationMiddleware', () => {
   describe('Resource Ownership Authorization', () => {
     it('should allow access to owned resource', async () => {
       mockRequest.params = { id: 'user-123' };
-      jest.spyOn(middleware as any, 'fetchJson').mockResolvedValueOnce({
-        statusCode: 200,
-        body: { ownerId: 'user-123' }
-      });
+      prismaClientMock.prisma.product.findFirst.mockResolvedValueOnce({ id: 'user-123' });
       const ownershipMiddleware = middleware.authorizeResourceOwnership('products', 'id');
 
       await ownershipMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
@@ -230,10 +251,7 @@ describe('AuthorizationMiddleware', () => {
 
     it('should deny access to non-owned resource', async () => {
       mockRequest.params = { id: 'user-456' };
-      jest.spyOn(middleware as any, 'fetchJson').mockResolvedValueOnce({
-        statusCode: 200,
-        body: { ownerId: 'user-999' }
-      });
+      prismaClientMock.prisma.product.findFirst.mockResolvedValueOnce(null);
       const ownershipMiddleware = middleware.authorizeResourceOwnership('products', 'id');
 
       await ownershipMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
@@ -251,10 +269,6 @@ describe('AuthorizationMiddleware', () => {
     it('should allow admin access to any resource', async () => {
       mockRequest.user!.roles = ['admin'];
       mockRequest.params = { id: 'user-456' };
-      jest.spyOn(middleware as any, 'fetchJson').mockResolvedValueOnce({
-        statusCode: 200,
-        body: { ownerId: 'user-999' }
-      });
       const ownershipMiddleware = middleware.authorizeResourceOwnership('products', 'id');
 
       await ownershipMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
@@ -298,7 +312,7 @@ describe('AuthorizationMiddleware', () => {
         success: false,
         error: {
           code: 'INSUFFICIENT_PERMISSIONS',
-          message: 'Insufficient permissions for this operation',
+          message: 'Insufficient role permissions',
           details: {
             requiredRoles: ['admin', 'superuser'],
             userRoles: ['user'],
@@ -329,7 +343,7 @@ describe('AuthorizationMiddleware', () => {
         success: false,
         error: {
           code: 'INSUFFICIENT_PERMISSIONS',
-          message: 'Insufficient permissions for this operation',
+          message: 'Insufficient role permissions',
           details: {
             requiredRoles: ['superuser'],
             userRoles: ['user'],
@@ -342,6 +356,7 @@ describe('AuthorizationMiddleware', () => {
 
   describe('Risk-Based Authentication', () => {
     it('should allow low-risk access without MFA', async () => {
+      mockRequest.user!.attributes!.accountCreated = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       mockRequest.user!.securityContext!.mfaEnabled = false;
       const riskMiddleware = middleware.authorizeWithRiskAssessment();
 
@@ -501,7 +516,7 @@ describe('AuthorizationMiddleware', () => {
         action: 'read',
         scope: 'public'
       };
-      mockRequest.user!.permissions = ['products:read:public'];
+      mockRequest.user!.permissions = [permission as unknown as string];
 
       const permissionMiddleware = middleware.authorizePermissions(permission);
 

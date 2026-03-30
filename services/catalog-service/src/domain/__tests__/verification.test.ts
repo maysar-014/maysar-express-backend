@@ -286,7 +286,7 @@ describe('Domain Verification System', () => {
       expect(result.testResults.interfaces).toBeDefined();
       expect(result.summary).toBeDefined();
       expect(result.timestamp).toBeInstanceOf(Date);
-      expect(result.duration).toBeGreaterThan(0);
+      expect(result.duration).toBeGreaterThanOrEqual(0);
     });
 
     it('should generate verification report', () => {

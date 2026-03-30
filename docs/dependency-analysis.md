@@ -1,8 +1,10 @@
 # User Service Separation: Dependency Analysis
 
+> Historical note: this document captures the earlier service-splitting analysis for user data ownership. The current codebase runs those flows inside the monolith, so treat the scenarios below as background context rather than the live runtime map.
+
 ## Executive Summary
 
-This document provides a comprehensive analysis of how services in the Maysar microservices architecture depend on user data, identifying the impact of separating user management into a dedicated User Service. The analysis covers current dependencies, data access patterns, and recommendations for service discovery and resilience patterns.
+This document provides a historical analysis of how the older split-service design depended on user data, identifying the impact of separating user management into a dedicated User Service. It is retained for context around the migration to the current modular monolith.
 
 ## Current Service Dependencies Analysis
 

@@ -213,6 +213,8 @@ export class MessageBus {
     this.isRunning = true;
     console.log('Starting message bus...');
 
+    await this.eventSubscriber.start();
+
     // Initialize default channels
     await this.initializeDefaultChannels();
 
@@ -231,6 +233,8 @@ export class MessageBus {
 
     // Stop processing pipelines
     await this.stopProcessingPipelines();
+
+    await this.eventSubscriber.stop();
 
     console.log('Message bus stopped');
   }
@@ -307,8 +311,6 @@ export class MessageBus {
    * Publish message to a channel
    */
   async publishToChannel(channelId: string, event: DomainEvent): Promise<void> {
-    if (!this.isRunning) return;
-
     const channel = this.channels.get(channelId);
     if (!channel) {
       throw new Error(`Channel not found: ${channelId}`);
@@ -335,7 +337,13 @@ export class MessageBus {
     if (!processedEvent) return; // Filtered out
 
     // Publish to channel subscribers
-    await this.eventPublisher.publish(processedEvent);
+    try {
+      await this.eventPublisher.publish(processedEvent);
+    } catch (error) {
+      console.error(`Failed to publish event ${event.eventId} to channel ${channelId}:`, error);
+      this.metrics.processingErrors++;
+      return;
+    }
 
     this.metrics.messagesProcessed++;
     this.metrics.lastActivity = new Date();

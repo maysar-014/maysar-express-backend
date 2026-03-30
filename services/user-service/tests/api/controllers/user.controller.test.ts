@@ -14,8 +14,11 @@ describe('UserController (basic)', () => {
   let mockGetUserUseCase: any;
   let mockUpdateUserUseCase: any;
   let mockVerifyEmailUseCase: any;
+  let mockRequestPasswordResetUseCase: any;
+  let mockResetPasswordUseCase: any;
   let mockEmailService: any;
   let mockNotificationClient: any;
+  let mockUserRepository: any;
 
   beforeEach(() => {
     mockCreateUserUseCase = { execute: jest.fn() };
@@ -29,8 +32,11 @@ describe('UserController (basic)', () => {
     mockGetUserUseCase = { execute: jest.fn() };
     mockUpdateUserUseCase = { execute: jest.fn() };
     mockVerifyEmailUseCase = { execute: jest.fn() };
+    mockRequestPasswordResetUseCase = { execute: jest.fn() };
+    mockResetPasswordUseCase = { execute: jest.fn() };
     mockEmailService = { sendPasswordResetEmail: jest.fn(), sendEmail: jest.fn() };
     mockNotificationClient = { notify: jest.fn() };
+    mockUserRepository = { findByEmail: jest.fn() };
 
     controller = new UserController(
       mockCreateUserUseCase,
@@ -44,8 +50,11 @@ describe('UserController (basic)', () => {
       mockGetUserUseCase,
       mockUpdateUserUseCase,
       mockVerifyEmailUseCase,
+      mockRequestPasswordResetUseCase,
+      mockResetPasswordUseCase,
       mockEmailService,
-      mockNotificationClient
+      mockNotificationClient,
+      mockUserRepository
     );
   });
 

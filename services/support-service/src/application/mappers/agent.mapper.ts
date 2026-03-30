@@ -3,6 +3,12 @@ import { AgentResponseDto } from '../dto/agent.dto';
 
 export class AgentMapper {
     public static toResponseDto(agent: SupportAgent): AgentResponseDto {
+        const metrics = agent.metrics || {
+            totalTicketsResolved: 0,
+            averageResolutionTime: undefined,
+            rating: undefined
+        };
+
         return {
             id: agent.id,
             userId: agent.userId,
@@ -11,9 +17,9 @@ export class AgentMapper {
             currentTicketCount: agent.currentTicketCount,
             isAvailable: agent.isAvailable,
             metrics: {
-                totalTicketsResolved: agent.metrics.totalTicketsResolved,
-                averageResolutionTime: agent.metrics.averageResolutionTime,
-                rating: agent.metrics.rating
+                totalTicketsResolved: metrics.totalTicketsResolved ?? 0,
+                averageResolutionTime: metrics.averageResolutionTime,
+                rating: metrics.rating
             },
             createdAt: agent.createdAt,
             updatedAt: agent.updatedAt
@@ -29,7 +35,7 @@ export class AgentMapper {
             currentTicketCount: persistence.currentTicketCount,
             isAvailable: persistence.isAvailable,
             metrics: {
-                totalTicketsResolved: persistence.totalTicketsResolved,
+                totalTicketsResolved: persistence.totalTicketsResolved ?? 0,
                 averageResolutionTime: persistence.averageResolutionTime,
                 rating: persistence.rating
             },

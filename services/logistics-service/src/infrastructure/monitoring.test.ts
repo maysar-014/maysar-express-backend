@@ -28,11 +28,13 @@ describe('InfrastructureMonitor', () => {
       getAllMetrics: jest.fn().mockReturnValue([
         {
           name: 'google-maps-api',
-          state: 'OPEN',
+          state: 'OPEN' as never,
           failedRequests: 5,
           totalRequests: 20,
+          successfulRequests: 15,
           lastSuccessTime: new Date('2026-03-08T10:00:00.000Z'),
           lastFailureTime: new Date('2026-03-08T10:05:00.000Z'),
+          consecutiveFailures: 5,
           consecutiveSuccesses: 0
         }
       ]),
@@ -144,20 +146,24 @@ describe('InfrastructureMonitor', () => {
         metrics: [
           {
             name: 'google-maps-api',
-            state: 'OPEN',
+            state: 'OPEN' as never,
             failedRequests: 10,
             totalRequests: 20,
+            successfulRequests: 10,
             lastFailureTime: new Date('2026-03-08T10:05:00.000Z'),
             lastSuccessTime: new Date('2026-03-08T10:00:00.000Z'),
+            consecutiveFailures: 10,
             consecutiveSuccesses: 0
           },
           {
             name: 'weather-api',
-            state: 'HALF_OPEN',
+            state: 'HALF_OPEN' as never,
             failedRequests: 2,
             totalRequests: 10,
+            successfulRequests: 8,
             lastFailureTime: new Date('2026-03-08T09:50:00.000Z'),
             lastSuccessTime: new Date('2026-03-08T09:58:00.000Z'),
+            consecutiveFailures: 2,
             consecutiveSuccesses: 2
           }
         ]

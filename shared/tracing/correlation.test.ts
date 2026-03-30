@@ -8,7 +8,7 @@ describe('Correlation & Tracing', () => {
   });
 
   afterAll(async () => {
-    await tracingService.stop();
+    await tracingService.stop().catch(() => undefined);
   });
 
   describe('Event Correlation', () => {

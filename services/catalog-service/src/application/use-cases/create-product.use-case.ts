@@ -1,5 +1,5 @@
 import { StructuredCreateProductDto } from '../dto/product.dto';
-import { StructuredProductAttributes } from '../../domain/value-objects/product-attributes.value-object';
+import { CategoryAttributeSchema, StructuredProductAttributes } from '../../domain/value-objects/product-attributes.value-object';
 import { DescriptionGeneratorEngine } from '../../domain/engines/description-generator.engine';
 import { SeoTitleGeneratorEngine } from '../../domain/engines/seo-title-generator.engine';
 import { SeoSlug } from '../../domain/value-objects/seo-slug.value-object';
@@ -44,15 +44,52 @@ export interface IProductRepository {
   ): Promise<void>;
 }
 
+type CategoryRecord = {
+  id: string;
+  name: string;
+  slug: string;
+  [key: string]: unknown;
+};
+
+type CategoryAttributeRecord = {
+  id: string;
+  name: string;
+  displayLabel: string;
+  type: string;
+  options?: unknown;
+  isRequired?: boolean;
+  placeholder?: string;
+};
+
+interface CategoryRepositoryLike {
+  findById(id: string): Promise<CategoryRecord | null>;
+}
+
+interface CategoryAttributeRepositoryLike {
+  findByCategory(categoryId: string): Promise<CategoryAttributeRecord[]>;
+}
+
+interface EventPublisherLike {
+  publish(event: unknown): Promise<void>;
+}
+
+interface IdGeneratorLike {
+  generate(): string;
+}
+
+interface DateTimeServiceLike {
+  now(): Date;
+}
+
 export class CreateProductUseCase {
   constructor(
     private readonly productRepository: IProductRepository,
-    private readonly categoryRepository: any,
-    private readonly categoryAttributeRepository: any,
-    private readonly productAttributeRepository: any,
-    private readonly eventPublisher: any,
-    private readonly idGenerator: any,
-    private readonly dateTimeService: any
+    private readonly categoryRepository: CategoryRepositoryLike,
+    private readonly categoryAttributeRepository: CategoryAttributeRepositoryLike,
+    private readonly productAttributeRepository: unknown,
+    private readonly eventPublisher: EventPublisherLike,
+    private readonly idGenerator: IdGeneratorLike,
+    private readonly dateTimeService: DateTimeServiceLike
   ) {}
 
   async execute(dto: StructuredCreateProductDto): Promise<CreateProductResponse> {
@@ -63,13 +100,13 @@ export class CreateProductUseCase {
       }
 
       const schemaData = await this.categoryAttributeRepository.findByCategory(dto.categoryId);
-      const schema = schemaData.map((s: any) => ({
+      const schema: CategoryAttributeSchema[] = schemaData.map((s) => ({
         id: s.id,
         name: s.name,
         displayLabel: s.displayLabel,
-        type: s.type,
-        options: s.options,
-        isRequired: s.isRequired,
+        type: s.type as CategoryAttributeSchema['type'],
+        options: Array.isArray(s.options) ? s.options.filter((option): option is string => typeof option === 'string') : undefined,
+        isRequired: Boolean(s.isRequired),
         placeholder: s.placeholder,
       }));
 
@@ -118,8 +155,8 @@ export class CreateProductUseCase {
         brand: dto.brand,
         productName: dto.productName,
         keyAttribute,
-        requiredAttributesFilled: schema.filter((s: any) => s.isRequired && dto.structuredAttributes[s.name]).length,
-        totalRequiredAttributes: schema.filter((s: any) => s.isRequired).length,
+        requiredAttributesFilled: schema.filter((s) => s.isRequired && dto.structuredAttributes[s.name]).length,
+        totalRequiredAttributes: schema.filter((s) => s.isRequired).length,
         imageCount: dto.mediaUrls?.length || 0,
         descriptionLength: composedDescription.length,
         isLeafCategory: true,
@@ -157,8 +194,8 @@ export class CreateProductUseCase {
       };
 
       const attributesToSave = schema
-        .filter((s: any) => dto.structuredAttributes[s.name])
-        .map((s: any) => ({
+        .filter((s) => dto.structuredAttributes[s.name])
+        .map((s) => ({
           attributeId: s.id,
           value: dto.structuredAttributes[s.name],
         }));

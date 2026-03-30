@@ -62,12 +62,13 @@ export class User {
 
   get id(): string { return this.props.id; }
   get publicCode(): string | undefined { return this.props.publicCode; }
-  get email(): Email { return typeof this.props.email === 'string' ? { toString: () => this.props.email as string } as Email : this.props.email as Email; }
+  get email(): string { return typeof this.props.email === 'string' ? this.props.email : this.props.email.toString(); }
   get role(): string { return this.props.role; }
   get status(): string { return this.props.status ?? UserStatus.ACTIVE; }
   get profile(): any { return this.props.profile; }
   get passwordHash(): PasswordHash { return this.props.passwordHash!; }
   get twoFactorSecret(): string | undefined { return this.props.twoFactorSecret; }
+  get kycStatus(): string | undefined { return this.props.kycStatus; }
   get createdAt(): Date { return this.props.createdAt!; }
   get isEmailVerified(): boolean { return this.props.emailVerified === true || this.props.isEmailVerified === true; }
   get name(): string | undefined { return this.props.name ?? this.props.profile?.name; }

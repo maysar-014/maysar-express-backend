@@ -75,7 +75,7 @@ describe('StructuredProductAttributes', () => {
     it('should throw on TEXT exceeding 500 chars', () => {
       const longText = 'a'.repeat(501);
       expect(() => {
-        StructuredProductAttributes.create({ color: longText }, schema);
+        StructuredProductAttributes.create({ volume: '5L', oil_type: 'Vegetable', color: longText }, schema);
       }).toThrow('must be 500 characters or less');
     });
 

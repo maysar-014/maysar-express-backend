@@ -20,6 +20,20 @@ jest.mock('../config/monitoring.config', () => ({
   logMonitoringConfigSummary: jest.fn()
 }));
 
+jest.mock('../config/database.config', () => ({
+  databaseManager: {
+    getPrisma: jest.fn(() => ({
+      $queryRaw: jest.fn().mockResolvedValue(undefined)
+    }))
+  }
+}));
+
+jest.mock('@shared/redis/ioredis-client', () => ({
+  getSharedRedisClient: jest.fn(() => ({
+    ping: jest.fn().mockResolvedValue('PONG')
+  }))
+}));
+
 type MockReq = Partial<Request> & { get: jest.Mock };
 type MockRes = Partial<Response> & {
   status: jest.Mock;
@@ -105,13 +119,13 @@ describe('error-handling.middleware', () => {
     expect(next).toHaveBeenCalled();
   });
 
-  it('adds service status and supports degraded recovery responses', () => {
+  it('adds service status and supports degraded recovery responses', async () => {
     const req = createReq() as Request & { degradedMode?: boolean; serviceStatus?: unknown };
     const res = createRes();
     const next = jest.fn() as jest.MockedFunction<NextFunction>;
     const originalJson = res.json as jest.Mock;
 
-    gracefulDegradationHandler(req, res as Response, next);
+    await gracefulDegradationHandler(req, res as Response, next);
     expect(req.serviceStatus).toBeDefined();
 
     recoveryHandler(req, res as Response, next);

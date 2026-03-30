@@ -1,5 +1,5 @@
 import { EngagementPolicy } from '../engagement-policy';
-import { ReputationTier } from '../../engines/reputation-engine';
+import { ReputationTier } from '../../entities/business-profile.entity';
 
 describe('EngagementPolicy', () => {
     it('should get daily limit for tier', () => {

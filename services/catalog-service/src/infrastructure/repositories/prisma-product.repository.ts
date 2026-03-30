@@ -56,10 +56,11 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
    */
   async save(product: any): Promise<any> {
     const productEntity = product as Product;
+    const productId = productEntity.getId().toString();
 
     // Extract basic product data
     const productData = {
-      id: productEntity.getId().toString(),
+      id: productId,
       sellerId: productEntity.getSellerId().toString(),
       title: productEntity.getName(),
       description: productEntity.getDescription(),
@@ -73,14 +74,14 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
     };
 
     // Extract variants data
-    const variants = productEntity.getVariants().map(variant => ({
-      id: variant.getId(),
-      sku: variant.getSku(),
-      name: variant.getName(),
-      price: variant.getPrice().toNumber(),
-      compareAtPrice: variant.getCompareAtPrice()?.toNumber(),
-      costPrice: variant.getCostPrice()?.toNumber(),
-      attributes: variant.getAttributes(),
+    const variants = productEntity.getVariants().map((variant, index) => ({
+      id: variant.getId?.() || `${productId}-variant-${index}`,
+      sku: variant.getSku?.() || `${productId}-sku-${index}`,
+      name: variant.getName?.() || productEntity.getName(),
+      price: this.resolveNumericValue(variant.getPrice?.(), 0) ?? 0,
+      compareAtPrice: this.resolveNumericValue(variant.getCompareAtPrice?.(), undefined),
+      costPrice: this.resolveNumericValue(variant.getCostPrice?.(), undefined),
+      attributes: variant.getAttributes?.() || {},
       status: VariantStatus.active
     }));
 
@@ -106,21 +107,19 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
         }
       });
 
-      // Handle variants - delete existing and create new ones
-      if (variants.length > 0) {
-        await tx.productVariant.deleteMany({
-          where: { productId: productData.id }
-        });
+      // Handle variants - delete existing and create new ones, even when empty.
+      await tx.productVariant.deleteMany({
+        where: { productId: productData.id }
+      });
 
-        await tx.productVariant.createMany({
-          data: variants.map(variant => ({
-            ...variant,
-            productId: productData.id,
-            attributes: variant.attributes || {},
-            status: variant.status
-          }))
-        });
-      }
+      await tx.productVariant.createMany({
+        data: variants.map(variant => ({
+          ...variant,
+          productId: productData.id,
+          attributes: variant.attributes || {},
+          status: variant.status
+        }))
+      });
 
       return savedProduct;
     });
@@ -191,7 +190,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
 
     if (!productData) return null;
 
-    return this.mapPrismaProductToDomain(productData);
+    return this.normalizeProductRecord(productData);
   }
 
   /**
@@ -207,7 +206,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       orderBy: { createdAt: 'desc' }
     });
 
-    return productsData.map((product: any) => this.mapPrismaProductToDomain(product));
+    return productsData.map((product: any) => this.normalizeProductRecord(product));
   }
 
   /**
@@ -223,7 +222,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       orderBy: { createdAt: 'desc' }
     });
 
-    return productsData.map((product: any) => this.mapPrismaProductToDomain(product));
+    return productsData.map((product: any) => this.normalizeProductRecord(product));
   }
 
   /**
@@ -285,7 +284,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       this.prisma.product.count({ where })
     ]);
 
-    const products = productsData.map(product => this.mapPrismaProductToDomain(product));
+    const products = productsData.map(product => this.normalizeProductRecord(product));
 
     return {
       products,
@@ -316,7 +315,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       }
     });
 
-    return this.mapPrismaProductToDomain(productData);
+    return productData;
   }
 
   /**
@@ -361,7 +360,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       return [];
     }
 
-    const productsData = await this.prisma.catalog_Product.findMany({
+    const productsData = await this.prisma.product.findMany({
       where,
       include: {
         category: true,
@@ -369,7 +368,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       }
     });
 
-    return productsData.map(product => this.mapPrismaProductToDomain(product));
+    return productsData.map(product => this.normalizeProductRecord(product));
   }
 
   /**
@@ -377,7 +376,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
    * Used for strong matching in catalog matching engine
    */
   async findByFingerprint(fingerprint: string, categoryId: string): Promise<Product[]> {
-    const productsData = await this.prisma.catalog_Product.findMany({
+    const productsData = await this.prisma.product.findMany({
       where: {
         fingerprint,
         categoryId
@@ -388,7 +387,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       }
     });
 
-    return productsData.map(product => this.mapPrismaProductToDomain(product));
+    return productsData.map(product => this.normalizeProductRecord(product));
   }
 
   /**
@@ -396,7 +395,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
    * Used for similarity matching in catalog matching engine
    */
   async findByCategoryAndBrand(categoryId: string, brand: string): Promise<Product[]> {
-    const productsData = await this.prisma.catalog_Product.findMany({
+    const productsData = await this.prisma.product.findMany({
       where: {
         categoryId,
         brand: {
@@ -410,7 +409,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       }
     });
 
-    return productsData.map(product => this.mapPrismaProductToDomain(product));
+    return productsData.map(product => this.normalizeProductRecord(product));
   }
 
   // Private helper methods
@@ -426,14 +425,125 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
     }
   }
 
-  private mapProductVisibility(visibility: ProductVisibility): Visibility {
-    switch (visibility) {
-      case ProductVisibility.PUBLIC: return Visibility.public;
-      case ProductVisibility.PRIVATE: return Visibility.private;
-      case ProductVisibility.SELLER_ONLY: return Visibility.private;
-      case ProductVisibility.B2B_ONLY: return Visibility.unlisted;
-      default: return Visibility.public;
+  private mapProductVisibility(visibility: ProductVisibility | string): Visibility {
+    switch (String(visibility).toLowerCase()) {
+      case 'public':
+        return Visibility.public;
+      case 'private':
+      case 'seller_only':
+        return Visibility.private;
+      case 'b2b_only':
+      case 'unlisted':
+        return Visibility.unlisted;
+      default:
+        return Visibility.public;
     }
+  }
+
+  private normalizeProductRecord(productData: any): any {
+    const variants = Array.isArray(productData.variants)
+      ? productData.variants.map((variant: any) => this.normalizeVariantRecord(variant))
+      : [];
+    const defaultVariant = variants[0];
+    const name = productData.name || productData.title || '';
+    const priceSource = productData.price ?? defaultVariant?.price ?? 0;
+    const currencySource = productData.currency ?? defaultVariant?.currency ?? 'USD';
+
+    return {
+      id: productData.id,
+      title: name,
+      name,
+      sellerId: productData.sellerId,
+      description: productData.description ?? '',
+      categoryId: productData.categoryId ?? '',
+      status: productData.status ?? 'draft',
+      visibility: productData.visibility ?? 'public',
+      type: productData.type ?? 'physical',
+      tags: Array.isArray(productData.tags) ? productData.tags : [],
+      attributes: productData.attributes || defaultVariant?.attributes || {},
+      price: {
+        amount: this.resolveNumericValue(priceSource, 0) ?? 0,
+        currency: this.resolveCurrency(currencySource)
+      },
+      variants,
+      category: productData.category ?? null,
+      createdAt: productData.createdAt ?? new Date(),
+      updatedAt: productData.updatedAt ?? new Date(),
+      publishedAt: productData.publishedAt ?? productData.published_at,
+      brand: productData.brand,
+      model: productData.model,
+      slug: productData.slug,
+      enablerEnabled: !!productData.enablerEnabled,
+      enablerCommissionRate: productData.enablerCommissionRate !== undefined
+        ? Number(productData.enablerCommissionRate)
+        : undefined
+    };
+  }
+
+  private normalizeVariantRecord(variantData: any): any {
+    const price = this.resolveNumericValue(variantData.price ?? variantData.getPrice?.(), 0) ?? 0;
+    const compareAtPrice = this.resolveNumericValue(
+      variantData.compareAtPrice ?? variantData.getCompareAtPrice?.(),
+      undefined
+    );
+    const costPrice = this.resolveNumericValue(variantData.costPrice ?? variantData.getCostPrice?.(), undefined);
+    const inventoryQuantity = this.resolveNumericValue(
+      variantData.inventoryQuantity ?? variantData.stock ?? variantData.getInventoryQuantity?.(),
+      0
+    ) ?? 0;
+
+    return {
+      id: variantData.id,
+      sku: variantData.sku,
+      name: variantData.name,
+      price,
+      compareAtPrice,
+      costPrice,
+      inventoryQuantity,
+      stock: inventoryQuantity,
+      attributes: variantData.attributes || {},
+      status: variantData.status || VariantStatus.active
+    };
+  }
+
+  private resolveNumericValue(value: any, fallback?: number): number | undefined {
+    if (value === null || value === undefined) {
+      return fallback;
+    }
+
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : fallback;
+    }
+
+    if (typeof value === 'object') {
+      if (typeof value.toNumber === 'function') {
+        const converted = Number(value.toNumber());
+        return Number.isFinite(converted) ? converted : fallback;
+      }
+
+      if (typeof value.amount === 'number') {
+        return value.amount;
+      }
+
+      if (typeof value.value === 'number') {
+        return value.value;
+      }
+    }
+
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  private resolveCurrency(value: any, fallback: string = 'USD'): string {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+
+    if (value && typeof value === 'object' && typeof value.currency === 'string') {
+      return value.currency;
+    }
+
+    return fallback;
   }
 
   private mapPrismaProductToDomain(productData: any): Product {

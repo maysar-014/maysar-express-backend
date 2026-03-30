@@ -1,5 +1,5 @@
-import { DescriptionGeneratorEngine } from '../description-generator.engine';
-import { StructuredProductAttributes } from '../../value-objects/product-attributes.value-object';
+import { DescriptionGeneratorEngine } from './description-generator.engine';
+import { StructuredProductAttributes } from '../value-objects/product-attributes.value-object';
 
 describe('DescriptionGeneratorEngine', () => {
   const schema = [
@@ -53,7 +53,7 @@ describe('DescriptionGeneratorEngine', () => {
 
     it('should extract specifications from attributes', () => {
       const attrs = StructuredProductAttributes.create(
-        { volume: '5L', oil_type: 'Vegetable' },
+        { volume: '5L', oil_type: 'Vegetable', capacity: '5L' },
         schema
       );
       const desc = DescriptionGeneratorEngine.generate(attrs, 'cooking-oil', 'Cooking Oil', 'Azam');

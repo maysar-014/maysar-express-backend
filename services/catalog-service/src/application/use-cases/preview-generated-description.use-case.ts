@@ -1,4 +1,3 @@
-﻿// @ts-nocheck
 /**
  * Preview Generated Description Use Case
  * Generates and returns preview of product description without saving
@@ -11,9 +10,25 @@ import { SeoTitleGeneratorEngine } from '../../domain/engines/seo-title-generato
 import { SeoSlug } from '../../domain/value-objects/seo-slug.value-object';
 import { ProductQualityPolicy } from '../../domain/policies/product-quality.policy';
 
+export interface PreviewCategoryAttributeRecord {
+  id: string;
+  name: string;
+  displayLabel: string;
+  type: 'TEXT' | 'NUMBER' | 'SELECT' | 'BOOLEAN';
+  options?: string | string[];
+  isRequired: boolean;
+  placeholder?: string;
+}
+
+export interface PreviewCategoryRecord {
+  name: string;
+  slug: string;
+  children?: unknown[];
+}
+
 export interface IPreviewRepository {
-  findCategoryById(categoryId: string): Promise<any | null>;
-  findCategoryAttributesByCategory(categoryId: string): Promise<any[]>;
+  findCategoryById(categoryId: string): Promise<PreviewCategoryRecord | null>;
+  findCategoryAttributesByCategory(categoryId: string): Promise<PreviewCategoryAttributeRecord[]>;
 }
 
 export class PreviewGeneratedDescriptionUseCase {
@@ -33,7 +48,7 @@ export class PreviewGeneratedDescriptionUseCase {
       name: s.name,
       displayLabel: s.displayLabel,
       type: s.type,
-      options: s.options ? (typeof s.options === 'string' ? JSON.parse(s.options) : s.options) : undefined,
+      options: s.options ? (typeof s.options === 'string' ? JSON.parse(s.options) as string[] : s.options) : undefined,
       isRequired: s.isRequired,
       placeholder: s.placeholder,
     }));

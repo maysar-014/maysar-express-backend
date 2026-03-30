@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../../infrastructure/services/logger.service';
 
+type AsyncHandler = (req: Request, res: Response, next: NextFunction) => unknown;
+
 export class APIError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
@@ -67,7 +69,7 @@ export const errorHandler = (
   });
 };
 
-export const asyncHandler = (fn: Function) => {
+export const asyncHandler = (fn: AsyncHandler) => {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };

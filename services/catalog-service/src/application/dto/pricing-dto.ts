@@ -4,13 +4,44 @@
  * Application layer data contracts for pricing commands and results
  */
 
-import { z } from 'zod'; // Assuming Zod for validation schemas
-
 /**
  * Pricing Strategy Types
  */
 export type PricingStrategy = 'fixed' | 'percentage' | 'formula';
 export type PricingRuleType = 'fixed_discount' | 'percentage_discount' | 'fixed_price' | 'buy_get';
+export type PricingRecord = Record<string, unknown>;
+
+type UpdatePricingCommandLike = {
+  productId?: unknown;
+  pricingStrategy?: unknown;
+  pricingValue?: unknown;
+  currency?: unknown;
+  effectiveDate?: unknown;
+  expiryDate?: unknown;
+  reason?: unknown;
+  requestedBy?: unknown;
+  metadata?: PricingRecord;
+};
+
+type BulkUpdatePricingCommandLike = UpdatePricingCommandLike & {
+  productIds?: unknown[];
+  sellerId?: unknown;
+  requestId?: unknown;
+};
+
+type PricingRuleLike = {
+  ruleId?: unknown;
+  ruleType?: unknown;
+  name?: unknown;
+  description?: unknown;
+  value?: unknown;
+  conditions?: unknown;
+  priority?: unknown;
+  isActive?: unknown;
+  validFrom?: unknown;
+  validTo?: unknown;
+  metadata?: PricingRecord;
+};
 
 /**
  * Price Update Command DTO
@@ -25,7 +56,7 @@ export interface UpdatePricingCommandDto {
   expiryDate?: Date;
   reason?: string;
   requestedBy: string;
-  metadata?: Record<string, any>;
+  metadata?: PricingRecord;
 }
 
 /**
@@ -62,7 +93,7 @@ export interface PricingRuleDto {
   isActive: boolean;
   validFrom?: Date;
   validTo?: Date;
-  metadata?: Record<string, any>;
+  metadata?: PricingRecord;
 }
 
 /**
@@ -73,8 +104,8 @@ export interface PricingConditionDto {
   conditionId: string;
   type: 'min_quantity' | 'max_quantity' | 'customer_segment' | 'first_time' | 'loyalty_tier' | 'time_range' | 'location';
   operator: 'equals' | 'greater_than' | 'less_than' | 'between' | 'in' | 'not_in' | 'contains';
-  value: any;
-  metadata?: Record<string, any>;
+  value: unknown;
+  metadata?: PricingRecord;
 }
 
 /**
@@ -413,70 +444,79 @@ export interface PricingSimulationResultDto {
 /**
  * Type guards for runtime type checking
  */
-export function isUpdatePricingCommandDto(obj: any): obj is UpdatePricingCommandDto {
+export function isUpdatePricingCommandDto(obj: unknown): obj is UpdatePricingCommandDto {
+  if (obj === null || obj === undefined || typeof obj !== 'object') {
+    return false;
+  }
+
+  const candidate = obj as UpdatePricingCommandLike;
   return (
-    obj &&
-    typeof obj === 'object' &&
-    typeof obj.productId === 'string' &&
-    obj.productId.length > 0 &&
-    ['fixed', 'percentage', 'formula'].includes(obj.pricingStrategy) &&
-    typeof obj.pricingValue === 'number' &&
-    obj.pricingValue > 0 &&
-    (!obj.currency || (typeof obj.currency === 'string' && obj.currency.length === 3)) &&
-    (!obj.effectiveDate || obj.effectiveDate instanceof Date) &&
-    (!obj.expiryDate || obj.expiryDate instanceof Date) &&
-    (!obj.expiryDate || !obj.effectiveDate || obj.effectiveDate < obj.expiryDate) &&
-    (!obj.reason || (typeof obj.reason === 'string' && obj.reason.length <= 500)) &&
-    typeof obj.requestedBy === 'string' &&
-    obj.requestedBy.length > 0
+    typeof candidate.productId === 'string' &&
+    candidate.productId.length > 0 &&
+    ['fixed', 'percentage', 'formula'].includes(candidate.pricingStrategy as PricingStrategy) &&
+    typeof candidate.pricingValue === 'number' &&
+    candidate.pricingValue > 0 &&
+    (!candidate.currency || (typeof candidate.currency === 'string' && candidate.currency.length === 3)) &&
+    (!candidate.effectiveDate || candidate.effectiveDate instanceof Date) &&
+    (!candidate.expiryDate || candidate.expiryDate instanceof Date) &&
+    (!candidate.expiryDate || !candidate.effectiveDate || candidate.effectiveDate < candidate.expiryDate) &&
+    (!candidate.reason || (typeof candidate.reason === 'string' && candidate.reason.length <= 500)) &&
+    typeof candidate.requestedBy === 'string' &&
+    candidate.requestedBy.length > 0
   );
 }
 
-export function isBulkUpdatePricingCommandDto(obj: any): obj is BulkUpdatePricingCommandDto {
+export function isBulkUpdatePricingCommandDto(obj: unknown): obj is BulkUpdatePricingCommandDto {
+  if (obj === null || obj === undefined || typeof obj !== 'object') {
+    return false;
+  }
+
+  const candidate = obj as BulkUpdatePricingCommandLike;
   return (
-    obj &&
-    typeof obj === 'object' &&
-    Array.isArray(obj.productIds) &&
-    obj.productIds.length >= 1 &&
-    obj.productIds.length <= 1000 &&
-    obj.productIds.every((id: any) => typeof id === 'string') &&
-    ['fixed', 'percentage', 'formula'].includes(obj.pricingStrategy) &&
-    typeof obj.pricingValue === 'number' &&
-    obj.pricingValue >= -100 &&
-    obj.pricingValue <= 1000 &&
-    (!obj.currency || (typeof obj.currency === 'string' && obj.currency.length === 3)) &&
-    (!obj.effectiveDate || obj.effectiveDate instanceof Date) &&
-    (!obj.expiryDate || obj.expiryDate instanceof Date) &&
-    (!obj.sellerId || typeof obj.sellerId === 'string') &&
-    typeof obj.reason === 'string' &&
-    obj.reason.length > 0 &&
-    obj.reason.length <= 500 &&
-    typeof obj.requestId === 'string' &&
-    obj.requestId.length > 0 &&
-    typeof obj.requestedBy === 'string' &&
-    obj.requestedBy.length > 0
+    Array.isArray(candidate.productIds) &&
+    candidate.productIds.length >= 1 &&
+    candidate.productIds.length <= 1000 &&
+    candidate.productIds.every((id) => typeof id === 'string') &&
+    ['fixed', 'percentage', 'formula'].includes(candidate.pricingStrategy as PricingStrategy) &&
+    typeof candidate.pricingValue === 'number' &&
+    candidate.pricingValue >= -100 &&
+    candidate.pricingValue <= 1000 &&
+    (!candidate.currency || (typeof candidate.currency === 'string' && candidate.currency.length === 3)) &&
+    (!candidate.effectiveDate || candidate.effectiveDate instanceof Date) &&
+    (!candidate.expiryDate || candidate.expiryDate instanceof Date) &&
+    (!candidate.sellerId || typeof candidate.sellerId === 'string') &&
+    typeof candidate.reason === 'string' &&
+    candidate.reason.length > 0 &&
+    candidate.reason.length <= 500 &&
+    typeof candidate.requestId === 'string' &&
+    candidate.requestId.length > 0 &&
+    typeof candidate.requestedBy === 'string' &&
+    candidate.requestedBy.length > 0
   );
 }
 
-export function isPricingRuleDto(obj: any): obj is PricingRuleDto {
+export function isPricingRuleDto(obj: unknown): obj is PricingRuleDto {
+  if (obj === null || obj === undefined || typeof obj !== 'object') {
+    return false;
+  }
+
+  const candidate = obj as PricingRuleLike;
   return (
-    obj &&
-    typeof obj === 'object' &&
-    typeof obj.ruleId === 'string' &&
-    obj.ruleId.length > 0 &&
-    ['fixed_discount', 'percentage_discount', 'fixed_price', 'buy_get'].includes(obj.ruleType) &&
-    typeof obj.name === 'string' &&
-    obj.name.length > 0 &&
-    obj.name.length <= 100 &&
-    (!obj.description || (typeof obj.description === 'string' && obj.description.length <= 500)) &&
-    typeof obj.value === 'number' &&
-    (!obj.conditions || Array.isArray(obj.conditions)) &&
-    typeof obj.priority === 'number' &&
-    obj.priority >= 0 &&
-    obj.priority <= 100 &&
-    typeof obj.isActive === 'boolean' &&
-    (!obj.validFrom || obj.validFrom instanceof Date) &&
-    (!obj.validTo || obj.validTo instanceof Date)
+    typeof candidate.ruleId === 'string' &&
+    candidate.ruleId.length > 0 &&
+    ['fixed_discount', 'percentage_discount', 'fixed_price', 'buy_get'].includes(candidate.ruleType as PricingRuleType) &&
+    typeof candidate.name === 'string' &&
+    candidate.name.length > 0 &&
+    candidate.name.length <= 100 &&
+    (!candidate.description || (typeof candidate.description === 'string' && candidate.description.length <= 500)) &&
+    typeof candidate.value === 'number' &&
+    (!candidate.conditions || Array.isArray(candidate.conditions)) &&
+    typeof candidate.priority === 'number' &&
+    candidate.priority >= 0 &&
+    candidate.priority <= 100 &&
+    typeof candidate.isActive === 'boolean' &&
+    (!candidate.validFrom || candidate.validFrom instanceof Date) &&
+    (!candidate.validTo || candidate.validTo instanceof Date)
   );
 }
 
@@ -484,7 +524,7 @@ export function isPricingRuleDto(obj: any): obj is PricingRuleDto {
  * DTO Factory Functions
  * Helper functions for creating validated DTOs
  */
-export function createUpdatePricingCommand(data: any): UpdatePricingCommandDto {
+export function createUpdatePricingCommand(data: unknown): UpdatePricingCommandDto {
   if (!isUpdatePricingCommandDto(data)) {
     throw new Error('Invalid UpdatePricingCommandDto data');
   }
@@ -495,7 +535,7 @@ export function createUpdatePricingCommand(data: any): UpdatePricingCommandDto {
   };
 }
 
-export function createBulkUpdatePricingCommand(data: any): BulkUpdatePricingCommandDto {
+export function createBulkUpdatePricingCommand(data: unknown): BulkUpdatePricingCommandDto {
   if (!isBulkUpdatePricingCommandDto(data)) {
     throw new Error('Invalid BulkUpdatePricingCommandDto data');
   }
@@ -503,7 +543,7 @@ export function createBulkUpdatePricingCommand(data: any): BulkUpdatePricingComm
   return data;
 }
 
-export function createPricingRule(data: any): PricingRuleDto {
+export function createPricingRule(data: unknown): PricingRuleDto {
   if (!isPricingRuleDto(data)) {
     throw new Error('Invalid PricingRuleDto data');
   }

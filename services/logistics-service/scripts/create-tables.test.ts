@@ -39,14 +39,14 @@ describe('create-tables script', () => {
     const execSync = jest.fn(() => {
       throw new Error('migration-failed');
     });
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const stderrSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
     jest.doMock('child_process', () => ({ execSync }));
 
     require('./create-tables');
     await flush();
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.any(Error));
+    expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining('migration-failed'));
   });
 });
 

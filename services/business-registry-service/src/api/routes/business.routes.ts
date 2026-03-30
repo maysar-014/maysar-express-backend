@@ -18,7 +18,10 @@ import {
   validateReactivateBusiness,
   validateCreateBusinessDocument,
   validateCreateComplianceRecord,
-  validateBusinessIdParam
+  validateBusinessIdParam,
+  validatePublicSellerQuery,
+  validatePublicSellerIdParam,
+  validatePublicIndustryParam
 } from '../middleware/validation.middleware';
 import { SagaEventHandler } from '../../application/sagas/saga-event-handler';
 import { MailerAdapter, ComplianceAdapter, CapabilityAdapter } from '../../infrastructure/adapters';
@@ -82,6 +85,26 @@ export function createBusinessRoutes(): Router {
 
 export function createLegacyBusinessRoutes(): Router {
   return createConfiguredBusinessRoutes('legacy');
+}
+
+export function createPublicBusinessRoutes(): Router {
+  const router = Router();
+  const controller = initializeController();
+
+  router.get('/sellers', validatePublicSellerQuery, (req, res, next) =>
+    controller.listPublicSellers(req, res).catch(next)
+  );
+  router.get('/sellers/:sellerId/industries', validatePublicSellerIdParam, (req, res, next) =>
+    controller.getPublicSellerIndustries(req, res).catch(next)
+  );
+  router.get('/sellers/:sellerId', validatePublicSellerIdParam, (req, res, next) =>
+    controller.getPublicSellerById(req, res).catch(next)
+  );
+  router.get('/industries/:industry/sellers', validatePublicIndustryParam, validatePublicSellerQuery, (req, res, next) =>
+    controller.listSellersByIndustry(req, res).catch(next)
+  );
+
+  return router;
 }
 
 function createConfiguredBusinessRoutes(mode: BusinessRouteMode): Router {

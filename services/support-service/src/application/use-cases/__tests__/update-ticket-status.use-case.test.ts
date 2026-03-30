@@ -1,5 +1,6 @@
 import { UpdateTicketStatusUseCase } from '../update-ticket-status.use-case';
 import { UpdateTicketStatusDto } from '../../dto/ticket.dto';
+import { TicketStatus } from '../../../domain/types';
 
 describe('UpdateTicketStatusUseCase', () => {
     let useCase: UpdateTicketStatusUseCase;
@@ -9,13 +10,13 @@ describe('UpdateTicketStatusUseCase', () => {
 
     const mockTicket = {
         id: 'ticket-1',
-        status: 'OPEN',
+        status: TicketStatus.OPEN,
         updateStatus: jest.fn(),
     };
 
     const validDto: UpdateTicketStatusDto = {
         ticketId: 'ticket-1',
-        newStatus: 'IN_PROGRESS',
+        newStatus: TicketStatus.IN_PROGRESS,
         updatedBy: 'agent-1',
         reason: 'Started working on issue',
     };
@@ -38,7 +39,7 @@ describe('UpdateTicketStatusUseCase', () => {
         const result = await useCase.execute(validDto);
 
         expect(result).toBeDefined();
-        expect(mockTicket.updateStatus).toHaveBeenCalledWith('IN_PROGRESS');
+        expect(mockTicket.updateStatus).toHaveBeenCalledWith(TicketStatus.IN_PROGRESS);
         expect(mockTicketRepo.update).toHaveBeenCalled();
     });
 
@@ -54,7 +55,7 @@ describe('UpdateTicketStatusUseCase', () => {
         expect(mockHistoryRepo.create).toHaveBeenCalledWith(
             expect.objectContaining({
                 fromStatus: 'OPEN',
-                toStatus: 'IN_PROGRESS',
+                toStatus: TicketStatus.IN_PROGRESS,
             }),
             'ticket-1'
         );
@@ -68,9 +69,9 @@ describe('UpdateTicketStatusUseCase', () => {
 
     it('should handle status transitions', async () => {
         const transitions = [
-            { from: 'OPEN', to: 'IN_PROGRESS' },
-            { from: 'IN_PROGRESS', to: 'RESOLVED' },
-            { from: 'RESOLVED', to: 'CLOSED' },
+            { from: TicketStatus.OPEN, to: TicketStatus.IN_PROGRESS },
+            { from: TicketStatus.IN_PROGRESS, to: TicketStatus.RESOLVED },
+            { from: TicketStatus.RESOLVED, to: TicketStatus.CLOSED },
         ];
 
         for (const { to } of transitions) {

@@ -1,3 +1,7 @@
+jest.mock('dotenv', () => ({
+  config: jest.fn()
+}));
+
 describe('google oauth config', () => {
   const previousEnv = { ...process.env };
   let logSpy: jest.SpyInstance;

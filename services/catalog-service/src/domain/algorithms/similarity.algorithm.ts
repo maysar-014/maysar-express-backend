@@ -10,7 +10,7 @@ export class SimilarityAlgorithm {
         if (a.length === 0) return b.length;
         if (b.length === 0) return a.length;
 
-        let [short, long] = a.length < b.length ? [a, b] : [b, a];
+        const [short, long] = a.length < b.length ? [a, b] : [b, a];
         let prevRow = Array.from({ length: short.length + 1 }, (_, i) => i);
         let currRow = new Array(short.length + 1);
 
@@ -85,6 +85,16 @@ export class SimilarityAlgorithm {
      * Checks if two strings are similar enough based on a threshold.
      */
     static areSimilar(a: string, b: string, threshold: number = 0.85): boolean {
-        return this.calculateStringSimilarity(a, b) >= threshold;
+        if (!a || !b) {
+            return false;
+        }
+
+        const maxLength = Math.max(a.length, b.length);
+        if (maxLength === 0) {
+            return true;
+        }
+
+        const levenshteinSimilarity = Math.max(0, 1 - (this.calculateLevenshteinDistance(a, b) / (2 * maxLength)));
+        return levenshteinSimilarity >= threshold;
     }
 }

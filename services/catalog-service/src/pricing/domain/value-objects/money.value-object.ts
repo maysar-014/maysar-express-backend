@@ -3,7 +3,20 @@ export class Money {
         public readonly amount: number,
         public readonly currency: string
     ) {
-        if (amount < 0) throw new Error('Amount cannot be negative');
+        if (!Number.isFinite(amount)) throw new Error('Amount must be a finite number');
+        if (!currency || currency.trim().length === 0) throw new Error('Currency is required');
+    }
+
+    static create(amount: number, currency: string): Money {
+        return new Money(amount, currency);
+    }
+
+    getAmount(): number {
+        return this.amount;
+    }
+
+    getCurrency(): string {
+        return this.currency;
     }
 
     add(other: Money): Money {

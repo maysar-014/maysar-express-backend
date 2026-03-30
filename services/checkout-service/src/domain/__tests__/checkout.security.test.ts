@@ -54,9 +54,9 @@ describe('Input Validation Security', () => {
   describe('Cart Validation', () => {
     it('should reject zero quantity', () => {
       expect(() => validateCartRequest({
-        cartId: 'cart-1',
-        userId: 'user-1',
-        productId: 'prod-1',
+        cartId: 'chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV',
+        userId: 'usr_test_0001',
+        productId: 'prd_01ARZ3NDEKTSV4RRFFQ69G5FAV',
         quantity: 0,
         priceAtTime: 50
       })).toThrow(ValidationError);
@@ -64,9 +64,9 @@ describe('Input Validation Security', () => {
 
     it('should reject negative price', () => {
       expect(() => validateCartRequest({
-        cartId: 'cart-1',
-        userId: 'user-1',
-        productId: 'prod-1',
+        cartId: 'chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV',
+        userId: 'usr_test_0001',
+        productId: 'prd_01ARZ3NDEKTSV4RRFFQ69G5FAV',
         quantity: 1,
         priceAtTime: -50
       })).toThrow(ValidationError);
@@ -74,9 +74,9 @@ describe('Input Validation Security', () => {
 
     it('should accept valid cart request', () => {
       expect(() => validateCartRequest({
-        cartId: 'cart-1',
-        userId: 'user-1',
-        productId: 'prod-1',
+        cartId: 'chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV',
+        userId: 'usr_test_0001',
+        productId: 'prd_01ARZ3NDEKTSV4RRFFQ69G5FAV',
         quantity: 1,
         priceAtTime: 50
       })).not.toThrow();

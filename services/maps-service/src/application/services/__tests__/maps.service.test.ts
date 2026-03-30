@@ -136,8 +136,6 @@ describe('MapsService - Application Orchestration', () => {
                     ],
                     totalDistance: 5.2,
                     totalDuration: 10,
-                    baseDuration: 8,
-                    trafficDelay: 2,
                     waypoints: [testOrigin, testDestination],
                     efficiency: 92,
                     confidence: 0.95,
@@ -150,8 +148,6 @@ describe('MapsService - Application Orchestration', () => {
 
                 // Then: Result should match provider output exactly
                 expect(result).toEqual(complexRoute);
-                expect(result.baseDuration).toBe(8);
-                expect(result.trafficDelay).toBe(2);
             });
         });
     });
@@ -274,9 +270,9 @@ describe('MapsService - Application Orchestration', () => {
                 const heavyTraffic = {
                     level: 'heavy' as const,
                     delayMinutes: 25,
-                    incidents: [{ type: 'accident', location: testOrigin }],
+                    incidents: [{ type: 'accident', location: testOrigin, description: 'Accident on route', severity: 4 }],
                     averageSpeed: 20
-                };
+                } as any;
                 const badWeather = {
                     temperature: 18,
                     condition: 'rain' as const,

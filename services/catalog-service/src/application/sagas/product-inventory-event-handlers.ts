@@ -63,6 +63,19 @@ export interface InventoryUpdatedEvent {
   };
 }
 
+export interface ProductCreatedInventoryEvent {
+  eventId: string;
+  eventType: 'ProductCreated';
+  aggregateId: string;
+  version: number;
+  timestamp: Date;
+  payload: {
+    productId: string;
+    sellerId?: string;
+    initialInventoryCount?: number;
+  };
+}
+
 /**
  * Product Inventory Verified Handler
  * Handles successful inventory verification responses
@@ -79,7 +92,7 @@ export class ProductInventoryVerifiedHandler extends BaseEventHandler {
     super();
   }
 
-  async handle(event: InventoryVerifiedEvent, context?: any): Promise<void> {
+  async handle(event: InventoryVerifiedEvent, _context?: unknown): Promise<void> {
     this.validateEvent(event);
 
     const { productId, sagaId, verified, availableStock, reservedStock, status } = event.payload;
@@ -148,7 +161,7 @@ export class ProductInventoryVerificationFailedHandler extends BaseEventHandler 
     super();
   }
 
-  async handle(event: InventoryVerificationFailedEvent, context?: any): Promise<void> {
+  async handle(event: InventoryVerificationFailedEvent, _context?: unknown): Promise<void> {
     this.validateEvent(event);
 
     const { productId, sagaId, reason, errorCode } = event.payload;
@@ -190,7 +203,7 @@ export class ProductInventoryUpdatedHandler extends BaseEventHandler {
     super();
   }
 
-  async handle(event: InventoryUpdatedEvent, context?: any): Promise<void> {
+  async handle(event: InventoryUpdatedEvent, _context?: unknown): Promise<void> {
     this.validateEvent(event);
 
     const { productId, previousStock, newStock, changeReason, updatedBy } = event.payload;
@@ -282,7 +295,7 @@ export class ProductCreatedInventoryHandler extends BaseEventHandler {
     super();
   }
 
-  async handle(event: any, context?: any): Promise<void> {
+  async handle(event: ProductCreatedInventoryEvent, _context?: unknown): Promise<void> {
     this.validateEvent(event);
 
     const { productId, initialInventoryCount } = event.payload;

@@ -1,7 +1,7 @@
 // Integration Tests for API Endpoints
 // Tests for all 3 endpoints with real-world scenarios
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from '@jest/globals';
 import { getModelPrefix, isSystemId, makeId } from '@shared/ids/id';
 
 const productId = makeId(getModelPrefix('Catalog_Product'));

@@ -90,8 +90,6 @@ describe('PhoneNumber Value Object', () => {
 
         it('should check if mobile money is supported', () => {
             expect(new PhoneNumber('0754123456').supportsMobileMoney()).toBe(true);
-            expect(new PhoneNumber('0774123456').supportsMobileMoney()).toBe(true); // UNKNOWN operator is still technically valid format but maybe not supported?
-            // Re-reading logic: supportsMobileMoney returns true if operator !== null && operator !== 'UNKNOWN'
             expect(new PhoneNumber('0774123456').supportsMobileMoney()).toBe(false);
         });
     });

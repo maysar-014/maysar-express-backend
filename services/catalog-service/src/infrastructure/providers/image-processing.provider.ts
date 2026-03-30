@@ -92,6 +92,7 @@ export class SharpImageProvider {
   private config: ImageProcessingConfig;
   private circuitBreaker: CircuitBreaker;
   private retryPolicy: RetryPolicy;
+  private redisClient: ReturnType<typeof getSharedRedisClient> | null = null;
   private metrics = {
     processed: 0,
     failed: 0,
@@ -107,7 +108,6 @@ export class SharpImageProvider {
     reject: (error: Error) => void;
   }> = [];
   private isProcessing = false;
-  private readonly redis = getSharedRedisClient();
 
   constructor(config: ImageProcessingConfig) {
     this.config = config;
@@ -212,7 +212,7 @@ export class SharpImageProvider {
     return {
       results: results.filter(Boolean),
       totalProcessingTime: Date.now() - startTime,
-      successful: results.length,
+      successful: results.filter(Boolean).length,
       failed: errors.length,
       errors
     };
@@ -396,11 +396,9 @@ export class SharpImageProvider {
       }
     }
 
-    if (options.format) {
-      pipeline = pipeline.toFormat(options.format, {
-        quality: options.quality || this.config.quality
-      });
-    }
+    pipeline = pipeline.toFormat(options.format || 'jpeg', {
+      quality: options.quality || this.config.quality
+    });
 
     const outputBuffer = await pipeline.toBuffer();
     const metadata = await sharp(outputBuffer).metadata();
@@ -459,7 +457,12 @@ export class SharpImageProvider {
    * Get processed image from cache
    */
   private async getFromCache(cacheKey: string): Promise<ImageProcessingResult | null> {
-    const cached = await this.redis.get(`image:processed:${cacheKey}`);
+    const redis = this.getRedisClient();
+    if (!redis) {
+      return null;
+    }
+
+    const cached = await redis.get(`image:processed:${cacheKey}`);
     if (!cached) return null;
 
     const parsed = JSON.parse(cached);
@@ -473,11 +476,16 @@ export class SharpImageProvider {
    * Save processed image to cache
    */
   private async saveToCache(cacheKey: string, result: ImageProcessingResult): Promise<void> {
+    const redis = this.getRedisClient();
+    if (!redis) {
+      return;
+    }
+
     const payload = {
       ...result,
       buffer: result.buffer.toString('base64')
     };
-    await this.redis.setex(`image:processed:${cacheKey}`, 3600, JSON.stringify(payload));
+    await redis.setex(`image:processed:${cacheKey}`, 3600, JSON.stringify(payload));
   }
 
   /**
@@ -516,6 +524,23 @@ export class SharpImageProvider {
       cacheHitRate,
       timestamp: new Date()
     };
+  }
+
+  /**
+   * Lazily obtain the shared Redis client only when caching is enabled.
+   * This avoids opening a TCP connection in tests or deployments that do not
+   * use image result caching.
+   */
+  private getRedisClient(): ReturnType<typeof getSharedRedisClient> | null {
+    if (!this.config.cacheEnabled) {
+      return null;
+    }
+
+    if (!this.redisClient) {
+      this.redisClient = getSharedRedisClient();
+    }
+
+    return this.redisClient;
   }
 }
 

@@ -48,7 +48,7 @@ describe('SecurityMiddleware', () => {
   });
 
   it('validates JWT, API key, session tokens and crypto/hash primitives', () => {
-    expect(middleware.validateJwtToken('aaa.bbb.ccc')).toBe(true);
+    expect(middleware.validateJwtToken('eyJhbGciOiJub25lIn0.eyJzdWIiOiIxMjMifQ.signature')).toBe(true);
     expect(middleware.validateJwtToken('not-a-jwt')).toBe(false);
 
     expect(middleware.validateApiKey('ak_live_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe(true);

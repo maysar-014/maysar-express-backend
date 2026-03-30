@@ -21,10 +21,39 @@ import {
   globalHealthAlertSystem
 } from '../health-check.service';
 
+const mockPrismaClient = {
+  $queryRaw: jest.fn(),
+  $metrics: jest.fn()
+};
+
+const mockRedisClient = {
+  ping: jest.fn()
+};
+
 // Mock external dependencies
 jest.mock('../../providers', () => ({
   ProviderManager: {
     getInstance: jest.fn()
+  }
+}));
+
+jest.mock('@shared/database/prisma-client', () => ({
+  createPrismaClient: jest.fn(() => mockPrismaClient)
+}));
+
+jest.mock('@shared/redis/ioredis-client', () => ({
+  getSharedRedisClient: jest.fn(() => mockRedisClient)
+}));
+
+jest.mock('../cache.service', () => ({
+  CacheServiceFactory: {
+    getInstance: jest.fn(() => null)
+  }
+}));
+
+jest.mock('../../providers/cache-provider', () => ({
+  CacheProviderFactory: {
+    getInstance: jest.fn(() => null)
   }
 }));
 
@@ -44,6 +73,9 @@ describe('HealthCheckService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPrismaClient.$queryRaw.mockResolvedValue([{ '?column?': 1 }]);
+    mockPrismaClient.$metrics.mockResolvedValue({ connectionPoolSize: 5 });
+    mockRedisClient.ping.mockResolvedValue('PONG');
 
     config = {
       enabled: true,
@@ -204,21 +236,16 @@ describe('HealthCheckService', () => {
         expect(result.status).toBe(HealthStatus.HEALTHY);
         expect(result.responseTime).toBeGreaterThanOrEqual(0);
         expect(result.message).toContain('Database connection healthy');
-        expect(result.details).toHaveProperty('connectionPoolSize');
+        expect(result.details).toHaveProperty('metrics');
       });
 
       it('should handle database errors gracefully', async () => {
-        // Mock a database error by overriding the method temporarily
-        const originalMethod = (healthCheckService as any).checkDatabase;
-        (healthCheckService as any).checkDatabase = jest.fn().mockRejectedValue(new Error('Connection refused'));
+        mockPrismaClient.$queryRaw.mockRejectedValueOnce(new Error('Connection refused'));
 
         const result: ComponentHealthResult = await (healthCheckService as any).checkDatabase();
 
         expect(result.status).toBe(HealthStatus.UNHEALTHY);
         expect(result.message).toContain('Database check failed');
-
-        // Restore original method
-        (healthCheckService as any).checkDatabase = originalMethod;
       });
     });
 

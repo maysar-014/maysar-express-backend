@@ -43,10 +43,12 @@ export class ProductStatusValue {
   constructor(private readonly status: ProductStatus) {}
 
   static fromString(status: string): ProductStatusValue {
-    if (!Object.values(ProductStatus).includes(status as ProductStatus)) {
+    const normalizedStatus = status.trim().toLowerCase();
+
+    if (!Object.values(ProductStatus).includes(normalizedStatus as ProductStatus)) {
       throw new Error(`Invalid product status: ${status}`);
     }
-    return new ProductStatusValue(status as ProductStatus);
+    return new ProductStatusValue(normalizedStatus as ProductStatus);
   }
 
   toString(): ProductStatus {
@@ -106,7 +108,8 @@ export class Dimensions {
   }
 
   getVolume(): number {
-    return this.length * this.width * this.height;
+    const volume = this.length * this.width * this.height;
+    return Math.round(volume * 1000000) / 1000000;
   }
 
   convertTo(unit: string): Dimensions {
@@ -213,8 +216,8 @@ export class SEOData {
     if (description && description.length > 160) {
       throw new Error('SEO description must be 160 characters or less');
     }
-    if (slug && !/^[a-z0-9-]+$/.test(slug)) {
-      throw new Error('SEO slug must contain only lowercase letters, numbers, and hyphens');
+    if (slug && !/^[a-z0-9_-]+$/.test(slug)) {
+      throw new Error('SEO slug must contain only lowercase letters, numbers, hyphens, and underscores');
     }
   }
 

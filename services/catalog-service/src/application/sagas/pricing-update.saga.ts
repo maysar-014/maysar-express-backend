@@ -10,10 +10,9 @@ import {
   IdGenerator,
   DateTimeService
 } from '../../domain/interfaces';
-import { ProductId, SellerId } from '../../domain/value-objects/ids.value-object';
 import { BaseSaga } from './index';
 
-export interface PricingUpdateContext {
+export interface PricingUpdateContext extends Record<string, unknown> {
   productIds: string[];
   pricingStrategy: 'fixed' | 'percentage' | 'formula';
   pricingValue: number;
@@ -42,11 +41,85 @@ export interface PricingUpdateResult {
   };
 }
 
+interface PriceDetails {
+  amount: number;
+  currency: string;
+}
+
+interface PricingChange {
+  originalPrice: PriceDetails;
+  newPrice: PriceDetails;
+  changeAmount: number;
+  changePercent: number;
+}
+
+interface PricingUpdateProductRecord {
+  sellerId?: string;
+  price: PriceDetails;
+  status?: string;
+}
+
+interface ProductDeletedEvent {
+  eventType: 'ProductDeleted';
+  payload: {
+    productId: string;
+  };
+}
+
+interface PricingPolicyChangedEvent {
+  eventType: 'PricingPolicyChanged';
+  payload?: Record<string, unknown>;
+}
+
+type PricingUpdateEvent = ProductDeletedEvent | PricingPolicyChangedEvent;
+
+function isPricingUpdateEvent(event: unknown): event is PricingUpdateEvent {
+  if (typeof event !== 'object' || event === null || !('eventType' in event)) {
+    return false;
+  }
+
+  const eventType = (event as { eventType?: unknown }).eventType;
+  return eventType === 'ProductDeleted' || eventType === 'PricingPolicyChanged';
+}
+
+interface PricingUpdateSagaState extends Record<string, unknown> {
+  productIds: string[];
+  pricingStrategy: 'fixed' | 'percentage' | 'formula';
+  pricingValue: number;
+  currency: string;
+  effectiveDate?: Date;
+  expiryDate?: Date;
+  sellerId?: string;
+  reason: string;
+  validateBusinessRules: boolean;
+  notifyStakeholders: boolean;
+  requestId: string;
+  timestamp: Date;
+  currentStep: string;
+  productsValidated: boolean;
+  pricingCalculated: boolean;
+  businessRulesChecked: boolean;
+  pricingApplied: boolean;
+  notificationsSent: boolean;
+  processedProducts: string[];
+  successfulUpdates: string[];
+  failedUpdates: string[];
+  skippedProducts: string[];
+  originalPrices: Map<string, PriceDetails>;
+  appliedPricingChanges: Map<string, PricingChange>;
+  errors: Array<{ step: string; error: string; timestamp: Date }>;
+  retryCount: number;
+  maxRetries: number;
+  totalRevenueChange: number;
+  priceChangePercentages: number[];
+  completedSteps?: string[];
+}
+
 /**
  * Pricing Update Saga
  * Handles complex pricing update workflows with validation and rollback
  */
-export class PricingUpdateSaga extends BaseSaga {
+export class PricingUpdateSaga extends BaseSaga<PricingUpdateContext, PricingUpdateSagaState> {
   readonly sagaId: string;
   readonly sagaType = 'PricingUpdate';
 
@@ -131,7 +204,7 @@ export class PricingUpdateSaga extends BaseSaga {
 
         for (const productId of this.state.productIds) {
           try {
-            const product = await this.productRepository.findById(productId);
+            const product = await this.productRepository.findById(productId) as PricingUpdateProductRecord | null;
             if (!product) {
               this.results.skipped.push({ productId, reason: 'Product not found' });
               continue;
@@ -449,6 +522,13 @@ export class PricingUpdateSaga extends BaseSaga {
             continue;
           }
 
+          // Validation and notification failures should fail fast so the caller
+          // can observe the rollback behavior instead of silently skipping ahead.
+          if (stepId === 'validate_business_rules' || stepId === 'send_notifications') {
+            await this.compensate();
+            throw error;
+          }
+
           // Check if we should retry
           if (this.state.retryCount < this.state.maxRetries) {
             this.state.retryCount++;
@@ -464,8 +544,12 @@ export class PricingUpdateSaga extends BaseSaga {
     }
   }
 
-  protected async processEvent(event: any): Promise<void> {
+  protected async processEvent(event: unknown): Promise<void> {
     // Handle events that might affect the pricing update
+
+    if (!isPricingUpdateEvent(event)) {
+      return;
+    }
 
     switch (event.eventType) {
       case 'ProductDeleted':
@@ -493,14 +577,10 @@ export class PricingUpdateSaga extends BaseSaga {
       return true; // Continue if at least some pricing updates succeeded
     }
 
-    if (stepId === 'send_notifications') {
-      return true; // Notifications are not critical for the pricing update success
-    }
-
     return false;
   }
 
-  private async calculateNewPrice(productId: string, originalPrice: any): Promise<any> {
+  private async calculateNewPrice(productId: string, originalPrice: PriceDetails): Promise<PriceDetails> {
     const { pricingStrategy, pricingValue, currency } = this.state;
 
     switch (pricingStrategy) {
@@ -530,20 +610,20 @@ export class PricingUpdateSaga extends BaseSaga {
     }
   }
 
-  private async validatePricingBusinessRules(productId: string, pricingChange: any): Promise<void> {
+  private async validatePricingBusinessRules(productId: string, pricingChange: PricingChange): Promise<void> {
     const { changePercent, newPrice } = pricingChange;
 
     // Business rule validations
-    if (Math.abs(changePercent) > 50) {
-      throw new Error(`Price change of ${changePercent.toFixed(1)}% exceeds 50% limit`);
-    }
-
     if (newPrice.amount <= 0) {
       throw new Error('New price must be greater than 0');
     }
 
     if (newPrice.amount > 100000) {
       throw new Error('New price cannot exceed $100,000');
+    }
+
+    if (Math.abs(changePercent) > 50) {
+      throw new Error(`Price change of ${changePercent.toFixed(1)}% exceeds 50% limit`);
     }
 
     // Could add more business rules:
@@ -553,9 +633,9 @@ export class PricingUpdateSaga extends BaseSaga {
     // - Seller-specific constraints
   }
 
-  private async applyPricingUpdate(productId: string, newPrice: any): Promise<void> {
+  private async applyPricingUpdate(productId: string, newPrice: PriceDetails): Promise<void> {
     // Get current product state
-    const currentProduct = await this.productRepository.findById(productId);
+    const currentProduct = await this.productRepository.findById(productId) as PricingUpdateProductRecord | null;
     if (!currentProduct) {
       throw new Error(`Product ${productId} not found during pricing update`);
     }

@@ -4,15 +4,15 @@ import { eventBus } from '@shared-events/eventBus';
 
 jest.mock('@prisma/client');
 jest.mock('@shared-events/eventBus');
-jest.mock('../../../shared/outbox/outboxPattern');
+jest.mock('../../../../shared/outbox/outboxPattern');
 
 describe('InventoryService', () => {
   type InventoryRecord = {
     id: string;
     productVariantId: string;
     warehouseId: string;
-    availableQuantity: number;
-    reservedQuantity: number;
+    quantityAvailable: number;
+    quantityReserved: number;
   };
 
   type InventoryReservationRecord = {
@@ -20,17 +20,17 @@ describe('InventoryService', () => {
     orderId: string;
     productVariantId: string;
     warehouseId: string;
-    quantity: number;
+    quantityReserved: number;
     status: string;
   };
 
   type InventoryServicePrismaMock = {
-    inventory: {
+    inventory_StockItem: {
       findFirst: jest.Mock<Promise<InventoryRecord | null>, [unknown]>;
       update: jest.Mock<Promise<unknown>, [unknown]>;
       updateMany: jest.Mock<Promise<unknown>, [unknown]>;
     };
-    inventoryReservation: {
+    inventory_Reservation: {
       create: jest.Mock<Promise<unknown>, [unknown]>;
       findMany: jest.Mock<Promise<InventoryReservationRecord[]>, [unknown]>;
       update: jest.Mock<Promise<unknown>, [unknown]>;
@@ -43,12 +43,12 @@ describe('InventoryService', () => {
 
   beforeEach(() => {
     mockPrisma = {
-      inventory: {
+      inventory_StockItem: {
         findFirst: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn(),
       },
-      inventoryReservation: {
+      inventory_Reservation: {
         create: jest.fn(),
         findMany: jest.fn(),
         update: jest.fn(),
@@ -68,14 +68,14 @@ describe('InventoryService', () => {
       id: 'inv-1',
       productVariantId: 'var-1',
       warehouseId: 'wh-1',
-      availableQuantity: 100,
-      reservedQuantity: 20,
+      quantityAvailable: 100,
+      quantityReserved: 20,
     };
 
     beforeEach(() => {
-      mockPrisma.inventory.findFirst.mockResolvedValue(mockInventory as any);
-      mockPrisma.inventoryReservation.create.mockResolvedValue({ id: 'res-1' } as any);
-      mockPrisma.inventory.update.mockResolvedValue({} as any);
+      mockPrisma.inventory_StockItem.findFirst.mockResolvedValue(mockInventory as any);
+      mockPrisma.inventory_Reservation.create.mockResolvedValue({ id: 'res-1' } as any);
+      mockPrisma.inventory_StockItem.update.mockResolvedValue({} as any);
     });
 
     it('should reserve inventory successfully', async () => {
@@ -94,7 +94,7 @@ describe('InventoryService', () => {
 
       expect(result.success).toBe(true);
       expect(result.reservationIds).toHaveLength(1);
-      expect(mockPrisma.inventoryReservation.create).toHaveBeenCalled();
+      expect(mockPrisma.inventory_Reservation.create).toHaveBeenCalled();
     });
 
     it('should create reservation with correct data', async () => {
@@ -111,12 +111,13 @@ describe('InventoryService', () => {
 
       await inventoryService.reserveInventory(reservationData);
 
-      expect(mockPrisma.inventoryReservation.create).toHaveBeenCalledWith({
+      expect(mockPrisma.inventory_Reservation.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           orderId: 'order-1',
+          orderItemId: expect.any(String),
           productVariantId: 'var-1',
           warehouseId: 'wh-1',
-          quantity: 10,
+          quantityReserved: 10,
           status: 'active',
           expiresAt: expect.any(Date),
         }),
@@ -137,19 +138,19 @@ describe('InventoryService', () => {
 
       await inventoryService.reserveInventory(reservationData);
 
-      expect(mockPrisma.inventory.update).toHaveBeenCalledWith({
+      expect(mockPrisma.inventory_StockItem.update).toHaveBeenCalledWith({
         where: { id: 'inv-1' },
         data: {
-          availableQuantity: { decrement: 10 },
-          reservedQuantity: { increment: 10 },
+          quantityAvailable: { decrement: 10 },
+          quantityReserved: { increment: 10 },
         },
       });
     });
 
     it('should throw error when insufficient stock', async () => {
-      mockPrisma.inventory.findFirst.mockResolvedValue({
+      mockPrisma.inventory_StockItem.findFirst.mockResolvedValue({
         ...mockInventory,
-        availableQuantity: 5,
+        quantityAvailable: 5,
       } as any);
 
       const reservationData = {
@@ -169,7 +170,7 @@ describe('InventoryService', () => {
     });
 
     it('should throw error when inventory not found', async () => {
-      mockPrisma.inventory.findFirst.mockResolvedValue(null);
+      mockPrisma.inventory_StockItem.findFirst.mockResolvedValue(null);
 
       const reservationData = {
         orderId: 'order-1',
@@ -188,7 +189,7 @@ describe('InventoryService', () => {
     });
 
     it('should handle multiple items reservation', async () => {
-      mockPrisma.inventory.findFirst
+      mockPrisma.inventory_StockItem.findFirst
         .mockResolvedValueOnce({ ...mockInventory, productVariantId: 'var-1' } as any)
         .mockResolvedValueOnce({ ...mockInventory, productVariantId: 'var-2' } as any);
 
@@ -203,11 +204,11 @@ describe('InventoryService', () => {
       const result = await inventoryService.reserveInventory(reservationData);
 
       expect(result.reservationIds).toHaveLength(2);
-      expect(mockPrisma.inventoryReservation.create).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.inventory_Reservation.create).toHaveBeenCalledTimes(2);
     });
 
     it('should rollback on partial failure', async () => {
-      mockPrisma.inventory.findFirst
+      mockPrisma.inventory_StockItem.findFirst
         .mockResolvedValueOnce(mockInventory as any)
         .mockResolvedValueOnce(null);
 
@@ -230,7 +231,7 @@ describe('InventoryService', () => {
         orderId: 'order-1',
         productVariantId: 'var-1',
         warehouseId: 'wh-1',
-        quantity: 10,
+        quantityReserved: 10,
         status: 'active',
       },
       {
@@ -238,55 +239,55 @@ describe('InventoryService', () => {
         orderId: 'order-1',
         productVariantId: 'var-2',
         warehouseId: 'wh-1',
-        quantity: 5,
+        quantityReserved: 5,
         status: 'active',
       },
     ];
 
     beforeEach(() => {
-      mockPrisma.inventoryReservation.findMany.mockResolvedValue(mockReservations as any);
-      mockPrisma.inventoryReservation.update.mockResolvedValue({} as any);
-      mockPrisma.inventory.updateMany.mockResolvedValue({ count: 1 } as any);
+      mockPrisma.inventory_Reservation.findMany.mockResolvedValue(mockReservations as any);
+      mockPrisma.inventory_Reservation.update.mockResolvedValue({} as any);
+      mockPrisma.inventory_StockItem.updateMany.mockResolvedValue({ count: 1 } as any);
     });
 
     it('should release all reservations for an order', async () => {
       await inventoryService.releaseInventory('order-1', 'order_cancelled');
 
-      expect(mockPrisma.inventoryReservation.update).toHaveBeenCalledTimes(2);
-      expect(mockPrisma.inventory.updateMany).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.inventory_Reservation.update).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.inventory_StockItem.updateMany).toHaveBeenCalledTimes(2);
     });
 
     it('should update reservation status to released', async () => {
       await inventoryService.releaseInventory('order-1', 'order_cancelled');
 
-      expect(mockPrisma.inventoryReservation.update).toHaveBeenCalledWith({
+      expect(mockPrisma.inventory_Reservation.update).toHaveBeenCalledWith({
         where: { id: 'res-1' },
-        data: { status: 'released' },
+        data: { status: 'cancelled' },
       });
     });
 
     it('should restore inventory quantities', async () => {
       await inventoryService.releaseInventory('order-1', 'payment_failed');
 
-      expect(mockPrisma.inventory.updateMany).toHaveBeenCalledWith({
+      expect(mockPrisma.inventory_StockItem.updateMany).toHaveBeenCalledWith({
         where: {
           productVariantId: 'var-1',
           warehouseId: 'wh-1',
         },
         data: {
-          availableQuantity: { increment: 10 },
-          reservedQuantity: { decrement: 10 },
+          quantityAvailable: { increment: 10 },
+          quantityReserved: { decrement: 10 },
         },
       });
     });
 
     it('should handle empty reservations', async () => {
-      mockPrisma.inventoryReservation.findMany.mockResolvedValue([]);
+      mockPrisma.inventory_Reservation.findMany.mockResolvedValue([]);
 
       await inventoryService.releaseInventory('order-999', 'expired');
 
-      expect(mockPrisma.inventoryReservation.update).not.toHaveBeenCalled();
-      expect(mockPrisma.inventory.updateMany).not.toHaveBeenCalled();
+      expect(mockPrisma.inventory_Reservation.update).not.toHaveBeenCalled();
+      expect(mockPrisma.inventory_StockItem.updateMany).not.toHaveBeenCalled();
     });
 
     it('should process all reservations in transaction', async () => {
@@ -314,12 +315,12 @@ describe('InventoryService', () => {
         });
 
         expect(mockPublish).toHaveBeenCalledWith({
-          type: 'ReorderCalculated',
+          eventType: 'ReorderCalculated',
           data: expect.objectContaining({
             productId: 'prod-1',
             reorderQuantity: 200,
-            sagaId: 'saga-1',
           }),
+          metadata: { sagaId: 'saga-1' },
         });
       });
 
@@ -366,12 +367,13 @@ describe('InventoryService', () => {
 
         expect(mockPublish).toHaveBeenCalledTimes(2);
         expect(mockPublish).toHaveBeenCalledWith({
-          type: 'InventoryReserved',
+          eventType: 'InventoryReserved',
           data: expect.objectContaining({
             orderId: 'order-1',
             productId: 'prod-1',
             quantity: 10,
           }),
+          metadata: { sagaId: 'saga-1' },
         });
       });
 
@@ -396,12 +398,13 @@ describe('InventoryService', () => {
         });
 
         expect(mockPublish).toHaveBeenCalledWith({
-          type: 'InventoryReleased',
+          eventType: 'InventoryReleased',
           data: expect.objectContaining({
             orderId: 'order-1',
             productId: 'prod-1',
             quantity: 10,
           }),
+          metadata: { sagaId: 'saga-1' },
         });
       });
     });
@@ -429,12 +432,13 @@ describe('InventoryService', () => {
         });
 
         expect(mockPublish).toHaveBeenCalledWith({
-          type: 'QualityTestingCompleted',
+          eventType: 'QualityTestingCompleted',
           data: expect.objectContaining({
             supplierId: 'sup-1',
             batchId: 'batch-1',
             testResults: expect.any(Object),
           }),
+          metadata: { sagaId: 'saga-1' },
         });
       });
 
@@ -458,10 +462,11 @@ describe('InventoryService', () => {
         });
 
         expect(mockPublish).toHaveBeenCalledWith({
-          type: 'QualityApprovalGranted',
+          eventType: 'QualityApprovalGranted',
           data: expect.objectContaining({
             approved: true,
           }),
+          metadata: { sagaId: 'saga-1' },
         });
       });
 
@@ -485,10 +490,11 @@ describe('InventoryService', () => {
         });
 
         expect(mockPublish).toHaveBeenCalledWith({
-          type: 'QualityApprovalGranted',
+          eventType: 'QualityApprovalGranted',
           data: expect.objectContaining({
             approved: false,
           }),
+          metadata: { sagaId: 'saga-1' },
         });
       });
 
@@ -512,12 +518,13 @@ describe('InventoryService', () => {
         });
 
         expect(mockPublish).toHaveBeenCalledWith({
-          type: 'QualityCertificateIssued',
+          eventType: 'QualityCertificateIssued',
           data: expect.objectContaining({
             supplierId: 'sup-1',
             batchId: 'batch-1',
             certificateId: expect.any(String),
           }),
+          metadata: { sagaId: 'saga-1' },
         });
       });
     });

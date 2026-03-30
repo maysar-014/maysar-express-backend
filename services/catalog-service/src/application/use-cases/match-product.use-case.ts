@@ -75,7 +75,7 @@ export class MatchProductUseCase {
             matchedProductId: matchResult.matchedProductId,
             matchLevel: matchResult.level,
             matchScore: matchResult.score,
-            matchingCriteria: matchResult.criteria,
+            matchingCriteria: matchResult.criteria as unknown as Record<string, unknown>,
             decision,
             decidedBy: 'SYSTEM',
             sellerId: request.sellerId,

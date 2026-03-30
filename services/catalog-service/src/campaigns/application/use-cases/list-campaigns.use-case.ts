@@ -11,7 +11,7 @@ export class ListCampaignsUseCase {
         private readonly campaignRepository: ICampaignRepository
     ) { }
 
-    async execute(filters?: any): Promise<CampaignDto[]> {
+    async execute(filters?: Record<string, unknown>): Promise<CampaignDto[]> {
         const campaigns = await this.campaignRepository.findAll(filters);
         return campaigns.map(campaign => CampaignMapper.toDto(campaign));
     }

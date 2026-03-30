@@ -10,7 +10,7 @@ export class PrismaMatchConfirmationRepository implements IMatchConfirmationRepo
                 id: confirmation.id,
                 auditId: confirmation.auditId,
                 sellerId: confirmation.sellerId,
-                candidateProducts: confirmation.candidateProducts,
+                candidateProducts: confirmation.candidateProducts as any,
                 status: confirmation.status as any,
                 sellerChoice: confirmation.sellerChoice,
                 expiresAt: confirmation.expiresAt,

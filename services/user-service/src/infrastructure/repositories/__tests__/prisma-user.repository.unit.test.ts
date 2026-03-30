@@ -46,7 +46,8 @@ describe('PrismaUserRepository unit tests (mocked prisma)', () => {
       phoneNumber: '+15551234567',
       firstName: 'A',
       lastName: 'B',
-      role: 'user',
+      role: 'buyer',
+      status: 'active',
       language: 'en',
       timezone: 'UTC'
     };

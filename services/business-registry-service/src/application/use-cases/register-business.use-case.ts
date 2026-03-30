@@ -54,7 +54,10 @@ export class RegisterBusinessUseCase {
       created.id,
       created.ownerId,
       created.businessType,
-      created.registrationNumber.getValue()
+      created.registrationNumber.getValue(),
+      {
+        industries: created.industry
+      }
     );
     await this.sagaEventHandler.handleBusinessRegisteredEvent(event);
 
@@ -67,6 +70,9 @@ export class RegisterBusinessUseCase {
     }
     if (!dto.ownerId || dto.ownerId.trim().length === 0) {
       throw new BusinessValidationError('Owner ID is required');
+    }
+    if (!Array.isArray(dto.industry) || dto.industry.length === 0) {
+      throw new BusinessValidationError('At least one industry is required');
     }
     try {
       RegistrationNumber.create(dto.registrationNumber);

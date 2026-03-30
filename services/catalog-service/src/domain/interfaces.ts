@@ -4,6 +4,8 @@
  * Pure domain declarations - no implementations
  */
 
+export type DomainRecord = Record<string, unknown>;
+
 // ============================================================================
 // REPOSITORY INTERFACES
 // ============================================================================
@@ -18,35 +20,35 @@ export interface ProductRepository {
    * @param product The product entity to save
    * @returns Promise resolving to the saved product
    */
-  save(product: any): Promise<any>;
+  save(product: DomainRecord): Promise<DomainRecord>;
 
   /**
    * Save a product using persistence DTO
    * @param dto The product persistence DTO
    * @returns Promise resolving to the saved product
    */
-  savePersistenceDto?(dto: any): Promise<any>;
+  savePersistenceDto?(dto: DomainRecord): Promise<DomainRecord>;
 
   /**
    * Find product by ID
    * @param id Product identifier
    * @returns Promise resolving to product or null
    */
-  findById(id: string): Promise<any | null>;
+  findById(id: string): Promise<DomainRecord | null>;
 
   /**
    * Find products by seller
    * @param sellerId Seller identifier
    * @returns Promise resolving to array of products
    */
-  findBySeller(sellerId: string): Promise<any[]>;
+  findBySeller(sellerId: string): Promise<DomainRecord[]>;
 
   /**
    * Find products by category
    * @param categoryId Category identifier
    * @returns Promise resolving to array of products
    */
-  findByCategory(categoryId: string): Promise<any[]>;
+  findByCategory(categoryId: string): Promise<DomainRecord[]>;
 
   /**
    * Search products with filters
@@ -54,7 +56,7 @@ export interface ProductRepository {
    * @param pagination Pagination parameters
    * @returns Promise resolving to paginated results
    */
-  search(filters: any, pagination: any): Promise<any>;
+  search(filters: DomainRecord, pagination: DomainRecord): Promise<DomainRecord>;
 
   /**
    * Update product status
@@ -62,7 +64,7 @@ export interface ProductRepository {
    * @param status New status
    * @returns Promise resolving to updated product
    */
-  updateStatus(id: string, status: string): Promise<any>;
+  updateStatus(id: string, status: string): Promise<DomainRecord>;
 
   /**
    * Delete product
@@ -82,34 +84,34 @@ export interface CategoryRepository {
    * @param category The category entity to save
    * @returns Promise resolving to the saved category
    */
-  save(category: any): Promise<any>;
+  save(category: DomainRecord): Promise<DomainRecord>;
 
   /**
    * Find category by ID
    * @param id Category identifier
    * @returns Promise resolving to category or null
    */
-  findById(id: string): Promise<any | null>;
+  findById(id: string): Promise<DomainRecord | null>;
 
   /**
    * Find all categories
    * @returns Promise resolving to array of categories
    */
-  findAll(): Promise<any[]>;
+  findAll(): Promise<DomainRecord[]>;
 
   /**
    * Find category by slug
    * @param slug Category slug
    * @returns Promise resolving to category or null
    */
-  findBySlug(slug: string): Promise<any | null>;
+  findBySlug(slug: string): Promise<DomainRecord | null>;
 
   /**
    * Find subcategories of a parent category
    * @param parentId Parent category identifier
    * @returns Promise resolving to array of subcategories
    */
-  findSubcategories(parentId: string): Promise<any[]>;
+  findSubcategories(parentId: string): Promise<DomainRecord[]>;
 
   /**
    * Update category
@@ -117,7 +119,7 @@ export interface CategoryRepository {
    * @param updates Category updates
    * @returns Promise resolving to updated category
    */
-  update(id: string, updates: any): Promise<any>;
+  update(id: string, updates: DomainRecord): Promise<DomainRecord>;
 }
 
 /**
@@ -130,21 +132,21 @@ export interface SellerRepository {
    * @param seller The seller entity to save
    * @returns Promise resolving to the saved seller
    */
-  save(seller: any): Promise<any>;
+  save(seller: DomainRecord): Promise<DomainRecord>;
 
   /**
    * Find seller by ID
    * @param id Seller identifier
    * @returns Promise resolving to seller or null
    */
-  findById(id: string): Promise<any | null>;
+  findById(id: string): Promise<DomainRecord | null>;
 
   /**
    * Find seller by email
    * @param email Seller email
    * @returns Promise resolving to seller or null
    */
-  findByEmail(email: string): Promise<any | null>;
+  findByEmail(email: string): Promise<DomainRecord | null>;
 
   /**
    * Update seller profile
@@ -152,7 +154,7 @@ export interface SellerRepository {
    * @param updates Profile updates
    * @returns Promise resolving to updated seller
    */
-  updateProfile(id: string, updates: any): Promise<any>;
+  updateProfile(id: string, updates: DomainRecord): Promise<DomainRecord>;
 
   /**
    * Update seller metrics
@@ -160,7 +162,7 @@ export interface SellerRepository {
    * @param metrics Performance metrics
    * @returns Promise resolving to updated seller
    */
-  updateMetrics(id: string, metrics: any): Promise<any>;
+  updateMetrics(id: string, metrics: DomainRecord): Promise<DomainRecord>;
 }
 
 /**
@@ -200,14 +202,14 @@ export interface InventoryRepository {
    * @param variantId Variant identifier (optional)
    * @returns Promise resolving to stock information
    */
-  getStock(productId: string, variantId?: string): Promise<any>;
+  getStock(productId: string, variantId?: string): Promise<DomainRecord>;
 
   /**
    * Get low stock alerts
    * @param threshold Minimum stock threshold
    * @returns Promise resolving to low stock items
    */
-  getLowStockAlerts(threshold: number): Promise<any[]>;
+  getLowStockAlerts(threshold: number): Promise<DomainRecord[]>;
 }
 
 /**
@@ -220,21 +222,21 @@ export interface MediaRepository {
    * @param media Media entity
    * @returns Promise resolving to saved media
    */
-  save(media: any): Promise<any>;
+  save(media: DomainRecord): Promise<DomainRecord>;
 
   /**
    * Find media by ID
    * @param id Media identifier
    * @returns Promise resolving to media or null
    */
-  findById(id: string): Promise<any | null>;
+  findById(id: string): Promise<DomainRecord | null>;
 
   /**
    * Find media by product
    * @param productId Product identifier
    * @returns Promise resolving to array of media
    */
-  findByProduct(productId: string): Promise<any[]>;
+  findByProduct(productId: string): Promise<DomainRecord[]>;
 
   /**
    * Delete media
@@ -249,7 +251,7 @@ export interface MediaRepository {
    * @param metadata Updated metadata
    * @returns Promise resolving to updated media
    */
-  updateMetadata(id: string, metadata: any): Promise<any>;
+  updateMetadata(id: string, metadata: DomainRecord): Promise<DomainRecord>;
 }
 
 // ============================================================================
@@ -266,14 +268,14 @@ export interface DomainEventPublisher {
    * @param event The domain event to publish
    * @returns Promise resolving when event is published
    */
-  publish(event: any): Promise<void>;
+  publish(event: DomainEvent): Promise<void>;
 
   /**
    * Publish multiple domain events
    * @param events Array of domain events
    * @returns Promise resolving when all events are published
    */
-  publishAll(events: any[]): Promise<void>;
+  publishAll(events: DomainEvent[]): Promise<void>;
 }
 
 /**
@@ -286,7 +288,7 @@ export interface EventStore {
    * @param events Array of domain events
    * @returns Promise resolving when events are saved
    */
-  save(events: any[]): Promise<void>;
+  save(events: DomainEvent[]): Promise<void>;
 
   /**
    * Load events for an aggregate
@@ -294,7 +296,7 @@ export interface EventStore {
    * @param fromVersion Optional starting version
    * @returns Promise resolving to array of events
    */
-  load(aggregateId: string, fromVersion?: number): Promise<any[]>;
+  load(aggregateId: string, fromVersion?: number): Promise<DomainEvent[]>;
 
   /**
    * Get event stream for aggregate type
@@ -302,7 +304,7 @@ export interface EventStore {
    * @param aggregateId Aggregate identifier
    * @returns Promise resolving to event stream
    */
-  getStream(aggregateType: string, aggregateId: string): Promise<any[]>;
+  getStream(aggregateType: string, aggregateId: string): Promise<DomainEvent[]>;
 }
 
 // ============================================================================
@@ -319,7 +321,7 @@ export interface SearchService {
    * @param document Document to index
    * @returns Promise resolving when document is indexed
    */
-  index(document: any): Promise<void>;
+  index(document: DomainRecord): Promise<void>;
 
   /**
    * Search documents
@@ -328,7 +330,7 @@ export interface SearchService {
    * @param pagination Pagination parameters
    * @returns Promise resolving to search results
    */
-  search(query: string, filters: any, pagination: any): Promise<any>;
+  search(query: string, filters: DomainRecord, pagination: DomainRecord): Promise<DomainRecord>;
 
   /**
    * Remove document from search index
@@ -343,7 +345,7 @@ export interface SearchService {
    * @param updates Updated fields
    * @returns Promise resolving when document is updated
    */
-  update(id: string, updates: any): Promise<void>;
+  update(id: string, updates: DomainRecord): Promise<void>;
 }
 
 /**
@@ -365,7 +367,7 @@ export interface CacheService {
    * @param ttl Time to live in seconds
    * @returns Promise resolving when value is cached
    */
-  set(key: string, value: any, ttl?: number): Promise<void>;
+  set(key: string, value: unknown, ttl?: number): Promise<void>;
 
   /**
    * Delete value from cache
@@ -399,7 +401,7 @@ export interface FileStorageService {
    * @param metadata File metadata
    * @returns Promise resolving to file information
    */
-  upload(file: Buffer, metadata: any): Promise<any>;
+  upload(file: Buffer, metadata: DomainRecord): Promise<DomainRecord>;
 
   /**
    * Download file
@@ -420,7 +422,7 @@ export interface FileStorageService {
    * @param fileId File identifier
    * @returns Promise resolving to file metadata
    */
-  getMetadata(fileId: string): Promise<any>;
+  getMetadata(fileId: string): Promise<DomainRecord>;
 
   /**
    * Generate presigned URL for file access
@@ -506,28 +508,28 @@ export interface LoggingService {
    * @param message Log message
    * @param context Additional context
    */
-  debug(message: string, context?: any): void;
+  debug(message: string, context?: DomainRecord): void;
 
   /**
    * Log info message
    * @param message Log message
    * @param context Additional context
    */
-  info(message: string, context?: any): void;
+  info(message: string, context?: DomainRecord): void;
 
   /**
    * Log warning message
    * @param message Log message
    * @param context Additional context
    */
-  warn(message: string, context?: any): void;
+  warn(message: string, context?: DomainRecord): void;
 
   /**
    * Log error message
    * @param message Log message
    * @param context Additional context
    */
-  error(message: string, context?: any): void;
+  error(message: string, context?: DomainRecord): void;
 }
 
 // ============================================================================
@@ -567,12 +569,12 @@ export interface DomainEvent {
   /**
    * Event payload
    */
-  payload: any;
+  payload: unknown;
 
   /**
    * Event metadata
    */
-  metadata?: Record<string, any>;
+  metadata?: DomainRecord;
 }
 
 /**
@@ -593,7 +595,7 @@ export interface ProductUpdatedEvent extends DomainEvent {
   eventType: 'ProductUpdated';
   payload: {
     productId: string;
-    changes: Record<string, any>;
+    changes: DomainRecord;
   };
 }
 
@@ -660,21 +662,21 @@ export interface EntityFactory {
    * @param data Product creation data
    * @returns New product entity
    */
-  createProduct(data: any): any;
+  createProduct(data: DomainRecord): DomainRecord;
 
   /**
    * Create seller entity
    * @param data Seller creation data
    * @returns New seller entity
    */
-  createSeller(data: any): any;
+  createSeller(data: DomainRecord): DomainRecord;
 
   /**
    * Create category entity
    * @param data Category creation data
    * @returns New category entity
    */
-  createCategory(data: any): any;
+  createCategory(data: DomainRecord): DomainRecord;
 }
 
 /**
@@ -688,19 +690,19 @@ export interface ValueObjectFactory {
    * @param currency Currency code
    * @returns Price value object
    */
-  createPrice(amount: number, currency?: string): any;
+  createPrice(amount: number, currency?: string): DomainRecord;
 
   /**
    * Create product ID
    * @param idGenerator ID generator implementation
    * @returns Product ID value object
    */
-  createProductId(idGenerator?: any): any;
+  createProductId(idGenerator?: IdGenerator): DomainRecord;
 
   /**
    * Create address value object
    * @param data Address data
    * @returns Address value object
    */
-  createAddress(data: any): any;
+  createAddress(data: DomainRecord): DomainRecord;
 }

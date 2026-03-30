@@ -38,13 +38,13 @@ export interface VisibilityAction {
 export interface VisibilityContext {
   productId: string;
   sellerId: string;
-  currentVisibility: 'public' | 'private' | 'seller_only' | 'b2b_only' | 'hidden';
+  currentVisibility: string;
   category: string;
   price: number;
-  productStatus: 'draft' | 'pending_review' | 'published' | 'archived' | 'suspended';
-  sellerRating: number;
-  sellerTier: 'new' | 'established' | 'trusted' | 'premium';
-  accountAge: number; // days
+  productStatus: string;
+  sellerRating: number | undefined;
+  sellerTier: string;
+  accountAge: number | null | undefined; // days
   violationCount: number;
   reviewCount: number;
   successfulSales: number;
@@ -55,7 +55,7 @@ export interface VisibilityContext {
 
 export interface VisibilityRuleResult {
   appliedRules: string[];
-  finalVisibility: 'public' | 'private' | 'seller_only' | 'b2b_only' | 'hidden';
+  finalVisibility: string;
   visibilityChanges: Array<{
     ruleId: string;
     fromVisibility: string;
@@ -202,20 +202,22 @@ export class VisibilityRuleEngine {
     switch (action.type) {
       case 'set_visibility':
         return action.value;
-      case 'restrict_visibility':
+      case 'restrict_visibility': {
         // Restrict visibility based on current level
         const visibilityLevels: ('public' | 'private' | 'seller_only' | 'b2b_only' | 'hidden')[] = ['hidden', 'seller_only', 'private', 'b2b_only', 'public'];
         const currentIndex = visibilityLevels.indexOf(currentVisibility as any);
         const restrictIndex = visibilityLevels.indexOf(action.value);
         if (currentIndex === -1 || restrictIndex === -1) return currentVisibility as any;
         return visibilityLevels[Math.min(currentIndex, restrictIndex)];
-      case 'boost_visibility':
+      }
+      case 'boost_visibility': {
         // Boost visibility (opposite of restrict)
         const boostLevels: ('public' | 'private' | 'seller_only' | 'b2b_only' | 'hidden')[] = ['hidden', 'seller_only', 'private', 'b2b_only', 'public'];
         const currentBoostIndex = boostLevels.indexOf(currentVisibility as any);
         const boostIndex = boostLevels.indexOf(action.value);
         if (currentBoostIndex === -1 || boostIndex === -1) return currentVisibility as any;
         return boostLevels[Math.max(currentBoostIndex, boostIndex)];
+      }
       case 'hide_product':
         return 'hidden';
       default:

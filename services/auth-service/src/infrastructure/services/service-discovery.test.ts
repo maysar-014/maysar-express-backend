@@ -6,7 +6,7 @@ const mockLoggerError = jest.fn();
 jest.useFakeTimers();
 
 jest.mock('../clients/user-service.client', () => ({
-  createUserServiceClient: (...args: unknown[]) => mockCreateUserServiceClient(...args)
+  createUserServiceClient: (..._args: any[]) => mockCreateUserServiceClient()
 }));
 
 jest.mock('./logger.service', () => ({

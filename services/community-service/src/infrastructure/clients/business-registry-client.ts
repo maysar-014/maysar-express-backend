@@ -17,7 +17,7 @@ export class HttpBusinessRegistryClient implements BusinessRegistryClient {
     async getBusinessDetails(businessId: string): Promise<{
         id: string;
         name: string;
-        industry: string;
+        industry: string[];
         verificationStatus: string;
     } | null> {
         const business = await businessRepository.findById(businessId);
@@ -27,7 +27,7 @@ export class HttpBusinessRegistryClient implements BusinessRegistryClient {
         return {
             id: business.id,
             name: business.name,
-            industry: business.industry || '',
+            industry: business.industry || [],
             verificationStatus: business.verificationStatus
         };
     }

@@ -1,4 +1,4 @@
-import { ReserveInventoryUseCase } from '../reserve-inventory.use-case';
+import { ReserveInventoryUseCase } from './reserve-inventory.use-case';
 
 const mockRepository = {
   findStock: jest.fn(),

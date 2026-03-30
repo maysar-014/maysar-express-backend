@@ -9,7 +9,48 @@ import {
   MediaRepository,
   SearchService
 } from '../../domain/interfaces';
-import { ProductId } from '../../domain/value-objects/ids.value-object';
+type ProductRecord = {
+  id?: string;
+  sellerId?: string;
+  name?: string;
+  description?: string;
+  price?: {
+    amount?: number;
+    currency?: string;
+  } | number;
+  currency?: string;
+  categoryId?: string;
+  type?: string;
+  tags?: string[];
+  attributes?: Record<string, unknown>;
+  status?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  getId?: () => { toString(): string } | string;
+  getDefaultVariant?: () => {
+    getPrice(): {
+      toNumber(): number;
+      getCurrency(): string;
+    };
+    getAttributes?: () => Record<string, unknown>;
+  };
+  getSellerId?: () => { toString(): string } | string;
+  getName?: () => string;
+  getDescription?: () => string;
+  getCategoryId?: () => { toString(): string } | string | undefined;
+  getType?: () => string;
+  getTags?: () => string[];
+  getStatus?: () => { toString(): string } | string;
+  getCreatedAt?: () => Date;
+  getUpdatedAt?: () => Date;
+};
+
+type SearchResultRecord = {
+  id?: string;
+  name?: string;
+  price?: number;
+  score?: number;
+};
 
 export interface GetProductRequest {
   productId: string;
@@ -30,7 +71,7 @@ export interface ProductDetails {
   categoryName?: string;
   type: string;
   tags: string[];
-  attributes: Record<string, any>;
+  attributes: Record<string, unknown>;
   status: string;
   media?: Array<{
     id: string;
@@ -109,7 +150,7 @@ export class GetProductUseCase {
     }
   }
 
-  private async buildProductDetails(product: any, request: GetProductRequest): Promise<ProductDetails> {
+  private async buildProductDetails(product: ProductRecord, request: GetProductRequest): Promise<ProductDetails> {
     const normalizedProduct = this.normalizeProductRecord(product);
 
     const details: ProductDetails = {
@@ -145,44 +186,46 @@ export class GetProductUseCase {
     return details;
   }
 
-  private normalizeProductRecord(product: any): ProductDetails {
-    if (product && typeof product.getId === 'function' && typeof product.getDefaultVariant === 'function') {
-      const defaultVariant = product.getDefaultVariant();
+  private normalizeProductRecord(product: unknown): ProductDetails {
+    const candidate = product as ProductRecord;
+
+    if (candidate && typeof candidate.getId === 'function' && typeof candidate.getDefaultVariant === 'function') {
+      const defaultVariant = candidate.getDefaultVariant();
       return {
-        id: String(product.getId().toString()),
-        sellerId: String(product.getSellerId().toString()),
-        name: product.getName(),
-        description: product.getDescription(),
+        id: String(candidate.getId().toString()),
+        sellerId: String(candidate.getSellerId?.().toString?.() || ''),
+        name: candidate.getName?.() || '',
+        description: candidate.getDescription?.() || '',
         price: {
           amount: Number(defaultVariant.getPrice().toNumber()),
           currency: defaultVariant.getPrice().getCurrency()
         },
-        categoryId: String(product.getCategoryId()?.toString?.() || ''),
-        type: String(product.getType?.() || 'physical'),
-        tags: product.getTags?.() || [],
+        categoryId: String(candidate.getCategoryId?.()?.toString?.() || ''),
+        type: String(candidate.getType?.() || 'physical'),
+        tags: candidate.getTags?.() || [],
         attributes: defaultVariant.getAttributes?.() || {},
-        status: String(product.getStatus().toString()),
-        createdAt: product.getCreatedAt(),
-        updatedAt: product.getUpdatedAt()
+        status: String(candidate.getStatus?.()?.toString?.() || 'draft'),
+        createdAt: candidate.getCreatedAt?.() ?? new Date(),
+        updatedAt: candidate.getUpdatedAt?.() ?? new Date()
       };
     }
 
     return {
-      id: String(product.id),
-      sellerId: String(product.sellerId),
-      name: product.name,
-      description: product.description,
+      id: String(candidate.id ?? ''),
+      sellerId: String(candidate.sellerId ?? ''),
+      name: candidate.name ?? '',
+      description: candidate.description ?? '',
       price: {
-        amount: Number(product.price?.amount ?? product.price ?? 0),
-        currency: String(product.price?.currency ?? product.currency ?? 'USD')
+        amount: Number((candidate.price && typeof candidate.price === 'object' ? candidate.price.amount : candidate.price) ?? 0),
+        currency: String((candidate.price && typeof candidate.price === 'object' ? candidate.price.currency : candidate.currency) ?? 'USD')
       },
-      categoryId: String(product.categoryId || ''),
-      type: String(product.type || 'physical'),
-      tags: product.tags || [],
-      attributes: product.attributes || {},
-      status: String(product.status || 'draft'),
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt
+      categoryId: String(candidate.categoryId || ''),
+      type: String(candidate.type || 'physical'),
+      tags: candidate.tags || [],
+      attributes: candidate.attributes || {},
+      status: String(candidate.status || 'draft'),
+      createdAt: candidate.createdAt ?? new Date(),
+      updatedAt: candidate.updatedAt ?? new Date()
     };
   }
 
@@ -193,14 +236,21 @@ export class GetProductUseCase {
     order: number;
   }>> {
     try {
-      const media = await this.mediaRepository.findByProduct(productId);
+      const media = (await this.mediaRepository.findByProduct(productId)) as Array<{
+        id?: string;
+        url?: string;
+        type?: string;
+        order?: number;
+      }>;
+
       return media
-        .sort((a, b) => (a.order || 0) - (b.order || 0))
+        .slice()
+        .sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0))
         .map(m => ({
-          id: m.id,
-          url: m.url,
+          id: String(m.id ?? ''),
+          url: String(m.url ?? ''),
           type: m.type || 'unknown',
-          order: m.order || 0
+          order: Number(m.order ?? 0)
         }));
     } catch (error) {
       console.warn('Failed to load product media:', error);
@@ -210,7 +260,7 @@ export class GetProductUseCase {
 
 
 
-  private async loadProductRecommendations(product: any): Promise<Array<{
+  private async loadProductRecommendations(product: ProductRecord): Promise<Array<{
     productId: string;
     name: string;
     price: number;
@@ -229,8 +279,8 @@ export class GetProductUseCase {
         limit: 5
       }, { limit: 5 });
 
-      return searchResults.map((result: any) => ({
-        productId: result.id,
+      return this.normalizeSearchResults(searchResults).map((result: SearchResultRecord) => ({
+        productId: result.id || '',
         name: result.name || 'Unknown Product',
         price: result.price || 0,
         relevanceScore: result.score || 0
@@ -240,6 +290,24 @@ export class GetProductUseCase {
       console.warn('Failed to load product recommendations:', error);
       return [];
     }
+  }
+
+  private normalizeSearchResults(result: unknown): SearchResultRecord[] {
+    if (Array.isArray(result)) {
+      return result as SearchResultRecord[];
+    }
+
+    const record = result as { results?: unknown; products?: unknown };
+
+    if (Array.isArray(record?.results)) {
+      return record.results as SearchResultRecord[];
+    }
+
+    if (Array.isArray(record?.products)) {
+      return record.products as SearchResultRecord[];
+    }
+
+    return [];
   }
 }
 
@@ -313,60 +381,50 @@ export class GetProductsBySellerUseCase {
     }
   }
 
-  private async buildBasicProductDetails(product: any): Promise<ProductDetails> {
-    const normalizedProduct =
-      product && typeof product.getId === 'function' && typeof product.getDefaultVariant === 'function'
-        ? {
-            id: String(product.getId().toString()),
-            sellerId: String(product.getSellerId().toString()),
-            name: product.getName(),
-            description: product.getDescription(),
-            price: {
-              amount: Number(product.getDefaultVariant().getPrice().toNumber()),
-              currency: product.getDefaultVariant().getPrice().getCurrency()
-            },
-            categoryId: String(product.getCategoryId()?.toString?.() || ''),
-            type: String(product.getType?.() || 'physical'),
-            tags: product.getTags?.() || [],
-            attributes: product.getDefaultVariant().getAttributes?.() || {},
-            status: String(product.getStatus().toString()),
-            createdAt: product.getCreatedAt(),
-            updatedAt: product.getUpdatedAt()
-          }
-        : {
-            id: String(product.id),
-            sellerId: String(product.sellerId),
-            name: product.name,
-            description: product.description,
-            price: {
-              amount: Number(product.price?.amount ?? product.price ?? 0),
-              currency: String(product.price?.currency ?? product.currency ?? 'USD')
-            },
-            categoryId: String(product.categoryId || ''),
-            type: String(product.type || 'physical'),
-            tags: product.tags || [],
-            attributes: product.attributes || {},
-            status: String(product.status || 'draft'),
-            createdAt: product.createdAt,
-            updatedAt: product.updatedAt
-          };
+  private async buildBasicProductDetails(product: ProductRecord): Promise<ProductDetails> {
+    return this.normalizeProductRecord(product);
+  }
+
+  private normalizeProductRecord(product: ProductRecord): ProductDetails {
+    const candidate = product as ProductRecord;
+
+    if (candidate && typeof candidate.getId === 'function' && typeof candidate.getDefaultVariant === 'function') {
+      const defaultVariant = candidate.getDefaultVariant();
+      return {
+        id: String(candidate.getId().toString()),
+        sellerId: String(candidate.getSellerId?.().toString?.() || ''),
+        name: candidate.getName?.() || '',
+        description: candidate.getDescription?.() || '',
+        price: {
+          amount: Number(defaultVariant.getPrice().toNumber()),
+          currency: defaultVariant.getPrice().getCurrency()
+        },
+        categoryId: String(candidate.getCategoryId?.()?.toString?.() || ''),
+        type: String(candidate.getType?.() || 'physical'),
+        tags: candidate.getTags?.() || [],
+        attributes: defaultVariant.getAttributes?.() || {},
+        status: String(candidate.getStatus?.()?.toString?.() || 'draft'),
+        createdAt: candidate.getCreatedAt?.() ?? new Date(),
+        updatedAt: candidate.getUpdatedAt?.() ?? new Date()
+      };
+    }
 
     return {
-      id: normalizedProduct.id,
-      sellerId: normalizedProduct.sellerId,
-      name: normalizedProduct.name,
-      description: normalizedProduct.description,
+      id: String(candidate.id ?? ''),
+      sellerId: String(candidate.sellerId ?? ''),
+      name: candidate.name ?? '',
+      description: candidate.description ?? '',
       price: {
-        amount: normalizedProduct.price.amount,
-        currency: normalizedProduct.price.currency
+        amount: Number((candidate.price && typeof candidate.price === 'object' ? candidate.price.amount : candidate.price) ?? 0),
+        currency: String((candidate.price && typeof candidate.price === 'object' ? candidate.price.currency : candidate.currency) ?? 'USD')
       },
-      categoryId: normalizedProduct.categoryId,
-      type: normalizedProduct.type,
-      tags: normalizedProduct.tags || [],
-      attributes: normalizedProduct.attributes || {},
-      status: normalizedProduct.status,
-      createdAt: normalizedProduct.createdAt,
-      updatedAt: normalizedProduct.updatedAt
+      categoryId: String(candidate.categoryId || ''),
+      type: String(candidate.type || 'physical'),
+      tags: candidate.tags || [],
+      attributes: candidate.attributes || {},
+      status: String(candidate.status || 'draft'),
+      createdAt: candidate.createdAt ?? new Date(),
+      updatedAt: candidate.updatedAt ?? new Date()
     };
   }
 }

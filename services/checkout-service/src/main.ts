@@ -1,4 +1,5 @@
 import express from 'express';
+import type { Server } from 'http';
 import { PrismaCartRepository } from './infrastructure/repositories/prisma-cart.repository';
 import { PrismaCheckoutRepository } from './infrastructure/repositories/prisma-checkout.repository';
 import { PrismaCheckoutOrderRepository } from './infrastructure/repositories/prisma-checkout-order.repository';
@@ -60,9 +61,32 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 3005;
 
-app.listen(PORT, () => {
-  logger.info(`Checkout Service running on port ${PORT}`);
-});
+export interface ClosableServer {
+  close(callback: (error?: Error) => void): void;
+}
+
+export const startServer = (): Server => {
+  return app.listen(PORT, () => {
+    logger.info(`Checkout Service running on port ${PORT}`);
+  });
+};
+
+export const gracefulShutdown = (server: ClosableServer): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    server.close((error?: Error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve();
+    });
+  });
+};
+
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
 
 export default app;
 

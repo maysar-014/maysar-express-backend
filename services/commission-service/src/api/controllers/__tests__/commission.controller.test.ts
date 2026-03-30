@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
 import { CommissionController } from '../commission.controller';
-import { CalculateCommissionUseCase } from '../../application/use-cases/calculate-commission.use-case';
-import { ApproveCommissionUseCase } from '../../application/use-cases/approve-commission.use-case';
-import { ICommissionRepository } from '../../domain/repositories/index';
-import { CommissionFactory } from '../../../__tests__/factories/commission.factory';
-import { CommissionId, SellerId } from '../../domain/value-objects/ids.value-object';
-import { CommissionAmount, CommissionRate } from '../../domain/value-objects/monetary.value-object';
-import { CommissionType } from '../../domain/value-objects/commission-types.value-object';
-import { RecipientType } from '../../domain/value-objects/recipient-types.value-object';
+import { CalculateCommissionUseCase } from '../../../application/use-cases/calculate-commission.use-case';
+import { ApproveCommissionUseCase } from '../../../application/use-cases/approve-commission.use-case';
+import { ICommissionRepository } from '../../../domain/repositories/index';
+import { CommissionFactory } from '../../../../__tests__/factories/commission.factory';
+import { CommissionId, OrderId, SellerId } from '../../../domain/value-objects/ids.value-object';
+import { CommissionAmount, CommissionRate } from '../../../domain/value-objects/monetary.value-object';
+import { CommissionType } from '../../../domain/value-objects/commission-types.value-object';
+import { RecipientType } from '../../../domain/value-objects/recipient-types.value-object';
 
 describe('CommissionController', () => {
     let controller: CommissionController;
@@ -55,7 +55,7 @@ describe('CommissionController', () => {
 
             mockRequest = {
                 body: {
-                    orderId: CommissionId.create().toString(),
+                    orderId: OrderId.create().toString(),
                     sellerId: SellerId.create().toString(),
                     orderAmount: 1000,
                     recipientType: RecipientType.SELLER,
@@ -76,7 +76,15 @@ describe('CommissionController', () => {
 
         it('should return 400 on error', async () => {
             mockCalculateUseCase.execute.mockRejectedValue(new Error('Validation failed'));
-            mockRequest = { body: {} } as Request;
+            mockRequest = {
+                body: {
+                    orderId: OrderId.create().toString(),
+                    sellerId: SellerId.create().toString(),
+                    orderAmount: 1000,
+                    recipientType: RecipientType.SELLER,
+                    commissionType: CommissionType.SALE
+                }
+            } as Request;
 
             await controller.calculateCommission(mockRequest as Request, mockResponse as Response);
 

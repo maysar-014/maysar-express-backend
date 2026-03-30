@@ -36,7 +36,7 @@ describe('EventCorrelationService', () => {
   });
 
   it('creates correlated events with ids, metadata and trace context', () => {
-    mockedUuid.mockReturnValueOnce('corr-generated').mockReturnValueOnce('evt-generated');
+    mockedUuid.mockReturnValueOnce('evt-generated');
 
     const event = EventCorrelationService.createCorrelatedEvent('OrderCreated', { orderId: 'order-1' }, {
       causationId: 'cause-1',

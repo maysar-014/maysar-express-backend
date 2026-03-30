@@ -35,9 +35,10 @@ describe('ModuleController', () => {
     await controller.list({} as never, res, next);
 
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith([
-      expect.objectContaining({ id: 'module-1', name: 'Safety' })
-    ]);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      data: [expect.objectContaining({ id: 'module-1', name: 'Safety' })]
+    });
   });
 
   it('forwards not found error in get()', async () => {
@@ -86,8 +87,11 @@ describe('ModuleController', () => {
     const contentRes = createRes();
     await controller.getContent({ params: { id: 'module-2' } } as never, contentRes, next);
     expect(contentRes.json).toHaveBeenCalledWith({
-      contentType: ContentType.VIDEO,
-      content: { type: ContentType.VIDEO, url: 'https://cdn.example/v.mp4' }
+      success: true,
+      data: {
+        contentType: ContentType.VIDEO,
+        content: { type: ContentType.VIDEO, url: 'https://cdn.example/v.mp4' }
+      }
     });
 
     const leaderboardRes = createRes();

@@ -48,11 +48,16 @@ export class PrismaTicketMessageRepository implements ITicketMessageRepository {
                 isInternal: message.isInternal,
                 createdAt: message.createdAt
             };
-            const data = await this.prisma.support_TicketMessage.upsert({
-                where: { id: message.id },
-                create: payload,
-                update: payload
-            });
+            const table = this.prisma.support_TicketMessage as any;
+            const data = typeof table.upsert === 'function'
+                ? await table.upsert({
+                    where: { id: message.id },
+                    create: payload,
+                    update: payload
+                })
+                : await table.create({
+                    data: payload
+                });
             return MessageMapper.toDomain(data);
         } catch (error) {
             logger.error(`Error creating message: ${message.id}`, { error });

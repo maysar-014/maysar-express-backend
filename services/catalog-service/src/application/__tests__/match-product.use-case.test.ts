@@ -1,5 +1,5 @@
 import { MatchProductUseCase } from '../use-cases/match-product.use-case';
-import { IProductRepository, IProductMatchAuditRepository } from '../../domain/repositories/repository.interfaces';
+import { IProductRepository, IProductMatchAuditRepository, IMatchConfirmationRepository } from '../../domain/repositories/repository.interfaces';
 import { Product } from '../../domain/entities/product.entity';
 import { ProductId, SellerId, CategoryId } from '../../domain/value-objects/ids.value-object';
 import { ProductStatusValue, ProductStatus, ProductType, ProductVisibility } from '../../domain/value-objects/product-types.value-object';
@@ -68,6 +68,38 @@ class MockAuditRepository implements IProductMatchAuditRepository {
     }
 }
 
+class MockConfirmationRepository implements IMatchConfirmationRepository {
+    private confirmations: any[] = [];
+
+    async save(confirmation: any): Promise<void> {
+        this.confirmations.push(confirmation);
+    }
+
+    async findById(id: string): Promise<any | null> {
+        return this.confirmations.find(confirmation => confirmation.id === id) || null;
+    }
+
+    async findPendingBySeller(sellerId: string): Promise<any[]> {
+        return this.confirmations.filter(confirmation => confirmation.sellerId === sellerId && confirmation.status === 'PENDING');
+    }
+
+    async updateStatus(id: string, status: string, sellerChoice?: string): Promise<void> {
+        const confirmation = this.confirmations.find(item => item.id === id);
+        if (confirmation) {
+            confirmation.status = status;
+            confirmation.sellerChoice = sellerChoice;
+        }
+    }
+
+    async findExpired(): Promise<any[]> {
+        return this.confirmations.filter(confirmation => confirmation.expiresAt < new Date());
+    }
+
+    getConfirmations() {
+        return this.confirmations;
+    }
+}
+
 // Helper to create mock variant
 const createMockVariant = () => ({
     getId: () => 'var-1',
@@ -87,15 +119,17 @@ describe('MatchProductUseCase - Integration', () => {
     let useCase: MatchProductUseCase;
     let productRepo: MockProductRepository;
     let auditRepo: MockAuditRepository;
+    let confirmationRepo: MockConfirmationRepository;
 
     beforeEach(() => {
         productRepo = new MockProductRepository();
         auditRepo = new MockAuditRepository();
-        useCase = new MatchProductUseCase(productRepo, auditRepo);
+        confirmationRepo = new MockConfirmationRepository();
+        useCase = new MatchProductUseCase(productRepo, auditRepo, confirmationRepo);
     });
 
     it('should find exact match by identifier and create audit', async () => {
-        const existingProduct = new Product(
+        const existingProduct = new (Product as any)(
             new ProductId('prod-1'),
             new SellerId('seller-1'),
             'iPhone 15',
@@ -151,17 +185,17 @@ describe('MatchProductUseCase - Integration', () => {
     });
 
     it('should require confirmation for possible match', async () => {
-        const existingProduct = new Product(
+        const existingProduct = new (Product as any)(
             new ProductId('prod-2'),
             new SellerId('seller-1'),
-            'iPhone 15 Pro Max',
+            'iPhone 15 Pro',
             'Description',
             new ProductStatusValue(ProductStatus.PUBLISHED),
             ProductType.PHYSICAL,
             ProductVisibility.PUBLIC,
             new CategoryId('cat-1'),
             'Apple',
-            'iPhone 15 Pro Max',
+            'iPhone 15 Pro',
             [createMockVariant()]
         );
 

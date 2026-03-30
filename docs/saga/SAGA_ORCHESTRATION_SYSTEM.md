@@ -27,7 +27,9 @@
 
 ### **What is Saga Orchestration?**
 
-Saga orchestration is a **transaction coordination pattern** that manages complex business workflows spanning multiple modules. In the current monolith, sagas provide **eventual consistency** through **compensation actions** and **in-memory event-driven communication**, while remaining ready for future microservices decomposition.
+Saga orchestration is a **transaction coordination pattern** that manages complex business workflows spanning multiple modules. In the current monolith, sagas provide **eventual consistency** through **compensation actions** and **in-memory event-driven communication**, while still keeping the workflows easy to extract later if we ever split the platform.
+
+> Note: some of the lower diagrams still show broker-based or multi-service concepts from the earlier planning phase. The live runtime uses the shared EventBus and module wrappers.
 
 ### **Key Benefits**
 
@@ -129,7 +131,7 @@ A **Saga** is a **long-running business transaction** that coordinates multiple 
 
 | Characteristic | Description |
 |----------------|-------------|
-| **Distributed** | Spans multiple microservices |
+| **Distributed** | Spans multiple modules in the monolith |
 | **Event-Driven** | Communicates via domain events |
 | **Compensatable** | Each step has undo operation |
 | **Eventually Consistent** | No immediate consistency guarantees |

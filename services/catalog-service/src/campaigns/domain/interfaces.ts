@@ -1,18 +1,19 @@
-import { CampaignStatus, CampaignType } from './enums';
+export type CampaignRecord = Record<string, unknown>;
 
 export interface ICampaignRepository {
-  save(campaign: any): Promise<void>;
-  findById(id: string): Promise<any | null>;
-  findBySellerId(sellerId: string): Promise<any[]>;
-  update(id: string, data: any): Promise<void>;
+  save(campaign: CampaignRecord): Promise<void>;
+  findById(id: string): Promise<CampaignRecord | null>;
+  findBySellerId(sellerId: string): Promise<CampaignRecord[]>;
+  findAll(filters?: Record<string, unknown>): Promise<CampaignRecord[]>;
+  update(id: string, data: CampaignRecord): Promise<void>;
   delete(id: string): Promise<void>;
 }
 
 export interface ICampaignValidator {
-  validate(campaign: any): Promise<{ valid: boolean; errors: string[] }>;
+  validate(campaign: CampaignRecord): Promise<{ valid: boolean; errors: string[] }>;
 }
 
 export interface ICampaignEngine {
-  calculateDiscount(campaign: any, orderAmount: number): number;
-  isEligible(campaign: any, userId: string): Promise<boolean>;
+  calculateDiscount(campaign: CampaignRecord, orderAmount: number): number;
+  isEligible(campaign: CampaignRecord, userId: string): Promise<boolean>;
 }

@@ -14,6 +14,18 @@ export class MessageMapper {
         };
     }
 
+    public static toDTO(message: any): MessageResponseDto {
+        return {
+            id: message.id,
+            ticketId: message.ticketId ?? message.getTicketId?.(),
+            senderId: message.senderId ?? message.getSenderId?.(),
+            senderType: message.senderType ?? message.getSenderType?.(),
+            content: message.content ?? message.getContent?.(),
+            isInternal: message.isInternal ?? message.getIsInternal?.() ?? false,
+            createdAt: message.createdAt ?? message.getCreatedAt?.() ?? new Date()
+        };
+    }
+
     public static toDomain(persistence: any): TicketMessage {
         return new TicketMessage({
             id: persistence.id,

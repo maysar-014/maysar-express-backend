@@ -2,18 +2,28 @@
  * Application Handlers Index
  */
 
-export interface EventHandler {
+export interface CampaignEvent {
     readonly eventType: string;
-    handle(event: any, context?: any): Promise<void>;
 }
 
-export abstract class BaseEventHandler implements EventHandler {
+export type CampaignHandlerContext = Record<string, unknown>;
+
+export interface EventHandler<TEvent extends CampaignEvent = CampaignEvent, TContext = CampaignHandlerContext> {
+    readonly eventType: string;
+    handle(event: TEvent, context?: TContext): Promise<void>;
+}
+
+function isCampaignEvent(value: unknown): value is CampaignEvent {
+    return typeof value === 'object' && value !== null && 'eventType' in value && typeof (value as { eventType?: unknown }).eventType === 'string';
+}
+
+export abstract class BaseEventHandler<TEvent extends CampaignEvent = CampaignEvent, TContext = CampaignHandlerContext> implements EventHandler<TEvent, TContext> {
     abstract readonly eventType: string;
 
-    abstract handle(event: any, context?: any): Promise<void>;
+    abstract handle(event: TEvent, context?: TContext): Promise<void>;
 
-    protected validateEvent(event: any): void {
-        if (!event || !event.eventType) {
+    protected validateEvent(event: unknown): asserts event is TEvent {
+        if (!isCampaignEvent(event)) {
             throw new Error('Invalid event structure');
         }
 
@@ -22,7 +32,7 @@ export abstract class BaseEventHandler implements EventHandler {
         }
     }
 
-    protected logEventProcessing(event: any, action: string): void {
+    protected logEventProcessing(event: TEvent, action: string): void {
         console.log(`[${this.constructor.name}] Processing ${event.eventType}: ${action}`);
     }
 }
@@ -38,7 +48,11 @@ export class EventHandlerRegistry {
         this.handlers.get(eventType)!.push(handler);
     }
 
-    async handleEvent(event: any, context?: any): Promise<void> {
+    async handleEvent(event: unknown, context?: CampaignHandlerContext): Promise<void> {
+        if (!isCampaignEvent(event)) {
+            throw new Error('Invalid event structure');
+        }
+
         const eventType = event.eventType;
         const handlers = this.handlers.get(eventType) || [];
 

@@ -1,13 +1,14 @@
+jest.mock('../../../../business-registry-service/src/infrastructure', () => ({
+  businessRepository: {
+    findById: jest.fn()
+  }
+}));
+
 import { HttpBusinessRegistryClient } from './business-registry-client';
+import { businessRepository } from '../../../../business-registry-service/src/infrastructure';
 import { VerificationStatus } from '../../../../business-registry-service/src/domain/entities/business.entity';
 
-const mockBusinessRepository = {
-  findById: jest.fn()
-};
-
-jest.mock('../../../../business-registry-service/src/infrastructure', () => ({
-  businessRepository: mockBusinessRepository
-}));
+const mockBusinessRepository = businessRepository as unknown as { findById: jest.Mock };
 
 describe('HttpBusinessRegistryClient', () => {
   beforeEach(() => {

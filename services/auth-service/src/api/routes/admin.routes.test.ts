@@ -7,6 +7,7 @@ const mockAsyncHandler = jest.fn(
     (req: express.Request, res: express.Response, next: express.NextFunction) =>
       Promise.resolve(fn(req, res, next)).catch(next)
 );
+const mockRequireRole = jest.fn((_roles?: unknown) => (_req: express.Request, _res: express.Response, next: express.NextFunction) => next());
 
 const mockAdminController = {
   getUser: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'getUser' })),
@@ -29,6 +30,9 @@ jest.mock('../middleware/validation.middleware', () => ({
 
 jest.mock('../middleware/error-handler.middleware', () => ({
   asyncHandler: (...args: unknown[]) => mockAsyncHandler(...args as [(req: express.Request, res: express.Response, next: express.NextFunction) => unknown])
+}));
+jest.mock('@shared/middleware/auth-context.middleware', () => ({
+  requireRole: (...args: unknown[]) => mockRequireRole(...args)
 }));
 
 jest.mock('../controllers/admin.controller', () => ({
@@ -69,11 +73,13 @@ describe('admin.routes', () => {
   });
 
   it('delegates representative endpoints to admin controller handlers', async () => {
-    const userRes = await request(app).get('/api/v1/admin/users/user-1');
+    const userId = '123e4567-e89b-12d3-a456-426614174000';
+
+    const userRes = await request(app).get(`/api/v1/admin/users/${userId}`);
     expect(userRes.status).toBe(200);
     expect(userRes.body.action).toBe('getUser');
 
-    const statusRes = await request(app).patch('/api/v1/admin/users/user-1/status').send({ status: 'suspended' });
+    const statusRes = await request(app).patch(`/api/v1/admin/users/${userId}/status`).send({ status: 'suspended' });
     expect(statusRes.status).toBe(200);
     expect(statusRes.body.action).toBe('updateUserStatus');
 

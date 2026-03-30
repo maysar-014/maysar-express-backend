@@ -1,9 +1,15 @@
 import { VerifyTwoFactorSetupUseCase } from '../verify-two-factor-setup.use-case';
-import { TotpEngine } from '../../domain/engines/totp.engine';
+import { TotpEngine } from '../../../domain/engines/totp.engine';
 
 describe('VerifyTwoFactorSetupUseCase', () => {
     let useCase: VerifyTwoFactorSetupUseCase;
-    let mockRepository: { findByUserId: jest.Mock; save: jest.Mock };
+    let mockRepository: {
+        findByUserId: jest.Mock;
+        save: jest.Mock;
+        deleteByUserId: jest.Mock;
+        updateBackupCodes: jest.Mock;
+        markBackupCodeAsUsed: jest.Mock;
+    };
 
     const mockConfig = {
         secret: 'secret123',
@@ -15,7 +21,13 @@ describe('VerifyTwoFactorSetupUseCase', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        mockRepository = { findByUserId: jest.fn().mockResolvedValue(mockConfig), save: jest.fn() };
+        mockRepository = {
+            findByUserId: jest.fn().mockResolvedValue(mockConfig),
+            save: jest.fn(),
+            deleteByUserId: jest.fn(),
+            updateBackupCodes: jest.fn(),
+            markBackupCodeAsUsed: jest.fn()
+        };
         useCase = new VerifyTwoFactorSetupUseCase(mockRepository);
     });
 

@@ -4,7 +4,7 @@ describe('DescriptionValidationPolicy', () => {
   describe('validate', () => {
     it('should validate correct description', () => {
       const result = DescriptionValidationPolicy.validate(
-        'This is a premium Cooking Oil product with excellent specifications and features. Perfect for cooking and frying.',
+        'This is a premium Cooking Oil product with excellent specifications and features. It is ideal for cooking, frying, and everyday kitchen use, with reliable quality, stable performance, and detailed warranty information.',
         'Cooking Oil',
         ['cooking', 'oil', 'edible']
       );
@@ -35,9 +35,9 @@ describe('DescriptionValidationPolicy', () => {
 
     it('should reject description without product name', () => {
       const result = DescriptionValidationPolicy.validate(
-        'This is a premium product with excellent specifications and features. Perfect for cooking and frying.',
-        'Cooking Oil',
-        ['cooking', 'oil']
+        'This is a premium edible liquid with excellent specifications and features. It is ideal for frying, cooking, and everyday kitchen use, with reliable quality, stable performance, and detailed warranty information.',
+        'Extra Virgin Olive Oil',
+        ['edible', 'liquid']
       );
       expect(result.isValid).toBe(false);
       expect(result.violatedRules.some((r: string) => r.includes('product name'))).toBe(true);
@@ -98,7 +98,7 @@ describe('DescriptionValidationPolicy', () => {
 
   describe('maximum length validation', () => {
     it('should accept description at maximum length', () => {
-      const maxDesc = 'a'.repeat(5000) + ' Cooking Oil with specifications';
+      const maxDesc = 'Cooking Oil with excellent specifications and features for edible use. '.padEnd(5000, 'a');
       const result = DescriptionValidationPolicy.validate(
         maxDesc,
         'Cooking Oil',
@@ -233,11 +233,11 @@ describe('DescriptionValidationPolicy', () => {
   describe('suggestions', () => {
     it('should suggest adding product name', () => {
       const result = DescriptionValidationPolicy.validate(
-        'Premium product with excellent quality and specifications for cooking',
-        'Cooking Oil',
-        ['cooking', 'oil']
+        'Premium edible liquid with excellent quality and specifications for kitchen use. It is designed for frying, cooking, and everyday preparation, with reliable quality and detailed warranty information.',
+        'Extra Virgin Olive Oil',
+        ['edible', 'liquid']
       );
-      expect(result.suggestions.some((s: string) => s.includes('Cooking Oil'))).toBe(true);
+      expect(result.suggestions.some((s: string) => s.includes('Extra Virgin Olive Oil'))).toBe(true);
     });
 
     it('should suggest adding keywords', () => {
@@ -287,7 +287,7 @@ describe('DescriptionValidationPolicy', () => {
 
     it('should handle special characters', () => {
       const result = DescriptionValidationPolicy.validate(
-        'Premium Cooking Oil & Co. with excellent quality (100%) and specifications for cooking!',
+        'Premium Cooking Oil & Co. with excellent quality (100%) and specifications for cooking! This formulation is designed for daily kitchen use and includes durable packaging, clear instructions, and warranty details.',
         'Cooking Oil',
         ['cooking', 'oil']
       );
@@ -296,7 +296,7 @@ describe('DescriptionValidationPolicy', () => {
 
     it('should handle unicode characters', () => {
       const result = DescriptionValidationPolicy.validate(
-        'Premium Cooking Óil with excellent quality and specifications for cooking',
+        'Premium Cooking Óil with excellent quality and specifications for cooking. It is built for everyday kitchen use, includes clear dimensions, and comes with warranty details.',
         'Cooking Oil',
         ['cooking', 'oil']
       );
@@ -305,7 +305,7 @@ describe('DescriptionValidationPolicy', () => {
 
     it('should handle multiple spaces', () => {
       const result = DescriptionValidationPolicy.validate(
-        'Premium  Cooking   Oil    with excellent quality and specifications for cooking',
+        'Premium  Cooking   Oil    with excellent quality and specifications for cooking. This product is ideal for frying, includes detailed specifications, and offers dependable performance.',
         'Cooking Oil',
         ['cooking', 'oil']
       );

@@ -20,6 +20,7 @@
  * - Concurrent access scenarios
  */
 
+import type { PrismaClient } from '@prisma/client';
 import { DomainEvent } from '../../../domain/interfaces';
 import { 
   PrismaEventStore, 
@@ -32,10 +33,7 @@ import {
 describe('Event Store', () => {
   describe('Event Store Factory', () => {
     beforeEach(() => {
-      // Clear any existing instance
-      EventStoreFactory.setInstance = () => {
-        throw new Error('Cannot override existing instance');
-      };
+      EventStoreFactory.resetInstance();
     });
 
     it('should create Prisma event store', () => {
@@ -49,7 +47,7 @@ describe('Event Store', () => {
           findFirst: jest.fn()
         },
         $transaction: jest.fn()
-      };
+      } as unknown as PrismaClient;
 
       const store = EventStoreFactory.createPrisma(mockPrisma);
       expect(store).toBeInstanceOf(PrismaEventStore);
@@ -67,6 +65,7 @@ describe('Event Store', () => {
 
     it('should prevent multiple instance creation', () => {
       const store = EventStoreFactory.createInMemory();
+      EventStoreFactory.setInstance(store);
 
       expect(() => {
         EventStoreFactory.setInstance(store);
@@ -192,7 +191,7 @@ describe('Event Store', () => {
       await expect(store.save([])).resolves.toBeUndefined();
     });
 
-    it('should clear all events', () => {
+    it('should clear all events', async () => {
       const event: DomainEvent = {
         eventId: 'event-123',
         eventType: 'ProductCreated',
@@ -203,14 +202,14 @@ describe('Event Store', () => {
         metadata: {}
       };
 
-      store.getAllEvents().push(event);
+      await store.save([event]);
       expect(store.getAllEvents()).toHaveLength(1);
 
       store.clear();
       expect(store.getAllEvents()).toHaveLength(0);
     });
 
-    it('should get all events sorted by timestamp', () => {
+    it('should get all events sorted by timestamp', async () => {
       const events: DomainEvent[] = [
         {
           eventId: 'event-1',
@@ -232,7 +231,7 @@ describe('Event Store', () => {
         }
       ];
 
-      store.getAllEvents().push(...events);
+      await store.save(events);
       const allEvents = store.getAllEvents();
 
       expect(allEvents).toHaveLength(2);
@@ -257,6 +256,8 @@ describe('Event Store', () => {
         },
         $transaction: jest.fn()
       };
+
+      mockPrisma.$transaction.mockImplementation(async (callback: any) => callback(mockPrisma));
 
       store = new PrismaEventStore(mockPrisma);
     });
@@ -608,7 +609,7 @@ describe('Event Store', () => {
         eventId: `event-${i}`,
         eventType: 'ProductCreated',
         aggregateId: `product-${i % 10}`, // 10 different aggregates
-        version: 1,
+        version: Math.floor(i / 10) + 1,
         timestamp: new Date(),
         payload: { name: `Product ${i}` },
         metadata: {}
@@ -687,6 +688,8 @@ describe('Event Store', () => {
         $transaction: jest.fn()
       };
 
+      mockPrisma.$transaction.mockImplementation(async (callback: any) => callback(mockPrisma));
+
       store = new PrismaEventStore(mockPrisma);
       maintenance = new EventStoreMaintenance(store);
     });
@@ -763,7 +766,7 @@ describe('Event Store', () => {
         $queryRawUnsafe: jest.fn(),
         $runCommandRaw: jest.fn(),
         $extends: jest.fn().mockReturnValue({ extArgs: {}, eventStore: jest.fn() })
-      };
+      } as unknown as PrismaClient;
 
       const config = {
         enableSnapshots: true,

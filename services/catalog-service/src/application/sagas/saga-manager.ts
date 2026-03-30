@@ -5,9 +5,18 @@
  */
 
 import { DistributedSagaOrchestrator } from '../../../../../shared/saga/saga.orchestrator';
-import { ISagaLogRepository, SagaStatus } from '../../../../../shared/saga/saga.log';
+import { ISagaLogRepository } from '../../../../../shared/saga/saga.log';
 import { DomainEventPublisher, IdGenerator, DateTimeService } from '../../domain/interfaces';
-import { eventHandlerRegistry } from '../handlers';
+
+interface SagaOrchestratorControl {
+  completeStep(
+    sagaId: string,
+    stepName: string,
+    stepId?: string,
+    nextAction?: (saga: unknown) => Promise<void>
+  ): Promise<void>;
+  failStep(sagaId: string, stepName: string, error: string): Promise<void>;
+}
 
 export interface SagaInstance {
   sagaId: string;
@@ -31,7 +40,7 @@ export interface SagaCorrelation {
  * Central coordinator for saga orchestration
  */
 export class SagaManager {
-  private orchestrators: Map<string, DistributedSagaOrchestrator> = new Map();
+  private orchestrators: Map<string, DistributedSagaOrchestrator<Record<string, unknown>>> = new Map();
   private correlations: Map<string, SagaCorrelation> = new Map();
 
   constructor(
@@ -43,16 +52,16 @@ export class SagaManager {
     this.setupEventHandling();
   }
 
-  registerOrchestrator(sagaType: string, orchestrator: DistributedSagaOrchestrator): void {
-    this.orchestrators.set(sagaType, orchestrator);
+  registerOrchestrator<TContext extends Record<string, unknown>>(sagaType: string, orchestrator: DistributedSagaOrchestrator<TContext>): void {
+    this.orchestrators.set(sagaType, orchestrator as unknown as DistributedSagaOrchestrator<Record<string, unknown>>);
   }
 
   /**
    * Start a new saga instance
    */
   async startSaga(
-    sagaFactory: () => any,
-    context: any,
+    sagaFactory: () => { constructor: { name: string } },
+    context: Record<string, unknown>,
     correlationId?: string
   ): Promise<string> {
     const saga = sagaFactory();
@@ -83,9 +92,16 @@ export class SagaManager {
    * that call the orchestrator's completeStep/failStep methods.
    * This method remains for compatibility or generic routing.
    */
-  async handleEvent(event: any): Promise<void> {
-    const sagaId = event.metadata?.sagaId || event.payload?.sagaId;
-    if (!sagaId) return;
+  async handleEvent(event: unknown): Promise<void> {
+    if (typeof event !== 'object' || event === null) return;
+
+    const record = event as {
+      metadata?: Record<string, unknown>;
+      payload?: Record<string, unknown>;
+    };
+    const sagaIdValue = record.metadata?.sagaId ?? record.payload?.sagaId;
+    if (typeof sagaIdValue !== 'string') return;
+    const sagaId = sagaIdValue;
 
     const sagaEntry = await this.sagaLogRepository.getById(sagaId);
     if (!sagaEntry) return;
@@ -101,7 +117,7 @@ export class SagaManager {
   /**
    * Get saga instance by ID
    */
-  getSagaInstance(sagaId: string): SagaInstance | undefined {
+  getSagaInstance(_sagaId: string): SagaInstance | undefined {
     // Synchronous version for tests
     return undefined; // Would need to be implemented with sync storage
   }
@@ -115,7 +131,8 @@ export class SagaManager {
 
     const orchestrator = this.orchestrators.get(entry.sagaType);
     if (orchestrator) {
-      await (orchestrator as any).completeStep(sagaId, entry.currentStep, {});
+      const control = orchestrator as unknown as SagaOrchestratorControl;
+      await control.completeStep(sagaId, entry.currentStep);
     }
   }
 
@@ -186,7 +203,8 @@ export class SagaManager {
 
     const orchestrator = this.orchestrators.get(entry.sagaType);
     if (orchestrator) {
-      await (orchestrator as any).failStep(sagaId, entry.currentStep, reason);
+      const control = orchestrator as unknown as SagaOrchestratorControl;
+      await control.failStep(sagaId, entry.currentStep, reason);
     }
   }
 

@@ -39,7 +39,7 @@ export interface EventHandlingContext {
   retryCount: number;
   correlationId?: string;
   causationId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -95,12 +95,16 @@ export abstract class BaseEventSubscriber {
     let retryCount = 0;
     let lastError: Error | null = null;
 
+    const metadata = event.metadata as Record<string, unknown> | undefined;
+    const correlationId = typeof metadata?.correlationId === 'string' ? metadata.correlationId : undefined;
+    const causationId = typeof metadata?.causationId === 'string' ? metadata.causationId : undefined;
+
     const context: EventHandlingContext = {
       subscriptionId,
       receivedAt: new Date(),
       retryCount: 0,
-      correlationId: event.metadata?.correlationId,
-      causationId: event.metadata?.causationId,
+      correlationId,
+      causationId,
       metadata: event.metadata
     };
 

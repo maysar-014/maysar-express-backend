@@ -48,3 +48,8 @@ export class AuthorizationMiddleware {
         };
     }
 }
+
+/**
+ * Backward-compatible alias for older tests and callers.
+ */
+export const authorizationMiddleware = AuthorizationMiddleware.authorizeRoles;

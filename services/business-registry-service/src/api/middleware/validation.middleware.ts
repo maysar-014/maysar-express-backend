@@ -6,8 +6,9 @@ import { joiId } from '@shared/validation/id';
 const isContractTestRequest = (req: Request): boolean =>
   String(req.headers['x-contract-test'] || '').trim() === '1' && process.env.NODE_ENV !== 'production';
 
-const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F]+$/u;
+const SAFE_VISIBLE_STRING_PATTERN = new RegExp('^(?=.*\\S)[^\\u0000-\\u001F\\u007F]+$', 'u');
 const safeVisibleString = Joi.string().min(1).pattern(SAFE_VISIBLE_STRING_PATTERN);
+const industryItemSchema = safeVisibleString.trim().lowercase();
 
 const createBusinessSchema = Joi.object({
   name: safeVisibleString.min(2).max(200).required(),
@@ -18,7 +19,7 @@ const createBusinessSchema = Joi.object({
   taxId: Joi.string().pattern(/^\d{9}$/).optional(),
   ownerId: joiId().required(),
   description: safeVisibleString.max(1000).optional(),
-  industry: safeVisibleString.max(100).optional(),
+  industry: Joi.array().items(industryItemSchema).min(1).unique().required(),
   website: Joi.string().uri().optional(),
   email: Joi.string().email().optional(),
   phoneNumber: Joi.string().max(20).optional(),
@@ -40,7 +41,7 @@ const createBusinessSchema = Joi.object({
 const updateBusinessSchema = Joi.object({
   name: safeVisibleString.min(2).max(200).optional(),
   description: safeVisibleString.max(1000).optional(),
-  industry: safeVisibleString.max(100).optional(),
+  industry: Joi.array().items(industryItemSchema).min(1).unique().optional(),
   website: Joi.string().uri().optional(),
   email: Joi.string().email().optional(),
   phoneNumber: Joi.string().max(20).optional(),
@@ -92,13 +93,44 @@ const businessIdParamSchema = Joi.object({
   id: joiId().required()
 });
 
+const sellerIdParamSchema = Joi.object({
+  sellerId: joiId().required()
+});
+
+const industryParamSchema = Joi.object({
+  industry: safeVisibleString.min(2).max(100).required()
+});
+
+const publicSellerQuerySchema = Joi.object({
+  industry: safeVisibleString.min(2).max(100).optional(),
+  industries: safeVisibleString.max(300).optional(),
+  q: safeVisibleString.min(1).max(200).optional(),
+  limit: Joi.number().integer().min(1).max(100).optional(),
+  offset: Joi.number().integer().min(0).optional()
+});
+
 const normalizeContractUpdateBusinessPayload = (body: unknown) => {
   const source = body && typeof body === 'object' ? body as Record<string, unknown> : {};
   const payload: Record<string, unknown> = {};
+  const normalizeIndustryList = (value: unknown): string[] | undefined => {
+    if (Array.isArray(value)) {
+      const industries = value
+        .map((item) => typeof item === 'string' ? item.trim().toLowerCase() : '')
+        .filter((item) => item.length > 0);
+      return industries.length > 0 ? Array.from(new Set(industries)) : undefined;
+    }
+
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return [value.trim().toLowerCase()];
+    }
+
+    return undefined;
+  };
 
   if (typeof source.name === 'string' && source.name.trim().length >= 2) payload.name = source.name.trim();
   if (typeof source.description === 'string') payload.description = source.description;
-  if (typeof source.industry === 'string' && source.industry.trim().length > 0) payload.industry = source.industry.trim();
+  const industries = normalizeIndustryList(source.industry);
+  if (industries) payload.industry = industries;
   if (typeof source.website === 'string' && /^https?:\/\//i.test(source.website)) payload.website = source.website;
   if (typeof source.email === 'string' && source.email.includes('@')) payload.email = source.email;
   if (typeof source.phoneNumber === 'string' && source.phoneNumber.trim().length > 0) payload.phoneNumber = source.phoneNumber.trim();
@@ -123,7 +155,7 @@ const normalizeContractUpdateBusinessPayload = (body: unknown) => {
   }
 
   if (Object.keys(payload).length === 0) {
-    payload.industry = 'Commerce';
+    payload.industry = ['commerce'];
   }
 
   return payload;
@@ -211,5 +243,35 @@ export function validateCreateComplianceRecord(req: Request, res: Response, next
     return;
   }
   req.body = value;
+  next();
+}
+
+export function validatePublicSellerQuery(req: Request, res: Response, next: NextFunction): void {
+  const { error, value } = publicSellerQuerySchema.validate(req.query);
+  if (error) {
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.details[0]?.message } });
+    return;
+  }
+  req.query = value;
+  next();
+}
+
+export function validatePublicSellerIdParam(req: Request, res: Response, next: NextFunction): void {
+  const { error, value } = sellerIdParamSchema.validate(req.params);
+  if (error) {
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.details[0]?.message } });
+    return;
+  }
+  req.params = value;
+  next();
+}
+
+export function validatePublicIndustryParam(req: Request, res: Response, next: NextFunction): void {
+  const { error, value } = industryParamSchema.validate(req.params);
+  if (error) {
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.details[0]?.message } });
+    return;
+  }
+  req.params = value;
   next();
 }

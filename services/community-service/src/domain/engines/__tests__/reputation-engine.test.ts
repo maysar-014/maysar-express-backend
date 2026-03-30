@@ -1,4 +1,5 @@
-import { ReputationEngine, ReputationTier } from '../reputation-engine';
+import { ReputationEngine } from '../reputation-engine';
+import { ReputationTier } from '../../entities/business-profile.entity';
 
 describe('ReputationEngine', () => {
     it('should calculate reputation', () => {

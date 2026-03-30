@@ -1,5 +1,4 @@
 import { KnowledgeArticle } from '../knowledge-article.entity';
-import { ExpertiseLevel } from '../../value-objects/expertise-badge.value-object';
 
 describe('KnowledgeArticle', () => {
     it('should create article', () => {
@@ -11,7 +10,7 @@ describe('KnowledgeArticle', () => {
             sections: [{ order: 1, heading: 'Introduction', content: 'Content here' }],
             category: 'BEST_PRACTICES',
             industryTags: ['agriculture'],
-            expertiseLevel: ExpertiseLevel.BEGINNER
+            expertiseLevel: 'BEGINNER'
         });
         expect(article.id).toBe('a1');
     });
@@ -25,7 +24,7 @@ describe('KnowledgeArticle', () => {
             sections: [{ order: 1, heading: 'Introduction', content: 'Content here' }],
             category: 'BEST_PRACTICES',
             industryTags: ['agriculture'],
-            expertiseLevel: ExpertiseLevel.BEGINNER
+            expertiseLevel: 'BEGINNER'
         });
         article.submitForReview();
         article.startReview();

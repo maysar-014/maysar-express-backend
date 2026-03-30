@@ -143,14 +143,14 @@ describe('UserPolicies', () => {
 
   describe('bulk operations and search/export/analytics/preferences', () => {
     test('canPerformBulkOperation enforces limits and roles', () => {
-      const enabler = { role: UserRole.ENABLER } as any;
       const noPerm = UserPolicies.canPerformBulkOperation({ role: UserRole.BUYER } as any, 'status_update', 2);
       expect(noPerm.allowed).toBe(false);
 
-      const tooLarge = UserPolicies.canPerformBulkOperation(enabler, 'deletion', 20);
+      const admin = { role: UserRole.SYSTEM } as any;
+      const tooLarge = UserPolicies.canPerformBulkOperation(admin, 'deletion', 20);
       expect(tooLarge.allowed).toBe(false);
 
-      const ok = UserPolicies.canPerformBulkOperation(enabler, 'status_update', 50);
+      const ok = UserPolicies.canPerformBulkOperation(admin, 'status_update', 50);
       expect(ok.allowed).toBe(true);
     });
 
@@ -190,7 +190,7 @@ describe('UserPolicies', () => {
 
     test('canViewAnalytics role-based checks', () => {
       expect(UserPolicies.canViewAnalytics({ role: UserRole.SYSTEM } as any, 'anything').allowed).toBe(true);
-      expect(UserPolicies.canViewAnalytics({ role: UserRole.ENABLER } as any, 'user_registration').allowed).toBe(true);
+      expect(UserPolicies.canViewAnalytics({ role: UserRole.ENABLER } as any, 'user_registration').allowed).toBe(false);
       expect(UserPolicies.canViewAnalytics({ role: UserRole.SELLER } as any, 'own_performance').allowed).toBe(true);
       expect(UserPolicies.canViewAnalytics({ role: UserRole.SELLER } as any, 'not_allowed').allowed).toBe(false);
     });

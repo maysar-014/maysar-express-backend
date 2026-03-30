@@ -10,7 +10,7 @@ interface MockPrisma {
 
 jest.mock('../../stock/stockManager');
 jest.mock('../../warehouse/warehouseManager');
-jest.mock('../../../../../shared/events/eventBus');
+jest.mock('@shared-events/eventBus');
 
 describe('ReservationEngine', () => {
   let engine: ReservationEngine;

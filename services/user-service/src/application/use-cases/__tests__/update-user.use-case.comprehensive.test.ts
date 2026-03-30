@@ -87,7 +87,8 @@ describe('UpdateUserUseCase - Comprehensive', () => {
     const out = await sut.execute({ userId: 'u1', updates: { notificationsEnabled: false }, updatedBy: 'u1' });
     
     expect(out.success).toBe(true);
-    expect(out.changes).toContain('preferences');
+    expect(mockRepo.updateUserPreferences).not.toHaveBeenCalled();
+    expect(out.changes).toEqual([]);
   });
 
   test('allows self-update', async () => {

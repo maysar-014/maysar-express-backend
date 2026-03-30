@@ -1,4 +1,4 @@
-import { ReleaseInventoryUseCase } from '../release-inventory.use-case';
+import { ReleaseInventoryUseCase } from './release-inventory.use-case';
 
 const mockRepository = {
   findReservations: jest.fn(),

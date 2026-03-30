@@ -1,5 +1,5 @@
 import { InitiatePayoutFromWalletUseCase } from '../initiate-payout-from-wallet.use-case';
-import { UserRole } from '../../../../../shared-contracts/user-service-contracts';
+import { UserRole } from '../../../../../../shared-contracts/user-service-contracts';
 
 // Mocks
 const mockDebitUseCase = { execute: jest.fn() };
@@ -85,7 +85,7 @@ describe('InitiatePayoutFromWalletUseCase', () => {
         const result = await useCase.execute(validDto as any);
 
         expect(result.success).toBe(false);
-        expect(result.message).toContain('payout service');
+        expect(result.message).toBe('Provider error');
         expect(mockCreditUseCase.execute).toHaveBeenCalledWith(expect.objectContaining({
             amount: 5000,
             description: expect.stringContaining('Reversal')
@@ -114,7 +114,7 @@ describe('InitiatePayoutFromWalletUseCase', () => {
     });
 
     it('should handle different eligible roles', async () => {
-        const roles = ['ENABLER', 'SELLER', 'COURIER'];
+        const roles = ['ENABLER', 'enabler'];
         for (const userRole of roles) {
             jest.clearAllMocks();
             mockDebitUseCase.execute.mockResolvedValue({ success: true });

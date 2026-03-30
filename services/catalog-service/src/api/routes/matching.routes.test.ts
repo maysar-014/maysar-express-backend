@@ -3,6 +3,10 @@ import request from 'supertest';
 import type { Router, Request, Response } from 'express';
 import { MatchingRoutes } from './matching.routes';
 
+jest.mock('@shared/middleware/auth-context.middleware', () => ({
+  requireAuth: (_req: any, _res: any, next: any) => next()
+}));
+
 interface Layer {
   route?: {
     path: string;

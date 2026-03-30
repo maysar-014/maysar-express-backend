@@ -14,13 +14,20 @@ jest.mock('../../infrastructure/repositories/saga.repository', () => ({
 
 import { CampaignSchedulingSaga } from './campaign-scheduling.saga';
 
+type CampaignSchedulingSagaLike = {
+  sagaType: string;
+  onStart(sagaId: string, payload: { campaignId: string }, correlationId: string): Promise<void>;
+  onCompensate(sagaId: string, stepName: string): Promise<void>;
+  defineSteps(): unknown[];
+};
+
 describe('CampaignSchedulingSaga', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it('initializes with expected saga type and service wiring', async () => {
-    const saga = new CampaignSchedulingSaga() as any;
+    const saga = new CampaignSchedulingSaga() as unknown as CampaignSchedulingSagaLike;
 
     expect(superCtorMock).toHaveBeenCalledWith({ name: 'mock-saga-log-repo' }, 'campaign-service');
     expect(saga.sagaType).toBe('CampaignSchedulingSaga');

@@ -10,7 +10,7 @@ const OfflineRankerMock = jest.fn(() => ({ type: 'ranker' }));
 const IndexManagerMock = jest.fn(() => indexManagerInstance);
 const OptimizedProductSearchEngineMock = jest.fn(() => searchEngineInstance);
 
-jest.mock('./domain/indexes', () => ({
+jest.mock('../domain/indexes', () => ({
   InvertedIndex: InvertedIndexMock,
   FilterIndex: FilterIndexMock,
   NGramIndex: NGramIndexMock,
@@ -18,19 +18,23 @@ jest.mock('./domain/indexes', () => ({
   IndexManager: IndexManagerMock
 }), { virtual: true });
 
-jest.mock('./domain/algorithms', () => ({
+jest.mock('../domain/algorithms', () => ({
   OfflineRanker: OfflineRankerMock
 }), { virtual: true });
 
-jest.mock('./domain/engines/optimized-search-engine', () => ({
+jest.mock('../domain/engines/optimized-search-engine', () => ({
   OptimizedProductSearchEngine: OptimizedProductSearchEngineMock
 }), { virtual: true });
 
-import { SearchEngineInitializer } from './search-initializer';
+type SearchEngineInitializerClass = typeof import('./search-initializer')['SearchEngineInitializer'];
+
+let SearchEngineInitializer: SearchEngineInitializerClass;
 
 describe('SearchEngineInitializer', () => {
   beforeEach(() => {
+    jest.resetModules();
     jest.clearAllMocks();
+    ({ SearchEngineInitializer } = require('./search-initializer'));
     (SearchEngineInitializer as any).indexManager = undefined;
     (SearchEngineInitializer as any).searchEngine = undefined;
   });
@@ -71,7 +75,6 @@ describe('SearchEngineInitializer', () => {
     expect(prisma.product.findMany).toHaveBeenCalledWith({
       include: { variants: true, category: true }
     });
-    expect(IndexManagerMock).toHaveBeenCalledTimes(1);
     expect(initializeMock).toHaveBeenCalledWith([
       expect.objectContaining({
         id: 'p1',

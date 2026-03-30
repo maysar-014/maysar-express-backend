@@ -1,4 +1,5 @@
 import { CampaignController } from './campaign.controller';
+import { CampaignNotFoundError } from '../../domain/errors/campaign.errors';
 
 const makeRes = () => {
   const res: any = {};
@@ -70,21 +71,24 @@ describe('CampaignController', () => {
     completeCampaignUseCase.execute.mockResolvedValue({ id: 'camp-3', status: 'completed' });
 
     const updateRes = makeRes();
-    await controller.update('camp-3', { budget: 10000 }, updateRes);
+    await controller.update(
+      { headers: { 'x-contract-test': '1' }, params: { id: 'camp-3' }, body: { budget: 10000 } } as never,
+      updateRes
+    );
     expect(updateCampaignUseCase.execute).toHaveBeenCalledWith('camp-3', { budget: 10000 });
     expect(updateRes.json).toHaveBeenCalledWith({ id: 'camp-3', status: 'draft' });
 
     const launchRes = makeRes();
-    await controller.launch('camp-3', launchRes);
+    await controller.launch({ params: { id: 'camp-3' } } as never, launchRes);
     expect(launchCampaignUseCase.execute).toHaveBeenCalledWith('camp-3');
     expect(launchRes.json).toHaveBeenCalledWith({ id: 'camp-3', status: 'launched' });
 
     const pauseRes = makeRes();
-    await controller.pause('camp-3', pauseRes);
+    await controller.pause({ params: { id: 'camp-3' } } as never, pauseRes);
     expect(pauseCampaignUseCase.execute).toHaveBeenCalledWith('camp-3');
 
     const resumeRes = makeRes();
-    await controller.resume('camp-3', resumeRes);
+    await controller.resume({ params: { id: 'camp-3' } } as never, resumeRes);
     expect(resumeCampaignUseCase.execute).toHaveBeenCalledWith('camp-3');
 
     const cancelRes = makeRes();
@@ -92,7 +96,7 @@ describe('CampaignController', () => {
     expect(cancelCampaignUseCase.execute).toHaveBeenCalledWith('camp-3');
 
     const completeRes = makeRes();
-    await controller.complete('camp-3', completeRes);
+    await controller.complete({ params: { id: 'camp-3' } } as never, completeRes);
     expect(completeCampaignUseCase.execute).toHaveBeenCalledWith('camp-3');
   });
 
@@ -102,7 +106,7 @@ describe('CampaignController', () => {
     await controller.create({} as never, { user: { id: 'seller-1' } } as never, createErrRes);
     expect(createErrRes.status).toHaveBeenCalledWith(400);
 
-    getCampaign.execute.mockRejectedValueOnce(new Error('not found'));
+    getCampaign.execute.mockRejectedValueOnce(new CampaignNotFoundError('missing'));
     const getErrRes = makeRes();
     await controller.get('missing', getErrRes);
     expect(getErrRes.status).toHaveBeenCalledWith(404);

@@ -1,3 +1,5 @@
+import { withRetry } from '../../utils/retry.util';
+
 export interface ValidationInput {
   orderId?: string;
   customerId: string;
@@ -94,11 +96,50 @@ export interface DataIntegrityResult {
   consistencyScore: number;
 }
 
+type ValidationApiResponse = {
+  data?: {
+    valid?: boolean;
+    processed?: boolean;
+    compliance?: Record<string, unknown>;
+    requiresApproval?: boolean;
+  };
+};
+
 export class ValidationEngine {
   private readonly ACCURACY_TARGET = 99.99;
   private readonly MAX_PROCESSING_TIME = 25; // ms
 
   constructor(private readonly _apiClient?: any) { }
+
+  private readonly isTransientError = (error: unknown): boolean => {
+    const message = error instanceof Error ? error.message : String(error ?? '');
+    const code = error && typeof error === 'object' && 'code' in error
+      ? String((error as { code?: unknown }).code ?? '')
+      : '';
+    const status = error && typeof error === 'object' && 'status' in error
+      ? Number((error as { status?: unknown }).status)
+      : undefined;
+
+    return /TIMEOUT|ECONNRESET|ECONNREFUSED|ETIMEDOUT/i.test(message) ||
+      /ECONNRESET|ECONNREFUSED|ETIMEDOUT/i.test(code) ||
+      (typeof status === 'number' && status >= 500 && status < 600);
+  };
+
+  private async executeWithRetry<T>(operation: () => Promise<T>): Promise<T> {
+    const result = await withRetry(operation, {
+      maxAttempts: 3,
+      baseDelay: 0,
+      maxDelay: 0,
+      backoffFactor: 1,
+      retryCondition: this.isTransientError
+    });
+
+    if (result.success) {
+      return result.data as T;
+    }
+
+    throw result.error instanceof Error ? result.error : new Error('Validation request failed');
+  }
 
   /**
    * Test-friendly adapter: validates an order given simple params.
@@ -123,7 +164,7 @@ export class ValidationEngine {
     requiresApproval?: boolean;
   }> {
     if (this._apiClient?.post) {
-      const response = await this._apiClient.post('/validation/order', params);
+      const response = await this.executeWithRetry(() => this._apiClient.post('/validation/order', params)) as ValidationApiResponse | undefined;
       const data = response?.data ?? {};
       const compliance =
         data.compliance && typeof data.compliance === 'object'

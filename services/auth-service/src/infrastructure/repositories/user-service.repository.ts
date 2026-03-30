@@ -44,7 +44,7 @@ export class UserServiceRepository implements IUserRepository {
     try {
       userData = await this.userServiceClient.findUserByEmail(normalizedEmail);
     } catch (error) {
-      logger.warn('Primary user lookup failed, falling back to HTTP lookup', {
+      logger.warn?.('Primary user lookup failed, falling back to HTTP lookup', {
         email: normalizedEmail,
         message: (error as Error)?.message
       });
@@ -186,7 +186,7 @@ export class UserServiceRepository implements IUserRepository {
       const user = response?.data?.data?.user ?? null;
       return user;
     } catch (error: any) {
-      logger.warn('User lookup fallback failed', {
+      logger.warn?.('User lookup fallback failed', {
         email,
         message: error?.message
       });

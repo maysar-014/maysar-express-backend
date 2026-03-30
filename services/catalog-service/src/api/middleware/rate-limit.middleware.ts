@@ -108,9 +108,10 @@ export interface RateLimitAnalytics {
  * Rate Limiting Middleware Factory
  */
 export function createRateLimit(config: Partial<RateLimitConfig> = {}) {
-  const finalConfig = { ...DEFAULT_RATE_LIMIT_CONFIG, ...config };
+  const finalConfig = normalizeRateLimitConfig(config);
   const store = createRateLimitStore(finalConfig);
   const analytics = finalConfig.enableAnalytics ? new RateLimitAnalyticsTracker() : null;
+  const deferCounting = finalConfig.skipSuccessfulRequests || finalConfig.skipFailedRequests;
 
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -131,7 +132,9 @@ export function createRateLimit(config: Partial<RateLimitConfig> = {}) {
       }
 
       // Apply rate limiting
-      const result = await applyRateLimit(clientKey, finalConfig, store);
+      const result = deferCounting && finalConfig.strategy === 'fixed'
+        ? await checkFixedWindowLimit(clientKey, finalConfig, store, Math.floor(finalConfig.maxRequests * finalConfig.burstMultiplier))
+        : await applyRateLimit(clientKey, finalConfig, store);
 
       // Update analytics
       if (analytics) {
@@ -147,6 +150,10 @@ export function createRateLimit(config: Partial<RateLimitConfig> = {}) {
       if (result.limited) {
         finalConfig.onLimitReached(req, res);
         return;
+      }
+
+      if (deferCounting && finalConfig.strategy === 'fixed') {
+        attachDeferredRateLimitCount(res, store, clientKey, finalConfig);
       }
 
       // Continue to next middleware
@@ -374,18 +381,117 @@ function createRateLimitStore(config: RateLimitConfig): RateLimitStore {
 }
 
 /**
+ * Normalize configuration so malformed values do not accidentally block requests.
+ */
+function normalizeRateLimitConfig(config: Partial<RateLimitConfig> = {}): RateLimitConfig {
+  const merged = { ...DEFAULT_RATE_LIMIT_CONFIG, ...config };
+
+  return {
+    ...merged,
+    windowMs: Number.isFinite(merged.windowMs) && merged.windowMs > 0
+      ? merged.windowMs
+      : DEFAULT_RATE_LIMIT_CONFIG.windowMs,
+    maxRequests: Number.isFinite(merged.maxRequests) && merged.maxRequests > 0
+      ? merged.maxRequests
+      : DEFAULT_RATE_LIMIT_CONFIG.maxRequests,
+    burstMultiplier: Number.isFinite(merged.burstMultiplier) && merged.burstMultiplier > 0
+      ? merged.burstMultiplier
+      : DEFAULT_RATE_LIMIT_CONFIG.burstMultiplier,
+    whitelist: Array.isArray(merged.whitelist) ? merged.whitelist : [],
+    blacklist: Array.isArray(merged.blacklist) ? merged.blacklist : []
+  };
+}
+
+/**
+ * Check fixed window state without consuming a hit yet.
+ * Used when the middleware needs to defer counting until the response finishes.
+ */
+async function checkFixedWindowLimit(
+  key: string,
+  config: RateLimitConfig,
+  store: RateLimitStore,
+  maxRequests: number
+): Promise<RateLimitResult> {
+  const storeKey = `${config.cachePrefix}${key}:${Math.floor(Date.now() / config.windowMs)}`;
+  const existing = await store.get(storeKey);
+  const count = existing?.count ?? 0;
+  const resetTime = existing?.resetTime ?? (Math.floor(Date.now() / config.windowMs) * config.windowMs + config.windowMs);
+  const limited = count >= maxRequests;
+  const remaining = Math.max(0, maxRequests - count);
+
+  return {
+    limited,
+    remaining,
+    resetTime,
+    current: count,
+    retryAfter: limited ? Math.ceil((resetTime - Date.now()) / 1000) : undefined
+  };
+}
+
+/**
+ * Defer request counting until the response finishes.
+ * This is only used for the skipSuccessfulRequests/skipFailedRequests paths.
+ */
+function attachDeferredRateLimitCount(
+  res: Response,
+  store: RateLimitStore,
+  key: string,
+  config: RateLimitConfig
+): void {
+  const response = res as Response & {
+    once?: (event: string, listener: () => void) => unknown;
+    statusCode?: number;
+  };
+
+  if (typeof response.once !== 'function') {
+    return;
+  }
+
+  const storeKey = `${config.cachePrefix}${key}:${Math.floor(Date.now() / config.windowMs)}`;
+  response.once('finish', () => {
+    const statusCode = response.statusCode ?? 200;
+    const shouldCount = (!config.skipSuccessfulRequests || statusCode >= 400)
+      && (!config.skipFailedRequests || statusCode < 400);
+
+    if (!shouldCount) {
+      return;
+    }
+
+    void store.increment(storeKey, config.windowMs).catch(error => {
+      console.error('[RATE LIMIT] Deferred counter error:', error);
+    });
+  });
+}
+
+/**
  * Set rate limit headers on response
  */
 function setRateLimitHeaders(res: Response, result: RateLimitResult, config: RateLimitConfig): void {
-  res.set({
+  const headers = {
     'X-RateLimit-Limit': config.maxRequests.toString(),
     'X-RateLimit-Remaining': result.remaining.toString(),
     'X-RateLimit-Reset': new Date(result.resetTime).toISOString(),
     'X-RateLimit-Current': result.current.toString()
-  });
+  };
+
+  const responseWithHeader = res as Response & {
+    setHeader?: (name: string, value: string) => unknown;
+  };
+
+  if (typeof responseWithHeader.setHeader === 'function') {
+    for (const [name, value] of Object.entries(headers)) {
+      responseWithHeader.setHeader(name, value);
+    }
+  } else {
+    res.set(headers);
+  }
 
   if (result.retryAfter) {
-    res.set('Retry-After', result.retryAfter.toString());
+    if (typeof responseWithHeader.setHeader === 'function') {
+      responseWithHeader.setHeader('Retry-After', result.retryAfter.toString());
+    } else {
+      res.set('Retry-After', result.retryAfter.toString());
+    }
   }
 }
 

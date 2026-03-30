@@ -11,6 +11,10 @@ import { createProductRoutes, ProductRoutesFactory, PRODUCT_ROUTES_METADATA } fr
 import { ProductController } from '../../controllers/product.controller';
 import { errorHandler, notFoundHandler } from '../../middleware/error.middleware';
 
+jest.mock('@shared/middleware/auth-context.middleware', () => ({
+  requireRole: () => (_req: any, _res: any, next: any) => next()
+}));
+
 // Mock ProductController
 const mockProductController = {
   createProduct: jest.fn(),
@@ -72,7 +76,7 @@ describe('Product Routes', () => {
     it('should have correct route metadata', () => {
       expect(PRODUCT_ROUTES_METADATA.version).toBe('v1');
       expect(PRODUCT_ROUTES_METADATA.prefix).toBe('/v1');
-      expect(PRODUCT_ROUTES_METADATA.routes).toHaveLength(16);
+      expect(PRODUCT_ROUTES_METADATA.routes).toHaveLength(18);
       expect(PRODUCT_ROUTES_METADATA.middleware).toEqual([
         'authentication',
         'authorization',
@@ -223,7 +227,7 @@ describe('Product Routes', () => {
         mockProductController.searchProducts.mockImplementation((req, res) => {
           expect(req.query.q).toBe('laptop');
           expect(req.query.category).toBe('electronics');
-          expect(req.query.page).toBe('1');
+          expect(req.query.page).toBe(1);
           res.status(200).json({ success: true });
         });
 
@@ -374,8 +378,8 @@ describe('Product Routes', () => {
           .set('Authorization', 'Bearer valid-token-123')
           .send({ productIds: ['prod-123'] });
 
-        expect(response.status).toBe(200);
-        expect(response.body.success).toBe(true);
+        expect(response.status).toBe(204);
+        expect(response.text).toBe('');
       });
     });
   });
@@ -412,7 +416,7 @@ describe('Product Routes', () => {
         const response = await request(app)
           .put('/v1/products/prod-123/category')
           .set('Authorization', 'Bearer valid-token-123')
-          .send({ categoryId: 'new-cat-123' });
+          .send({ categoryId: '123e4567-e89b-12d3-a456-426614174000' });
 
         expect(response.status).toBe(501);
         expect(response.body.success).toBe(false);

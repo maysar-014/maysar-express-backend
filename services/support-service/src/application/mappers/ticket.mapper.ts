@@ -21,6 +21,28 @@ export class TicketMapper {
         };
     }
 
+    public static toDTO(ticket: any): TicketResponseDto {
+        return {
+            id: ticket.id,
+            userId: ticket.userId ?? ticket.getUserId?.(),
+            subject: ticket.subject ?? ticket.getSubject?.(),
+            description: ticket.description ?? ticket.getDescription?.(),
+            status: ticket.status ?? ticket.getStatus?.(),
+            priority: ticket.priority ?? ticket.getPriority?.(),
+            category: ticket.category ?? ticket.getCategory?.(),
+            assignedAgentId: ticket.assignedAgentId ?? ticket.getAssignedAgentId?.(),
+            createdAt: ticket.createdAt ?? ticket.getCreatedAt?.() ?? new Date(),
+            updatedAt: ticket.updatedAt ?? ticket.getUpdatedAt?.() ?? new Date(),
+            resolvedAt: ticket.resolvedAt ?? ticket.getResolvedAt?.(),
+            closedAt: ticket.closedAt ?? ticket.getClosedAt?.(),
+            resolution: ticket.resolution ?? ticket.getResolution?.()
+        };
+    }
+
+    public static toDTOList(tickets: any[]): TicketResponseDto[] {
+        return tickets.map(ticket => this.toDTO(ticket));
+    }
+
     public static toDetailDto(ticket: Ticket, messages: any[] = [], attachments: any[] = []): TicketDetailResponseDto {
         return {
             ...this.toResponseDto(ticket),

@@ -14,11 +14,13 @@
 
 ## System Overview
 
-**Maysar Express Backend** is an enterprise-grade e-commerce platform built as a **modular monolith** with microservices-ready architecture. The system consists of 25+ services that communicate through an event-driven architecture using the Saga pattern for distributed transactions.
+**Maysar Express Backend** is an enterprise-grade e-commerce platform built as a **modular monolith**. The current runtime consists of 21 service modules that communicate through an in-process event-driven architecture using the Saga pattern for cross-module workflows.
+
+> Note: some diagrams and implementation notes below were kept from earlier broker-based planning docs. The live runtime uses the shared EventBus and module wrappers, not an external Kafka cluster.
 
 ### Key Characteristics
 - **Architecture**: Modular Monolith with Clean Architecture principles
-- **Communication**: Event-driven with in-memory EventBus (production-ready for message brokers)
+- **Communication**: Event-driven with the shared in-process EventBus and saga/outbox helpers
 - **Transaction Management**: Saga orchestration pattern with compensation logic
 - **Database**: PostgreSQL with Prisma ORM + Supabase integration
 - **Deployment**: Single Docker container with service isolation
@@ -29,7 +31,7 @@
 - **Framework**: Express.js
 - **ORM**: Prisma with PostgreSQL
 - **Cache**: Redis
-- **Events**: In-memory EventBus (Kafka/RabbitMQ ready)
+- **Events**: In-process EventBus
 - **Testing**: Jest with 90%+ coverage target
 
 ---
@@ -904,11 +906,11 @@ Each service logs structured events:
 
 The Maysar Express Backend is a sophisticated e-commerce platform that:
 
-1. **Modular Architecture**: 25+ services with clear boundaries
+1. **Modular Architecture**: 21 service modules with clear boundaries
 2. **Event-Driven**: Asynchronous communication via EventBus
-3. **Saga Pattern**: Distributed transaction management with compensation
+3. **Saga Pattern**: Coordinated transaction management with compensation
 4. **Clean Architecture**: Separation of concerns across layers
 5. **Production-Ready**: Comprehensive error handling, logging, monitoring
-6. **Scalable Design**: Ready for microservices decomposition
+6. **Scalable Design**: Ready for a future modular split if needed
 
-Each service operates independently while coordinating through events and sagas, ensuring data consistency and system reliability.
+Each module operates independently while coordinating through events and sagas, ensuring data consistency and system reliability.

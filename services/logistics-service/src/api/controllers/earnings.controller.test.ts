@@ -32,8 +32,17 @@ const createResponse = (): Response => {
 };
 
 describe('EarningsController', () => {
+  beforeAll(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-03-27T12:00:00.000Z'));
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  afterAll(() => {
+    jest.useRealTimers();
   });
 
   it('returns courier earnings summary with derived totals', async () => {

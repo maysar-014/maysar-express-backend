@@ -28,6 +28,6 @@ describe('EnablerController', () => {
         req.params = { id: 'e1' };
         req.body = { adminId: 'admin1' };
         await controller.approve(req as Request, res as Response);
-        expect(mockApproveUseCase.execute).toHaveBeenCalledWith('e1', 'admin1');
+        expect(mockApproveUseCase.execute).toHaveBeenCalledWith('e1', 'admin1', undefined);
     });
 });

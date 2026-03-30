@@ -10,28 +10,43 @@ import { Address } from '../../../domain/value-objects/address.value-object';
 describe('Order Entity', () => {
   const validAddress = new Address('123 Main St', 'Dar es Salaam', '11101', 'TZ');
   const validMoney = new Money(15000, 'TZS');
+  const createOrderData = (overrides: Record<string, any> = {}) => ({
+    id: 'order_123',
+    buyerId: 'buyer_123',
+    sellerId: 'seller_456',
+    items: [
+      {
+        productId: 'prod_789',
+        quantity: 1,
+        price: validMoney,
+        weight: 1.5
+      }
+    ],
+    totalAmount: 15000,
+    totalWeight: 1.5,
+    currency: 'TZS',
+    deliveryAddress: validAddress,
+    paymentMethod: 'cod' as const,
+    ...overrides
+  });
 
   describe('Order Creation', () => {
     it('should create a valid order with required fields', () => {
-      const orderData = {
-        buyerId: 'buyer_123',
-        sellerId: 'seller_456',
-        items: [{
-          productId: 'prod_789',
-          quantity: 2,
-          price: validMoney,
-          weight: 1.5
-        }],
-        totalAmount: validMoney,
-        totalWeight: 3.0,
-        currency: 'TZS',
-        deliveryAddress: validAddress,
-        paymentMethod: 'COD' as const
-      };
+      const orderData = createOrderData({
+        items: [
+          {
+            productId: 'prod_789',
+            quantity: 2,
+            price: validMoney,
+            weight: 1.5
+          }
+        ],
+        totalWeight: 3.0
+      });
 
       const order = new Order(orderData);
 
-      expect(order.id).toBeDefined();
+      expect(order.id).toBe('order_123');
       expect(order.buyerId).toBe('buyer_123');
       expect(order.sellerId).toBe('seller_456');
       expect(order.status).toBe(OrderStatus.PENDING);
@@ -53,23 +68,7 @@ describe('Order Entity', () => {
     let order: Order;
 
     beforeEach(() => {
-      const orderData = {
-        buyerId: 'buyer_123',
-        sellerId: 'seller_456',
-        items: [{
-          productId: 'prod_789',
-          quantity: 1,
-          price: validMoney,
-          weight: 1.5
-        }],
-        totalAmount: validMoney,
-        totalWeight: 1.5,
-        currency: 'TZS',
-        deliveryAddress: validAddress,
-        paymentMethod: 'COD' as const
-      };
-
-      order = new Order(orderData);
+      order = new Order(createOrderData());
     });
 
     it('should start in PENDING status', () => {
@@ -94,66 +93,21 @@ describe('Order Entity', () => {
 
   describe('Order Business Logic', () => {
     it('should determine if order can be cancelled', () => {
-      const orderData = {
-        buyerId: 'buyer_123',
-        sellerId: 'seller_456',
-        items: [{
-          productId: 'prod_789',
-          quantity: 1,
-          price: validMoney,
-          weight: 1.5
-        }],
-        totalAmount: validMoney,
-        totalWeight: 1.5,
-        currency: 'TZS',
-        deliveryAddress: validAddress,
-        paymentMethod: 'COD' as const
-      };
-
-      const pendingOrder = new Order(orderData);
+      const pendingOrder = new Order(createOrderData());
       expect(pendingOrder.canBeCancelled()).toBe(true);
 
-      const confirmedOrder = new Order(orderData);
+      const confirmedOrder = new Order(createOrderData({ id: 'order_124' }));
       confirmedOrder.updateStatus(OrderStatus.CONFIRMED);
       expect(confirmedOrder.canBeCancelled()).toBe(true);
 
-      const deliveredOrder = new Order(orderData);
+      const deliveredOrder = new Order(createOrderData({ id: 'order_125' }));
       deliveredOrder.updateStatus(OrderStatus.DELIVERED);
       expect(deliveredOrder.canBeCancelled()).toBe(false);
     });
 
     it('should determine if order is heavy', () => {
-      const lightOrderData = {
-        buyerId: 'buyer_123',
-        sellerId: 'seller_456',
-        items: [{
-          productId: 'prod_789',
-          quantity: 1,
-          price: validMoney,
-          weight: 1.5
-        }],
-        totalAmount: validMoney,
-        totalWeight: 15,
-        currency: 'TZS',
-        deliveryAddress: validAddress,
-        paymentMethod: 'COD' as const
-      };
-
-      const heavyOrderData = {
-        buyerId: 'buyer_123',
-        sellerId: 'seller_456',
-        items: [{
-          productId: 'prod_789',
-          quantity: 1,
-          price: validMoney,
-          weight: 1.5
-        }],
-        totalAmount: validMoney,
-        totalWeight: 25,
-        currency: 'TZS',
-        deliveryAddress: validAddress,
-        paymentMethod: 'COD' as const
-      };
+      const lightOrderData = createOrderData({ totalWeight: 15, id: 'order_126' });
+      const heavyOrderData = createOrderData({ totalWeight: 25, id: 'order_127' });
 
       const lightOrder = new Order(lightOrderData);
       const heavyOrder = new Order(heavyOrderData);
@@ -212,10 +166,10 @@ describe('Order Entity', () => {
       });
 
       it('should throw error for missing fields', () => {
-        expect(() => new Address('', 'Dar es Salaam', '11101', 'TZ')).toThrow('All address fields are required');
-        expect(() => new Address('123 Main St', '', '11101', 'TZ')).toThrow('All address fields are required');
-        expect(() => new Address('123 Main St', 'Dar es Salaam', '', 'TZ')).toThrow('All address fields are required');
-        expect(() => new Address('123 Main St', 'Dar es Salaam', '11101', '')).toThrow('All address fields are required');
+        expect(() => new Address('', 'Dar es Salaam', '11101', 'TZ')).toThrow('Street, city, postal code, and country are required for named address');
+        expect(() => new Address('123 Main St', '', '11101', 'TZ')).toThrow('Street, city, postal code, and country are required for named address');
+        expect(() => new Address('123 Main St', 'Dar es Salaam', '', 'TZ')).toThrow('Street, city, postal code, and country are required for named address');
+        expect(() => new Address('123 Main St', 'Dar es Salaam', '11101', '')).toThrow('Street, city, postal code, and country are required for named address');
       });
 
       it('should compare address equality', () => {

@@ -9,16 +9,15 @@ jest.mock('../../../domain/policies/cancellation.policy');
 describe('OrderCoordinator Saga', () => {
   let orderCoordinator: OrderCoordinator;
   let mockCodPolicy: jest.Mocked<CODPolicy>;
-  let mockCancellationPolicy: jest.Mocked<CancellationPolicy>;
+  let mockCancellationPolicy: CancellationPolicy;
 
   beforeEach(() => {
     // Create mocks
     mockCodPolicy = new CODPolicy() as jest.Mocked<CODPolicy>;
-    mockCancellationPolicy = new CancellationPolicy() as jest.Mocked<CancellationPolicy>;
+    mockCancellationPolicy = {} as CancellationPolicy;
 
     // Setup mock implementations
     mockCodPolicy.validate.mockResolvedValue({ valid: true, errors: [] });
-    mockCancellationPolicy.canCancelOrder.mockResolvedValue({ allowed: true });
 
     orderCoordinator = new OrderCoordinator(mockCodPolicy, mockCancellationPolicy);
   });

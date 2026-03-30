@@ -38,6 +38,10 @@ export class ProductionPlanRepository implements IProductionRepository {
         return this.toEntity(data);
     }
 
+    async create(plan: ProductionPlan): Promise<ProductionPlan> {
+        return this.save(plan);
+    }
+
     async findById(id: string): Promise<ProductionPlan | null> {
         const data = await this.planDelegate.findUnique({ where: { id } });
         if (!data) return null;

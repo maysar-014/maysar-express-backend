@@ -382,9 +382,18 @@ export class PrismaEventStore implements EventStore {
 export class InMemoryEventStore implements EventStore {
   private events: Map<string, DomainEvent[]> = new Map();
   private aggregateVersions: Map<string, number> = new Map();
+  private eventIds: Set<string> = new Set();
 
   async save(events: DomainEvent[]): Promise<void> {
     for (const event of events) {
+      if (!event.eventId || !event.eventType || !event.aggregateId) {
+        throw new Error('Invalid event');
+      }
+
+      if (this.eventIds.has(event.eventId)) {
+        throw new Error(`Duplicate event ID: ${event.eventId}`);
+      }
+
       if (!this.events.has(event.aggregateId)) {
         this.events.set(event.aggregateId, []);
       }
@@ -398,6 +407,7 @@ export class InMemoryEventStore implements EventStore {
       }
 
       aggregateEvents.push(event);
+      this.eventIds.add(event.eventId);
       this.aggregateVersions.set(event.aggregateId, event.version);
     }
   }
@@ -429,6 +439,7 @@ export class InMemoryEventStore implements EventStore {
   clear(): void {
     this.events.clear();
     this.aggregateVersions.clear();
+    this.eventIds.clear();
   }
 }
 
@@ -437,6 +448,10 @@ export class InMemoryEventStore implements EventStore {
  */
 export class EventStoreFactory {
   private static instance: EventStore | null = null;
+
+  static resetInstance(): void {
+    this.instance = null;
+  }
 
   static createPrisma(prisma: PrismaClient, config?: EventStoreConfig): PrismaEventStore {
     return new PrismaEventStore(prisma, config);
@@ -452,7 +467,11 @@ export class EventStoreFactory {
     }
 
     if (!prisma) {
-      throw new Error('Prisma client required for Prisma event store');
+      if (process.env.EVENT_STORE_TYPE === 'prisma') {
+        throw new Error('Prisma client required for Prisma event store');
+      }
+
+      return this.createInMemory();
     }
 
     return this.createPrisma(prisma, config);

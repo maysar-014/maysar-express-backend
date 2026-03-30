@@ -17,6 +17,7 @@ import {
   SearchProductsRequest
 } from '../search-products.use-case';
 import {
+  DomainRecord,
   ProductRepository,
   CategoryRepository,
   SearchService
@@ -106,7 +107,7 @@ describe('SearchProductsUseCase', () => {
 
       const mockCategory = { id: 'category-electronics', name: 'Electronics' };
 
-      mockSearchService.search.mockResolvedValue(mockSearchResults);
+      mockSearchService.search.mockResolvedValue(mockSearchResults as unknown as DomainRecord);
       mockCategoryRepository.findById.mockResolvedValue(mockCategory);
 
       // When: Executing search
@@ -124,7 +125,7 @@ describe('SearchProductsUseCase', () => {
           category: 'category-electronics',
           priceRange: { min: 100, max: 2000 }
         }),
-        { limit: 1000, sortBy: 'relevance' }
+        { limit: 20, offset: 0, sortBy: 'relevance' }
       );
 
       expect(result.facets.categories).toContainEqual({
@@ -173,7 +174,7 @@ describe('SearchProductsUseCase', () => {
         }
       ];
 
-      mockProductRepository.search.mockResolvedValue(mockRepositoryResults);
+      mockProductRepository.search.mockResolvedValue(mockRepositoryResults as unknown as DomainRecord);
       mockCategoryRepository.findById.mockResolvedValue({ id: 'category-books', name: 'Books' });
 
       // When: Executing filter-only search
@@ -188,7 +189,7 @@ describe('SearchProductsUseCase', () => {
           sellerId: 'seller-123',
           status: 'active'
         }),
-        { limit: 1000 }
+        { limit: 10, offset: 0 }
       );
     });
 
@@ -207,7 +208,7 @@ describe('SearchProductsUseCase', () => {
         { id: 'product-3', name: 'Medium Product', price: { amount: 99.99 }, createdAt: new Date() }
       ];
 
-      mockSearchService.search.mockResolvedValue(mockResults);
+      mockSearchService.search.mockResolvedValue(mockResults as unknown as DomainRecord);
 
       // When: Executing search with price sorting
       const result = await useCase.execute(request);
@@ -241,7 +242,7 @@ describe('SearchProductsUseCase', () => {
         createdAt: new Date()
       }));
 
-      mockSearchService.search.mockResolvedValue(mockResults);
+      mockSearchService.search.mockResolvedValue(mockResults as unknown as DomainRecord);
 
       // When: Requesting page 2 with limit 5
       const result = await useCase.execute(request);
@@ -342,7 +343,8 @@ describe('SearchProductsUseCase', () => {
       ];
 
       mockSearchService.search.mockRejectedValue(new Error('Search service down'));
-      mockProductRepository.search.mockResolvedValue(mockRepositoryResults);
+      mockProductRepository.search.mockResolvedValue(mockRepositoryResults as unknown as DomainRecord);
+      mockCategoryRepository.findById.mockResolvedValue({ id: 'category-electronics', name: 'Electronics' });
 
       // When: Search service fails
       const result = await useCase.execute(request);
@@ -385,7 +387,7 @@ describe('SearchProductsUseCase', () => {
         pagination: { page: 1, limit: 20 }
       };
 
-      mockSearchService.search.mockResolvedValue([]);
+      mockSearchService.search.mockResolvedValue([] as unknown as DomainRecord);
 
       // When: No results found
       const result = await useCase.execute(request);
@@ -418,7 +420,7 @@ describe('SearchProductsUseCase', () => {
         { id: 'product-4', price: { amount: 75.50 }, createdAt: new Date() }
       ];
 
-      mockSearchService.search.mockResolvedValue(mockResults);
+      mockSearchService.search.mockResolvedValue(mockResults as unknown as DomainRecord);
 
       // When: Applying price filter
       const result = await useCase.execute(request);
@@ -447,7 +449,7 @@ describe('SearchProductsUseCase', () => {
         { id: 'product-4', tags: ['basic'], createdAt: new Date() }
       ];
 
-      mockSearchService.search.mockResolvedValue(mockResults);
+      mockSearchService.search.mockResolvedValue(mockResults as unknown as DomainRecord);
 
       // When: Applying tags filter
       const result = await useCase.execute(request);

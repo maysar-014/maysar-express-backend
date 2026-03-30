@@ -154,7 +154,14 @@ describe('KnowledgeController', () => {
     await controller.submitReview(req, res, jest.fn());
 
     expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith({ message: 'Review submitted' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      message: 'Review submitted',
+      data: {
+        articleId: 'a-2',
+        reviewerId: 'u2'
+      }
+    });
   });
 
   it('returns placeholder publishArticle response', async () => {
@@ -167,7 +174,14 @@ describe('KnowledgeController', () => {
     await controller.publishArticle(req, res, jest.fn());
 
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ message: 'Article published' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      message: 'Article published',
+      data: {
+        articleId: 'a-3',
+        publishedBy: 'u3'
+      }
+    });
   });
 });
 

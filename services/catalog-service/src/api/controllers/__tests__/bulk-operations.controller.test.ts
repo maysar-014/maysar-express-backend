@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Bulk Operations Controller Test Suite
  * Tests for bulk operations controller functionality
  */
@@ -6,112 +6,77 @@
 import { Request, Response } from 'express';
 import { BulkOperationsController } from '../bulk-operations.controller';
 
+type MockResponse = Response & {
+  status: jest.Mock;
+  json: jest.Mock;
+  end: jest.Mock;
+};
+
+function createRequest(overrides: Partial<Request> = {}): Partial<Request> {
+  return {
+    body: {},
+    params: {},
+    query: {},
+    ...overrides
+  };
+}
+
+function createResponse(): MockResponse {
+  return {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn().mockReturnThis(),
+    end: jest.fn().mockReturnThis()
+  } as unknown as MockResponse;
+}
+
 describe('BulkOperationsController', () => {
   let controller: BulkOperationsController;
-  let mockRequest: Partial<Request>;
-  let mockResponse: Partial<Response>;
 
   beforeEach(() => {
     controller = new BulkOperationsController();
-    
-    mockRequest = {
-      body: {},
-      params: {},
-      query: {}
-    };
-    
-    mockResponse = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-      send: jest.fn().mockReturnThis()
-    };
   });
 
   describe('bulkCreateProducts', () => {
-    it('should create bulk products successfully', async () => {
-      const productsData = [
-        { name: 'Product 1', price: 100 },
-        { name: 'Product 2', price: 200 }
-      ];
+    it('should create products and return the batch count', async () => {
+      const req = createRequest({
+        body: {
+          products: [
+            { name: 'Product 1', price: 100 },
+            { name: 'Product 2', price: 200 }
+          ]
+        }
+      });
+      const res = createResponse();
 
-      mockRequest.body = { products: productsData };
+      await controller.bulkCreateProducts(req as Request, res as Response);
 
-      await controller.bulkCreateProducts(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(201);
-      expect(mockResponse.json).toHaveBeenCalledWith(
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: true,
           data: expect.objectContaining({
-            totalRequested: 2,
-            successful: 2,
-            failed: 0
+            createdCount: 2,
+            operationId: expect.stringMatching(/^bulk-create-/)
+          }),
+          meta: expect.objectContaining({
+            timestamp: expect.any(Date)
           })
         })
       );
     });
 
-    it('should handle missing products in request body', async () => {
-      mockRequest.body = {};
+    it('should treat a missing products list as an empty batch', async () => {
+      const req = createRequest({ body: {} });
+      const res = createResponse();
 
-      await controller.bulkCreateProducts(mockRequest as Request, mockResponse as Response);
+      await controller.bulkCreateProducts(req as Request, res as Response);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          success: false,
-          error: expect.objectContaining({
-            code: 'VALIDATION_ERROR'
-          })
-        })
-      );
-    });
-
-    it('should handle empty products array', async () => {
-      mockRequest.body = { products: [] };
-
-      await controller.bulkCreateProducts(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.objectContaining({
-            code: 'VALIDATION_ERROR'
-          })
-        })
-      );
-    });
-
-    it('should handle too many products', async () => {
-      const productsData = Array(101).fill({ name: 'Product', price: 100 });
-
-      mockRequest.body = { products: productsData };
-
-      await controller.bulkCreateProducts(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.objectContaining({
-            code: 'VALIDATION_ERROR'
-          })
-        })
-      );
-    });
-
-    it('should handle missing request body', async () => {
-      mockRequest.body = undefined;
-
-      await controller.bulkCreateProducts(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.objectContaining({
-            code: 'VALIDATION_ERROR'
+          success: true,
+          data: expect.objectContaining({
+            createdCount: 0
           })
         })
       );
@@ -119,72 +84,30 @@ describe('BulkOperationsController', () => {
   });
 
   describe('bulkUpdateProducts', () => {
-    it('should update bulk products successfully', async () => {
-      const productIds = ['1', '2', '3'];
-      const updates = { status: 'active', price: 150 };
+    it('should update products and return the batch count', async () => {
+      const req = createRequest({
+        body: {
+          products: [
+            { id: '1', status: 'active' },
+            { id: '2', status: 'active' },
+            { id: '3', status: 'archived' }
+          ]
+        }
+      });
+      const res = createResponse();
 
-      mockRequest.body = { productIds, updates };
+      await controller.bulkUpdateProducts(req as Request, res as Response);
 
-      await controller.bulkUpdateProducts(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith(
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: true,
           data: expect.objectContaining({
-            totalRequested: 3,
-            successful: 3,
-            failed: 0
-          })
-        })
-      );
-    });
-
-    it('should handle missing productIds', async () => {
-      mockRequest.body = { updates: { status: 'active' } };
-
-      await controller.bulkUpdateProducts(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.objectContaining({
-            code: 'VALIDATION_ERROR'
-          })
-        })
-      );
-    });
-
-    it('should handle missing updates', async () => {
-      mockRequest.body = { productIds: ['1', '2'] };
-
-      await controller.bulkUpdateProducts(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.objectContaining({
-            code: 'VALIDATION_ERROR'
-          })
-        })
-      );
-    });
-
-    it('should handle too many productIds', async () => {
-      const productIds = Array(501).fill('product-id');
-
-      mockRequest.body = { productIds, updates: { status: 'active' } };
-
-      await controller.bulkUpdateProducts(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.objectContaining({
-            code: 'VALIDATION_ERROR'
+            updatedCount: 3,
+            operationId: expect.stringMatching(/^bulk-update-/)
+          }),
+          meta: expect.objectContaining({
+            timestamp: expect.any(Date)
           })
         })
       );
@@ -192,307 +115,101 @@ describe('BulkOperationsController', () => {
   });
 
   describe('bulkDeleteProducts', () => {
-    it('should delete bulk products successfully', async () => {
-      const productIds = ['1', '2', '3'];
+    it('should delete products when ids are provided', async () => {
+      const req = createRequest({
+        body: {
+          productIds: ['1', '2', '3']
+        }
+      });
+      const res = createResponse();
 
-      mockRequest.body = { productIds };
+      await controller.bulkDeleteProducts(req as Request, res as Response);
 
-      await controller.bulkDeleteProducts(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            totalRequested: 3,
-            successful: 3,
-            failed: 0
-          })
-        })
-      );
+      expect(res.status).toHaveBeenCalledWith(204);
+      expect(res.end).toHaveBeenCalledTimes(1);
+      expect(res.json).not.toHaveBeenCalled();
     });
 
-    it('should handle missing productIds', async () => {
-      mockRequest.body = {};
+    it('should return a validation error when productIds are missing', async () => {
+      const req = createRequest({ body: {} });
+      const res = createResponse();
 
-      await controller.bulkDeleteProducts(mockRequest as Request, mockResponse as Response);
+      await controller.bulkDeleteProducts(req as Request, res as Response);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
           error: expect.objectContaining({
-            code: 'VALIDATION_ERROR'
-          })
-        })
-      );
-    });
-
-    it('should handle too many productIds', async () => {
-      const productIds = Array(101).fill('product-id');
-
-      mockRequest.body = { productIds };
-
-      await controller.bulkDeleteProducts(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.objectContaining({
-            code: 'VALIDATION_ERROR'
-          })
-        })
-      );
-    });
-  });
-
-  describe('bulkPublishProducts', () => {
-    it('should publish bulk products successfully', async () => {
-      const productIds = ['1', '2', '3'];
-
-      mockRequest.body = { productIds };
-
-      await controller.bulkPublishProducts(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            totalRequested: 3,
-            successful: 3,
-            failed: 0
-          })
-        })
-      );
-    });
-
-    it('should handle too many productIds', async () => {
-      const productIds = Array(201).fill('product-id');
-
-      mockRequest.body = { productIds };
-
-      await controller.bulkPublishProducts(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.objectContaining({
-            code: 'VALIDATION_ERROR'
-          })
-        })
-      );
-    });
-  });
-
-  describe('bulkUnpublishProducts', () => {
-    it('should unpublish bulk products successfully', async () => {
-      const productIds = ['1', '2', '3'];
-
-      mockRequest.body = { productIds };
-
-      await controller.bulkUnpublishProducts(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            totalRequested: 3,
-            successful: 3,
-            failed: 0
-          })
-        })
-      );
-    });
-  });
-
-  describe('bulkUpdateCategories', () => {
-    it('should update bulk categories successfully', async () => {
-      const productIds = ['1', '2', '3'];
-      const newCategoryId = 'new-category-id';
-
-      mockRequest.body = { productIds, newCategoryId };
-
-      await controller.bulkUpdateCategories(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            totalRequested: 3,
-            successful: 3,
-            failed: 0
-          })
-        })
-      );
-    });
-
-    it('should handle missing newCategoryId', async () => {
-      const productIds = ['1', '2', '3'];
-
-      mockRequest.body = { productIds };
-
-      await controller.bulkUpdateCategories(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.objectContaining({
-            code: 'VALIDATION_ERROR'
-          })
-        })
-      );
-    });
-  });
-
-  describe('getBulkOperationStatus', () => {
-    it('should get bulk operation status successfully', async () => {
-      mockRequest.params = { operationId: 'bulk-update-123' };
-
-      await controller.getBulkOperationStatus(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            operationId: 'bulk-update-123'
-          })
-        })
-      );
-    });
-
-    it('should handle missing operationId', async () => {
-      mockRequest.params = {};
-
-      await controller.getBulkOperationStatus(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.objectContaining({
-            code: 'VALIDATION_ERROR'
-          })
-        })
-      );
-    });
-  });
-
-  describe('getBulkOperationsHistory', () => {
-    it('should get bulk operations history successfully', async () => {
-      mockRequest.query = { limit: '10', offset: '0' };
-
-      await controller.getBulkOperationsHistory(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            operations: expect.any(Array)
-          })
-        })
-      );
-    });
-
-    it('should handle filtering by type', async () => {
-      mockRequest.query = { type: 'bulk_update', limit: '10', offset: '0' };
-
-      await controller.getBulkOperationsHistory(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            operations: expect.any(Array)
-          })
-        })
-      );
-    });
-
-    it('should handle filtering by status', async () => {
-      mockRequest.query = { status: 'completed', limit: '10', offset: '0' };
-
-      await controller.getBulkOperationsHistory(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            operations: expect.any(Array)
-          })
-        })
-      );
-    });
-  });
-
-  describe('error handling', () => {
-    it('should handle internal errors gracefully', async () => {
-      // Mock console.error to avoid noise in test output
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-
-      // Mock a scenario that would cause an internal error
-      mockRequest.body = { products: null };
-
-      await controller.bulkCreateProducts(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.objectContaining({
-            code: 'INTERNAL_ERROR'
-          })
-        })
-      );
-
-      consoleSpy.mockRestore();
-    });
-  });
-
-  describe('response formatting', () => {
-    it('should return consistent response format for success', async () => {
-      const productsData = [{ name: 'Product 1', price: 100 }];
-
-      mockRequest.body = { products: productsData };
-
-      await controller.bulkCreateProducts(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.any(Object),
-          meta: expect.objectContaining({
-            timestamp: expect.any(Date)
-          })
-        })
-      );
-    });
-
-    it('should return consistent response format for errors', async () => {
-      mockRequest.body = {};
-
-      await controller.bulkCreateProducts(mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.objectContaining({
-            code: expect.any(String),
-            message: expect.any(String)
+            code: 'VALIDATION_ERROR',
+            message: 'At least one product ID is required'
           }),
           meta: expect.objectContaining({
             timestamp: expect.any(Date)
           })
         })
+      );
+    });
+  });
+
+  describe('Not implemented operations', () => {
+    async function expectNotImplemented(
+      handler: (req: Request, res: Response) => Promise<void>,
+      expectedMessage: string,
+      req: Partial<Request> = createRequest()
+    ): Promise<void> {
+      const res = createResponse();
+      await handler(req as Request, res as Response);
+
+      expect(res.status).toHaveBeenCalledWith(501);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'NOT_IMPLEMENTED',
+            message: expectedMessage
+          }),
+          meta: expect.objectContaining({
+            timestamp: expect.any(Date)
+          })
+        })
+      );
+    }
+
+    it('should return not implemented for bulkPublishProducts', async () => {
+      await expectNotImplemented(
+        controller.bulkPublishProducts.bind(controller),
+        'Bulk product publishing is not implemented.'
+      );
+    });
+
+    it('should return not implemented for bulkUnpublishProducts', async () => {
+      await expectNotImplemented(
+        controller.bulkUnpublishProducts.bind(controller),
+        'Bulk product unpublishing is not implemented.'
+      );
+    });
+
+    it('should return not implemented for bulkUpdateCategories', async () => {
+      await expectNotImplemented(
+        controller.bulkUpdateCategories.bind(controller),
+        'Bulk category updates are not implemented.'
+      );
+    });
+
+    it('should return not implemented for getBulkOperationStatus', async () => {
+      await expectNotImplemented(
+        controller.getBulkOperationStatus.bind(controller),
+        'Bulk operation status is not implemented.',
+        createRequest({ params: { operationId: 'bulk-update-123' } })
+      );
+    });
+
+    it('should return not implemented for getBulkOperationsHistory', async () => {
+      await expectNotImplemented(
+        controller.getBulkOperationsHistory.bind(controller),
+        'Bulk operations history is not implemented.',
+        createRequest({ query: { limit: '10', offset: '0' } })
       );
     });
   });

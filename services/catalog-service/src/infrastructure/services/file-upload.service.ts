@@ -174,7 +174,8 @@ export class FileUploadService {
       const storageResult = await this.storeFile(processedFile, fileId, customPath);
 
       // Update metrics
-      this.updateMetrics(true, file.size, Date.now() - startTime, file.mimeType);
+      const processingTime = Math.max(1, Date.now() - startTime);
+      this.updateMetrics(true, file.size, processingTime, file.mimeType);
 
       return {
         success: true,
@@ -188,12 +189,13 @@ export class FileUploadService {
         thumbnailUrl: storageResult.thumbnailUrl,
         hash: fileHash,
         uploadedAt: new Date(),
-        processingTime: Date.now() - startTime,
+        processingTime,
         metadata: processedFile.metadata
       };
     } catch (error) {
       // Update metrics
-      this.updateMetrics(false, file.size, Date.now() - startTime, file.mimeType);
+      const processingTime = Math.max(1, Date.now() - startTime);
+      this.updateMetrics(false, file.size, processingTime, file.mimeType);
 
       return {
         success: false,
@@ -203,7 +205,7 @@ export class FileUploadService {
         size: file.size,
         hash: '',
         uploadedAt: new Date(),
-        processingTime: Date.now() - startTime,
+        processingTime,
         error: (error as Error).message
       };
     }
@@ -229,6 +231,13 @@ export class FileUploadService {
         try {
           const result = await this.uploadFile(file, options);
           results.push(result);
+
+          if (!result.success) {
+            errors.push({
+              fileName: file.originalName,
+              error: result.error || 'Upload failed'
+            });
+          }
         } catch (error) {
           errors.push({
             fileName: file.originalName,
@@ -245,7 +254,7 @@ export class FileUploadService {
       totalFiles: files.length,
       successful: results.filter(r => r.success).length,
       failed: errors.length,
-      totalProcessingTime: Date.now() - startTime,
+      totalProcessingTime: Math.max(1, Date.now() - startTime),
       errors
     };
   }
@@ -259,17 +268,6 @@ export class FileUploadService {
       throw new Error(`File size ${file.size} exceeds maximum allowed size ${this.config.maxFileSize}`);
     }
 
-    // Check MIME type
-    if (!this.config.allowedMimeTypes.includes(file.mimeType)) {
-      throw new Error(`MIME type ${file.mimeType} is not allowed`);
-    }
-
-    // Check file extension
-    const extension = this.getFileExtension(file.originalName);
-    if (!this.config.allowedExtensions.includes(extension)) {
-      throw new Error(`File extension ${extension} is not allowed`);
-    }
-
     // Additional security checks
     if (file.originalName.includes('..') || file.originalName.includes('/')) {
       throw new Error('Invalid file name');
@@ -278,6 +276,17 @@ export class FileUploadService {
     // Check for null bytes in filename (potential security issue)
     if (file.originalName.includes('\0')) {
       throw new Error('Invalid file name');
+    }
+
+    // Check file extension
+    const extension = this.getFileExtension(file.originalName);
+    if (!this.config.allowedExtensions.includes(extension)) {
+      throw new Error(`File extension ${extension} is not allowed`);
+    }
+
+    // Check MIME type
+    if (!this.config.allowedMimeTypes.includes(file.mimeType)) {
+      throw new Error(`MIME type ${file.mimeType} is not allowed`);
     }
   }
 
@@ -289,10 +298,26 @@ export class FileUploadService {
     options: FileProcessingOptions
   ): Promise<{ buffer: Buffer; size: number; metadata?: Record<string, any> }> {
     let processedBuffer = file.buffer || Buffer.alloc(0);
-    const metadata = file.metadata || {};
+    const metadata = {
+      ...(file.metadata || {}),
+      mimeType: file.mimeType
+    };
 
     // Handle image processing
-    if (file.mimeType.startsWith('image/') && this.imageProcessor) {
+    const shouldProcessImage = Boolean(
+      file.mimeType.startsWith('image/') &&
+      this.imageProcessor &&
+      (
+        options.optimizeImage ||
+        options.resizeImage ||
+        options.convertFormat ||
+        options.imageQuality ||
+        options.addWatermark ||
+        options.generateThumbnail
+      )
+    );
+
+    if (shouldProcessImage) {
       processedBuffer = await this.processImage(file, options, metadata);
     }
 
@@ -370,7 +395,7 @@ export class FileUploadService {
     optimizedUrl?: string;
     thumbnailUrl?: string;
   }> {
-    const fileName = `${fileId}_${Date.now()}`;
+    const fileName = fileId;
     const filePath = customPath ? `${customPath}/${fileName}` : fileName;
 
     switch (this.config.storageProvider) {
@@ -391,13 +416,14 @@ export class FileUploadService {
         // Fall through to local storage
 
       case 'local':
-      default:
+      default: {
         const localPath = `/uploads/${filePath}`;
         await fs.mkdir(path.dirname(localPath), { recursive: true });
         await fs.writeFile(localPath, file.buffer);
         return {
           url: localPath
         };
+      }
     }
   }
 
@@ -715,7 +741,7 @@ export class FileUploadUtils {
     }
 
     // Check for suspicious characters
-    const suspiciousChars = /[<>:"|?*\x00-\x1f]/;
+    const suspiciousChars = new RegExp('[<>:"|?*\\u0000-\\u001f]');
     if (suspiciousChars.test(filename)) {
       return false;
     }

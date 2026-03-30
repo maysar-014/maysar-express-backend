@@ -206,19 +206,22 @@ export class InventoryRuleEngine {
     let reasoning = action.reason;
 
     switch (action.type) {
-      case 'reorder':
+      case 'reorder': {
         const reorderQuantity = this.calculateReorderQuantity(action, context);
         reasoning += ` Recommended reorder quantity: ${reorderQuantity} units`;
         break;
-      case 'adjust_reorder_point':
+      }
+      case 'adjust_reorder_point': {
         const newReorderPoint = this.calculateOptimalReorderPoint(context);
         reasoning += ` Suggested reorder point: ${newReorderPoint} units`;
         break;
+      }
       case 'increase_safety_stock':
-      case 'decrease_safety_stock':
+      case 'decrease_safety_stock': {
         const safetyStockChange = this.calculateSafetyStockAdjustment(action, context);
         reasoning += ` Safety stock adjustment: ${safetyStockChange > 0 ? '+' : ''}${safetyStockChange} units`;
         break;
+      }
     }
 
     return { reasoning };

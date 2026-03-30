@@ -31,7 +31,7 @@ export abstract class Saga<T = unknown> {
         try {
           await (this.steps[i] as SagaStep<TData>).compensate(context);
         } catch (compensationError) {
-          console.error('Compensation failed:', compensationError);
+          process.stderr.write(`Compensation failed: ${String(compensationError)}\n`);
         }
       }
       throw error;

@@ -5,6 +5,7 @@
 - Source: `postman/Maysar-Platform-E2E.postman_collection.json`
 - Total operational requests covered: **219**
 - Single entry point: `http://localhost:3000`
+- Source-of-truth note: if a path below disagrees with the current service README or OpenAPI file, treat the service docs as current and regenerate this playbook next.
 - This document provides step-by-step intent and response behavior for both happy and unhappy paths.
 
 ## Folder Coverage Summary

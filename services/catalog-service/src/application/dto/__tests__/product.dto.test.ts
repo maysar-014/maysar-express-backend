@@ -78,7 +78,7 @@ describe('Product DTOs', () => {
       expect(createData.tags).toEqual([]);
       expect(createData.mediaUrls).toEqual([]);
       expect(createData.inventoryCount).toBe(50);
-      expect(createData.attributes).toBeUndefined();
+      expect(createData.attributes).toEqual({});
       expect(createData.seoTitle).toBeUndefined();
       expect(createData.seoDescription).toBeUndefined();
     });
@@ -529,7 +529,7 @@ describe('Product DTOs', () => {
       expect(detailsData.publishedAt).toBeUndefined();
       expect(detailsData.categoryName).toBeUndefined();
       expect(detailsData.categoryPath).toBeUndefined();
-      expect(detailsData.attributes).toBeUndefined();
+      expect(detailsData.attributes).toEqual({});
       expect(detailsData.sellerName).toBeUndefined();
     });
   });

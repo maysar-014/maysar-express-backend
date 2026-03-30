@@ -157,7 +157,10 @@ describe('CreateUserUseCase', () => {
       });
 
       await expect(createUserUseCase.execute(validCreateUserDto))
-        .rejects.toThrow(UserValidationError);
+        .rejects.toMatchObject({
+          name: 'UserInternalError',
+          message: 'Failed to create user: Unexpected error'
+        });
     });
   });
 });

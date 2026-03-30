@@ -44,6 +44,8 @@ tags:
     description: Analytics and reporting
   - name: Business
     description: Business registration
+  - name: Seller Discovery
+    description: Public seller discovery and industry browsing
   - name: Commission
     description: Commission calculations
   - name: Compliance
@@ -16487,6 +16489,226 @@ paths:
         schema:
           type: string
         example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/analytics/sellers/{sellerId}/sla':
+    get:
+      tags:
+        - Analytics
+      summary: Seller SLA report
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        - name: lookbackDays
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+          example: 30
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BearerAuth: []
+    parameters:
+      - name: sellerId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/analytics/sellers/{sellerId}/sla/breaches':
+    get:
+      tags:
+        - Analytics
+      summary: Seller SLA breaches
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        - name: lookbackDays
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+          example: 30
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BearerAuth: []
+    parameters:
+      - name: sellerId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/analytics/sellers/{sellerId}/sla/readiness':
+    get:
+      tags:
+        - Analytics
+      summary: Seller SLA readiness
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        - name: lookbackDays
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+          example: 30
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BearerAuth: []
+    parameters:
+      - name: sellerId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/analytics/sellers/{sellerId}/sla/evaluate':
+    post:
+      tags:
+        - Analytics
+      summary: Evaluate seller SLA
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        - name: lookbackDays
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+          example: 30
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BearerAuth: []
+    parameters:
+      - name: sellerId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
   '/api/analytics/action-items/{actionId}/resolve':
     patch:
       tags:
@@ -17316,6 +17538,188 @@ paths:
       security:
         - BearerAuth: []
     parameters: []
+  /api/business-registry/public/sellers:
+    get:
+      tags:
+        - Seller Discovery
+      summary: Browse public sellers
+      description: Returns active, verified sellers with public business profiles. Supports filtering by industry, industries, and search terms.
+      parameters:
+        - name: industry
+          in: query
+          required: false
+          schema:
+            type: string
+          example: retail
+        - name: industries
+          in: query
+          required: false
+          schema:
+            type: string
+          example: retail,logistics
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+          example: acme
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          example: 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          example: 0
+      responses:
+        '200':
+          description: Public seller list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicSellerListResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+      security: []
+  '/api/business-registry/public/sellers/{sellerId}':
+    get:
+      tags:
+        - Seller Discovery
+      summary: Get public seller profile
+      description: Returns the seller's public business profile and all public businesses associated with the seller.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      responses:
+        '200':
+          description: Public seller profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicSellerProfile'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: Seller not found
+          content:
+            application/json:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+      security: []
+  '/api/business-registry/public/sellers/{sellerId}/industries':
+    get:
+      tags:
+        - Seller Discovery
+      summary: Get seller industries
+      description: Returns the normalized set of industries represented by the seller's public businesses.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      responses:
+        '200':
+          description: Seller industries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicSellerIndustries'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: Seller not found
+          content:
+            application/json:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+      security: []
+  '/api/business-registry/public/industries/{industry}/sellers':
+    get:
+      tags:
+        - Seller Discovery
+      summary: Browse sellers by industry
+      description: Lists public sellers whose verified businesses operate in the requested industry.
+      parameters:
+        - name: industry
+          in: path
+          required: true
+          schema:
+            type: string
+          example: retail
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+          example: acme
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          example: 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          example: 0
+      responses:
+        '200':
+          description: Public seller list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicSellerListResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+      security: []
   '/api/business-registry/owner/{ownerId}':
     get:
       tags:
@@ -43441,3 +43845,190 @@ components:
       type: object
       description: Generic health/readiness response (shape varies by service)
       additionalProperties: true
+    PublicBusinessAddress:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - street
+        - city
+        - region
+        - country
+        - isPrimary
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+            - MAIN
+            - BRANCH
+            - WAREHOUSE
+            - OTHER
+        street:
+          type: string
+        city:
+          type: string
+        region:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+        isPrimary:
+          type: boolean
+    PublicBusiness:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - name
+        - businessType
+        - registrationNumber
+        - status
+        - verificationStatus
+        - complianceStatus
+        - ownerId
+        - industry
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        businessType:
+          type: string
+        registrationNumber:
+          type: string
+        taxId:
+          type: string
+        status:
+          type: string
+        verificationStatus:
+          type: string
+        complianceStatus:
+          type: string
+        ownerId:
+          type: string
+        description:
+          type: string
+        industry:
+          type: array
+          items:
+            type: string
+        website:
+          type: string
+        email:
+          type: string
+        phoneNumber:
+          type: string
+        verifiedAt:
+          type: string
+          format: date-time
+        verifiedBy:
+          type: string
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicBusinessAddress'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    PublicSellerSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - sellerId
+        - sellerName
+        - businessCount
+        - industries
+        - primaryBusiness
+      properties:
+        sellerId:
+          type: string
+        sellerName:
+          type: string
+        businessCount:
+          type: integer
+        industries:
+          type: array
+          items:
+            type: string
+        primaryBusiness:
+          $ref: '#/components/schemas/PublicBusiness'
+    PublicSellerProfile:
+      type: object
+      additionalProperties: false
+      required:
+        - sellerId
+        - sellerName
+        - businessCount
+        - industries
+        - primaryBusiness
+        - businesses
+      properties:
+        sellerId:
+          type: string
+        sellerName:
+          type: string
+        businessCount:
+          type: integer
+        industries:
+          type: array
+          items:
+            type: string
+        primaryBusiness:
+          $ref: '#/components/schemas/PublicBusiness'
+        businesses:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicBusiness'
+    PublicSellerIndustries:
+      type: object
+      additionalProperties: false
+      required:
+        - sellerId
+        - industries
+        - businessCount
+      properties:
+        sellerId:
+          type: string
+        industries:
+          type: array
+          items:
+            type: string
+        businessCount:
+          type: integer
+    PublicSellerPagination:
+      type: object
+      additionalProperties: false
+      required:
+        - limit
+        - offset
+        - hasMore
+      properties:
+        limit:
+          type: integer
+        offset:
+          type: integer
+        hasMore:
+          type: boolean
+        nextOffset:
+          type: integer
+    PublicSellerListResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - pagination
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicSellerSummary'
+        pagination:
+          $ref: '#/components/schemas/PublicSellerPagination'

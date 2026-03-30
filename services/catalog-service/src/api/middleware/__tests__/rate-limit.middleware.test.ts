@@ -6,9 +6,17 @@
 import { Request, Response, NextFunction } from 'express';
 import { createRateLimit, ipRateLimit, RateLimitMiddlewareFactory } from '../rate-limit.middleware';
 
+interface MockResponse extends Partial<Response> {
+  status: jest.Mock;
+  json: jest.Mock;
+  send: jest.Mock;
+  setHeader: jest.Mock;
+  set: jest.Mock;
+}
+
 describe('Rate Limit Middleware', () => {
   let mockRequest: Partial<Request>;
-  let mockResponse: Partial<Response>;
+  let mockResponse: MockResponse;
   let mockNext: jest.MockedFunction<NextFunction>;
 
   beforeEach(() => {
@@ -23,7 +31,8 @@ describe('Rate Limit Middleware', () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
       send: jest.fn().mockReturnThis(),
-      setHeader: jest.fn().mockReturnThis()
+      setHeader: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis()
     };
     
     mockNext = jest.fn() as jest.MockedFunction<NextFunction>;
@@ -83,6 +92,7 @@ describe('Rate Limit Middleware', () => {
       const config = {
         windowMs: 60 * 1000, // 1 minute
         maxRequests: 5,
+        burstMultiplier: 1,
         skipSuccessfulRequests: false,
         skipFailedRequests: false
       };

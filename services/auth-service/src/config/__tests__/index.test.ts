@@ -1,3 +1,7 @@
+jest.mock('dotenv', () => ({
+  config: jest.fn()
+}));
+
 describe('config index', () => {
   const previousEnv = { ...process.env };
 
@@ -38,6 +42,7 @@ describe('config index', () => {
     process.env.DATABASE_URL = 'postgresql://db/test';
     process.env.JWT_SECRET = 'too-short';
     process.env.REDIS_URL = 'redis://localhost:6379';
+    process.env.ENABLE_EMAIL_VERIFICATION = 'true';
     process.env.ENABLE_PHONE_VERIFICATION = 'true';
     delete process.env.SMTP_USER;
     delete process.env.AFRICASTALKING_API_KEY;

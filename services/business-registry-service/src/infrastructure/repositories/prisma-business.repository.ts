@@ -5,9 +5,10 @@ import { BusinessId } from '../../domain/value-objects/business-id.value-object'
 import { RegistrationNumber } from '../../domain/value-objects/registration-number.value-object';
 import { TaxId } from '../../domain/value-objects/tax-id.value-object';
 import { BusinessAddress } from '../../domain/value-objects/business-address.value-object';
-import { BusinessStatus, VerificationStatus } from '../../domain/types/business.types';
+import { BusinessStatus, ComplianceStatus, VerificationStatus } from '../../domain/types/business.types';
 import { BusinessNotFoundError } from '../../domain/errors/business.errors';
 import { logger } from '../services/logger.service';
+import { PublicBusinessDiscoveryFilters } from '../../domain/repositories';
 
 export class PrismaBusinessRepository implements IBusinessRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -61,6 +62,41 @@ export class PrismaBusinessRepository implements IBusinessRepository {
       return data.map(d => this.mapToDomain(d));
     } catch (error) {
       logger.error('Error finding businesses by owner', { ownerId, error: this.formatError(error) });
+      throw error;
+    }
+  }
+
+  async findPublicSellerPreviews(filters: Omit<PublicBusinessDiscoveryFilters, 'sellerId' | 'sellerIds'> = {}): Promise<Business[]> {
+    try {
+      const where = this.buildPublicDiscoveryWhere(filters);
+      const data = await this.prisma.business.findMany({
+        where,
+        distinct: ['ownerId'],
+        take: this.normalizeLimit(filters.limit),
+        skip: this.normalizeOffset(filters.offset),
+        include: { addresses: true },
+        orderBy: { createdAt: 'desc' }
+      });
+      return data.map(d => this.mapToDomain(d));
+    } catch (error) {
+      logger.error('Error finding public seller previews', { filters, error: this.formatError(error) });
+      throw error;
+    }
+  }
+
+  async findPublicBusinesses(filters: PublicBusinessDiscoveryFilters = {}): Promise<Business[]> {
+    try {
+      const where = this.buildPublicDiscoveryWhere(filters);
+      const data = await this.prisma.business.findMany({
+        where,
+        ...(typeof filters.limit === 'number' ? { take: filters.limit } : {}),
+        ...(typeof filters.offset === 'number' ? { skip: filters.offset } : {}),
+        include: { addresses: true },
+        orderBy: { createdAt: 'desc' }
+      });
+      return data.map(d => this.mapToDomain(d));
+    } catch (error) {
+      logger.error('Error finding public businesses', { filters, error: this.formatError(error) });
       throw error;
     }
   }
@@ -206,12 +242,14 @@ export class PrismaBusinessRepository implements IBusinessRepository {
 
   async search(query: string, limit = 50, offset = 0): Promise<Business[]> {
     try {
+      const normalizedQuery = query.trim().toLowerCase();
+      const searchTerms = normalizedQuery.length > 0 ? normalizedQuery.split(/[\s,]+/).filter(Boolean) : [];
       const data = await this.prisma.business.findMany({
         where: {
           OR: [
             { name: { contains: query, mode: 'insensitive' } },
             { registrationNumber: { contains: query, mode: 'insensitive' } },
-            { industry: { contains: query, mode: 'insensitive' } }
+            ...(searchTerms.length > 0 ? [{ industry: { hasSome: searchTerms } }] : [])
           ]
         },
         take: limit,
@@ -374,7 +412,7 @@ export class PrismaBusinessRepository implements IBusinessRepository {
     complianceStatus: string;
     ownerId: string;
     description: string | null;
-    industry: string | null;
+    industry: string[] | string | null;
     website: string | null;
     email: string | null;
     phoneNumber: string | null;
@@ -395,6 +433,11 @@ export class PrismaBusinessRepository implements IBusinessRepository {
   }): Business {
     const registrationNumber = RegistrationNumber.create(data.registrationNumber);
     const taxId = data.taxId ? TaxId.create(data.taxId) : undefined;
+    const industries = Array.isArray(data.industry)
+      ? data.industry
+      : typeof data.industry === 'string'
+        ? [data.industry]
+        : [];
     const addresses = (data.addresses ?? []).map(addr =>
       BusinessAddress.create({
         id: addr.id,
@@ -419,7 +462,7 @@ export class PrismaBusinessRepository implements IBusinessRepository {
       complianceStatus: data.complianceStatus as never,
       ownerId: data.ownerId,
       description: data.description ?? undefined,
-      industry: data.industry ?? undefined,
+      industry: industries,
       website: data.website ?? undefined,
       email: data.email ?? undefined,
       phoneNumber: data.phoneNumber ?? undefined,
@@ -437,5 +480,70 @@ export class PrismaBusinessRepository implements IBusinessRepository {
 
   private isNotFoundError(error: unknown): boolean {
     return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
+  }
+
+  private buildPublicDiscoveryWhere(filters: PublicBusinessDiscoveryFilters): Prisma.BusinessWhereInput {
+    const industries = this.normalizeIndustryList(filters.industry, filters.industries);
+    const normalizedSellerIds = Array.isArray(filters.sellerIds)
+      ? filters.sellerIds.map((sellerId) => sellerId.trim()).filter((sellerId) => sellerId.length > 0)
+      : [];
+    const ownerFilter = typeof filters.sellerId === 'string' && filters.sellerId.trim().length > 0
+      ? { ownerId: filters.sellerId.trim() }
+      : normalizedSellerIds.length > 0
+        ? { ownerId: { in: normalizedSellerIds } }
+        : {};
+    const query = typeof filters.query === 'string' ? filters.query.trim() : '';
+    const searchTerms = query.length > 0
+      ? query.toLowerCase().split(/[\s,]+/).filter(Boolean)
+      : [];
+
+    return {
+      status: BusinessStatus.ACTIVE,
+      verificationStatus: VerificationStatus.VERIFIED,
+      complianceStatus: { not: ComplianceStatus.NON_COMPLIANT } as never,
+      ...ownerFilter,
+      ...(industries.length === 1
+        ? { industry: { has: industries[0] } }
+        : industries.length > 1
+          ? { industry: { hasSome: industries } }
+          : {}),
+      ...(query.length > 0
+        ? {
+            OR: [
+              { name: { contains: query, mode: 'insensitive' } },
+              { registrationNumber: { contains: query, mode: 'insensitive' } },
+              ...(searchTerms.length > 0 ? [{ industry: { hasSome: searchTerms } }] : [])
+            ]
+          }
+        : {})
+    };
+  }
+
+  private normalizeIndustryList(primary?: string, secondary?: string[]): string[] {
+    const rawValues = [
+      ...(typeof primary === 'string' ? [primary] : []),
+      ...(Array.isArray(secondary) ? secondary : [])
+    ];
+
+    const normalized = rawValues
+      .flatMap((value) => value.split(','))
+      .map((value) => value.trim().toLowerCase())
+      .filter((value) => value.length > 0);
+
+    return Array.from(new Set(normalized));
+  }
+
+  private normalizeLimit(limit?: number): number | undefined {
+    if (typeof limit !== 'number' || Number.isNaN(limit)) {
+      return undefined;
+    }
+    return Math.max(1, Math.min(Math.floor(limit), 101));
+  }
+
+  private normalizeOffset(offset?: number): number | undefined {
+    if (typeof offset !== 'number' || Number.isNaN(offset)) {
+      return undefined;
+    }
+    return Math.max(0, Math.floor(offset));
   }
 }

@@ -268,7 +268,7 @@ export class DynamicPricingTriggeredEvent extends PricingDomainEvent {
     public readonly newPrice: Price,
     public readonly priceChangePercentage: number,
     public readonly triggeredBy: 'algorithm' | 'manual',
-    public readonly triggerData?: Record<string, any>,
+    public readonly triggerData?: Record<string, unknown>,
     occurredAt?: Date
   ) {
     super(eventId, aggregateId, occurredAt);

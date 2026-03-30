@@ -11,7 +11,7 @@ describe('AuthServiceClient integration stub', () => {
 
     await expect(client.isUserVerified('user-1')).resolves.toBe(true);
     expect(logSpy).toHaveBeenCalledWith(
-      '[AuthServiceClient] Checking verification for user user-1'
+      '[AuthServiceClient] Bypassing verification for user user-1 (non-production).'
     );
   });
 });

@@ -27,25 +27,56 @@ import {
   ValueObjectFactory
 } from '../interfaces';
 
+type TestRecord = {
+  id?: string;
+  name?: string;
+  slug?: string;
+  price?: number;
+  sellerId?: string;
+  categoryId?: string;
+  productId?: string;
+  variantId?: string;
+  currentStock?: number;
+  reservedStock?: number;
+  availableStock?: number;
+  threshold?: number;
+  needsReorder?: boolean;
+  page?: number;
+  limit?: number;
+  total?: number;
+  results?: TestRecord[];
+  products?: TestRecord[];
+  title?: string;
+  url?: string;
+  fileId?: string;
+  metadata?: Record<string, unknown>;
+  changes?: Record<string, unknown>;
+  status?: string;
+  email?: string;
+  mimeType?: string;
+  uploadedAt?: Date;
+  [key: string]: unknown;
+};
+
 // Mock implementations for testing
 class MockProductRepository implements ProductRepository {
-  async save(product: any): Promise<any> {
+  async save(product: TestRecord): Promise<TestRecord> {
     return { ...product, id: 'test-product-id' };
   }
 
-  async findById(id: string): Promise<any | null> {
+  async findById(id: string): Promise<TestRecord | null> {
     return id === 'test-product-id' ? { id, name: 'Test Product' } : null;
   }
 
-  async findBySeller(sellerId: string): Promise<any[]> {
+  async findBySeller(sellerId: string): Promise<TestRecord[]> {
     return [{ id: 'product-1', sellerId, name: 'Product 1' }];
   }
 
-  async findByCategory(categoryId: string): Promise<any[]> {
+  async findByCategory(categoryId: string): Promise<TestRecord[]> {
     return [{ id: 'product-1', categoryId, name: 'Product 1' }];
   }
 
-  async search(filters: any, pagination: any): Promise<any> {
+  async search(filters: TestRecord, pagination: TestRecord): Promise<TestRecord> {
     return {
       products: [{ id: 'product-1', name: 'Product 1' }],
       total: 1,
@@ -54,7 +85,7 @@ class MockProductRepository implements ProductRepository {
     };
   }
 
-  async updateStatus(id: string, status: string): Promise<any> {
+  async updateStatus(id: string, status: string): Promise<TestRecord> {
     return { id, status };
   }
 
@@ -64,49 +95,49 @@ class MockProductRepository implements ProductRepository {
 }
 
 class MockCategoryRepository implements CategoryRepository {
-  async save(category: any): Promise<any> {
+  async save(category: TestRecord): Promise<TestRecord> {
     return { ...category, id: 'test-category-id' };
   }
 
-  async findById(id: string): Promise<any | null> {
+  async findById(id: string): Promise<TestRecord | null> {
     return id === 'test-category-id' ? { id, name: 'Test Category' } : null;
   }
 
-  async findAll(): Promise<any[]> {
+  async findAll(): Promise<TestRecord[]> {
     return [{ id: 'cat-1', name: 'Category 1' }];
   }
 
-  async findBySlug(slug: string): Promise<any | null> {
+  async findBySlug(slug: string): Promise<TestRecord | null> {
     return slug === 'test-category' ? { id: 'cat-1', slug, name: 'Test Category' } : null;
   }
 
-  async findSubcategories(parentId: string): Promise<any[]> {
+  async findSubcategories(parentId: string): Promise<TestRecord[]> {
     return [{ id: 'subcat-1', parentId, name: 'Subcategory 1' }];
   }
 
-  async update(id: string, updates: any): Promise<any> {
+  async update(id: string, updates: TestRecord): Promise<TestRecord> {
     return { id, ...updates };
   }
 }
 
 class MockSellerRepository implements SellerRepository {
-  async save(seller: any): Promise<any> {
+  async save(seller: TestRecord): Promise<TestRecord> {
     return { ...seller, id: 'test-seller-id' };
   }
 
-  async findById(id: string): Promise<any | null> {
+  async findById(id: string): Promise<TestRecord | null> {
     return id === 'test-seller-id' ? { id, name: 'Test Seller' } : null;
   }
 
-  async findByEmail(email: string): Promise<any | null> {
+  async findByEmail(email: string): Promise<TestRecord | null> {
     return email === 'test@example.com' ? { id: 'seller-1', email } : null;
   }
 
-  async updateProfile(id: string, updates: any): Promise<any> {
+  async updateProfile(id: string, updates: TestRecord): Promise<TestRecord> {
     return { id, ...updates };
   }
 
-  async updateMetrics(id: string, metrics: any): Promise<any> {
+  async updateMetrics(id: string, metrics: TestRecord): Promise<TestRecord> {
     return { id, metrics };
   }
 }
@@ -124,7 +155,7 @@ class MockInventoryRepository implements InventoryRepository {
     return true;
   }
 
-  async getStock(productId: string, variantId?: string): Promise<any> {
+  async getStock(productId: string, variantId?: string): Promise<TestRecord> {
     return {
       productId,
       variantId,
@@ -134,7 +165,7 @@ class MockInventoryRepository implements InventoryRepository {
     };
   }
 
-  async getLowStockAlerts(threshold: number): Promise<any[]> {
+  async getLowStockAlerts(threshold: number): Promise<TestRecord[]> {
     return [
       {
         productId: 'product-1',
@@ -147,15 +178,15 @@ class MockInventoryRepository implements InventoryRepository {
 }
 
 class MockMediaRepository implements MediaRepository {
-  async save(media: any): Promise<any> {
+  async save(media: TestRecord): Promise<TestRecord> {
     return { ...media, id: 'test-media-id' };
   }
 
-  async findById(id: string): Promise<any | null> {
+  async findById(id: string): Promise<TestRecord | null> {
     return id === 'test-media-id' ? { id, url: 'test-url' } : null;
   }
 
-  async findByProduct(productId: string): Promise<any[]> {
+  async findByProduct(productId: string): Promise<TestRecord[]> {
     return [{ id: 'media-1', productId, url: 'test-url-1' }];
   }
 
@@ -163,41 +194,41 @@ class MockMediaRepository implements MediaRepository {
     return true;
   }
 
-  async updateMetadata(id: string, metadata: any): Promise<any> {
+  async updateMetadata(id: string, metadata: TestRecord): Promise<TestRecord> {
     return { id, metadata };
   }
 }
 
 class MockDomainEventPublisher implements DomainEventPublisher {
-  async publish(event: any): Promise<void> {
+  async publish(event: DomainEvent): Promise<void> {
     // Mock implementation
   }
 
-  async publishAll(events: any[]): Promise<void> {
+  async publishAll(events: DomainEvent[]): Promise<void> {
     // Mock implementation
   }
 }
 
 class MockEventStore implements EventStore {
-  async save(events: any[]): Promise<void> {
+  async save(events: DomainEvent[]): Promise<void> {
     // Mock implementation
   }
 
-  async load(aggregateId: string, fromVersion?: number): Promise<any[]> {
+  async load(aggregateId: string, fromVersion?: number): Promise<DomainEvent[]> {
     return [];
   }
 
-  async getStream(aggregateType: string, aggregateId: string): Promise<any[]> {
+  async getStream(aggregateType: string, aggregateId: string): Promise<DomainEvent[]> {
     return [];
   }
 }
 
 class MockSearchService implements SearchService {
-  async index(document: any): Promise<void> {
+  async index(document: TestRecord): Promise<void> {
     // Mock implementation
   }
 
-  async search(query: string, filters: any, pagination: any): Promise<any> {
+  async search(query: string, filters: TestRecord, pagination: TestRecord): Promise<TestRecord> {
     return {
       results: [{ id: 'result-1', title: 'Test Result' }],
       total: 1,
@@ -210,13 +241,13 @@ class MockSearchService implements SearchService {
     // Mock implementation
   }
 
-  async update(id: string, updates: any): Promise<void> {
+  async update(id: string, updates: TestRecord): Promise<void> {
     // Mock implementation
   }
 }
 
 class MockCacheService implements CacheService {
-  private cache = new Map<string, { value: any; expiresAt?: number }>();
+  private cache = new Map<string, { value: unknown; expiresAt?: number }>();
 
   async get<T>(key: string): Promise<T | null> {
     const item = this.cache.get(key);
@@ -230,7 +261,7 @@ class MockCacheService implements CacheService {
     return item.value as T;
   }
 
-  async set(key: string, value: any, ttl?: number): Promise<void> {
+  async set(key: string, value: unknown, ttl?: number): Promise<void> {
     const expiresAt = ttl ? Date.now() + (ttl * 1000) : undefined;
     this.cache.set(key, { value, expiresAt });
   }
@@ -249,7 +280,7 @@ class MockCacheService implements CacheService {
 }
 
 class MockFileStorageService implements FileStorageService {
-  async upload(file: Buffer, metadata: any): Promise<any> {
+  async upload(file: Buffer, metadata: TestRecord): Promise<TestRecord> {
     return {
       fileId: 'test-file-id',
       url: 'https://example.com/test-file',
@@ -265,7 +296,7 @@ class MockFileStorageService implements FileStorageService {
     return true;
   }
 
-  async getMetadata(fileId: string): Promise<any> {
+  async getMetadata(fileId: string): Promise<TestRecord> {
     return {
       fileId,
       size: 1024,
@@ -326,19 +357,19 @@ class MockDateTimeService implements DateTimeService {
 }
 
 class MockLoggingService implements LoggingService {
-  debug(message: string, context?: any): void {
+  debug(message: string, context?: Record<string, unknown>): void {
     console.debug(`[DEBUG] ${message}`, context);
   }
 
-  info(message: string, context?: any): void {
+  info(message: string, context?: Record<string, unknown>): void {
     console.info(`[INFO] ${message}`, context);
   }
 
-  warn(message: string, context?: any): void {
+  warn(message: string, context?: Record<string, unknown>): void {
     console.warn(`[WARN] ${message}`, context);
   }
 
-  error(message: string, context?: any): void {
+  error(message: string, context?: Record<string, unknown>): void {
     console.error(`[ERROR] ${message}`, context);
   }
 }

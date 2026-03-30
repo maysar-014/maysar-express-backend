@@ -137,7 +137,7 @@ describe('Payout Entity', () => {
             const scheduledDate = new Date();
             scheduledDate.setDate(scheduledDate.getDate() - 1);
 
-            const payout = createPayout(PayoutStatus.SCHEDULED);
+            const payout = createPayout(PayoutStatus.PENDING);
             payout.schedule(scheduledDate);
 
             expect(payout.isOverdue()).toBe(true);
@@ -147,7 +147,7 @@ describe('Payout Entity', () => {
             const scheduledDate = new Date();
             scheduledDate.setDate(scheduledDate.getDate() + 1);
 
-            const payout = createPayout(PayoutStatus.SCHEDULED);
+            const payout = createPayout(PayoutStatus.PENDING);
             payout.schedule(scheduledDate);
 
             expect(payout.isOverdue()).toBe(false);

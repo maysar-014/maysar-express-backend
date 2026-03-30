@@ -28,7 +28,7 @@ export interface BusinessProps {
   complianceStatus: ComplianceStatus;
   ownerId: string;
   description?: string;
-  industry?: string;
+  industry: string[];
   website?: string;
   email?: string;
   phoneNumber?: string;
@@ -54,7 +54,7 @@ export class Business implements Entity {
   public readonly complianceStatus: ComplianceStatus;
   public readonly ownerId: string;
   public readonly description?: string;
-  public readonly industry?: string;
+  public readonly industry: string[];
   public readonly website?: string;
   public readonly email?: string;
   public readonly phoneNumber?: string;
@@ -75,7 +75,7 @@ export class Business implements Entity {
     this.complianceStatus = props.complianceStatus;
     this.ownerId = props.ownerId;
     this.description = props.description;
-    this.industry = props.industry;
+    this.industry = Business.normalizeIndustries(props.industry);
     this.website = props.website;
     this.email = props.email;
     this.phoneNumber = props.phoneNumber;
@@ -97,7 +97,7 @@ export class Business implements Entity {
     taxId?: TaxId;
     ownerId: string;
     description?: string;
-    industry?: string;
+    industry: string[];
     website?: string;
     email?: string;
     phoneNumber?: string;
@@ -156,7 +156,7 @@ export class Business implements Entity {
   updateDetails(props: {
     name?: string;
     description?: string;
-    industry?: string;
+    industry?: string[];
     website?: string;
     email?: string;
     phoneNumber?: string;
@@ -191,6 +191,10 @@ export class Business implements Entity {
       errors.push('Owner ID is required');
     }
 
+    if (!Array.isArray(this.industry) || this.industry.length === 0) {
+      errors.push('At least one industry is required');
+    }
+
     if (this.taxId && !this.taxId.isValid()) {
       errors.push('Invalid tax ID format');
     }
@@ -215,5 +219,13 @@ export class Business implements Entity {
 
   canOperate(): boolean {
     return this.isActive() && this.isVerified() && this.complianceStatus !== ComplianceStatus.NON_COMPLIANT;
+  }
+
+  private static normalizeIndustries(industries: string[]): string[] {
+    const normalized = industries
+      .map((value) => value.trim().toLowerCase())
+      .filter((value) => value.length > 0);
+
+    return Array.from(new Set(normalized));
   }
 }

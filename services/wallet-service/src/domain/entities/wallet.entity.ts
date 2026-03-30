@@ -319,12 +319,12 @@ export class Wallet {
      * Close wallet
      */
     close(): void {
-        if (this.props.balance > 0) {
-            throw new Error('Cannot close wallet with positive balance');
-        }
-
         if (this.props.frozenAmount > 0) {
             throw new Error('Cannot close wallet with frozen funds');
+        }
+
+        if (this.props.balance > 0) {
+            throw new Error('Cannot close wallet with positive balance');
         }
 
         this.props.status = WalletStatus.CLOSED;

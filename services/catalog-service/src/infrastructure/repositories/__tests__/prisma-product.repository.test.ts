@@ -595,7 +595,7 @@ describe('PrismaProductRepository', () => {
 
   describe('error handling', () => {
     it('should handle connection errors gracefully', async () => {
-      mockPrisma.$connect.mockRejectedValue(new Error('Connection failed'));
+      mockPrisma.$transaction.mockRejectedValue(new Error('Connection failed'));
 
       await expect(repository.save(mockProduct)).rejects.toThrow('Connection failed');
     });
@@ -664,7 +664,7 @@ describe('PrismaProductRepository', () => {
         id: `prod-${i}`
       }));
 
-      mockPrisma.product.findMany.mockResolvedValue(largeProductSet);
+      mockPrisma.product.findMany.mockResolvedValue(largeProductSet.slice(0, 100));
       mockPrisma.product.count.mockResolvedValue(1000);
 
       const result = await repository.search({}, { page: 1, limit: 100 });

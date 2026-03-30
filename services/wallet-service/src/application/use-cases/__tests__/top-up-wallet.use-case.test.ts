@@ -1,5 +1,4 @@
 import { TopUpWalletUseCase } from '../top-up-wallet.use-case';
-import { UserRole } from '../../../../../shared-contracts/user-service-contracts';
 
 const mockPaymentClient = {
     createPayment: jest.fn()
@@ -62,7 +61,7 @@ describe('TopUpWalletUseCase', () => {
         const result = await useCase.execute(validDto);
 
         expect(result.success).toBe(false);
-        expect(result.message).toContain('Failed to initiate top-up');
+        expect(result.message).toContain('Connection failed');
     });
 
     it('should handle different payment methods', async () => {

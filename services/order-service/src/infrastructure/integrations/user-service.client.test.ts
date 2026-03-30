@@ -12,12 +12,11 @@ describe('UserServiceClient integration stub', () => {
     const result = await client.getCODReputation('user-2');
 
     expect(result).toEqual({
-      score: 85,
-      successfulOrders: 10,
-      permanentlyDisabled: false
+      score: 100,
+      successfulOrders: 0
     });
     expect(logSpy).toHaveBeenCalledWith(
-      '[UserServiceClient] Fetching COD reputation for user user-2'
+      '[UserServiceClient] Bypassing COD reputation for user user-2 (non-production).'
     );
   });
 });

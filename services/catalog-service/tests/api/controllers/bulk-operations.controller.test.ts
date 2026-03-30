@@ -1,15 +1,13 @@
-import { BulkOperationsController } from '../src/api/controllers/bulk-operations.controller';
+import { BulkOperationsController } from '../../../src/api/controllers/bulk-operations.controller';
 import { Request, Response } from 'express';
 
 describe('BulkOperationsController', () => {
   let controller: BulkOperationsController;
-  let mockUseCase: any;
   let req: Partial<Request>;
   let res: Partial<Response>;
 
   beforeEach(() => {
-    mockUseCase = { execute: jest.fn() };
-    controller = new BulkOperationsController(mockUseCase);
+    controller = new BulkOperationsController();
     req = { params: {}, body: {}, query: {} };
     res = {
       status: jest.fn().mockReturnThis(),
@@ -20,15 +18,17 @@ describe('BulkOperationsController', () => {
 
   describe('bulkCreateProducts', () => {
     it('should handle request successfully', async () => {
-      mockUseCase.execute.mockResolvedValue({ success: true });
+      req.body = { products: [{ id: 'p1' }, { id: 'p2' }] };
       await controller.bulkCreateProducts(req as Request, res as Response);
-      expect(res.status).toHaveBeenCalledWith(200);
-    });
-
-    it('should handle errors', async () => {
-      mockUseCase.execute.mockRejectedValue(new Error('Test error'));
-      await controller.bulkCreateProducts(req as Request, res as Response);
-      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: expect.objectContaining({
+            createdCount: 2
+          })
+        })
+      );
     });
   });
 });

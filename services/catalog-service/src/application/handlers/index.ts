@@ -7,27 +7,57 @@
 // Export handlers as they are implemented
 // This file serves as the entry point for application handlers
 
-export interface EventHandler {
+export interface ApplicationEvent {
   readonly eventType: string;
-  handle(event: any, context?: any): Promise<void>;
 }
 
-export interface CommandHandler {
+export interface ApplicationCommand {
+  readonly type: string;
+}
+
+export type HandlerContext = Record<string, unknown>;
+
+export interface CommandResult<TData = unknown> {
+  success: boolean;
+  data?: TData;
+  error?: string;
+  commandType: string;
+  timestamp: Date;
+}
+
+export interface EventHandler<TEvent extends ApplicationEvent = ApplicationEvent, TContext = HandlerContext> {
+  readonly eventType: string;
+  handle(event: TEvent, context?: TContext): Promise<void>;
+}
+
+export interface CommandHandler<
+  TCommand extends ApplicationCommand = ApplicationCommand,
+  TResult = unknown,
+  TContext = HandlerContext
+> {
   readonly commandType: string;
-  handle(command: any, context?: any): Promise<any>;
+  handle(command: TCommand, context?: TContext): Promise<TResult>;
+}
+
+function isApplicationEvent(value: unknown): value is ApplicationEvent {
+  return typeof value === 'object' && value !== null && 'eventType' in value && typeof (value as { eventType?: unknown }).eventType === 'string';
+}
+
+function isApplicationCommand(value: unknown): value is ApplicationCommand {
+  return typeof value === 'object' && value !== null && 'type' in value && typeof (value as { type?: unknown }).type === 'string';
 }
 
 /**
  * Base Event Handler
  * Provides common functionality for event handlers
  */
-export abstract class BaseEventHandler implements EventHandler {
+export abstract class BaseEventHandler<TEvent extends ApplicationEvent = ApplicationEvent, TContext = HandlerContext> implements EventHandler<TEvent, TContext> {
   abstract readonly eventType: string;
 
-  abstract handle(event: any, context?: any): Promise<void>;
+  abstract handle(event: TEvent, context?: TContext): Promise<void>;
 
-  protected validateEvent(event: any): void {
-    if (!event || !event.eventType) {
+  protected validateEvent(event: unknown): asserts event is TEvent {
+    if (!isApplicationEvent(event)) {
       throw new Error('Invalid event structure');
     }
 
@@ -36,7 +66,7 @@ export abstract class BaseEventHandler implements EventHandler {
     }
   }
 
-  protected logEventProcessing(event: any, action: string): void {
+  protected logEventProcessing(event: TEvent, action: string): void {
     console.log(`[${this.constructor.name}] Processing ${event.eventType}: ${action}`);
   }
 }
@@ -45,13 +75,17 @@ export abstract class BaseEventHandler implements EventHandler {
  * Base Command Handler
  * Provides common functionality for command handlers
  */
-export abstract class BaseCommandHandler implements CommandHandler {
+export abstract class BaseCommandHandler<
+  TCommand extends ApplicationCommand = ApplicationCommand,
+  TResult = unknown,
+  TContext = HandlerContext
+> implements CommandHandler<TCommand, TResult, TContext> {
   abstract readonly commandType: string;
 
-  abstract handle(command: any, context?: any): Promise<any>;
+  abstract handle(command: TCommand, context?: TContext): Promise<TResult>;
 
-  protected validateCommand(command: any): void {
-    if (!command || !command.type) {
+  protected validateCommand(command: unknown): asserts command is TCommand {
+    if (!isApplicationCommand(command)) {
       throw new Error('Invalid command structure');
     }
 
@@ -60,7 +94,7 @@ export abstract class BaseCommandHandler implements CommandHandler {
     }
   }
 
-  protected createCommandResult(success: boolean, data?: any, error?: string): any {
+  protected createCommandResult<TData>(success: boolean, data?: TData, error?: string): CommandResult<TData> {
     return {
       success,
       data,
@@ -86,7 +120,11 @@ export class EventHandlerRegistry {
     this.handlers.get(eventType)!.push(handler);
   }
 
-  async handleEvent(event: any, context?: any): Promise<void> {
+  async handleEvent(event: unknown, context?: HandlerContext): Promise<void> {
+    if (!isApplicationEvent(event)) {
+      throw new Error('Invalid event structure');
+    }
+
     const eventType = event.eventType;
     const handlers = this.handlers.get(eventType) || [];
 
@@ -124,7 +162,11 @@ export class CommandHandlerRegistry {
     this.handlers.set(commandType, handler);
   }
 
-  async handleCommand(command: any, context?: any): Promise<any> {
+  async handleCommand(command: unknown, context?: HandlerContext): Promise<unknown> {
+    if (!isApplicationCommand(command)) {
+      throw new Error('Invalid command structure');
+    }
+
     const commandType = command.type;
     const handler = this.handlers.get(commandType);
 

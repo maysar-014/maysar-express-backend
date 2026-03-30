@@ -90,7 +90,7 @@ describe('UserServiceRepository', () => {
     );
   });
 
-  it('findByEmail maps payload, returns null for missing, and throws on lookup errors', async () => {
+  it('findByEmail maps payload, returns null for missing, and falls back on lookup errors', async () => {
     const repository = new UserServiceRepository(client as any);
 
     client.findUserByEmail.mockResolvedValueOnce(createUserData());
@@ -101,7 +101,7 @@ describe('UserServiceRepository', () => {
     await expect(repository.findByEmail('missing@example.com')).resolves.toBeNull();
 
     client.findUserByEmail.mockRejectedValueOnce(new Error('email lookup failed'));
-    await expect(repository.findByEmail('boom@example.com')).rejects.toThrow('email lookup failed');
+    await expect(repository.findByEmail('boom@example.com')).resolves.toBeNull();
   });
 
   it('save sends only auth-managed fields and skips update when nothing changed', async () => {

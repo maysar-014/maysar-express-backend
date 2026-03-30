@@ -1,9 +1,19 @@
+const mockExecuteBusinessRegistrationSaga = jest.fn();
+const mockExecuteBusinessVerificationSaga = jest.fn();
+
+jest.mock('../business-registration.saga', () => ({
+  executeBusinessRegistrationSaga: mockExecuteBusinessRegistrationSaga
+}));
+
+jest.mock('../business-verification.saga', () => ({
+  executeBusinessVerificationSaga: mockExecuteBusinessVerificationSaga
+}));
+
 import { SagaEventHandler } from '../saga-event-handler';
 import { BusinessRegisteredEvent, BusinessVerifiedEvent } from '../../../domain/events';
 import { BusinessType } from '../../../domain/types/business.types';
 
 describe('SagaEventHandler', () => {
-  // Mock dependencies
   const mockMailer = {
     sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
     sendBusinessVerifiedEmail: jest.fn().mockResolvedValue(undefined)
@@ -11,8 +21,8 @@ describe('SagaEventHandler', () => {
 
   const mockCompliance = {
     notifyNewBusiness: jest.fn().mockResolvedValue(undefined),
-    createComplianceRecord: jest.fn().mockResolvedValue('compliance-1'),
-    revokeComplianceRecord: jest.fn().mockResolvedValue(undefined)
+    createKYCRecord: jest.fn().mockResolvedValue('kyc-1'),
+    revokeKYCRecord: jest.fn().mockResolvedValue(undefined)
   };
 
   const mockCapability = {
@@ -36,17 +46,20 @@ describe('SagaEventHandler', () => {
     delete: jest.fn()
   };
 
-  const createSagaEventHandler = () => {
-    return new SagaEventHandler({
-      mailer: mockMailer as any,
-      compliance: mockCompliance as any,
-      capability: mockCapability as any,
-      businessRepository: mockBusinessRepository as any
+  const createSagaEventHandler = () =>
+    new SagaEventHandler({
+      mailer: mockMailer as never,
+      compliance: mockCompliance as never,
+      capability: mockCapability as never,
+      businessRepository: mockBusinessRepository as never
     });
-  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
   describe('handleBusinessRegisteredEvent', () => {
-    it('should execute registration saga with mocked dependencies', async () => {
+    it('delegates registration saga execution with the current dependencies', async () => {
       const event = new BusinessRegisteredEvent(
         'biz-1',
         'owner-1',
@@ -55,15 +68,19 @@ describe('SagaEventHandler', () => {
       );
 
       const handler = createSagaEventHandler();
-      
-      await expect(handler.handleBusinessRegisteredEvent(event)).resolves.not.toThrow();
-      
-      expect(mockMailer.sendVerificationEmail).toHaveBeenCalled();
-      expect(mockCompliance.notifyNewBusiness).toHaveBeenCalled();
-      expect(mockCompliance.createComplianceRecord).toHaveBeenCalled();
+      await expect(handler.handleBusinessRegisteredEvent(event)).resolves.toBeUndefined();
+
+      expect(mockExecuteBusinessRegistrationSaga).toHaveBeenCalledWith(
+        event,
+        expect.objectContaining({
+          mailer: mockMailer,
+          compliance: mockCompliance,
+          businessRepository: mockBusinessRepository
+        })
+      );
     });
 
-    it('should handle errors during registration saga execution', async () => {
+    it('propagates registration saga failures', async () => {
       const event = new BusinessRegisteredEvent(
         'biz-1',
         'owner-1',
@@ -71,48 +88,47 @@ describe('SagaEventHandler', () => {
         'TZ-DAR-12345'
       );
 
-      const error = new Error('Failed to send email');
-      mockMailer.sendVerificationEmail.mockRejectedValueOnce(error);
+      mockExecuteBusinessRegistrationSaga.mockRejectedValueOnce(new Error('registration failed'));
 
       const handler = createSagaEventHandler();
-      
-      // The saga should handle errors internally and not propagate them to the event handler
-      await expect(handler.handleBusinessRegisteredEvent(event)).resolves.not.toThrow();
+      await expect(handler.handleBusinessRegisteredEvent(event)).rejects.toThrow('registration failed');
     });
   });
 
   describe('handleBusinessVerifiedEvent', () => {
-    it('should execute verification saga with mocked dependencies', async () => {
+    it('delegates verification saga execution with the current dependencies', async () => {
       const event = new BusinessVerifiedEvent('biz-1', 'verifier-1', 'owner-1');
 
       const handler = createSagaEventHandler();
-      
-      await expect(handler.handleBusinessVerifiedEvent(event)).resolves.not.toThrow();
-      
-      expect(mockMailer.sendBusinessVerifiedEmail).toHaveBeenCalled();
-      expect(mockCapability.enableCapabilities).toHaveBeenCalled();
+      await expect(handler.handleBusinessVerifiedEvent(event)).resolves.toBeUndefined();
+
+      expect(mockExecuteBusinessVerificationSaga).toHaveBeenCalledWith(
+        event,
+        expect.objectContaining({
+          mailer: mockMailer,
+          capability: mockCapability,
+          businessRepository: mockBusinessRepository
+        })
+      );
     });
 
-    it('should handle errors during verification saga execution', async () => {
+    it('propagates verification saga failures', async () => {
       const event = new BusinessVerifiedEvent('biz-1', 'verifier-1', 'owner-1');
 
-      const error = new Error('Failed to enable capabilities');
-      mockCapability.enableCapabilities.mockRejectedValueOnce(error);
+      mockExecuteBusinessVerificationSaga.mockRejectedValueOnce(new Error('verification failed'));
 
       const handler = createSagaEventHandler();
-      
-      // The saga should handle errors internally and not propagate them to the event handler
-      await expect(handler.handleBusinessVerifiedEvent(event)).resolves.not.toThrow();
+      await expect(handler.handleBusinessVerifiedEvent(event)).rejects.toThrow('verification failed');
     });
   });
 
   describe('dependencies injection', () => {
-    it('should throw error if dependencies are not provided', () => {
-      // @ts-ignore - Testing missing dependencies
+    it('throws error if dependencies are not provided', () => {
+      // @ts-expect-error - Testing missing dependencies
       expect(() => new SagaEventHandler()).toThrow();
     });
 
-    it('should accept all required dependencies', () => {
+    it('accepts all required dependencies', () => {
       expect(() => createSagaEventHandler()).not.toThrow();
     });
   });

@@ -1,7 +1,5 @@
 import { ValidateExpertiseUseCase } from '../validate-expertise.use-case';
 import { BusinessProfile } from '../../../domain/entities/business-profile.entity';
-import { ExpertiseLevel } from '../../../domain/value-objects/expertise-badge.value-object';
-import { ReputationTier } from '../../../domain/engines/reputation-engine';
 
 const mockProfileRepository = { findByUserId: jest.fn(), save: jest.fn() } as any;
 const mockTrainingService = { getCompletedModules: jest.fn() } as any;
@@ -26,12 +24,23 @@ describe('ValidateExpertiseUseCase', () => {
         mockProfileRepository.findByUserId.mockResolvedValue(profile);
         mockTrainingService.getCompletedModules.mockResolvedValue([]);
         mockBusinessRegistry.verifyBusinessCredentials.mockResolvedValue(true);
-        
-        const result = await useCase.execute({ 
-            userId: 'u1', 
+
+        const result = await useCase.execute({
+            userId: 'u1',
             expertiseArea: 'farming',
-            targetLevel: ExpertiseLevel.BEGINNER
+            targetLevel: 'BEGINNER'
         });
-        expect(result.verified).toBeDefined();
+
+        expect(result.verified).toBe(true);
+        expect(mockProfileRepository.save).toHaveBeenCalledWith(profile);
+        expect(mockEventPublisher.publish).toHaveBeenCalledWith(
+            'ExpertiseValidated',
+            expect.objectContaining({
+                userId: 'u1',
+                expertiseArea: 'farming',
+                level: 'BEGINNER',
+                verified: true
+            })
+        );
     });
 });

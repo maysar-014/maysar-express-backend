@@ -96,6 +96,14 @@ describe('Event Subscriber', () => {
 
     it('should handle Redis connection', async () => {
       // Test Redis-specific functionality
+      (redisSubscriber as any).connected = true;
+      (redisSubscriber as any).redisSubscriber = {
+        subscribe: jest.fn().mockResolvedValue(undefined),
+        unsubscribe: jest.fn().mockResolvedValue(undefined),
+        on: jest.fn(),
+        quit: jest.fn().mockResolvedValue(undefined)
+      };
+
       const subscriptionId = await redisSubscriber.subscribe({
         eventType: 'ProductCreated',
         handler: jest.fn()

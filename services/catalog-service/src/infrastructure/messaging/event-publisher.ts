@@ -7,6 +7,12 @@
 import { DomainEventPublisher, DomainEvent } from '../../domain/interfaces';
 import { IdGenerator, DateTimeService } from '../../domain/interfaces';
 
+function ensureValidDomainEvent(event: unknown): asserts event is DomainEvent {
+  if (!EventSerializer.validate(event)) {
+    throw new Error('Invalid domain event');
+  }
+}
+
 /**
  * Event Publishing Strategy
  * Defines how events are published (sync, async, batched, etc.)
@@ -123,6 +129,7 @@ export class TransactionalOutboxPublisher extends BaseEventPublisher {
   }
 
   async publish(event: DomainEvent, transaction?: any): Promise<void> {
+    ensureValidDomainEvent(event);
     console.log(`Saving event ${event.eventId} to outbox: ${event.eventType}`);
     await this.repository.save({
       eventId: event.eventId,
@@ -174,8 +181,9 @@ export class InMemoryEventPublisher extends BaseEventPublisher {
   }
 
   async publish(event: DomainEvent): Promise<void> {
+    ensureValidDomainEvent(event);
     if (this.config.strategy === PublishingStrategy.BATCHED) {
-      this.addToBatch(event);
+      await this.addToBatch(event);
       return;
     }
 
@@ -184,8 +192,9 @@ export class InMemoryEventPublisher extends BaseEventPublisher {
 
   async publishAll(events: DomainEvent[]): Promise<void> {
     if (this.config.strategy === PublishingStrategy.BATCHED) {
-      this.batchQueue.push(...events);
-      this.scheduleBatchPublish();
+      for (const event of events) {
+        await this.publish(event);
+      }
       return;
     }
 
@@ -237,11 +246,11 @@ export class InMemoryEventPublisher extends BaseEventPublisher {
     await Promise.all(handlers.map(handler => this.safeExecuteHandler(handler, event)));
   }
 
-  private addToBatch(event: DomainEvent): void {
+  private async addToBatch(event: DomainEvent): Promise<void> {
     this.batchQueue.push(event);
 
     if (this.batchQueue.length >= this.config.batchSize) {
-      this.publishBatch();
+      await this.publishBatch();
     } else {
       this.scheduleBatchPublish();
     }
@@ -253,7 +262,7 @@ export class InMemoryEventPublisher extends BaseEventPublisher {
     }
 
     this.batchTimer = setTimeout(() => {
-      this.publishBatch();
+      void this.publishBatch();
     }, this.config.batchTimeout);
   }
 
@@ -315,7 +324,9 @@ export class EventPublisherFactory {
     repository?: any
   ): BaseEventPublisher {
     // Use environment variable to determine transport type
-    const transport = process.env.EVENT_TRANSPORT || EventTransport.OUTBOX;
+    const transport = process.env.EVENT_TRANSPORT || (process.env.NODE_ENV === 'test'
+      ? EventTransport.IN_MEMORY
+      : EventTransport.OUTBOX);
 
     switch (transport) {
       case EventTransport.OUTBOX:
@@ -336,6 +347,10 @@ export class EventPublisherFactory {
       throw new Error('Event publisher instance already exists');
     }
     this.instance = publisher;
+  }
+
+  static resetInstance(): void {
+    this.instance = null;
   }
 }
 
@@ -387,7 +402,8 @@ export class EventSerializer {
       typeof event.aggregateId === 'string' &&
       typeof event.version === 'number' &&
       event.timestamp instanceof Date &&
-      typeof event.payload === 'object'
+      typeof event.payload === 'object' &&
+      event.payload !== null
     );
   }
 }

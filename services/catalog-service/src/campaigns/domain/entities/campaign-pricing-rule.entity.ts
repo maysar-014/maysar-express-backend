@@ -5,7 +5,7 @@ export class CampaignPricingRule {
         private readonly id: string,
         private readonly ruleValue: PricingRuleValue,
         private readonly priority: number = 0,
-        private readonly conditions: Record<string, any> = {},
+        private readonly conditions: Record<string, unknown> = {},
         private readonly createdAt: Date = new Date()
     ) { }
 
@@ -21,7 +21,7 @@ export class CampaignPricingRule {
         return this.priority;
     }
 
-    getConditions(): Record<string, any> {
+    getConditions(): Record<string, unknown> {
         return { ...this.conditions };
     }
 
@@ -37,7 +37,7 @@ export class CampaignPricingRule {
         return this.ruleValue.apply(originalPrice);
     }
 
-    static create(id: string, ruleValue: PricingRuleValue, priority?: number, conditions?: Record<string, any>): CampaignPricingRule {
+    static create(id: string, ruleValue: PricingRuleValue, priority?: number, conditions?: Record<string, unknown>): CampaignPricingRule {
         return new CampaignPricingRule(id, ruleValue, priority, conditions);
     }
 }

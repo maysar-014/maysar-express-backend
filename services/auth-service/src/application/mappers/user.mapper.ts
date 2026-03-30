@@ -20,7 +20,8 @@ export class UserMapper {
             email: user.email,
             role: user.role,
             accountStatus: user.status,
-            profile: user.profile
+            profile: user.profile,
+            kycStatus: user.kycStatus
         };
     }
 }

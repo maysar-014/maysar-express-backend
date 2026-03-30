@@ -20,7 +20,7 @@
  * - Serialization errors
  */
 
-import { DomainEvent } from '../../../domain/interfaces';
+import { DomainEvent, DateTimeService, IdGenerator } from '../../../domain/interfaces';
 import { 
   EventPublisherFactory, 
   InMemoryEventPublisher, 
@@ -30,32 +30,55 @@ import {
   PublishingStrategy,
   EventTransport
 } from '../event-publisher';
-import { IdGenerator } from '../../../domain/interfaces';
+
+const createMockIdGenerator = (): IdGenerator => ({
+  generate: () => 'test-id',
+  validate: () => true
+});
+
+const createMockDateTimeService = (): DateTimeService => ({
+  now: () => new Date(),
+  timestamp: () => Date.now(),
+  add: (date: Date) => date,
+  isPast: () => false,
+  format: (date: Date) => date.toISOString()
+});
 
 describe('Event Publisher', () => {
   describe('Event Publisher Factory', () => {
+    const originalEventTransport = process.env.EVENT_TRANSPORT;
+
     beforeEach(() => {
-      // Clear any existing instance
-      EventPublisherFactory.setInstance = () => {
-        throw new Error('Cannot override existing instance');
-      };
+      delete process.env.EVENT_TRANSPORT;
+      EventPublisherFactory.resetInstance();
+    });
+
+    afterEach(() => {
+      if (originalEventTransport === undefined) {
+        delete process.env.EVENT_TRANSPORT;
+      } else {
+        process.env.EVENT_TRANSPORT = originalEventTransport;
+      }
+      EventPublisherFactory.resetInstance();
     });
 
     it('should create in-memory event publisher', () => {
       const publisher = EventPublisherFactory.createInMemory(
         {},
-        { generate: () => 'test-id' } as IdGenerator,
-        { getCurrentTime: () => new Date() }
+        createMockIdGenerator(),
+        createMockDateTimeService()
       );
 
       expect(publisher).toBeInstanceOf(InMemoryEventPublisher);
     });
 
     it('should create outbox event publisher', () => {
+      const repository = { save: jest.fn().mockResolvedValue(undefined) };
       const publisher = EventPublisherFactory.createOutbox(
-        { connectionString: 'postgresql://localhost:5432/test' },
-        { generate: () => 'test-id' } as IdGenerator,
-        { getCurrentTime: () => new Date() }
+        repository,
+        {},
+        createMockIdGenerator(),
+        createMockDateTimeService()
       );
 
       expect(publisher).toBeInstanceOf(TransactionalOutboxPublisher);
@@ -64,8 +87,8 @@ describe('Event Publisher', () => {
     it('should create default publisher based on environment', () => {
       const publisher = EventPublisherFactory.createDefault(
         {},
-        { generate: () => 'test-id' } as IdGenerator,
-        { getCurrentTime: () => new Date() }
+        createMockIdGenerator(),
+        createMockDateTimeService()
       );
 
       expect(publisher).toBeInstanceOf(InMemoryEventPublisher);
@@ -74,9 +97,11 @@ describe('Event Publisher', () => {
     it('should prevent multiple instance creation', () => {
       const publisher = EventPublisherFactory.createInMemory(
         {},
-        { generateId: () => 'test-id' },
-        { getCurrentTime: () => new Date() }
+        createMockIdGenerator(),
+        createMockDateTimeService()
       );
+
+      EventPublisherFactory.setInstance(publisher);
 
       expect(() => {
         EventPublisherFactory.setInstance(publisher);
@@ -212,13 +237,13 @@ describe('Event Publisher', () => {
 
   describe('In-Memory Event Publisher', () => {
     let publisher: InMemoryEventPublisher;
-    let mockIdGenerator: any;
-    let mockDateTimeService: any;
+    let mockIdGenerator: IdGenerator;
+    let mockDateTimeService: DateTimeService;
     let mockHandler: jest.Mock;
 
     beforeEach(() => {
-      mockIdGenerator = { generate: () => 'test-id' };
-      mockDateTimeService = { now: () => new Date() };
+      mockIdGenerator = createMockIdGenerator();
+      mockDateTimeService = createMockDateTimeService();
       mockHandler = jest.fn().mockResolvedValue(undefined);
 
       publisher = new InMemoryEventPublisher(
@@ -228,6 +253,7 @@ describe('Event Publisher', () => {
       );
 
       publisher.registerHandler('ProductCreated', mockHandler);
+      publisher.registerHandler('ProductUpdated', mockHandler);
     });
 
     afterEach(async () => {
@@ -334,11 +360,12 @@ describe('Event Publisher', () => {
         metadata: {}
       };
 
-      publisher.getStoredEvents().push(event);
-      expect(publisher.getStoredEvents()).toHaveLength(1);
+      return publisher.publish(event).then(() => {
+        expect(publisher.getStoredEvents()).toHaveLength(1);
 
-      publisher.clearStoredEvents();
-      expect(publisher.getStoredEvents()).toHaveLength(0);
+        publisher.clearStoredEvents();
+        expect(publisher.getStoredEvents()).toHaveLength(0);
+      });
     });
 
     it('should handle handler failures gracefully', async () => {
@@ -363,18 +390,18 @@ describe('Event Publisher', () => {
 
   describe('Outbox Event Publisher', () => {
     let publisher: TransactionalOutboxPublisher;
-    let mockIdGenerator: any;
-    let mockDateTimeService: any;
+    let mockIdGenerator: IdGenerator;
+    let mockDateTimeService: DateTimeService;
+    let mockRepository: { save: jest.Mock };
 
     beforeEach(() => {
-      mockIdGenerator = { generate: () => 'test-id' };
-      mockDateTimeService = { now: () => new Date() };
+      mockIdGenerator = createMockIdGenerator();
+      mockDateTimeService = createMockDateTimeService();
+      mockRepository = { save: jest.fn().mockResolvedValue(undefined) };
 
       publisher = new TransactionalOutboxPublisher(
-        { 
-          strategy: PublishingStrategy.ASYNC,
-          connectionString: 'postgresql://localhost:5432/test'
-        },
+        mockRepository,
+        { strategy: PublishingStrategy.ASYNC },
         mockIdGenerator,
         mockDateTimeService
       );
@@ -390,11 +417,11 @@ describe('Event Publisher', () => {
 
     it('should handle batched publishing with outbox', async () => {
       const batchPublisher = new TransactionalOutboxPublisher(
-        { 
+        mockRepository,
+        {
           strategy: PublishingStrategy.BATCHED,
           batchSize: 2,
-          batchTimeout: 100,
-          connectionString: 'postgresql://localhost:5432/test'
+          batchTimeout: 100
         },
         mockIdGenerator,
         mockDateTimeService
@@ -429,12 +456,12 @@ describe('Event Publisher', () => {
 
   describe('Event Publisher Edge Cases', () => {
     let publisher: InMemoryEventPublisher;
-    let mockIdGenerator: any;
-    let mockDateTimeService: any;
+    let mockIdGenerator: IdGenerator;
+    let mockDateTimeService: DateTimeService;
 
     beforeEach(() => {
-      mockIdGenerator = { generate: () => 'test-id' };
-      mockDateTimeService = { now: () => new Date() };
+      mockIdGenerator = createMockIdGenerator();
+      mockDateTimeService = createMockDateTimeService();
       publisher = new InMemoryEventPublisher({}, mockIdGenerator, mockDateTimeService);
     });
 
@@ -443,18 +470,18 @@ describe('Event Publisher', () => {
     });
 
     it('should handle null/undefined events gracefully', async () => {
-      const event: any = null;
+      const event = null as unknown as DomainEvent;
       await expect(publisher.publish(event)).rejects.toThrow();
     });
 
     it('should handle events with missing required fields', async () => {
-      const invalidEvent: any = {
+      const invalidEvent = {
         eventType: 'ProductCreated',
         aggregateId: 'product-456',
         version: 1,
         timestamp: new Date()
         // Missing eventId and payload
-      };
+      } as unknown as DomainEvent;
 
       await expect(publisher.publish(invalidEvent)).rejects.toThrow();
     });
@@ -497,12 +524,12 @@ describe('Event Publisher', () => {
 
   describe('Event Publisher Performance', () => {
     let publisher: InMemoryEventPublisher;
-    let mockIdGenerator: any;
-    let mockDateTimeService: any;
+    let mockIdGenerator: IdGenerator;
+    let mockDateTimeService: DateTimeService;
 
     beforeEach(() => {
-      mockIdGenerator = { generate: () => 'test-id' };
-      mockDateTimeService = { now: () => new Date() };
+      mockIdGenerator = createMockIdGenerator();
+      mockDateTimeService = createMockDateTimeService();
       publisher = new InMemoryEventPublisher({}, mockIdGenerator, mockDateTimeService);
     });
 

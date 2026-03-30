@@ -2,12 +2,15 @@ import {
   ProductRepository,
   CategoryRepository,
   DomainEventPublisher,
+  DomainEvent,
   IdGenerator,
   DateTimeService
 } from '../../domain/interfaces';
 import { DistributedSagaOrchestrator, SagaStep } from '../../../../../shared/saga/saga.orchestrator';
 import { ISagaLogRepository } from '../../../../../shared/saga/saga.log';
-type SagaOutbox = ConstructorParameters<typeof DistributedSagaOrchestrator<any>>[2];
+type SagaOutbox = {
+  saveEvent(event: { eventType: string; data: unknown; metadata: unknown }, transaction?: unknown): Promise<void>;
+};
 
 const noopSagaLogRepository: ISagaLogRepository = {
   save: async () => { },
@@ -21,12 +24,17 @@ const noopSagaLogRepository: ISagaLogRepository = {
 
 export interface BulkProductUpdateContext {
   productIds: string[];
-  updates: Record<string, any>;
+  updates: BulkProductUpdateChanges;
   updateType: 'price' | 'status' | 'category' | 'attributes' | 'visibility';
   sellerId?: string;
   validateBusinessRules: boolean;
   requestId: string;
   timestamp: Date;
+  currentStep?: string;
+  productsValidated?: boolean;
+  updatesApplied?: boolean;
+  errors?: Array<{ step: string; error: string; timestamp: Date }>;
+  retryCount?: number;
   // Progress tracking
   processedProducts?: string[];
   successfulUpdates?: string[];
@@ -37,8 +45,31 @@ export interface BulkProductUpdateContext {
   failed?: Array<{ productId: string; error: string }>;
   skipped?: Array<{ productId: string; reason: string }>;
   // Compensation tracking
-  originalStates?: Record<string, any>; // productId -> original state
-  appliedUpdates?: Record<string, any>; // productId -> applied changes
+  originalStates?: Record<string, BulkProductUpdateProductRecord>; // productId -> original state
+  appliedUpdates?: Record<string, BulkProductUpdateChanges>; // productId -> applied changes
+}
+
+interface BulkProductUpdateChanges {
+  price?: {
+    amount: number;
+    currency?: string;
+  };
+  status?: string;
+  categoryId?: string;
+  attributes?: Record<string, unknown>;
+  visibility?: string;
+  [key: string]: unknown;
+}
+
+interface BulkProductUpdateProductRecord {
+  sellerId?: string;
+  status?: string;
+  categoryId?: string;
+  price?: {
+    amount: number;
+    currency?: string;
+  };
+  [key: string]: unknown;
 }
 
 export class BulkProductUpdateSaga extends DistributedSagaOrchestrator<BulkProductUpdateContext> {
@@ -50,6 +81,7 @@ export class BulkProductUpdateSaga extends DistributedSagaOrchestrator<BulkProdu
   private readonly dateTimeService: DateTimeService;
   private lastContext: BulkProductUpdateContext | null;
   private completed: boolean;
+  private readonly legacyMode: boolean;
 
   constructor(
     sagaLogRepository: ISagaLogRepository,
@@ -85,6 +117,7 @@ export class BulkProductUpdateSaga extends DistributedSagaOrchestrator<BulkProdu
     const outbox = isOrchestratedMode ? arg8 : undefined;
     super(sagaLogRepository, serviceName, outbox);
 
+    this.legacyMode = !isOrchestratedMode;
     this.lastContext = null;
     this.completed = false;
 
@@ -101,6 +134,7 @@ export class BulkProductUpdateSaga extends DistributedSagaOrchestrator<BulkProdu
     this.eventPublisher = arg3 as DomainEventPublisher;
     this.idGenerator = arg4 as IdGenerator;
     this.dateTimeService = arg5 as DateTimeService;
+    this.lastContext = (arg6 as BulkProductUpdateContext | undefined) ?? null;
   }
 
   public override async start(
@@ -109,6 +143,13 @@ export class BulkProductUpdateSaga extends DistributedSagaOrchestrator<BulkProdu
   ): Promise<string> {
     this.lastContext = payload;
     this.completed = false;
+
+    if (this.legacyMode) {
+      const sagaId = this.idGenerator.generate();
+      await this.runLegacySaga(payload, sagaId);
+      return sagaId;
+    }
+
     return super.start(payload, correlationId);
   }
 
@@ -167,9 +208,18 @@ export class BulkProductUpdateSaga extends DistributedSagaOrchestrator<BulkProdu
           for (const productId of context.processedProducts || []) {
             try {
               const originalProduct = context.originalStates?.[productId];
+              if (!originalProduct) {
+                context.failed?.push({
+                  productId,
+                  error: 'Original product state not found'
+                });
+                context.failedUpdates.push(productId);
+                continue;
+              }
+
               const preparedUpdate = await this.prepareUpdate(productId, originalProduct, context, sagaId);
 
-              if (preparedUpdate.valid) {
+              if (preparedUpdate.valid && preparedUpdate.update) {
                 context.appliedUpdates[productId] = preparedUpdate.update;
                 context.successfulUpdates.push(productId);
               } else {
@@ -242,7 +292,7 @@ export class BulkProductUpdateSaga extends DistributedSagaOrchestrator<BulkProdu
         execute: async (context: BulkProductUpdateContext, sagaId: string) => {
           console.log(`[${sagaId}] Sending notifications for ${context.successful?.length} updated products`);
 
-          await (this as any).publishCommand('BulkProductUpdateCompleted', {
+          await this.publishCommand('BulkProductUpdateCompleted', {
             sagaId: sagaId,
             updateType: context.updateType,
             totalProducts: context.processedProducts?.length || 0,
@@ -256,7 +306,7 @@ export class BulkProductUpdateSaga extends DistributedSagaOrchestrator<BulkProdu
           for (const productId of context.successful || []) {
             const update = context.appliedUpdates?.[productId];
             if (update) {
-              await (this as any).publishCommand('ProductUpdated', {
+              await this.publishCommand('ProductUpdated', {
                 productId,
                 changes: update,
                 bulkUpdateId: sagaId,
@@ -275,18 +325,56 @@ export class BulkProductUpdateSaga extends DistributedSagaOrchestrator<BulkProdu
   }
 
   public getState(): BulkProductUpdateContext {
-    return this.lastContext ?? {
+    return {
       productIds: [],
       updates: {},
       updateType: 'status',
       validateBusinessRules: false,
       requestId: '',
       timestamp: new Date(),
+      currentStep: 'initialized',
+      productsValidated: false,
+      updatesApplied: false,
+      errors: [],
+      retryCount: 0,
+      processedProducts: [],
+      successfulUpdates: [],
+      failedUpdates: [],
+      skippedProducts: [],
+      successful: [],
+      failed: [],
+      skipped: [],
+      originalStates: {},
+      appliedUpdates: {},
+      ...(this.lastContext ?? {})
     };
   }
 
   public isCompleted(): boolean {
     return this.completed;
+  }
+
+  protected override async publishCommand(
+    commandType: string,
+    payload: unknown,
+    correlationId: string,
+    sagaId?: string,
+    _transaction?: unknown
+  ): Promise<void> {
+    const event: DomainEvent = {
+      eventId: this.idGenerator.generate(),
+      eventType: commandType,
+      aggregateId: sagaId ?? correlationId,
+      version: 1,
+      timestamp: this.dateTimeService.now(),
+      payload,
+      metadata: {
+        correlationId,
+        sagaId: sagaId ?? correlationId
+      }
+    };
+
+    await this.eventPublisher.publish(event);
   }
 
   public getResults(): {
@@ -349,13 +437,13 @@ export class BulkProductUpdateSaga extends DistributedSagaOrchestrator<BulkProdu
   }
 
   // Helper methods
-  private async prepareUpdate(productId: string, originalProduct: any, context: BulkProductUpdateContext, sagaId: string): Promise<{
+  private async prepareUpdate(productId: string, originalProduct: BulkProductUpdateProductRecord, context: BulkProductUpdateContext, sagaId: string): Promise<{
     valid: boolean;
-    update?: any;
+    update?: BulkProductUpdateChanges;
     reason?: string;
   }> {
     try {
-      const update = { ...context.updates };
+      const update: BulkProductUpdateChanges = { ...context.updates };
 
       switch (context.updateType) {
         case 'price':
@@ -384,7 +472,7 @@ export class BulkProductUpdateSaga extends DistributedSagaOrchestrator<BulkProdu
     }
   }
 
-  private async validatePriceUpdate(update: any, originalProduct: any, validateRules: boolean): Promise<{ valid: boolean; reason?: string }> {
+  private async validatePriceUpdate(update: BulkProductUpdateChanges, originalProduct: BulkProductUpdateProductRecord, validateRules: boolean): Promise<{ valid: boolean; reason?: string }> {
     if (!update.price || update.price.amount <= 0) return { valid: false, reason: 'Invalid price specified' };
     const originalPrice = originalProduct.price?.amount || 0;
     const newPrice = update.price.amount;
@@ -396,14 +484,14 @@ export class BulkProductUpdateSaga extends DistributedSagaOrchestrator<BulkProdu
     return { valid: true };
   }
 
-  private async validateStatusUpdate(update: any, originalProduct: any): Promise<{ valid: boolean; reason?: string }> {
+  private async validateStatusUpdate(update: BulkProductUpdateChanges, originalProduct: BulkProductUpdateProductRecord): Promise<{ valid: boolean; reason?: string }> {
     const validStatuses = ['draft', 'published', 'archived', 'suspended'];
-    if (!validStatuses.includes(update.status)) return { valid: false, reason: `Invalid status: ${update.status}` };
+    if (!update.status || !validStatuses.includes(update.status)) return { valid: false, reason: `Invalid status: ${update.status}` };
     if (originalProduct.status === 'archived' && update.status !== 'archived') return { valid: false, reason: 'Cannot change status of archived products' };
     return { valid: true };
   }
 
-  private async validateCategoryUpdate(update: any, originalProduct: any): Promise<{ valid: boolean; reason?: string }> {
+  private async validateCategoryUpdate(update: BulkProductUpdateChanges, originalProduct: BulkProductUpdateProductRecord): Promise<{ valid: boolean; reason?: string }> {
     if (!update.categoryId) return { valid: false, reason: 'Category ID is required' };
     const category = await this.categoryRepository.findById(update.categoryId);
     if (!category) return { valid: false, reason: 'Category not found' };
@@ -411,11 +499,49 @@ export class BulkProductUpdateSaga extends DistributedSagaOrchestrator<BulkProdu
     return { valid: true };
   }
 
-  private async applyProductUpdate(productId: string, update: any): Promise<void> {
-    const currentProduct = await this.productRepository.findById(productId);
+  private async applyProductUpdate(productId: string, update: BulkProductUpdateChanges): Promise<void> {
+    const currentProduct = await this.productRepository.findById(productId) as BulkProductUpdateProductRecord | null;
     if (!currentProduct) throw new Error(`Product ${productId} not found during update`);
     const updatedProduct = { ...currentProduct, ...update };
     await this.productRepository.save(updatedProduct);
+  }
+
+  private async runLegacySaga(context: BulkProductUpdateContext, sagaId: string): Promise<void> {
+    let lastCompletedStepIndex = -1;
+
+    try {
+      for (let i = 0; i < this.steps.length; i++) {
+        const step = this.steps[i];
+        context.currentStep = step.name;
+        await step.execute(context, sagaId);
+        lastCompletedStepIndex = i;
+      }
+
+      context.currentStep = 'completed';
+      this.completed = true;
+    } catch (error) {
+      this.completed = false;
+      context.errors = context.errors ?? [];
+      context.errors.push({
+        step: context.currentStep ?? 'unknown',
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: this.dateTimeService.now()
+      });
+
+      for (let i = lastCompletedStepIndex; i >= 0; i--) {
+        try {
+          await this.steps[i].compensate(context, sagaId);
+        } catch (compensationError) {
+          context.errors.push({
+            step: this.steps[i].name,
+            error: compensationError instanceof Error ? compensationError.message : String(compensationError),
+            timestamp: this.dateTimeService.now()
+          });
+        }
+      }
+
+      throw error;
+    }
   }
 }
 

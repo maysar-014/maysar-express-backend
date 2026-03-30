@@ -1,4 +1,4 @@
-import { getModelPrefix, isSystemId, makeId } from '@shared/ids/id';
+import { getModelPrefix, makeId } from '@shared/ids/id';
 import { prisma } from '../../infrastructure/database/prisma-client';
 import { logger } from '../../infrastructure/services/logger.service';
 
@@ -33,11 +33,10 @@ export class AuditService {
         details
       };
 
-      const userId = isSystemId(event.userId) ? event.userId : undefined;
       await auditLogDelegate.create({
         data: {
           id: makeId(auditIdPrefix),
-          userId,
+          userId: event.userId,
           email: details.email,
           action: event.action,
           ipAddress,

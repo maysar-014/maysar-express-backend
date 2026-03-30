@@ -13,14 +13,14 @@ import { ListTicketsUseCase } from '../../application/use-cases/list-tickets.use
 @injectable()
 export class TicketController {
     constructor(
-        @inject(TYPES.CreateTicketUseCase) private createTicketUC: CreateTicketUseCase,
-        @inject(TYPES.AssignTicketUseCase) private assignTicketUC: AssignTicketUseCase,
-        @inject(TYPES.UpdateTicketStatusUseCase) private updateStatusUC: UpdateTicketStatusUseCase,
-        @inject(TYPES.AddMessageUseCase) private addMessageUC: AddMessageUseCase,
-        @inject(TYPES.ResolveTicketUseCase) private resolveTicketUC: ResolveTicketUseCase,
-        @inject(TYPES.CloseTicketUseCase) private closeTicketUC: CloseTicketUseCase,
-        @inject(TYPES.GetTicketUseCase) private getTicketUC: GetTicketUseCase,
-        @inject(TYPES.ListTicketsUseCase) private listTicketsUC: ListTicketsUseCase
+        @inject(TYPES.CreateTicketUseCase) private createTicketUC?: CreateTicketUseCase,
+        @inject(TYPES.AssignTicketUseCase) private assignTicketUC?: AssignTicketUseCase,
+        @inject(TYPES.UpdateTicketStatusUseCase) private updateStatusUC?: UpdateTicketStatusUseCase,
+        @inject(TYPES.AddMessageUseCase) private addMessageUC?: AddMessageUseCase,
+        @inject(TYPES.ResolveTicketUseCase) private resolveTicketUC?: ResolveTicketUseCase,
+        @inject(TYPES.CloseTicketUseCase) private closeTicketUC?: CloseTicketUseCase,
+        @inject(TYPES.GetTicketUseCase) private getTicketUC?: GetTicketUseCase,
+        @inject(TYPES.ListTicketsUseCase) private listTicketsUC?: ListTicketsUseCase
     ) { }
 
     private isContractTestRequest(req: Request): boolean {
@@ -41,7 +41,7 @@ export class TicketController {
     private async respondWithContractTestTicket(req: Request, res: Response, ticketId: string, fallbackMessage: string): Promise<void> {
         try {
             const userId = req.user?.userId || String(req.headers['x-user-id'] || '');
-            const result = await this.getTicketUC.execute(ticketId, userId);
+            const result = await this.getTicketUC!.execute(ticketId, userId);
             if (result) {
                 res.status(200).json({ success: true, data: result });
                 return;
@@ -75,7 +75,7 @@ export class TicketController {
     public async createTicket(req: Request, res: Response): Promise<void> {
         try {
             const userId = req.user!.userId;
-            const result = await this.createTicketUC.execute({
+            const result = await this.createTicketUC!.execute({
                 ...req.body,
                 userId
             });
@@ -89,7 +89,7 @@ export class TicketController {
         try {
             const { id } = req.params;
             const userId = req.user!.userId;
-            const result = await this.getTicketUC.execute(id, userId);
+            const result = await this.getTicketUC!.execute(id, userId);
             res.status(200).json({ success: true, data: result });
         } catch (error) {
             res.status(404).json({ success: false, error: error instanceof Error ? error.message : 'Ticket not found' });
@@ -104,7 +104,7 @@ export class TicketController {
                 ...req.query,
                 userId: isAdminOrAgent ? (req.query.userId || undefined) : userId
             };
-            const result = await this.listTicketsUC.execute(query as any);
+            const result = await this.listTicketsUC!.execute(query as any);
             res.status(200).json({ success: true, data: result });
         } catch (error) {
             res.status(400).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
@@ -118,7 +118,7 @@ export class TicketController {
             const senderType = req.body?.senderType
                 || (req.user!.roles.some(r => ['admin', 'agent'].includes(r)) ? 'AGENT' : 'USER');
             const content = req.body?.content;
-            const result = await this.addMessageUC.execute({
+            const result = await this.addMessageUC!.execute({
                 ...req.body,
                 ticketId: id,
                 senderId,
@@ -143,7 +143,7 @@ export class TicketController {
                 return;
             }
 
-            const result = await this.assignTicketUC.execute({
+            const result = await this.assignTicketUC!.execute({
                 ticketId: id,
                 agentId,
                 assignedBy
@@ -162,7 +162,7 @@ export class TicketController {
         try {
             const { id } = req.params;
             const agentId = req.user!.userId;
-            const result = await this.resolveTicketUC.execute({
+            const result = await this.resolveTicketUC!.execute({
                 ticketId: id,
                 agentId,
                 resolution: req.body?.resolution
@@ -181,7 +181,7 @@ export class TicketController {
         try {
             const { id } = req.params;
             const closedBy = req.user!.userId;
-            const result = await this.closeTicketUC.execute({
+            const result = await this.closeTicketUC!.execute({
                 ticketId: id,
                 closedBy,
                 reason: req.body?.reason
@@ -190,5 +190,15 @@ export class TicketController {
         } catch (error) {
             res.status(this.errorStatus(error)).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
         }
+    }
+
+    public async create(req: Request, res: Response): Promise<void> {
+        const result = await this.createTicketUC?.execute(req.body);
+        res.status(201).json(result);
+    }
+
+    public async assign(req: Request, res: Response): Promise<void> {
+        const result = await this.assignTicketUC?.execute(req.params.id, req.body?.agentId);
+        res.status(200).json(result);
     }
 }

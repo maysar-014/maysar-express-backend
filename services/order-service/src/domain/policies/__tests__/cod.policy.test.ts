@@ -36,14 +36,14 @@ describe('CODPolicy', () => {
             jest.spyOn(policy as any, 'isBuyerVerified').mockResolvedValue(false);
             const result = await policy.validate(validOrder);
             expect(result.valid).toBe(false);
-            expect(result.errors).toContain('Buyer must be verified');
+            expect(result.errors).toContain('Buyer must be verified for COD orders');
         });
 
         it('should fail if COD not supported in area', async () => {
             jest.spyOn(policy as any, 'isCODSupportedInArea').mockResolvedValue(false);
             const result = await policy.validate(validOrder);
             expect(result.valid).toBe(false);
-            expect(result.errors).toContain('COD not supported');
+            expect(result.errors).toContain('COD not supported in delivery area');
         });
 
         it('should pass if all conditions met', async () => {

@@ -14,7 +14,9 @@ describe('SellerAnalyticsSaga', () => {
     let repository: jest.Mocked<SellerAnalyticsRepository>;
 
     // We need to capture event handlers to trigger them manually
-    let handlers: { [key: string]: Function } = {};
+    type CapturedEvent = { data?: Record<string, unknown> } & Record<string, unknown>;
+    type CapturedHandler = (event: CapturedEvent) => Promise<void>;
+    let handlers: Record<string, CapturedHandler> = {};
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -22,7 +24,7 @@ describe('SellerAnalyticsSaga', () => {
 
         eventBus = {
             publish: jest.fn().mockResolvedValue(undefined),
-            subscribe: jest.fn().mockImplementation((event, handler) => {
+            subscribe: jest.fn().mockImplementation((event: string, handler: CapturedHandler) => {
                 handlers[event] = handler;
             })
         } as unknown as jest.Mocked<IEventBus>;
@@ -44,13 +46,14 @@ describe('SellerAnalyticsSaga', () => {
         const sagaId = 'saga-abc';
 
         it('should handle MetricsCollectionRequested and publish SellerMetricsCollected', async () => {
-            const event = { data: { sellerId, dateRange: 'today', sagaId } };
+            const metrics = { revenue: 100, orders: 12 };
+            const event = { data: { sellerId, dateRange: 'today', sagaId, metrics } };
 
             await handlers['MetricsCollectionRequested'](event);
 
             expect(eventBus.publish).toHaveBeenCalledWith(expect.objectContaining({
                 type: 'SellerMetricsCollected',
-                data: expect.objectContaining({ sellerId, sagaId })
+                data: expect.objectContaining({ sellerId, sagaId, metrics, timeRange: 'today' })
             }));
         });
 
@@ -75,13 +78,14 @@ describe('SellerAnalyticsSaga', () => {
 
         it('should handle SellerKPIsCalculated by publishing RealTimeDataUpdated', async () => {
             const kpis = { revenueGrowth: 0.1 };
-            const event = { data: { sellerId, kpis, sagaId } };
+            const realTimeData = { activeVisitors: 50, conversionRate: 0.12 };
+            const event = { data: { sellerId, kpis, sagaId, realTimeData } };
 
             await handlers['SellerKPIsCalculated'](event);
 
             expect(eventBus.publish).toHaveBeenCalledWith(expect.objectContaining({
                 type: 'RealTimeDataUpdated',
-                data: expect.objectContaining({ sellerId })
+                data: expect.objectContaining({ sellerId, realTimeData, sagaId })
             }));
         });
 
@@ -104,11 +108,13 @@ describe('SellerAnalyticsSaga', () => {
         const sagaId = 'saga-def';
 
         it('should handle SalesDataCollectionRequested', async () => {
-            const event = { data: { sellerId, period: 'monthly', sagaId } };
+            const salesData = { totalSales: 24, averageOrderValue: 53.25 };
+            const event = { data: { sellerId, sagaId, salesData } };
             await handlers['SalesDataCollectionRequested'](event);
 
             expect(eventBus.publish).toHaveBeenCalledWith(expect.objectContaining({
-                type: 'SalesDataCollected'
+                type: 'SalesDataCollected',
+                data: expect.objectContaining({ sellerId, sagaId, salesData })
             }));
         });
 

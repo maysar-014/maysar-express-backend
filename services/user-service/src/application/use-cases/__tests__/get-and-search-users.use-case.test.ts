@@ -43,6 +43,7 @@ describe('GetUserUseCase', () => {
     const user = User.create({ id: 'u1', email: Email.create('a@gmail.com'), phoneNumber: PhoneNumber.create('+255712345678'), firstName: 'A', lastName: 'B', role: UserRole.BUYER });
     const repo: any = { findById: jest.fn().mockResolvedValue(user) };
     const policySpy = jest.spyOn(UserPolicies as any, 'canSearchUsers');
+    policySpy.mockClear();
 
     const sut = new GetUserUseCase(repo);
     const out = await sut.execute({ userId: 'u1', requestingUserId: 'admin-user', requestingUserRoles: ['admin'] });

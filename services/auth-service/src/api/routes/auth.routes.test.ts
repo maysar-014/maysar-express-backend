@@ -9,6 +9,7 @@ const mockAsyncHandler = jest.fn(
 );
 const mockRateLimit = jest.fn((_options?: unknown) => (_req: express.Request, _res: express.Response, next: express.NextFunction) => next());
 const mockCsrfValidation = jest.fn((_req: express.Request, _res: express.Response, next: express.NextFunction) => next());
+const mockRequireAuth = jest.fn((_req: express.Request, _res: express.Response, next: express.NextFunction) => next());
 
 jest.mock('../middleware/validation.middleware', () => ({
   validateRequest: (schema: unknown) => mockValidateRequest(schema)
@@ -23,6 +24,10 @@ jest.mock('../middleware/rate-limiting.middleware', () => ({
 jest.mock('@shared/middleware/csrf.middleware', () => ({
   csrfValidationMiddleware: (...args: unknown[]) =>
     mockCsrfValidation(...args as [express.Request, express.Response, express.NextFunction])
+}));
+jest.mock('@shared/middleware/auth-context.middleware', () => ({
+  requireAuth: (...args: unknown[]) =>
+    mockRequireAuth(...args as [express.Request, express.Response, express.NextFunction])
 }));
 
 import { createAuthRoutes } from './auth.routes';

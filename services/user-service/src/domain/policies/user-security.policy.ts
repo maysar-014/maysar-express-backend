@@ -1,5 +1,5 @@
-import { DomainPolicy } from '@domain/interfaces';
-import { User, UserRole } from '@domain/entities/user.entity';
+import { DomainPolicy } from '../interfaces';
+import { User, UserRole } from '../entities/user.entity';
 import { getSharedRedisClient } from '@shared/redis/ioredis-client';
 import { prisma } from '../../infrastructure/database/prisma-client';
 

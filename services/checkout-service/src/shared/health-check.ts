@@ -3,9 +3,24 @@
  * Monitors system health and dependencies
  */
 
+export interface HealthCheckResult {
+  status: 'healthy';
+  timestamp: number;
+  service: string;
+}
+
 export class HealthCheck {
-  async check(): Promise<{ status: string }> {
-    // Implementation
-    return { status: 'healthy' };
+  constructor(private readonly service = 'checkout-service') {}
+
+  async check(): Promise<HealthCheckResult> {
+    return {
+      status: 'healthy',
+      timestamp: Date.now(),
+      service: this.service
+    };
   }
 }
+
+export const healthCheck = async (): Promise<HealthCheckResult> => {
+  return new HealthCheck().check();
+};

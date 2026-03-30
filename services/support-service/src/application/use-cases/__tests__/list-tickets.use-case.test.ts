@@ -1,14 +1,15 @@
 import { ListTicketsUseCase } from '../list-tickets.use-case';
 import { ListTicketsDto } from '../../dto/ticket.dto';
+import { TicketStatus } from '../../../domain/types';
 
 describe('ListTicketsUseCase', () => {
     let useCase: ListTicketsUseCase;
     let mockTicketRepo: any;
 
     const mockTickets = [
-        { id: 'ticket-1', subject: 'Issue 1', status: 'OPEN' },
-        { id: 'ticket-2', subject: 'Issue 2', status: 'IN_PROGRESS' },
-        { id: 'ticket-3', subject: 'Issue 3', status: 'RESOLVED' },
+        { id: 'ticket-1', subject: 'Issue 1', status: TicketStatus.OPEN },
+        { id: 'ticket-2', subject: 'Issue 2', status: TicketStatus.IN_PROGRESS },
+        { id: 'ticket-3', subject: 'Issue 3', status: TicketStatus.RESOLVED },
     ];
 
     const validDto: ListTicketsDto = {
@@ -47,7 +48,7 @@ describe('ListTicketsUseCase', () => {
     });
 
     it('should filter by status', async () => {
-        const dtoWithStatus = { ...validDto, status: 'OPEN' };
+        const dtoWithStatus = { ...validDto, status: TicketStatus.OPEN };
 
         await useCase.execute(dtoWithStatus);
 

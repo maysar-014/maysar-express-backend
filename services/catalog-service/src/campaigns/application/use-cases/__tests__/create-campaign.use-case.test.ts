@@ -1,24 +1,35 @@
 import { CreateCampaignUseCase } from '../create-campaign.use-case';
 import { PauseCampaignUseCase } from '../pause-campaign.use-case';
 import { CancelCampaignUseCase } from '../cancel-campaign.use-case';
+import { CampaignMapper } from '../../mappers/campaign.mapper';
+import { CampaignType, RuleType, ConditionType, OperatorType } from '../../../domain/types/campaign.types';
+import type { ICampaignRepository } from '../../../domain/repositories/campaign.repository.interface';
+
+type CampaignRepositoryMock = Partial<ICampaignRepository> & {
+    save: jest.Mock;
+    findById?: jest.Mock;
+};
 
 describe('CreateCampaignUseCase', () => {
     let useCase: CreateCampaignUseCase;
-    let mockRepository: any;
+    let mockRepository: CampaignRepositoryMock;
 
     const validDto = {
         name: 'Summer Sale',
-        type: 'DISCOUNT',
+        type: CampaignType.DISCOUNT,
         startDate: new Date(),
         endDate: new Date(Date.now() + 86400000),
         timezone: 'Africa/Dar_es_Salaam',
-        pricingRules: [{ type: 'PERCENTAGE', value: 20, priority: 1, conditions: [] }],
+        pricingRules: [{ type: RuleType.PERCENTAGE_DISCOUNT, value: 20, priority: 1, conditions: {} }],
     };
 
     beforeEach(() => {
         jest.clearAllMocks();
-        mockRepository = { save: jest.fn() };
-        useCase = new CreateCampaignUseCase(mockRepository);
+        mockRepository = {
+            save: jest.fn(),
+            findById: jest.fn(),
+        };
+        useCase = new CreateCampaignUseCase(mockRepository as ICampaignRepository);
     });
 
     it('should create campaign successfully', async () => {
@@ -45,13 +56,16 @@ describe('CreateCampaignUseCase', () => {
     });
 
     it('should add conditions when provided', async () => {
-        const dtoWithConditions = { ...validDto, conditions: [{ type: 'MIN_PURCHASE', operator: 'GREATER_THAN', value: 100 }] };
+        const dtoWithConditions = {
+            ...validDto,
+            conditions: [{ type: ConditionType.MIN_ORDER_VALUE, operator: OperatorType.GREATER_THAN, value: 100 }]
+        };
         await useCase.execute('seller-1', 'admin-1', dtoWithConditions);
         expect(mockRepository.save).toHaveBeenCalled();
     });
 
     it('should handle different campaign types', async () => {
-        const types = ['DISCOUNT', 'BOGO', 'FREE_SHIPPING'];
+        const types = [CampaignType.DISCOUNT, CampaignType.PROMOTION, CampaignType.CLEARANCE, CampaignType.SEASONAL];
         for (const type of types) {
             jest.clearAllMocks();
             await useCase.execute('seller-1', 'admin-1', { ...validDto, type });
@@ -62,17 +76,18 @@ describe('CreateCampaignUseCase', () => {
 
 describe('PauseCampaignUseCase', () => {
     let useCase: PauseCampaignUseCase;
-    let mockRepository: any;
+    let mockRepository: CampaignRepositoryMock;
 
     const mockCampaign = { id: 'camp-1', pause: jest.fn() };
 
     beforeEach(() => {
         jest.clearAllMocks();
+        jest.spyOn(CampaignMapper, 'toDto').mockReturnValue({ id: 'camp-1' } as never);
         mockRepository = {
             findById: jest.fn().mockResolvedValue(mockCampaign),
             save: jest.fn(),
         };
-        useCase = new PauseCampaignUseCase(mockRepository);
+        useCase = new PauseCampaignUseCase(mockRepository as unknown as ICampaignRepository);
     });
 
     it('should pause campaign successfully', async () => {
@@ -82,24 +97,25 @@ describe('PauseCampaignUseCase', () => {
     });
 
     it('should fail when campaign not found', async () => {
-        mockRepository.findById.mockResolvedValue(null);
+        mockRepository.findById!.mockResolvedValue(null);
         await expect(useCase.execute('invalid')).rejects.toThrow();
     });
 });
 
 describe('CancelCampaignUseCase', () => {
     let useCase: CancelCampaignUseCase;
-    let mockRepository: any;
+    let mockRepository: CampaignRepositoryMock;
 
     const mockCampaign = { id: 'camp-1', cancel: jest.fn() };
 
     beforeEach(() => {
         jest.clearAllMocks();
+        jest.spyOn(CampaignMapper, 'toDto').mockReturnValue({ id: 'camp-1' } as never);
         mockRepository = {
             findById: jest.fn().mockResolvedValue(mockCampaign),
             save: jest.fn(),
         };
-        useCase = new CancelCampaignUseCase(mockRepository);
+        useCase = new CancelCampaignUseCase(mockRepository as unknown as ICampaignRepository);
     });
 
     it('should cancel campaign successfully', async () => {
@@ -109,7 +125,7 @@ describe('CancelCampaignUseCase', () => {
     });
 
     it('should fail when campaign not found', async () => {
-        mockRepository.findById.mockResolvedValue(null);
+        mockRepository.findById!.mockResolvedValue(null);
         await expect(useCase.execute('invalid')).rejects.toThrow();
     });
 });

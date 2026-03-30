@@ -19,7 +19,11 @@ const mockControllerHandlers = {
   addDocument: jest.fn(async (_req: express.Request, res: express.Response) => res.status(201).json({ action: 'addDocument' })),
   listDocuments: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'listDocuments' })),
   addComplianceRecord: jest.fn(async (_req: express.Request, res: express.Response) => res.status(201).json({ action: 'addComplianceRecord' })),
-  listComplianceRecords: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'listComplianceRecords' }))
+  listComplianceRecords: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'listComplianceRecords' })),
+  listPublicSellers: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'listPublicSellers' })),
+  getPublicSellerById: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'getPublicSellerById' })),
+  getPublicSellerIndustries: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'getPublicSellerIndustries' })),
+  listSellersByIndustry: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'listSellersByIndustry' }))
 };
 
 jest.mock('../controllers/business.controller', () => ({
@@ -68,7 +72,10 @@ jest.mock('../middleware/validation.middleware', () => ({
   validateReactivateBusiness: noOpMiddleware,
   validateCreateBusinessDocument: noOpMiddleware,
   validateCreateComplianceRecord: noOpMiddleware,
-  validateBusinessIdParam: noOpMiddleware
+  validateBusinessIdParam: noOpMiddleware,
+  validatePublicSellerQuery: noOpMiddleware,
+  validatePublicSellerIdParam: noOpMiddleware,
+  validatePublicIndustryParam: noOpMiddleware
 }));
 
 jest.mock('../../application/sagas/saga-event-handler', () => ({
@@ -100,7 +107,7 @@ jest.mock('@shared/middleware/auth-context.middleware', () => ({
   requireAuth: noOpMiddleware
 }));
 
-import { createBusinessRoutes, createLegacyBusinessRoutes } from './business.routes';
+import { createBusinessRoutes, createLegacyBusinessRoutes, createPublicBusinessRoutes } from './business.routes';
 
 describe('business.routes', () => {
   beforeEach(() => {
@@ -128,6 +135,22 @@ describe('business.routes', () => {
     expect(mockLoggerInfo).toHaveBeenCalledWith('✅ Business Registry Saga Event Handlers initialized');
   });
 
+  it('creates public seller routes without auth guard', () => {
+    const router = createPublicBusinessRoutes();
+    const endpoints = router.stack
+      .filter(layer => (layer as { route?: { path: string } }).route)
+      .map(layer => (layer as { route: { path: string } }).route.path);
+
+    expect(endpoints).toEqual(
+      expect.arrayContaining([
+        '/sellers',
+        '/sellers/:sellerId/industries',
+        '/sellers/:sellerId',
+        '/industries/:industry/sellers'
+      ])
+    );
+  });
+
   it('delegates representative route handlers to business controller methods', async () => {
     const app = express();
     app.use(express.json());
@@ -148,6 +171,28 @@ describe('business.routes', () => {
     const reactivateRes = await request(app).post('/businesses/biz-1/reactivate').send({ reactivatedBy: 'admin' });
     expect(reactivateRes.status).toBe(200);
     expect(reactivateRes.body.action).toBe('reactivateBusiness');
+  });
+
+  it('delegates public seller discovery routes to business controller methods', async () => {
+    const app = express();
+    app.use(express.json());
+    app.use('/public', createPublicBusinessRoutes());
+
+    const sellersRes = await request(app).get('/public/sellers?industry=retail&limit=5');
+    expect(sellersRes.status).toBe(200);
+    expect(sellersRes.body.action).toBe('listPublicSellers');
+
+    const sellerRes = await request(app).get('/public/sellers/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV');
+    expect(sellerRes.status).toBe(200);
+    expect(sellerRes.body.action).toBe('getPublicSellerById');
+
+    const industriesRes = await request(app).get('/public/sellers/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV/industries');
+    expect(industriesRes.status).toBe(200);
+    expect(industriesRes.body.action).toBe('getPublicSellerIndustries');
+
+    const industryRes = await request(app).get('/public/industries/retail/sellers');
+    expect(industryRes.status).toBe(200);
+    expect(industryRes.body.action).toBe('listSellersByIndustry');
   });
 
   it('creates legacy alias routes without the create endpoint', () => {

@@ -8,6 +8,6 @@ describe('service instances', () => {
 
     await expect(
       notificationClient.sendEmail('user-1', 'welcome', { name: 'Amina' })
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow('NotificationServiceClient is not configured');
   });
 });

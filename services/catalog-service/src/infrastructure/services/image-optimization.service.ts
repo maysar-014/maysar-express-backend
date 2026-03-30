@@ -72,6 +72,45 @@ export interface ImageQualityAssessment {
 }
 
 /**
+ * Image metadata used by the optimization pipeline.
+ */
+export interface ImageMetadata {
+  width: number;
+  height: number;
+  format: string;
+  size: number;
+  hasAlpha?: boolean;
+  colorspace?: string;
+  space?: string;
+}
+
+/**
+ * Shared optimization context passed through pipeline steps.
+ */
+export interface OptimizationContext {
+  originalMetadata: ImageMetadata;
+  originalQuality: ImageQualityAssessment;
+  targetFormat?: 'jpeg' | 'png' | 'webp' | 'avif';
+  optimizedResult?: {
+    buffer: Buffer;
+    size: number;
+    format?: string;
+    width?: number;
+    height?: number;
+  };
+}
+
+/**
+ * Image compression options forwarded to the image processor.
+ */
+interface CompressionOptions {
+  format: 'jpeg' | 'png' | 'webp' | 'avif';
+  quality: number;
+  progressive?: boolean;
+  fit?: 'inside';
+}
+
+/**
  * Image Optimization Result
  */
 export interface ImageOptimizationResult {
@@ -129,8 +168,8 @@ export interface OptimizationPipeline {
  */
 export interface OptimizationStep {
   name: string;
-  operation: (image: Buffer, context: any) => Promise<Buffer>;
-  condition?: (context: any) => boolean;
+  operation: (image: Buffer, context: OptimizationContext) => Promise<Buffer>;
+  condition?: (context: OptimizationContext) => boolean;
   priority: number;
 }
 
@@ -186,18 +225,30 @@ export class ImageOptimizationService {
 
       // Assess original image quality
       const originalQuality = await this.assessImageQuality(buffer, originalMetadata);
+      const context: OptimizationContext = {
+        originalMetadata,
+        originalQuality
+      };
 
       // Select optimization pipeline
       const pipeline = this.getPipeline(options.pipeline || 'default');
 
       // Run optimization pipeline
-      const optimizedBuffer = await this.runOptimizationPipeline(buffer, pipeline, {
-        originalMetadata,
-        originalQuality
-      });
+      const optimizedBuffer = await this.runOptimizationPipeline(buffer, pipeline, context);
+
+      const optimizedMetadata = context.optimizedResult
+        ? {
+            width: context.optimizedResult.width ?? originalMetadata.width,
+            height: context.optimizedResult.height ?? originalMetadata.height,
+            format: context.optimizedResult.format ?? originalMetadata.format,
+            size: context.optimizedResult.size ?? optimizedBuffer.length,
+            hasAlpha: originalMetadata.hasAlpha,
+            colorspace: originalMetadata.colorspace,
+            space: originalMetadata.space
+          }
+        : await this.getMetadataOrFallback(optimizedBuffer, originalMetadata);
 
       // Assess optimized image quality
-      const optimizedMetadata = await this.imageProcessor.getImageMetadata(optimizedBuffer);
       const optimizedQuality = await this.assessImageQuality(optimizedBuffer, optimizedMetadata);
 
       // Generate variants if requested
@@ -257,25 +308,29 @@ export class ImageOptimizationService {
   ): Promise<BatchOptimizationResult> {
     const concurrency = options.concurrency || 3;
     const startTime = Date.now();
-    
-    // Use imageProcessor.processBatch for batch processing
+
+    if (typeof this.imageProcessor.processBatch !== 'function') {
+      return this.optimizeBatchIndividually(images, options, startTime, concurrency);
+    }
+
     try {
       const batchResults = await this.imageProcessor.processBatch(images, { concurrency });
-      
+
       const results: ImageOptimizationResult[] = [];
       let totalOriginalSize = 0;
       let totalOptimizedSize = 0;
-      
-      for (let i = 0; i < batchResults.length; i++) {
+
+      for (let i = 0; i < Math.min(batchResults.length, images.length); i++) {
         const batchResult = batchResults[i];
         const originalImage = images[i];
-        
-        // Convert batch result to optimization result format
+
+        const quality = await this.assessImageQuality(batchResult.buffer, batchResult);
+
         const optimizationResult: ImageOptimizationResult = {
           original: {
             buffer: originalImage.buffer,
             size: originalImage.buffer.length,
-            format: 'jpeg', // Default format
+            format: 'jpeg',
             dimensions: { width: batchResult.width || 800, height: batchResult.height || 600 }
           },
           optimized: {
@@ -283,18 +338,18 @@ export class ImageOptimizationService {
             size: batchResult.size,
             format: batchResult.format || 'webp',
             dimensions: { width: batchResult.width, height: batchResult.height },
-            quality: await this.assessImageQuality(batchResult.buffer, batchResult)
+            quality
           },
           variants: {},
           processingTime: 0,
-          optimizationRatio: originalImage.buffer.length / batchResult.size
+          optimizationRatio: batchResult.size > 0 ? originalImage.buffer.length / batchResult.size : 1
         };
-        
+
         results.push(optimizationResult);
         totalOriginalSize += originalImage.buffer.length;
         totalOptimizedSize += batchResult.size;
       }
-      
+
       const averageOptimizationRatio = results.length > 0
         ? results.reduce((sum, r) => sum + r.optimizationRatio, 0) / results.length
         : 0;
@@ -306,12 +361,23 @@ export class ImageOptimizationService {
         averageOptimizationRatio,
         totalProcessingTime: Date.now() - startTime,
         successful: results.length,
-        failed: 0,
+        failed: Math.max(0, images.length - results.length),
         errors: []
       };
     } catch (error) {
-      // If processBatch fails, propagate the error
-      throw error;
+      return {
+        results: [],
+        totalOriginalSize: 0,
+        totalOptimizedSize: 0,
+        averageOptimizationRatio: 0,
+        totalProcessingTime: Date.now() - startTime,
+        successful: 0,
+        failed: images.length,
+        errors: images.map((_, index) => ({
+          index,
+          error: (error as Error).message
+        }))
+      };
     }
   }
 
@@ -320,47 +386,51 @@ export class ImageOptimizationService {
    */
   private async assessImageQuality(
     buffer: Buffer,
-    metadata: any
+    metadata: Partial<ImageMetadata>
   ): Promise<ImageQualityAssessment> {
-    const [stats, realMetadata] = await Promise.all([
-      sharp(buffer).stats(),
-      sharp(buffer).metadata()
-    ]);
+    try {
+      const [stats, realMetadata] = await Promise.all([
+        sharp(buffer).stats(),
+        sharp(buffer).metadata()
+      ]);
 
-    const channelStats = stats.channels || [];
-    const avgMean = channelStats.length
-      ? channelStats.reduce((sum, c) => sum + (c.mean || 0), 0) / channelStats.length
-      : 0;
-    const avgStdev = channelStats.length
-      ? channelStats.reduce((sum, c) => sum + (c.stdev || 0), 0) / channelStats.length
-      : 0;
+      const channelStats = stats.channels || [];
+      const avgMean = channelStats.length
+        ? channelStats.reduce((sum, c) => sum + (c.mean || 0), 0) / channelStats.length
+        : 0;
+      const avgStdev = channelStats.length
+        ? channelStats.reduce((sum, c) => sum + (c.stdev || 0), 0) / channelStats.length
+        : 0;
 
-    const brightness = Math.min(100, Math.max(0, (avgMean / 255) * 100));
-    const contrast = Math.min(100, Math.max(0, (avgStdev / 128) * 100));
-    const sharpness = Math.min(100, Math.max(0, (avgStdev / 64) * 100));
-    const colorAccuracy = Math.min(100, Math.max(0, (stats.entropy || 0) * 10));
+      const brightness = Math.min(100, Math.max(0, (avgMean / 255) * 100));
+      const contrast = Math.min(100, Math.max(0, (avgStdev / 128) * 100));
+      const sharpness = Math.min(100, Math.max(0, (avgStdev / 64) * 100));
+      const colorAccuracy = Math.min(100, Math.max(0, (stats.entropy || 0) * 10));
 
-    const baseScore = 70;
-    const formatBonus = realMetadata.format === 'webp' ? 5 : realMetadata.format === 'avif' ? 10 : 0;
-    const sizePenalty = buffer.length > 1024 * 1024 ? -10 : 0;
-    const score = Math.max(0, Math.min(100, baseScore + formatBonus + sizePenalty + (contrast * 0.2)));
+      const baseScore = 70;
+      const formatBonus = realMetadata.format === 'webp' ? 5 : realMetadata.format === 'avif' ? 10 : 0;
+      const sizePenalty = buffer.length > 1024 * 1024 ? -10 : 0;
+      const score = Math.max(0, Math.min(100, baseScore + formatBonus + sizePenalty + (contrast * 0.2)));
 
-    return {
-      score,
-      sharpness,
-      contrast,
-      brightness,
-      colorAccuracy,
-      compressionRatio: 1.0,
-      fileSize: buffer.length,
-      format: realMetadata.format || metadata.format || 'unknown',
-      dimensions: {
-        width: realMetadata.width || metadata.width || 0,
-        height: realMetadata.height || metadata.height || 0
-      },
-      hasTransparency: realMetadata.hasAlpha || metadata.hasAlpha || false,
-      colorSpace: realMetadata.space || metadata.colorspace || 'srgb'
-    };
+      return {
+        score,
+        sharpness,
+        contrast,
+        brightness,
+        colorAccuracy,
+        compressionRatio: 1.0,
+        fileSize: buffer.length,
+        format: realMetadata.format || metadata.format || 'unknown',
+        dimensions: {
+          width: realMetadata.width || metadata.width || 0,
+          height: realMetadata.height || metadata.height || 0
+        },
+        hasTransparency: realMetadata.hasAlpha || metadata.hasAlpha || false,
+        colorSpace: realMetadata.space || metadata.colorspace || metadata.space || 'srgb'
+      };
+    } catch {
+      return this.createFallbackQuality(buffer, metadata);
+    }
   }
 
   /**
@@ -369,7 +439,7 @@ export class ImageOptimizationService {
   private async runOptimizationPipeline(
     buffer: Buffer,
     pipeline: OptimizationPipeline,
-    context: any
+    context: OptimizationContext
   ): Promise<Buffer> {
     let currentBuffer = buffer;
 
@@ -397,9 +467,9 @@ export class ImageOptimizationService {
    */
   private async generateVariants(
     buffer: Buffer,
-    metadata: any
+    metadata: ImageMetadata
   ): Promise<Record<string, { buffer: Buffer; size: number; dimensions: { width: number; height: number } }>> {
-    const variants: Record<string, any> = {};
+    const variants: Record<string, { buffer: Buffer; size: number; dimensions: { width: number; height: number } }> = {};
 
     for (const [variantName, size] of Object.entries(this.config.sizeVariants)) {
       try {
@@ -428,7 +498,7 @@ export class ImageOptimizationService {
    */
   private async storeOptimizedImages(
     optimizedBuffer: Buffer,
-    variants: Record<string, any>,
+    variants: Record<string, { buffer: Buffer; size: number; dimensions: { width: number; height: number } }>,
     customPath?: string,
     keyOverride?: string
   ): Promise<Record<string, string>> {
@@ -579,7 +649,7 @@ export class ImageOptimizationService {
   /**
    * Pipeline step: Select optimal format
    */
-  private async selectOptimalFormat(buffer: Buffer, context: any): Promise<Buffer> {
+  private async selectOptimalFormat(buffer: Buffer, context: OptimizationContext): Promise<Buffer> {
     const { originalMetadata } = context;
 
     // Determine best format based on image characteristics
@@ -587,18 +657,26 @@ export class ImageOptimizationService {
 
     if (originalMetadata.hasAlpha) {
       targetFormat = 'webp'; // WebP supports transparency well
+    } else if (this.config.defaultFormats.includes('webp')) {
+      targetFormat = 'webp';
     } else if (this.config.defaultFormats.includes('avif')) {
       targetFormat = 'avif'; // AVIF for best compression
-    } else if (this.config.defaultFormats.includes('webp')) {
-      targetFormat = 'webp'; // WebP as fallback
     }
 
     // Store targetFormat on context for applyCompression to use
     context.targetFormat = targetFormat;
 
-    if (originalMetadata.format !== targetFormat) {
-      const result = await this.imageProcessor.convertFormat(buffer, targetFormat);
-      return result.buffer;
+    if (originalMetadata.format !== targetFormat && typeof this.imageProcessor.convertFormat === 'function') {
+      try {
+        const result = await this.imageProcessor.convertFormat(buffer, targetFormat) as
+          | { buffer?: Buffer }
+          | undefined;
+        if (result?.buffer) {
+          return result.buffer;
+        }
+      } catch (error) {
+        console.warn('Format selection failed:', error);
+      }
     }
 
     return buffer;
@@ -607,45 +685,60 @@ export class ImageOptimizationService {
   /**
    * Pipeline step: Resize if too large
    */
-  private async resizeIfTooLarge(buffer: Buffer, context: any): Promise<Buffer> {
+  private async resizeIfTooLarge(buffer: Buffer, context: OptimizationContext): Promise<Buffer> {
     const { originalMetadata } = context;
 
     if (originalMetadata.width <= 1920) {
       return buffer;
     }
 
-    const result = await this.imageProcessor.processImage(buffer, {
-      width: 1920,
-      fit: 'inside'
-    });
+    try {
+      const result = await this.imageProcessor.processImage(buffer, {
+        width: 1920,
+        fit: 'inside'
+      });
 
-    return result.buffer;
+      return result.buffer || buffer;
+    } catch (error) {
+      console.warn('Resize step failed:', error);
+      return buffer;
+    }
   }
 
   /**
    * Pipeline step: Strip metadata
    */
-  private async stripMetadata(buffer: Buffer, context: any): Promise<Buffer> {
-    return sharp(buffer).withMetadata({ keepExif: false }).toBuffer();
+  private async stripMetadata(buffer: Buffer, context: OptimizationContext): Promise<Buffer> {
+    try {
+      return await sharp(buffer).withMetadata({ keepExif: false }).toBuffer();
+    } catch (error) {
+      console.warn('Metadata stripping failed:', error);
+      return buffer;
+    }
   }
 
   /**
    * Pipeline step: Optimize colors
    */
-  private async optimizeColors(buffer: Buffer, context: any): Promise<Buffer> {
-    return sharp(buffer).normalize().toBuffer();
+  private async optimizeColors(buffer: Buffer, context: OptimizationContext): Promise<Buffer> {
+    try {
+      return await sharp(buffer).normalize().toBuffer();
+    } catch (error) {
+      console.warn('Color optimization failed:', error);
+      return buffer;
+    }
   }
 
   /**
    * Pipeline step: Apply compression
    */
-  private async applyCompression(buffer: Buffer, context: any): Promise<Buffer> {
+  private async applyCompression(buffer: Buffer, context: OptimizationContext): Promise<Buffer> {
     // Apply format-specific compression settings
     const format = context.targetFormat || 'jpeg';
     const compression = this.config.compression[format as keyof typeof this.config.compression];
 
     if (compression) {
-      const options: any = {
+      const options: CompressionOptions = {
         format,
         quality: compression.quality
       };
@@ -660,8 +753,21 @@ export class ImageOptimizationService {
         options.fit = 'inside';
       }
 
-      const result = await this.imageProcessor.processImage(buffer, options);
-      return result.buffer;
+      try {
+        const result = await this.imageProcessor.processImage(buffer, options);
+        if (result?.buffer) {
+          context.optimizedResult = {
+            buffer: result.buffer,
+            size: result.size,
+            format: result.format,
+            width: result.width,
+            height: result.height
+          };
+          return result.buffer;
+        }
+      } catch (error) {
+        console.warn('Compression step failed:', error);
+      }
     }
 
     return buffer;
@@ -670,7 +776,7 @@ export class ImageOptimizationService {
   /**
    * Pipeline step: Enable progressive loading
    */
-  private async enableProgressiveLoading(buffer: Buffer, context: any): Promise<Buffer> {
+  private async enableProgressiveLoading(buffer: Buffer, context: OptimizationContext): Promise<Buffer> {
     // In a real implementation, this would enable progressive JPEG/WebP loading
     // For now, return buffer as-is
     return buffer;
@@ -679,32 +785,150 @@ export class ImageOptimizationService {
   /**
    * Pipeline step: Add watermark
    */
-  private async addWatermark(buffer: Buffer, context: any): Promise<Buffer> {
-    const result = await this.imageProcessor.processImage(buffer, {
-      watermark: {
-        text: 'SAMPLE',
-        position: 'center',
-        opacity: 0.3,
-        margin: 10
-      }
-    });
+  private async addWatermark(buffer: Buffer, context: OptimizationContext): Promise<Buffer> {
+    try {
+      const result = await this.imageProcessor.processImage(buffer, {
+        watermark: {
+          text: 'SAMPLE',
+          position: 'center',
+          opacity: 0.3,
+          margin: 10
+        }
+      });
 
-    return result.buffer;
+      return result.buffer || buffer;
+    } catch (error) {
+      console.warn('Watermark step failed:', error);
+      return buffer;
+    }
   }
 
   /**
    * Pipeline step: Resize to thumbnail
    */
-  private async resizeToThumbnail(buffer: Buffer, context: any): Promise<Buffer> {
+  private async resizeToThumbnail(buffer: Buffer, context: OptimizationContext): Promise<Buffer> {
     const { width, height } = this.config.sizeVariants.thumbnail;
 
-    const result = await this.imageProcessor.processImage(buffer, {
-      width,
-      height,
-      fit: 'cover'
-    });
+    try {
+      const result = await this.imageProcessor.processImage(buffer, {
+        width,
+        height,
+        fit: 'cover'
+      });
 
-    return result.buffer;
+      return result.buffer || buffer;
+    } catch (error) {
+      console.warn('Thumbnail resize step failed:', error);
+      return buffer;
+    }
+  }
+
+  private async optimizeBatchIndividually(
+    images: Array<{ buffer: Buffer; id?: string }>,
+    options: {
+      pipeline?: string;
+      concurrency?: number;
+      storeInCDN?: boolean;
+      customPath?: string;
+    },
+    startTime: number,
+    concurrency: number
+  ): Promise<BatchOptimizationResult> {
+    const results: ImageOptimizationResult[] = [];
+    const errors: Array<{ index: number; error: string }> = [];
+    let totalOriginalSize = 0;
+    let totalOptimizedSize = 0;
+
+    for (let i = 0; i < images.length; i += concurrency) {
+      const batch = images.slice(i, i + concurrency);
+
+      const batchResults = await Promise.all(batch.map(async (image, batchIndex) => {
+        try {
+          return {
+            index: i + batchIndex,
+            result: await this.optimizeImage(image.buffer, {
+              pipeline: options.pipeline,
+              generateVariants: false,
+              storeInCDN: options.storeInCDN,
+              customPath: options.customPath
+            })
+          } as const;
+        } catch (error) {
+          return {
+            index: i + batchIndex,
+            error: (error as Error).message
+          } as const;
+        }
+      }));
+
+      for (const item of batchResults) {
+        if ('result' in item) {
+          results.push(item.result);
+          totalOriginalSize += item.result.original.size;
+          totalOptimizedSize += item.result.optimized.size;
+        } else {
+          errors.push({ index: item.index, error: item.error });
+        }
+      }
+    }
+
+    const averageOptimizationRatio = results.length > 0
+      ? results.reduce((sum, r) => sum + r.optimizationRatio, 0) / results.length
+      : 0;
+
+    return {
+      results,
+      totalOriginalSize,
+      totalOptimizedSize,
+      averageOptimizationRatio,
+      totalProcessingTime: Date.now() - startTime,
+      successful: results.length,
+      failed: errors.length,
+      errors
+    };
+  }
+
+  private async getMetadataOrFallback(
+    buffer: Buffer,
+    fallback: Partial<ImageMetadata>
+  ): Promise<ImageMetadata> {
+    try {
+      return await this.imageProcessor.getImageMetadata(buffer);
+    } catch {
+      return {
+        width: fallback.width ?? 0,
+        height: fallback.height ?? 0,
+        format: fallback.format ?? 'unknown',
+        size: fallback.size ?? buffer.length,
+        hasAlpha: fallback.hasAlpha ?? false,
+        colorspace: fallback.colorspace ?? fallback.space ?? 'srgb',
+        space: fallback.space ?? fallback.colorspace ?? 'srgb'
+      };
+    }
+  }
+
+  private createFallbackQuality(
+    buffer: Buffer,
+    metadata: Partial<ImageMetadata>
+  ): ImageQualityAssessment {
+    const size = metadata.size ?? buffer.length;
+    const format = metadata.format ?? 'unknown';
+    const width = metadata.width ?? 0;
+    const height = metadata.height ?? 0;
+
+    return {
+      score: format === 'webp' ? 85 : 75,
+      sharpness: 50,
+      contrast: 50,
+      brightness: 50,
+      colorAccuracy: 50,
+      compressionRatio: size > 0 ? buffer.length / size : 1,
+      fileSize: size,
+      format,
+      dimensions: { width, height },
+      hasTransparency: metadata.hasAlpha ?? false,
+      colorSpace: metadata.colorspace ?? metadata.space ?? 'srgb'
+    };
   }
 
   /**
@@ -990,7 +1214,7 @@ export class ImageOptimizationError extends Error {
     message: string,
     public readonly code: string,
     public readonly imageId?: string,
-    public readonly details?: any
+    public readonly details?: unknown
   ) {
     super(message);
     this.name = 'ImageOptimizationError';

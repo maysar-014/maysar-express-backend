@@ -1,78 +1,55 @@
 # Business Registry Service
 
-Business Registry Service for Maysar Marketplace. Handles business registration, verification workflows, compliance tracking, and lifecycle management.
+Business registry module for the Maysar monolith. It handles business onboarding, verification, public seller discovery, compliance records, and lifecycle actions.
 
-## Architecture
+## Runtime
 
-The service follows Clean Architecture principles with strict layer separation:
+- Canonical monolith mount: `/api/business-registry`
+- Legacy standalone router entry: `services/business-registry-service/src/main.ts`
 
-- **Domain Layer**: Entities, value objects, policies, algorithms, and domain services
-- **Application Layer**: Use cases, sagas, DTOs, and mappers
-- **Infrastructure Layer**: Prisma repositories, event publishing, logging
-- **API Layer**: Express controllers, routes, and middleware
+## Current Routes
+
+- `GET /api/business-registry/health`
+- `GET /api/business-registry/health/ready`
+- `GET /api/business-registry/health/live`
+- `GET /api/business-registry/public/sellers`
+- `GET /api/business-registry/public/sellers/:sellerId`
+- `GET /api/business-registry/public/sellers/:sellerId/industries`
+- `POST /api/business-registry/businesses`
+- `GET /api/business-registry/businesses/search`
+- `GET /api/business-registry/businesses/owner/:ownerId`
+- `GET /api/business-registry/businesses/:id`
+- `PUT /api/business-registry/businesses/:id`
+- `DELETE /api/business-registry/businesses/:id`
+- `POST /api/business-registry/businesses/:id/verify`
+- `POST /api/business-registry/businesses/:id/suspend`
+- `POST /api/business-registry/businesses/:id/reactivate`
+- `POST /api/business-registry/businesses/:id/documents`
+- `GET /api/business-registry/businesses/:id/documents`
+- `POST /api/business-registry/businesses/:id/compliance-records`
+- `GET /api/business-registry/businesses/:id/compliance-records`
 
 ## Setup
 
 ```bash
 npm install
 cp .env.example .env
-# Configure DATABASE_URL in .env
-npx prisma generate
-npx prisma migrate dev
-```
-
-## Development
-
-```bash
+npm run prisma:generate
+npm run prisma:migrate
 npm run dev
-```
-
-## Build
-
-```bash
-npm run build
-npm start
 ```
 
 ## Testing
 
 ```bash
-npm test
-npm run test:coverage
-npm run test:e2e
+npm run test:business-registry-service
+npm run test:business-registry-service:unit
+npm run test:business-registry-service:integration
+npm run test:business-registry-service:coverage
 ```
 
-## API Endpoints
+## Docs
 
-### Business Management
-- `POST /api/businesses` - Register a new business
-- `GET /api/businesses/:id` - Get business by ID
-- `PUT /api/businesses/:id` - Update business details
-- `DELETE /api/businesses/:id` - Delete business
-- `POST /api/businesses/:id/verify` - Verify business
-- `POST /api/businesses/:id/suspend` - Suspend business
-- `POST /api/businesses/:id/reactivate` - Reactivate business
-- `GET /api/businesses/owner/:ownerId` - Get businesses by owner
-- `GET /api/businesses/search?q=query` - Search businesses
-
-### Health
-- `GET /health` - Basic health check
-- `GET /health/ready` - Readiness probe (database connectivity)
-- `GET /health/live` - Liveness probe
-
-## Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| DATABASE_URL | PostgreSQL connection string |
-| PORT | Service port (default: 3001) |
-| NODE_ENV | Environment (development/production) |
-| LOG_LEVEL | Logging level |
-| EVENT_BUS_URL | Redis URL for event bus |
-
-## Deployment
-
-```bash
-docker build -t business-registry-service .
-docker run -p 3001:3001 business-registry-service
-```
+- `services/business-registry-service/src/api/index.ts`
+- `services/business-registry-service/src/api/routes/business.routes.ts`
+- `services/business-registry-service/src/application/sagas/`

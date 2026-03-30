@@ -1,60 +1,109 @@
 import { CalculateCommissionUseCase } from '../calculate-commission.use-case';
+import { ICommissionRepository, IEventStoreRepository } from '../../../domain/repositories/index';
+import { OrderId, SellerId } from '../../../domain/value-objects/ids.value-object';
+import { CommissionAmount, CommissionRate } from '../../../domain/value-objects/monetary.value-object';
+import { CommissionType, CommissionStatus } from '../../../domain/value-objects/commission-types.value-object';
+import { RecipientType } from '../../../domain/value-objects/recipient-types.value-object';
 
-const mockRepository = { save: jest.fn(), findByOrderId: jest.fn() } as any;
-const mockRuleEngine = { calculate: jest.fn() } as any;
+const mockRepository = {
+    save: jest.fn()
+} as unknown as jest.Mocked<ICommissionRepository>;
+const mockEventStore = {
+    saveEvent: jest.fn()
+} as unknown as jest.Mocked<IEventStoreRepository>;
 
 describe('CalculateCommissionUseCase', () => {
     let useCase: CalculateCommissionUseCase;
 
     beforeEach(() => {
         jest.clearAllMocks();
-        useCase = new CalculateCommissionUseCase(mockRepository, mockRuleEngine);
+        useCase = new CalculateCommissionUseCase(mockRepository, mockEventStore);
     });
 
     it('should calculate commission successfully', async () => {
-        mockRepository.findByOrderId.mockResolvedValue(null);
-        mockRuleEngine.calculate.mockReturnValue({ amount: 10, rate: 0.1 });
-        
-        const result = await useCase.execute({ orderId: 'order-1', amount: 100 });
-        expect(result.commission).toBe(10);
+        const input = {
+            orderId: OrderId.create(),
+            sellerId: SellerId.create(),
+            orderAmount: CommissionAmount.fromNumber(1000),
+            recipientType: RecipientType.SELLER,
+            commissionType: CommissionType.SALE
+        };
+
+        const result = await useCase.execute(input);
+
+        expect(result.commission.status).toBe(CommissionStatus.PENDING);
+        expect(result.commission.orderId.equals(input.orderId)).toBe(true);
+        expect(result.commission.sellerId.equals(input.sellerId)).toBe(true);
+        expect(result.commission.amount.toNumber()).toBe(80);
+        expect(result.breakdown.totalCommission.toNumber()).toBe(80);
         expect(mockRepository.save).toHaveBeenCalled();
+        expect(mockEventStore.saveEvent).toHaveBeenCalledTimes(1);
     });
 
-    it('should fail if commission already calculated', async () => {
-        mockRepository.findByOrderId.mockResolvedValue({ id: 'existing' });
-        await expect(useCase.execute({ orderId: 'order-1', amount: 100 }))
-            .rejects.toThrow('Commission already calculated');
+    it('should reject commissions below the minimum amount', async () => {
+        await expect(useCase.execute({
+            orderId: OrderId.create(),
+            sellerId: SellerId.create(),
+            orderAmount: CommissionAmount.fromNumber(0.5),
+            recipientType: RecipientType.SELLER,
+            commissionType: CommissionType.SALE
+        })).rejects.toThrow('Commission creation not allowed');
     });
 
-    it('should calculate different commission rates', async () => {
-        const rates = [0.05, 0.1, 0.15, 0.2];
-        for (const rate of rates) {
-            jest.clearAllMocks();
-            mockRepository.findByOrderId.mockResolvedValue(null);
-            mockRuleEngine.calculate.mockReturnValue({ amount: 100 * rate, rate });
-            const result = await useCase.execute({ orderId: 'order-1', amount: 100 });
-            expect(result.commission).toBe(100 * rate);
-        }
+    it('should respect a custom base rate when provided', async () => {
+        const result = await useCase.execute({
+            orderId: OrderId.create(),
+            sellerId: SellerId.create(),
+            orderAmount: CommissionAmount.fromNumber(1000),
+            recipientType: RecipientType.SELLER,
+            commissionType: CommissionType.SALE,
+            baseRate: CommissionRate.fromPercentage(12)
+        });
+
+        expect(result.commission.amount.toNumber()).toBe(120);
+        expect(result.breakdown.totalCommission.toNumber()).toBe(120);
     });
 
     it('should handle zero commission', async () => {
-        mockRepository.findByOrderId.mockResolvedValue(null);
-        mockRuleEngine.calculate.mockReturnValue({ amount: 0, rate: 0 });
-        const result = await useCase.execute({ orderId: 'order-1', amount: 100 });
-        expect(result.commission).toBe(0);
+        const result = await useCase.execute({
+            orderId: OrderId.create(),
+            sellerId: SellerId.create(),
+            orderAmount: CommissionAmount.fromNumber(0),
+            recipientType: RecipientType.COURIER,
+            commissionType: CommissionType.SALE
+        });
+
+        expect(result.commission.amount.toNumber()).toBe(0);
+        expect(result.breakdown.totalCommission.toNumber()).toBe(0);
     });
 
     it('should handle large amounts', async () => {
-        mockRepository.findByOrderId.mockResolvedValue(null);
-        mockRuleEngine.calculate.mockReturnValue({ amount: 10000, rate: 0.1 });
-        const result = await useCase.execute({ orderId: 'order-1', amount: 100000 });
-        expect(result.commission).toBe(10000);
+        const result = await useCase.execute({
+            orderId: OrderId.create(),
+            sellerId: SellerId.create(),
+            orderAmount: CommissionAmount.fromNumber(10000),
+            recipientType: RecipientType.SELLER,
+            commissionType: CommissionType.SALE
+        });
+
+        expect(result.commission.amount.toNumber()).toBe(800);
     });
 
     it('should save commission to repository', async () => {
-        mockRepository.findByOrderId.mockResolvedValue(null);
-        mockRuleEngine.calculate.mockReturnValue({ amount: 10, rate: 0.1 });
-        await useCase.execute({ orderId: 'order-1', amount: 100 });
-        expect(mockRepository.save).toHaveBeenCalledWith(expect.objectContaining({ orderId: 'order-1' }));
+        const orderId = OrderId.create();
+        const sellerId = SellerId.create();
+
+        await useCase.execute({
+            orderId,
+            sellerId,
+            orderAmount: CommissionAmount.fromNumber(1000),
+            recipientType: RecipientType.SELLER,
+            commissionType: CommissionType.SALE
+        });
+
+        expect(mockRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            orderId,
+            sellerId
+        }));
     });
 });

@@ -11,6 +11,22 @@ describe('ProductController', () => {
 
   let controller: ProductController;
 
+  const makeReq = (overrides: Record<string, any> = {}) => ({
+    params: {},
+    query: {},
+    body: {},
+    ...overrides,
+    headers: {
+      'x-request-id': 'test-request-id',
+      ...(overrides.headers || {}),
+    },
+  });
+
+  const makeRes = () => ({
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn(),
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     controller = new ProductController(
@@ -32,8 +48,8 @@ describe('ProductController', () => {
         attributes: [],
       });
 
-      const req = { params: { categoryId: 'cat-1' } };
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const req = makeReq({ params: { categoryId: 'cat-1' } });
+      const res = makeRes();
 
       await controller.loadCategoryAttributes(req as any, res as any);
 
@@ -42,8 +58,8 @@ describe('ProductController', () => {
     });
 
     it('should return 400 if categoryId missing', async () => {
-      const req = { params: {} };
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const req = makeReq({ params: {} });
+      const res = makeRes();
 
       await controller.loadCategoryAttributes(req as any, res as any);
 
@@ -53,8 +69,8 @@ describe('ProductController', () => {
     it('should handle errors', async () => {
       mockLoadCategoryAttributesUseCase.execute.mockRejectedValue(new Error('DB error'));
 
-      const req = { params: { categoryId: 'cat-1' } };
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const req = makeReq({ params: { categoryId: 'cat-1' } });
+      const res = makeRes();
 
       await controller.loadCategoryAttributes(req as any, res as any);
 
@@ -79,7 +95,7 @@ describe('ProductController', () => {
           structuredAttributes: {},
         },
       };
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const res = makeRes();
 
       await controller.previewGeneratedDescription(req as any, res as any);
 
@@ -87,8 +103,8 @@ describe('ProductController', () => {
     });
 
     it('should return 400 for invalid input', async () => {
-      const req = { body: {} };
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const req = makeReq({ body: {} });
+      const res = makeRes();
 
       await controller.previewGeneratedDescription(req as any, res as any);
 
@@ -106,7 +122,7 @@ describe('ProductController', () => {
           structuredAttributes: {},
         },
       };
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const res = makeRes();
 
       await controller.previewGeneratedDescription(req as any, res as any);
 
@@ -135,7 +151,7 @@ describe('ProductController', () => {
         },
         query: {},
       };
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const res = makeRes();
 
       await controller.createProduct(req as any, res as any);
 
@@ -143,8 +159,8 @@ describe('ProductController', () => {
     });
 
     it('should return 400 for validation error', async () => {
-      const req = { body: {}, query: {} };
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const req = makeReq({ body: {}, query: {} });
+      const res = makeRes();
 
       await controller.createProduct(req as any, res as any);
 
@@ -171,7 +187,7 @@ describe('ProductController', () => {
         },
         query: {},
       };
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const res = makeRes();
 
       await controller.createProduct(req as any, res as any);
 
@@ -195,7 +211,7 @@ describe('ProductController', () => {
         },
         query: {},
       };
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const res = makeRes();
 
       await controller.createProduct(req as any, res as any);
 
@@ -207,11 +223,35 @@ describe('ProductController', () => {
     it('should get product by id', async () => {
       mockGetProductUseCase.execute.mockResolvedValue({
         status: 'success',
-        product: { id: 'prod-1', name: 'Oil' },
+        product: {
+          id: 'prod-1',
+          sellerId: 'seller-1',
+          sellerName: 'Seller One',
+          name: 'Oil',
+          description: 'Premium cooking oil',
+          price: 15000,
+          categoryId: 'cat-1',
+          categoryName: 'Cooking Oil',
+          categoryPath: ['Food', 'Cooking Oil'],
+          type: 'simple',
+          tags: ['oil'],
+          attributes: { volume: '5L' },
+          status: 'active',
+          media: [],
+          inventory: { available: 0, reserved: 0, total: 0, status: 'out_of_stock' },
+          shipping: {},
+          seo: {},
+          analytics: {},
+          ratings: {},
+          reviews: [],
+          recommendations: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       });
 
-      const req = { params: { id: 'prod-1' }, query: {} };
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const req = makeReq({ params: { id: 'prod-1' }, query: {} });
+      const res = makeRes();
 
       await controller.getProduct(req as any, res as any);
 
@@ -223,8 +263,8 @@ describe('ProductController', () => {
         status: 'not_found',
       });
 
-      const req = { params: { id: 'invalid' }, query: {} };
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const req = makeReq({ params: { id: 'invalid' }, query: {} });
+      const res = makeRes();
 
       await controller.getProduct(req as any, res as any);
 
@@ -240,8 +280,8 @@ describe('ProductController', () => {
         total: 0,
       });
 
-      const req = { params: { sellerId: 'seller-1' }, query: {} };
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const req = makeReq({ params: { sellerId: 'seller-1' }, query: {} });
+      const res = makeRes();
 
       await controller.getProductsBySeller(req as any, res as any);
 
@@ -258,8 +298,8 @@ describe('ProductController', () => {
         pagination: { page: 1, limit: 20, totalPages: 0 },
       });
 
-      const req = { query: { q: 'oil' } };
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const req = makeReq({ query: { q: 'oil' } });
+      const res = makeRes();
 
       await controller.searchProducts(req as any, res as any);
 

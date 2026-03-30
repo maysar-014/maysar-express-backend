@@ -9,26 +9,35 @@ describe('CommissionSettlementSaga', () => {
     const settlePaymentUseCase = {
       execute: jest.fn().mockResolvedValue(undefined)
     };
+    const orderRepository = {
+      findByOrderId: jest.fn().mockResolvedValue({
+        enablerId: 'enabler-1',
+        enablerCommission: 100
+      })
+    };
     const notificationService = {
       sendCommissionPaidNotification: jest.fn().mockResolvedValue(undefined)
     };
-    const saga = new CommissionSettlementSaga(settlePaymentUseCase as never, notificationService);
+    const saga = new CommissionSettlementSaga(settlePaymentUseCase as never, orderRepository as never, notificationService);
 
     await saga.execute('order-1');
 
     expect(settlePaymentUseCase.execute).toHaveBeenCalledWith('order-1');
-    expect(notificationService.sendCommissionPaidNotification).toHaveBeenCalledWith('mock-id', 100);
+    expect(notificationService.sendCommissionPaidNotification).toHaveBeenCalledWith('enabler-1', 100);
   });
 
   it('swallows errors and logs when settlement fails', async () => {
     const settlePaymentUseCase = {
       execute: jest.fn().mockRejectedValue(new Error('settlement-failed'))
     };
+    const orderRepository = {
+      findByOrderId: jest.fn()
+    };
     const notificationService = {
       sendCommissionPaidNotification: jest.fn()
     };
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    const saga = new CommissionSettlementSaga(settlePaymentUseCase as never, notificationService);
+    const saga = new CommissionSettlementSaga(settlePaymentUseCase as never, orderRepository as never, notificationService);
 
     await expect(saga.execute('order-2')).resolves.toBeUndefined();
 

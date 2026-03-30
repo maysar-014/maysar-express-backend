@@ -24,7 +24,7 @@ describe('ResolveCODDisputeUseCase', () => {
         jest.clearAllMocks();
 
         mockDisputeRepository = {
-            findById: jest.fn().mockResolvedValue({ ...mockDispute }),
+            findById: jest.fn().mockImplementation(async () => ({ ...mockDispute })),
             update: jest.fn(),
         };
         mockEventPublisher = { publish: jest.fn() };

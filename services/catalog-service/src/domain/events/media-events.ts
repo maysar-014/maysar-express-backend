@@ -3,7 +3,7 @@
  * Pure domain events representing business facts about media assets
  */
 
-import { MediaId, ProductId, SellerId } from '../value-objects/ids.value-object';
+import { MediaId, SellerId } from '../value-objects/ids.value-object';
 
 export abstract class MediaDomainEvent {
   public readonly eventId: string;
@@ -119,7 +119,7 @@ export class MediaUpdatedEvent extends MediaDomainEvent {
     eventId: string,
     aggregateId: MediaId,
     public readonly sellerId: SellerId,
-    public readonly changes: Record<string, any>,
+    public readonly changes: Record<string, unknown>,
     public readonly updatedBy: string,
     occurredAt?: Date
   ) {

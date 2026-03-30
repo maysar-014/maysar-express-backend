@@ -26,11 +26,13 @@ describe('business.dto type contracts', () => {
       businessType: BusinessType.CORPORATION,
       registrationNumber: 'REG-100',
       ownerId: 'owner-1',
+      industry: ['retail', 'wholesale'],
       addresses: [address]
     };
 
     const updateDto: UpdateBusinessDto = {
       name: 'Acme Updated',
+      industry: ['electronics'],
       addresses: [address]
     };
 
@@ -43,6 +45,7 @@ describe('business.dto type contracts', () => {
       verificationStatus: 'VERIFIED',
       complianceStatus: 'COMPLIANT',
       ownerId: 'owner-1',
+      industry: ['retail'],
       addresses: [address],
       createdAt: new Date('2026-03-01T00:00:00.000Z'),
       updatedAt: new Date('2026-03-08T00:00:00.000Z')

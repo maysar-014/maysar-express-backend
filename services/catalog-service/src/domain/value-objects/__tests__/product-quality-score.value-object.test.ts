@@ -132,7 +132,7 @@ describe('QualityScore', () => {
       };
       const score = QualityScore.create(signals);
       const suggestions = score.getSuggestionsForImprovement();
-      expect(suggestions).toContain(expect.stringContaining('title'));
+      expect(suggestions.some((suggestion) => suggestion.includes('title'))).toBe(true);
     });
 
     it('should suggest attributes improvement', () => {
@@ -145,7 +145,7 @@ describe('QualityScore', () => {
       };
       const score = QualityScore.create(signals);
       const suggestions = score.getSuggestionsForImprovement();
-      expect(suggestions).toContain(expect.stringContaining('attribute'));
+      expect(suggestions.some((suggestion) => suggestion.includes('attribute'))).toBe(true);
     });
 
     it('should suggest images improvement', () => {
@@ -158,7 +158,7 @@ describe('QualityScore', () => {
       };
       const score = QualityScore.create(signals);
       const suggestions = score.getSuggestionsForImprovement();
-      expect(suggestions).toContain(expect.stringContaining('image'));
+      expect(suggestions.some((suggestion) => suggestion.includes('image'))).toBe(true);
     });
 
     it('should suggest description improvement', () => {
@@ -171,7 +171,7 @@ describe('QualityScore', () => {
       };
       const score = QualityScore.create(signals);
       const suggestions = score.getSuggestionsForImprovement();
-      expect(suggestions).toContain(expect.stringContaining('description'));
+      expect(suggestions.some((suggestion) => suggestion.includes('description'))).toBe(true);
     });
 
     it('should suggest category improvement', () => {
@@ -184,7 +184,7 @@ describe('QualityScore', () => {
       };
       const score = QualityScore.create(signals);
       const suggestions = score.getSuggestionsForImprovement();
-      expect(suggestions).toContain(expect.stringContaining('category'));
+      expect(suggestions.some((suggestion) => suggestion.includes('category'))).toBe(true);
     });
 
     it('should return empty array for perfect score', () => {

@@ -47,3 +47,5 @@ export const errorHandler = (
         }
     });
 };
+
+export const errorMiddleware = errorHandler;

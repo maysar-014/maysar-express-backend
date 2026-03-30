@@ -38,6 +38,9 @@ describe('External API Contract Tests', () => {
       maxFileSize: 10 * 1024 * 1024,
       allowedMimeTypes: ['image/jpeg', 'image/png']
     });
+    (cdnProvider as any).s3Client = {
+      send: jest.fn().mockResolvedValue({ ETag: '"etag-123"' })
+    };
 
     const upload = await cdnProvider.uploadFile(Buffer.from('data'), {
       key: 'products/test.jpg',
@@ -60,8 +63,12 @@ describe('External API Contract Tests', () => {
       concurrency: 2,
       cacheEnabled: false
     });
+    const sampleImage = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8L4v8AAAAASUVORK5CYII=',
+      'base64'
+    );
 
-    const processed = await imageProvider.processImage(Buffer.from('img-data'), {
+    const processed = await imageProvider.processImage(sampleImage, {
       width: 800,
       height: 600,
       format: 'webp',

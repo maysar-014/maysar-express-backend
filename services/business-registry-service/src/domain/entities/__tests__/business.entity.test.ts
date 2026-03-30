@@ -16,7 +16,8 @@ describe('Business Entity', () => {
         name: 'Test Business',
         businessType: BusinessType.SOLE_PROPRIETORSHIP,
         registrationNumber,
-        ownerId
+        ownerId,
+        industry: ['retail']
       });
 
       expect(business.status).toBe(BusinessStatus.PENDING);
@@ -34,7 +35,8 @@ describe('Business Entity', () => {
         name: 'Test Business',
         businessType: BusinessType.SOLE_PROPRIETORSHIP,
         registrationNumber,
-        ownerId
+        ownerId,
+        industry: ['retail']
       });
 
       const verified = business.verify('admin-1');
@@ -53,7 +55,8 @@ describe('Business Entity', () => {
         name: 'Test Business',
         businessType: BusinessType.SOLE_PROPRIETORSHIP,
         registrationNumber,
-        ownerId
+        ownerId,
+        industry: ['retail']
       });
 
       const suspended = business.suspend();
@@ -69,7 +72,8 @@ describe('Business Entity', () => {
         name: 'Test Business',
         businessType: BusinessType.SOLE_PROPRIETORSHIP,
         registrationNumber,
-        ownerId
+        ownerId,
+        industry: ['retail']
       });
       const suspended = business.suspend();
       const reactivated = suspended.reactivate();
@@ -85,7 +89,8 @@ describe('Business Entity', () => {
         name: 'Test Business',
         businessType: BusinessType.SOLE_PROPRIETORSHIP,
         registrationNumber,
-        ownerId
+        ownerId,
+        industry: ['retail']
       });
 
       const result = business.validate();
@@ -101,6 +106,7 @@ describe('Business Entity', () => {
         businessType: BusinessType.SOLE_PROPRIETORSHIP,
         registrationNumber,
         ownerId: '',
+        industry: [],
         status: BusinessStatus.PENDING,
         verificationStatus: VerificationStatus.UNVERIFIED,
         complianceStatus: ComplianceStatus.UNDER_REVIEW,
@@ -122,7 +128,8 @@ describe('Business Entity', () => {
         name: 'Test Business',
         businessType: BusinessType.SOLE_PROPRIETORSHIP,
         registrationNumber,
-        ownerId
+        ownerId,
+        industry: ['retail']
       });
       const verified = business.verify('admin-1');
 

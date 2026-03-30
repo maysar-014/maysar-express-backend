@@ -32,11 +32,20 @@ describe('PrismaBadgeRepository', () => {
     expect(byType[0].id).toBe('b2');
   });
 
-  it('throws when badge delegate is unavailable', async () => {
+  it('uses in-memory fallback when badge delegate is unavailable', async () => {
     const repo = new PrismaBadgeRepository({} as never);
 
-    await expect(repo.findByType('X')).rejects.toThrow(
-      'Badge delegate is not configured on prisma client'
-    );
+    await repo.save({
+      id: 'b3',
+      learnerId: 'l3',
+      type: 'X',
+      reason: 'fallback',
+      metadata: { source: 'test' },
+      awardedAt: new Date('2026-03-09T00:00:00.000Z')
+    });
+
+    const badges = await repo.findByType('X');
+    expect(badges).toHaveLength(1);
+    expect(badges[0].id).toBe('b3');
   });
 });

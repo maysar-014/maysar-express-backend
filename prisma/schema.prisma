@@ -348,7 +348,7 @@ model Business {
   complianceStatus   BusinessRegistry_ComplianceStatus   @default(UNDER_REVIEW)
   ownerId            String
   description        String?
-  industry           String?
+  industry           String[]
   website            String?
   email              String?
   phoneNumber        String?

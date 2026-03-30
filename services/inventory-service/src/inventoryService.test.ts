@@ -1,3 +1,16 @@
+jest.mock('../../../shared/outbox/outboxPattern', () => ({
+  TransactionalOutbox: jest.fn().mockImplementation(() => ({
+    saveEvent: jest.fn().mockResolvedValue(undefined)
+  }))
+}));
+
+jest.mock('@shared-events/eventBus', () => ({
+  eventBus: {
+    subscribe: jest.fn(),
+    publish: jest.fn()
+  }
+}), { virtual: true });
+
 import { InventoryService } from './inventoryService';
 
 interface MockPrisma {
@@ -40,8 +53,8 @@ describe('InventoryService', () => {
     it('should reserve inventory successfully', async () => {
       mockPrisma.inventory_StockItem.findFirst.mockResolvedValue({
         id: 's1',
-        availableQuantity: 100,
-        reservedQuantity: 0
+        quantityAvailable: 100,
+        quantityReserved: 0
       });
       mockPrisma.inventory_Reservation.create.mockResolvedValue({
         id: 'r1'
@@ -59,8 +72,8 @@ describe('InventoryService', () => {
     it('should rollback on insufficient stock', async () => {
       mockPrisma.inventory_StockItem.findFirst.mockResolvedValue({
         id: 's1',
-        availableQuantity: 5,
-        reservedQuantity: 0
+        quantityAvailable: 5,
+        quantityReserved: 0
       });
 
       await expect(service.reserveInventory({

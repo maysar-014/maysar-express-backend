@@ -7,9 +7,20 @@ import { CartController } from '../../controllers/cart.controller';
 import { CheckoutController } from '../../controllers/checkout.controller';
 import { Request, Response } from 'express';
 
+const cartId = 'chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const userId = 'usr_test_0001';
+const productId = 'cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV';
+const sourceCartId = 'chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAW';
+const targetCartId = 'chk_cart_01ARZ3NDEKTSV4RRFFQ69G5FAX';
+
 describe('CartController E2E', () => {
   let controller: CartController;
-  let mockRepository: any;
+  let mockRepository: {
+    save: jest.Mock;
+    getById: jest.Mock;
+    getByUserId: jest.Mock;
+    delete: jest.Mock;
+  };
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
 
@@ -34,9 +45,9 @@ describe('CartController E2E', () => {
 
   it('should add item to cart', async () => {
     mockRequest.body = {
-      cartId: 'cart-1',
-      userId: 'user-1',
-      productId: 'prod-1',
+      cartId,
+      userId,
+      productId,
       quantity: 2,
       priceAtTime: 50
     };
@@ -49,7 +60,7 @@ describe('CartController E2E', () => {
   });
 
   it('should handle validation errors', async () => {
-    mockRequest.body = { cartId: 'cart-1' };
+    mockRequest.body = { cartId };
 
     await controller.addToCart(mockRequest as Request, mockResponse as Response);
 
@@ -58,12 +69,14 @@ describe('CartController E2E', () => {
 
   it('should remove item from cart', async () => {
     mockRequest.body = {
-      cartId: 'cart-1',
-      userId: 'user-1',
-      productId: 'prod-1'
+      cartId,
+      userId,
+      productId
     };
     mockRepository.getById.mockResolvedValueOnce({
-      items: [{ productId: 'prod-1', quantity: 1, priceAtTime: 50 }]
+      id: cartId,
+      userId,
+      items: [{ productId, quantity: 1, priceAtTime: 50 }]
     });
 
     await controller.removeFromCart(mockRequest as Request, mockResponse as Response);
@@ -75,14 +88,15 @@ describe('CartController E2E', () => {
 
   it('should update item quantity', async () => {
     mockRequest.body = {
-      cartId: 'cart-1',
-      userId: 'user-1',
-      productId: 'prod-1',
+      cartId,
+      userId,
+      productId,
       quantity: 5
     };
     mockRepository.getById.mockResolvedValueOnce({
-      userId: 'user-1',
-      items: [{ productId: 'prod-1', quantity: 1, priceAtTime: 50 }]
+      id: cartId,
+      userId,
+      items: [{ productId, quantity: 1, priceAtTime: 50 }]
     });
 
     await controller.updateCartItem(mockRequest as Request, mockResponse as Response);
@@ -93,8 +107,8 @@ describe('CartController E2E', () => {
   });
 
   it('should get cart', async () => {
-    mockRequest.params = { cartId: 'cart-1' };
-    (mockRequest as any).userId = 'user-1';
+    mockRequest.params = { cartId };
+    (mockRequest as Request & { userId?: string }).userId = userId;
 
     await controller.getCart(mockRequest as Request, mockResponse as Response);
 
@@ -104,7 +118,13 @@ describe('CartController E2E', () => {
   });
 
   it('should clear cart', async () => {
-    mockRequest.body = { cartId: 'cart-1', userId: 'user-1' };
+    mockRequest.params = { cartId };
+    mockRequest.body = { userId };
+    mockRepository.getById.mockResolvedValueOnce({
+      id: cartId,
+      userId,
+      items: [{ productId, quantity: 1, priceAtTime: 50 }]
+    });
 
     await controller.clearCart(mockRequest as Request, mockResponse as Response);
 
@@ -114,16 +134,16 @@ describe('CartController E2E', () => {
   });
 
   it('should resolve current cart for authenticated user', async () => {
-    (mockRequest as any).user = { userId: 'user-1' };
+    Object.assign(mockRequest, { user: { userId } });
     mockRepository.getByUserId.mockResolvedValueOnce({
-      id: 'chk_cart_existing',
-      userId: 'user-1',
-      items: [{ productId: 'prod-1', quantity: 1, priceAtTime: 50 }]
+      id: cartId,
+      userId,
+      items: [{ productId, quantity: 1, priceAtTime: 50 }]
     });
 
     await controller.getCurrentCart(mockRequest as Request, mockResponse as Response);
 
-    expect(mockRepository.getByUserId).toHaveBeenCalledWith('user-1');
+    expect(mockRepository.getByUserId).toHaveBeenCalledWith(userId);
     expect(mockResponse.json).toHaveBeenCalledWith(
       expect.objectContaining({ success: true })
     );
@@ -131,24 +151,26 @@ describe('CartController E2E', () => {
 
   it('should merge guest cart into target cart', async () => {
     mockRequest.body = {
-      sourceCartId: 'guest-cart-1',
-      targetCartId: 'user-cart-1',
-      userId: 'user-1'
+      sourceCartId,
+      targetCartId,
+      userId
     };
     mockRepository.getById
       .mockResolvedValueOnce({
-        userId: 'guest-user',
-        items: [{ productId: 'prod-1', quantity: 2, priceAtTime: 50 }]
+        id: sourceCartId,
+        userId,
+        items: [{ productId, quantity: 2, priceAtTime: 50 }]
       })
       .mockResolvedValueOnce({
-        userId: 'user-1',
-        items: [{ productId: 'prod-2', quantity: 1, priceAtTime: 100 }]
+        id: targetCartId,
+        userId,
+        items: [{ productId: 'cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAG', quantity: 1, priceAtTime: 100 }]
       });
 
     await controller.mergeCarts(mockRequest as Request, mockResponse as Response);
 
     expect(mockRepository.save).toHaveBeenCalled();
-    expect(mockRepository.delete).toHaveBeenCalledWith('guest-cart-1');
+    expect(mockRepository.delete).toHaveBeenCalledWith(sourceCartId);
     expect(mockResponse.json).toHaveBeenCalledWith(
       expect.objectContaining({ success: true })
     );
@@ -157,16 +179,22 @@ describe('CartController E2E', () => {
 
 describe('CheckoutController E2E', () => {
   let controller: CheckoutController;
-  let mockCheckoutRepository: any;
-  let mockEventBus: any;
+  let mockCheckoutRepository: {
+    saveCheckoutSession: jest.Mock;
+    getSession: jest.Mock;
+    saveSession: jest.Mock;
+  };
+  let mockEventBus: {
+    publish: jest.Mock;
+  };
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
 
   beforeEach(() => {
     const sessionFixture = {
       id: 'session-1',
-      cartId: 'cart-1',
-      userId: 'user-1',
+      cartId,
+      userId,
       enablerId: undefined,
       enablerCode: undefined,
       status: 'initiated',
@@ -206,8 +234,8 @@ describe('CheckoutController E2E', () => {
 
   it('should initiate checkout', async () => {
     mockRequest.body = {
-      cartId: 'cart-1',
-      userId: 'user-1',
+      cartId,
+      userId,
       shippingAddressId: 'addr-1',
       billingAddressId: 'addr-2',
       shippingMethodId: 'ship-1',
@@ -250,8 +278,8 @@ describe('CheckoutController E2E', () => {
 
   it('should handle idempotency', async () => {
     mockRequest.body = {
-      cartId: 'cart-1',
-      userId: 'user-1',
+      cartId,
+      userId,
       shippingAddressId: 'addr-1',
       billingAddressId: 'addr-2',
       shippingMethodId: 'ship-1',

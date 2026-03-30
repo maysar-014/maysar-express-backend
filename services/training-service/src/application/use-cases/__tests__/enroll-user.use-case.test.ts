@@ -7,7 +7,9 @@ describe('EnrollUserUseCase', () => {
     let useCase: EnrollUserUseCase;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        jest.resetAllMocks();
+        mockRepository.save.mockResolvedValue(undefined);
+        mockEventBus.publish.mockResolvedValue(undefined);
         useCase = new EnrollUserUseCase(mockRepository, mockEventBus);
     });
 

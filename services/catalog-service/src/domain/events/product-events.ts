@@ -52,7 +52,7 @@ export class ProductUpdatedEvent extends ProductDomainEvent {
     eventId: string,
     aggregateId: ProductId,
     public readonly sellerId: SellerId,
-    public readonly changes: Record<string, any>,
+    public readonly changes: Record<string, unknown>,
     public readonly updatedBy: string,
     occurredAt?: Date
   ) {
@@ -167,7 +167,7 @@ export class ProductVariantUpdatedEvent extends ProductDomainEvent {
     aggregateId: ProductId,
     public readonly sellerId: SellerId,
     public readonly variantId: string,
-    public readonly changes: Record<string, any>,
+    public readonly changes: Record<string, unknown>,
     public readonly updatedBy: string,
     occurredAt?: Date
   ) {

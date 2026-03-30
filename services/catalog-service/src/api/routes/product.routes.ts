@@ -366,17 +366,12 @@ export function createProductRoutes(
   router.post(`${apiPrefix}/products/:id/unpublish`,
     ...sellerMiddleware,
     async (req, res) => {
-      const { id } = req.params;
-      if (!id) {
-        return res.status(400).json({
-          success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'Product ID is required' }
-        });
-      }
-      res.status(200).json({
-        success: true,
-        data: { productId: id, unpublished: true },
-        meta: { timestamp: new Date() }
+      res.status(501).json({
+        success: false,
+        error: {
+          code: 'NOT_IMPLEMENTED',
+          message: 'Product unpublish is not implemented yet'
+        }
       });
     }
   );
@@ -404,25 +399,12 @@ export function createProductRoutes(
     ...sellerMiddleware,
     cache,
     async (req, res) => {
-      const { id } = req.params;
-      if (!id) {
-        return res.status(400).json({
-          success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'Product ID is required' }
-        });
-      }
-      res.status(200).json({
-        success: true,
-        data: {
-          productId: id,
-          metrics: {
-            views: 0,
-            clicks: 0,
-            conversions: 0,
-            conversionRate: 0
-          }
-        },
-        meta: { timestamp: new Date() }
+      res.status(501).json({
+        success: false,
+        error: {
+          code: 'NOT_IMPLEMENTED',
+          message: 'Product metrics are not implemented yet'
+        }
       });
     }
   );
@@ -486,14 +468,12 @@ export function createProductRoutes(
     ...sellerMiddleware,
     validateSchemaRequest(updateCategorySchema),
     async (req, res) => {
-      res.status(200).json({
-        success: true,
-        data: {
-          productId: req.params.id,
-          categoryId: req.body.categoryId,
-          updated: true
-        },
-        meta: { timestamp: new Date() }
+      res.status(501).json({
+        success: false,
+        error: {
+          code: 'NOT_IMPLEMENTED',
+          message: 'Product category updates are not implemented yet'
+        }
       });
     }
   );
@@ -509,20 +489,12 @@ export function createProductRoutes(
   router.post(`${apiPrefix}/products/:id/media`,
     ...sellerMiddleware,
     async (req, res) => {
-      const { id } = req.params;
-      if (!id) {
-        return res.status(400).json({
-          success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'Product ID is required' }
-        });
-      }
-      res.status(200).json({
-        success: true,
-        data: {
-          productId: id,
-          uploaded: true
-        },
-        meta: { timestamp: new Date() }
+      res.status(501).json({
+        success: false,
+        error: {
+          code: 'NOT_IMPLEMENTED',
+          message: 'Product media upload is not implemented yet'
+        }
       });
     }
   );
@@ -535,20 +507,12 @@ export function createProductRoutes(
     ...commonMiddleware,
     cache,
     async (req, res) => {
-      const { id } = req.params;
-      if (!id) {
-        return res.status(400).json({
-          success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'Product ID is required' }
-        });
-      }
-      res.status(200).json({
-        success: true,
-        data: {
-          productId: id,
-          media: []
-        },
-        meta: { timestamp: new Date() }
+      res.status(501).json({
+        success: false,
+        error: {
+          code: 'NOT_IMPLEMENTED',
+          message: 'Product media listing is not implemented yet'
+        }
       });
     }
   );

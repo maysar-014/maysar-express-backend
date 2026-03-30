@@ -4,6 +4,21 @@ import { asyncHandler } from '../middleware/error-handler.middleware';
 import { rateLimit } from '../middleware/rate-limiting.middleware';
 import { csrfValidationMiddleware } from '@shared/middleware/csrf.middleware';
 import { requireAuth } from '@shared/middleware/auth-context.middleware';
+import { AuthController } from '../controllers/auth.controller';
+
+type AuthControllerHandlers = Pick<AuthController,
+  | 'register'
+  | 'login'
+  | 'logout'
+  | 'refreshToken'
+  | 'verifySession'
+  | 'forgotPassword'
+  | 'resetPassword'
+  | 'enableTwoFactor'
+  | 'disableTwoFactor'
+  | 'verifyTwoFactorSetup'
+  | 'reportSuspiciousActivity'
+  | 'getAuthStats'>;
 
 const parseLimit = (value: string | undefined, fallback: number): number => {
   if (!value) return fallback;
@@ -16,7 +31,7 @@ const registerLimitMax = parseLimit(process.env.AUTH_REGISTER_RATE_LIMIT_MAX, is
 const loginLimitMax = parseLimit(process.env.AUTH_LOGIN_RATE_LIMIT_MAX, isProduction ? 5 : 60);
 
 // Export factory function instead of router instance directly
-export const createAuthRoutes = (authController: any): Router => { // Using any for controller to avoid type issues if imports vary, but ideally AuthController
+export const createAuthRoutes = (authController: AuthControllerHandlers): Router => {
   const router = Router();
 
   // ============================================================================

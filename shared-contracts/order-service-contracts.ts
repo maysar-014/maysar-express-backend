@@ -1,4 +1,4 @@
-import { EventEnvelope, Money, OrderStatus, UUID } from './types';
+import { Money, UUID } from './types';
 
 export namespace OrderService {
     export namespace Events {

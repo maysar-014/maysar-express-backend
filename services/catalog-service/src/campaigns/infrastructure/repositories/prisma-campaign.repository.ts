@@ -4,6 +4,51 @@ import { TYPES } from '../../types';
 import { ICampaignRepository } from '../../domain/repositories/campaign.repository.interface';
 import { Campaign } from '../../domain/entities/campaign.entity';
 import { CampaignMapper } from '../../application/mappers/campaign.mapper';
+import { CampaignStatus, CampaignType, ConditionType, ICampaignMetadata, RuleType } from '../../domain/types/campaign.types';
+
+type CampaignPricingRuleWrite = {
+    id: string;
+    ruleType: RuleType;
+    value: number;
+    priority?: number;
+    conditions?: Record<string, unknown>;
+    createdAt?: Date;
+};
+
+type CampaignConditionWrite = {
+    id: string;
+    type: ConditionType;
+    operator: string;
+    value: unknown;
+    createdAt?: Date;
+};
+
+type CampaignProductWrite = {
+    productId: string;
+    originalPrice: unknown;
+    campaignPrice: unknown;
+};
+
+type CampaignCategoryWrite = {
+    categoryId: string;
+};
+
+type CampaignWriteModel = {
+    name: string;
+    description?: string;
+    type: CampaignType;
+    status: CampaignStatus;
+    startDate: Date;
+    endDate?: Date;
+    timezone: string;
+    sellerId: string;
+    createdBy: string;
+    metadata?: ICampaignMetadata;
+    pricingRules: { deleteMany: Record<string, never>; create: CampaignPricingRuleWrite[] };
+    conditions: { deleteMany: Record<string, never>; create: CampaignConditionWrite[] };
+    products: { deleteMany: Record<string, never>; create: CampaignProductWrite[] };
+    categories: { deleteMany: Record<string, never>; create: CampaignCategoryWrite[] };
+};
 
 @injectable()
 export class PrismaCampaignRepository implements ICampaignRepository {
@@ -25,11 +70,11 @@ export class PrismaCampaignRepository implements ICampaignRepository {
 
         if (!record) return null;
 
-        return CampaignMapper.toDomain(record);
+        return CampaignMapper.toDomain(this.normalizeRecord(record));
     }
 
     async save(campaign: Campaign): Promise<void> {
-        const data = CampaignMapper.toPersistence(campaign);
+        const data = CampaignMapper.toPersistence(campaign) as CampaignWriteModel;
 
         await this.prisma.$transaction(async (tx) => {
             const campaignId = campaign.getId();
@@ -45,7 +90,7 @@ export class PrismaCampaignRepository implements ICampaignRepository {
                     startDate: data.startDate,
                     endDate: data.endDate,
                     timezone: data.timezone,
-                    metadata: data.metadata,
+                    metadata: data.metadata as any,
                     updatedAt: new Date(),
                 },
                 create: {
@@ -59,7 +104,7 @@ export class PrismaCampaignRepository implements ICampaignRepository {
                     timezone: data.timezone,
                     sellerId: data.sellerId,
                     createdBy: data.createdBy,
-                    metadata: data.metadata,
+                    metadata: data.metadata as any,
                 },
             });
 
@@ -77,13 +122,13 @@ export class PrismaCampaignRepository implements ICampaignRepository {
             await tx.campaign_PricingRule.deleteMany({ where: { campaignId } });
             if (data.pricingRules.create.length > 0) {
                 await tx.campaign_PricingRule.createMany({
-                    data: data.pricingRules.create.map((r: any) => ({
+                    data: data.pricingRules.create.map((r) => ({
                         id: r.id,
                         campaignId,
                         ruleType: r.ruleType,
                         value: r.value,
                         priority: r.priority,
-                        conditions: r.conditions,
+                        conditions: r.conditions as any,
                         createdAt: r.createdAt,
                     })),
                 });
@@ -93,12 +138,12 @@ export class PrismaCampaignRepository implements ICampaignRepository {
             await tx.campaign_Condition.deleteMany({ where: { campaignId } });
             if (data.conditions.create.length > 0) {
                 await tx.campaign_Condition.createMany({
-                    data: data.conditions.create.map((c: any) => ({
+                    data: data.conditions.create.map((c) => ({
                         id: c.id,
                         campaignId,
                         type: c.type,
                         operator: c.operator,
-                        value: c.value,
+                        value: c.value as any,
                         createdAt: c.createdAt,
                     })),
                 });
@@ -108,11 +153,11 @@ export class PrismaCampaignRepository implements ICampaignRepository {
             await tx.campaign_Product.deleteMany({ where: { campaignId } });
             if (data.products.create.length > 0) {
                 await tx.campaign_Product.createMany({
-                    data: data.products.create.map((p: any) => ({
+                    data: data.products.create.map((p) => ({
                         campaignId,
                         productId: p.productId,
-                        originalPrice: p.originalPrice,
-                        campaignPrice: p.campaignPrice,
+                        originalPrice: p.originalPrice as any,
+                        campaignPrice: p.campaignPrice as any,
                     })),
                 });
             }
@@ -121,7 +166,7 @@ export class PrismaCampaignRepository implements ICampaignRepository {
             await tx.campaign_Category.deleteMany({ where: { campaignId } });
             if (data.categories.create.length > 0) {
                 await tx.campaign_Category.createMany({
-                    data: data.categories.create.map((cat: any) => ({
+                    data: data.categories.create.map((cat) => ({
                         campaignId,
                         categoryId: cat.categoryId,
                     })),
@@ -134,7 +179,7 @@ export class PrismaCampaignRepository implements ICampaignRepository {
         await this.prisma.campaign_Campaign.delete({ where: { id } });
     }
 
-    async findAll(filters?: any): Promise<Campaign[]> {
+    async findAll(filters?: Record<string, unknown>): Promise<Campaign[]> {
         const records = await this.prisma.campaign_Campaign.findMany({
             where: filters,
             include: {
@@ -146,10 +191,18 @@ export class PrismaCampaignRepository implements ICampaignRepository {
             orderBy: { createdAt: 'desc' },
         });
 
-        return records.map(record => CampaignMapper.toDomain(record));
+        return records.map(record => CampaignMapper.toDomain(this.normalizeRecord(record)));
     }
 
     async findBySellerId(sellerId: string): Promise<Campaign[]> {
         return this.findAll({ sellerId });
+    }
+
+    private normalizeRecord(record: any) {
+        return {
+            ...record,
+            description: record.description ?? undefined,
+            metadata: record.metadata ?? undefined
+        };
     }
 }

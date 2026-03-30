@@ -10,7 +10,7 @@ describe('BusinessChallenge', () => {
             category: 'OPERATIONS',
             industryTags: ['agriculture'],
             constraints: ['budget'],
-            successCriteria: ['Increase efficiency by 20%']
+            successCriteria: [{ description: 'Increase efficiency by 20%', measurable: true }]
         });
         expect(challenge.id).toBe('c1');
     });
@@ -24,7 +24,7 @@ describe('BusinessChallenge', () => {
             category: 'OPERATIONS',
             industryTags: ['agriculture'],
             constraints: ['budget'],
-            successCriteria: ['Increase efficiency by 20%']
+            successCriteria: [{ description: 'Increase efficiency by 20%', measurable: true }]
         });
         challenge.approve();
         expect(challenge.status).toBe(ChallengeStatus.OPEN);

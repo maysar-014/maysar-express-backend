@@ -82,11 +82,11 @@ describe('campaign.mapper', () => {
       sellerId: 'seller-2',
       createdBy: 'admin-2',
       metadata: { source: 'import' },
-      pricingRules: [
+        pricingRules: [
         {
           id: 'rule-2',
           ruleType: RuleType.FIXED_DISCOUNT,
-          value: '15',
+          value: 15,
           priority: 2,
           conditions: { maxUses: 10 }
         }

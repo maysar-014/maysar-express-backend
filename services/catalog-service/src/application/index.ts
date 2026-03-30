@@ -42,23 +42,46 @@ export * from './handlers';
  * - Communicates via: Domain interfaces, DTOs
  */
 
+export interface ApplicationResponseMetadata {
+  service: string;
+  timestamp: Date;
+  [key: string]: unknown;
+}
+
+export interface ApplicationSuccessResponse<TData = unknown> {
+  success: true;
+  data: TData;
+  metadata: ApplicationResponseMetadata;
+}
+
+export interface ApplicationErrorResponse {
+  success: false;
+  error: {
+    message: string;
+    code: string;
+  };
+  metadata: ApplicationResponseMetadata;
+}
+
+export type ApplicationResponse<TData = unknown> = ApplicationSuccessResponse<TData> | ApplicationErrorResponse;
+
 /**
  * Application Service Interface
  * Defines the contract for application services
  */
-export interface ApplicationService {
+export interface ApplicationService<TRequest = unknown, TResponse = unknown, TContext extends ApplicationContext = ApplicationContext> {
   readonly serviceName: string;
-  execute(request: any, context?: any): Promise<any>;
+  execute(request: TRequest, context?: TContext): Promise<TResponse>;
 }
 
 /**
  * Base Application Service
  * Provides common functionality for application services
  */
-export abstract class BaseApplicationService implements ApplicationService {
+export abstract class BaseApplicationService<TRequest = unknown, TResponse = unknown, TContext extends ApplicationContext = ApplicationContext> implements ApplicationService<TRequest, TResponse, TContext> {
   abstract readonly serviceName: string;
 
-  abstract execute(request: any, context?: any): Promise<any>;
+  abstract execute(request: TRequest, context?: TContext): Promise<TResponse>;
 
   protected validateRequest<T>(request: T, validator: (req: T) => boolean): void {
     if (!validator(request)) {
@@ -66,19 +89,19 @@ export abstract class BaseApplicationService implements ApplicationService {
     }
   }
 
-  protected createSuccessResponse<T>(data: T, metadata?: any): any {
+  protected createSuccessResponse<T>(data: T, metadata?: Record<string, unknown>): ApplicationSuccessResponse<T> {
     return {
       success: true,
       data,
       metadata: {
         service: this.serviceName,
         timestamp: new Date(),
-        ...metadata
+        ...(metadata ?? {})
       }
     };
   }
 
-  protected createErrorResponse(error: string, code?: string, metadata?: any): any {
+  protected createErrorResponse(error: string, code?: string, metadata?: Record<string, unknown>): ApplicationErrorResponse {
     return {
       success: false,
       error: {
@@ -88,7 +111,7 @@ export abstract class BaseApplicationService implements ApplicationService {
       metadata: {
         service: this.serviceName,
         timestamp: new Date(),
-        ...metadata
+        ...(metadata ?? {})
       }
     };
   }
@@ -176,7 +199,7 @@ export interface ApplicationHealthCheck {
     infrastructure: boolean;
   };
   lastChecked: Date;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 /**
@@ -206,11 +229,11 @@ export interface ApplicationMetrics {
  * Application Layer Bootstrap
  * Initializes the application layer with required dependencies
  */
-export interface ApplicationBootstrap {
+export interface ApplicationBootstrap<TUseCaseFactory = unknown, TSagaFactory = unknown, THandlerFactory = unknown> {
   initialize(config?: Partial<ApplicationConfig>): Promise<void>;
-  registerUseCases(useCaseFactory: any): void;
-  registerSagas(sagaFactory: any): void;
-  registerHandlers(handlerFactory: any): void;
+  registerUseCases(useCaseFactory: TUseCaseFactory): void;
+  registerSagas(sagaFactory: TSagaFactory): void;
+  registerHandlers(handlerFactory: THandlerFactory): void;
   getHealthCheck(): Promise<ApplicationHealthCheck>;
   getMetrics(): ApplicationMetrics;
   shutdown(): Promise<void>;
@@ -220,27 +243,27 @@ export interface ApplicationBootstrap {
  * Application Error Types
  * Standardized error types for application layer
  */
-export class ApplicationError extends Error {
+export class ApplicationError<TDetails = unknown> extends Error {
   constructor(
     message: string,
     public readonly code: string,
     public readonly statusCode: number = 500,
-    public readonly details?: any
+    public readonly details?: TDetails
   ) {
     super(message);
     this.name = 'ApplicationError';
   }
 }
 
-export class ValidationError extends ApplicationError {
-  constructor(message: string, details?: any) {
+export class ValidationError<TDetails = unknown> extends ApplicationError<TDetails> {
+  constructor(message: string, details?: TDetails) {
     super(message, 'VALIDATION_ERROR', 400, details);
     this.name = 'ValidationError';
   }
 }
 
-export class BusinessRuleViolationError extends ApplicationError {
-  constructor(message: string, details?: any) {
+export class BusinessRuleViolationError<TDetails = unknown> extends ApplicationError<TDetails> {
+  constructor(message: string, details?: TDetails) {
     super(message, 'BUSINESS_RULE_VIOLATION', 409, details);
     this.name = 'BusinessRuleViolationError';
   }

@@ -1,5 +1,6 @@
 import { CreateTicketUseCase } from '../create-ticket.use-case';
 import { CreateTicketDto } from '../../dto/ticket.dto';
+import { TicketPriority, TicketStatus } from '../../../domain/types';
 
 describe('CreateTicketUseCase', () => {
     let useCase: CreateTicketUseCase;
@@ -13,13 +14,13 @@ describe('CreateTicketUseCase', () => {
         subject: 'Login Issue',
         description: 'Cannot login to account',
         category: 'TECHNICAL',
-        priority: 'HIGH',
+        priority: TicketPriority.HIGH,
     };
 
     beforeEach(() => {
         jest.clearAllMocks();
 
-        mockTicketRepo = { create: jest.fn().mockResolvedValue({ id: 'ticket-1', ...validDto, status: 'OPEN', createdAt: new Date(), updatedAt: new Date() }) };
+        mockTicketRepo = { create: jest.fn().mockResolvedValue({ id: 'ticket-1', ...validDto, status: TicketStatus.OPEN, createdAt: new Date(), updatedAt: new Date() }) };
         mockHistoryRepo = { create: jest.fn() };
         mockAttachmentRepo = { create: jest.fn() };
         mockEventBus = { publish: jest.fn() };
@@ -61,7 +62,7 @@ describe('CreateTicketUseCase', () => {
     });
 
     it('should handle different priorities', async () => {
-        const priorities = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
+        const priorities = [TicketPriority.LOW, TicketPriority.MEDIUM, TicketPriority.HIGH, TicketPriority.URGENT];
 
         for (const priority of priorities) {
             jest.clearAllMocks();

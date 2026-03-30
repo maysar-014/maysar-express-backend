@@ -1,7 +1,21 @@
+type ActivatableCampaign = {
+    status: string;
+    [key: string]: unknown;
+};
+
+interface CampaignActivatorRepository {
+    findById(id: string): Promise<ActivatableCampaign | null>;
+    update(campaign: ActivatableCampaign): Promise<void>;
+}
+
+interface CampaignEventBus {
+    publish(eventName: string, payload: ActivatableCampaign): Promise<void>;
+}
+
 export class ActivateCampaignUseCase {
     constructor(
-        private readonly repository: any,
-        private readonly eventBus: any
+        private readonly repository: CampaignActivatorRepository,
+        private readonly eventBus: CampaignEventBus
     ) {}
 
     async execute(dto: { campaignId: string }) {

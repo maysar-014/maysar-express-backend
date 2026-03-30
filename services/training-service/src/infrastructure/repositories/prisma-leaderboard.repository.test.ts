@@ -60,7 +60,7 @@ describe('PrismaLeaderboardRepository', () => {
     expect(missingRank).toBe(0);
   });
 
-  it('returns entry by learner and throws when leaderboard delegate is missing', async () => {
+  it('returns entry by learner and uses fallback when leaderboard delegate is missing', async () => {
     const repo = new PrismaLeaderboardRepository({
       training_LeaderboardEntry: {
         upsert: jest.fn(),
@@ -73,9 +73,15 @@ describe('PrismaLeaderboardRepository', () => {
     expect(entry?.learnerId).toBe('l7');
 
     const repoWithoutDelegate = new PrismaLeaderboardRepository({} as never);
-    await expect(repoWithoutDelegate.getTop(1)).rejects.toThrow(
-      'Leaderboard delegate is not configured on prisma client'
-    );
+    await repoWithoutDelegate.updateEntry({
+      learnerId: 'l9',
+      totalScore: 50,
+      modulesCount: 1,
+      badgesCount: 0
+    });
+    const top = await repoWithoutDelegate.getTop(1);
+    expect(top).toHaveLength(1);
+    expect(top[0].learnerId).toBe('l9');
   });
 });
 

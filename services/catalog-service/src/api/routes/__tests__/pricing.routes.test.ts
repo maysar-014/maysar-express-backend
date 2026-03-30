@@ -10,6 +10,10 @@ import express from 'express';
 import { createPricingRoutes, PricingRoutesFactory, PRICING_ROUTES_METADATA } from '../pricing.routes';
 import { PricingController } from '../../controllers/pricing.controller';
 
+jest.mock('@shared/middleware/auth-context.middleware', () => ({
+  requireRole: () => (req: any, res: any, next: any) => next()
+}));
+
 // Mock PricingController
 const mockPricingController = {
   calculatePrice: jest.fn(),
@@ -395,7 +399,7 @@ describe('Pricing Routes', () => {
       });
 
       const response = await request(customApp)
-        .post('/api/v2/pricing/calculate')
+        .post('/v2/pricing/calculate')
         .send({});
 
       expect(response.status).toBe(200);
@@ -528,7 +532,7 @@ describe('Pricing Routes', () => {
         res.status(200).json({ success: true, data: { price: 100 } });
       });
 
-      const promises = Array(5).fill().map(() =>
+      const promises = Array.from({ length: 5 }, () =>
         request(app)
           .post('/v1/pricing/calculate')
           .send({ productId: 'prod-123' })

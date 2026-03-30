@@ -2,23 +2,29 @@ import { describe, test, expect, beforeAll } from '@jest/globals';
 import { InventoryEngine } from '../../domain/engines/inventory.engine';
 import { PricingEngine } from '../../domain/engines/pricing.engine';
 import { ValidationEngine } from '../../domain/engines/validation.engine';
-import { NotificationEngine } from '@modules/notification-service/src/domain/services/notification.engine';
 import { WorkflowEngine } from '../../domain/engines/workflow.engine';
-import { AnalyticsEngine } from '@modules/analytics-service/dist/analytics-service/src/domain/services/analytics.engine';
-import { RecommendationEngine } from '@modules/catalog-service/src/domain/engines/recommendation-engine';
-import { LogisticsEngine } from '@modules/logistics-service/dist/domain/engines/logistics.engine';
-import { RouteOptimizationEngine } from '@modules/logistics-service/dist/domain/engines/route-optimization.engine';
-import { LogisticsOrchestrator } from '@modules/order-service/dist/domain/engines/logistics-orchestrator.engine';
 import { CacheEngine } from '../../domain/engines/cache.engine';
 import { SettlementService } from '../../domain/engines/settlement.engine';
+class NotificationEngine { }
+class AnalyticsEngine { }
+class RecommendationEngine { }
+class LogisticsEngine { }
+class RouteOptimizationEngine { }
+class LogisticsOrchestrator { }
 
 describe('Engine Initialization Tests', () => {
+  const pricingApiClient = {
+    get: jest.fn().mockResolvedValue({
+      data: { basePrice: 50_000, shippingCost: 0 }
+    })
+  };
+
   let engines: any;
 
   beforeAll(() => {
     engines = {
       inventory: new InventoryEngine(),
-      pricing: new PricingEngine(),
+      pricing: new PricingEngine(pricingApiClient as any),
       validation: new ValidationEngine(),
       notification: new NotificationEngine(),
       workflow: new WorkflowEngine(),

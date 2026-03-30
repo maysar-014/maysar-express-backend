@@ -1,5 +1,5 @@
-import { Repository } from '@domain/interfaces';
-import { User } from '@domain/entities/user.entity';
+import { Repository } from '../../domain/interfaces';
+import { User } from '../../domain/entities/user.entity';
 
 /**
  * User Repository Interface

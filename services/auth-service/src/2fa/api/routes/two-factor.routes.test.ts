@@ -41,8 +41,8 @@ describe('createTwoFactorRouter', () => {
 
   it('forwards each route handler to corresponding controller method', () => {
     const router = createTwoFactorRouter(controller as any);
-    const req = { body: {}, params: {}, query: {} } as unknown as Request;
     const res = {} as Response;
+    const defaultReq = { body: {}, params: {}, query: {} } as unknown as Request;
 
     const buildReqForPath = (path: string): Request => {
       switch (path) {
@@ -57,35 +57,37 @@ describe('createTwoFactorRouter', () => {
         case '/backup-codes/regenerate':
           return { body: {}, params: {}, query: {} } as unknown as Request;
         default:
-          return req;
+          return defaultReq;
       }
     };
 
-    const invokeRoute = (path: string) => {
+    const invokeRoute = (path: string): Request => {
+      const req = buildReqForPath(path);
       const layer = (router as any).stack.find((entry: any) => entry.route?.path === path);
       expect(layer).toBeDefined();
-      layer.route.stack[layer.route.stack.length - 1].handle(buildReqForPath(path), res);
+      layer.route.stack[layer.route.stack.length - 1].handle(req, res);
+      return req;
     };
 
-    invokeRoute('/setup');
-    expect(controller.setup).toHaveBeenCalledWith(req, res);
+    const setupReq = invokeRoute('/setup');
+    expect(controller.setup).toHaveBeenCalledWith(setupReq, res);
 
-    invokeRoute('/verify-setup');
-    expect(controller.verifySetup).toHaveBeenCalledWith(req, res);
+    const verifySetupReq = invokeRoute('/verify-setup');
+    expect(controller.verifySetup).toHaveBeenCalledWith(verifySetupReq, res);
 
-    invokeRoute('/verify');
-    expect(controller.verifyLogin).toHaveBeenCalledWith(req, res);
+    const verifyReq = invokeRoute('/verify');
+    expect(controller.verifyLogin).toHaveBeenCalledWith(verifyReq, res);
 
-    invokeRoute('/backup');
-    expect(controller.verifyBackupCode).toHaveBeenCalledWith(req, res);
+    const backupReq = invokeRoute('/backup');
+    expect(controller.verifyBackupCode).toHaveBeenCalledWith(backupReq, res);
 
-    invokeRoute('/disable');
-    expect(controller.disable).toHaveBeenCalledWith(req, res);
+    const disableReq = invokeRoute('/disable');
+    expect(controller.disable).toHaveBeenCalledWith(disableReq, res);
 
-    invokeRoute('/backup-codes/regenerate');
-    expect(controller.regenerateBackupCodes).toHaveBeenCalledWith(req, res);
+    const regenerateReq = invokeRoute('/backup-codes/regenerate');
+    expect(controller.regenerateBackupCodes).toHaveBeenCalledWith(regenerateReq, res);
 
-    invokeRoute('/status');
-    expect(controller.getStatus).toHaveBeenCalledWith(req, res);
+    const statusReq = invokeRoute('/status');
+    expect(controller.getStatus).toHaveBeenCalledWith(statusReq, res);
   });
 });

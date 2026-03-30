@@ -10,6 +10,10 @@ const mockDebit = { execute: jest.fn() };
 const mockPlaceHold = { execute: jest.fn() };
 const mockReleaseHold = { execute: jest.fn() };
 const mockReverse = { execute: jest.fn() };
+const mockEventPublisher = {
+    publishWalletPaymentFailed: jest.fn(),
+    publishWalletPaymentProcessed: jest.fn()
+};
 
 describe('WalletTransactionSaga', () => {
     let saga: WalletTransactionSaga;
@@ -19,12 +23,12 @@ describe('WalletTransactionSaga', () => {
         saga = new WalletTransactionSaga(
             mockSagaLogRepo as any,
             'wallet-service',
-            mockCredit,
-            mockDebit,
-            mockPlaceHold,
-            mockReleaseHold,
-            mockReverse,
-            {} // outbox
+            mockCredit as any,
+            mockDebit as any,
+            mockPlaceHold as any,
+            mockReleaseHold as any,
+            mockReverse as any,
+            mockEventPublisher as any
         );
     });
 

@@ -12,6 +12,10 @@ const attachRedisErrorHandlers = (client: RedisClient, label?: string): void => 
 
   const prefix = label ? `redis:${label}` : 'redis';
 
+  if (typeof client.on !== 'function') {
+    return;
+  }
+
   client.on('error', (error) => {
     const message = error instanceof Error ? error.message : String(error);
     // Avoid throwing from error handlers; log and keep process alive.

@@ -6,6 +6,15 @@ import { Container } from 'inversify';
 import { TYPES } from '../../types';
 import { CampaignController } from '../controllers/campaign.controller';
 
+jest.mock('../middleware', () => ({
+    authenticate: () => (req: any, _res: any, next: any) => {
+        req.user = { userId: 'seller-1', role: 'seller' };
+        next();
+    },
+    authorize: () => (_req: any, _res: any, next: any) => next(),
+    validateRequest: () => (_req: any, _res: any, next: any) => next()
+}));
+
 describe('Campaign API', () => {
     let app: express.Application;
     let mockCreateUseCase: any;

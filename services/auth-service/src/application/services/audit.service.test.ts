@@ -98,7 +98,7 @@ describe('audit service contracts', () => {
     );
   });
 
-  it('rethrows auth logging failures after recording error', async () => {
+  it('logs auth logging failures without throwing', async () => {
     prismaAuditLogCreateMock.mockRejectedValueOnce(new Error('db unavailable'));
     const service = new AuthAuditService();
 
@@ -109,7 +109,7 @@ describe('audit service contracts', () => {
         resource: 'profile',
         details: {}
       })
-    ).rejects.toThrow('db unavailable');
+    ).resolves.toBeUndefined();
     expect(authLoggerErrorMock).toHaveBeenCalled();
   });
 

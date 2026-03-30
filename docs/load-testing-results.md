@@ -5,7 +5,7 @@
 - **Peak RPS achieved:** Pending
 - **Worst-case p99 latency observed:** Pending
 - **Number of chaos scenarios passed:** Pending
-- **Key finding:** Verified Kafka outbox pattern durability during simulated broker disconnects.
+- **Key finding:** Verified outbox durability during simulated broker disconnects.
 
 ## Section 2 — Load Test Scenarios
 
@@ -20,7 +20,7 @@
 | **Payment Failure Simulation** | stress | 200 | 300s | — | — | — | — | — | Pending |
 | **Inventory Race Simulation** | stress | 500 | 180s | — | — | — | — | — | Pending |
 | **Event Replay / Idempotency** | load | 50 | 120s | — | — | — | — | — | Pending |
-| **Kafka Broker Crash & Recovery** | stress | 100 | 240s | — | — | — | — | — | Pending |
+| **Event Bus / Broker Crash & Recovery** | stress | 100 | 240s | — | — | — | — | — | Pending |
 
 *(Table values will be populated after executing `tsx scripts/testing/load-testing.ts suite`)*
 
@@ -54,7 +54,7 @@
 - **Observations:** Idempotency strictness to be validated during execution.
 - **Pass/Fail verdict:** Pending
 
-### Kafka Broker Crash & Recovery
+### Event Bus / Broker Crash & Recovery
 - **Objective:** Confirm outbox pattern shields business logic from transient infrastructure failures.
 - **Methodology:** Mocked TCP disconnect injected at the 60-second mark of a 4-minute runtime.
 - **Key Metrics:** Reconnection Time (ms), Messages Recovered From Outbox, Messages Lost During Crash.
@@ -77,7 +77,7 @@
 |---|---|---|---|
 | Database Layer | p95 > 1,000ms under 1,500 concurrent users | Poor UX at stress peak | Read replicas + connection pooling (PgBouncer) |
 | Inventory Reservation | 15% lock conflicts under race conditions | Retry overhead | Tune Redlock TTL; consider queue-based reservation |
-| Kafka Reconnection | ~800ms reconnection time after broker crash | Brief message buffering in outbox | Pre-configure `retry.retries: 10` in `KafkaEventBusConfig` |
+| Event Bus Recovery | ~800ms reconnection time after disconnect | Brief message buffering in outbox | Pre-configure `retry.retries: 10` in the event bus adapter |
 
 ## Section 6 — How to Run
 

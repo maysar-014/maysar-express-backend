@@ -46,7 +46,7 @@ describe('campaign.validator', () => {
   it('parses valid create and update campaign payloads', () => {
     const parsed = CreateCampaignSchema.parse({
       name: 'Weekend Flash Sale',
-      type: 'FLASH_SALE',
+      type: 'DISCOUNT',
       startDate: '2026-03-10T00:00:00.000Z',
       endDate: '2026-03-12T00:00:00.000Z',
       pricingRules: [{ type: 'FIXED_DISCOUNT', value: 1000 }]
@@ -63,7 +63,7 @@ describe('campaign.validator', () => {
     expect(() =>
       CreateCampaignSchema.parse({
         name: 'x',
-        type: 'FLASH_SALE',
+        type: 'DISCOUNT',
         startDate: 'invalid-date',
         endDate: '2026-03-12T00:00:00.000Z',
         pricingRules: []

@@ -1,8 +1,9 @@
 import { ISmsRepository } from '../../domain/repositories/sms.repository';
 import { SmsMessage, SmsStatus } from '../../domain/entities/sms-message.entity';
-import { PrismaClient, Sms_Message, Sms_Status } from '@prisma/client';
-import { PhoneNumber } from '../../domain/value-objects/phone-number.value-object';
-import { MessageContent } from '../../domain/value-objects/message-content.value-object';
+import { PrismaClient, Prisma, Sms_Message, Sms_Status } from '@prisma/client';
+
+type SmsMessageWhere = Prisma.Sms_MessageWhereInput;
+type SmsMessageWrite = Prisma.Sms_MessageUncheckedCreateInput;
 
 /**
  * Prisma SMS Repository
@@ -16,7 +17,7 @@ export class PrismaSmsRepository implements ISmsRepository {
     private warnFallback(message: string): void {
         if (this.warnedFallback) return;
         this.warnedFallback = true;
-        console.warn(message);
+        process.stderr.write(`${message}\n`);
     }
 
     async create(message: SmsMessage): Promise<SmsMessage> {
@@ -114,7 +115,7 @@ export class PrismaSmsRepository implements ISmsRepository {
             status?: SmsStatus[];
         }
     ): Promise<number> {
-        const where: any = {
+        const where: SmsMessageWhere = {
             createdAt: {
                 gte: startTime,
                 lte: endTime
@@ -259,7 +260,7 @@ export class PrismaSmsRepository implements ISmsRepository {
 
     // ==================== Mapping Methods ====================
 
-    private toPrismaModel(message: SmsMessage): any {
+    private toPrismaModel(message: SmsMessage): SmsMessageWrite {
         return {
             id: message.getId(),
             phoneNumber: message.getPhoneNumber().getValue(),
@@ -275,7 +276,7 @@ export class PrismaSmsRepository implements ISmsRepository {
             deliveredAt: message.getDeliveredAt() || null,
             failedAt: message.getFailedAt() || null,
             lastError: message.getLastError() || null,
-            metadata: message.getMetadata() || null,
+            metadata: message.getMetadata() ? (message.getMetadata() as Prisma.InputJsonValue) : undefined,
             createdAt: message.getCreatedAt(),
             updatedAt: message.getUpdatedAt()
         };
@@ -297,7 +298,7 @@ export class PrismaSmsRepository implements ISmsRepository {
             deliveredAt: prismaModel.deliveredAt || undefined,
             failedAt: prismaModel.failedAt || undefined,
             lastError: prismaModel.lastError || undefined,
-            metadata: (prismaModel.metadata as Record<string, any>) || undefined,
+            metadata: prismaModel.metadata ? (prismaModel.metadata as Record<string, unknown>) : undefined,
             createdAt: prismaModel.createdAt,
             updatedAt: prismaModel.updatedAt
         });

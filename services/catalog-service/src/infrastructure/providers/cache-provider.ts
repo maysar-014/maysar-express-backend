@@ -143,10 +143,11 @@ export class MemoryCacheProvider implements CacheService {
   }
 
   async clear(): Promise<void> {
+    const clearedCount = this.cache.size;
     this.cache.clear();
     this.metrics.totalSize = 0;
     if (this.config.enableMetrics) {
-      this.metrics.deletes += this.cache.size;
+      this.metrics.deletes += clearedCount;
     }
   }
 
@@ -218,10 +219,10 @@ export class MemoryCacheProvider implements CacheService {
 
   private evictOldest(): void {
     let oldestKey: string | null = null;
-    let oldestTime = Date.now();
+    let oldestTime = Number.POSITIVE_INFINITY;
 
     for (const [key, entry] of this.cache) {
-      if (entry.lastAccessed < oldestTime) {
+      if (entry.lastAccessed <= oldestTime) {
         oldestTime = entry.lastAccessed;
         oldestKey = key;
       }

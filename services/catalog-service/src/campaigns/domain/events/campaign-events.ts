@@ -1,4 +1,4 @@
-import { CampaignType, CampaignStatus } from '../types/campaign.types';
+import { CampaignType } from '../types/campaign.types';
 
 export abstract class CampaignDomainEvent {
     public readonly eventId: string;

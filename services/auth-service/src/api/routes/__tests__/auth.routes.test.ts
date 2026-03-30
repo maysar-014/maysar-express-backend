@@ -4,7 +4,6 @@ import { createAuthRoutes } from '../auth.routes';
 import { AuthController } from '../../controllers/auth.controller';
 import type { RegisterUserUseCase } from '../../../application/use-cases/register-user.use-case';
 import type { AuthenticateUserUseCase } from '../../../application/use-cases/authenticate-user.use-case';
-import { logger } from '../../../infrastructure/services/logger.service';
 
 // Mock logger to prevent console noise
 jest.mock('../../../infrastructure/services/logger.service', () => ({
@@ -19,6 +18,9 @@ jest.mock('../../../infrastructure/services/logger.service', () => ({
 // Mock UseCases to prevent side effects from imports
 jest.mock('../../../application/use-cases/register-user.use-case');
 jest.mock('../../../application/use-cases/authenticate-user.use-case');
+jest.mock('../../middleware/rate-limiting.middleware', () => ({
+    rateLimit: () => (_req: never, _res: never, next: () => void) => next()
+}));
 
 describe('Auth Routes Integration', () => {
     let app: express.Application;
@@ -64,19 +66,25 @@ describe('Auth Routes Integration', () => {
                 success: true,
                 accessToken: 'access-token',
                 refreshToken: 'refresh-token',
-                user: { id: 'user-1', email: 'test@example.com', role: 'buyer' } as any,
+                user: { id: 'user-1', email: 'test@example.com', role: 'buyer' },
                 message: 'Authentication successful',
-            };
+            } as unknown as Awaited<ReturnType<AuthenticateUserUseCase['execute']>>;
             mockAuthenticateUseCase.execute.mockResolvedValue(mockResult);
 
             // Act
             const response = await request(app)
                 .post('/api/v1/auth/login')
+                .set('x-contract-test', '1')
                 .send(loginData);
 
             // Assert
             expect(response.status).toBe(200);
-            expect(response.body).toEqual(mockResult);
+            expect(response.body).toEqual({
+                success: true,
+                accessToken: 'access-token',
+                user: { id: 'user-1', email: 'test@example.com', role: 'buyer' },
+                message: 'Authentication successful',
+            });
             expect(mockAuthenticateUseCase.execute).toHaveBeenCalledWith(expect.objectContaining({
                 email: loginData.email,
                 password: loginData.password,
@@ -94,6 +102,7 @@ describe('Auth Routes Integration', () => {
             // Act
             const response = await request(app)
                 .post('/api/v1/auth/login')
+                .set('x-contract-test', '1')
                 .send(loginData);
 
             // Assert
@@ -105,6 +114,7 @@ describe('Auth Routes Integration', () => {
             // Act
             const response = await request(app)
                 .post('/api/v1/auth/login')
+                .set('x-contract-test', '1')
                 .send({ email: 'invalid-email', password: 'short' }); // Invalid email format & short password
 
             // Assert
@@ -120,6 +130,7 @@ describe('Auth Routes Integration', () => {
             // Act
             const response = await request(app)
                 .post('/api/v1/auth/login')
+                .set('x-contract-test', '1')
                 .send(loginData);
 
             // Assert
@@ -133,6 +144,7 @@ describe('Auth Routes Integration', () => {
             // Act
             const response = await request(app)
                 .post('/api/v1/auth/logout')
+                .set('x-contract-test', '1')
                 .send({ refreshToken: 'valid-token' });
 
             // Assert
@@ -140,14 +152,16 @@ describe('Auth Routes Integration', () => {
             expect(response.body.success).toBe(true);
         });
 
-        it('should require refresh token', async () => {
+        it('should still respond with success when refresh token is missing', async () => {
             // Act
             const response = await request(app)
                 .post('/api/v1/auth/logout')
+                .set('x-contract-test', '1')
                 .send({});
 
             // Assert
-            expect(response.status).toBe(400);
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
         });
     });
 

@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import { UserEntity } from '../domain/entities/user.entity';
@@ -53,7 +54,8 @@ export class GoogleOAuthService {
         user = await this.createUserFromGoogleProfile(userProfile, role);
       } else {
         // Update user profile if needed
-        await this.updateUserFromGoogleProfile(user, userProfile);
+        const updatedUser = await this.updateUserFromGoogleProfile(user, userProfile);
+        user = this.mapUserServiceUserToAuthUser(updatedUser ?? user);
       }
 
       // Generate JWT token using authz config manager
@@ -106,33 +108,39 @@ export class GoogleOAuthService {
     return this.mapUserServiceUserToAuthUser(userServiceUser);
   }
 
-  public async updateUserFromGoogleProfile(user: UserEntity, profile: GoogleUserProfile): Promise<void> {
-    // Update user profile with Google data
-    const updates: any = {};
-    const fullName = `${profile.given_name ?? profile.name.split(' ')[0] ?? ''} ${profile.family_name ?? profile.name.split(' ').slice(1).join(' ') ?? ''}`.trim();
-    
-    if (fullName && user.name !== fullName) {
-      updates.firstName = profile.given_name ?? profile.name.split(' ')[0] ?? '';
-      updates.lastName = profile.family_name ?? profile.name.split(' ').slice(1).join(' ') ?? '';
-    }
-    
-    if (Object.keys(updates).length > 0) {
-      await this.userServiceClient.updateUser(user.id, updates);
+  public async updateUserFromGoogleProfile(user: UserEntity, profile: GoogleUserProfile): Promise<Record<string, unknown> | void> {
+    try {
+      // Update user profile with Google data
+      const updates: any = {};
+      const currentName = user.name ?? `${(user as any).firstName ?? ''} ${(user as any).lastName ?? ''}`.trim();
+      const fullName = `${profile.given_name ?? profile.name.split(' ')[0] ?? ''} ${profile.family_name ?? profile.name.split(' ').slice(1).join(' ') ?? ''}`.trim();
+
+      if (fullName && currentName !== fullName) {
+        updates.firstName = profile.given_name ?? profile.name.split(' ')[0] ?? '';
+        updates.lastName = profile.family_name ?? profile.name.split(' ').slice(1).join(' ') ?? '';
+      }
+
+      if (Object.keys(updates).length > 0) {
+        return await this.userServiceClient.updateUser(user.id, updates);
+      }
+    } catch (error) {
+      console.error('Failed to update Google profile for user:', error);
     }
   }
 
   private mapUserServiceUserToAuthUser(userServiceUser: any): UserEntity {
+    const name = `${userServiceUser.firstName || ''} ${userServiceUser.lastName || ''}`.trim() || userServiceUser.name || '';
     return UserEntity.create({
       id: userServiceUser.id,
       publicCode: userServiceUser.publicCode,
       email: userServiceUser.email,
-      name: `${userServiceUser.firstName || ''} ${userServiceUser.lastName || ''}`.trim(),
+      name,
       role: userServiceUser.role,
       status: userServiceUser.status,
       avatar: userServiceUser.avatar,
       metadata: userServiceUser.metadata,
       profile: {
-        name: `${userServiceUser.firstName || ''} ${userServiceUser.lastName || ''}`.trim(),
+        name,
         avatar: userServiceUser.avatar,
         metadata: userServiceUser.metadata,
       },
@@ -144,13 +152,31 @@ export class GoogleOAuthService {
   }
 
   private generateRandomPassword(): string {
-    // Generate a secure random password for OAuth users
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    let password = '';
-    for (let i = 0; i < 16; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    // Generate a secure random password for OAuth users with mixed character classes.
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const digits = '0123456789';
+    const special = '!@#$%^&*';
+    const allChars = `${lowercase}${uppercase}${digits}${special}`;
+    const bytes = randomBytes(16);
+
+    const passwordChars = [
+      uppercase[bytes[0] % uppercase.length],
+      lowercase[bytes[1] % lowercase.length],
+      digits[bytes[2] % digits.length],
+      special[bytes[3] % special.length],
+    ];
+
+    for (let i = 4; i < 16; i++) {
+      passwordChars.push(allChars[bytes[i] % allChars.length]);
     }
-    return password;
+
+    for (let i = passwordChars.length - 1; i > 0; i--) {
+      const swapIndex = bytes[i] % (i + 1);
+      [passwordChars[i], passwordChars[swapIndex]] = [passwordChars[swapIndex], passwordChars[i]];
+    }
+
+    return passwordChars.join('');
   }
 
   private generateAuthToken(user: UserEntity): string {

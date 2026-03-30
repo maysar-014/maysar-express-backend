@@ -7,6 +7,7 @@ describe('IEnablerRepository contract', () => {
     const repo: IEnablerRepository = {
       findById: jest.fn().mockResolvedValue(enabler),
       findByUserId: jest.fn().mockResolvedValue(enabler),
+      findByCode: jest.fn().mockResolvedValue(enabler),
       findByStatus: jest.fn().mockResolvedValue([enabler]),
       save: jest.fn().mockResolvedValue(undefined),
       update: jest.fn().mockResolvedValue(undefined)
@@ -14,6 +15,7 @@ describe('IEnablerRepository contract', () => {
 
     expect(await repo.findById('enabler-1')).toBe(enabler);
     expect(await repo.findByUserId('user-1')).toBe(enabler);
+    expect(await repo.findByCode('code-1')).toBe(enabler);
     expect((await repo.findByStatus('ACTIVE' as never)).length).toBe(1);
   });
 });

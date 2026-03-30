@@ -58,7 +58,7 @@ export class CategoryUpdatedEvent extends CategoryDomainEvent {
     eventId: string,
     aggregateId: CategoryId,
     public readonly sellerId: SellerId,
-    public readonly changes: Record<string, any>,
+    public readonly changes: Record<string, unknown>,
     public readonly updatedBy: string,
     occurredAt?: Date
   ) {

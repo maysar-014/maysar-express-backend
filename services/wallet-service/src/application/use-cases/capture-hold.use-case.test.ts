@@ -80,7 +80,8 @@ describe('CaptureHoldUseCase', () => {
     expect(wallet.captureHold).toHaveBeenCalledWith(hold);
     expect(transactionRepository.save).toHaveBeenCalledTimes(1);
     expect(idempotencyService.storeResult).toHaveBeenCalledWith(expect.anything(), result);
-    expect(result).toEqual({ captured: true, transactionId: '123e4567-e89b-12d3-a456-426614174000' });
+    expect(result.captured).toBe(true);
+    expect(result.transactionId).toMatch(/^wal_tra_/);
     expect(eventPublisher.publishHoldCaptured).toHaveBeenCalledWith(
       expect.objectContaining({ holdId: 'h1', walletId: 'w1', amount: 20 })
     );

@@ -8,9 +8,7 @@ import { createMaintenanceRoutes } from './api/routes/maintenance.routes';
 import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 export function createServer(container: Container) {
-    const server = new InversifyExpressServer(container);
-
-    server.setConfig((app) => {
+    const configureApp = (app: express.Application) => {
         app.use(correlationMiddleware());
         app.use(express.json());
 
@@ -21,9 +19,28 @@ export function createServer(container: Container) {
         });
 
         app.use('/api/v1/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
-    });
+    };
 
-    return server.build();
+    if (process.env.NODE_ENV === 'test') {
+        const app = express();
+        configureApp(app);
+        return app;
+    }
+
+    const server = new InversifyExpressServer(container);
+
+    server.setConfig(configureApp);
+
+    try {
+        return server.build();
+    } catch (error) {
+        if (error instanceof Error && error.message.includes('No controllers have been found')) {
+            const app = express();
+            configureApp(app);
+            return app;
+        }
+        throw error;
+    }
 }
 
 

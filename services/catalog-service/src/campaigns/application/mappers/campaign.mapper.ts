@@ -5,6 +5,67 @@ import { CampaignCondition } from '../../domain/entities/campaign-condition.enti
 import { CampaignSchedule } from '../../domain/value-objects/campaign-schedule.value-object';
 import { CampaignMetadata } from '../../domain/value-objects/campaign-metadata.value-object';
 import { PricingRuleValue } from '../../domain/value-objects/pricing-rule-value.value-object';
+import { CampaignStatus, CampaignType, ConditionType, ICampaignMetadata, RuleType } from '../../domain/types/campaign.types';
+
+type CampaignPersistenceRuleRecord = {
+    id: string;
+    ruleType: RuleType;
+    value: number;
+    priority?: number;
+    conditions?: Record<string, unknown>;
+    createdAt?: Date;
+};
+
+type CampaignPersistenceConditionRecord = {
+    id: string;
+    type: ConditionType;
+    operator: string;
+    value: unknown;
+    createdAt?: Date;
+};
+
+type CampaignPersistenceReadRecord = {
+    id: string;
+    name: string;
+    description?: string;
+    type: CampaignType;
+    status: CampaignStatus;
+    startDate: Date;
+    endDate?: Date;
+    timezone: string;
+    sellerId: string;
+    createdBy: string;
+    metadata?: ICampaignMetadata;
+    pricingRules?: CampaignPersistenceRuleRecord[];
+    conditions?: CampaignPersistenceConditionRecord[];
+    products?: Array<{ productId: string }>;
+    categories?: Array<{ categoryId: string }>;
+    createdAt: Date;
+    updatedAt: Date;
+};
+
+type CampaignNestedWrite<T> = {
+    deleteMany: Record<string, never>;
+    create: T[];
+};
+
+type CampaignPersistenceWriteRecord = {
+    id: string;
+    name: string;
+    description?: string;
+    type: CampaignType;
+    status: CampaignStatus;
+    startDate: Date;
+    endDate?: Date;
+    timezone: string;
+    sellerId: string;
+    createdBy: string;
+    metadata?: ICampaignMetadata;
+    pricingRules: CampaignNestedWrite<CampaignPersistenceRuleRecord>;
+    conditions: CampaignNestedWrite<CampaignPersistenceConditionRecord>;
+    products: CampaignNestedWrite<{ productId: string; originalPrice: unknown; campaignPrice: unknown }>;
+    categories: CampaignNestedWrite<{ categoryId: string }>;
+};
 
 export class CampaignMapper {
     static toDto(campaign: Campaign): CampaignDto {
@@ -28,7 +89,7 @@ export class CampaignMapper {
         };
     }
 
-    static toPersistence(campaign: Campaign): any {
+    static toPersistence(campaign: Campaign): CampaignPersistenceWriteRecord {
         return {
             id: campaign.getId(),
             name: campaign.getName(),
@@ -79,21 +140,21 @@ export class CampaignMapper {
         };
     }
 
-    static toDomain(record: any): Campaign {
+    static toDomain(record: CampaignPersistenceReadRecord): Campaign {
         const schedule = CampaignSchedule.create(record.startDate, record.endDate, record.timezone);
-        const metadata = CampaignMetadata.create(record.metadata as any);
+        const metadata = CampaignMetadata.create(record.metadata);
 
-        const pricingRules = record.pricingRules?.map((ruleRecord: any) => {
+        const pricingRules = record.pricingRules?.map((ruleRecord: CampaignPersistenceRuleRecord) => {
             const ruleValue = PricingRuleValue.create(ruleRecord.ruleType, Number(ruleRecord.value));
-            return CampaignPricingRule.create(ruleRecord.id, ruleValue, ruleRecord.priority, ruleRecord.conditions as any);
+            return CampaignPricingRule.create(ruleRecord.id, ruleValue, ruleRecord.priority, ruleRecord.conditions);
         }) || [];
 
-        const conditions = record.conditions?.map((condRecord: any) => {
+        const conditions = record.conditions?.map((condRecord: CampaignPersistenceConditionRecord) => {
             return CampaignCondition.create(condRecord.id, condRecord.type, condRecord.operator, condRecord.value);
         }) || [];
 
-        const productIds = record.products?.map((p: any) => p.productId) || [];
-        const categoryIds = record.categories?.map((c: any) => c.categoryId) || [];
+        const productIds = record.products?.map((p) => p.productId) || [];
+        const categoryIds = record.categories?.map((c) => c.categoryId) || [];
 
         return Campaign.reconstitute(
             record.id,

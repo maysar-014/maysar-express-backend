@@ -78,6 +78,9 @@ jest.mock('@shared/middleware/idempotency', () => ({
     middleware: () => passthrough
   }))
 }));
+jest.mock('@shared/middleware/auth-context.middleware', () => ({
+  requireAuth: passthrough
+}));
 jest.mock('../../infrastructure/container', () => ({
   DependencyContainer: {
     getInstance: jest.fn(() => ({}))
@@ -94,6 +97,7 @@ jest.mock(
 jest.mock('../validators/delivery.validator', () => ({
   DeliveryValidator: {
     createDelivery: () => createValidation(),
+    getDelivery: () => createValidation(),
     getDeliveries: () => createValidation(),
     updateDeliveryStatus: () => createValidation()
   }

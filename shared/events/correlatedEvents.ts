@@ -18,7 +18,7 @@ export class EventCorrelationService {
       traceContext?: TraceContext;
     }
   ): CorrelatedEventEnvelope {
-    const correlationId = context?.correlationId || uuidv4();
+    const correlationId = context?.correlationId || context?.traceContext?.correlationId || uuidv4();
     const eventId = uuidv4();
     const timestamp = new Date();
     const producer = process.env.SERVICE_NAME || 'unknown-service';
@@ -29,6 +29,9 @@ export class EventCorrelationService {
       data: payload,
       eventId,
       correlationId,
+      causationId: context?.causationId,
+      traceId: context?.traceContext?.traceId,
+      spanId: context?.traceContext?.spanId,
       timestamp,
       metadata: {
         eventId,
@@ -107,7 +110,7 @@ export class EventChainTracker {
     chain.events.push({
       eventId: eventId || '',
       eventType,
-      causationId,
+      causationId: causationId || event.causationId,
       timestamp,
       traceId: event.traceId,
       spanId: event.spanId

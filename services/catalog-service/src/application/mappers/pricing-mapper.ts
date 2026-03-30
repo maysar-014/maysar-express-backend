@@ -4,7 +4,6 @@
  * Handles pricing rules, calculations, and analytics transformations
  */
 
-import { Price } from '../../domain/value-objects/monetary.value-object';
 import {
   UpdatePricingCommandDto,
   BulkUpdatePricingCommandDto,
@@ -16,144 +15,184 @@ import {
   PricingAnalyticsDto
 } from '../dto/pricing-dto';
 
+type PricingRuleDomain = Omit<PricingRuleDto, 'metadata'> & {
+  metadata?: Record<string, unknown>;
+};
+
+type CalculatePriceRequestDomain = {
+  productId: string;
+  basePrice: number;
+  pricingRules: PricingRuleDomain[];
+  customerContext?: CalculatePriceRequestDto['customerContext'];
+  context?: CalculatePriceRequestDto['context'];
+};
+
 /**
  * Pricing Mapper
  * Handles transformations between pricing domain objects and DTOs
  * Includes validation and performance optimizations
  */
 export class PricingMapper {
+  private static requireObject(value: unknown, label: string): Record<string, unknown> {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      throw new Error(`${label} is invalid`);
+    }
+
+    return value as Record<string, unknown>;
+  }
+
   /**
    * Map pricing rule DTO to domain pricing rule
    */
-  static ruleDtoToDomain(dto: PricingRuleDto): any {
+  static ruleDtoToDomain(dto: PricingRuleDto): PricingRuleDomain {
+    const input = this.requireObject(dto, 'Pricing rule DTO') as unknown as PricingRuleDto;
+
     return {
-      ruleId: dto.ruleId,
-      ruleType: dto.ruleType,
-      name: dto.name,
-      description: dto.description,
-      value: dto.value,
-      conditions: dto.conditions,
-      priority: dto.priority,
-      isActive: dto.isActive,
-      validFrom: dto.validFrom,
-      validTo: dto.validTo
+      ruleId: input.ruleId,
+      ruleType: input.ruleType,
+      name: input.name,
+      description: input.description,
+      value: input.value,
+      conditions: input.conditions,
+      priority: input.priority,
+      isActive: input.isActive,
+      validFrom: input.validFrom,
+      validTo: input.validTo
     };
   }
 
   /**
    * Map domain pricing rule to DTO
    */
-  static ruleDomainToDto(domain: any): PricingRuleDto {
+  static ruleDomainToDto(domain: unknown): PricingRuleDto {
+    const input = this.requireObject(domain, 'Pricing rule') as Partial<PricingRuleDto> & {
+      metadata?: Record<string, unknown>;
+    };
+
+    if (typeof input.ruleId !== 'string' || typeof input.ruleType !== 'string' || typeof input.name !== 'string' || typeof input.value !== 'number' || typeof input.priority !== 'number') {
+      throw new Error('Pricing rule is invalid');
+    }
+
     return {
-      ruleId: domain.ruleId,
-      ruleType: domain.ruleType,
-      name: domain.name,
-      description: domain.description,
-      value: domain.value,
-      conditions: domain.conditions,
-      priority: domain.priority,
-      isActive: domain.isActive,
-      validFrom: domain.validFrom,
-      validTo: domain.validTo,
-      metadata: domain.metadata
+      ruleId: input.ruleId as string,
+      ruleType: input.ruleType as PricingRuleDto['ruleType'],
+      name: input.name as string,
+      description: typeof input.description === 'string' ? input.description : undefined,
+      value: input.value as number,
+      conditions: Array.isArray(input.conditions) ? input.conditions : undefined,
+      priority: input.priority as number,
+      isActive: Boolean(input.isActive),
+      validFrom: input.validFrom as Date | undefined,
+      validTo: input.validTo as Date | undefined,
+      metadata: (input.metadata as PricingRuleDto['metadata']) ?? {}
     };
   }
 
   /**
    * Map price calculation request to domain format
    */
-  static calculatePriceRequestToDomain(dto: CalculatePriceRequestDto): any {
+  static calculatePriceRequestToDomain(dto: CalculatePriceRequestDto): CalculatePriceRequestDomain {
+    const input = this.requireObject(dto, 'Pricing calculation request') as unknown as CalculatePriceRequestDto;
+
     return {
-      productId: dto.productId,
-      basePrice: dto.basePrice,
-      pricingRules: dto.pricingRules.map(rule => this.ruleDtoToDomain(rule)),
-      customerContext: dto.customerContext,
-      context: dto.context
+      productId: input.productId,
+      basePrice: input.basePrice,
+      pricingRules: Array.isArray(input.pricingRules) ? input.pricingRules.map(rule => this.ruleDtoToDomain(rule as PricingRuleDto)) : [],
+      customerContext: input.customerContext,
+      context: input.context
     };
   }
 
   /**
    * Map price calculation result to DTO
    */
-  static calculatePriceResultToDto(domain: any): CalculatePriceResultDto {
+  static calculatePriceResultToDto(domain: unknown): CalculatePriceResultDto {
+    const input = this.requireObject(domain, 'Pricing calculation result') as unknown as CalculatePriceResultDto;
+
     return {
-      productId: domain.productId,
-      basePrice: domain.basePrice,
-      finalPrice: domain.finalPrice,
-      currency: domain.currency,
-      appliedRules: domain.appliedRules,
-      totalDiscount: domain.totalDiscount,
-      totalDiscountPercent: domain.totalDiscountPercent,
-      breakdown: domain.breakdown,
-      metadata: domain.metadata
+      productId: input.productId,
+      basePrice: input.basePrice,
+      finalPrice: input.finalPrice,
+      currency: input.currency,
+      appliedRules: input.appliedRules,
+      totalDiscount: input.totalDiscount,
+      totalDiscountPercent: input.totalDiscountPercent,
+      breakdown: input.breakdown,
+      metadata: input.metadata
     };
   }
 
   /**
    * Map pricing update result to DTO
    */
-  static updatePricingResultToDto(domain: any): UpdatePricingResultDto {
+  static updatePricingResultToDto(domain: unknown): UpdatePricingResultDto {
+    const input = this.requireObject(domain, 'Pricing update result') as unknown as UpdatePricingResultDto;
+
     return {
-      productId: domain.productId,
-      success: domain.success,
-      previousPrice: domain.previousPrice,
-      newPrice: domain.newPrice,
-      changeAmount: domain.changeAmount,
-      changePercent: domain.changePercent,
-      pricingStrategy: domain.pricingStrategy,
-      effectiveDate: domain.effectiveDate,
-      expiryDate: domain.expiryDate,
-      updatedAt: domain.updatedAt,
-      updatedBy: domain.updatedBy,
-      reason: domain.reason,
-      validationResults: domain.validationResults
+      productId: input.productId,
+      success: input.success,
+      previousPrice: input.previousPrice,
+      newPrice: input.newPrice,
+      changeAmount: input.changeAmount,
+      changePercent: input.changePercent,
+      pricingStrategy: input.pricingStrategy,
+      effectiveDate: input.effectiveDate,
+      expiryDate: input.expiryDate,
+      updatedAt: input.updatedAt,
+      updatedBy: input.updatedBy,
+      reason: input.reason,
+      validationResults: input.validationResults
     };
   }
 
   /**
    * Map bulk pricing update result to DTO
    */
-  static bulkUpdatePricingResultToDto(domain: any): BulkUpdatePricingResultDto {
+  static bulkUpdatePricingResultToDto(domain: unknown): BulkUpdatePricingResultDto {
+    const input = this.requireObject(domain, 'Bulk pricing update result') as unknown as BulkUpdatePricingResultDto;
+
     return {
-      operationId: domain.operationId,
-      totalProducts: domain.totalProducts,
-      successfulUpdates: domain.successfulUpdates,
-      failedUpdates: domain.failedUpdates,
-      skippedProducts: domain.skippedProducts,
-      pricingStrategy: domain.pricingStrategy,
-      pricingValue: domain.pricingValue,
-      results: domain.results.map((result: any) => this.updatePricingResultToDto(result)),
-      errors: domain.errors,
-      warnings: domain.warnings,
-      pricingImpact: domain.pricingImpact,
-      metadata: domain.metadata
+      operationId: input.operationId,
+      totalProducts: input.totalProducts,
+      successfulUpdates: input.successfulUpdates,
+      failedUpdates: input.failedUpdates,
+      skippedProducts: input.skippedProducts,
+      pricingStrategy: input.pricingStrategy,
+      pricingValue: input.pricingValue,
+      results: input.results.map(result => this.updatePricingResultToDto(result)),
+      errors: input.errors,
+      warnings: input.warnings,
+      pricingImpact: input.pricingImpact,
+      metadata: input.metadata
     };
   }
 
   /**
    * Map pricing analytics to DTO
    */
-  static pricingAnalyticsToDto(domain: any): PricingAnalyticsDto {
+  static pricingAnalyticsToDto(domain: unknown): PricingAnalyticsDto {
+    const input = this.requireObject(domain, 'Pricing analytics') as unknown as PricingAnalyticsDto;
+
     return {
-      period: domain.period,
-      summary: domain.summary,
-      rulePerformance: domain.rulePerformance,
-      strategyBreakdown: domain.strategyBreakdown,
-      temporalTrends: domain.temporalTrends
+      period: input.period,
+      summary: input.summary,
+      rulePerformance: input.rulePerformance,
+      strategyBreakdown: input.strategyBreakdown,
+      temporalTrends: input.temporalTrends
     };
   }
 
   /**
    * Batch mapping for pricing rules
    */
-  static rulesToDtoBatch(domainRules: any[]): PricingRuleDto[] {
+  static rulesToDtoBatch(domainRules: unknown[]): PricingRuleDto[] {
     return domainRules.map(rule => this.ruleDomainToDto(rule));
   }
 
   /**
    * Batch mapping for pricing results
    */
-  static pricingResultsToDtoBatch(domainResults: any[]): CalculatePriceResultDto[] {
+  static pricingResultsToDtoBatch(domainResults: unknown[]): CalculatePriceResultDto[] {
     return domainResults.map(result => this.calculatePriceResultToDto(result));
   }
 

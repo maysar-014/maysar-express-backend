@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Module } from '../../src/core/module.interface';
-import { createBusinessRoutes, createLegacyBusinessRoutes } from './src/api/routes/business.routes';
+import { createBusinessRoutes, createLegacyBusinessRoutes, createPublicBusinessRoutes } from './src/api/routes/business.routes';
 import { createHealthRoutes } from './src/api/routes/health.routes';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
@@ -15,6 +15,7 @@ export const BusinessRegistryModule: Module = {
         const router = Router();
         router.use('/health', createHealthRoutes());
         router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
+        router.use('/public', createPublicBusinessRoutes());
         router.use('/businesses', createBusinessRoutes());
         router.use('/', createLegacyBusinessRoutes());
         router.use(errorMiddleware);

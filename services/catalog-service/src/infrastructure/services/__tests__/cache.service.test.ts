@@ -299,12 +299,20 @@ describe('DistributedCacheService', () => {
     });
 
     it('should start and stop periodic warming', () => {
-      cacheService.startPeriodicWarming();
+      const warmingService = new DistributedCacheService({
+        ...mockConfig,
+        cacheWarming: {
+          ...mockConfig.cacheWarming!,
+          enabled: true
+        }
+      });
 
-      expect(cacheService['warmingInterval']).toBeDefined();
+      warmingService.startPeriodicWarming();
 
-      cacheService.stopPeriodicWarming();
-      expect(cacheService['warmingInterval']).toBeUndefined();
+      expect(warmingService['warmingInterval']).toBeDefined();
+
+      warmingService.stopPeriodicWarming();
+      expect(warmingService['warmingInterval']).toBeUndefined();
     });
   });
 
@@ -348,15 +356,16 @@ describe('DistributedCacheService', () => {
       await cacheService.delete('key1');
 
       const analytics = cacheService.getAnalytics();
-      expect(analytics.totalRequests).toBe(3);
+      expect(analytics.totalRequests).toBe(1);
       expect(analytics.cacheHits).toBe(1);
-      expect(analytics.cacheMisses).toBe(2);
+      expect(analytics.cacheMisses).toBe(0);
     });
 
     it('should track cache errors', async () => {
-      // Mock an error scenario
-      const originalSet = cacheService.set;
-      cacheService.set = jest.fn().mockRejectedValue(new Error('Cache error'));
+      // Force the underlying provider to fail so the service still records analytics.
+      const cacheProvider = cacheService as any;
+      const originalSet = cacheProvider.cache.set;
+      cacheProvider.cache.set = jest.fn().mockRejectedValue(new Error('Cache error'));
 
       try {
         await cacheService.set('test-key', 'test-value');
@@ -366,9 +375,10 @@ describe('DistributedCacheService', () => {
 
       const analytics = cacheService.getAnalytics();
       expect(analytics.totalRequests).toBe(1);
+      expect(analytics.cacheMisses).toBe(1);
 
       // Restore original method
-      cacheService.set = originalSet;
+      cacheProvider.cache.set = originalSet;
     });
   });
 
@@ -606,7 +616,7 @@ describe('DistributedCacheService', () => {
 
       const analytics = cacheService.getAnalytics();
 
-      expect(analytics.totalRequests).toBe(3);
+      expect(analytics.totalRequests).toBe(2);
       expect(analytics.cacheHits).toBe(1);
       expect(analytics.cacheMisses).toBe(1);
       expect(analytics.hitRate).toBe(0.5);

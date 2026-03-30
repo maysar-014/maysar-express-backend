@@ -39,6 +39,7 @@ import { EnablerAnalyticsSaga } from './application/sagas/EnablerAnalyticsSaga';
 // API
 import { AnalyticsController } from './api/controllers/AnalyticsController';
 import { createAnalyticsRoutes } from './api/routes/analyticsRoutes';
+import sellerSlaRoutes from './api/routes/sellerSlaRoutes';
 
 async function bootstrap() {
   const app = express();
@@ -105,6 +106,7 @@ async function bootstrap() {
 
   // Mount Routes
   app.use('/api', analyticsRoutes);
+  app.use('/api', sellerSlaRoutes);
 
   // Health Check
   app.get('/health', (req, res) => {

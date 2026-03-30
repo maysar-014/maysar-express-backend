@@ -31,11 +31,11 @@ export interface ProductMatchAudit {
     matchedProductId?: string;
     matchLevel: string;
     matchScore: number;
-    matchingCriteria: any;
+    matchingCriteria: Record<string, unknown>;
     decision: string;
     decidedBy: string;
     sellerId: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
     createdAt: Date;
 }
 
@@ -43,7 +43,7 @@ export interface MatchConfirmation {
     id: string;
     auditId: string;
     sellerId: string;
-    candidateProducts: any;
+    candidateProducts: unknown[];
     status: string;
     sellerChoice?: string;
     expiresAt: Date;

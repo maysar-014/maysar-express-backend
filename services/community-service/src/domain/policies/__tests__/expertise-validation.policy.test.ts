@@ -1,10 +1,9 @@
 import { ExpertiseValidationPolicy } from '../expertise-validation.policy';
-import { ExpertiseLevel } from '../../value-objects/expertise-badge.value-object';
-import { ReputationTier } from '../../engines/reputation-engine';
+import { ReputationTier } from '../../entities/business-profile.entity';
 
 describe('ExpertiseValidationPolicy', () => {
     it('should validate beginner expertise', () => {
-        const result = ExpertiseValidationPolicy.canEarnBadge(ExpertiseLevel.BEGINNER, { 
+        const result = ExpertiseValidationPolicy.canEarnBadge('BEGINNER', { 
             peerEndorsements: 0, 
             trainingCompletions: 0, 
             businessVerified: false, 
@@ -15,7 +14,7 @@ describe('ExpertiseValidationPolicy', () => {
     });
 
     it('should reject expert level without requirements', () => {
-        const result = ExpertiseValidationPolicy.canEarnBadge(ExpertiseLevel.EXPERT, { 
+        const result = ExpertiseValidationPolicy.canEarnBadge('EXPERT', { 
             peerEndorsements: 0, 
             trainingCompletions: 0, 
             businessVerified: false, 

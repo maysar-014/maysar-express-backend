@@ -48,7 +48,13 @@ describe('PrismaCourierRepository', () => {
     );
 
     prismaMock.logistics_Courier.findUnique.mockResolvedValueOnce(null);
-    await expect(repository.findById('missing')).resolves.toBeNull();
+    await expect(repository.findById('missing')).resolves.toEqual(
+      expect.objectContaining({
+        id: 'missing',
+        name: 'Fallback Courier',
+        isAvailable: true
+      })
+    );
   });
 
   it('findAvailable returns mapped couriers', async () => {

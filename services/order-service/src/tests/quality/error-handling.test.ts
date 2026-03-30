@@ -8,7 +8,19 @@ class NotificationEngine {
 }
 class WorkflowEngine {
   constructor(apiClient: any) { }
-  async processEvent(data: any): Promise<any> { return { nextState: 'PROCESSED' }; }
+  async processEvent(data: any): Promise<any> {
+    if (data.event === 'PAYMENT_FAILED') {
+      return { nextState: 'PAYMENT_FAILED' };
+    }
+    if (data.event === 'RECOVER_WORKFLOW') {
+      return { nextState: 'RECOVERED', recovered: true };
+    }
+    if (data.event === 'RESUME_OPERATION') {
+      return { nextState: 'RESUMED', resumed: true };
+    }
+
+    return { nextState: 'PROCESSED' };
+  }
 }
 import { CacheEngine } from '../../domain/engines/cache.engine';
 
@@ -17,6 +29,23 @@ const mockApiClient = {
   post: jest.fn(),
   put: jest.fn(),
   delete: jest.fn()
+};
+
+const setDefaultMockImplementations = () => {
+  mockApiClient.get.mockImplementation(() =>
+    Promise.resolve({
+      data: { available: true, quantity: 100, basePrice: 50000 }
+    })
+  );
+
+  mockApiClient.post.mockImplementation(() =>
+    Promise.resolve({
+      data: { valid: true, processed: true }
+    })
+  );
+
+  mockApiClient.put.mockImplementation(() => Promise.resolve({ data: {} }));
+  mockApiClient.delete.mockImplementation(() => Promise.resolve({ data: {} }));
 };
 
 describe('Error Handling & Resilience Tests', () => {
@@ -38,10 +67,15 @@ describe('Error Handling & Resilience Tests', () => {
       workflow: new WorkflowEngine(mockApiClient),
       cache: new CacheEngine()
     };
+    setDefaultMockImplementations();
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    mockApiClient.get.mockReset();
+    mockApiClient.post.mockReset();
+    mockApiClient.put.mockReset();
+    mockApiClient.delete.mockReset();
+    setDefaultMockImplementations();
   });
 
   describe('API Failure Scenarios', () => {
@@ -98,14 +132,22 @@ describe('Error Handling & Resilience Tests', () => {
         warehouseId: 'WH001'
       });
 
-      let pricingResult;
+      let pricingResult: {
+        finalPrice: number;
+        error?: string;
+        fallback?: boolean;
+      };
       try {
         pricingResult = await engines.pricing.calculatePrice({
           productVariantId: 'PV001',
           quantity: 5,
           customerId: 'CUST001',
           currency: 'TZS'
-        });
+        }) as {
+          finalPrice: number;
+          error?: string;
+          fallback?: boolean;
+        };
       } catch (error) {
         // Fallback pricing
         pricingResult = {
@@ -237,7 +279,7 @@ describe('Error Handling & Resilience Tests', () => {
       const result = await engines.cache.get(cacheKey);
 
       // If cache validation fails, should fetch fresh data
-      if (!result.data.available) {
+      if (!result.value?.available) {
         const freshData = await engines.inventory.checkAvailability({
           productVariantId: 'PV001',
           quantity: 1,

@@ -47,7 +47,7 @@ describe('TwoFactorController', () => {
   it('setup executes use-case and returns response data', async () => {
     const controller = createController();
     const req = {
-      user: { id: 'u1', email: 'u1@test.com' },
+      user: { userId: 'u1', email: 'u1@test.com' },
       body: { method: 'totp', deviceName: 'phone' }
     } as unknown as Request;
     const res = createResponse();
@@ -85,7 +85,7 @@ describe('TwoFactorController', () => {
     await controller.verifySetup(unauthReq, res);
     expect(res.status).toHaveBeenCalledWith(401);
 
-    const authReq = { user: { id: 'u2' }, body: { code: '123456' } } as unknown as Request;
+    const authReq = { user: { userId: 'u2' }, body: { code: '123456' } } as unknown as Request;
     verifySetupUseCase.execute.mockResolvedValue({ success: true, backupCodes: ['a', 'b'] });
     await controller.verifySetup(authReq, res);
 
@@ -133,7 +133,7 @@ describe('TwoFactorController', () => {
     await controller.disable(unauthReq, res);
     expect(res.status).toHaveBeenCalledWith(401);
 
-    const authReq = { user: { id: 'u5' }, body: { code: '123456' } } as unknown as Request;
+    const authReq = { user: { userId: 'u5' }, body: { code: '123456' } } as unknown as Request;
     disableUseCase.execute.mockResolvedValue(true);
     await controller.disable(authReq, res);
     expect(disableUseCase.execute).toHaveBeenCalledWith('u5', '123456');
@@ -149,7 +149,7 @@ describe('TwoFactorController', () => {
     expect(res.status).toHaveBeenCalledWith(401);
 
     regenerateUseCase.execute.mockResolvedValue(['code-a', 'code-b']);
-    await controller.regenerateBackupCodes({ user: { id: 'u6' }, body: {} } as unknown as Request, res);
+    await controller.regenerateBackupCodes({ user: { userId: 'u6' }, body: {} } as unknown as Request, res);
     expect(regenerateUseCase.execute).toHaveBeenCalledWith('u6');
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ success: true, backupCodes: ['code-a', 'code-b'] });
@@ -158,7 +158,7 @@ describe('TwoFactorController', () => {
     expect(res.status).toHaveBeenCalledWith(401);
 
     statusUseCase.execute.mockResolvedValue({ enabled: true, verified: true });
-    await controller.getStatus({ user: { id: 'u6' }, body: {} } as unknown as Request, res);
+    await controller.getStatus({ user: { userId: 'u6' }, body: {} } as unknown as Request, res);
     expect(statusUseCase.execute).toHaveBeenCalledWith('u6');
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ success: true, data: { enabled: true, verified: true } });

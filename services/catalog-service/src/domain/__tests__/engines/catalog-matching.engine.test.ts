@@ -32,7 +32,7 @@ describe('CatalogMatchingEngine', () => {
                 categoryId: 'cat-1',
             };
 
-            const existingProduct = new Product(
+            const existingProduct = new (Product as any)(
                 new ProductId('prod-1'),
                 new SellerId('seller-1'),
                 'iPhone 15',
@@ -69,7 +69,7 @@ describe('CatalogMatchingEngine', () => {
                 categoryId: 'cat-1',
             };
 
-            const existingProduct = new Product(
+            const existingProduct = new (Product as any)(
                 new ProductId('prod-2'),
                 new SellerId('seller-1'),
                 'Galaxy S24',
@@ -112,7 +112,7 @@ describe('CatalogMatchingEngine', () => {
                 categoryId: 'cat-1',
             };
 
-            const existingProduct = new Product(
+            const existingProduct = new (Product as any)(
                 new ProductId('prod-3'),
                 new SellerId('seller-1'),
                 'iPhone 15',
@@ -149,17 +149,17 @@ describe('CatalogMatchingEngine', () => {
                 categoryId: 'cat-1',
             };
 
-            const existingProduct = new Product(
+            const existingProduct = new (Product as any)(
                 new ProductId('prod-4'),
                 new SellerId('seller-1'),
-                'iPhone 15 Pro Max',
+                'iPhone 15 Pro',
                 'Description',
                 new ProductStatusValue(ProductStatus.PUBLISHED),
                 ProductType.PHYSICAL,
                 ProductVisibility.PUBLIC,
                 new CategoryId('cat-1'),
                 'Apple',
-                'iPhone 15 Pro Max',
+                'iPhone 15 Pro',
                 [createMockVariant()]
             );
 
@@ -177,7 +177,7 @@ describe('CatalogMatchingEngine', () => {
                 categoryId: 'cat-1',
             };
 
-            const existingProduct = new Product(
+            const existingProduct = new (Product as any)(
                 new ProductId('prod-5'),
                 new SellerId('seller-1'),
                 'Galaxy S24',
@@ -219,7 +219,7 @@ describe('CatalogMatchingEngine', () => {
                 categoryId: 'cat-1',
             };
 
-            const existingProduct = new Product(
+            const existingProduct = new (Product as any)(
                 new ProductId('prod-6'),
                 new SellerId('seller-1'),
                 'MacBook Pro',
@@ -239,3 +239,5 @@ describe('CatalogMatchingEngine', () => {
         });
     });
 });
+
+

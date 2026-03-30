@@ -14,13 +14,19 @@ describe('ApproveEnablerUseCase', () => {
     it('should approve enabler', async () => {
         mockRepository.findById.mockResolvedValue({
             id: 'e1',
+            userId: 'user-1',
             status: 'PENDING',
+            enablerCode: null,
+            enablerCodeShort: null,
+            businessName: 'Test Enabler',
+            tier: 'BRONZE',
+            commissionRate: 0.15,
             approve: jest.fn(),
             assignEnablerCode: jest.fn(),
-            toPlainObject: () => ({ verificationStatus: 'pending' })
+            toPlainObject: () => ({ verificationStatus: 'pending', createdAt: new Date() })
         });
         mockRepository.findByCode.mockResolvedValue(null);
-        await useCase.execute('e1', 'admin-1');
+        await useCase.execute('e1', 'admin-1', ['email_verified', 'phone_verified']);
         expect(mockRepository.update).toHaveBeenCalled();
     });
 });

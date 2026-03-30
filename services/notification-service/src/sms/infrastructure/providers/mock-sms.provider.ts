@@ -1,13 +1,20 @@
 import { ISmsProvider } from './sms-provider.interface';
 import { ProviderResponse } from '../../domain/value-objects/provider-response.value-object';
 
+type SentMessage = {
+    phoneNumber: string;
+    message: string;
+    sentAt: Date;
+    status: 'sent' | 'delivered';
+};
+
 /**
  * Mock SMS Provider
  * Simulates SMS sending for local/dev without external API calls.
  */
 export class MockSmsProvider implements ISmsProvider {
     private readonly name = 'mock';
-    private readonly sentMessages: Map<string, any> = new Map();
+    private readonly sentMessages: Map<string, SentMessage> = new Map();
     private shouldFail: boolean = false;
     private failureRate: number = 0;
 
@@ -36,7 +43,7 @@ export class MockSmsProvider implements ISmsProvider {
         });
 
         if (process.env.NODE_ENV !== 'test') {
-            console.log(`[MockSmsProvider] Sent SMS to ${phoneNumber}: ${message.substring(0, 50)}...`);
+            process.stdout.write(`[MockSmsProvider] Sent SMS to ${phoneNumber}: ${message.substring(0, 50)}...\n`);
         }
 
         return ProviderResponse.createSuccess(providerMessageId, {
@@ -84,7 +91,7 @@ export class MockSmsProvider implements ISmsProvider {
         };
     }
 
-    getSentMessages(): Map<string, any> {
+    getSentMessages(): Map<string, SentMessage> {
         return new Map(this.sentMessages);
     }
 

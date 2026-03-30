@@ -87,6 +87,7 @@ describe('PrismaUserRepository more methods', () => {
     expect(typeof counts['active']).toBe('number');
 
     // getUserRegistrationStats
+    prisma.user_User.groupBy.mockResolvedValueOnce([{ role: 'buyer', _count: { role: 1 } }]);
     const stats = await repo.getUserRegistrationStats(new Date('2020-01-01'), new Date('2020-12-31'));
     expect(stats.totalRegistrations).toBeDefined();
 

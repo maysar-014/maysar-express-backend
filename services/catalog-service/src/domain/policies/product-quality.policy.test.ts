@@ -1,5 +1,5 @@
-import { ProductQualityPolicy } from '../product-quality.policy';
-import { QualityScore } from '../../value-objects/product-quality-score.value-object';
+import { ProductQualityPolicy } from './product-quality.policy';
+import { QualityScore } from '../value-objects/product-quality-score.value-object';
 
 describe('ProductQualityPolicy', () => {
   describe('computeScore', () => {
@@ -171,7 +171,7 @@ describe('ProductQualityPolicy', () => {
 
     it('should sum to 100', () => {
       const weights = ProductQualityPolicy.getSignalWeights();
-      const total = Object.values(weights).reduce((sum, w) => sum + w, 0);
+      const total = Object.values(weights).reduce((sum: number, w: number) => sum + w, 0);
       expect(total).toBe(100);
     });
   });

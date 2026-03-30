@@ -1,4 +1,3 @@
-﻿// @ts-nocheck
 import { BaseEventHandler } from './index';
 import { ICampaignRepository } from '../../domain/interfaces';
 
@@ -26,9 +25,9 @@ export class CategoryDeletedHandler extends BaseEventHandler {
 
         const campaigns = await this.campaignRepository.findAll({ categoryId });
 
-        for (const campaign of campaigns) {
-            campaign.removeCategory(categoryId);
-            await this.campaignRepository.save(campaign);
+        for (const campaign of campaigns as Array<{ removeCategory?: (id: string) => void }>) {
+            campaign.removeCategory?.(categoryId);
+            await this.campaignRepository.save(campaign as never);
         }
     }
 }

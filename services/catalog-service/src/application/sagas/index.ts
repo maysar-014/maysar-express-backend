@@ -5,12 +5,12 @@
  */
 
 // Core Saga Interfaces and Base Classes
-export interface Saga {
+export interface Saga<TContext extends Record<string, unknown> = Record<string, unknown>, TState extends Record<string, unknown> = Record<string, unknown>> {
   readonly sagaId: string;
   readonly sagaType: string;
-  start(context: any): Promise<void>;
-  handleEvent(event: any): Promise<void>;
-  getState(): any;
+  start(context: TContext): Promise<void>;
+  handleEvent(event: unknown): Promise<void>;
+  getState(): TState;
   isCompleted(): boolean;
   compensate(): Promise<void>;
 }
@@ -19,31 +19,31 @@ export interface Saga {
  * Base Saga Implementation
  * Provides common saga orchestration functionality
  */
-export abstract class BaseSaga implements Saga {
+export abstract class BaseSaga<TContext extends Record<string, unknown> = Record<string, unknown>, TState extends Record<string, unknown> = Record<string, unknown>> implements Saga<TContext, TState> {
   abstract readonly sagaId: string;
   abstract readonly sagaType: string;
 
-  protected state: any = {};
+  protected state: TState = {} as TState;
   protected steps: Array<{
     id: string;
-    operation: () => Promise<any>;
+    operation: () => Promise<unknown>;
     compensation: () => Promise<void>;
     completed: boolean;
     compensated: boolean;
   }> = [];
 
-  async start(context: any): Promise<void> {
+  async start(context: TContext): Promise<void> {
     this.initializeState(context);
     await this.executeNextStep();
   }
 
-  async handleEvent(event: any): Promise<void> {
+  async handleEvent(event: unknown): Promise<void> {
     // Handle external events that might affect saga progress
     await this.processEvent(event);
   }
 
-  getState(): any {
-    return { ...this.state };
+  getState(): TState {
+    return { ...this.state } as TState;
   }
 
   isCompleted(): boolean {
@@ -61,11 +61,11 @@ export abstract class BaseSaga implements Saga {
     }
   }
 
-  protected abstract initializeState(context: any): void;
+  protected abstract initializeState(context: TContext): void;
   protected abstract executeNextStep(): Promise<void>;
-  protected abstract processEvent(event: any): Promise<void>;
+  protected abstract processEvent(event: unknown): Promise<void>;
 
-  protected addStep(id: string, operation: () => Promise<any>, compensation: () => Promise<void>): void {
+  protected addStep(id: string, operation: () => Promise<unknown>, compensation: () => Promise<void>): void {
     this.steps.push({
       id,
       operation,

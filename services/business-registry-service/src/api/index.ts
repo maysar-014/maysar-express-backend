@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createBusinessRoutes } from './routes/business.routes';
+import { createBusinessRoutes, createPublicBusinessRoutes } from './routes/business.routes';
 import { createHealthRoutes } from './routes/health.routes';
 import { createMaintenanceRoutes } from './routes/maintenance.routes';
 import { requestLoggerMiddleware } from './middleware/request-logger.middleware';
@@ -12,6 +12,7 @@ export function createApiRouter(): Router {
   router.use(requestLoggerMiddleware);
 
   router.use('/health', createHealthRoutes());
+  router.use('/api/business-registry/public', createPublicBusinessRoutes());
   router.use('/api/businesses', createBusinessRoutes());
   router.use('/api/v1/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
 

@@ -43,15 +43,16 @@ describe('OrderFulfillmentSaga', () => {
     });
 
     describe('StockReservation Step', () => {
-        it('should publish StockReservation.Command', async () => {
+        it('should publish StockReservation.Command.v1', async () => {
             const steps = (saga as unknown as { defineSteps: () => Array<{ name: string; execute: (p: unknown, c: string) => Promise<void> }> }).defineSteps();
             const step = steps.find((s) => s.name === 'StockReservation');
 
             if (step) await step.execute(payload, 'saga-1');
 
             expect(saga.publishCommand).toHaveBeenCalledWith(
-                'StockReservation.Command',
+                'StockReservation.Command.v1',
                 expect.objectContaining({
+                    sagaId: 'saga-1',
                     orderId: 'o1',
                     items: payload.items
                 }),
@@ -59,30 +60,34 @@ describe('OrderFulfillmentSaga', () => {
             );
         });
 
-        it('should compensate with StockRelease.Command', async () => {
+        it('should compensate with StockRelease.Command.v1', async () => {
             const steps = (saga as unknown as { defineSteps: () => Array<{ name: string; compensate: (p: unknown, c: string) => Promise<void> }> }).defineSteps();
             const step = steps.find((s) => s.name === 'StockReservation');
 
             if (step) await step.compensate(payload, 'saga-1');
 
             expect(saga.publishCommand).toHaveBeenCalledWith(
-                'StockRelease.Command',
-                expect.objectContaining({ orderId: 'o1' }),
+                'StockRelease.Command.v1',
+                expect.objectContaining({
+                    sagaId: 'saga-1',
+                    orderId: 'o1'
+                }),
                 'saga-1'
             );
         });
     });
 
     describe('Payment Step', () => {
-        it('should publish Payment.Command', async () => {
+        it('should publish Payment.Command.v1', async () => {
             const steps = (saga as unknown as { defineSteps: () => Array<{ name: string; execute: (p: unknown, c: string) => Promise<void> }> }).defineSteps();
             const step = steps.find((s) => s.name === 'Payment');
 
             if (step) await step.execute(payload, 'saga-1');
 
             expect(saga.publishCommand).toHaveBeenCalledWith(
-                'Payment.Command',
+                'Payment.Command.v1',
                 expect.objectContaining({
+                    sagaId: 'saga-1',
                     orderId: 'o1',
                     amount: 100,
                     buyerId: 'b1'
@@ -94,7 +99,8 @@ describe('OrderFulfillmentSaga', () => {
 
     describe('Event Handlers', () => {
         it('should complete StockReservation step on success', async () => {
-            saga.completeStep = jest.fn();
+            const completeStep = jest.fn();
+            (saga as unknown as { completeStep: jest.Mock }).completeStep = completeStep;
 
             await saga.handleStockReserved('saga-1');
 
@@ -103,17 +109,18 @@ describe('OrderFulfillmentSaga', () => {
                 'OrderFulfillmentSaga.StockReserved',
                 expect.any(Function)
             );
-            expect(saga.completeStep).toHaveBeenCalledWith('saga-1', 'StockReservation');
+            expect(completeStep).toHaveBeenCalledWith('saga-1', 'StockReservation');
         });
 
         it('should skip handler when event already processed', async () => {
-            saga.completeStep = jest.fn();
+            const completeStep = jest.fn();
+            (saga as unknown as { completeStep: jest.Mock }).completeStep = completeStep;
             (mockEventIdempotency.withIdempotency as jest.Mock).mockResolvedValueOnce(null);
 
             const result = await saga.handleStockReserved('saga-1');
 
-            expect(result).toBeNull();
-            expect(saga.completeStep).not.toHaveBeenCalled();
+            expect(result).toBeUndefined();
+            expect(completeStep).not.toHaveBeenCalled();
         });
     });
 });

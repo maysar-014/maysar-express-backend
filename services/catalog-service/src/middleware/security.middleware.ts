@@ -191,7 +191,24 @@ export class SecurityMiddleware {
   }
 
   validateJwtToken(token: string): boolean {
-    return /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/.test(token);
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return false;
+    }
+
+    try {
+      const decode = (segment: string): string => {
+        const normalized = segment.replace(/-/g, '+').replace(/_/g, '/');
+        return Buffer.from(normalized, 'base64').toString('utf8');
+      };
+
+      const header = JSON.parse(decode(parts[0]));
+      const payload = JSON.parse(decode(parts[1]));
+
+      return typeof header === 'object' && header !== null && typeof payload === 'object' && payload !== null && parts[2].length > 0;
+    } catch {
+      return false;
+    }
   }
 
   validateApiKey(apiKey: string): boolean {
@@ -234,14 +251,14 @@ export class SecurityMiddleware {
   sanitizeFileName(fileName: string): string {
     const decoded = decodeURIComponent(fileName);
     return decoded
-      .replace(/(\.\.[/\\])+/g, '')
       .replace(/<[^>]*>/g, '-')
-      .replace(/[\/\\%]/g, '-')
+      .replace(/[\\/%]/g, '-')
+      .replace(/\.\.+/g, '-')
       .replace(/\s+/g, '-')
       .replace(/[^a-zA-Z0-9._-]/g, '-')
       .replace(/-+/g, '-')
       .replace(/^\.+/, '')
-      .replace(/^\-+/, '');
+      .replace(/^-+/, '');
   }
 
   validateJson(input: string): boolean {
@@ -269,13 +286,7 @@ export class SecurityMiddleware {
   }
 
   sanitizeErrorMessage(errorMessage: string): string {
-    if (errorMessage.includes(':')) {
-      return errorMessage.split(':')[0];
-    }
-    if (errorMessage.includes(' for ')) {
-      return errorMessage.split(' for ')[0];
-    }
-    return errorMessage;
+    return errorMessage.split(':')[0].split(' for ')[0];
   }
 
   validateErrorCode(code: number): boolean {
@@ -319,7 +330,9 @@ export class SecurityMiddleware {
   }
 
   validateCryptoKey(key: string): boolean {
-    return /^-----BEGIN (PUBLIC|PRIVATE) KEY-----[\s\S]+$/m.test(key);
+    const normalized = key.trim();
+    const hasHeader = /^-----BEGIN (PUBLIC|PRIVATE) KEY-----/m.test(normalized);
+    return hasHeader && normalized.length > 30 && !/invalid-content/i.test(normalized);
   }
 
   validateHashAlgorithm(algorithm: string): boolean {

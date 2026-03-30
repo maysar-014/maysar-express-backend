@@ -59,7 +59,7 @@ describe('EventPublisherService', () => {
       constructor(public readonly id: string) {}
     }
 
-    await service.publish(new CampaignLaunched('camp-1'), tx);
+    await service.publish(new CampaignLaunched('camp-1') as any, tx as never);
 
     expect(tx.campaign_OutboxEvent.create).toHaveBeenCalledTimes(1);
     expect(prisma.campaign_OutboxEvent.create).not.toHaveBeenCalled();

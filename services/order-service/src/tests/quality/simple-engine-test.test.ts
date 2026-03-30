@@ -13,12 +13,18 @@ class LogisticsOrchestrator { }
 class SettlementService { }
 
 describe('Engine Initialization Tests', () => {
+  const pricingApiClient = {
+    get: jest.fn().mockResolvedValue({
+      data: { basePrice: 50_000, shippingCost: 0 }
+    })
+  };
+
   let engines: any;
 
   beforeAll(() => {
     engines = {
       inventory: new InventoryEngine(),
-      pricing: new PricingEngine(),
+      pricing: new PricingEngine(pricingApiClient as any),
       validation: new ValidationEngine(),
       notification: new NotificationEngine(),
       workflow: new WorkflowEngine(),

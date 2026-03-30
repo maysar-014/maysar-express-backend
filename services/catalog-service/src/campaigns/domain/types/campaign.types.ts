@@ -37,5 +37,5 @@ export enum OperatorType {
 }
 
 export interface ICampaignMetadata {
-    [key: string]: any;
+    [key: string]: unknown;
 }

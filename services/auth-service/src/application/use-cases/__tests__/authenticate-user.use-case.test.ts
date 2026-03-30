@@ -27,7 +27,7 @@ describe('AuthenticateUserUseCase', () => {
     const mockUser = (overrides = {}) => ({
         id: 'user-1',
         email: 'test@example.com',
-        password: 'hashed_password',
+        password: 'password',
         status: UserStatus.ACTIVE,
         role: 'buyer',
         failedLoginAttempts: 0,
@@ -253,7 +253,8 @@ describe('AuthenticateUserUseCase', () => {
             });
 
             expect(result.success).toBe(true);
-            expect(result.user.role).toBe('buyer');
+            expect(result.user).toBeDefined();
+            expect(result.user?.role).toBe('buyer');
         });
 
         it('should authenticate seller role', async () => {
@@ -267,7 +268,8 @@ describe('AuthenticateUserUseCase', () => {
             });
 
             expect(result.success).toBe(true);
-            expect(result.user.role).toBe('seller');
+            expect(result.user).toBeDefined();
+            expect(result.user?.role).toBe('seller');
         });
 
         it('should authenticate admin role', async () => {
@@ -281,7 +283,8 @@ describe('AuthenticateUserUseCase', () => {
             });
 
             expect(result.success).toBe(true);
-            expect(result.user.role).toBe('admin');
+            expect(result.user).toBeDefined();
+            expect(result.user?.role).toBe('admin');
         });
     });
 });

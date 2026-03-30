@@ -11,6 +11,7 @@ describe('BusinessRegistrationPolicy', () => {
       businessType: BusinessType.SOLE_PROPRIETORSHIP,
       registrationNumber: RegistrationNumber.create('TZ-DAR-12345'),
       ownerId: 'owner-1',
+      industry: ['retail'],
       status: BusinessStatus.ACTIVE,
       verificationStatus: VerificationStatus.VERIFIED,
       complianceStatus: ComplianceStatus.COMPLIANT,

@@ -87,14 +87,20 @@ export class PayoutRepository implements IPayoutRepository {
     }
 
     private mapToEntity(data: any): Payout {
+        const amount = Number(data.amount ?? 0);
+        const fee = Number(data.fee ?? 0);
+        const netAmount = Number(
+            data.netAmount ?? (Number.isFinite(amount) && Number.isFinite(fee) ? amount - fee : 0)
+        );
+
         return new Payout({
             id: data.id,
-            userId: data.userId,
-            userRole: data.userRole,
-            amount: Number(data.amount),
+            userId: data.userId ?? data.recipientId ?? '',
+            userRole: data.userRole ?? 'seller',
+            amount,
             currency: data.currency,
-            method: data.method as PayoutMethod,
-            status: data.status as PayoutStatus,
+            method: PayoutRepository.normalizeMethod(data.method),
+            status: PayoutRepository.normalizeStatus(data.status),
             bankDetails: data.bankDetails ? JSON.parse(this.piiService.decrypt(data.bankDetails)) : undefined,
             mobileMoneyDetails: data.mobileMoneyDetails as any,
             reference: data.reference,
@@ -102,11 +108,25 @@ export class PayoutRepository implements IPayoutRepository {
             completedAt: data.completedAt,
             failedAt: data.failedAt,
             failureReason: data.failureReason,
-            fee: Number(data.fee),
-            netAmount: Number(data.netAmount),
+            fee,
+            netAmount,
             metadata: data.metadata as any,
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt,
+            createdAt: data.createdAt ?? new Date(),
+            updatedAt: data.updatedAt ?? new Date(),
         });
+    }
+
+    private static normalizeMethod(method: unknown): PayoutMethod {
+        const normalized = String(method ?? PayoutMethod.BANK_TRANSFER).trim().replace(/-/g, '_').toUpperCase();
+        return Object.values(PayoutMethod).includes(normalized as PayoutMethod)
+            ? (normalized as PayoutMethod)
+            : PayoutMethod.BANK_TRANSFER;
+    }
+
+    private static normalizeStatus(status: unknown): PayoutStatus {
+        const normalized = String(status ?? PayoutStatus.PENDING).trim().toUpperCase();
+        return Object.values(PayoutStatus).includes(normalized as PayoutStatus)
+            ? (normalized as PayoutStatus)
+            : PayoutStatus.PENDING;
     }
 }

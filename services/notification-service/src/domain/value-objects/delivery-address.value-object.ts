@@ -24,10 +24,11 @@ export class DeliveryAddress {
       case 'email':
         if (!EMAIL_REGEX.test(trimmed)) throw new Error('Invalid email format');
         return new DeliveryAddress(trimmed.toLowerCase(), type);
-      case 'phone':
+      case 'phone': {
         const normalized = trimmed.replace(/\s+/g, '');
         if (!PHONE_REGEX.test(normalized)) throw new Error('Invalid phone number format');
         return new DeliveryAddress(normalized, type);
+      }
       case 'device_token':
         if (trimmed.length < DEVICE_TOKEN_MIN || trimmed.length > DEVICE_TOKEN_MAX) {
           throw new Error(`Device token must be between ${DEVICE_TOKEN_MIN} and ${DEVICE_TOKEN_MAX} characters`);

@@ -26,7 +26,7 @@ export function validateRequest<T>(
                     error: {
                         code: 'VALIDATION_ERROR',
                         message: 'Request validation failed',
-                        details: error.issues.map((err: any) => ({
+                        details: error.issues.map((err) => ({
                             field: err.path.join('.'),
                             message: err.message
                         }))

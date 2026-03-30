@@ -1,5 +1,4 @@
-import { DiscussionThread, ThreadStatus } from '../discussion-thread.entity';
-import { ExpertiseLevel } from '../../value-objects/expertise-badge.value-object';
+import { DiscussionThread, ThreadStatus, ExpertiseLevel } from '../discussion-thread.entity';
 
 describe('DiscussionThread', () => {
     it('should create thread', () => {

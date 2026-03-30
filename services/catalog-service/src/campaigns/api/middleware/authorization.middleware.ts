@@ -4,11 +4,18 @@
 
 import { Request, Response, NextFunction } from 'express';
 
-export function authorize(allowedRoles: string[]) {
-    return (req: Request, res: Response, next: NextFunction) => {
-        const user = (req as any).user;
+type CampaignAuthenticatedRequest = Request & {
+    user?: {
+        role?: string;
+    };
+};
 
-        if (!user || !allowedRoles.includes(user.role)) {
+export function authorize(allowedRoles: string[]) {
+    return (req: CampaignAuthenticatedRequest, res: Response, next: NextFunction) => {
+        const user = req.user;
+        const role = user?.role;
+
+        if (!user || !role || !allowedRoles.includes(role)) {
             return res.status(403).json({
                 success: false,
                 error: {

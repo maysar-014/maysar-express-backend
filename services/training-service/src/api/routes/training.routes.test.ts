@@ -4,6 +4,11 @@ import { createTrainingRoutes } from './training.routes';
 
 describe('createTrainingRoutes', () => {
   it('wires training workflow endpoints to controller methods', async () => {
+    const authHeaders = {
+      'x-contract-test': '1',
+      'x-user-id': 'usr_learner-1',
+      'x-user-roles': 'learner'
+    };
     const controller = {
       start: jest.fn((req, res) => res.status(201).json({ route: 'start' })),
       complete: jest.fn((req, res) => res.status(200).json({ route: 'complete', id: req.params.id })),
@@ -27,13 +32,22 @@ describe('createTrainingRoutes', () => {
 
     const startRes = await request(app)
       .post('/training/start')
+      .set(authHeaders)
       .send({ learnerId: 'learner-1', learnerRole: 'courier', moduleId: 'module-1' });
-    const startInvalidRes = await request(app).post('/training/start').send({});
-    const completeRes = await request(app).post('/training/record-1/complete').send({ score: 88 });
-    const progressRes = await request(app).get('/training/progress/learner-1');
-    const eligibilityRes = await request(app).get('/training/eligibility/learner-1');
-    const availableRes = await request(app).get('/training/available?learnerId=learner-1&learnerRole=courier');
-    const trackRes = await request(app).post('/training/record-1/progress').send({ completionPercentage: 30 });
+    const startInvalidRes = await request(app).post('/training/start').set(authHeaders).send({});
+    const completeRes = await request(app)
+      .post('/training/record-1/complete')
+      .set(authHeaders)
+      .send({ score: 88 });
+    const progressRes = await request(app).get('/training/progress/learner-1').set(authHeaders);
+    const eligibilityRes = await request(app).get('/training/eligibility/learner-1').set(authHeaders);
+    const availableRes = await request(app)
+      .get('/training/available?learnerId=learner-1&learnerRole=courier')
+      .set(authHeaders);
+    const trackRes = await request(app)
+      .post('/training/record-1/progress')
+      .set(authHeaders)
+      .send({ completionPercentage: 30 });
 
     expect(startRes.status).toBe(201);
     expect(startInvalidRes.status).toBe(400);

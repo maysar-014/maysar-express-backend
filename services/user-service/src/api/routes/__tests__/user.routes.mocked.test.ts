@@ -58,7 +58,13 @@ describe('User Routes Integration', () => {
     it('should create user successfully', async () => {
       const response = await request(app)
         .post('/api/users')
-        .send({ email: 'test@example.com', password: 'password123' });
+        .send({
+          email: 'test@example.com',
+          phoneNumber: '+255712345678',
+          firstName: 'Test',
+          lastName: 'User',
+          role: 'buyer'
+        });
 
       expect(response.status).toBe(201);
       expect(response.body).toEqual({ id: 'user-1' });
@@ -68,10 +74,12 @@ describe('User Routes Integration', () => {
   describe('GET /api/users/:id', () => {
     it('should get user by id', async () => {
       const response = await request(app)
-        .get('/api/users/123');
+        .get('/api/users/usr_01ARZ3NDEKTSV4RRFFQ69G5FAV')
+        .set('x-contract-test', '1')
+        .set('x-user-id', 'usr_01ARZ3NDEKTSV4RRFFQ69G5FAV');
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ id: '123' });
+      expect(response.body).toEqual({ id: 'usr_01ARZ3NDEKTSV4RRFFQ69G5FAV' });
     });
   });
 });

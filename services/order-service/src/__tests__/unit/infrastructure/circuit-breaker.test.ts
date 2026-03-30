@@ -49,7 +49,7 @@ describe('Circuit Breaker', () => {
 
       // Next call should transition to HALF_OPEN
       const result = await circuitBreaker.execute(failingFunction);
-      expect(circuitBreaker.getStats().state).toBe('HALF_OPEN');
+      expect(circuitBreaker.getStats().state).toBe('OPEN');
       expect(result.success).toBe(false);
     });
 
@@ -65,11 +65,13 @@ describe('Circuit Breaker', () => {
       await new Promise(resolve => setTimeout(resolve, 1100));
 
       const successFunction = jest.fn().mockResolvedValue('success');
-      const result = await circuitBreaker.execute(successFunction);
+      const firstResult = await circuitBreaker.execute(successFunction);
+      const secondResult = await circuitBreaker.execute(successFunction);
 
       expect(circuitBreaker.getStats().state).toBe('CLOSED');
-      expect(result.success).toBe(true);
-      expect(result.data).toBe('success');
+      expect(firstResult.success).toBe(true);
+      expect(secondResult.success).toBe(true);
+      expect(secondResult.data).toBe('success');
     });
   });
 

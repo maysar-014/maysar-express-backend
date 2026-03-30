@@ -14,7 +14,7 @@ describe('Payment Entity', () => {
     describe('Creation', () => {
         it('should create valid payment with PENDING status', () => {
             const payment = new Payment(validData);
-            expect(payment.id).toBe('pay-123');
+            expect(payment.id).toBe(validData.id);
             expect(payment.status).toBe(PaymentStatus.PENDING);
             expect(payment.amount).toBe(5000);
             expect(payment.method).toBe(PaymentMethod.MOBILE_MONEY);

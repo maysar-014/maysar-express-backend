@@ -6,13 +6,17 @@ jest.mock('../../../infrastructure/services/logger.service');
 
 describe('requestLogger', () => {
     let req: Partial<Request>;
-    let res: Partial<Response>;
+    let res: Partial<Response> & { on: jest.Mock };
     let next: NextFunction;
     let finishCallback: () => void;
 
     beforeEach(() => {
         req = { method: 'POST', originalUrl: '/api/test' };
-        res = { on: jest.fn((event, cb) => { if (event === 'finish') finishCallback = cb; }) };
+        res = {
+            on: jest.fn((event: string, cb: () => void) => {
+                if (event === 'finish') finishCallback = cb;
+            })
+        } as Partial<Response> & { on: jest.Mock };
         next = jest.fn();
         jest.clearAllMocks();
     });

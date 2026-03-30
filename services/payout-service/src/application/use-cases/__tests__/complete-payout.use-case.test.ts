@@ -1,6 +1,6 @@
 import { CompletePayoutUseCase } from '../complete-payout.use-case';
 import { IPayoutRepository } from '../../../domain/ports/payout.repository.port';
-import { Payout } from '../../../domain/entities/payout.entity';
+import { Payout, PayoutStatus } from '../../../domain/entities/payout.entity';
 
 const mockRepository: jest.Mocked<IPayoutRepository> = {
     findById: jest.fn(),
@@ -21,7 +21,8 @@ describe('CompletePayoutUseCase', () => {
             recipientId: 'r1',
             amount: 100,
             currency: 'USD',
-            method: 'bank_transfer'
+            method: 'bank_transfer',
+            status: PayoutStatus.PROCESSING
         });
 
         mockRepository.findById.mockResolvedValue(payout);

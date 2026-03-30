@@ -2,7 +2,7 @@ import { InventoryService } from '../inventoryService';
 import { eventBus } from '@shared-events/eventBus';
 
 jest.mock('@shared-events/eventBus');
-jest.mock('../../../shared/outbox/outboxPattern');
+jest.mock('../../../../shared/outbox/outboxPattern');
 
 interface MockPrisma {
   $transaction: jest.Mock;
@@ -53,8 +53,8 @@ describe('InventoryService Integration', () => {
         id: 'inv-1',
         productVariantId: 'var-1',
         warehouseId: 'wh-1',
-        availableQuantity: 100,
-        reservedQuantity: 0
+        quantityAvailable: 100,
+        quantityReserved: 0
       } as any);
 
       mockPrisma.inventory_Reservation.create.mockResolvedValue({
@@ -78,7 +78,8 @@ describe('InventoryService Integration', () => {
 
       mockPrisma.inventory_StockItem.findFirst.mockResolvedValue({
         id: 'inv-1',
-        availableQuantity: 10
+        quantityAvailable: 10,
+        quantityReserved: 0
       } as any);
 
       await expect(service.reserveInventory(reservationData)).rejects.toThrow('Insufficient stock');
@@ -95,7 +96,8 @@ describe('InventoryService Integration', () => {
 
       mockPrisma.inventory_StockItem.findFirst.mockResolvedValue({
         id: 'inv-1',
-        availableQuantity: 100
+        quantityAvailable: 100,
+        quantityReserved: 0
       } as any);
 
       const result = await service.reserveInventory(reservationData);

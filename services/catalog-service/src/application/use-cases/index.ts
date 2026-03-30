@@ -16,14 +16,21 @@ export * from './preview-generated-description.use-case';
  * Defines contract for creating and configuring use cases
  * Infrastructure layer implements this to provide dependency injection
  */
-export interface IUseCaseFactory {
+export interface IUseCaseFactory<
+  TCreateProduct = unknown,
+  TGetProduct = unknown,
+  TGetProductsBySeller = unknown,
+  TSearchProducts = unknown,
+  TLoadCategoryAttributes = unknown,
+  TPreviewGeneratedDescription = unknown
+> {
   // Product Management
-  createProductUseCase(): any;
-  getProductUseCase(): any;
-  getProductsBySellerUseCase(): any;
-  searchProductsUseCase(): any;
-  loadCategoryAttributesUseCase(): any;
-  previewGeneratedDescriptionUseCase(): any;
+  createProductUseCase(): TCreateProduct;
+  getProductUseCase(): TGetProduct;
+  getProductsBySellerUseCase(): TGetProductsBySeller;
+  searchProductsUseCase(): TSearchProducts;
+  loadCategoryAttributesUseCase(): TLoadCategoryAttributes;
+  previewGeneratedDescriptionUseCase(): TPreviewGeneratedDescription;
 
   // Future use cases can be added here
   // updateProductUseCase(): any;
@@ -36,18 +43,18 @@ export interface IUseCaseFactory {
  * Use Case Result Types
  * Common result patterns across all use cases
  */
-export interface UseCaseResult<T = any> {
+export interface UseCaseResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
-export function successResult<T>(data: T, metadata?: Record<string, any>): UseCaseResult<T> {
+export function successResult<T>(data: T, metadata?: Record<string, unknown>): UseCaseResult<T> {
   return { success: true, data, metadata };
 }
 
-export function failureResult(error: string, metadata?: Record<string, any>): UseCaseResult {
+export function failureResult(error: string, metadata?: Record<string, unknown>): UseCaseResult {
   return { success: false, error, metadata };
 }
 
@@ -75,9 +82,7 @@ export interface SortingRequest {
   direction: 'asc' | 'desc';
 }
 
-export interface FilterRequest {
-  [key: string]: any;
-}
+export type FilterRequest = Record<string, unknown>;
 
 /**
  * Use Case Base Class
@@ -98,7 +103,7 @@ export abstract class BaseUseCase {
     return errors;
   }
 
-  protected validateRequired(value: any, fieldName: string): string[] {
+  protected validateRequired(value: unknown, fieldName: string): string[] {
     const errors: string[] = [];
 
     if (!value || (typeof value === 'string' && value.trim().length === 0)) {

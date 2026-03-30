@@ -1,5 +1,6 @@
 import { AddMessageUseCase } from '../add-message.use-case';
 import { AddMessageDto } from '../../dto/message.dto';
+import { SenderType, TicketStatus } from '../../../domain/types';
 
 describe('AddMessageUseCase', () => {
     let useCase: AddMessageUseCase;
@@ -8,12 +9,12 @@ describe('AddMessageUseCase', () => {
     let mockAttachmentRepo: any;
     let mockEventBus: any;
 
-    const mockTicket = { id: 'ticket-1', status: 'OPEN' };
+    const mockTicket = { id: 'ticket-1', status: TicketStatus.OPEN };
 
     const validDto: AddMessageDto = {
         ticketId: 'ticket-1',
         senderId: 'user-1',
-        senderType: 'USER',
+        senderType: SenderType.USER,
         content: 'I still have the issue',
         isInternal: false,
     };
@@ -67,7 +68,7 @@ describe('AddMessageUseCase', () => {
     });
 
     it('should handle different sender types', async () => {
-        const senderTypes = ['USER', 'AGENT', 'SYSTEM'];
+        const senderTypes = [SenderType.USER, SenderType.AGENT, SenderType.SYSTEM];
 
         for (const senderType of senderTypes) {
             jest.clearAllMocks();

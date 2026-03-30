@@ -1,5 +1,24 @@
-import { ISmsProvider } from './sms-provider.interface';
+import { ISmsProvider, DeliveryReport } from './sms-provider.interface';
 import { ProviderResponse } from '../../domain/value-objects/provider-response.value-object';
+
+type AfricaTalkingRecipient = {
+    cost?: string;
+    messageId?: string;
+    number?: string;
+    status?: string;
+    statusCode?: string | number;
+};
+
+type AfricaTalkingMessageData = {
+    Message?: string;
+    Recipients?: AfricaTalkingRecipient[];
+};
+
+type AfricaTalkingResponse = {
+    message?: string;
+    error?: string;
+    SMSMessageData?: AfricaTalkingMessageData;
+};
 
 /**
  * Africa's Talking SMS Provider
@@ -85,7 +104,7 @@ export class AfricasTalkingSmsProvider implements ISmsProvider {
             });
 
             const raw = await response.text();
-            let data: any = null;
+            let data: AfricaTalkingResponse | null = null;
             if (raw) {
                 try {
                     data = JSON.parse(raw);
@@ -120,6 +139,12 @@ export class AfricasTalkingSmsProvider implements ISmsProvider {
             }
 
             const recipient = recipients[0];
+            if (!recipient?.messageId) {
+                return ProviderResponse.createFailure(
+                    'Missing message ID in provider response',
+                    response.status.toString()
+                );
+            }
 
             const statusCode = Number(recipient.statusCode);
             const isSuccessCode = statusCode === 100 || statusCode === 101 || statusCode === 102;
@@ -188,7 +213,7 @@ export class AfricasTalkingSmsProvider implements ISmsProvider {
         };
     }
 
-    private tryParseXmlResponse(xml: string): any | null {
+    private tryParseXmlResponse(xml: string): AfricaTalkingResponse | null {
         try {
             if (!xml.includes('<SMSMessageData')) {
                 return null;
@@ -234,20 +259,22 @@ export class AfricasTalkingSmsProvider implements ISmsProvider {
      * Handle delivery report callback
      * Should be called from webhook endpoint
      */
-    parseDeliveryReport(body: any): {
-        providerMessageId: string;
-        status: 'delivered' | 'failed';
-        phoneNumber: string;
-        failureReason?: string;
-    } | null {
+    parseDeliveryReport(body: unknown): DeliveryReport | null {
         try {
             if (!body || typeof body !== 'object') {
                 return null;
             }
 
-            const providerMessageId = body.id;
-            const providerStatus = body.status;
-            const phoneNumber = body.phoneNumber;
+            const report = body as {
+                id?: unknown;
+                status?: unknown;
+                phoneNumber?: unknown;
+                failureReason?: unknown;
+            };
+
+            const providerMessageId = report.id;
+            const providerStatus = report.status;
+            const phoneNumber = report.phoneNumber;
 
             if (
                 typeof providerMessageId !== 'string' || providerMessageId.length === 0 ||
@@ -261,7 +288,7 @@ export class AfricasTalkingSmsProvider implements ISmsProvider {
                 providerMessageId,
                 status: providerStatus === 'Success' ? 'delivered' : 'failed',
                 phoneNumber,
-                failureReason: body.failureReason
+                failureReason: typeof report.failureReason === 'string' ? report.failureReason : undefined
             };
         } catch {
             return null;

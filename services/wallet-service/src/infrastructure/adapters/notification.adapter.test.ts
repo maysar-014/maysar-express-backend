@@ -20,6 +20,10 @@ jest.mock('../../../../business-registry-service/src/infrastructure/services/log
   }
 }));
 
+jest.mock('../../../../notification-service/src/internal/notification.facade', () => ({
+  sendNotificationInternal: jest.fn().mockResolvedValue(undefined)
+}));
+
 import { NotificationAdapter as WalletNotificationAdapter } from './notification.adapter';
 
 describe('notification adapters', () => {
@@ -58,13 +62,8 @@ describe('notification adapters', () => {
     process.env.PLATFORM_BASE_URL = 'http://platform.local';
 
     const businessModule = await import('../../../../business-registry-service/src/infrastructure/adapters/notification.adapter');
+    const notificationFacade = await import('../../../../notification-service/src/internal/notification.facade');
     const adapter = new businessModule.NotificationAdapter();
-
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      text: async () => 'ok'
-    } as unknown);
 
     await adapter.sendNotification({
       userId: 'user-2',
@@ -72,19 +71,17 @@ describe('notification adapters', () => {
       subject: 'Welcome',
       content: 'Hello'
     });
-    expect(fetchMock).toHaveBeenCalledWith(
-      'http://platform.local/api/notification/notifications',
+    expect(notificationFacade.sendNotificationInternal).toHaveBeenCalledWith(
       expect.objectContaining({
-        method: 'POST'
+        userId: 'user-2',
+        channel: 'email',
+        subject: 'Welcome',
+        content: 'Hello'
       })
     );
     expect(businessLoggerDebugMock).toHaveBeenCalled();
 
-    fetchMock.mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      text: async () => 'server error'
-    } as unknown);
+    (notificationFacade.sendNotificationInternal as jest.Mock).mockRejectedValueOnce(new Error('server error'));
 
     await expect(
       adapter.sendNotification({
@@ -93,7 +90,7 @@ describe('notification adapters', () => {
         subject: 'Alert',
         content: 'Body'
       })
-    ).rejects.toThrow('Notification service error 500: server error');
+    ).rejects.toThrow('server error');
     expect(businessLoggerWarnMock).toHaveBeenCalled();
   });
 });

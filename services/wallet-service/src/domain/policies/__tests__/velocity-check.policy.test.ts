@@ -38,7 +38,7 @@ describe('VelocityCheckPolicy', () => {
 
         it('should detect high frequency in last minute', () => {
             const now = new Date();
-            const txs = Array(5).fill(null).map(() => createTransaction(100, now));
+            const txs = [100, 101, 102, 103, 104].map(amount => createTransaction(amount, now));
 
             const result = policy.checkVelocity(
                 txs,
@@ -52,11 +52,13 @@ describe('VelocityCheckPolicy', () => {
 
         it('should detect high frequency in last hour', () => {
             const now = new Date();
-            const txs = Array(20).fill(null).map(() => createTransaction(100, new Date(now.getTime() - 1000 * 60 * 30))); // 30 mins ago
+            const txs = Array.from({ length: 20 }, (_, index) =>
+                createTransaction(100 + index, new Date(now.getTime() - 1000 * 60 * 30))
+            ); // 30 mins ago
 
             const result = policy.checkVelocity(
                 txs,
-                baseMoney(100)
+                baseMoney(999)
             );
 
             expect(result.riskScore).toBeGreaterThanOrEqual(30);

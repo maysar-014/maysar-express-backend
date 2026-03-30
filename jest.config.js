@@ -212,6 +212,7 @@ module.exports = {
       moduleNameMapper: {
         '@inventory/(.*)': '<rootDir>/services/inventory-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '@shared-events/(.*)': '<rootDir>/shared/events/$1',
         '^uuid$': require.resolve('uuid'),
       }
     },

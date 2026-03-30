@@ -10,13 +10,22 @@ describe('FraudDetectionAlgorithm', () => {
       timestamp: now,
       ipAddress: '10.0.0.1'
     };
-    const history = Array.from({ length: 11 }, (_, i) => ({
+    const history = [
+      {
+        enablerId: 'en-2',
+        buyerId: 'b-ip',
+        orderAmount: 1000,
+        timestamp: new Date(now.getTime() - 10 * 60 * 1000),
+        ipAddress: '10.0.0.1'
+      },
+      ...Array.from({ length: 11 }, (_, i) => ({
       enablerId: 'en-1',
       buyerId: `b-${i}`,
       orderAmount: 1000,
       timestamp: new Date(now.getTime() - 10 * 60 * 1000),
       ipAddress: i === 0 ? '10.0.0.1' : `10.0.0.${i + 1}`
-    }));
+    }))
+    ];
 
     const result = FraudDetectionAlgorithm.detectFraud(activity, history as never);
 

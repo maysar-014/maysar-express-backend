@@ -11,7 +11,7 @@ export interface ProviderResponseProps {
     statusCode?: string;
     errorMessage?: string;
     timestamp: Date;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
 }
 
 export class ProviderResponse {
@@ -20,7 +20,7 @@ export class ProviderResponse {
     private readonly statusCode?: string;
     private readonly errorMessage?: string;
     private readonly timestamp: Date;
-    private readonly metadata?: Record<string, any>;
+    private readonly metadata?: Record<string, unknown>;
 
     private constructor(props: ProviderResponseProps) {
         this.providerMessageId = props.providerMessageId;
@@ -36,7 +36,7 @@ export class ProviderResponse {
         return new ProviderResponse(props);
     }
 
-    static createSuccess(providerMessageId: string, metadata?: Record<string, any>): ProviderResponse {
+    static createSuccess(providerMessageId: string, metadata?: Record<string, unknown>): ProviderResponse {
         return new ProviderResponse({
             providerMessageId,
             status: 'accepted',
@@ -85,7 +85,7 @@ export class ProviderResponse {
         return this.timestamp;
     }
 
-    getMetadata(): Record<string, any> | undefined {
+    getMetadata(): Record<string, unknown> | undefined {
         return this.metadata;
     }
 
@@ -142,7 +142,7 @@ export class ProviderResponse {
         }
     }
 
-    toJSON(): Record<string, any> {
+    toJSON(): Record<string, unknown> {
         return {
             providerMessageId: this.providerMessageId,
             status: this.status,

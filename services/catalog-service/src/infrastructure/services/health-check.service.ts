@@ -192,14 +192,7 @@ export class HealthCheckService {
 
     // Execute all checks with timeout
     const results = await Promise.allSettled(
-      componentChecks.map(check =>
-        Promise.race([
-          check,
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Health check timeout')), this.config.timeout)
-          )
-        ])
-      )
+      componentChecks.map(check => this.runCheckWithTimeout(check))
     );
 
     // Process results
@@ -515,12 +508,19 @@ export class HealthCheckService {
    * Determine overall system health status
    */
   private determineOverallStatus(components: ComponentHealthResult[]): HealthStatus {
+    const componentMap = new Map(components.map(component => [component.name, component]));
+    const criticalComponents = ['database', 'cache'];
+    const hasCriticalFailure = criticalComponents.some(
+      name => componentMap.get(name)?.status === HealthStatus.UNHEALTHY
+    );
+
+    if (hasCriticalFailure) {
+      return HealthStatus.UNHEALTHY;
+    }
+
     const unhealthyCount = components.filter(c => c.status === HealthStatus.UNHEALTHY).length;
     const degradedCount = components.filter(c => c.status === HealthStatus.DEGRADED).length;
-
-    if (unhealthyCount > 0) {
-      return HealthStatus.UNHEALTHY;
-    } else if (degradedCount > 0) {
+    if (unhealthyCount > 0 || degradedCount > 0) {
       return HealthStatus.DEGRADED;
     }
 
@@ -548,6 +548,23 @@ export class HealthCheckService {
   private getComponentName(index: number): string {
     const components = ['database', 'cache', 'search', 'messaging', 'external-apis'];
     return components[index] || `component-${index}`;
+  }
+
+  /**
+   * Run a health check with timeout and clean timer handles reliably.
+   */
+  private runCheckWithTimeout<T>(checkPromise: Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const timeoutId = setTimeout(
+        () => reject(new Error('Health check timeout')),
+        this.config.timeout
+      );
+
+      checkPromise
+        .then(resolve)
+        .catch(reject)
+        .finally(() => clearTimeout(timeoutId));
+    });
   }
 
   /**
@@ -722,10 +739,13 @@ export class HealthCheckMiddleware {
    */
   async handleLivenessCheck(req: any, res: any): Promise<void> {
     // Liveness is simpler - just check if the process is running
+    const startTime = (this.healthCheckService as Record<string, unknown>)['startTime'];
+    const uptime = startTime instanceof Date ? Date.now() - startTime.getTime() : 0;
+
     res.status(200).json({
       status: 'alive',
       timestamp: new Date(),
-      uptime: Date.now() - this.healthCheckService['startTime'].getTime()
+      uptime
     });
   }
 }

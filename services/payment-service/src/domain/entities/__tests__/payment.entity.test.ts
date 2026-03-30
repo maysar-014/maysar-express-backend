@@ -49,7 +49,7 @@ describe('Payment Entity', () => {
         it('should throw error for invalid currency', () => {
             const invalidProps = { ...validPaymentProps, currency: 'INVALID' };
 
-            expect(() => new Payment(invalidProps)).toThrow('Invalid currency');
+            expect(() => new Payment(invalidProps)).toThrow('Unsupported currency: INVALID');
         });
 
         it('should throw error for missing required fields', () => {
@@ -153,7 +153,7 @@ describe('Payment Entity', () => {
                 completedAt: new Date()
             });
 
-            expect(() => payment.markAsCompleted()).toThrow('Invalid status transition');
+            expect(() => payment.markAsCompleted()).toThrow('Payment is already completed');
         });
     });
 
@@ -276,7 +276,7 @@ describe('Payment Entity', () => {
             });
 
             expect(() => payment.recordRefund(3000))
-                .toThrow('Refund amount exceeds refundable amount');
+                .toThrow('Refund amount 3000 exceeds refundable amount 2000');
         });
 
         it('should throw error for negative refund amount', () => {
@@ -294,7 +294,7 @@ describe('Payment Entity', () => {
             const payment = new Payment(validPaymentProps);
 
             expect(() => payment.recordRefund(1000))
-                .toThrow('Can only refund completed payments');
+                .toThrow('Payment cannot be refunded');
         });
     });
 
@@ -309,8 +309,8 @@ describe('Payment Entity', () => {
             const fees = payment.calculateFees();
 
             expect(fees.platformFee).toBe(200); // 2% of 10000
-            expect(fees.providerFee).toBe(300); // 3% of 10000
-            expect(fees.totalFee).toBe(500);
+            expect(fees.providerFee).toBe(150); // 1.5% of 10000
+            expect(fees.totalFee).toBe(350);
         });
 
         it('should calculate fees for wallet payment', () => {
@@ -338,18 +338,18 @@ describe('Payment Entity', () => {
             const fees = payment.calculateFees();
 
             expect(fees.platformFee).toBe(200); // 2% of 10000
-            expect(fees.providerFee).toBe(350); // 3.5% of 10000
-            expect(fees.totalFee).toBe(550);
+            expect(fees.providerFee).toBe(290); // 2.9% of 10000
+            expect(fees.totalFee).toBe(490);
         });
 
         it('should calculate correct provider fees for different payment methods', () => {
-            // M-PESA: 3% provider fee
+            // M-PESA: 1.5% provider fee
             const mPesaPayment = new Payment({
                 ...validPaymentProps,
                 amount: 10000,
                 method: PaymentMethod.MPESA
             });
-            expect(mPesaPayment.calculateFees().providerFee).toBe(300);
+            expect(mPesaPayment.calculateFees().providerFee).toBe(150);
 
             // Wallet: 0% provider fee
             const walletPayment = new Payment({
@@ -359,21 +359,21 @@ describe('Payment Entity', () => {
             });
             expect(walletPayment.calculateFees().providerFee).toBe(0);
 
-            // Card: 3.5% provider fee
+            // Card: 2.9% provider fee
             const cardPayment = new Payment({
                 ...validPaymentProps,
                 amount: 10000,
                 method: PaymentMethod.CARD
             });
-            expect(cardPayment.calculateFees().providerFee).toBe(350);
+            expect(cardPayment.calculateFees().providerFee).toBe(290);
 
-            // Bank Transfer: 2.5% provider fee
+            // Bank Transfer: 1% provider fee
             const bankPayment = new Payment({
                 ...validPaymentProps,
                 amount: 10000,
                 method: PaymentMethod.BANK_TRANSFER
             });
-            expect(bankPayment.calculateFees().providerFee).toBe(250);
+            expect(bankPayment.calculateFees().providerFee).toBe(100);
         });
     });
 

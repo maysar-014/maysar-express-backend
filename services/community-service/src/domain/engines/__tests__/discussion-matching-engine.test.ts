@@ -1,5 +1,4 @@
 import { DiscussionMatchingEngine } from '../discussion-matching-engine';
-import { ExpertiseLevel } from '../../value-objects/expertise-badge.value-object';
 
 describe('DiscussionMatchingEngine', () => {
     it('should match experts to thread', () => {
@@ -7,7 +6,7 @@ describe('DiscussionMatchingEngine', () => {
             { 
                 topic: 'farming', 
                 category: 'GENERAL', 
-                expertiseLevel: ExpertiseLevel.BEGINNER, 
+                expertiseLevel: 'BEGINNER', 
                 industryTags: ['agriculture'] 
             }, 
             []

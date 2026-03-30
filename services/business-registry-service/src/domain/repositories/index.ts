@@ -1,6 +1,16 @@
 import { Business } from '../entities/business.entity';
 import { BusinessStatus, VerificationStatus } from '../types/business.types';
 
+export interface PublicBusinessDiscoveryFilters {
+  sellerId?: string;
+  sellerIds?: string[];
+  industry?: string;
+  industries?: string[];
+  query?: string;
+  limit?: number;
+  offset?: number;
+}
+
 /**
  * Business Repository Interface
  * Defines the contract for business data access operations
@@ -10,6 +20,8 @@ export interface IBusinessRepository {
   findByRegistrationNumber(registrationNumber: string): Promise<Business | null>;
   findByTaxId(taxId: string): Promise<Business | null>;
   findByOwnerId(ownerId: string): Promise<Business[]>;
+  findPublicSellerPreviews(filters?: Omit<PublicBusinessDiscoveryFilters, 'sellerId' | 'sellerIds'>): Promise<Business[]>;
+  findPublicBusinesses(filters?: PublicBusinessDiscoveryFilters): Promise<Business[]>;
   create(business: Business): Promise<Business>;
   update(business: Business): Promise<Business>;
   delete(id: string): Promise<void>;

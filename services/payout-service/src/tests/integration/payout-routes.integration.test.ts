@@ -15,10 +15,10 @@ describe('Payout Service Routes Integration', () => {
     app.use(express.json());
     app.use('/api/payouts', createPayoutRoutes(controller));
 
-    const response = await request(app).get('/api/payouts/payout-123');
+    const response = await request(app).get('/api/payouts/pyo_01ARZ3NDEKTSV4RRFFQ69G5FAV');
 
     expect(response.status).toBe(200);
-    expect(response.body.id).toBe('payout-123');
+    expect(response.body.id).toBe('pyo_01ARZ3NDEKTSV4RRFFQ69G5FAV');
   });
 });
 

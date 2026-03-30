@@ -47,11 +47,16 @@ export class MessageContent {
         // Trim whitespace
         let sanitized = content.trim();
 
+        // Remove control characters while preserving line breaks for normalization
+        sanitized = Array.from(sanitized)
+            .filter((char) => {
+                const code = char.charCodeAt(0);
+                return code === 10 || code === 13 || (code >= 32 && code !== 127);
+            })
+            .join('');
+
         // Replace multiple spaces with single space
         sanitized = sanitized.replace(/\s+/g, ' ');
-
-        // Remove null bytes and other control characters (except newline and carriage return)
-        sanitized = sanitized.replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
         return sanitized;
     }

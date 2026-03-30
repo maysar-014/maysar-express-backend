@@ -185,11 +185,8 @@ describe('GoogleOAuthController', () => {
     await controller.refreshToken(req, res);
     await controller.revokeAccess(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(501);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: false
-      })
-    );
+    expect(res.status).toHaveBeenNthCalledWith(1, 200);
+    expect(res.status).toHaveBeenNthCalledWith(2, 200);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
   });
 });

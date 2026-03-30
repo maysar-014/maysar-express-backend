@@ -1,3 +1,5 @@
+import { DomainEvent } from './events/sms.events';
+
 /**
  * Domain Interfaces
  * Core domain interface definitions
@@ -14,6 +16,6 @@ export interface ValueObject<T> {
 }
 
 export interface AggregateRoot extends Entity {
-    getDomainEvents(): any[];
+    getDomainEvents(): DomainEvent[];
     clearDomainEvents(): void;
 }

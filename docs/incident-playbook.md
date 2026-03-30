@@ -2,6 +2,8 @@
 
 This playbook provides standard procedures for responding to production incidents.
 
+> Note: the current runtime does not use Kafka. Section 3.3 is retained as a historical external-broker runbook and should only be applied if a brokered transport is reintroduced.
+
 ## 1. Severity Levels
 
 | Severity | Definition | Response SLA |
@@ -38,12 +40,12 @@ This playbook provides standard procedures for responding to production incident
 - **Recovery steps**: Restart container, restore from RDB snapshot if data persistence is required for critical state.
 - **Impact**: Session loss, rate-limit state reset, Redlock availability issues.
 
-### 3.3 Kafka Partition / Broker Failure
+### 3.3 Event Bus / Broker Failure
 
-- **Detection signals**: Consumer lag metric spike, `kafka_broker_count < 3`.
+- **Detection signals**: Consumer lag metric spike or event transport outage.
 - **Immediate actions**: Outbox processor pauses; outbox rows remain safe in DB.
 - **Recovery steps**: Restart broker, verify consumer group offsets, replay from outbox if necessary.
-- **Reference**: `shared/outbox/outbox.processor.ts` and `shared/events/kafka.event-bus.ts`.
+- **Reference**: `shared/outbox/outbox.processor.ts` and the current event bus adapter.
 
 ### 3.4 Saga Stuck / Dead-Letter Growth
 

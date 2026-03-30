@@ -1,6 +1,6 @@
-import { DomainService } from '@domain/interfaces';
-import { User } from '@domain/entities/user.entity';
-import { UserMetadata } from '@domain/types/user.types';
+import { DomainService } from '../interfaces';
+import { User } from '../entities/user.entity';
+import { UserMetadata } from '../types/user.types';
 
 /**
  * User Validation Service

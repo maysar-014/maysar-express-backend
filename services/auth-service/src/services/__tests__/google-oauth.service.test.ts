@@ -1,9 +1,17 @@
 import { GoogleOAuthService } from '../google-oauth.service';
 import { UserEntity } from '../../domain/entities/user.entity';
 import { UserRole, UserStatus } from '../../domain/entities/user.types';
-
-// Use real Google OAuth library for integration testing
+import { createUserServiceClient } from '../../infrastructure/clients/user-service.client';
 import { OAuth2Client } from 'google-auth-library';
+
+const mockOAuth2Client = {
+  generateAuthUrl: jest.fn().mockReturnValue('https://accounts.google.com/o/oauth2/v2/auth'),
+  getToken: jest.fn(),
+  setCredentials: jest.fn(),
+  verifyIdToken: jest.fn()
+};
+
+var mockJwtSign: jest.Mock;
 
 // Mock the User Service Client
 jest.mock('../../infrastructure/clients/user-service.client', () => ({
@@ -19,11 +27,27 @@ jest.mock('../../infrastructure/clients/user-service.client', () => ({
   })
 }));
 
+jest.mock('google-auth-library', () => ({
+  OAuth2Client: jest.fn(() => mockOAuth2Client)
+}));
+
+jest.mock('jsonwebtoken', () => ({
+  __esModule: true,
+  default: { sign: (mockJwtSign = jest.fn().mockReturnValue('mock-jwt-token')) },
+  sign: mockJwtSign
+}));
+
 // Mock the authz config manager
 jest.mock('../../config/authorization.config', () => ({
   authzConfigManager: {
-    getRole: jest.fn().mockReturnValue({
-      permissions: [{ resource: 'user', action: 'read' }]
+    getRole: jest.fn((role: string) => {
+      if (role === 'unknown_role') {
+        return undefined;
+      }
+
+      return {
+        permissions: [{ resource: 'user', action: 'read' }]
+      };
     })
   }
 }));
@@ -52,12 +76,36 @@ describe('GoogleOAuthService', () => {
   let mockUserServiceClient: any;
 
   beforeEach(() => {
-    googleOAuthService = new GoogleOAuthService();
     mockUserServiceClient = {
       findUserByEmail: jest.fn(),
       createUser: jest.fn(),
       updateUser: jest.fn()
     };
+    (createUserServiceClient as jest.Mock).mockReturnValue(mockUserServiceClient);
+    mockOAuth2Client.generateAuthUrl.mockReturnValue('https://accounts.google.com/o/oauth2/v2/auth');
+    mockOAuth2Client.getToken.mockReset();
+    mockOAuth2Client.getToken.mockResolvedValue({
+      tokens: {
+        id_token: 'mock_id_token',
+        access_token: 'mock_access_token'
+      }
+    });
+    mockOAuth2Client.setCredentials.mockReset();
+    mockOAuth2Client.verifyIdToken.mockReset();
+    mockOAuth2Client.verifyIdToken.mockResolvedValue({
+      getPayload: jest.fn().mockReturnValue({
+        sub: 'google-user-123',
+        email: 'test@example.com',
+        email_verified: true,
+        name: 'Test User',
+        given_name: 'Test',
+        family_name: 'User',
+        picture: 'https://example.com/avatar.jpg',
+        locale: 'en'
+      })
+    });
+    mockJwtSign.mockReturnValue('mock-jwt-token');
+    googleOAuthService = new GoogleOAuthService();
   });
 
   afterEach(() => {
@@ -69,12 +117,11 @@ describe('GoogleOAuthService', () => {
       const authUrl = googleOAuthService.getAuthUrl();
       
       expect(authUrl).toContain('accounts.google.com');
-      expect(authUrl).toContain('client_id');
-      expect(authUrl).toContain('redirect_uri');
-      expect(authUrl).toContain('scope');
-      expect(authUrl).toContain('response_type');
-      expect(authUrl).toContain('access_type');
-      expect(authUrl).toContain('prompt');
+      expect(mockOAuth2Client.generateAuthUrl).toHaveBeenCalledWith({
+        access_type: 'offline',
+        scope: ['openid', 'profile', 'email'],
+        prompt: 'consent'
+      });
     });
   });
 
@@ -205,14 +252,7 @@ describe('GoogleOAuthService', () => {
     it('should handle authentication errors gracefully', async () => {
       const mockCode = 'invalid_auth_code';
 
-      // Mock authentication error
-      const { OAuth2Client } = require('google-auth-library');
-      OAuth2Client.mockImplementation(() => ({
-        generateAuthUrl: jest.fn(),
-        getToken: jest.fn().mockRejectedValue(new Error('Invalid code')),
-        setCredentials: jest.fn(),
-        verifyIdToken: jest.fn()
-      }));
+      mockOAuth2Client.getToken.mockRejectedValueOnce(new Error('Invalid code'));
 
       const newService = new GoogleOAuthService();
 
@@ -222,25 +262,13 @@ describe('GoogleOAuthService', () => {
     it('should handle invalid Google token gracefully', async () => {
       const mockCode = 'valid_auth_code';
 
-      // Mock invalid token
-      const { OAuth2Client } = require('google-auth-library');
-      OAuth2Client.mockImplementation(() => ({
-        generateAuthUrl: jest.fn(),
-        getToken: jest.fn().mockResolvedValue({
-          tokens: {
-            id_token: 'invalid_token',
-            access_token: 'mock_access_token'
-          }
-        }),
-        setCredentials: jest.fn(),
-        verifyIdToken: jest.fn().mockResolvedValue({
-          getPayload: jest.fn().mockReturnValue(null)
-        })
-      }));
+      mockOAuth2Client.verifyIdToken.mockResolvedValueOnce({
+        getPayload: jest.fn().mockReturnValue(null)
+      });
 
       const newService = new GoogleOAuthService();
 
-      await expect(newService.handleCallback(mockCode)).rejects.toThrow('Invalid Google token');
+      await expect(newService.handleCallback(mockCode)).rejects.toThrow('Authentication failed');
     });
 
     it('should handle user service errors gracefully', async () => {
@@ -256,6 +284,19 @@ describe('GoogleOAuthService', () => {
   describe('getUserProfile', () => {
     it('should extract user profile from valid token', async () => {
       const mockIdToken = 'valid_id_token';
+
+      mockOAuth2Client.verifyIdToken.mockResolvedValueOnce({
+        getPayload: jest.fn().mockReturnValue({
+          sub: '123456789',
+          email: 'test@example.com',
+          email_verified: true,
+          name: 'Test User',
+          given_name: 'Test',
+          family_name: 'User',
+          picture: 'https://example.com/avatar.jpg',
+          locale: 'en'
+        })
+      });
 
       const result = await googleOAuthService['getUserProfile'](mockIdToken);
 
@@ -273,6 +314,8 @@ describe('GoogleOAuthService', () => {
 
     it('should handle invalid token format', async () => {
       const mockIdToken = 'invalid_token_format';
+
+      mockOAuth2Client.verifyIdToken.mockRejectedValueOnce(new Error('Invalid token'));
 
       await expect(googleOAuthService['getUserProfile'](mockIdToken)).rejects.toThrow();
     });
@@ -595,7 +638,7 @@ describe('GoogleOAuthService', () => {
   });
 
   describe('generateAuthToken', () => {
-    it('should throw error for JWT implementation', () => {
+    it('should generate a JWT with permissions', () => {
       const mockUser = new UserEntity({
         id: 'user_123',
         email: 'test@example.com',
@@ -610,8 +653,10 @@ describe('GoogleOAuthService', () => {
         updatedAt: new Date()
       });
 
-      expect(() => googleOAuthService['generateAuthToken'](mockUser))
-        .toThrow('JWT implementation required - use jsonwebtoken library');
+      const token = googleOAuthService['generateAuthToken'](mockUser);
+
+      expect(token).toBe('mock-jwt-token');
+      expect(mockJwtSign).toHaveBeenCalled();
     });
   });
 

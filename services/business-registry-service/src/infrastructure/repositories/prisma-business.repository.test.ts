@@ -110,6 +110,7 @@ const createBusinessEntity = (addressIds: string[] = ['addr-1', 'addr-2']): Busi
     registrationNumber: RegistrationNumber.create('TZ-DAR-99999'),
     taxId: TaxId.create('123456789'),
     ownerId: 'owner-entity-1',
+    industry: ['retail'],
     addresses
   }).verify('auditor-1');
 };
@@ -207,6 +208,54 @@ describe('PrismaBusinessRepository', () => {
       expect.objectContaining({
         where: { ownerId: 'owner-1' },
         include: { addresses: true }
+      })
+    );
+  });
+
+  it('supports public seller discovery query methods', async () => {
+    const prisma = createPrismaMock();
+    prisma.business.findMany.mockResolvedValue([createRawBusiness({ id: 'biz-public' })]);
+    const repository = new PrismaBusinessRepository(prisma as never);
+
+    await repository.findPublicSellerPreviews({
+      industry: 'Retail',
+      query: 'Acme',
+      limit: 101,
+      offset: 5
+    });
+    await repository.findPublicBusinesses({
+      sellerId: 'seller-1',
+      industries: ['Retail', 'Fashion'],
+      query: 'Acme',
+      limit: 10,
+      offset: 2
+    });
+
+    expect(prisma.business.findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        distinct: ['ownerId'],
+        take: 101,
+        skip: 5,
+        where: expect.objectContaining({
+          status: BusinessStatus.ACTIVE,
+          verificationStatus: VerificationStatus.VERIFIED,
+          complianceStatus: { not: ComplianceStatus.NON_COMPLIANT },
+          industry: { has: 'retail' },
+          OR: expect.any(Array)
+        })
+      })
+    );
+    expect(prisma.business.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        take: 10,
+        skip: 2,
+        where: expect.objectContaining({
+          ownerId: 'seller-1',
+          industry: { hasSome: ['retail', 'fashion'] },
+          OR: expect.any(Array)
+        })
       })
     );
   });
@@ -331,7 +380,7 @@ describe('PrismaBusinessRepository', () => {
     prisma.$transaction.mockImplementation(async (fn: (transaction: typeof tx) => unknown) => fn(tx));
     const repository = new PrismaBusinessRepository(prisma as never);
 
-    await expect(repository.update(entity)).rejects.toThrow(`Business ${entity.id} not found after update`);
+    await expect(repository.update(entity)).rejects.toThrow(`Business ${entity.id} not found`);
   });
 
   it('deletes business and logs success', async () => {

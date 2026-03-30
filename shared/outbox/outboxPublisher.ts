@@ -1,7 +1,7 @@
 import { TransactionalOutbox, OutboxStatus } from './outboxPattern';
 import { eventBus as globalEventBus, EventEnvelope, IEventBus } from '../events/eventBus';
 import { PrismaClient } from '@prisma/client';
-import { createPrismaClient } from '@shared/database/prisma-client';
+import { createPrismaClient } from '../database/prisma-client';
 
 export class OutboxPublisher {
   private isRunning = false;

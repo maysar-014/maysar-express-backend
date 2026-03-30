@@ -5,6 +5,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import * as crypto from 'crypto';
 import { AuthServiceClient } from '../../infrastructure/clients/auth-service.client';
 import { logger } from '../../infrastructure/services/logger.service';
 
@@ -62,12 +63,27 @@ export interface UserContext {
   email: string;
   roles: string[];
   permissions: string[];
-  sessionId: string;
-  deviceId: string;
-  ipAddress: string;
-  userAgent: string;
-  issuedAt: number;
-  expiresAt: number;
+  attributes?: Record<string, unknown>;
+  sessionInfo?: {
+    sessionId: string;
+    deviceId: string;
+    ipAddress: string;
+    userAgent: string;
+    loginTime: Date;
+    lastActivity: Date;
+  };
+  securityContext?: {
+    mfaEnabled: boolean;
+    accountStatus: string;
+    passwordLastChanged: Date;
+    failedLoginAttempts: number;
+  };
+  sessionId?: string;
+  deviceId?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  issuedAt?: number;
+  expiresAt?: number;
   geoLocation?: {
     country: string;
     region: string;
@@ -224,16 +240,16 @@ export class AuthenticationMiddleware {
         }
 
         // Verify API key
-        const isValid = await this.verifyApiKey(apiKey);
-        if (!isValid) {
+        const validation = await this.authServiceClient.validateApiKey(apiKey);
+        if (!validation.valid) {
           return this.sendUnauthorized(res, 'INVALID_API_KEY', 'Invalid API key');
         }
 
         // Attach service context
         const serviceContext: ServiceContext = {
-          serviceId: this.extractServiceId(apiKey),
+          serviceId: validation.serviceId || this.extractServiceId(apiKey),
           serviceKey: this.hashApiKey(apiKey),
-          permissions: ['read', 'write'], // Default permissions for valid services
+          permissions: validation.permissions || ['read', 'write'], // Default permissions for valid services
           timestamp: Date.now(),
           ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
           userAgent: req.headers['user-agent'] || 'unknown'
@@ -336,12 +352,12 @@ export class AuthenticationMiddleware {
 
         // Try API key authentication
         if (apiKey) {
-          const isValid = await this.verifyApiKey(apiKey);
-          if (isValid) {
+          const validation = await this.authServiceClient.validateApiKey(apiKey);
+          if (validation.valid) {
             const serviceContext: ServiceContext = {
-              serviceId: this.extractServiceId(apiKey),
+              serviceId: validation.serviceId || this.extractServiceId(apiKey),
               serviceKey: this.hashApiKey(apiKey),
-              permissions: ['read', 'write'],
+              permissions: validation.permissions || ['read', 'write'],
               timestamp: Date.now(),
               ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
               userAgent: req.headers['user-agent'] || 'unknown'
@@ -408,7 +424,8 @@ export class AuthenticationMiddleware {
    */
   private validateUserSession(userContext: UserContext): boolean {
     // Check token expiration
-    if (Date.now() > userContext.expiresAt) {
+    const expiresAt = userContext.expiresAt ?? 0;
+    if (Date.now() > expiresAt) {
       return false;
     }
 
@@ -454,7 +471,6 @@ export class AuthenticationMiddleware {
    * Hash API Key for Storage
    */
   private hashApiKey(apiKey: string): string {
-    const crypto = require('crypto');
     return crypto.createHash('sha256').update(apiKey).digest('hex');
   }
 
@@ -462,7 +478,6 @@ export class AuthenticationMiddleware {
    * Generate Device ID
    */
   private generateDeviceId(req: Request): string {
-    const crypto = require('crypto');
     const fingerprint = [
       req.headers['user-agent'],
       req.ip,
@@ -475,7 +490,6 @@ export class AuthenticationMiddleware {
    * Generate Session ID
    */
   private generateSessionId(): string {
-    const crypto = require('crypto');
     return crypto.createHash('sha256')
       .update(`${Date.now()}-${Math.random()}`)
       .digest('hex')

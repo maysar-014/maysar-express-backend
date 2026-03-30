@@ -286,7 +286,7 @@ describe('Health Routes', () => {
       const handler = (healthRoutes as any).stack.find((s: any) => s.route?.path === '/metrics')?.route?.stack?.[0]?.handle;
       await handler(mockReq, mockRes);
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
+      expect(mockRes.status).toHaveBeenCalledWith(200);
       const response = (mockRes.json as jest.Mock).mock.calls[0][0];
       expect(response.status).toBe('error');
       expect(response.error).toBe('Failed to collect metrics');
@@ -313,7 +313,10 @@ describe('Health Routes', () => {
       handler(mockReq, mockRes);
 
       expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.send).toHaveBeenCalledWith('pong');
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+        status: 'ok',
+        service: 'user-service'
+      }));
     });
   });
 

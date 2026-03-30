@@ -18,6 +18,7 @@ import {
   GetProductRequest
 } from '../get-product.use-case';
 import {
+  DomainRecord,
   ProductRepository,
   MediaRepository,
   SearchService
@@ -189,7 +190,7 @@ describe('GetProductUseCase', () => {
       };
 
       mockProductRepository.findById.mockResolvedValue(mockProduct);
-      mockSearchService.search.mockResolvedValue(mockRecommendations);
+      mockSearchService.search.mockResolvedValue(mockRecommendations as unknown as DomainRecord);
 
       // When: Retrieving product with recommendations
       const result = await useCase.execute(request);

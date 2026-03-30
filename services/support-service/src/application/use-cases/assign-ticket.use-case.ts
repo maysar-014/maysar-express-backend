@@ -27,15 +27,23 @@ export class AssignTicketUseCase {
         );
     }
 
-    public async execute(dto: AssignTicketDto): Promise<TicketResponseDto> {
-        const ticket = await this.ticketRepository.findById(dto.ticketId);
+    public async execute(dto: AssignTicketDto | string, agentId?: string): Promise<TicketResponseDto> {
+        const normalizedDto: AssignTicketDto = typeof dto === 'string'
+            ? {
+                ticketId: dto,
+                agentId: agentId || '',
+                assignedBy: agentId || 'SYSTEM'
+            }
+            : dto;
+
+        const ticket = await this.ticketRepository.findById(normalizedDto.ticketId);
         if (!ticket) {
-            throw new Error(`Ticket not found: ${dto.ticketId}`);
+            throw new Error(`Ticket not found: ${normalizedDto.ticketId}`);
         }
 
-        const agent = await this.resolveAgent(dto.agentId, dto.assignedBy);
+        const agent = await this.resolveAgent(normalizedDto.agentId, normalizedDto.assignedBy);
         if (!agent) {
-            throw new Error(`Agent not found: ${dto.agentId}`);
+            throw new Error(`Agent not found: ${normalizedDto.agentId}`);
         }
 
         const validation = this.assignmentPolicy.validateAssignment(ticket, agent);
@@ -55,13 +63,13 @@ export class AssignTicketUseCase {
             id: makeId(getModelPrefix('Support_TicketStatusHistory')),
             fromStatus,
             toStatus: ticket.status,
-            changedBy: dto.assignedBy,
+            changedBy: normalizedDto.assignedBy,
             reason: 'Agent Assigned',
             createdAt: new Date()
         };
         await this.historyRepository.create(statusHistory, ticket.id);
 
-        const event = new TicketAssignedEvent(ticket.id, agent.id, dto.assignedBy);
+        const event = new TicketAssignedEvent(ticket.id, agent.id, normalizedDto.assignedBy);
         if (this.eventBus.publish) {
             await this.eventBus.publish('TicketAssigned', event);
         }

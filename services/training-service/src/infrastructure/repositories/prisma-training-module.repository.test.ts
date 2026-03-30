@@ -60,12 +60,13 @@ describe('PrismaTrainingModuleRepository', () => {
     await expect(repo.findById('missing')).resolves.toBeNull();
   });
 
-  it('throws clear error when training module delegate is missing', async () => {
+  it('uses fallback modules when training module delegate is missing', async () => {
     const repo = new PrismaTrainingModuleRepository({} as never);
 
-    await expect(repo.findAll()).rejects.toThrow(
-      'Training module delegate is not configured on prisma client'
-    );
+    const modules = await repo.findAll();
+    expect(modules).toHaveLength(1);
+    expect(modules[0].id).toBe('module-default');
+    expect(modules[0].name).toBe('Getting Started');
   });
 });
 

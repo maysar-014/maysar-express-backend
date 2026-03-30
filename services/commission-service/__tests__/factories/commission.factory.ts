@@ -1,5 +1,1 @@
-export class CommissionFactory {
-  static create(data: any): any {
-    return data;
-  }
-}
+export { CommissionFactory } from '../../src/__tests__/factories/commission.factory';

@@ -21,7 +21,7 @@ export interface CreateBusinessDto {
   taxId?: string;
   ownerId: string;
   description?: string;
-  industry?: string;
+  industry: string[];
   website?: string;
   email?: string;
   phoneNumber?: string;
@@ -34,7 +34,7 @@ export interface CreateBusinessDto {
 export interface UpdateBusinessDto {
   name?: string;
   description?: string;
-  industry?: string;
+  industry?: string[];
   website?: string;
   email?: string;
   phoneNumber?: string;
@@ -55,7 +55,7 @@ export interface BusinessResponseDto {
   complianceStatus: string;
   ownerId: string;
   description?: string;
-  industry?: string;
+  industry: string[];
   website?: string;
   email?: string;
   phoneNumber?: string;

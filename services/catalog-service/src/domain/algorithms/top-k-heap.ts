@@ -38,7 +38,7 @@ export class TopKHeap<T> {
   private siftDown(index: number): void {
     const length = this.heap.length;
     
-    while (true) {
+    while (index < this.heap.length) {
       let smallest = index;
       const leftChild = 2 * index + 1;
       const rightChild = 2 * index + 2;

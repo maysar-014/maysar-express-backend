@@ -92,6 +92,7 @@ export class PricingRuleEngine {
     const flags: string[] = [];
 
     let currentPrice = context.currentPrice;
+    const basePrice = context.currentPrice;
     let totalConfidence = 0;
     let ruleCount = 0;
 
@@ -101,14 +102,14 @@ export class PricingRuleEngine {
       if (this.evaluateCondition(rule.condition, context)) {
         appliedRules.push(rule.id);
 
-        const adjustment = this.executeAction(rule.action, currentPrice, context);
+        const adjustment = this.executeAction(rule.action, currentPrice, basePrice, context);
         if (adjustment !== 0) {
           adjustments.push({
             ruleId: rule.id,
             adjustment,
             reason: rule.action.reason
           });
-          currentPrice += adjustment;
+          currentPrice = this.roundPrice(currentPrice + adjustment);
         }
 
         if (rule.action.type === 'flag_for_review') {
@@ -124,7 +125,7 @@ export class PricingRuleEngine {
 
     return {
       appliedRules,
-      finalPrice: Math.max(0, currentPrice), // Ensure non-negative price
+      finalPrice: this.roundPrice(Math.max(0, currentPrice)), // Ensure non-negative price
       adjustments,
       flags,
       confidence: Math.min(averageConfidence, 1.0)
@@ -133,27 +134,54 @@ export class PricingRuleEngine {
 
   private evaluateCondition(condition: PricingCondition, context: PricingContext): boolean {
     const fieldValue = this.getFieldValue(condition.type, context);
+    let baseMatch = false;
 
     switch (condition.operator) {
       case 'equals':
-        return fieldValue === condition.value;
+        baseMatch = fieldValue === condition.value;
+        break;
       case 'not_equals':
-        return fieldValue !== condition.value;
+        baseMatch = fieldValue !== condition.value;
+        break;
       case 'greater_than':
-        return fieldValue > condition.value;
+        baseMatch = fieldValue > condition.value;
+        break;
       case 'less_than':
-        return fieldValue < condition.value;
+        baseMatch = fieldValue < condition.value;
+        break;
       case 'between':
-        return fieldValue >= condition.value[0] && fieldValue <= condition.value[1];
+        baseMatch = fieldValue >= condition.value[0] && fieldValue <= condition.value[1];
+        break;
       case 'in':
-        return Array.isArray(condition.value) && condition.value.includes(fieldValue);
+        baseMatch = Array.isArray(condition.value) && condition.value.includes(fieldValue);
+        break;
       case 'not_in':
-        return Array.isArray(condition.value) && !condition.value.includes(fieldValue);
+        baseMatch = Array.isArray(condition.value) && !condition.value.includes(fieldValue);
+        break;
       case 'contains':
-        return String(fieldValue).toLowerCase().includes(String(condition.value).toLowerCase());
+        baseMatch = String(fieldValue).toLowerCase().includes(String(condition.value).toLowerCase());
+        break;
       default:
-        return false;
+        baseMatch = false;
+        break;
     }
+
+    const andMatch = condition.and ? condition.and.every(andCondition => this.evaluateCondition(andCondition, context)) : true;
+    const orMatch = condition.or ? condition.or.some(orCondition => this.evaluateCondition(orCondition, context)) : false;
+
+    if (condition.and && condition.or) {
+      return (baseMatch && andMatch) || orMatch;
+    }
+
+    if (condition.and) {
+      return baseMatch && andMatch;
+    }
+
+    if (condition.or) {
+      return baseMatch || orMatch;
+    }
+
+    return baseMatch;
   }
 
   private getFieldValue(field: string, context: PricingContext): any {
@@ -175,31 +203,40 @@ export class PricingRuleEngine {
     }
   }
 
-  private executeAction(action: PricingAction, currentPrice: number, context: PricingContext): number {
+  private executeAction(
+    action: PricingAction,
+    currentPrice: number,
+    referencePrice: number,
+    context: PricingContext
+  ): number {
     switch (action.type) {
       case 'set_price':
         return action.unit === 'absolute' ? action.value - currentPrice : 0; // Absolute set would be handled differently
 
       case 'adjust_price':
         if (action.unit === 'percentage') {
-          return currentPrice * (action.value / 100);
+          return this.roundPrice(referencePrice * (action.value / 100));
         } else if (action.unit === 'absolute') {
           return action.value;
         } else if (action.unit === 'multiplier') {
-          return currentPrice * (action.value - 1);
+          return this.roundPrice(referencePrice * (action.value - 1));
         }
         return 0;
 
       case 'set_margin':
         if (context.costPrice) {
           const targetPrice = context.costPrice * (1 + action.value / 100);
-          return targetPrice - currentPrice;
+          return this.roundPrice(targetPrice - currentPrice);
         }
         return 0;
 
       default:
         return 0;
     }
+  }
+
+  private roundPrice(value: number): number {
+    return Math.round(value * 100) / 100;
   }
 }
 

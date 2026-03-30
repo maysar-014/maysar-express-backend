@@ -35,7 +35,7 @@ describe('Payment Flow Integration', () => {
         const response = await request(app)
             .get(`/api/payments/order/${orderId}`);
 
-        expect([404, 500]).toContain(response.status);
+        expect([400, 404, 500]).toContain(response.status);
         expect(response.body.success).toBe(false);
     });
 });

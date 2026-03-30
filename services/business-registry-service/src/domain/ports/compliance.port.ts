@@ -8,6 +8,7 @@ export interface IComplianceAdapter {
     ownerId: string;
     businessType: string;
     registrationNumber: string;
+    industries?: string[];
     correlationId: string;
   }): Promise<void>;
 

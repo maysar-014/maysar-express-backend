@@ -441,7 +441,7 @@ describe('SEOData', () => {
       const invalidSlug = 'Invalid Slug With Spaces';
 
       // When/Then: Creating SEO data should throw error
-      expect(() => new SEOData('title', 'description', [], invalidSlug)).toThrow('SEO slug must contain only lowercase letters, numbers, and hyphens');
+      expect(() => new SEOData('title', 'description', [], invalidSlug)).toThrow('SEO slug must contain only lowercase letters, numbers, hyphens, and underscores');
     });
 
     it('should accept valid slug format', () => {

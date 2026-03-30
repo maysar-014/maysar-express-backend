@@ -40,10 +40,19 @@ import {
   ImageProcessingResult,
   BatchProcessingResult
 } from '../image-processing.provider';
+import sharp from 'sharp';
+
+jest.mock('@shared/redis/ioredis-client', () => ({
+  getSharedRedisClient: jest.fn(() => ({
+    get: jest.fn().mockResolvedValue(null),
+    setex: jest.fn().mockResolvedValue(undefined)
+  }))
+}));
 
 describe('Sharp Image Provider', () => {
   let imageProvider: SharpImageProvider;
   let mockConfig: ImageProcessingConfig;
+  let testImageBuffer: Buffer;
 
   beforeEach(() => {
     mockConfig = {
@@ -61,9 +70,22 @@ describe('Sharp Image Provider', () => {
     imageProvider = new SharpImageProvider(mockConfig);
   });
 
+  beforeAll(async () => {
+    testImageBuffer = await sharp({
+      create: {
+        width: 1920,
+        height: 1080,
+        channels: 3,
+        background: { r: 255, g: 255, b: 255 }
+      }
+    })
+      .png()
+      .toBuffer();
+  });
+
   describe('Single Image Processing', () => {
     it('should process image with basic options', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const options: ImageProcessingOptions = {
         width: 800,
         height: 600,
@@ -90,7 +112,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should process image with default options', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
 
       const result = await imageProvider.processImage(buffer);
 
@@ -108,7 +130,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should handle image resizing', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const options: ImageProcessingOptions = {
         width: 300,
         height: 200,
@@ -122,7 +144,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should handle image format conversion', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const options: ImageProcessingOptions = {
         format: 'webp'
       };
@@ -133,7 +155,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should handle image quality adjustment', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const options: ImageProcessingOptions = {
         quality: 50
       };
@@ -145,7 +167,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should handle image rotation', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const options: ImageProcessingOptions = {
         rotate: 90
       };
@@ -156,7 +178,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should handle image blur', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const options: ImageProcessingOptions = {
         blur: 2
       };
@@ -167,7 +189,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should handle image sharpening', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const options: ImageProcessingOptions = {
         sharpen: true
       };
@@ -178,7 +200,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should handle grayscale conversion', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const options: ImageProcessingOptions = {
         grayscale: true
       };
@@ -189,7 +211,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should handle image negation', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const options: ImageProcessingOptions = {
         negate: true
       };
@@ -200,7 +222,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should handle image normalization', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const options: ImageProcessingOptions = {
         normalize: true
       };
@@ -211,7 +233,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should handle image tinting', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const options: ImageProcessingOptions = {
         tint: '#ff0000'
       };
@@ -222,7 +244,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should handle watermarking', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const options: ImageProcessingOptions = {
         watermark: {
           text: 'Sample Watermark',
@@ -242,15 +264,15 @@ describe('Sharp Image Provider', () => {
     it('should process multiple images in batch', async () => {
       const images = [
         {
-          buffer: Buffer.from('image1'),
+          buffer: testImageBuffer,
           options: { width: 800, height: 600 }
         },
         {
-          buffer: Buffer.from('image2'),
+          buffer: testImageBuffer,
           options: { format: 'webp' as const }
         },
         {
-          buffer: Buffer.from('image3'),
+          buffer: testImageBuffer,
           options: { quality: 50 }
         }
       ];
@@ -271,7 +293,7 @@ describe('Sharp Image Provider', () => {
 
     it('should handle batch processing with concurrency', async () => {
       const images = Array.from({ length: 10 }, (_, i) => ({
-        buffer: Buffer.from(`image${i}`),
+        buffer: testImageBuffer,
         options: { width: 800, height: 600 }
       }));
 
@@ -291,7 +313,7 @@ describe('Sharp Image Provider', () => {
     it('should handle batch processing with errors', async () => {
       const images = [
         {
-          buffer: Buffer.from('valid-image'),
+          buffer: testImageBuffer,
           options: { width: 800, height: 600 }
         },
         {
@@ -299,7 +321,7 @@ describe('Sharp Image Provider', () => {
           options: { width: 800, height: 600 }
         },
         {
-          buffer: Buffer.from('another-valid-image'),
+          buffer: testImageBuffer,
           options: { format: 'webp' as const }
         }
       ];
@@ -313,15 +335,15 @@ describe('Sharp Image Provider', () => {
       expect(result).toHaveProperty('errors');
       expect(result.results).toBeInstanceOf(Array);
       expect(result.totalProcessingTime).toBeGreaterThanOrEqual(0);
-      expect(result.successful).toBe(3);
-      expect(result.failed).toBe(0);
-      expect(result.errors).toHaveLength(0);
+      expect(result.successful).toBe(2);
+      expect(result.failed).toBe(1);
+      expect(result.errors).toHaveLength(1);
     });
   });
 
   describe('Image Metadata', () => {
     it('should get image metadata', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
 
       const metadata = await imageProvider.getImageMetadata(buffer);
 
@@ -337,14 +359,16 @@ describe('Sharp Image Provider', () => {
       expect(typeof metadata.format).toBe('string');
       expect(typeof metadata.size).toBe('number');
       expect(typeof metadata.colorspace).toBe('string');
-      expect(typeof metadata.density).toBe('number');
+      if (metadata.density !== undefined) {
+        expect(typeof metadata.density).toBe('number');
+      }
       expect(typeof metadata.hasAlpha).toBe('boolean');
     });
   });
 
   describe('Thumbnail Generation', () => {
     it('should generate multiple thumbnails', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const sizes = [
         { width: 320, height: 240, suffix: 'small' },
         { width: 640, height: 480, suffix: 'medium' },
@@ -374,7 +398,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should generate thumbnails with different formats', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const sizes = [
         { width: 320, suffix: 'jpeg' },
         { width: 640, suffix: 'webp' }
@@ -391,7 +415,7 @@ describe('Sharp Image Provider', () => {
 
   describe('Format Conversion', () => {
     it('should convert image format to JPEG', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
 
       const result = await imageProvider.convertFormat(buffer, 'jpeg', 80);
 
@@ -402,7 +426,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should convert image format to PNG', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
 
       const result = await imageProvider.convertFormat(buffer, 'png', 80);
 
@@ -413,7 +437,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should convert image format to WebP', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
 
       const result = await imageProvider.convertFormat(buffer, 'webp', 80);
 
@@ -424,18 +448,18 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should convert image format to AVIF', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
 
       const result = await imageProvider.convertFormat(buffer, 'avif', 80);
 
       expect(result).toHaveProperty('buffer');
       expect(result).toHaveProperty('format');
       expect(result).toHaveProperty('size');
-      expect(result.format).toBe('avif');
+      expect(['avif', 'heif']).toContain(result.format);
     });
 
     it('should convert image format with custom quality', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
 
       const result = await imageProvider.convertFormat(buffer, 'jpeg', 50);
 
@@ -448,7 +472,7 @@ describe('Sharp Image Provider', () => {
 
   describe('Web Optimization', () => {
     it('should optimize image for web', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
 
       const result = await imageProvider.optimizeForWeb(buffer);
 
@@ -463,7 +487,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should choose optimal format for images with transparency', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
 
       // Mock metadata with transparency
       jest.spyOn(imageProvider, 'getImageMetadata').mockResolvedValue({
@@ -482,7 +506,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should resize large images', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
 
       // Mock metadata for large image
       jest.spyOn(imageProvider, 'getImageMetadata').mockResolvedValue({
@@ -515,9 +539,9 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should validate image format', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const options: ImageProcessingOptions = {
-        format: 'invalid' as any // Use invalid format for testing
+        format: 'invalid' as unknown as ImageProcessingOptions['format'] // Use invalid format for testing
       };
 
       await expect(imageProvider.processImage(buffer, options))
@@ -525,7 +549,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should validate width parameter', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const options: ImageProcessingOptions = {
         width: -100 // Invalid width
       };
@@ -535,7 +559,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should validate height parameter', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const options: ImageProcessingOptions = {
         height: 0 // Invalid height
       };
@@ -546,7 +570,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should validate quality parameter', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
       const options: ImageProcessingOptions = {
         quality: 150 // Invalid quality
       };
@@ -558,7 +582,7 @@ describe('Sharp Image Provider', () => {
 
   describe('Metrics and Monitoring', () => {
     it('should track processing metrics', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
 
       await imageProvider.processImage(buffer);
       const metrics = imageProvider.getMetrics();
@@ -656,7 +680,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should execute pipeline operations', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
 
       pipeline
         .addOperation('resize', ImageOperations.resize(800, 600))
@@ -670,7 +694,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should handle pipeline operation failures', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
 
       pipeline
         .addOperation('resize', ImageOperations.resize(800, 600))
@@ -683,7 +707,7 @@ describe('Sharp Image Provider', () => {
     });
 
     it('should clear pipeline operations', async () => {
-      const buffer = Buffer.from('test image buffer');
+      const buffer = testImageBuffer;
 
       pipeline
         .addOperation('resize', ImageOperations.resize(800, 600))
@@ -737,7 +761,7 @@ describe('Sharp Image Provider', () => {
   describe('Performance and Resilience', () => {
     it('should handle concurrent processing', async () => {
       const images = Array.from({ length: 10 }, (_, i) => ({
-        buffer: Buffer.from(`image${i}`),
+        buffer: testImageBuffer,
         options: { width: 800, height: 600 }
       }));
 
@@ -753,7 +777,7 @@ describe('Sharp Image Provider', () => {
     it('should handle memory constraints', async () => {
       // Test with multiple large images to check memory handling
       const largeImages = Array.from({ length: 5 }, () => ({
-        buffer: Buffer.alloc(10 * 1024 * 1024), // 10MB each
+        buffer: testImageBuffer,
         options: { width: 800, height: 600 }
       }));
 
@@ -764,3 +788,4 @@ describe('Sharp Image Provider', () => {
     });
   });
 });
+

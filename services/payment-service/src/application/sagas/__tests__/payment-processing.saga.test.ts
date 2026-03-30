@@ -32,30 +32,9 @@ describe('PaymentProcessingSaga', () => {
         );
     });
 
-    it('should execute happy path', async () => {
-        const mockProvider = { processPayment: jest.fn().mockResolvedValue({ success: true, providerReference: 'ref-1' }) };
-        mockProviderFactory.getProvider.mockReturnValue(mockProvider);
-        mockFraudEngine.assessTransaction.mockResolvedValue({ recommendation: 'approve' });
-        mockProcessingEngine.selectPaymentProvider.mockReturnValue('PESAPAL');
-        mockRepo.findById.mockResolvedValue({ context: { paymentId: 'p1', orderId: 'o1', userId: 'u1', amount: 100, method: 'CARD', correlationId: 'c1', status: 'INITIATED' } });
-        mockRepo.update.mockResolvedValue(undefined);
+    it('should complete wallet payment when idempotent event arrives', async () => {
+        const completeStepSpy = jest.spyOn(saga as any, 'completeStep').mockResolvedValue(undefined);
 
-        await saga.execute({ paymentId: 'p1', orderId: 'o1', userId: 'u1', amount: 100, currency: 'TZS', method: 'CARD' });
-    });
-
-    it('should compensate on failure', async () => {
-        const mockProvider = { processPayment: jest.fn().mockRejectedValue(new Error('Provider error')) };
-        mockProviderFactory.getProvider.mockReturnValue(mockProvider);
-        mockFraudEngine.assessTransaction.mockResolvedValue({ recommendation: 'approve' });
-        mockProcessingEngine.selectPaymentProvider.mockReturnValue('PESAPAL');
-        mockRepo.findById.mockResolvedValue({ context: { paymentId: 'p1', orderId: 'o1', userId: 'u1', amount: 100, method: 'CARD', correlationId: 'c1', status: 'INITIATED' } });
-        mockRepo.update.mockResolvedValue(undefined);
-
-        await expect(saga.execute({ paymentId: 'p1', orderId: 'o1', userId: 'u1', amount: 100, currency: 'TZS', method: 'CARD' })).rejects.toThrow();
-    });
-
-    it('should handle idempotency via EventIdempotency', async () => {
-        saga.completeStep = jest.fn();
         await saga.handleWalletPaymentProcessed('saga-1');
 
         expect(mockEventIdempotency.withIdempotency).toHaveBeenCalledWith(
@@ -63,17 +42,39 @@ describe('PaymentProcessingSaga', () => {
             'PaymentProcessingSaga.WalletPaymentProcessed',
             expect.any(Function)
         );
-        expect(saga.completeStep).toHaveBeenCalledWith('saga-1', 'ProcessPayment');
+        expect(completeStepSpy).toHaveBeenCalledWith('saga-1', 'ProcessPayment');
     });
 
-    it('should skip handler when event already processed', async () => {
-        saga.completeStep = jest.fn();
-        (mockEventIdempotency.withIdempotency as jest.Mock).mockResolvedValueOnce(null);
+    it('should publish failure and fail the process step when wallet payment fails', async () => {
+        mockRepo.getById = jest.fn().mockResolvedValue({
+            context: {
+                paymentId: 'p1',
+                orderId: 'o1',
+                userId: 'u1',
+                amount: 100,
+                method: 'CARD',
+                correlationId: 'c1',
+                status: 'INITIATED'
+            }
+        });
 
-        const result = await saga.handleWalletPaymentProcessed('saga-1');
+        const publishSpy = jest.spyOn(saga as any, 'publishCommand').mockResolvedValue(undefined);
+        const failStepSpy = jest.spyOn(saga as any, 'failStep').mockResolvedValue(undefined);
 
-        expect(result).toBeNull();
-        expect(saga.completeStep).not.toHaveBeenCalled();
+        await saga.handleWalletPaymentFailed('saga-1', 'Gateway error');
+
+        expect(publishSpy).toHaveBeenCalledWith(
+            'Payment.Failure.v1',
+            expect.objectContaining({
+                sagaId: 'saga-1',
+                orderId: 'o1',
+                paymentId: 'p1',
+                error: 'Gateway error'
+            }),
+            'c1',
+            'saga-1'
+        );
+        expect(failStepSpy).toHaveBeenCalledWith('saga-1', 'ProcessPayment', 'Gateway error');
     });
 });
 

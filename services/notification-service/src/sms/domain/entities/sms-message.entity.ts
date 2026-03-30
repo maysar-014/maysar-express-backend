@@ -46,7 +46,7 @@ export class SmsMessage {
     private deliveredAt?: Date;
     private failedAt?: Date;
     private lastError?: string;
-    private readonly metadata?: Record<string, any>;
+    private readonly metadata?: Record<string, unknown>;
     private readonly createdAt: Date;
     private updatedAt: Date;
     private domainEvents: DomainEvent[] = [];
@@ -66,7 +66,7 @@ export class SmsMessage {
         deliveredAt?: Date;
         failedAt?: Date;
         lastError?: string;
-        metadata?: Record<string, any>;
+        metadata?: Record<string, unknown>;
         createdAt: Date;
         updatedAt: Date;
     }) {
@@ -99,7 +99,7 @@ export class SmsMessage {
         userId?: string;
         maxRetries?: number;
         scheduledAt?: Date;
-        metadata?: Record<string, any>;
+        metadata?: Record<string, unknown>;
     }): SmsMessage {
         const phoneNumber = PhoneNumber.create(props.phoneNumber);
         const content = MessageContent.create(props.content);
@@ -150,7 +150,7 @@ export class SmsMessage {
         deliveredAt?: Date;
         failedAt?: Date;
         lastError?: string;
-        metadata?: Record<string, any>;
+        metadata?: Record<string, unknown>;
         createdAt: Date;
         updatedAt: Date;
     }): SmsMessage {
@@ -375,7 +375,7 @@ export class SmsMessage {
         return this.lastError;
     }
 
-    getMetadata(): Record<string, any> | undefined {
+    getMetadata(): Record<string, unknown> | undefined {
         return this.metadata;
     }
 

@@ -60,6 +60,8 @@ export interface PaymentProps {
 }
 
 export class Payment {
+    private static readonly SUPPORTED_CURRENCIES = ['TZS', 'USD', 'EUR', 'GBP', 'KES', 'UGX'];
+
     private props: PaymentProps;
 
     constructor(props: PaymentProps) {
@@ -174,6 +176,10 @@ export class Payment {
             throw new Error('Cannot fail a completed payment');
         }
 
+        if (!reason || reason.trim() === '') {
+            throw new Error('Failure reason is required');
+        }
+
         this.props.status = PaymentStatus.FAILED;
         this.props.failureReason = reason;
         this.props.updatedAt = new Date();
@@ -183,7 +189,10 @@ export class Payment {
      * Check if payment can be refunded
      */
     canRefund(): boolean {
-        if (this.props.status !== PaymentStatus.COMPLETED) {
+        if (
+            this.props.status !== PaymentStatus.COMPLETED &&
+            this.props.status !== PaymentStatus.PARTIALLY_REFUNDED
+        ) {
             return false;
         }
 
@@ -340,6 +349,10 @@ export class Payment {
 
         if (!props.currency || props.currency.trim() === '') {
             throw new Error('Currency is required');
+        }
+
+        if (!Payment.SUPPORTED_CURRENCIES.includes(props.currency.toUpperCase())) {
+            throw new Error(`Unsupported currency: ${props.currency}`);
         }
 
         if (!Object.values(PaymentMethod).includes(props.method)) {

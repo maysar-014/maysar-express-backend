@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../../infrastructure/services/logger.service';
 
+type AsyncHandler = (req: Request, res: Response, next: NextFunction) => unknown;
+
 /**
  * Async error handler wrapper
  */
-export function asyncHandler(fn: Function) {
+export function asyncHandler(fn: AsyncHandler) {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };

@@ -1,7 +1,5 @@
-﻿// @ts-nocheck
 import { BaseEventHandler } from './index';
 import { ICampaignRepository } from '../../domain/interfaces';
-import { CampaignMapper } from '../mappers/campaign.mapper';
 
 export interface ProductDeletedEvent {
     eventType: 'ProductDeleted';
@@ -30,9 +28,9 @@ export class ProductDeletedHandler extends BaseEventHandler {
         // This is a simplified version.
         const campaigns = await this.campaignRepository.findAll({ productId });
 
-        for (const campaign of campaigns) {
-            campaign.removeProduct(productId);
-            await this.campaignRepository.save(campaign);
+        for (const campaign of campaigns as Array<{ removeProduct?: (id: string) => void }>) {
+            campaign.removeProduct?.(productId);
+            await this.campaignRepository.save(campaign as never);
         }
     }
 }

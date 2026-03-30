@@ -4,10 +4,12 @@
  * Provides clean imports for all controller classes
  */
 
-export { ProductController } from './product.controller';
-export { PricingController } from './pricing.controller';
-export { SearchController } from './search.controller';
-export { BulkOperationsController } from './bulk-operations.controller';
+import { ProductController } from './product.controller';
+import { PricingController } from './pricing.controller';
+import { SearchController } from './search.controller';
+import { BulkOperationsController } from './bulk-operations.controller';
+
+export { ProductController, PricingController, SearchController, BulkOperationsController };
 
 /**
  * Controller Health Check
@@ -22,12 +24,6 @@ export function verifyControllerHealth(): {
   const controllers: string[] = [];
 
   try {
-    // Check if controllers can be imported
-    const { ProductController } = require('./product.controller');
-    const { PricingController } = require('./pricing.controller');
-    const { SearchController } = require('./search.controller');
-    const { BulkOperationsController } = require('./bulk-operations.controller');
-
     controllers.push('ProductController', 'PricingController', 'SearchController', 'BulkOperationsController');
 
     // Basic instantiation checks

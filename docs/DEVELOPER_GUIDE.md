@@ -1,64 +1,56 @@
-# Maysar Express Backend - Modular Monolith Developer Guide
+# Maysar Express Backend - Developer Guide
 
 ## Overview
 
-We have migrated from a microservices architecture to a modular monolith to simplify development, deployment, and operation while maintaining clear boundaries.
-
-## Architecture
-
-- **Single Process**: All modules run in one Node.js process.
-- **Unified Entry Point**: `src/main.ts` bootstraps the application.
-- **Modular Structure**: Services are now modules under `services/`, preserving their Clean Architecture layers.
-- **Communication**:
-  - **In-Process Events**: Using `shared/events/eventBus.ts` (EventEmitter).
-  - **Service Locator**: Using `src/core/service-locator.ts` for some shared capabilities.
-  - **No HTTP between modules**: Modules should communicate via events or direct method calls if strictly necessary via public interfaces.
+The codebase runs as a modular monolith. `src/main.ts` boots the process, `services/index.ts` registers the modules, and `src/app.ts` mounts them under `/api/{service-name}`. Modules communicate through the shared in-process event bus and shared saga/outbox helpers.
 
 ## Getting Started
 
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
-2. **Setup Database**:
-   ```bash
-   npm run db:fresh
-   ```
-   (Ensures `prisma/schema.prisma` is deployed)
-3. **Run Development Server**:
-   ```bash
-   npm run dev
-   ```
-   Server runs at `http://localhost:3000`.
+```bash
+npm install
+cp .env.example .env
+npm run prisma:generate
+npm run prisma:migrate
+npm run dev
+```
 
-## Adding a New Module
+The server listens on `http://localhost:3000` by default.
 
-1. Create a directory in `services/my-new-service`.
-2. Implement your domain logic.
-3. Create `services/my-new-service/index.ts` exporting the `Module` interface:
-   ```typescript
-   export const MyNewModule: Module = {
-       name: 'my-new-service',
-       initialize: async () => { ... },
-       routes: router,
-       shutdown: async () => { ... }
-   };
-   ```
-4. Register it in `services/index.ts`.
+## Adding A Module
+
+1. Create `services/my-new-service/`.
+2. Implement the module export in `services/my-new-service/index.ts` using the `Module` interface from `src/core/module.interface.ts`.
+3. Expose the module routes from that wrapper and register the module in `services/index.ts`.
+4. Let `src/app.ts` mount it automatically under `/api/my-new-service`.
+5. If a legacy alias is required, add it via `routeAliases`.
 
 ## Testing
 
-- **Unit Tests**: `npm run test:unit`
-- **Integration Tests**: `npm run test:integration`
-- All tests run via `jest` with the root `jest.config.js`.
-
-## Docker
-
-Build the single image:
 ```bash
-docker build -t maysar-backend .
+npm run test
+npm run test:<service-name>
+npm run test:integration:module
+npm run test:e2e:cypress
 ```
-Run with Compose:
+
+## Containers
+
+Use Docker Compose for a local containerized stack:
+
 ```bash
-npm run docker:up
+docker compose up --build
+docker compose down
 ```
+
+For the staging profile, use:
+
+```bash
+npm run staging:up
+npm run staging:down
+```
+
+## Notes
+
+- Module-level route prefixes should be documented as they appear after `src/app.ts` mounts the module.
+- Prefer the shared event bus over HTTP calls between modules.
+- When adding documentation, keep the monolith runtime and the module wrapper paths in sync.

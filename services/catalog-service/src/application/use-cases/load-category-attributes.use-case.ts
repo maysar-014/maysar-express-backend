@@ -5,12 +5,27 @@
 
 import { CategoryAttributeSchemaDto } from '../dto/product.dto';
 
+export interface CategoryAttributeRecord {
+  id: string;
+  name: string;
+  displayLabel: string;
+  type: 'TEXT' | 'NUMBER' | 'SELECT' | 'BOOLEAN';
+  isRequired: boolean;
+  options?: string | string[];
+  placeholder?: string;
+}
+
+export interface CategoryRecord {
+  name: string;
+  slug: string;
+}
+
 export interface ILoadCategoryAttributesRepository {
-  findByCategory(categoryId: string): Promise<any[]>;
+  findByCategory(categoryId: string): Promise<CategoryAttributeRecord[]>;
 }
 
 export interface ICategoryRepository {
-  findById(categoryId: string): Promise<any | null>;
+  findById(categoryId: string): Promise<CategoryRecord | null>;
 }
 
 export class LoadCategoryAttributesUseCase {
@@ -40,7 +55,7 @@ export class LoadCategoryAttributesUseCase {
         displayLabel: attr.displayLabel,
         type: attr.type,
         isRequired: attr.isRequired,
-        options: attr.options ? (typeof attr.options === 'string' ? JSON.parse(attr.options) : attr.options) : undefined,
+        options: attr.options ? (typeof attr.options === 'string' ? JSON.parse(attr.options) as string[] : attr.options) : undefined,
         placeholder: attr.placeholder,
       })),
     };

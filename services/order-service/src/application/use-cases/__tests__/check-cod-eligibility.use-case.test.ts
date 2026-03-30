@@ -9,8 +9,18 @@ describe('CheckCODEligibilityUseCase', () => {
         sellerId: 'seller-1',
         totalAmount: 50000,
         currency: 'TZS',
-        deliveryAddress: { city: 'Dar es Salaam', country: 'Tanzania' },
-        sellerAddress: { city: 'Arusha', country: 'Tanzania' },
+        deliveryAddress: {
+            street: '123 Market Street',
+            city: 'Dar es Salaam',
+            postalCode: '11101',
+            country: 'Tanzania',
+        },
+        sellerAddress: {
+            street: '45 Soko Road',
+            city: 'Arusha',
+            postalCode: '23100',
+            country: 'Tanzania',
+        },
         items: [{ productId: 'prod-1', quantity: 2, price: 25000 }],
     };
 

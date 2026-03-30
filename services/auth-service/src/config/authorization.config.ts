@@ -7,6 +7,7 @@
  */
 
 import { AuthzConfig, Permission, PermissionCondition, Role, UserContext } from '../api/middleware/authorization.middleware';
+import * as crypto from 'crypto';
 import { logger } from '../infrastructure/services/logger.service';
 
 // =====================================================================================
@@ -977,7 +978,6 @@ export class AuthorizationConfigManager {
   }
 
   private calculateChecksum(): string {
-    const crypto = require('crypto');
     const configString = JSON.stringify({
       roles: this.getAllRoles(),
       permissions: this.getAllPermissions(),

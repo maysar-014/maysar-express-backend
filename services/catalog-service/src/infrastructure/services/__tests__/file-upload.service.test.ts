@@ -61,7 +61,8 @@ jest.mock('crypto', () => ({
   createHash: jest.fn(() => ({
     update: jest.fn().mockReturnThis(),
     digest: jest.fn(() => 'test-hash')
-  }))
+  })),
+  randomBytes: jest.fn(() => Buffer.from('00112233445566778899aabbccddeeff', 'hex'))
 }));
 
 jest.mock('fs', () => ({
@@ -129,7 +130,7 @@ describe('FileUploadService', () => {
       encoding: '7bit',
       mimeType: 'image/jpeg',
       size: 1024 * 1024, // 1MB
-      buffer: Buffer.from('test-image-data'),
+      buffer: Buffer.alloc(1024 * 1024, 1),
       metadata: { width: 1920, height: 1080 }
     };
 
@@ -366,7 +367,7 @@ describe('FileUploadService', () => {
     it('should validate MIME type', () => {
       const invalidFile = {
         fieldName: 'file',
-        originalName: 'script.js',
+        originalName: 'script.jpg',
         encoding: '7bit',
         mimeType: 'application/javascript',
         size: 1024,
@@ -697,9 +698,9 @@ describe('FileUploadService', () => {
     it('should handle hash calculation errors', async () => {
       const fileWithoutBuffer = {
         fieldName: 'file',
-        originalName: 'test.txt',
+        originalName: 'test.pdf',
         encoding: '7bit',
-        mimeType: 'text/plain',
+        mimeType: 'application/pdf',
         size: 1024
         // No buffer or stream
       };

@@ -67,12 +67,13 @@ export class AccessEngine {
     });
     
     const cached = await pipeline.exec();
-    const results: AccessResult[] = [];
+    const results: Array<AccessResult | undefined> = new Array(requests.length);
     const uncached: AccessRequest[] = [];
 
     requests.forEach((req, i) => {
-      if (cached[i][1]) {
-        results[i] = JSON.parse(cached[i][1]);
+      const cachedEntry = cached?.[i];
+      if (cachedEntry?.[1]) {
+        results[i] = JSON.parse(cachedEntry[1]);
       } else {
         uncached.push(req);
       }
@@ -91,7 +92,7 @@ export class AccessEngine {
       }
     }
 
-    return results;
+    return results.filter((result): result is AccessResult => Boolean(result));
   }
 
   private async getRolePermissions(role: string): Promise<Record<string, string[]>> {

@@ -30,8 +30,8 @@ describe('Money Value Object', () => {
             expect(() => new Money(100, 'XYZ')).toThrow('Unsupported currency: XYZ');
         });
 
-        it('should throw error for invalid currency code length', () => {
-            expect(() => new Money(100, 'TZ')).toThrow('Currency code must be 3 characters');
+        it('should throw error for unsupported short currency codes', () => {
+            expect(() => new Money(100, 'TZ')).toThrow('Unsupported currency: TZ');
         });
     });
 

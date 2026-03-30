@@ -5,14 +5,14 @@ export interface PricingRuleDto {
     type: RuleType;
     value: number;
     priority: number;
-    conditions?: Record<string, any>;
+    conditions?: Record<string, unknown>;
 }
 
 export interface CampaignConditionDto {
     id: string;
     type: ConditionType;
     operator: string;
-    value: any;
+    value: unknown;
 }
 
 export interface CampaignDto {

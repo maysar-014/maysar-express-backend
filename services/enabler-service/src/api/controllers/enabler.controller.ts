@@ -41,9 +41,9 @@ export class EnablerController {
     async approve(req: Request, res: Response): Promise<void> {
         try {
             const { id } = req.params;
-            const headerAdminId = Array.isArray(req.headers['x-user-id'])
-                ? req.headers['x-user-id'][0]
-                : req.headers['x-user-id'];
+            const headerAdminId = Array.isArray(req.headers?.['x-user-id'])
+                ? req.headers?.['x-user-id']?.[0]
+                : req.headers?.['x-user-id'];
             const adminId = req.body?.adminId || headerAdminId;
             const completenessEvents = req.body?.completenessEvents;
             const result = await this.approveUseCase.execute(id, adminId, completenessEvents);

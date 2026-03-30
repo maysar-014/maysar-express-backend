@@ -301,19 +301,6 @@ export class WalletController {
             });
 
             if (!result.success) {
-                if (
-                    this.isContractTestRequest(req)
-                    && this.isContractTestWalletConflict(result.message || '')
-                ) {
-                    res.status(200).json({
-                        success: true,
-                        paymentId: 'pay_01ARZ3NDEKTSV4RRFFQ69G5FAV',
-                        status: 'PENDING',
-                        redirectUrl: 'https://example.com/payments/redirect',
-                        message: 'Top-up initiated successfully'
-                    });
-                    return;
-                }
                 // Role ineligibility is an authorization failure (403), not a bad request (400)
                 const isRoleError = result.message?.includes('not eligible') || result.message?.includes('Only BUYER and SELLER');
                 const statusCode = isRoleError ? 403 : this.mapWalletErrorStatus(result.message || 'Wallet operation failed');

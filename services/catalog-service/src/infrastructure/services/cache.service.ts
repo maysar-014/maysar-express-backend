@@ -123,6 +123,7 @@ export class DistributedCacheService implements ICacheService {
   private invalidationRules: CacheInvalidationRule[] = [];
   private cacheTags = new Map<string, Set<string>>(); // tag -> keys mapping
   private keyTags = new Map<string, Set<string>>(); // key -> tags mapping
+  private cacheKeys = new Set<string>();
   private warmingInterval?: NodeJS.Timeout;
   private analytics = {
     totalRequests: 0,
@@ -167,11 +168,13 @@ export class DistributedCacheService implements ICacheService {
    * Set value in cache
    */
   async set(key: string, value: any, ttl?: number, tags?: string[]): Promise<void> {
+    const startTime = Date.now();
     const fullKey = this.getFullKey(key);
     const expiryTime = ttl || this.config.defaultTtl;
 
     try {
       await this.cache.set(fullKey, value, expiryTime);
+      this.cacheKeys.add(fullKey);
 
       // Handle tags
       if (tags && tags.length > 0) {
@@ -183,6 +186,7 @@ export class DistributedCacheService implements ICacheService {
       this.analytics.totalSize += size;
 
     } catch (error) {
+      this.updateAnalytics(false, Date.now() - startTime);
       console.error(`Cache set error for key ${key}:`, error);
       throw error;
     }
@@ -201,6 +205,7 @@ export class DistributedCacheService implements ICacheService {
         // Remove tags association
         this.removeKeyFromTags(fullKey);
         this.keyTags.delete(fullKey);
+        this.cacheKeys.delete(fullKey);
       }
 
       return deleted;
@@ -232,6 +237,7 @@ export class DistributedCacheService implements ICacheService {
       await this.cache.clear();
       this.cacheTags.clear();
       this.keyTags.clear();
+      this.cacheKeys.clear();
       this.analytics.totalSize = 0;
       console.log('Cache cleared successfully');
     } catch (error) {
@@ -279,7 +285,9 @@ export class DistributedCacheService implements ICacheService {
     if (this.cache instanceof RedisCacheProvider && 'setMultiple' in this.cache) {
       const fullEntries: Record<string, any> = {};
       for (const [key, value] of Object.entries(entries)) {
-        fullEntries[this.getFullKey(key)] = value;
+        const fullKey = this.getFullKey(key);
+        fullEntries[fullKey] = value;
+        this.cacheKeys.add(fullKey);
       }
 
       await (this.cache as any).setMultiple(fullEntries, ttl);
@@ -295,7 +303,9 @@ export class DistributedCacheService implements ICacheService {
     // Apply tags to all entries if provided
     if (tags && tags.length > 0) {
       for (const key of Object.keys(entries)) {
-        this.addTagsToKey(this.getFullKey(key), tags);
+        const fullKey = this.getFullKey(key);
+        this.addTagsToKey(fullKey, tags);
+        this.cacheKeys.add(fullKey);
       }
     }
   }
@@ -315,6 +325,7 @@ export class DistributedCacheService implements ICacheService {
             totalDeleted++;
             this.removeKeyFromTags(key);
             this.keyTags.delete(key);
+            this.cacheKeys.delete(key);
           }
         }
         this.cacheTags.delete(tag);
@@ -329,11 +340,11 @@ export class DistributedCacheService implements ICacheService {
    */
   async invalidateByPattern(pattern: string): Promise<number> {
     let totalDeleted = 0;
+    const fullPattern = this.getFullKey(pattern);
 
     if (this.cache instanceof RedisCacheProvider) {
       const redisClient = (this.cache as any).redisClient;
       if (redisClient) {
-        const fullPattern = this.getFullKey(pattern);
         const keys = await scanKeysIoredis(redisClient, fullPattern);
         if (keys.length > 0) {
           await redisClient.del(...keys);
@@ -341,19 +352,21 @@ export class DistributedCacheService implements ICacheService {
           keys.forEach((key: string) => {
             this.removeKeyFromTags(key);
             this.keyTags.delete(key);
+            this.cacheKeys.delete(key);
           });
         }
         return totalDeleted;
       }
     }
 
-    for (const [key] of this.keyTags) {
-      if (this.matchesPattern(key, pattern)) {
+    for (const key of this.cacheKeys) {
+      if (this.matchesPattern(key, fullPattern)) {
         const deleted = await this.cache.delete(key);
         if (deleted) {
           totalDeleted++;
           this.removeKeyFromTags(key);
           this.keyTags.delete(key);
+          this.cacheKeys.delete(key);
         }
       }
     }
@@ -600,8 +613,36 @@ export class DistributedCacheService implements ICacheService {
     );
   }
 
-  private getFullKey(key: string): string {
-    return this.config.keyPrefix ? `${this.config.keyPrefix}:${key}` : key;
+  private getFullKey(key: unknown): string {
+    const normalizedKey = this.normalizeKey(key);
+    return this.config.keyPrefix ? `${this.config.keyPrefix}:${normalizedKey}` : normalizedKey;
+  }
+
+  private normalizeKey(key: unknown): string {
+    if (typeof key === 'string') {
+      return key;
+    }
+
+    if (typeof key === 'number' || typeof key === 'boolean' || typeof key === 'bigint') {
+      return String(key);
+    }
+
+    if (key instanceof Date) {
+      return key.toISOString();
+    }
+
+    if (Array.isArray(key)) {
+      return key.map(item => this.normalizeKey(item)).join(':');
+    }
+
+    if (key && typeof key === 'object') {
+      return Object.entries(key as Record<string, unknown>)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([name, value]) => `${name}:${this.normalizeKey(value)}`)
+        .join('|');
+    }
+
+    return String(key);
   }
 
   private stripPrefix(fullKey: string): string {

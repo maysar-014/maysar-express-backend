@@ -65,6 +65,7 @@ export class BusinessRegistrationSaga extends DistributedSagaOrchestrator<Busine
             ownerId: context.event.ownerId,
             businessType: context.event.businessType,
             registrationNumber: context.event.registrationNumber,
+            industries: (context.event.metadata?.industries as string[] | undefined) ?? [],
             correlationId: context.metadata.correlationId
           });
           context.complianceNotified = true;

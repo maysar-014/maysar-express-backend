@@ -19,6 +19,36 @@ const createResponse = (): Response => {
   return response as unknown as Response;
 };
 
+const makePublicBusiness = (overrides: Partial<{
+  id: string;
+  name: string;
+  ownerId: string;
+  industry: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}> = {}) => ({
+  id: 'biz-1',
+  name: 'Acme Retail',
+  businessType: 'CORPORATION',
+  registrationNumber: 'TZ-DAR-12345',
+  taxId: null,
+  status: 'ACTIVE',
+  verificationStatus: 'VERIFIED',
+  complianceStatus: 'COMPLIANT',
+  ownerId: 'seller-1',
+  description: 'A public seller',
+  industry: ['retail'],
+  website: 'https://acme.test',
+  email: 'hello@acme.test',
+  phoneNumber: '255700000001',
+  verifiedAt: new Date('2026-01-01T00:00:00.000Z'),
+  verifiedBy: 'verifier-1',
+  addresses: [],
+  createdAt: new Date('2026-01-03T00:00:00.000Z'),
+  updatedAt: new Date('2026-01-04T00:00:00.000Z'),
+  ...overrides
+});
+
 describe('BusinessController', () => {
   const registerBusinessUseCase = { execute: jest.fn() };
   const verifyBusinessUseCase = { execute: jest.fn() };
@@ -29,7 +59,9 @@ describe('BusinessController', () => {
     findById: jest.fn(),
     delete: jest.fn(),
     findByOwnerId: jest.fn(),
-    search: jest.fn()
+    search: jest.fn(),
+    findPublicSellerPreviews: jest.fn(),
+    findPublicBusinesses: jest.fn()
   };
   const businessDocumentRepository = {
     createDocument: jest.fn(),
@@ -213,6 +245,153 @@ describe('BusinessController', () => {
     expect(reactivateBusinessUseCase.execute).toHaveBeenCalledWith('biz-50', 'admin-5');
     expect(businessRepository.findByOwnerId).toHaveBeenCalledWith('owner-9');
     expect(businessRepository.search).toHaveBeenCalledWith('acme', 10, 5);
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('lists public sellers with aggregated seller data', async () => {
+    const controller = makeController();
+    const req = {
+      params: {},
+      query: { q: 'Acme', industry: 'Retail', limit: '20', offset: '0' }
+    } as unknown as Request;
+    const res = createResponse();
+    const previewBusiness = makePublicBusiness({
+      id: 'biz-preview',
+      ownerId: 'seller-1',
+      name: 'Acme Retail',
+      industry: ['retail'],
+      createdAt: new Date('2026-01-02T00:00:00.000Z')
+    });
+    const newerBusiness = makePublicBusiness({
+      id: 'biz-2',
+      ownerId: 'seller-1',
+      name: 'Acme Fashion',
+      industry: ['fashion'],
+      createdAt: new Date('2026-01-05T00:00:00.000Z')
+    });
+
+    businessRepository.findPublicSellerPreviews.mockResolvedValue([previewBusiness]);
+    businessRepository.findPublicBusinesses.mockResolvedValue([previewBusiness, newerBusiness]);
+
+    await controller.listPublicSellers(req, res);
+
+    expect(businessRepository.findPublicSellerPreviews).toHaveBeenCalledWith({
+      industry: 'retail',
+      industries: ['retail'],
+      query: 'Acme',
+      limit: 21,
+      offset: 0
+    });
+    expect(businessRepository.findPublicBusinesses).toHaveBeenCalledWith({ sellerIds: ['seller-1'] });
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        data: expect.objectContaining({
+          items: [
+            expect.objectContaining({
+              sellerId: 'seller-1',
+              sellerName: 'Acme Fashion',
+              businessCount: 2,
+              industries: ['fashion', 'retail'],
+              primaryBusiness: { id: 'biz-2', mapped: true }
+            })
+          ],
+          pagination: expect.objectContaining({
+            limit: 20,
+            offset: 0,
+            hasMore: false
+          })
+        })
+      })
+    );
+  });
+
+  it('returns public seller profile and industry summary', async () => {
+    const controller = makeController();
+    const profileReq = { params: { sellerId: 'seller-1' } } as unknown as Request;
+    const industriesReq = { params: { sellerId: 'seller-1' } } as unknown as Request;
+    const profileRes = createResponse();
+    const industriesRes = createResponse();
+    const businesses = [
+      makePublicBusiness({
+        id: 'biz-1',
+        ownerId: 'seller-1',
+        name: 'Acme Retail',
+        industry: ['retail'],
+        createdAt: new Date('2026-01-02T00:00:00.000Z')
+      }),
+      makePublicBusiness({
+        id: 'biz-2',
+        ownerId: 'seller-1',
+        name: 'Acme Fashion',
+        industry: ['fashion', 'retail'],
+        createdAt: new Date('2026-01-05T00:00:00.000Z')
+      })
+    ];
+
+    businessRepository.findPublicBusinesses
+      .mockResolvedValueOnce(businesses)
+      .mockResolvedValueOnce(businesses);
+
+    await controller.getPublicSellerById(profileReq, profileRes);
+    await controller.getPublicSellerIndustries(industriesReq, industriesRes);
+
+    expect(businessRepository.findPublicBusinesses).toHaveBeenNthCalledWith(1, { sellerId: 'seller-1' });
+    expect(businessRepository.findPublicBusinesses).toHaveBeenNthCalledWith(2, { sellerId: 'seller-1' });
+    expect(profileRes.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        data: expect.objectContaining({
+          sellerId: 'seller-1',
+          sellerName: 'Acme Fashion',
+          businessCount: 2,
+          industries: ['fashion', 'retail'],
+          businesses: [
+            { id: 'biz-2', mapped: true },
+            { id: 'biz-1', mapped: true }
+          ]
+        })
+      })
+    );
+    expect(industriesRes.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        data: expect.objectContaining({
+          sellerId: 'seller-1',
+          businessCount: 2,
+          industries: ['fashion', 'retail']
+        })
+      })
+    );
+  });
+
+  it('lists sellers by industry from the path parameter', async () => {
+    const controller = makeController();
+    const req = {
+      params: { industry: 'Retail' },
+      query: { q: 'Acme', limit: '5', offset: '1' }
+    } as unknown as Request;
+    const res = createResponse();
+    const previewBusiness = makePublicBusiness({
+      id: 'biz-preview',
+      ownerId: 'seller-2',
+      name: 'Retail Hub',
+      industry: ['retail'],
+      createdAt: new Date('2026-01-03T00:00:00.000Z')
+    });
+    businessRepository.findPublicSellerPreviews.mockResolvedValue([previewBusiness]);
+    businessRepository.findPublicBusinesses.mockResolvedValue([previewBusiness]);
+
+    await controller.listSellersByIndustry(req, res);
+
+    expect(businessRepository.findPublicSellerPreviews).toHaveBeenCalledWith({
+      industry: 'retail',
+      industries: ['retail'],
+      query: 'Acme',
+      limit: 6,
+      offset: 1
+    });
     expect(res.status).toHaveBeenCalledWith(200);
   });
 });

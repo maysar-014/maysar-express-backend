@@ -3,6 +3,7 @@ import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 
 const courierRepository = {
   findAvailableCouriers: jest.fn(),
+  findById: jest.fn(),
   getCourierById: jest.fn(),
   updateCourierAvailability: jest.fn(),
   updateCourierStatus: jest.fn()
@@ -102,7 +103,7 @@ describe('CourierController', () => {
     const req = { params: { courierId: 'cour-1' } } as unknown as Request;
     const res = createResponse();
 
-    courierRepository.getCourierById.mockResolvedValue({
+    courierRepository.findById.mockResolvedValue({
       id: 'cour-1',
       name: 'Courier One',
       phone: '+255700000001',
@@ -115,7 +116,7 @@ describe('CourierController', () => {
 
     await controller.getCourier(req, res);
 
-    expect(courierRepository.getCourierById).toHaveBeenCalledWith('cour-1');
+    expect(courierRepository.findById).toHaveBeenCalledWith('cour-1');
     expect(res.json).toHaveBeenCalledWith({
       success: true,
       data: {
@@ -140,7 +141,7 @@ describe('CourierController', () => {
     const req = { params: { courierId: 'cour-missing' } } as unknown as Request;
     const res = createResponse();
 
-    courierRepository.getCourierById.mockResolvedValue(null);
+    courierRepository.findById.mockResolvedValue(null);
 
     await controller.getCourier(req, res);
 
@@ -156,7 +157,7 @@ describe('CourierController', () => {
     const req = { params: { courierId: 'cour-err' } } as unknown as Request;
     const res = createResponse();
 
-    courierRepository.getCourierById.mockRejectedValue(new Error('lookup failed'));
+    courierRepository.findById.mockRejectedValue(new Error('lookup failed'));
 
     await controller.getCourier(req, res);
 
@@ -175,7 +176,7 @@ describe('CourierController', () => {
     } as unknown as Request;
     const res = createResponse();
 
-    courierRepository.getCourierById.mockResolvedValue({ id: 'cour-1', status: 'offline' });
+    courierRepository.findById.mockResolvedValue({ id: 'cour-1', status: 'offline' });
     courierRepository.updateCourierStatus.mockResolvedValue(undefined);
 
     await controller.updateCourierStatus(req, res);
@@ -201,7 +202,7 @@ describe('CourierController', () => {
     } as unknown as Request;
     const res = createResponse();
 
-    courierRepository.getCourierById.mockResolvedValue(null);
+    courierRepository.findById.mockResolvedValue(null);
 
     await controller.updateCourierStatus(req, res);
 
@@ -221,7 +222,7 @@ describe('CourierController', () => {
     } as unknown as Request;
     const res = createResponse();
 
-    courierRepository.getCourierById.mockRejectedValue(new Error('update failed'));
+    courierRepository.findById.mockRejectedValue(new Error('update failed'));
 
     await controller.updateCourierStatus(req, res);
 

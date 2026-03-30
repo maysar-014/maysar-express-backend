@@ -52,7 +52,9 @@ export class SupportAgent implements Entity {
             currentTicketCount: 0,
             isAvailable: true,
             metrics: {
-                totalTicketsResolved: 0
+                totalTicketsResolved: 0,
+                averageResolutionTime: undefined,
+                rating: undefined
             },
             createdAt: new Date(),
             updatedAt: new Date()

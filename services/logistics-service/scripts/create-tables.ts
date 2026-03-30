@@ -32,12 +32,12 @@ const runPrismaMigrations = (): void => {
 
   execSync(migrateCommand, { stdio: 'inherit', cwd: repoRoot });
   execSync(`npx prisma generate --schema "${schemaPath}"`, { stdio: 'inherit', cwd: repoRoot });
-  console.log('Prisma migrations applied for logistics service');
+  process.stdout.write('Prisma migrations applied for logistics service\n');
 };
 
 try {
   runPrismaMigrations();
 } catch (error) {
-  console.error(error);
+  process.stderr.write(`${String(error)}\n`);
   process.exitCode = 1;
 }

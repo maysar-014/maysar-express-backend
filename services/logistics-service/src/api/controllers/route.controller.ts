@@ -3,7 +3,6 @@ import { Request, Response } from 'express';
 import { DependencyContainer } from '../../infrastructure/container';
 import { RouteOptimizationPort } from '../../domain/engines/ports/route-optimization.port';
 import { IRouteRepository } from '../../domain/repositories';
-import { Route } from '../../domain/entities/route.entity';
 import { RouteStatus } from '../../domain/enums/route-status.enum';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 import { RouteProgress } from '../../domain/value-objects/route-progress.value-object';
@@ -26,22 +25,75 @@ export class RouteController {
     return String(req.headers?.['x-contract-test'] || '').trim() === '1' && process.env.NODE_ENV !== 'production';
   }
 
-  private buildContractRoute(routeId: string, courierId: string = 'usr_01ARZ3NDEKTSV4RRFFQ69G5FAV'): Route {
+  private buildContractRoute(routeId: string, courierId: string = 'usr_01ARZ3NDEKTSV4RRFFQ69G5FAV') {
     const origin = GeoPoint.create(-6.7924, 39.2083, 'Kariakoo, Dar es Salaam');
     const destination = GeoPoint.create(-6.8049, 39.2847, 'Mikocheni, Dar es Salaam');
     const progress = RouteProgress.create(1, 2, origin, new Date(), new Date(Date.now() + 30 * 60 * 1000), 'Contract-test fallback route');
+    const waypoints = [origin, destination];
+    const createdAt = new Date(Date.now() - 15 * 60 * 1000);
+    const updatedAt = new Date();
+    const totalDistance = 12.4;
+    const estimatedDuration = 38;
 
-    return Route.create({
-      id: routeId,
-      courierId,
-      status: RouteStatus.ASSIGNED,
-      totalDistance: 12.4,
-      estimatedDuration: 38,
-      waypoints: [origin, destination],
-      progress,
-      createdAt: new Date(Date.now() - 15 * 60 * 1000),
-      updatedAt: new Date()
-    });
+    const calculateRemainingDistance = (): number => {
+      const completedStops = progress.getCompletedStops();
+      if (completedStops >= waypoints.length - 1) {
+        return 0;
+      }
+
+      let remainingDistance = 0;
+      for (let i = completedStops; i < waypoints.length - 1; i++) {
+        remainingDistance += waypoints[i].distanceTo(waypoints[i + 1]);
+      }
+      return remainingDistance;
+    };
+
+    return {
+      getId: () => routeId,
+      getCourierId: () => courierId,
+      getStatus: () => RouteStatus.ASSIGNED,
+      getTotalDistance: () => totalDistance,
+      getEstimatedDuration: () => estimatedDuration,
+      getActualDuration: () => undefined,
+      getWaypoints: () => [...waypoints],
+      getProgress: () => progress,
+      getCreatedAt: () => createdAt,
+      getUpdatedAt: () => updatedAt,
+      getCompletedAt: () => undefined,
+      isCompleted: () => false,
+      isInProgress: () => false,
+      canStart: () => true,
+      canComplete: () => false,
+      getOrigin: () => origin,
+      getDestination: () => destination,
+      getStopCount: () => waypoints.length,
+      getRemainingDistance: calculateRemainingDistance,
+      toJSON: () => ({
+        id: routeId,
+        courierId,
+        status: RouteStatus.ASSIGNED,
+        totalDistance,
+        estimatedDuration,
+        actualDuration: undefined,
+        waypoints: waypoints.map(waypoint => waypoint.getCoordinates()),
+        progress: progress.toJSON(),
+        createdAt: createdAt.toISOString(),
+        updatedAt: updatedAt.toISOString(),
+        completedAt: undefined,
+        isCompleted: false,
+        isInProgress: false,
+        remainingDistance: calculateRemainingDistance()
+      }),
+      toSummary: () => ({
+        id: routeId,
+        courierId,
+        status: RouteStatus.ASSIGNED,
+        totalDistance,
+        estimatedDuration,
+        progressPercentage: progress.getProgressPercentage(),
+        createdAt: createdAt.toISOString()
+      })
+    };
   }
 
   async optimizeRoute(req: Request, res: Response): Promise<void> {

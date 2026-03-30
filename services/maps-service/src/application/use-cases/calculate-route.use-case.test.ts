@@ -1,4 +1,4 @@
-import { CalculateRouteUseCase } from '../calculate-route.use-case';
+import { CalculateRouteUseCase } from './calculate-route.use-case';
 
 const mockAdapter = {
   calculateRoute: jest.fn()

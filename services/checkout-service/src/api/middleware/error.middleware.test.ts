@@ -20,19 +20,22 @@ describe('Error Middleware', () => {
     errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
     expect(mockRes.status).toHaveBeenCalledWith(500);
     expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
-      error: expect.any(String)
+      error: expect.objectContaining({
+        message: 'Test error',
+        timestamp: expect.any(Date)
+      })
     }));
   });
 
   it('should handle errors with status code', () => {
-    const error: any = new Error('Not found');
+    const error = new Error('Not found') as Error & { statusCode: number };
     error.statusCode = 404;
     errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
     expect(mockRes.status).toHaveBeenCalledWith(404);
   });
 
   it('should handle validation errors', () => {
-    const error: any = new Error('Validation failed');
+    const error = new Error('Validation failed');
     error.name = 'ValidationError';
     errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
     expect(mockRes.status).toHaveBeenCalledWith(400);

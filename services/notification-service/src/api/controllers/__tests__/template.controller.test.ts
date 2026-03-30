@@ -12,7 +12,12 @@ describe('TemplateController', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         controller = new TemplateController(mockCreateUseCase, mockRepository);
-        req = { body: {}, params: {}, headers: {} };
+        req = {
+            body: {},
+            params: {},
+            headers: {},
+            user: { userId: 'user-123' }
+        } as Partial<Request> & { user?: { userId: string } };
         res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     });
 
@@ -23,5 +28,11 @@ describe('TemplateController', () => {
         await controller.createTemplate(req as Request, res as Response);
 
         expect(res.status).toHaveBeenCalledWith(201);
+        expect(mockCreateUseCase.execute).toHaveBeenCalledWith(expect.objectContaining({
+            createdBy: 'user-123',
+            name: 'Welcome',
+            type: 'email',
+            channel: 'email'
+        }));
     });
 });

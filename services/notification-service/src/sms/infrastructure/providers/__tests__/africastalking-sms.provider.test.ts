@@ -18,7 +18,7 @@ describe('AfricasTalkingSmsProvider', () => {
         it('should send SMS successfully', async () => {
             (fetch as jest.Mock).mockResolvedValue({
                 ok: true,
-                json: async () => ({
+                text: async () => JSON.stringify({
                     SMSMessageData: {
                         Recipients: [{
                             status: 'Success',
@@ -40,7 +40,7 @@ describe('AfricasTalkingSmsProvider', () => {
             (fetch as jest.Mock).mockResolvedValue({
                 ok: false,
                 status: 400,
-                json: async () => ({ message: 'Invalid request' })
+                text: async () => JSON.stringify({ message: 'Invalid request' })
             });
 
             const result = await provider.send('+255612834684', 'Test');
@@ -52,7 +52,7 @@ describe('AfricasTalkingSmsProvider', () => {
         it('should handle no recipients', async () => {
             (fetch as jest.Mock).mockResolvedValue({
                 ok: true,
-                json: async () => ({
+                text: async () => JSON.stringify({
                     SMSMessageData: { Recipients: [] }
                 })
             });
@@ -66,7 +66,7 @@ describe('AfricasTalkingSmsProvider', () => {
         it('should handle rejected messages', async () => {
             (fetch as jest.Mock).mockResolvedValue({
                 ok: true,
-                json: async () => ({
+                text: async () => JSON.stringify({
                     SMSMessageData: {
                         Recipients: [{
                             status: 'Failed',

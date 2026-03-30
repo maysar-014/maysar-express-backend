@@ -31,7 +31,7 @@
     "start": "node dist/src/main.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "test": "jest --runInBand",
+    "test": "node scripts/testing/run-jest-projects.js",
     "test:parallel": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "cross-env NODE_OPTIONS=--max-old-space-size=8192 jest --coverage --runInBand",

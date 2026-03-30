@@ -29,6 +29,10 @@ describe('inventory worker script', () => {
 
     jest.doMock('@prisma/client', () => ({ PrismaClient }));
     jest.doMock('@shared-events/eventBus', () => ({ eventBus: {} }), { virtual: true });
+    jest.doMock('./infrastructure/redis/redis-stock-engine', () => ({
+      createRedisStockEngine: jest.fn(() => ({ stockEngine: {}, redisClient: {}, redisLock: {} })),
+      resolveRedisReservationMode: jest.fn(() => 'off')
+    }));
     jest.doMock('./modules/stock/stockManager', () => ({ StockManager }));
     jest.doMock('./modules/warehouse/warehouseManager', () => ({ WarehouseManager }));
     jest.doMock('./modules/reservation/reservationEngine', () => ({ ReservationEngine }));

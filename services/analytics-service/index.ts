@@ -3,6 +3,7 @@ import { Module } from '../../src/core/module.interface';
 import { createAnalyticsRoutes } from './src/api/routes/analyticsRoutes';
 import sellerDashboardRoutes from './src/api/routes/sellerDashboardRoutes';
 import sellerProfitabilityRoutes from './src/api/routes/sellerProfitabilityRoutes';
+import sellerSlaRoutes from './src/api/routes/sellerSlaRoutes';
 import { register as metricsRegistry } from './src/infrastructure/monitoring/metrics';
 import { EventBusAdapter } from './src/infrastructure/messaging/EventBusAdapter';
 import { EventSubscriber } from './src/infrastructure/messaging/EventSubscriber';
@@ -88,6 +89,7 @@ export const AnalyticsModule: Module = {
         router.use(createAnalyticsRoutes(analyticsWiring.controller));
         router.use(sellerDashboardRoutes);
         router.use(sellerProfitabilityRoutes);
+        router.use(sellerSlaRoutes);
 
         router.get('/health', (_req, res) => {
             res.json({ status: 'healthy', service: 'analytics-service', timestamp: new Date().toISOString() });

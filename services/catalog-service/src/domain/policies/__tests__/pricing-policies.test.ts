@@ -739,7 +739,7 @@ describe('PricingRuleEngine', () => {
       const result = engine.evaluateRules(context);
 
       // Then: Margin should be set to 50%
-      expect(result.adjustments[0].adjustment).toBe(35); // 70 * 1.5 - 100 = 105 - 100 = 5
+      expect(result.adjustments[0].adjustment).toBe(5); // 70 * 1.5 - 100 = 105 - 100 = 5
       expect(result.finalPrice).toBe(105);
     });
 

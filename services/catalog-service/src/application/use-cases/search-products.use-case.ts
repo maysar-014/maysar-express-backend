@@ -204,36 +204,42 @@ export class SearchProductsUseCase {
           }
         );
 
-        return searchResults;
+        return this.normalizeSearchResults(searchResults);
       }
 
-      return await this.productRepository.search(
+      return this.normalizeSearchResults(await this.productRepository.search(
         this.buildRepositoryFilters(request.filters),
         { 
           limit: request.pagination.limit,
           offset: (request.pagination.page - 1) * request.pagination.limit
         }
-      ).then((result) => this.normalizeRepositorySearchResults(result));
+      ));
 
     } catch (error) {
       console.warn('Search service error, falling back to repository:', error);
-      return await this.productRepository.search(
+      return this.normalizeSearchResults(await this.productRepository.search(
         this.buildRepositoryFilters(request.filters),
         { 
           limit: request.pagination.limit,
           offset: (request.pagination.page - 1) * request.pagination.limit
         }
-      ).then((result) => this.normalizeRepositorySearchResults(result));
+      ));
     }
   }
 
-  private normalizeRepositorySearchResults(result: any): any[] {
+  private normalizeSearchResults(result: unknown): any[] {
     if (Array.isArray(result)) {
       return result;
     }
 
-    if (Array.isArray(result?.products)) {
-      return result.products;
+    const record = result as { results?: unknown; products?: unknown };
+
+    if (Array.isArray(record?.results)) {
+      return record.results;
+    }
+
+    if (Array.isArray(record?.products)) {
+      return record.products;
     }
 
     return [];
@@ -376,9 +382,10 @@ export class SearchProductsUseCase {
     for (const [categoryId, count] of categoryCounts) {
       try {
         const category = await this.categoryRepository.findById(categoryId);
+        const categoryName = typeof category?.name === 'string' ? category.name : 'Unknown Category';
         facets.categories.push({
           id: categoryId,
-          name: category?.name || 'Unknown Category',
+          name: categoryName,
           count
         });
       } catch (error) {

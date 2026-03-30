@@ -74,8 +74,9 @@ export class AuthenticationPolicy {
    * Determines if a user can access admin features
    */
   static canAccessAdminFeatures(user: User): boolean {
-    return user.role === UserRole.SYSTEM ||
-           user.role === UserRole.ENABLER;
+    const role = this.normalizeRole(user.role);
+    return role === UserRole.SYSTEM ||
+           role === UserRole.ENABLER;
   }
 
   /**
@@ -83,17 +84,20 @@ export class AuthenticationPolicy {
    */
   static canManageUsers(manager: User, target: User): boolean {
     // Only system and enabler roles can manage users
-    if (manager.role !== UserRole.SYSTEM && manager.role !== UserRole.ENABLER) {
+    const managerRole = this.normalizeRole(manager.role);
+    const targetRole = this.normalizeRole(target.role);
+
+    if (managerRole !== UserRole.SYSTEM && managerRole !== UserRole.ENABLER) {
       return false;
     }
 
     // Cannot manage system users
-    if (target.role === UserRole.SYSTEM) {
+    if (targetRole === UserRole.SYSTEM) {
       return false;
     }
 
     // Enablers cannot manage other enablers
-    if (manager.role === UserRole.ENABLER && target.role === UserRole.ENABLER) {
+    if (managerRole === UserRole.ENABLER && targetRole === UserRole.ENABLER) {
       return false;
     }
 
@@ -104,13 +108,16 @@ export class AuthenticationPolicy {
    * Determines if a user can view another user's profile
    */
   static canViewUserProfile(viewer: User, target: User): boolean {
+    const viewerRole = this.normalizeRole(viewer.role);
+    const targetRole = this.normalizeRole(target.role);
+
     // System users can view all profiles
-    if (viewer.role === UserRole.SYSTEM) {
+    if (viewerRole === UserRole.SYSTEM) {
       return true;
     }
 
     // Enablers can view all non-system profiles
-    if (viewer.role === UserRole.ENABLER && target.role !== UserRole.SYSTEM) {
+    if (viewerRole === UserRole.ENABLER && targetRole !== UserRole.SYSTEM) {
       return true;
     }
 
@@ -127,27 +134,33 @@ export class AuthenticationPolicy {
    * Determines if a user can update another user's profile
    */
   static canUpdateUserProfile(updater: User, target: User): boolean {
+    const updaterRole = this.normalizeRole(updater.role);
+    const targetRole = this.normalizeRole(target.role);
+
     // Users can update their own profile
     if (updater.id === target.id) {
       return true;
     }
 
     // System and enabler roles can update other users
-    return (updater.role === UserRole.SYSTEM || updater.role === UserRole.ENABLER) &&
-           target.role !== UserRole.SYSTEM;
+    return (updaterRole === UserRole.SYSTEM || updaterRole === UserRole.ENABLER) &&
+           targetRole !== UserRole.SYSTEM;
   }
 
   /**
    * Determines if a user can delete another user
    */
   static canDeleteUser(deleter: User, target: User): boolean {
+    const deleterRole = this.normalizeRole(deleter.role);
+    const targetRole = this.normalizeRole(target.role);
+
     // Cannot delete system users
-    if (target.role === UserRole.SYSTEM) {
+    if (targetRole === UserRole.SYSTEM) {
       return false;
     }
 
     // Only system users can delete other users
-    return deleter.role === UserRole.SYSTEM;
+    return deleterRole === UserRole.SYSTEM;
   }
 
   /**
@@ -161,35 +174,39 @@ export class AuthenticationPolicy {
    * Determines if a user can perform bulk operations
    */
   static canPerformBulkOperations(user: User): boolean {
-    return user.role === UserRole.SYSTEM || user.role === UserRole.ENABLER;
+    const role = this.normalizeRole(user.role);
+    return role === UserRole.SYSTEM || role === UserRole.ENABLER;
   }
 
   /**
    * Determines if a user can export data
    */
   static canExportData(user: User): boolean {
-    return user.role === UserRole.SYSTEM || user.role === UserRole.ENABLER;
+    const role = this.normalizeRole(user.role);
+    return role === UserRole.SYSTEM || role === UserRole.ENABLER;
   }
 
   /**
    * Determines if a user can access audit logs
    */
   static canAccessAuditLogs(user: User): boolean {
-    return user.role === UserRole.SYSTEM || user.role === UserRole.ENABLER;
+    const role = this.normalizeRole(user.role);
+    return role === UserRole.SYSTEM || role === UserRole.ENABLER;
   }
 
   /**
    * Determines if a user can configure system settings
    */
   static canConfigureSystem(user: User): boolean {
-    return user.role === UserRole.SYSTEM;
+    return this.normalizeRole(user.role) === UserRole.SYSTEM;
   }
 
   /**
    * Determines if a user can send system notifications
    */
   static canSendSystemNotifications(user: User): boolean {
-    return user.role === UserRole.SYSTEM || user.role === UserRole.ENABLER;
+    const role = this.normalizeRole(user.role);
+    return role === UserRole.SYSTEM || role === UserRole.ENABLER;
   }
 
   /**
@@ -237,12 +254,15 @@ export class AuthenticationPolicy {
    */
   static canChangeUserRole(changer: User, target: User, newRole: UserRole | string): boolean {
     // Only system users can change roles
-    if (changer.role !== UserRole.SYSTEM) {
+    const changerRole = this.normalizeRole(changer.role);
+    const targetRole = this.normalizeRole(target.role);
+
+    if (changerRole !== UserRole.SYSTEM) {
       return false;
     }
 
     // Cannot change system user roles
-    if (target.role === UserRole.SYSTEM) {
+    if (targetRole === UserRole.SYSTEM) {
       return false;
     }
 
@@ -259,13 +279,14 @@ export class AuthenticationPolicy {
    */
   static canCreateUserWithRole(creator: User, targetRole: UserRole | string): boolean {
     const normalizedTargetRole = this.normalizeRole(targetRole);
+    const creatorRole = this.normalizeRole(creator.role);
     // System can create any role
-    if (creator.role === UserRole.SYSTEM) {
+    if (creatorRole === UserRole.SYSTEM) {
       return normalizedTargetRole !== UserRole.SYSTEM;
     }
 
     // Enablers can create buyer, seller, supplier, courier roles
-    if (creator.role === UserRole.ENABLER) {
+    if (creatorRole === UserRole.ENABLER) {
       return [UserRole.BUYER, UserRole.SELLER, UserRole.SUPPLIER, UserRole.COURIER].includes(normalizedTargetRole);
     }
 
@@ -303,20 +324,21 @@ export class AuthenticationPolicy {
    * Determines if a user can bypass rate limits
    */
   static canBypassRateLimits(user: User): boolean {
-    return user.role === UserRole.SYSTEM || user.role === UserRole.ENABLER;
+    const role = this.normalizeRole(user.role);
+    return role === UserRole.SYSTEM || role === UserRole.ENABLER;
   }
 
   /**
    * Determines if a user can view security logs
    */
   static canViewSecurityLogs(user: User): boolean {
-    return user.role === UserRole.SYSTEM;
+    return this.normalizeRole(user.role) === UserRole.SYSTEM;
   }
 
   /**
    * Determines if a user can perform security operations
    */
   static canPerformSecurityOperations(user: User): boolean {
-    return user.role === UserRole.SYSTEM;
+    return this.normalizeRole(user.role) === UserRole.SYSTEM;
   }
 }

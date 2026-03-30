@@ -16,6 +16,15 @@ import { authenticate, authorize, validateRequest } from '../middleware';
 import { CreateCampaignSchema, UpdateCampaignSchema } from '../validators/campaign.validator';
 import { CampaignNotFoundError, CampaignValidationError, InvalidScheduleError, PricingRuleError } from '../../domain/errors/campaign.errors';
 
+type CampaignRequestUser = {
+    userId?: string;
+    id?: string;
+};
+
+type CampaignAuthenticatedRequest = Request & {
+    user?: CampaignRequestUser;
+};
+
 @controller('/campaigns', authenticate())
 export class CampaignController {
     constructor(
@@ -35,7 +44,8 @@ export class CampaignController {
     }
 
     private getAuthenticatedUserId(req: Request): string | null {
-        return (req as any).user?.userId || (req as any).user?.id || null;
+        const authenticatedReq = req as CampaignAuthenticatedRequest;
+        return authenticatedReq.user?.userId || authenticatedReq.user?.id || null;
     }
 
     private mapCampaignError(error: unknown): { status: number; message: string } {
@@ -72,7 +82,7 @@ export class CampaignController {
             const sellerId = userId;
             const result = await this.createCampaign.execute(sellerId, userId, body);
             return res.status(201).json(result);
-        } catch (error: any) {
+        } catch (error: unknown) {
             const mapped = this.mapCampaignError(error);
             return res.status(mapped.status).json({ error: mapped.message });
         }
@@ -83,7 +93,7 @@ export class CampaignController {
         try {
             const result = await this.listCampaignsUseCase.execute(req.query);
             return res.json(result);
-        } catch (error: any) {
+        } catch (error: unknown) {
             const mapped = this.mapCampaignError(error);
             return res.status(mapped.status).json({ error: mapped.message });
         }
@@ -94,7 +104,7 @@ export class CampaignController {
         try {
             const result = await this.getCampaign.execute(id);
             return res.json(result);
-        } catch (error: any) {
+        } catch (error: unknown) {
             const mapped = this.mapCampaignError(error);
             return res.status(mapped.status).json({ error: mapped.message });
         }
@@ -107,7 +117,7 @@ export class CampaignController {
             const body = req.body;
             const result = await this.updateCampaignUseCase.execute(id, body);
             return res.json(result);
-        } catch (error: any) {
+        } catch (error: unknown) {
             const { id } = req.params;
             const mapped = this.mapCampaignError(error);
             if (this.isContractTestRequest(req) && mapped.status === 409) {
@@ -123,7 +133,7 @@ export class CampaignController {
             const { id } = req.params;
             const result = await this.launchCampaignUseCase.execute(id);
             return res.json(result);
-        } catch (error: any) {
+        } catch (error: unknown) {
             const { id } = req.params;
             const mapped = this.mapCampaignError(error);
             if (this.isContractTestRequest(req) && mapped.status === 409) {
@@ -139,7 +149,7 @@ export class CampaignController {
             const { id } = req.params;
             const result = await this.pauseCampaignUseCase.execute(id);
             return res.json(result);
-        } catch (error: any) {
+        } catch (error: unknown) {
             const { id } = req.params;
             const mapped = this.mapCampaignError(error);
             if (this.isContractTestRequest(req) && mapped.status === 409) {
@@ -155,7 +165,7 @@ export class CampaignController {
             const { id } = req.params;
             const result = await this.resumeCampaignUseCase.execute(id);
             return res.json(result);
-        } catch (error: any) {
+        } catch (error: unknown) {
             const { id } = req.params;
             const mapped = this.mapCampaignError(error);
             if (this.isContractTestRequest(req) && mapped.status === 409) {
@@ -170,7 +180,7 @@ export class CampaignController {
         try {
             const result = await this.cancelCampaignUseCase.execute(id);
             return res.json(result);
-        } catch (error: any) {
+        } catch (error: unknown) {
             const mapped = this.mapCampaignError(error);
             return res.status(mapped.status).json({ error: mapped.message });
         }
@@ -182,7 +192,7 @@ export class CampaignController {
             const { id } = req.params;
             const result = await this.completeCampaignUseCase.execute(id);
             return res.json(result);
-        } catch (error: any) {
+        } catch (error: unknown) {
             const { id } = req.params;
             const mapped = this.mapCampaignError(error);
             if (this.isContractTestRequest(req) && mapped.status === 409) {

@@ -61,7 +61,17 @@ export function createPricingRoutes(
     ...publicMiddleware,
     validateSchemaRequest(anyObjectSchema),
     async (req, res) => {
-      await pricingController.calculatePrice(req, res);
+      try {
+        await pricingController.calculatePrice(req, res);
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: {
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error instanceof Error ? error.message : 'Internal server error'
+          }
+        });
+      }
     }
   );
 
@@ -77,7 +87,17 @@ export function createPricingRoutes(
     ...adminMiddleware,
     validateSchemaRequest(anyObjectSchema),
     async (req, res) => {
-      await pricingController.updateProductPrice(req, res);
+      try {
+        await pricingController.updateProductPrice(req, res);
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: {
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error instanceof Error ? error.message : 'Internal server error'
+          }
+        });
+      }
     }
   );
 
@@ -93,7 +113,17 @@ export function createPricingRoutes(
     ...adminMiddleware,
     validateSchemaRequest(anyObjectSchema),
     async (req, res) => {
-      await pricingController.bulkUpdatePricing(req, res);
+      try {
+        await pricingController.bulkUpdatePricing(req, res);
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: {
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error instanceof Error ? error.message : 'Internal server error'
+          }
+        });
+      }
     }
   );
 
@@ -109,7 +139,17 @@ export function createPricingRoutes(
     ...publicMiddleware,
     cache,
     async (req, res) => {
-      await pricingController.getPricingRules(req, res);
+      try {
+        await pricingController.getPricingRules(req, res);
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: {
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error instanceof Error ? error.message : 'Internal server error'
+          }
+        });
+      }
     }
   );
 
@@ -121,7 +161,17 @@ export function createPricingRoutes(
     ...adminMiddleware,
     validateSchemaRequest(anyObjectSchema),
     async (req, res) => {
-      await pricingController.createPricingRule(req, res);
+      try {
+        await pricingController.createPricingRule(req, res);
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: {
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error instanceof Error ? error.message : 'Internal server error'
+          }
+        });
+      }
     }
   );
 
@@ -133,11 +183,11 @@ export function createPricingRoutes(
     ...publicMiddleware,
     validateSchemaRequest(anyObjectSchema),
     async (req, res) => {
-      res.status(200).json({
-        success: true,
-        data: {
-          valid: true,
-          issues: []
+      res.status(501).json({
+        success: false,
+        error: {
+          code: 'NOT_IMPLEMENTED',
+          message: 'Pricing rule validation is not implemented yet'
         }
       });
     }
@@ -155,7 +205,17 @@ export function createPricingRoutes(
     ...adminMiddleware,
     cache,
     async (req, res) => {
-      await pricingController.getPricingAnalytics(req, res);
+      try {
+        await pricingController.getPricingAnalytics(req, res);
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: {
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error instanceof Error ? error.message : 'Internal server error'
+          }
+        });
+      }
     }
   );
 

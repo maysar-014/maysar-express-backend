@@ -62,7 +62,17 @@ export function createSearchRoutes(
     ...commonMiddleware,
     cache,
     async (req, res) => {
-      await searchController.searchProducts(req, res);
+      try {
+        await searchController.searchProducts(req, res);
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: {
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error instanceof Error ? error.message : 'Internal server error'
+          }
+        });
+      }
     }
   );
 
@@ -78,7 +88,17 @@ export function createSearchRoutes(
     ...commonMiddleware,
     cache,
     async (req, res) => {
-      await searchController.getSearchSuggestions(req, res);
+      try {
+        await searchController.getSearchSuggestions(req, res);
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: {
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error instanceof Error ? error.message : 'Internal server error'
+          }
+        });
+      }
     }
   );
 
@@ -94,7 +114,17 @@ export function createSearchRoutes(
     ...commonMiddleware,
     cache,
     async (req, res) => {
-      await searchController.getPopularSearches(req, res);
+      try {
+        await searchController.getPopularSearches(req, res);
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: {
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error instanceof Error ? error.message : 'Internal server error'
+          }
+        });
+      }
     }
   );
 
@@ -106,7 +136,17 @@ export function createSearchRoutes(
     commonMiddleware[0], // authenticate only for analytics
     cache,
     async (req, res) => {
-      await searchController.getSearchAnalytics(req, res);
+      try {
+        await searchController.getSearchAnalytics(req, res);
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: {
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error instanceof Error ? error.message : 'Internal server error'
+          }
+        });
+      }
     }
   );
 
@@ -122,12 +162,28 @@ export function createSearchRoutes(
     ...commonMiddleware,
     async (req, res) => {
       // Redirect to new search endpoint
-      const query = req.query.q || req.query.query || '';
-      const params = new URLSearchParams(req.url.split('?')[1]);
-      params.set('q', query as string);
+      const rawQuery = req.url.includes('?') ? req.url.split('?')[1] : '';
+      const params = new URLSearchParams(rawQuery);
+      const query = params.get('q') ?? params.get('query') ?? undefined;
+      params.delete('q');
+      params.delete('query');
+
+      const nextParams = new URLSearchParams();
+      if (query !== undefined) {
+        nextParams.set('q', query);
+      } else if (!rawQuery) {
+        nextParams.set('q', '');
+      }
+
+      params.forEach((value, key) => {
+        nextParams.append(key, value);
+      });
 
       const baseUrl = req.baseUrl || '';
-      res.redirect(301, `${baseUrl}${apiPrefix}/products/search?${params.toString()}`);
+      const queryString = nextParams.toString();
+      res.redirect(301, queryString
+        ? `${baseUrl}${apiPrefix}/products/search?${queryString}`
+        : `${baseUrl}${apiPrefix}/products/search`);
     }
   );
 

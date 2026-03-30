@@ -10,6 +10,41 @@
 export type SearchStrategy = 'exact' | 'fuzzy' | 'semantic' | 'hybrid';
 export type SearchScope = 'products' | 'categories' | 'sellers' | 'all';
 export type SortDirection = 'asc' | 'desc';
+export type SearchRecord = Record<string, unknown>;
+
+type SearchRequestLike = {
+  query?: unknown;
+  filters?: unknown;
+  sorting?: {
+    field?: unknown;
+    direction?: unknown;
+  };
+  pagination?: {
+    page?: unknown;
+    limit?: unknown;
+  };
+  searchOptions?: unknown;
+};
+
+type SearchResponseLike = {
+  results?: unknown;
+  total?: unknown;
+  pagination?: unknown;
+  searchMetadata?: unknown;
+};
+
+type SearchTemplateLike = {
+  templateId?: unknown;
+  name?: unknown;
+  category?: unknown;
+  baseQuery?: unknown;
+  variables?: unknown;
+  isActive?: unknown;
+  usageCount?: unknown;
+  createdBy?: unknown;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+};
 
 /**
  * Product Search Request DTO
@@ -33,7 +68,7 @@ export interface ProductSearchRequestDto {
       min: number;
       max?: number;
     };
-    attributes?: Record<string, any>;
+    attributes?: SearchRecord;
     location?: {
       latitude: number;
       longitude: number;
@@ -278,7 +313,7 @@ export interface AdvancedSearchRequestDto extends ProductSearchRequestDto {
       name: string;
       type: 'terms' | 'range' | 'date_histogram' | 'stats';
       field: string;
-      options?: Record<string, any>;
+      options?: SearchRecord;
     }>;
     highlighting?: {
       fields: string[];
@@ -291,7 +326,7 @@ export interface AdvancedSearchRequestDto extends ProductSearchRequestDto {
   personalization: {
     enablePersonalization: boolean;
     userProfile?: {
-      preferences: Record<string, any>;
+      preferences: SearchRecord;
       behaviorHistory: Array<{
         action: 'view' | 'purchase' | 'favorite' | 'share';
         productId: string;
@@ -327,7 +362,7 @@ export interface SearchTemplateDto {
     name: string;
     type: 'string' | 'number' | 'boolean' | 'date' | 'array';
     required: boolean;
-    defaultValue?: any;
+    defaultValue?: unknown;
     validation?: {
       min?: number;
       max?: number;
@@ -354,20 +389,20 @@ export interface SearchConfigurationDto {
     endpoints: string[];
     authentication?: {
       type: 'basic' | 'api_key' | 'oauth';
-      credentials: Record<string, any>;
+      credentials: SearchRecord;
     };
   };
   indexSettings: {
     name: string;
-    mappings: Record<string, any>;
+    mappings: SearchRecord;
     settings: {
       replicas: number;
       shards: number;
       refreshInterval: string;
       analysis: {
-        analyzers: Record<string, any>;
-        tokenizers: Record<string, any>;
-        filters: Record<string, any>;
+        analyzers: SearchRecord;
+        tokenizers: SearchRecord;
+        filters: SearchRecord;
       };
     };
   };
@@ -456,59 +491,65 @@ export interface SearchValidationResponseDto {
 /**
  * Type guards for runtime type checking
  */
-export function isProductSearchRequestDto(obj: any): obj is ProductSearchRequestDto {
+export function isProductSearchRequestDto(obj: unknown): obj is ProductSearchRequestDto {
+  if (obj === null || obj === undefined || typeof obj !== 'object') {
+    return false;
+  }
+
+  const candidate = obj as SearchRequestLike;
   return (
-    obj !== null &&
-    obj !== undefined &&
-    typeof obj === 'object' &&
-    (!obj.query || typeof obj.query === 'string') &&
-    obj.filters &&
-    typeof obj.filters === 'object' &&
-    obj.sorting &&
-    typeof obj.sorting === 'object' &&
-    ['relevance', 'price', 'rating', 'newest', 'popularity', 'distance', 'name'].includes(obj.sorting.field) &&
-    ['asc', 'desc'].includes(obj.sorting.direction) &&
-    obj.pagination &&
-    typeof obj.pagination === 'object' &&
-    typeof obj.pagination.page === 'number' &&
-    obj.pagination.page >= 1 &&
-    typeof obj.pagination.limit === 'number' &&
-    obj.pagination.limit >= 1 &&
-    obj.searchOptions &&
-    typeof obj.searchOptions === 'object'
+    (!candidate.query || typeof candidate.query === 'string') &&
+    !!candidate.filters &&
+    typeof candidate.filters === 'object' &&
+    !!candidate.sorting &&
+    typeof candidate.sorting === 'object' &&
+    ['relevance', 'price', 'rating', 'newest', 'popularity', 'distance', 'name'].includes(candidate.sorting.field as string) &&
+    ['asc', 'desc'].includes(candidate.sorting.direction as SortDirection) &&
+    !!candidate.pagination &&
+    typeof candidate.pagination === 'object' &&
+    typeof candidate.pagination.page === 'number' &&
+    candidate.pagination.page >= 1 &&
+    typeof candidate.pagination.limit === 'number' &&
+    candidate.pagination.limit >= 1 &&
+    !!candidate.searchOptions &&
+    typeof candidate.searchOptions === 'object'
   );
 }
 
-export function isProductSearchResponseDto(obj: any): obj is ProductSearchResponseDto {
+export function isProductSearchResponseDto(obj: unknown): obj is ProductSearchResponseDto {
+  if (obj === null || obj === undefined || typeof obj !== 'object') {
+    return false;
+  }
+
+  const candidate = obj as SearchResponseLike;
   return (
-    obj !== null &&
-    obj !== undefined &&
-    typeof obj === 'object' &&
-    Array.isArray(obj.results) &&
-    typeof obj.total === 'number' &&
-    obj.pagination &&
-    typeof obj.pagination === 'object' &&
-    obj.searchMetadata &&
-    typeof obj.searchMetadata === 'object'
+    Array.isArray(candidate.results) &&
+    typeof candidate.total === 'number' &&
+    !!candidate.pagination &&
+    typeof candidate.pagination === 'object' &&
+    !!candidate.searchMetadata &&
+    typeof candidate.searchMetadata === 'object'
   );
 }
 
-export function isSearchTemplateDto(obj: any): obj is SearchTemplateDto {
+export function isSearchTemplateDto(obj: unknown): obj is SearchTemplateDto {
+  if (obj === null || obj === undefined || typeof obj !== 'object') {
+    return false;
+  }
+
+  const candidate = obj as SearchTemplateLike;
   return (
-    obj !== null &&
-    obj !== undefined &&
-    typeof obj === 'object' &&
-    typeof obj.templateId === 'string' &&
-    typeof obj.name === 'string' &&
-    ['user_segment', 'business_type', 'seasonal', 'promotional', 'custom'].includes(obj.category) &&
-    obj.baseQuery &&
-    typeof obj.baseQuery === 'object' &&
-    Array.isArray(obj.variables) &&
-    typeof obj.isActive === 'boolean' &&
-    typeof obj.usageCount === 'number' &&
-    obj.createdBy &&
-    obj.createdAt instanceof Date &&
-    obj.updatedAt instanceof Date
+    typeof candidate.templateId === 'string' &&
+    typeof candidate.name === 'string' &&
+    ['user_segment', 'business_type', 'seasonal', 'promotional', 'custom'].includes(candidate.category as string) &&
+    !!candidate.baseQuery &&
+    typeof candidate.baseQuery === 'object' &&
+    Array.isArray(candidate.variables) &&
+    typeof candidate.isActive === 'boolean' &&
+    typeof candidate.usageCount === 'number' &&
+    !!candidate.createdBy &&
+    candidate.createdAt instanceof Date &&
+    candidate.updatedAt instanceof Date
   );
 }
 
@@ -516,7 +557,7 @@ export function isSearchTemplateDto(obj: any): obj is SearchTemplateDto {
  * DTO Factory Functions
  * Helper functions for creating validated DTOs
  */
-export function createProductSearchRequest(data: any): ProductSearchRequestDto {
+export function createProductSearchRequest(data: unknown): ProductSearchRequestDto {
   if (!isProductSearchRequestDto(data)) {
     throw new Error('Invalid ProductSearchRequestDto data');
   }
@@ -531,7 +572,7 @@ export function createProductSearchRequest(data: any): ProductSearchRequestDto {
   };
 }
 
-export function createSearchTemplate(data: any): SearchTemplateDto {
+export function createSearchTemplate(data: unknown): SearchTemplateDto {
   if (!isSearchTemplateDto(data)) {
     throw new Error('Invalid SearchTemplateDto data');
   }

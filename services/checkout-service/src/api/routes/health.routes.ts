@@ -19,3 +19,4 @@ router.get('/live', (_req: Request, res: Response) => {
 });
 
 export { router as healthRoutes };
+export default router;

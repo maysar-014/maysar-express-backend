@@ -22,6 +22,8 @@ describe('AutoAssignTicketUseCase', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        mockTicket.isAssigned.mockReturnValue(false);
+        mockTicket.isClosed.mockReturnValue(false);
 
         mockTicketRepo = {
             findById: jest.fn().mockResolvedValue(mockTicket),

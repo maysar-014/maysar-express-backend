@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+﻿import { Request, Response } from 'express';
 import { UserController } from '../user.controller';
 import { UserAlreadyExistsError } from '@domain/errors/user.errors';
 
@@ -17,6 +17,8 @@ describe('UserController', () => {
   let mockGetUserUseCase: any;
   let mockUpdateUserUseCase: any;
   let mockVerifyEmailUseCase: any;
+  let mockRequestPasswordResetUseCase: any;
+  let mockResetPasswordUseCase: any;
   let mockEmailService: any;
   let mockNotificationClient: any;
 
@@ -32,6 +34,8 @@ describe('UserController', () => {
     mockGetUserUseCase = { execute: jest.fn() };
     mockUpdateUserUseCase = { execute: jest.fn() };
     mockVerifyEmailUseCase = { execute: jest.fn() };
+    mockRequestPasswordResetUseCase = { execute: jest.fn() };
+    mockResetPasswordUseCase = { execute: jest.fn() };
     mockEmailService = { sendPasswordResetEmail: jest.fn(), sendEmail: jest.fn() };
     mockNotificationClient = { notify: jest.fn() };
 
@@ -47,6 +51,8 @@ describe('UserController', () => {
       mockGetUserUseCase,
       mockUpdateUserUseCase,
       mockVerifyEmailUseCase,
+      mockRequestPasswordResetUseCase,
+      mockResetPasswordUseCase,
       mockEmailService,
       mockNotificationClient
     );
@@ -119,7 +125,7 @@ describe('UserController', () => {
 
       await controller.updateUser(mockRequest as Request, mockResponse as Response);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
       expect(mockResponse.json).toHaveBeenCalled();
     });
 
@@ -202,10 +208,11 @@ describe('UserController', () => {
 
     test('returns 200 when request is accepted', async () => {
       mockRequest.body = { email: 'test@example.com' };
+      mockRequestPasswordResetUseCase.execute.mockResolvedValue({ success: true });
 
       await controller.requestPasswordReset(mockRequest as Request, mockResponse as Response);
 
-      expect(mockEmailService.sendPasswordResetEmail).toHaveBeenCalled();
+      expect(mockRequestPasswordResetUseCase.execute).toHaveBeenCalledWith({ email: 'test@example.com' });
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalled();
     });
@@ -220,18 +227,23 @@ describe('UserController', () => {
     });
 
     test('returns 200 when reset succeeds', async () => {
-      mockRequest.body = { userId: 'user-1', newPassword: 'newpass' };
-      mockChangePasswordUseCase.execute.mockResolvedValue({ success: true });
+      mockRequest.body = { userId: 'user-1', token: 'reset-token', newPassword: 'newpass' };
+      mockResetPasswordUseCase.execute.mockResolvedValue({ success: true });
 
       await controller.resetPassword(mockRequest as Request, mockResponse as Response);
 
+      expect(mockResetPasswordUseCase.execute).toHaveBeenCalledWith({
+        userId: 'user-1',
+        token: 'reset-token',
+        newPassword: 'newpass'
+      });
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalled();
     });
 
     test('returns 400 when reset fails', async () => {
-      mockRequest.body = { userId: 'user-1', newPassword: 'newpass' };
-      mockChangePasswordUseCase.execute.mockResolvedValue({ success: false });
+      mockRequest.body = { userId: 'user-1', token: 'reset-token', newPassword: 'newpass' };
+      mockResetPasswordUseCase.execute.mockResolvedValue({ success: false });
 
       await controller.resetPassword(mockRequest as Request, mockResponse as Response);
 
@@ -287,7 +299,7 @@ describe('UserController', () => {
 
       await controller.updateProfile(mockRequest as Request, mockResponse as Response);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
       expect(mockResponse.json).toHaveBeenCalled();
     });
 
@@ -317,7 +329,9 @@ describe('UserController', () => {
         null as any,
         null as any,
         null as any,
-        null as any
+        null as any,
+        mockEmailService,
+        mockNotificationClient
       );
       mockRequest.params = { id: 'user-1' };
       mockRequest.headers = { 'x-user-id': 'user-1' };
@@ -378,7 +392,9 @@ describe('UserController', () => {
         null as any,
         null as any,
         null as any,
-        null as any
+        null as any,
+        mockEmailService,
+        mockNotificationClient
       );
       mockRequest.params = { id: 'user-1' };
       mockRequest.headers = { 'x-user-id': 'user-1' };
@@ -428,7 +444,9 @@ describe('UserController', () => {
         null as any,
         null as any,
         null as any,
-        null as any
+        null as any,
+        mockEmailService,
+        mockNotificationClient
       );
       mockRequest.params = { id: 'user-1' };
       mockRequest.headers = { 'x-user-id': 'user-1' };
@@ -478,7 +496,9 @@ describe('UserController', () => {
         null as any,
         null as any,
         null as any,
-        null as any
+        null as any,
+        mockEmailService,
+        mockNotificationClient
       );
       mockRequest.params = { id: 'user-1' };
       mockRequest.headers = { 'x-user-id': 'user-1' };
@@ -528,7 +548,9 @@ describe('UserController', () => {
         null as any,
         null as any,
         null as any,
-        null as any
+        null as any,
+        mockEmailService,
+        mockNotificationClient
       );
       mockRequest.params = { id: 'user-1' };
       mockRequest.headers = { 'x-user-id': 'user-1' };
@@ -578,7 +600,9 @@ describe('UserController', () => {
         null as any,
         null as any,
         null as any,
-        null as any
+        null as any,
+        mockEmailService,
+        mockNotificationClient
       );
       mockRequest.params = { id: 'user-1' };
       mockRequest.headers = { 'x-user-id': 'user-1' };
@@ -628,7 +652,9 @@ describe('UserController', () => {
         null as any,
         null as any,
         null as any,
-        null as any
+        null as any,
+        mockEmailService,
+        mockNotificationClient
       );
       mockRequest.headers = { 'x-user-id': 'user-1' };
       mockRequest.body = { userId: 'user-1', breachType: 'suspicious_login', severity: 'high' };
@@ -660,3 +686,4 @@ describe('UserController', () => {
     });
   });
 });
+

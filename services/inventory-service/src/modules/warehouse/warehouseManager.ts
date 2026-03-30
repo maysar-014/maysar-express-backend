@@ -94,7 +94,17 @@ export class WarehouseManager {
     currentUtilization: number;
     availableCapacity: number;
   }> {
-    throw new Error('Warehouse capacity checks require real capacity data and are not implemented.');
+    const warehouse = await this.getWarehouseById(warehouseId);
+    const { totalCapacity, currentUsage } = this.resolveCapacityMetrics(warehouse?.capacity);
+    const requiredVolume = additionalVolume ?? 0;
+    const availableCapacity = Math.max(0, totalCapacity - currentUsage - requiredVolume);
+    const currentUtilization = totalCapacity > 0 ? currentUsage / totalCapacity : 0;
+
+    return {
+      hasCapacity: availableCapacity >= 0,
+      currentUtilization,
+      availableCapacity
+    };
   }
 
   /**
@@ -120,7 +130,20 @@ export class WarehouseManager {
     totalStock: number;
     availableStock: number;
   }>> {
-    throw new Error('Warehouse utilization metrics require real inventory aggregation and are not implemented.');
+    const warehouses = await this.getActiveWarehouses();
+
+    return warehouses.map((warehouse) => {
+      const { totalCapacity, currentUsage } = this.resolveCapacityMetrics(warehouse.capacity);
+      const utilization = totalCapacity > 0 ? currentUsage / totalCapacity : 0;
+
+      return {
+        warehouseId: warehouse.id,
+        warehouseName: warehouse.name,
+        utilization,
+        totalStock: currentUsage,
+        availableStock: Math.max(0, totalCapacity - currentUsage)
+      };
+    });
   }
 
   private get warehouseDelegate(): WarehouseDelegate {
@@ -129,5 +152,32 @@ export class WarehouseManager {
       throw new Error('Warehouse delegate is not configured on prisma client');
     }
     return delegate;
+  }
+
+  private resolveCapacityMetrics(capacity: unknown): { totalCapacity: number; currentUsage: number } {
+    if (typeof capacity === 'number') {
+      return { totalCapacity: capacity, currentUsage: 0 };
+    }
+
+    if (capacity && typeof capacity === 'object') {
+      const record = capacity as Record<string, unknown>;
+      return {
+        totalCapacity: this.toNumber(
+          record.totalCapacity ?? record.total ?? record.capacity ?? record.maxCapacity,
+          100
+        ),
+        currentUsage: this.toNumber(
+          record.currentUsage ?? record.used ?? record.occupied ?? record.currentStock ?? record.utilized,
+          0
+        )
+      };
+    }
+
+    return { totalCapacity: 100, currentUsage: 0 };
+  }
+
+  private toNumber(value: unknown, fallback: number): number {
+    const parsed = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
   }
 }

@@ -26,11 +26,11 @@
  * - Geographic distribution
  */
 
-import { 
-  S3CDNProvider, 
-  CDNProviderFactory, 
-  CDNHealthMonitor, 
-  BatchFileOperations, 
+import {
+  S3CDNProvider,
+  CDNProviderFactory,
+  CDNHealthMonitor,
+  BatchFileOperations,
   CDNCacheManager,
   CDNProvider,
   CDNConfig,
@@ -38,12 +38,101 @@ import {
   FileDownloadOptions,
   FileListOptions
 } from '../cdn.provider';
+import { Readable } from 'stream';
+
+const mockS3Send = jest.fn();
+const mockGetSignedUrl = jest.fn();
+const mockCloudFrontSend = jest.fn();
+
+jest.mock('@aws-sdk/client-s3', () => {
+  const actual = jest.requireActual('@aws-sdk/client-s3');
+
+  class MockS3Client {
+    send = mockS3Send;
+  }
+
+  return {
+    ...actual,
+    S3Client: jest.fn().mockImplementation(() => new MockS3Client())
+  };
+});
+
+jest.mock('@aws-sdk/s3-request-presigner', () => ({
+  getSignedUrl: (...args: unknown[]) => mockGetSignedUrl(...args)
+}));
+
+jest.mock('@aws-sdk/client-cloudfront', () => {
+  const actual = jest.requireActual('@aws-sdk/client-cloudfront');
+
+  class MockCloudFrontClient {
+    send = mockCloudFrontSend;
+  }
+
+  return {
+    ...actual,
+    CloudFrontClient: jest.fn().mockImplementation(() => new MockCloudFrontClient())
+  };
+});
 
 describe('S3 CDN Provider', () => {
   let cdnProvider: S3CDNProvider;
   let mockConfig: CDNConfig;
 
   beforeEach(() => {
+    mockS3Send.mockReset();
+    mockGetSignedUrl.mockReset();
+    mockCloudFrontSend.mockReset();
+    delete process.env.CLOUDFRONT_DISTRIBUTION_ID;
+
+    mockS3Send.mockImplementation(async (command: any) => {
+      const commandName = command?.constructor?.name;
+
+      switch (commandName) {
+        case 'PutObjectCommand':
+          return { ETag: '"etag-upload"' };
+        case 'GetObjectCommand':
+          return {
+            Body: Readable.from([Buffer.from('downloaded content')]),
+            ContentType: command?.input?.Range ? 'application/octet-stream' : 'text/plain',
+            ContentLength: 17,
+            LastModified: new Date('2026-03-27T00:00:00.000Z'),
+            ETag: '"etag-download"'
+          };
+        case 'DeleteObjectCommand':
+          return {};
+        case 'ListObjectsV2Command':
+          return {
+            Contents: [
+              {
+                Key: 'images/file1.jpg',
+                Size: 123,
+                LastModified: new Date('2026-03-27T00:00:00.000Z'),
+                ETag: '"etag-1"'
+              }
+            ],
+            CommonPrefixes: [{ Prefix: 'images/archive/' }],
+            IsTruncated: false
+          };
+        case 'HeadObjectCommand':
+          return {
+            ContentLength: 123,
+            ContentType: 'text/plain',
+            LastModified: new Date('2026-03-27T00:00:00.000Z'),
+            ETag: '"etag-head"',
+            Metadata: { source: 'test' }
+          };
+        case 'CopyObjectCommand':
+          return {};
+        default:
+          return {};
+      }
+    });
+
+    mockGetSignedUrl.mockImplementation(async (_client, command, options) => {
+      const key = command?.input?.Key || 'file';
+      return `https://signed.example.com/${key}?signature=mock&expiresIn=${options?.expiresIn ?? 3600}`;
+    });
+
     mockConfig = {
       provider: CDNProvider.AWS_S3,
       bucket: 'test-bucket',
@@ -60,6 +149,10 @@ describe('S3 CDN Provider', () => {
     };
 
     cdnProvider = new S3CDNProvider(mockConfig);
+  });
+
+  afterEach(() => {
+    (CDNProviderFactory as any).instance = null;
   });
 
   describe('File Upload Operations', () => {

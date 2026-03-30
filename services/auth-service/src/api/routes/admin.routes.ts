@@ -6,7 +6,7 @@ import { isSystemId } from '@shared/ids/id';
 import { requireRole } from '@shared/middleware/auth-context.middleware';
 
 const router = Router();
-const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$/u;
+const SAFE_VISIBLE_STRING_PATTERN = new RegExp('^(?=.*\\S)[^\\u0000-\\u001F\\u007F-\\u009F]+$', 'u');
 router.use(requireRole(['admin']));
 const requireSystemId = (paramName: string) => (req: any, res: any, next: any) => {
   const value = typeof req.params?.[paramName] === 'string' ? req.params[paramName].trim() : '';

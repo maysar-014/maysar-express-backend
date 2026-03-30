@@ -46,13 +46,21 @@ describe('ProductMatchingController', () => {
       {} as never,
       {} as never
     );
-    const req = { body: {} } as unknown as Request;
+    const req = {
+      body: {},
+      headers: { 'x-user-id': 'seller-1' }
+    } as unknown as Request;
     const res = makeResponse();
 
     await controller.matchProduct(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: 'match failed' });
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      matchFound: false,
+      confidence: 0,
+      candidates: [],
+      reason: 'match failed'
+    });
   });
 
   it('confirms match by id with selected payload', async () => {

@@ -1,36 +1,103 @@
+import { Business, BusinessStatus, VerificationStatus } from '../../../domain/entities/business.entity';
+import { RegistrationNumber } from '../../../domain/value-objects/registration-number.value-object';
+import { BusinessType } from '../../../domain/types/business.types';
 import { VerifyBusinessUseCase } from '../verify-business.use-case';
 
-const mockRepository = { findById: jest.fn(), update: jest.fn() } as any;
-const mockEventBus = { publish: jest.fn() } as any;
-
 describe('VerifyBusinessUseCase', () => {
-    let useCase: VerifyBusinessUseCase;
+  const mockRepository = {
+    findById: jest.fn(),
+    update: jest.fn()
+  };
 
-    beforeEach(() => {
-        jest.clearAllMocks();
-        useCase = new VerifyBusinessUseCase(mockRepository, mockEventBus);
+  const mockSagaEventHandler = {
+    handleBusinessVerifiedEvent: jest.fn().mockResolvedValue(undefined)
+  };
+
+  const createUseCase = () =>
+    new VerifyBusinessUseCase(mockRepository as never, mockSagaEventHandler as never);
+
+  const createBusiness = () =>
+    Business.register({
+      id: 'business-1',
+      name: 'Test Business',
+      businessType: BusinessType.SOLE_PROPRIETORSHIP,
+      registrationNumber: RegistrationNumber.create('TZ-DAR-1234'),
+      ownerId: 'owner-1',
+      industry: ['retail']
     });
 
-    it('should verify business successfully', async () => {
-        mockRepository.findById.mockResolvedValue({ 
-            id: 'business-1', 
-            verified: false,
-            status: 'PENDING'
-        });
-        
-        const result = await useCase.execute({ businessId: 'business-1', verifiedBy: 'admin-1' });
-        expect(result.verified).toBe(true);
-        expect(mockRepository.update).toHaveBeenCalled();
-        expect(mockEventBus.publish).toHaveBeenCalledWith('BusinessVerified.v1', expect.any(Object));
-    });
+  const validDto = {
+    businessId: 'business-1',
+    verifiedBy: 'admin-1',
+    documentTypes: ['REGISTRATION_CERTIFICATE', 'PROOF_OF_ADDRESS', 'OWNER_ID']
+  };
 
-    it('should fail if already verified', async () => {
-        mockRepository.findById.mockResolvedValue({ 
-            id: 'business-1', 
-            verified: true
-        });
-        
-        await expect(useCase.execute({ businessId: 'business-1', verifiedBy: 'admin-1' }))
-            .rejects.toThrow('Business already verified');
-    });
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('verifies business successfully', async () => {
+    const business = createBusiness();
+    mockRepository.findById.mockResolvedValue(business);
+    mockRepository.update.mockImplementation(async (updatedBusiness: Business) => updatedBusiness);
+
+    const useCase = createUseCase();
+    const result = await useCase.execute(validDto);
+
+    expect(result.verificationStatus).toBe(VerificationStatus.VERIFIED);
+    expect(result.status).toBe(BusinessStatus.ACTIVE);
+    expect(result.verifiedBy).toBe('admin-1');
+    expect(mockRepository.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        verificationStatus: VerificationStatus.VERIFIED,
+        verifiedBy: 'admin-1'
+      })
+    );
+    expect(mockSagaEventHandler.handleBusinessVerifiedEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        aggregateId: 'business-1',
+        verifiedBy: 'admin-1',
+        ownerId: 'owner-1'
+      })
+    );
+  });
+
+  it('fails if business is already verified', async () => {
+    const business = createBusiness().verify('existing-verifier');
+    mockRepository.findById.mockResolvedValue(business);
+
+    const useCase = createUseCase();
+    await expect(useCase.execute(validDto)).rejects.toThrow('Already verified');
+  });
+
+  it('fails if required documents are missing', async () => {
+    mockRepository.findById.mockResolvedValue(createBusiness());
+
+    const useCase = createUseCase();
+    await expect(
+      useCase.execute({
+        ...validDto,
+        documentTypes: ['REGISTRATION_CERTIFICATE']
+      })
+    ).rejects.toThrow('Missing required documents');
+  });
+
+  it('fails if verifier id is missing', async () => {
+    mockRepository.findById.mockResolvedValue(createBusiness());
+
+    const useCase = createUseCase();
+    await expect(
+      useCase.execute({
+        ...validDto,
+        verifiedBy: ''
+      })
+    ).rejects.toThrow('Verifier ID is required');
+  });
+
+  it('fails when business is not found', async () => {
+    mockRepository.findById.mockResolvedValue(null);
+
+    const useCase = createUseCase();
+    await expect(useCase.execute(validDto)).rejects.toThrow('Business not found');
+  });
 });

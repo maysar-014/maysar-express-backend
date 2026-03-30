@@ -13,7 +13,7 @@ export class UpdateCampaignUseCase {
         private readonly campaignRepository: ICampaignRepository
     ) { }
 
-    async execute(id: string, updates: any): Promise<CampaignDto> {
+    async execute(id: string, _updates: Record<string, unknown>): Promise<CampaignDto> {
         const campaign = await this.campaignRepository.findById(id);
         if (!campaign) throw new CampaignNotFoundError(id);
 

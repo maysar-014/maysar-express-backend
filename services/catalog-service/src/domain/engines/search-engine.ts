@@ -177,7 +177,7 @@ export class TextSearchStrategy {
     if (a.length === 0) return b.length;
     if (b.length === 0) return a.length;
 
-    let [short, long] = a.length < b.length ? [a, b] : [b, a];
+    const [short, long] = a.length < b.length ? [a, b] : [b, a];
     let prevRow = Array.from({ length: short.length + 1 }, (_, i) => i);
     let currRow = new Array(short.length + 1);
 
@@ -343,17 +343,19 @@ export class SortStrategy {
 
     return results.sort((a, b) => {
       switch (sortBy) {
-        case 'price_asc':
+        case 'price_asc': {
           const priceA = productMap.get(a.productId.toString())?.price.toNumber() || 0;
           const priceB = productMap.get(b.productId.toString())?.price.toNumber() || 0;
           return priceA - priceB;
+        }
 
-        case 'price_desc':
+        case 'price_desc': {
           const priceDescA = productMap.get(a.productId.toString())?.price.toNumber() || 0;
           const priceDescB = productMap.get(b.productId.toString())?.price.toNumber() || 0;
           return priceDescB - priceDescA;
+        }
 
-        case 'rating':
+        case 'rating': {
           const ratingA = productMap.get(a.productId.toString())?.averageRating || 0;
           const ratingB = productMap.get(b.productId.toString())?.averageRating || 0;
           if (ratingB !== ratingA) return ratingB - ratingA;
@@ -361,16 +363,19 @@ export class SortStrategy {
           const reviewsA = productMap.get(a.productId.toString())?.reviewCount || 0;
           const reviewsB = productMap.get(b.productId.toString())?.reviewCount || 0;
           return reviewsB - reviewsA;
+        }
 
-        case 'popularity':
+        case 'popularity': {
           const popA = productMap.get(a.productId.toString())?.popularityScore || 0;
           const popB = productMap.get(b.productId.toString())?.popularityScore || 0;
           return popB - popA;
+        }
 
-        case 'newest':
+        case 'newest': {
           const dateA = productMap.get(a.productId.toString())?.createdAt || new Date(0);
           const dateB = productMap.get(b.productId.toString())?.createdAt || new Date(0);
           return dateB.getTime() - dateA.getTime();
+        }
 
         case 'relevance':
         default:
@@ -635,7 +640,7 @@ export class ProductSearchEngine {
     if (a.length === 0) return b.length;
     if (b.length === 0) return a.length;
 
-    let [short, long] = a.length < b.length ? [a, b] : [b, a];
+    const [short, long] = a.length < b.length ? [a, b] : [b, a];
     let prevRow = Array.from({ length: short.length + 1 }, (_, i) => i);
     let currRow = new Array(short.length + 1);
 

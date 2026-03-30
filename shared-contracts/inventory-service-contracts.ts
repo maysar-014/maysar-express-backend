@@ -1,4 +1,4 @@
-import { UUID, Money } from './types';
+import { UUID } from './types';
 
 export namespace InventoryService {
     export namespace Events {

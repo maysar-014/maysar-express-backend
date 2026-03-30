@@ -19,6 +19,7 @@ describe('BusinessMapper', () => {
         registrationNumber: 'TZ-DAR-12345',
         taxId: '123456789',
         ownerId: 'owner-1',
+        industry: ['retail', 'wholesale'],
         addresses: [
           {
             id: 'addr-1',
@@ -54,7 +55,7 @@ describe('BusinessMapper', () => {
       complianceStatus: ComplianceStatus.COMPLIANT,
       ownerId: 'owner-2',
       description: 'desc',
-      industry: 'Retail',
+      industry: ['Retail', 'Wholesale'],
       website: 'https://mapper.test',
       email: 'hello@mapper.test',
       phoneNumber: '255700000002',
@@ -84,7 +85,8 @@ describe('BusinessMapper', () => {
         id: 'biz-2',
         registrationNumber: 'TZ-AR-54321',
         taxId: '987654321',
-        ownerId: 'owner-2'
+        ownerId: 'owner-2',
+        industry: ['retail', 'wholesale']
       })
     );
     expect(dto.addresses).toHaveLength(1);

@@ -22,6 +22,7 @@ describe('catalogService bootstrap', () => {
     });
     const app = { use, get, post, listen };
     const expressFactory = jest.fn(() => app);
+    const router = { use: jest.fn(), post: jest.fn() };
     const jsonMiddleware = jest.fn(() => 'json-mw');
     (expressFactory as unknown as { json: typeof jsonMiddleware }).json = jsonMiddleware;
 
@@ -42,36 +43,35 @@ describe('catalogService bootstrap', () => {
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
 
-    jest.isolateModules(() => {
-      jest.doMock('express', () => ({
-        __esModule: true,
-        default: expressFactory
-      }));
-      jest.doMock('@prisma/client', () => ({
-        PrismaClient: prismaCtor
-      }));
-      jest.doMock(
-        '@shared-events/eventBus',
-        () => ({
-          eventBus: { subscribe, publish },
-          EventEnvelope: class EventEnvelope {}
-        }),
-        { virtual: true }
-      );
-      jest.doMock('dotenv', () => ({
-        __esModule: true,
-        default: { config: jest.fn() }
-      }));
-      jest.doMock('uuid', () => ({
-        v4: jest.fn(() => 'uuid-1')
-      }));
-      jest.doMock('./src/infrastructure/search-initializer', () => ({
-        SearchEngineInitializer: { initialize }
-      }));
+    jest.doMock('express', () => ({
+      __esModule: true,
+      default: expressFactory,
+      Router: jest.fn(() => router)
+    }));
+    jest.doMock('@prisma/client', () => ({
+      PrismaClient: prismaCtor
+    }));
+    jest.doMock(
+      '@shared-events/eventBus',
+      () => ({
+        eventBus: { subscribe, publish },
+        EventEnvelope: class EventEnvelope {}
+      }),
+      { virtual: true }
+    );
+    jest.doMock('dotenv', () => ({
+      __esModule: true,
+      default: { config: jest.fn() }
+    }));
+    jest.doMock('uuid', () => ({
+      v4: jest.fn(() => 'uuid-1')
+    }));
+    jest.doMock('./src/infrastructure/search-initializer', () => ({
+      SearchEngineInitializer: { initialize }
+    }));
 
-      const module = require('./catalogService');
-      expect(module.default).toBe(app);
-    });
+    const module = await import('./catalogService');
+    expect(module.default).toBe(app);
 
     await new Promise(resolve => setImmediate(resolve));
 

@@ -100,7 +100,7 @@ describe('PrismaUserRepository (partial)', () => {
     expect(prefs.language).toBe('sw');
 
     // for exportUserData, mock findById via prisma.user.findUnique used in findById
-    prisma.user_User.findUnique.mockResolvedValueOnce({ id: 'u1', email: 'u1@example.com', phoneNumber: '+255712345678', firstName: 'A', lastName: 'B', role: 'buyer', language: 'en', timezone: 'UTC', createdAt: new Date(), updatedAt: new Date() });
+    prisma.user_User.findUnique.mockResolvedValueOnce({ id: 'u1', email: 'u1@example.com', phoneNumber: '+255712345678', firstName: 'A', lastName: 'B', role: 'buyer', status: 'active', language: 'en', timezone: 'UTC', createdAt: new Date(), updatedAt: new Date() });
     prisma.user_UserAddress.findMany.mockResolvedValueOnce([]);
     prisma.user_AuditLog.findMany.mockResolvedValueOnce([]);
 

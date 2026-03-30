@@ -25,6 +25,8 @@ describe('User Controller Security', () => {
             getUser: { execute: jest.fn() },
             updateUser: { execute: jest.fn() },
             verifyEmail: { execute: jest.fn() },
+            requestPasswordReset: { execute: jest.fn() },
+            resetPassword: { execute: jest.fn() },
             emailService: { sendPasswordResetEmail: jest.fn(), sendEmail: jest.fn() },
             notificationClient: { notify: jest.fn() }
         };
@@ -41,6 +43,8 @@ describe('User Controller Security', () => {
             mockUseCases.getUser,
             mockUseCases.updateUser,
             mockUseCases.verifyEmail,
+            mockUseCases.requestPasswordReset,
+            mockUseCases.resetPassword,
             mockUseCases.emailService,
             mockUseCases.notificationClient
         );

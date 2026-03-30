@@ -21,13 +21,13 @@ export * from './bulk-operation-dto';
  * Shared patterns and utilities for DTOs
  */
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
   metadata?: {
     timestamp: Date;
@@ -37,7 +37,7 @@ export interface ApiResponse<T = any> {
   };
 }
 
-export interface PaginatedResponse<T = any> {
+export interface PaginatedResponse<T = unknown> {
   data: T[];
   pagination: {
     page: number;
@@ -52,7 +52,7 @@ export interface PaginatedResponse<T = any> {
     requestId: string;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
-    filters?: Record<string, any>;
+    filters?: Record<string, unknown>;
   };
 }
 
@@ -60,7 +60,7 @@ export interface ValidationError {
   field: string;
   code: string;
   message: string;
-  value?: any;
+  value?: unknown;
 }
 
 export interface ValidationResult {
@@ -90,7 +90,7 @@ export interface RequestContext {
  * Application Event DTOs
  * Data structures for application-level events
  */
-export interface ApplicationEvent<T = any> {
+export interface ApplicationEvent<T = unknown> {
   eventId: string;
   eventType: string;
   aggregateId: string;
@@ -109,7 +109,7 @@ export interface ApplicationEvent<T = any> {
  * Cache DTOs
  * Data structures for caching operations
  */
-export interface CacheEntry<T = any> {
+export interface CacheEntry<T = unknown> {
   key: string;
   value: T;
   ttl?: number;
@@ -134,7 +134,7 @@ export interface CacheInvalidationRequest {
  * Common search-related data structures
  */
 export interface SearchFilters {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface SearchSorting {
@@ -172,7 +172,7 @@ export interface SearchSuggestion {
   relevance: number;
 }
 
-export interface SearchResponse<T = any> {
+export interface SearchResponse<T = unknown> {
   results: T[];
   total: number;
   facets?: SearchFacet[];

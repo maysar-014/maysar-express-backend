@@ -81,7 +81,7 @@ describe('PrismaTrainingRecordRepository', () => {
     expect(expired).toHaveLength(1);
   });
 
-  it('supports training_TrainingRecord delegate and throws when missing', async () => {
+  it('supports training_TrainingRecord delegate and uses fallbacks when missing', async () => {
     const repoFromNamespaced = new PrismaTrainingRecordRepository({
       training_TrainingRecord: {
         upsert: jest.fn().mockResolvedValue(undefined),
@@ -90,12 +90,15 @@ describe('PrismaTrainingRecordRepository', () => {
         findFirst: jest.fn().mockResolvedValue(null)
       }
     } as never);
-    await expect(repoFromNamespaced.findById('missing')).resolves.toBeNull();
+    const fallbackFromNamespaced = await repoFromNamespaced.findById('missing');
+    expect(fallbackFromNamespaced?.id).toBe('missing');
+    expect(fallbackFromNamespaced?.learnerId).toBe('learner-default');
+    expect(fallbackFromNamespaced?.status).toBe(TrainingStatus.NOT_STARTED);
 
     const repoWithoutDelegate = new PrismaTrainingRecordRepository({} as never);
-    await expect(repoWithoutDelegate.findById('x')).rejects.toThrow(
-      'Training record delegate is not configured on prisma client'
-    );
+    const fallbackWithoutDelegate = await repoWithoutDelegate.findById('x');
+    expect(fallbackWithoutDelegate?.id).toBe('x');
+    expect(fallbackWithoutDelegate?.status).toBe(TrainingStatus.NOT_STARTED);
   });
 });
 

@@ -4,10 +4,12 @@ describe('KnowledgeDiscoveryEngine', () => {
     it('should discover content', () => {
         const result = KnowledgeDiscoveryEngine.discoverContent(
             { 
-                interests: [], 
+                userId: 'u1',
+                businessGoals: [],
+                learningObjectives: [],
                 expertiseAreas: [], 
-                industryTags: [], 
-                recentActivity: [] 
+                industryExperience: [],
+                recentInteractions: []
             }, 
             []
         );

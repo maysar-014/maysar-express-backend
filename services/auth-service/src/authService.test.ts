@@ -34,33 +34,31 @@ describe('authService bootstrap', () => {
     const logSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
     process.env.PORT = '4567';
 
-    jest.isolateModules(() => {
-      jest.doMock('express', () => ({
-        __esModule: true,
-        default: expressFactory
-      }));
-      jest.doMock('@prisma/client', () => ({
-        PrismaClient: prismaCtor
-      }));
-      jest.doMock('./infrastructure/repositories/prisma-user.repository', () => ({
-        PrismaUserRepository: prismaUserRepoCtor
-      }));
-      jest.doMock('./application/use-cases/register-user.use-case', () => ({
-        RegisterUserUseCase: registerUseCaseCtor
-      }));
-      jest.doMock('./application/use-cases/authenticate-user.use-case', () => ({
-        AuthenticateUserUseCase: authUseCaseCtor
-      }));
-      jest.doMock('./api/controllers/auth.controller', () => ({
-        AuthController: authControllerCtor
-      }));
-      jest.doMock('./infrastructure/events/auth.event-handlers', () => ({
-        AuthEventHandlers: authHandlersCtor
-      }));
+    jest.doMock('express', () => ({
+      __esModule: true,
+      default: expressFactory
+    }));
+    jest.doMock('@prisma/client', () => ({
+      PrismaClient: prismaCtor
+    }));
+    jest.doMock('./infrastructure/repositories/prisma-user.repository', () => ({
+      PrismaUserRepository: prismaUserRepoCtor
+    }));
+    jest.doMock('./application/use-cases/register-user.use-case', () => ({
+      RegisterUserUseCase: registerUseCaseCtor
+    }));
+    jest.doMock('./application/use-cases/authenticate-user.use-case', () => ({
+      AuthenticateUserUseCase: authUseCaseCtor
+    }));
+    jest.doMock('./api/controllers/auth.controller', () => ({
+      AuthController: authControllerCtor
+    }));
+    jest.doMock('./infrastructure/events/auth.event-handlers', () => ({
+      AuthEventHandlers: authHandlersCtor
+    }));
 
-      const module = require('./authService');
-      expect(module.default).toBe(app);
-    });
+    const module = await import('./authService');
+    expect(module.default).toBe(app);
 
     expect(expressFactory).toHaveBeenCalledTimes(1);
     expect(jsonMiddleware).toHaveBeenCalledTimes(1);

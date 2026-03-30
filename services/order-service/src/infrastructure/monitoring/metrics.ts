@@ -6,8 +6,8 @@
 import { register, collectDefaultMetrics, Gauge, Counter, Histogram, Summary } from 'prom-client';
 import { metricsConfig } from '../../config/monitoring.config';
 
-// Enable default metrics collection
-if (metricsConfig.collectDefaultMetrics) {
+// Enable default metrics collection outside test runs
+if (metricsConfig.collectDefaultMetrics && process.env.NODE_ENV !== 'test') {
   collectDefaultMetrics({ prefix: 'order_service_' });
 }
 
@@ -153,7 +153,9 @@ export class MetricsCollector {
   private collectionInterval?: NodeJS.Timeout;
 
   private constructor() {
-    this.startCollection();
+    if (process.env.NODE_ENV !== 'test') {
+      this.startCollection();
+    }
   }
 
   static getInstance(): MetricsCollector {

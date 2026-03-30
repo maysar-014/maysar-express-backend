@@ -89,7 +89,7 @@ describe('CheckoutEventHandlers', () => {
 
   it('should register all event handlers', () => {
     // Simulate the handlers being registered
-    mockEventBus.subscribe.mockImplementation((_: string, __: Function) => {
+    mockEventBus.subscribe.mockImplementation((_: string, __: (...args: unknown[]) => unknown) => {
       // Just track that subscribe was called
     });
 

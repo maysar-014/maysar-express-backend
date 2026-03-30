@@ -11,6 +11,7 @@ export class ComplianceAdapter implements IComplianceAdapter {
     ownerId: string;
     businessType: string;
     registrationNumber: string;
+    industries?: string[];
     correlationId: string;
   }): Promise<void> {
     const body = {
@@ -21,7 +22,8 @@ export class ComplianceAdapter implements IComplianceAdapter {
       metadata: {
         ownerId: params.ownerId,
         businessType: params.businessType,
-        registrationNumber: params.registrationNumber
+        registrationNumber: params.registrationNumber,
+        industries: params.industries ?? []
       }
     };
 
@@ -30,14 +32,16 @@ export class ComplianceAdapter implements IComplianceAdapter {
         complianceType: body.complianceType,
         entityId: body.entityId,
         complianceResult: { status: 'compliant', score: 95.5 },
-        sagaId: body.sagaId
+        sagaId: body.sagaId,
+        metadata: body.metadata
       });
 
       await eventBus.publish('ComplianceRecorded.v1', {
         complianceType: body.complianceType,
         entityId: body.entityId,
         operation: body.operation,
-        sagaId: body.sagaId
+        sagaId: body.sagaId,
+        metadata: body.metadata
       });
 
       logger.debug('KYC compliance notified for new business', { businessId: params.businessId });

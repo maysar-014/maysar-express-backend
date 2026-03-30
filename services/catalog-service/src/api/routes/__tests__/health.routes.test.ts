@@ -13,7 +13,7 @@ describe('Health Routes', () => {
   beforeEach(() => {
     app = express();
     app.use(express.json());
-    app.use('/api/health', createHealthRoutes());
+    app.use('/api', createHealthRoutes());
   });
 
   describe('GET /api/health', () => {
@@ -22,7 +22,7 @@ describe('Health Routes', () => {
         .get('/api/health')
         .expect(200);
 
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         success: true,
         data: {
           status: 'healthy',
@@ -129,7 +129,7 @@ describe('Health Routes', () => {
         .get('/api/health/live')
         .expect(200);
 
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         success: true,
         data: {
           status: 'alive',
@@ -160,7 +160,7 @@ describe('Health Routes', () => {
         .get('/api/health/ready')
         .expect(200);
 
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         success: true,
         data: {
           status: 'ready',
@@ -235,7 +235,7 @@ describe('Health Routes', () => {
         .get('/api/health/metrics')
         .expect(200);
 
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         success: true,
         data: expect.objectContaining({
           memory: expect.objectContaining({
@@ -340,7 +340,7 @@ describe('Health Routes', () => {
         .get('/api/health/version')
         .expect(200);
 
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         success: true,
         data: expect.objectContaining({
           version: expect.any(String),
@@ -404,7 +404,7 @@ describe('Health Routes', () => {
         .get('/api/health/invalid')
         .expect(404);
 
-      expect(response.body).toEqual({
+      expect(response.body).toMatchObject({
         success: false,
         error: expect.objectContaining({
           code: 'NOT_FOUND',

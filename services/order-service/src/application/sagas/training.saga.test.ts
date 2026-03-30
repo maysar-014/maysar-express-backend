@@ -57,7 +57,7 @@ describe('TrainingSaga', () => {
 
   it('creates in-progress record on start when no active record exists', async () => {
     trainingRecordRepository.findByModule.mockResolvedValueOnce(null);
-    const context = { courierId: 'courier-1', module: TrainingModule.SAFETY_BASICS };
+    const context: any = { courierId: 'courier-1', module: TrainingModule.SAFETY_BASICS };
     const step = saga.steps.find(s => s.name === 'start_training');
 
     await step?.execute(context, 'saga-1');
@@ -83,7 +83,7 @@ describe('TrainingSaga', () => {
       attempts: 2
     };
     trainingRecordRepository.findByModule.mockResolvedValueOnce(existing as never);
-    const context = { courierId: 'courier-2', module: TrainingModule.CUSTOMER_SERVICE };
+    const context: any = { courierId: 'courier-2', module: TrainingModule.CUSTOMER_SERVICE };
     const step = saga.steps.find(s => s.name === 'start_training');
 
     await step?.execute(context, 'saga-2');

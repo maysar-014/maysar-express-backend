@@ -46,13 +46,13 @@ export class ProductMapper {
     const variants = [defaultVariant];
 
     return Product.create(
-      SellerId.create(dto.sellerId),
+      SellerId.fromString(dto.sellerId),
       dto.name,
       dto.description,
       dto.type,
       variants,
       {
-        categoryId: dto.categoryId ? CategoryId.create(dto.categoryId) : undefined,
+        categoryId: dto.categoryId ? CategoryId.fromString(dto.categoryId) : undefined,
         visibility: ProductVisibility.PUBLIC,
         images: dto.mediaUrls,
         tags: dto.tags,
@@ -116,7 +116,6 @@ export class ProductMapper {
   }): ProductDetailsDto {
     const defaultVariant = entity.getDefaultVariant();
     const price = defaultVariant.getPrice();
-    const priceRange = entity.getPriceRange();
 
     return {
       id: entity.getId().toString(),
@@ -129,7 +128,7 @@ export class ProductMapper {
         currency: price.getCurrency(),
         originalPrice: defaultVariant.getCompareAtPrice()?.toNumber(),
         discountPercentage: defaultVariant.isOnSale() ?
-          Math.round(((defaultVariant.getCompareAtPrice()!.toNumber() - price.toNumber()) / defaultVariant.getCompareAtPrice()!.toNumber()) * 100) : undefined
+          Math.round((((defaultVariant.getCompareAtPrice()!.toNumber() - price.toNumber()) / defaultVariant.getCompareAtPrice()!.toNumber()) * 100) * 100) / 100 : undefined
       },
       categoryId: entity.getCategoryId()?.toString() || '',
       categoryName: options?.categoryName,
@@ -189,7 +188,9 @@ export class ProductMapper {
       recommendations: options?.recommendations || [],
       createdAt: entity.getCreatedAt(),
       updatedAt: entity.getUpdatedAt(),
-      publishedAt: entity.isPublished() ? entity.getCreatedAt() : undefined
+      publishedAt: typeof (entity as Product & { getPublishedAt?: () => Date | undefined }).getPublishedAt === 'function'
+        ? (entity as Product & { getPublishedAt?: () => Date | undefined }).getPublishedAt()
+        : (entity.isPublished() ? entity.getCreatedAt() : undefined)
     };
   }
 
@@ -231,12 +232,21 @@ export class ProductMapper {
   }> {
     this.validateUpdateProductDto(dto);
 
-    const update: any = {};
+    const update: Partial<{
+      name: string;
+      description: string;
+      price: Price;
+      categoryId: CategoryId;
+      tags: string[];
+      seoData: SEOData;
+      enablerEnabled: boolean;
+      enablerCommissionRate: number | undefined;
+    }> = {};
 
     if (dto.name !== undefined) update.name = dto.name;
     if (dto.description !== undefined) update.description = dto.description;
     if (dto.price !== undefined) update.price = new Price(dto.price, dto.currency);
-    if (dto.categoryId !== undefined) update.categoryId = CategoryId.create(dto.categoryId);
+    if (dto.categoryId !== undefined) update.categoryId = CategoryId.fromString(dto.categoryId);
     if (dto.tags !== undefined) update.tags = dto.tags;
     if (dto.seoTitle !== undefined || dto.seoDescription !== undefined) {
       update.seoData = {
@@ -348,6 +358,9 @@ export class ProductMapper {
    * Validation helpers
    */
   private static validateCreateProductDto(dto: CreateProductDto): void {
+    if (!dto || typeof dto !== 'object') {
+      throw new Error('Seller ID is required');
+    }
     if (!dto.sellerId) {
       throw new Error('Seller ID is required');
     }
@@ -374,6 +387,9 @@ export class ProductMapper {
   }
 
   private static validateUpdateProductDto(dto: UpdateProductDto): void {
+    if (!dto || typeof dto !== 'object') {
+      throw new Error('Product ID is required');
+    }
     if (!dto.productId) {
       throw new Error('Product ID is required');
     }

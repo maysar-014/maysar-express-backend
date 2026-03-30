@@ -37,6 +37,9 @@ describe('PreviewGeneratedDescriptionUseCase', () => {
         categoryId: 'cat-1',
         brand: 'Azam',
         productName: 'Cooking Oil',
+        sellerId: 'seller-1',
+        minimumOrderQuantity: 1,
+        supplierLocation: 'Dar es Salaam',
         structuredAttributes: { volume: '5L' },
       });
 
@@ -55,6 +58,9 @@ describe('PreviewGeneratedDescriptionUseCase', () => {
           categoryId: 'invalid',
           brand: 'Azam',
           productName: 'Oil',
+          sellerId: 'seller-1',
+          minimumOrderQuantity: 1,
+          supplierLocation: 'Dar es Salaam',
           structuredAttributes: {},
         })
       ).rejects.toThrow('Category not found');
@@ -83,6 +89,9 @@ describe('PreviewGeneratedDescriptionUseCase', () => {
           categoryId: 'cat-1',
           brand: 'Azam',
           productName: 'Oil',
+          sellerId: 'seller-1',
+          minimumOrderQuantity: 1,
+          supplierLocation: 'Dar es Salaam',
           structuredAttributes: {},
         })
       ).rejects.toThrow('Missing required attributes');
@@ -111,6 +120,9 @@ describe('PreviewGeneratedDescriptionUseCase', () => {
         categoryId: 'cat-1',
         brand: 'Azam',
         productName: 'Cooking Oil',
+        sellerId: 'seller-1',
+        minimumOrderQuantity: 1,
+        supplierLocation: 'Dar es Salaam',
         structuredAttributes: { volume: '5L' },
       });
 
@@ -141,6 +153,9 @@ describe('PreviewGeneratedDescriptionUseCase', () => {
         categoryId: 'cat-1',
         brand: 'Azam',
         productName: 'Cooking Oil',
+        sellerId: 'seller-1',
+        minimumOrderQuantity: 1,
+        supplierLocation: 'Dar es Salaam',
         structuredAttributes: { volume: '5L' },
       });
 
@@ -170,6 +185,9 @@ describe('PreviewGeneratedDescriptionUseCase', () => {
         categoryId: 'cat-1',
         brand: 'Azam',
         productName: 'Cooking Oil',
+        sellerId: 'seller-1',
+        minimumOrderQuantity: 1,
+        supplierLocation: 'Dar es Salaam',
         structuredAttributes: { volume: '5L' },
       });
 

@@ -11,7 +11,7 @@ export class TwoFactorPolicy {
     /**
      * Checks if a user is allowed to disable 2FA.
      */
-    public static canDisableTwoFactor(user: any): boolean {
+    public static canDisableTwoFactor(_user: { status?: string; role?: string }): boolean {
         // In some systems, certain roles might be prevented from disabling 2FA
         return true;
     }

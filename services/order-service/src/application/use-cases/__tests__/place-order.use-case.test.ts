@@ -106,7 +106,9 @@ describe('PlaceOrderUseCase', () => {
         await useCase.execute(validRequest);
 
         expect(mockRepository.save).toHaveBeenCalledWith(
-            expect.objectContaining({ totalAmount: 200 })
+            expect.objectContaining({
+                totalAmount: expect.objectContaining({ amount: 200, currency: 'TZS' })
+            })
         );
     });
 
@@ -124,7 +126,9 @@ describe('PlaceOrderUseCase', () => {
         await useCase.execute(requestWithoutCurrency);
 
         expect(mockRepository.save).toHaveBeenCalledWith(
-            expect.objectContaining({ currency: 'TZS' })
+            expect.objectContaining({
+                totalAmount: expect.objectContaining({ currency: 'TZS' })
+            })
         );
     });
 

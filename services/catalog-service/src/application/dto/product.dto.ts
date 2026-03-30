@@ -5,6 +5,7 @@
  */
 
 import { ProductType } from '../../domain/value-objects/product-types.value-object';
+import { QualityScoreSignals } from '../../domain/value-objects/product-quality-score.value-object';
 
 /**
  * Structured Create Product DTO
@@ -61,7 +62,7 @@ export interface GeneratedDescriptionDto {
     supplierInfo: string;
   };
   qualityScore: number;
-  scoreBreakdown: Record<string, number>;
+  scoreBreakdown: QualityScoreSignals;
   slug: string;
 }
 
@@ -80,7 +81,7 @@ export interface CreateProductDto {
   tags: string[];
   mediaUrls: string[];
   inventoryCount: number;
-  attributes: Record<string, any>;
+  attributes: Record<string, unknown>;
   seoTitle?: string;
   seoDescription?: string;
   enablerEnabled?: boolean;
@@ -100,7 +101,7 @@ export interface UpdateProductDto {
   categoryId?: string;
   tags?: string[];
   mediaUrls?: string[];
-  attributes?: Record<string, any>;
+  attributes?: Record<string, unknown>;
   seoTitle?: string;
   seoDescription?: string;
   enablerEnabled?: boolean;
@@ -152,7 +153,7 @@ export interface ProductDetailsDto {
   categoryPath?: string[];
   type: string;
   tags: string[];
-  attributes: Record<string, any>;
+  attributes: Record<string, unknown>;
   status: string;
   visibility: 'public' | 'private' | 'draft';
   media: Array<{
@@ -253,7 +254,7 @@ export interface ProductSearchDto {
       min: number;
       max?: number;
     };
-    attributes?: Record<string, any>;
+    attributes?: Record<string, unknown>;
     location?: {
       latitude: number;
       longitude: number;

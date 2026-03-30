@@ -163,7 +163,7 @@ afterEach(() => {
 // =====================================================================================
 
 declare global {
-  var domainTestUtils: {
+  let domainTestUtils: {
     createValidProduct: (overrides?: any) => any;
     createValidPricingContext: (overrides?: any) => any;
     createValidUserContext: (overrides?: any) => any;

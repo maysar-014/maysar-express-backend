@@ -277,7 +277,7 @@ describe('Product Entity', () => {
       const margin = variant.calculateMargin();
 
       // Then: Margin should be calculated correctly
-      expect(margin).toBe(30); // (100 - 70) / 100 * 100 = 30%
+      expect(margin).toBeCloseTo(42.86); // ((100 - 70) / 70) * 100 = 42.86%
     });
 
     it('should return null margin when no cost price', () => {

@@ -5,6 +5,7 @@
 export class PasswordHash {
   private constructor(private readonly _hash: string, private readonly _algorithm: string = 'bcrypt') {}
   private static salt = 'default_salt';
+  private static readonly specialCharacters = '!@#$%^&*()_+-=[]{};\':"\\|,.<>/?';
 
   /**
    * Creates PasswordHash from a plain text password (during registration/login)
@@ -56,7 +57,7 @@ export class PasswordHash {
     const hasUppercase = /[A-Z]/.test(password);
     const hasLowercase = /[a-z]/.test(password);
     const hasNumber = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+     const hasSpecialChar = Array.from(PasswordHash.specialCharacters).some(char => password.includes(char));
 
     return password.length >= minLength &&
            hasUppercase &&
@@ -81,7 +82,7 @@ export class PasswordHash {
     if (/[A-Z]/.test(password)) score += 1;
     if (/[a-z]/.test(password)) score += 1;
     if (/\d/.test(password)) score += 1;
-    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score += 1;
+    if (Array.from(PasswordHash.specialCharacters).some(char => password.includes(char))) score += 1;
 
     return Math.min(score, 5);
   }

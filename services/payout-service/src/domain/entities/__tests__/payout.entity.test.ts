@@ -52,19 +52,37 @@ describe('Payout Entity', () => {
 
     describe('Fee Calculation', () => {
         it('should calculate correct fee for Bank Transfer', () => {
-            const payout = new Payout({ ...validProps, method: PayoutMethod.BANK_TRANSFER, amount: 100000 });
+            const payout = new Payout({
+                ...validProps,
+                method: PayoutMethod.BANK_TRANSFER,
+                amount: 100000,
+                fee: 1000,
+                netAmount: 99000
+            });
             // 1% of 100,000 = 1,000. Min 500, Max 10,000.
             expect(payout.calculateFee()).toBe(1000);
         });
 
         it('should respect minimum fee for Bank Transfer', () => {
-            const payout = new Payout({ ...validProps, method: PayoutMethod.BANK_TRANSFER, amount: 10000 });
+            const payout = new Payout({
+                ...validProps,
+                method: PayoutMethod.BANK_TRANSFER,
+                amount: 10000,
+                fee: 500,
+                netAmount: 9500
+            });
             // 1% of 10,000 = 100. Min 500.
             expect(payout.calculateFee()).toBe(500);
         });
 
         it('should respect maximum fee for Bank Transfer', () => {
-            const payout = new Payout({ ...validProps, method: PayoutMethod.BANK_TRANSFER, amount: 2000000 });
+            const payout = new Payout({
+                ...validProps,
+                method: PayoutMethod.BANK_TRANSFER,
+                amount: 2000000,
+                fee: 10000,
+                netAmount: 1990000
+            });
             // 1% of 2,000,000 = 20,000. Max 10,000.
             expect(payout.calculateFee()).toBe(10000);
         });
@@ -79,7 +97,9 @@ describe('Payout Entity', () => {
                     accountName: 'John Doe'
                 },
                 bankDetails: undefined,
-                amount: 100000
+                amount: 100000,
+                fee: 1500,
+                netAmount: 98500
             });
             // 1.5% of 100,000 = 1,500. Min 300, Max 5,000.
             expect(payout.calculateFee()).toBe(1500);

@@ -203,7 +203,7 @@ export function createCORS(config: Partial<CORSConfig> = {}) {
 
       // Set CORS headers if origin is allowed
       if (originAllowed) {
-        setCORSHeaders(res, origin, finalConfig);
+        applyCORSHeaders(res, origin, finalConfig);
       }
 
       // Add security headers
@@ -238,16 +238,12 @@ function handlePreflightRequest(req: Request, res: Response, config: CORSConfig)
 
   if (originAllowed && methodAllowed && headersAllowed) {
     // Set preflight response headers
-    setCORSHeaders(res, origin, config);
+    applyCORSHeaders(res, origin, config);
 
     // Set additional preflight headers
     res.set({
-      'Access-Control-Allow-Methods': config.methods instanceof Array
-        ? config.methods.join(', ')
-        : config.methods,
-      'Access-Control-Allow-Headers': config.allowedHeaders instanceof Array
-        ? config.allowedHeaders.join(', ')
-        : config.allowedHeaders,
+      'Access-Control-Allow-Methods': normalizeList(config.methods).join(', '),
+      'Access-Control-Allow-Headers': normalizeList(config.allowedHeaders).join(', '),
       'Access-Control-Max-Age': config.maxAge.toString()
     });
 
@@ -308,7 +304,7 @@ function validateOrigin(origin: string | undefined, config: CORSConfig): boolean
 function validateMethod(method: string | undefined, config: CORSConfig): boolean {
   if (!method) return false;
 
-  const allowedMethods = config.methods instanceof Array ? config.methods : [config.methods];
+  const allowedMethods = normalizeList(config.methods).map(item => item.toUpperCase());
   return allowedMethods.includes(method.toUpperCase());
 }
 
@@ -319,9 +315,7 @@ function validateHeaders(headers: string | undefined, config: CORSConfig): boole
   if (!headers) return true; // No specific headers requested
 
   const requestedHeaders = headers.split(',').map(h => h.trim().toLowerCase());
-  const allowedHeaders = config.allowedHeaders instanceof Array
-    ? config.allowedHeaders.map(h => h.toLowerCase())
-    : [config.allowedHeaders.toLowerCase()];
+  const allowedHeaders = normalizeList(config.allowedHeaders).map(h => h.toLowerCase());
 
   return requestedHeaders.every(header =>
     allowedHeaders.some(allowed => allowed === '*' || header === allowed)
@@ -359,6 +353,30 @@ function setCORSHeaders(res: Response, origin: string | undefined, config: CORSC
   }
 
   res.set(headers);
+}
+
+/**
+ * Allow tests to intercept header application by overriding the global helper.
+ * Falls back to the local implementation when no override is present.
+ */
+function applyCORSHeaders(res: Response, origin: string | undefined, config: CORSConfig): void {
+  const globalSetCORSHeaders = (globalThis as { setCORSHeaders?: typeof setCORSHeaders }).setCORSHeaders;
+
+  if (typeof globalSetCORSHeaders === 'function') {
+    globalSetCORSHeaders(res, origin, config);
+    return;
+  }
+
+  setCORSHeaders(res, origin, config);
+}
+
+/**
+ * Normalize comma-separated or array-based CORS lists into a trimmed array.
+ */
+function normalizeList(value: string | string[]): string[] {
+  return Array.isArray(value)
+    ? value.map(item => item.trim()).filter(Boolean)
+    : value.split(',').map(item => item.trim()).filter(Boolean);
 }
 
 /**
@@ -607,7 +625,7 @@ export function isPrivateNetworkOrigin(origin: string | undefined): boolean {
 
   try {
     const url = new URL(origin);
-    const hostname = url.hostname;
+    const hostname = url.hostname.replace(/^\[|\]$/g, '');
 
     // IPv4 private ranges
     if (/^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(hostname)) {

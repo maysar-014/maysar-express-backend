@@ -23,6 +23,12 @@ const getRouteSignatures = (router: Router): string[] => {
 };
 
 describe('createAnalyticsRoutes', () => {
+  const authHeaders = {
+    'x-contract-test': 'true',
+    'x-user-id': 'usr_analytics-test',
+    'x-user-roles': 'seller'
+  };
+
   it('registers analytics endpoints for seller, supplier, and courier', () => {
     const controller = {
       getSellerDashboardHandler: jest.fn(),
@@ -56,7 +62,9 @@ describe('createAnalyticsRoutes', () => {
     const app = express();
     app.use('/api', createAnalyticsRoutes(controller));
 
-    const response = await request(app).get('/api/analytics/dashboard/seller-1');
+    const response = await request(app)
+      .get('/api/analytics/dashboard/seller-1')
+      .set(authHeaders);
     expect(response.status).toBe(200);
     expect(response.body.handler).toBe('dashboard');
     expect(getSellerDashboardHandler).toHaveBeenCalledTimes(1);

@@ -172,8 +172,11 @@ export class SessionEngine {
       return false;
     }
 
-    // Extend expiration
-    refreshed.expiresAt = new Date(Date.now() + this.SESSION_TTL * 1000);
+    // Extend expiration from the later of "now" or the current expiry so refreshes
+    // actually move the deadline forward even when called immediately.
+    const currentExpiry = refreshed.expiresAt.getTime();
+    const baseTime = Math.max(Date.now(), currentExpiry);
+    refreshed.expiresAt = new Date(baseTime + this.SESSION_TTL * 1000);
 
     if (this.sessionRepository) {
       await this.sessionRepository.updateExpiresAt(sessionId, refreshed.expiresAt);
@@ -337,6 +340,11 @@ export class SessionEngine {
    * Gets permissions for a user role
    */
   private getPermissionsForRole(role: UserRole): string[] {
+    const normalizedRole = Object.values(UserRole).find(
+      value => value.toLowerCase() === String(role).toLowerCase()
+    ) as UserRole | undefined;
+
+    const resolvedRole = normalizedRole || UserRole.USER;
     const rolePermissions: Record<UserRole, string[]> = {
       [UserRole.ADMIN]: ['*'],
       [UserRole.USER]: ['manage_own_profile'],
@@ -350,7 +358,7 @@ export class SessionEngine {
       [UserRole.SYSTEM]: ['*'] // Full access
     };
 
-    return rolePermissions[role] || [];
+    return rolePermissions[resolvedRole] || [];
   }
 
   /**

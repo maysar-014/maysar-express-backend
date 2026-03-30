@@ -1,4 +1,4 @@
-import { Location } from '../location.value-object';
+import { Location } from './location.value-object';
 
 describe('Location Value Object', () => {
   it('should create valid location', () => {

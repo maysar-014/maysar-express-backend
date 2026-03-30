@@ -42,7 +42,11 @@ describe('createSessionRouter', () => {
 
     expect(sessionEngine.createSession).toHaveBeenCalledWith('user-1', 'buyer', 'Chrome', '1.2.3.4');
     expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith({ sessionId: 'session-1' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      message: 'Session created',
+      data: { sessionId: 'session-1' }
+    });
   });
 
   it('POST / returns 500 on createSession errors', async () => {
@@ -56,8 +60,9 @@ describe('createSessionRouter', () => {
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({
-      error: 'Failed to create session',
-      message: 'db down'
+      success: false,
+      message: 'Failed to create session',
+      error: 'db down'
     });
   });
 
@@ -101,7 +106,11 @@ describe('createSessionRouter', () => {
     await handler(req, res);
 
     expect(sessionEngine.getUserSessions).toHaveBeenCalledWith('user-10');
-    expect(res.json).toHaveBeenCalledWith([{ id: 's1' }, { id: 's2' }]);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      data: [{ id: 's1' }, { id: 's2' }]
+    });
   });
 
   it('GET / returns 400 when userId is missing and 500 on downstream errors', async () => {
@@ -111,15 +120,16 @@ describe('createSessionRouter', () => {
 
     await handler({ query: {} } as unknown as Request, res);
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ error: 'userId is required' });
+    expect(res.json).toHaveBeenCalledWith({ success: false, message: 'userId is required' });
 
     sessionEngine.getUserSessions.mockRejectedValueOnce(new Error('query failed'));
     const errorRes = createResponse();
     await handler({ query: { userId: 'user-err' } } as unknown as Request, errorRes);
     expect(errorRes.status).toHaveBeenCalledWith(500);
     expect(errorRes.json).toHaveBeenCalledWith({
-      error: 'Failed to fetch sessions',
-      message: 'query failed'
+      success: false,
+      message: 'Failed to fetch sessions',
+      error: 'query failed'
     });
   });
 });

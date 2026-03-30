@@ -156,12 +156,12 @@ describe('SmsController', () => {
 
             await controller.retryMessage(req as Request, res as Response, next);
 
-            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.status).toHaveBeenCalledWith(409);
         });
 
         it('should return contract-test success when retry is already satisfied', async () => {
             req.params = { messageId: 'msg-1' };
-            req.headers = { 'x-contract-test': '1' } as any;
+            req.headers = { 'x-contract-test': '1' } as Request['headers'];
 
             (mockRetryFailedMessagesUseCase.executeById as jest.Mock).mockResolvedValue({
                 success: false,
@@ -213,6 +213,12 @@ describe('SmsController', () => {
 
     describe('webhookAfricastalking', () => {
         it('should process delivery report', async () => {
+            req.body = {
+                id: 'msg-1',
+                status: 'Success',
+                phoneNumber: '+255612834684'
+            };
+
             (mockHandleDeliveryReportUseCase.execute as jest.Mock).mockResolvedValue({
                 parsed: true,
                 accepted: true,

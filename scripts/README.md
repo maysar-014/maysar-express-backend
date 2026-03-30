@@ -1,6 +1,8 @@
 # Database Migration Scripts - Maysar E-commerce Platform
 
-This directory contains automated scripts for managing database migrations across all 13 services in the Maysar platform.
+> Legacy note: this directory contains migration helpers from the older split-service setup. The current monolith uses the root `prisma` commands and shared schema migrations first; treat the per-service mapping below as historical context.
+
+This directory contains automated scripts for managing database migrations across the older service split.
 
 ## 🚀 Quick Start
 

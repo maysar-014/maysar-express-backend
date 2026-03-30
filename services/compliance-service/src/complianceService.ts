@@ -25,7 +25,7 @@ const supportedIdSchema = z
   .string()
   .trim()
   .refine((value) => isSystemId(value), { message: 'Expected system ID' });
-const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F]+$/u;
+const SAFE_VISIBLE_STRING_PATTERN = new RegExp('^(?=.*\\S)[^\\u0000-\\u001F\\u007F]+$', 'u');
 const safeVisibleStringSchema = z.string().min(1).regex(SAFE_VISIBLE_STRING_PATTERN, {
   message: 'Expected a non-empty printable string'
 });
@@ -490,7 +490,9 @@ const runDocumentUpload = (req: express.Request) => new Promise<void>((resolve, 
     req.socket?.off('error', onSocketError);
     try {
       req.unpipe(parser);
-    } catch {}
+    } catch (error) {
+      void error;
+    }
   };
 
   const finish = (error?: unknown) => {
@@ -514,14 +516,20 @@ const runDocumentUpload = (req: express.Request) => new Promise<void>((resolve, 
   timeoutHandle = setTimeout(() => {
     try {
       req.unpipe(parser);
-    } catch {}
+    } catch (error) {
+      void error;
+    }
     try {
       req.resume();
-    } catch {}
+    } catch (error) {
+      void error;
+    }
     if (typeof (parser as { destroy?: (error?: Error) => void }).destroy === 'function') {
       try {
         (parser as { destroy?: (error?: Error) => void }).destroy?.(new Error('Multipart upload timed out'));
-      } catch {}
+      } catch (error) {
+        void error;
+      }
     }
     finish(new Error('Multipart upload timed out'));
   }, MULTIPART_PARSE_TIMEOUT_MS);

@@ -202,13 +202,13 @@ describe('PricingMapper', () => {
       expect(domainRequest.basePrice).toBe(100);
       expect(domainRequest.pricingRules).toHaveLength(1);
       expect(domainRequest.customerContext).toBeDefined();
-      expect(domainRequest.customerContext.customerId).toBe('customer-123');
-      expect(domainRequest.customerContext.segment).toBe('premium');
-      expect(domainRequest.customerContext.loyaltyTier).toBe('gold');
+      expect(domainRequest.customerContext?.customerId).toBe('customer-123');
+      expect(domainRequest.customerContext?.segment).toBe('premium');
+      expect(domainRequest.customerContext?.loyaltyTier).toBe('gold');
       expect(domainRequest.context).toBeDefined();
-      expect(domainRequest.context.quantity).toBe(2);
-      expect(domainRequest.context.couponCode).toBe('SUMMER20');
-      expect(domainRequest.context.campaignId).toBe('summer-sale');
+      expect(domainRequest.context?.quantity).toBe(2);
+      expect(domainRequest.context?.couponCode).toBe('SUMMER20');
+      expect(domainRequest.context?.campaignId).toBe('summer-sale');
     });
 
     it('should handle minimal CalculatePriceRequestDto', () => {
@@ -353,7 +353,7 @@ describe('PricingMapper', () => {
         },
         changeAmount: 20,
         changePercent: 20,
-        pricingStrategy: 'percentage' as any,
+        pricingStrategy: 'percentage',
         effectiveDate: new Date('2023-07-01'),
         expiryDate: new Date('2023-12-31'),
         updatedAt: new Date('2023-06-15T14:30:00Z'),
@@ -405,7 +405,7 @@ describe('PricingMapper', () => {
         },
         changeAmount: 0,
         changePercent: 0,
-        pricingStrategy: 'fixed' as any,
+        pricingStrategy: 'fixed',
         updatedAt: new Date(),
         updatedBy: 'system',
         validationResults: {
@@ -434,7 +434,7 @@ describe('PricingMapper', () => {
         successfulUpdates: 95,
         failedUpdates: 3,
         skippedProducts: 2,
-        pricingStrategy: 'percentage' as any,
+        pricingStrategy: 'percentage',
         pricingValue: 10,
         results: [
           {
@@ -444,7 +444,7 @@ describe('PricingMapper', () => {
             newPrice: { amount: 110, currency: 'USD' },
             changeAmount: 10,
             changePercent: 10,
-            pricingStrategy: 'percentage' as any,
+            pricingStrategy: 'percentage',
             updatedAt: new Date(),
             updatedBy: 'admin',
             validationResults: { businessRulesPassed: true, warnings: [], errors: [] }
@@ -512,7 +512,7 @@ describe('PricingMapper', () => {
           totalPriceChanges: 150,
           averagePriceChangePercent: 5.2,
           totalRevenueImpact: 25000,
-          mostUsedStrategy: 'percentage' as any
+          mostUsedStrategy: 'percentage'
         },
         rulePerformance: [
           {
@@ -700,36 +700,36 @@ describe('PricingMapper', () => {
   describe('error handling', () => {
     it('should handle null DTO gracefully', () => {
       expect(() => {
-        PricingMapper.ruleDtoToDomain(null as any);
+        PricingMapper.ruleDtoToDomain(null as unknown as PricingRuleDto);
       }).toThrow();
 
       expect(() => {
-        PricingMapper.ruleDomainToDto(null as any);
+        PricingMapper.ruleDomainToDto(null as unknown as PricingRuleDto);
       }).toThrow();
 
       expect(() => {
-        PricingMapper.calculatePriceRequestToDomain(null as any);
+        PricingMapper.calculatePriceRequestToDomain(null as unknown as CalculatePriceRequestDto);
       }).toThrow();
 
       expect(() => {
-        PricingMapper.calculatePriceResultToDto(null as any);
+        PricingMapper.calculatePriceResultToDto(null as unknown as CalculatePriceResultDto);
       }).toThrow();
     });
 
     it('should handle undefined DTO gracefully', () => {
       expect(() => {
-        PricingMapper.ruleDtoToDomain(undefined as any);
+        PricingMapper.ruleDtoToDomain(undefined as unknown as PricingRuleDto);
       }).toThrow();
 
       expect(() => {
-        PricingMapper.ruleDomainToDto(undefined as any);
+        PricingMapper.ruleDomainToDto(undefined as unknown as PricingRuleDto);
       }).toThrow();
     });
 
     it('should handle invalid domain objects', () => {
       const invalidDomain = {
         // Missing required fields
-      } as any;
+      } as unknown as PricingRuleDto;
 
       expect(() => {
         PricingMapper.ruleDomainToDto(invalidDomain);

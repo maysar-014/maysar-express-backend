@@ -1,11 +1,18 @@
 import { DomainEvent } from '../../domain/events/sms.events';
 import { eventBus } from '@shared/events/eventBus';
 
+type EventPayload = Record<string, unknown>;
+
+type LoggerLike = {
+    info(message: string, meta?: Record<string, unknown>): void;
+    error(message: string, meta?: Record<string, unknown>): void;
+};
+
 /**
  * Event Publisher Interface
  */
 export interface IEventPublisher {
-    publish(eventType: string, payload: any): Promise<void>;
+    publish(eventType: string, payload: EventPayload): Promise<void>;
     publishBatch(events: DomainEvent[]): Promise<void>;
 }
 
@@ -14,9 +21,9 @@ export interface IEventPublisher {
  * Publishes events to an in-memory event bus or message queue
  */
 export class EventPublisher implements IEventPublisher {
-    constructor(private readonly logger?: any) { }
+    constructor(private readonly logger?: LoggerLike) { }
 
-    async publish(eventType: string, payload: any): Promise<void> {
+    async publish(eventType: string, payload: EventPayload): Promise<void> {
         try {
             await eventBus.publish(eventType, payload);
 
