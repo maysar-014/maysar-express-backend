@@ -17,6 +17,7 @@ describe('PlaceOrderUseCase', () => {
         ],
         currency: 'TZS',
         paymentMethod: 'WALLET',
+        deliveryFee: 10,
         deliveryAddress: {
             street: '123 Main St',
             city: 'Dar es Salaam',
@@ -66,7 +67,19 @@ describe('PlaceOrderUseCase', () => {
 
         expect(result).toBeDefined();
         expect(mockCODEligibilityEngine.checkBuyerEligibility).toHaveBeenCalledWith('buyer-1');
-        expect(mockCODCommitmentService.secureCommitment).toHaveBeenCalled();
+        expect(mockCODCommitmentService.calculateCommitmentFee).toHaveBeenCalledWith(10);
+        expect(mockCODCommitmentService.secureCommitment).toHaveBeenCalledWith(
+            'buyer-1',
+            expect.any(String),
+            10,
+            'TZS'
+        );
+    });
+
+    it('should fail COD order when delivery fee is missing', async () => {
+        const codRequest = { ...validRequest, paymentMethod: 'COD' as const, deliveryFee: undefined };
+
+        await expect(useCase.execute(codRequest)).rejects.toThrow('Delivery fee is required for COD orders');
     });
 
     it('should fail COD order when buyer ineligible', async () => {

@@ -58,7 +58,7 @@ describe('UpdateBusinessUseCase', () => {
       {
         name: 'Updated Biz',
         description: 'New description',
-        industry: 'Retail',
+        industry: ['Retail'],
         website: 'https://biz.test',
         email: 'owner@biz.test',
         phoneNumber: '+255700000001',

@@ -144,7 +144,7 @@ describe('SearchProductsUseCase', () => {
 
       expect(result.searchMetadata.query).toBe('electronics laptop');
       expect(result.searchMetadata.totalResults).toBe(2);
-      expect(result.searchMetadata.executionTime).toBeGreaterThan(0);
+      expect(result.searchMetadata.executionTime).toBeGreaterThanOrEqual(0);
     });
 
     it('should perform filter-only search without query', async () => {

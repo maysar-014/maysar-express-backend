@@ -198,8 +198,13 @@ describe('CODEligibilityEngine', () => {
     expect(result).toEqual({ eligible: true });
   });
 
-  it('calculates commitment fee with minimum floor and percentage branch', () => {
-    expect(engine.calculateCommitmentFee(20_000)).toBe(5000);
-    expect(engine.calculateCommitmentFee(200_000)).toBe(10_000);
+  it('returns the requested delivery fee as the commitment amount', () => {
+    expect(engine.calculateCommitmentFee(20_000)).toBe(20_000);
+    expect(engine.calculateCommitmentFee(12_000)).toBe(12_000);
+  });
+
+  it('rejects zero or negative delivery fees', () => {
+    expect(() => engine.calculateCommitmentFee(0)).toThrow('Delivery fee must be greater than zero');
+    expect(() => engine.calculateCommitmentFee(-5)).toThrow('Delivery fee must be greater than zero');
   });
 });

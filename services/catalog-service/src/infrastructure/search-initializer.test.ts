@@ -1,45 +1,22 @@
-const initializeMock = jest.fn().mockResolvedValue(undefined);
-const indexManagerInstance = { initialize: initializeMock };
-const searchEngineInstance = { name: 'search-engine' };
-
-const InvertedIndexMock = jest.fn(() => ({ type: 'inverted' }));
-const FilterIndexMock = jest.fn(() => ({ type: 'filter' }));
-const NGramIndexMock = jest.fn(() => ({ type: 'ngram' }));
-const FacetIndexMock = jest.fn(() => ({ type: 'facet' }));
-const OfflineRankerMock = jest.fn(() => ({ type: 'ranker' }));
-const IndexManagerMock = jest.fn(() => indexManagerInstance);
-const OptimizedProductSearchEngineMock = jest.fn(() => searchEngineInstance);
-
-jest.mock('../domain/indexes', () => ({
-  InvertedIndex: InvertedIndexMock,
-  FilterIndex: FilterIndexMock,
-  NGramIndex: NGramIndexMock,
-  FacetIndex: FacetIndexMock,
-  IndexManager: IndexManagerMock
-}), { virtual: true });
-
-jest.mock('../domain/algorithms', () => ({
-  OfflineRanker: OfflineRankerMock
-}), { virtual: true });
-
-jest.mock('../domain/engines/optimized-search-engine', () => ({
-  OptimizedProductSearchEngine: OptimizedProductSearchEngineMock
-}), { virtual: true });
-
-type SearchEngineInitializerClass = typeof import('./search-initializer')['SearchEngineInitializer'];
-
-let SearchEngineInitializer: SearchEngineInitializerClass;
+import { IndexManager } from '../domain/indexes';
+import { SearchEngineInitializer } from './search-initializer';
 
 describe('SearchEngineInitializer', () => {
   beforeEach(() => {
-    jest.resetModules();
     jest.clearAllMocks();
-    ({ SearchEngineInitializer } = require('./search-initializer'));
     (SearchEngineInitializer as any).indexManager = undefined;
     (SearchEngineInitializer as any).searchEngine = undefined;
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('builds indexes and search engine from prisma products', async () => {
+    const initializeSpy = jest
+      .spyOn(IndexManager.prototype, 'initialize')
+      .mockResolvedValue(undefined);
+
     const prisma = {
       product: {
         findMany: jest.fn().mockResolvedValue([
@@ -68,6 +45,7 @@ describe('SearchEngineInitializer', () => {
         ])
       }
     };
+
     const logSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
 
     const result = await SearchEngineInitializer.initialize(prisma as never);
@@ -75,7 +53,7 @@ describe('SearchEngineInitializer', () => {
     expect(prisma.product.findMany).toHaveBeenCalledWith({
       include: { variants: true, category: true }
     });
-    expect(initializeMock).toHaveBeenCalledWith([
+    expect(initializeSpy).toHaveBeenCalledWith([
       expect.objectContaining({
         id: 'p1',
         price: 100,
@@ -90,13 +68,10 @@ describe('SearchEngineInitializer', () => {
         tags: []
       })
     ]);
-    expect(OptimizedProductSearchEngineMock).toHaveBeenCalledTimes(1);
-    expect(result).toEqual({
-      indexManager: indexManagerInstance,
-      searchEngine: searchEngineInstance
-    });
-    expect(SearchEngineInitializer.getIndexManager()).toBe(indexManagerInstance);
-    expect(SearchEngineInitializer.getSearchEngine()).toBe(searchEngineInstance);
+    expect(result.indexManager).toBe(SearchEngineInitializer.getIndexManager());
+    expect(result.searchEngine).toBe(SearchEngineInitializer.getSearchEngine());
+    expect(result.indexManager).toBeInstanceOf(IndexManager);
+    expect(typeof result.searchEngine.search).toBe('function');
     expect(logSpy).toHaveBeenCalledWith('Initializing optimized search indexes...');
     expect(logSpy).toHaveBeenCalledWith('Search indexes initialized with 2 products');
   });

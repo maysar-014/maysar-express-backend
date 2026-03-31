@@ -17,6 +17,7 @@ export interface PlaceOrderRequest {
   }>;
   currency?: string;
   paymentMethod: 'COD' | 'WALLET' | 'CARD' | 'MOBILE_PAYMENT';
+  deliveryFee?: number;
   deliveryAddress: {
     street: string;
     city: string;
@@ -76,8 +77,12 @@ export class PlaceOrderUseCase {
         throw new Error(`COD Ineligible: ${orderEligibility.reason}`);
       }
 
-      // 2. Calculate and Secure Commitment Fee
-      codCommitmentFee = this.codCommitmentService.calculateCommitmentFee(totalAmount);
+      if (request.deliveryFee === undefined) {
+        throw new Error('Delivery fee is required for COD orders');
+      }
+
+      // 2. Secure the delivery fee as the COD commitment
+      codCommitmentFee = this.codCommitmentService.calculateCommitmentFee(request.deliveryFee);
       codHoldId = await this.codCommitmentService.secureCommitment(request.buyerId, orderId, codCommitmentFee, currency);
     }
 

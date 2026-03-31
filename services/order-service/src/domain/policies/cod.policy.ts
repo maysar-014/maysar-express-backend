@@ -9,12 +9,18 @@ export class CODPolicy {
 
   async validate(orderData: any): Promise<CODValidationResult> {
     const errors: string[] = [];
+    const paymentMethod = String(orderData.paymentMethod ?? '').trim().toUpperCase();
 
-    if (orderData.paymentMethod !== 'COD') {
+    if (paymentMethod !== 'COD') {
       return { valid: true, errors: [] };
     }
 
-    // Amount limits
+    const deliveryFee = Number(orderData.deliveryFee);
+    if (!Number.isFinite(deliveryFee) || deliveryFee <= 0) {
+      errors.push('Delivery fee must be provided for COD orders');
+    }
+
+    // Amount limits still apply to the order balance collected on delivery.
     if (orderData.totalAmount > this.MAX_COD_AMOUNT) {
       errors.push(`COD amount exceeds maximum limit of ${this.MAX_COD_AMOUNT} TZS`);
     }

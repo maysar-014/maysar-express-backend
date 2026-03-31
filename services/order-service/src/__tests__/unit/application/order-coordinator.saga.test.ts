@@ -29,6 +29,7 @@ describe('OrderCoordinator Saga', () => {
         buyerId: 'buyer-123',
         sellerId: 'seller-456',
         totalWeight: 5.0,
+        deliveryFee: 12000,
         items: [{ productId: 'prod-1', quantity: 2, price: 100, weight: 1 }],
         paymentMethod: 'cod' as const
       };
@@ -48,6 +49,7 @@ describe('OrderCoordinator Saga', () => {
         buyerId: 'buyer-123',
         sellerId: 'seller-456',
         totalWeight: 60.0, // Exceeds 50kg limit
+        deliveryFee: 12000,
         items: [{ productId: 'prod-1', quantity: 1, price: 100, weight: 60 }],
         paymentMethod: 'cod' as const
       };
@@ -66,6 +68,7 @@ describe('OrderCoordinator Saga', () => {
         buyerId: 'buyer-123',
         sellerId: 'seller-456',
         totalWeight: 5.0,
+        deliveryFee: 12000,
         items: [{ productId: 'prod-1', quantity: 2, price: 100, weight: 1 }],
         paymentMethod: 'cod' as const
       };
@@ -89,6 +92,7 @@ describe('OrderCoordinator Saga', () => {
         buyerId: 'buyer-123',
         sellerId: 'seller-456',
         totalWeight: 60.0, // Exceeds weight limit
+        deliveryFee: 12000,
         items: [{ productId: 'prod-1', quantity: 1, price: 100, weight: 60 }],
         paymentMethod: 'cod' as const
       };
@@ -120,6 +124,7 @@ describe('OrderCoordinator Saga', () => {
         totalWeight: 5.0,
         currency: 'TZS',
         totalAmount: 1000,
+        deliveryFee: 12000,
         items: [{ productId: 'prod-1', quantity: 2, price: { amount: 500, currency: 'TZS' }, weight: 1 }],
         paymentMethod: 'cod' as const,
         deliveryAddress: {
@@ -169,6 +174,7 @@ describe('OrderCoordinator Saga', () => {
         totalWeight: 2.5,
         currency: 'TZS',
         totalAmount: 500,
+        deliveryFee: 12000,
         items: [{ productId: 'prod-1', quantity: 1, price: { amount: 500, currency: 'TZS' }, weight: 2.5 }],
         paymentMethod: 'cod' as const,
         deliveryAddress: {
@@ -197,6 +203,7 @@ describe('OrderCoordinator Saga', () => {
         totalWeight: 25.0, // Heavy order
         currency: 'TZS',
         totalAmount: 25000,
+        deliveryFee: 12000,
         items: [{ productId: 'prod-heavy', quantity: 1, price: { amount: 25000, currency: 'TZS' }, weight: 25 }],
         paymentMethod: 'cod' as const,
         deliveryAddress: {
@@ -221,6 +228,7 @@ describe('OrderCoordinator Saga', () => {
         buyerId: 'buyer-123',
         sellerId: 'seller-456',
         totalWeight: 60.0, // Invalid: exceeds weight limit
+        deliveryFee: 12000,
         items: [{ productId: 'prod-1', quantity: 1, price: 100, weight: 60 }],
         paymentMethod: 'cod' as const
       };
@@ -242,6 +250,7 @@ describe('OrderCoordinator Saga', () => {
         buyerId: 'buyer-123',
         sellerId: 'seller-456',
         totalWeight: 5.0,
+        deliveryFee: 12000,
         items: [{ productId: 'prod-1', quantity: 2, price: 100, weight: 1 }],
         paymentMethod: 'cod' as const
       };
@@ -265,6 +274,7 @@ describe('OrderCoordinator Saga', () => {
         buyerId: 'buyer-123',
         sellerId: 'seller-456',
         totalWeight: 5.0,
+        deliveryFee: 12000,
         items: [{ productId: 'prod-1', quantity: 2, price: 100, weight: 1 }],
         paymentMethod: 'cod' as const
       };

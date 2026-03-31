@@ -5,20 +5,20 @@ export interface IWalletServiceClient {
 }
 
 export class CODCommitmentService {
-    private readonly COMMITMENT_FEE_PERCENTAGE = 0.05; // 5%
-    private readonly MIN_COMMITMENT_FEE = 5000;       // 5,000 TZS
-
     constructor(
         private readonly walletService: IWalletServiceClient
     ) { }
 
-    calculateCommitmentFee(orderAmount: number): number {
-        const calculatedFee = orderAmount * this.COMMITMENT_FEE_PERCENTAGE;
-        return Math.max(calculatedFee, this.MIN_COMMITMENT_FEE);
+    calculateCommitmentFee(deliveryFee: number): number {
+        if (!Number.isFinite(deliveryFee) || deliveryFee <= 0) {
+            throw new Error('Delivery fee must be greater than zero');
+        }
+
+        return deliveryFee;
     }
 
     async secureCommitment(userId: string, orderId: string, amount: number, currency: string): Promise<string> {
-        const reason = `COD Commitment Fee for Order ${orderId}`;
+        const reason = `COD Delivery Fee Commitment for Order ${orderId}`;
         return await this.walletService.placeHold(userId, amount, currency, reason);
     }
 

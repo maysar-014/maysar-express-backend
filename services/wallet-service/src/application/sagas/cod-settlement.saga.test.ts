@@ -86,16 +86,17 @@ describe('CODSettlementSaga', () => {
     );
   });
 
-  it('processes COD commitment using release/capture/freeze branches', async () => {
+  it('processes COD commitment using capture/freeze branches', async () => {
     const saga = makeSaga();
     const step = getStep(saga, 'ProcessCODCommitment');
 
     await step.execute({ ...basePayload, deliveryStatus: 'SUCCESS' }, 'saga-success');
-    expect(releaseHoldUseCase.execute).toHaveBeenCalledWith(
+    expect(captureHoldUseCase.execute).toHaveBeenCalledWith(
       expect.objectContaining({
         holdId: 'hold-1',
         userId: 'buyer-1',
-        idempotencyKey: 'cod_release_order-1'
+        idempotencyKey: 'cod_delivery_charge_order-1',
+        correlationId: 'saga-success'
       })
     );
 

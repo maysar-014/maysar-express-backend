@@ -133,6 +133,7 @@ npm run staging:down
 | Document | Description |
 |----------|-------------|
 | [docs/README.md](docs/README.md) | Central documentation index |
+| [docs/Flow Docs/README.md](docs/Flow%20Docs/README.md) | Persona-oriented journey maps with happy/unhappy paths and sequence diagrams |
 | [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) | Architecture, local setup, adding modules |
 | [docs/MODELING_QUICK_START.md](docs/MODELING_QUICK_START.md) | How to create Mermaid diagrams |
 | [docs/DIAGRAM_MAINTENANCE_GUIDE.md](docs/DIAGRAM_MAINTENANCE_GUIDE.md) | Diagram update workflow |

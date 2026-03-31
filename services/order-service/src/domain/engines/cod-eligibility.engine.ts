@@ -102,10 +102,12 @@ export class CODEligibilityEngine {
         return { eligible: true };
     }
 
-    calculateCommitmentFee(orderAmount: number): number {
-        // 5% of order value, min 5,000 TZS
-        const percentageFee = orderAmount * 0.05;
-        return Math.max(percentageFee, 5000);
+    calculateCommitmentFee(deliveryFee: number): number {
+        if (!Number.isFinite(deliveryFee) || deliveryFee <= 0) {
+            throw new Error('Delivery fee must be greater than zero');
+        }
+
+        return deliveryFee;
     }
 
     private isHighRiskSKU(_productId: string): boolean {

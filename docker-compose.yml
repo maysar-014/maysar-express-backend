@@ -1,4 +1,58 @@
-version: '3.8'
+x-app-env: &app-env
+  NODE_ENV: ${NODE_ENV:-development}
+  PORT: ${PORT:-3000}
+  HOST: ${HOST:-0.0.0.0}
+  DATABASE_URL: "postgresql://${POSTGRES_USER:-maysar}:${POSTGRES_PASSWORD:-maysar}@postgres:5432/${POSTGRES_DB:-maysar}?schema=public"
+  REDIS_URL: "redis://:${REDIS_PASSWORD:-maysar}@redis:6379"
+  POSTGRES_USER: ${POSTGRES_USER:-maysar}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-maysar}
+  POSTGRES_DB: ${POSTGRES_DB:-maysar}
+  REDIS_PASSWORD: ${REDIS_PASSWORD:-maysar}
+  JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-keep-this-string-long-enough}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  LOG_FORMAT: ${LOG_FORMAT:-json}
+  BASE_URL: ${BASE_URL:-http://localhost:3000}
+  FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+  SERVICE_NAME: ${SERVICE_NAME:-maysar-backend}
+  SERVICE_VERSION: ${SERVICE_VERSION:-1.0.0}
+  ALLOWED_SERVICE_KEYS: ${ALLOWED_SERVICE_KEYS:-dev-service-key}
+  CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://localhost:3100,http://localhost:3200}
+  METRICS_ENABLED: ${METRICS_ENABLED:-true}
+  JAEGER_ENDPOINT: ${JAEGER_ENDPOINT:-http://jaeger:14268/api/traces}
+  SEARCH_PROVIDER: ${SEARCH_PROVIDER:-meilisearch}
+  MEILISEARCH_HOST: ${MEILISEARCH_HOST:-meilisearch}
+  MEILISEARCH_PORT: ${MEILISEARCH_PORT:-7700}
+  MEILISEARCH_PROTOCOL: ${MEILISEARCH_PROTOCOL:-http}
+  MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-dev-master-key}
+  MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY:-dev-master-key}
+  MEILISEARCH_INDEX_NAME: ${MEILISEARCH_INDEX_NAME:-catalog}
+  MEILISEARCH_REQUEST_TIMEOUT: ${MEILISEARCH_REQUEST_TIMEOUT:-30000}
+  SMTP_HOST: ${SMTP_HOST:-mailpit}
+  SMTP_PORT: ${SMTP_PORT:-1025}
+  SMTP_SECURE: ${SMTP_SECURE:-false}
+  SMTP_USER: ${SMTP_USER:-dev}
+  SMTP_PASS: ${SMTP_PASS:-dev}
+  SMTP_FROM: ${SMTP_FROM:-no-reply@maysar.local}
+  SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Maysar Local}
+  AFRICASTALKING_USERNAME: ${AFRICASTALKING_USERNAME:-sandbox}
+  AFRICASTALKING_API_KEY: ${AFRICASTALKING_API_KEY:-dev-africastalking-key}
+  AFRICASTALKING_SENDER_ID: ${AFRICASTALKING_SENDER_ID:-MAYSAR}
+  AFRICASTALKING_ENV: ${AFRICASTALKING_ENV:-sandbox}
+  AFRICASTALKING_BASE_URL: ${AFRICASTALKING_BASE_URL:-https://api.sandbox.africastalking.com/version1}
+  SMS_PROVIDER: ${SMS_PROVIDER:-africastalking}
+  SMS_SERVICE_PROVIDER: ${SMS_SERVICE_PROVIDER:-africastalking}
+  SMS_ALLOW_LIVE_IN_DEV: ${SMS_ALLOW_LIVE_IN_DEV:-false}
+  PESAPAL_CONSUMER_KEY: ${PESAPAL_CONSUMER_KEY:-dev-pesapal-consumer-key}
+  PESAPAL_CONSUMER_SECRET: ${PESAPAL_CONSUMER_SECRET:-dev-pesapal-consumer-secret}
+  PESAPAL_SECRET_KEY: ${PESAPAL_SECRET_KEY:-dev-pesapal-secret-key}
+  PESAPAL_IPN_ID: ${PESAPAL_IPN_ID:-dev-ipn-id}
+  PESAPAL_URL: ${PESAPAL_URL:-https://cybqa.pesapal.com/pesapalv3}
+  PESAPAL_WEBHOOK_SECRET: ${PESAPAL_WEBHOOK_SECRET:-dev-webhook-secret}
+  HERE_API_KEY: ${HERE_API_KEY:-DEVELOPMENT_MODE}
+  GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-DEVELOPMENT_MODE}
+  OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY:-development-key}
+  SERVICE_DISCOVERY_ENABLED: ${SERVICE_DISCOVERY_ENABLED:-true}
+  SERVICE_DISCOVERY_SERVICE_NAMES: ${SERVICE_DISCOVERY_SERVICE_NAMES:-auth,catalog,order}
 
 services:
   maysar-backend:
@@ -8,22 +62,10 @@ services:
       target: runner
     image: maysar-backend:latest
     environment:
-      NODE_ENV: production
-      # DATABASE_URL and REDIS_URL should be provided via environment or secrets
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
-      PORT: 3000
-      METRICS_ENABLED: "true"
-      JAEGER_ENDPOINT: "http://jaeger:14268/api/traces"
-      SERVICE_NAME: "maysar-monolith"
-      SERVICE_VERSION: "1.0.0"
+      <<: *app-env
       SEARCH_PROVIDER: meilisearch
       MEILISEARCH_HOST: meilisearch
-      MEILISEARCH_PORT: 7700
-      MEILISEARCH_PROTOCOL: http
-      MEILISEARCH_API_KEY: ${MEILI_MASTER_KEY}
-      MEILISEARCH_INDEX_NAME: catalog
-      MEILISEARCH_REQUEST_TIMEOUT: 30000
+      MEILISEARCH_API_KEY: ${MEILI_MASTER_KEY:-dev-master-key}
     depends_on:
       postgres:
         condition: service_healthy
@@ -31,17 +73,13 @@ services:
         condition: service_healthy
       meilisearch:
         condition: service_started
+      mailpit:
+        condition: service_started
     networks:
       - backend-network
       - database-network
     restart: always
     stop_grace_period: 1m
-    healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     logging:
       driver: "json-file"
       options:
@@ -63,16 +101,16 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-maysar}
+      POSTGRES_USER: ${POSTGRES_USER:-maysar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-maysar}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - database-network
     restart: always
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-maysar} -d ${POSTGRES_DB:-maysar}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -92,14 +130,14 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: [ "redis-server", "--requirepass", "${REDIS_PASSWORD}" ]
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-maysar}"]
     volumes:
       - redis_data:/data
     networks:
       - database-network
     restart: always
     healthcheck:
-      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping" ]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-maysar}", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -121,9 +159,24 @@ services:
     image: getmeili/meilisearch:latest
     environment:
       MEILI_ENV: production
-      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-dev-master-key}
     volumes:
       - meili_data:/meili_data
+    networks:
+      - backend-network
+    restart: always
+
+  mailpit:
+    image: axllent/mailpit:latest
+    environment:
+      MP_DATA_FILE: /data/mailpit.db
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+    volumes:
+      - mailpit_data:/data
+    ports:
+      - "1025:1025"
+      - "8025:8025"
     networks:
       - backend-network
     restart: always
@@ -161,3 +214,4 @@ volumes:
   postgres_data:
   redis_data:
   meili_data:
+  mailpit_data:

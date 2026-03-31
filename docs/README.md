@@ -32,6 +32,10 @@ Central navigation for all Maysar platform documentation. These pages describe t
 - [Business Registration Flow](modeling/cross-service/business-registration-flow.mmd)
 - [Product Publishing Flow](modeling/cross-service/product-publishing-flow.mmd)
 
+## Flow Docs
+
+- [Flow Docs](Flow%20Docs/README.md) â€” Persona-oriented journey maps with happy paths, unhappy paths, and sequence diagrams
+
 ## Operations
 
 - [Docker Orchestration](docker-orchestration.md)

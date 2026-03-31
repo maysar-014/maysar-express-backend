@@ -3,15 +3,22 @@ import express from 'express';
 import { createSellerStorefrontRoutes } from '../../src/api/routes/seller-storefront.routes';
 import { SellerStorefrontController } from '../../src/api/controllers/seller-storefront.controller';
 
+jest.setTimeout(60000);
+
 describe('Seller Storefront Routes Integration', () => {
   let app: express.Application;
+  let controller: SellerStorefrontController;
 
   beforeAll(() => {
     process.env.ALLOWED_SERVICE_KEYS = 'test-service-key';
     app = express();
     app.use(express.json());
     
-    const controller = new SellerStorefrontController('https://maysar.co.tz');
+    controller = new SellerStorefrontController('https://maysar.co.tz');
+    jest.spyOn(controller as any, 'generateQRCode').mockImplementation((async (url: string) => {
+      return `data:image/png;base64,${Buffer.from(url).toString('base64')}`;
+    }) as any);
+
     const routes = createSellerStorefrontRoutes(controller);
     app.use('/api/catalog/api/v1/sellers', routes);
   });

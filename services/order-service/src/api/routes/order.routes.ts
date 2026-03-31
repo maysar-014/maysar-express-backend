@@ -40,10 +40,38 @@ const createOrderBodySchema = Joi.object({
     postalCode: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
     country: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
   }).unknown(false).required(),
+  deliveryFee: Joi.number().greater(0).when('paymentMethod', {
+    is: 'COD',
+    then: Joi.required(),
+    otherwise: Joi.optional(),
+  }),
 }).unknown(false);
 
 const codValidationBodySchema = Joi.object({
-  buyerId: contractAwareUserIdSchema.optional(),
+  buyerId: contractAwareUserIdSchema.required(),
+  sellerId: Joi.string().min(1).required(),
+  totalAmount: Joi.number().greater(0).required(),
+  deliveryFee: Joi.number().greater(0).required(),
+  currency: Joi.string().length(3).optional(),
+  deliveryAddress: Joi.object({
+    street: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
+    city: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
+    postalCode: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
+    country: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
+  }).unknown(false).required(),
+  sellerAddress: Joi.object({
+    street: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
+    city: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
+    postalCode: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
+    country: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
+  }).unknown(false).required(),
+  items: Joi.array().items(
+    Joi.object({
+      productId: Joi.string().min(1).required(),
+      quantity: Joi.number().integer().min(1).required(),
+      price: orderItemPriceSchema.required(),
+    }).unknown(false)
+  ).min(1).required(),
 }).unknown(false);
 
 const orderListQuerySchema = Joi.object({

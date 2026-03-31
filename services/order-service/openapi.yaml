@@ -201,6 +201,7 @@ paths:
                     city: "Dar es Salaam"
                     postalCode: "11101"
                     country: "TZ"
+                  deliveryFee: 12000
                   paymentMethod: "COD"
                   notes: "Please handle with care"
               card_order:
@@ -886,6 +887,13 @@ components:
           default: "TZS"
         deliveryAddress:
           $ref: '#/components/schemas/Address'
+        deliveryFee:
+          type: number
+          exclusiveMinimum: 0
+          description: |
+            Prepaid delivery-fee commitment collected before order confirmation.
+            Required when `paymentMethod` is `COD`.
+            For COD orders, this amount is captured as the delivery charge when delivery succeeds.
         paymentMethod:
           type: string
           enum: [COD, CARD, MOBILE]

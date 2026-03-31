@@ -1,0 +1,124 @@
+# Courier Journeys
+
+This doc covers courier availability, assignment, delivery execution, COD verification, route planning, and earnings.
+
+## Concerned Actors
+
+| Actor | Concern |
+|------|---------|
+| Courier | Can I accept work, complete deliveries, and get paid correctly? |
+| `logistics-service` | Availability, dispatch, delivery lifecycle, and tracking |
+| `maps-service` | Route optimization and distance calculations |
+| `payment-service` | COD verification and payment-related delivery constraints |
+| `wallet-service` | Earnings settlement and COD commitments where applicable |
+| `payout-service` | Courier payout requests and reconciliation |
+| `notification-service` | Assignment, status, and customer notifications |
+| `analytics-service` | Courier performance and earnings metrics |
+
+## Use Case Matrix
+
+| ID | Use case | Happy path | Unhappy path |
+|----|----------|------------|--------------|
+| COU-01 | Availability and assignment acceptance | The courier toggles availability and receives eligible assignments immediately. | Offline status, certification issues, or assignment decline keeps the order in the queue. |
+| COU-02 | Delivery lifecycle updates | Pickup, transit, arrival, and delivery states move in order and notify the customer. | Out-of-order status, GPS failure, or delivery exception blocks progression and logs the issue. |
+| COU-03 | COD OTP collection and verification | The courier captures the OTP, verifies it, and the delivery is closed successfully. | OTP expired, wrong code, or retry limit reached keeps the delivery pending and escalates it. |
+| COU-04 | Route optimization and alternatives | The courier receives an optimized route and can compare ETA alternatives. | Missing map data, route conflict, or poor connectivity falls back to a manual route. |
+| COU-05 | Earnings and performance dashboard | Earnings, completion rate, and period filters update in one pass. | Delayed analytics or missing payouts show partial data and a retry state. |
+
+## Flow Notes
+
+- Delivery state transitions must remain monotonic.
+- Courier assignment should respect training or certification requirements.
+- COD verification must be explicit because it closes both delivery and payment risk.
+- Earnings screens should reconcile with wallet or payout data, not just raw delivery counts.
+
+## Sequence Diagram: Assignment To Delivery Completion
+
+```mermaid
+sequenceDiagram
+    actor Courier
+    participant UI as Courier App
+    participant Logistics as Logistics Service
+    participant Maps as Maps Service
+    participant Notif as Notification Service
+    participant Analytics as Analytics Service
+    participant Bus as EventBus
+
+    Courier->>UI: Set availability to online
+    UI->>Logistics: Update courier availability
+    Logistics->>Bus: Publish CourierAvailable
+
+    Logistics->>Maps: Compute best route
+    Maps-->>Logistics: Route plan and ETA
+    Logistics->>Notif: Send assignment alert
+
+    Courier->>UI: Accept delivery
+    UI->>Logistics: Update delivery status
+    alt Status order valid
+        Logistics->>Bus: Publish DeliveryAccepted
+        Logistics->>Analytics: Record assignment
+    else Invalid transition
+        Logistics-->>UI: 409 Invalid status transition
+    end
+
+    Courier->>UI: Mark delivered
+    UI->>Logistics: POST status update
+    Logistics->>Notif: Notify customer
+    Logistics->>Analytics: Update completion metrics
+    Logistics->>Bus: Publish DeliveryCompleted
+```
+
+## Sequence Diagram: COD OTP Verification
+
+```mermaid
+sequenceDiagram
+    actor Courier
+    participant UI as Courier App
+    participant Logistics as Logistics Service
+    participant Payment as Payment Service
+    participant Wallet as Wallet Service
+    participant Notif as Notification Service
+    participant Bus as EventBus
+
+    Courier->>UI: Enter OTP from customer
+    UI->>Logistics: Submit COD OTP
+    Logistics->>Payment: Verify COD settlement rule
+    alt OTP valid
+        Payment->>Wallet: Release or capture COD commitment
+        Payment->>Bus: Publish CODVerified
+        Logistics->>Notif: Confirm successful delivery
+        Logistics-->>UI: 200 Delivery closed
+    else OTP invalid or expired
+        Payment->>Bus: Publish CODVerificationFailed
+        Logistics-->>UI: 401 Verification failed
+    end
+```
+
+## Sequence Diagram: Route Optimization
+
+```mermaid
+sequenceDiagram
+    actor Courier
+    participant UI as Courier App
+    participant Logistics as Logistics Service
+    participant Maps as Maps Service
+    participant Analytics as Analytics Service
+
+    Courier->>UI: Request best route
+    UI->>Logistics: POST /api/logistics/api/v1/routes/optimize
+    Logistics->>Maps: Recompute route candidates
+    alt Map data available
+        Maps-->>Logistics: Route alternatives
+        Logistics->>Analytics: Store ETA delta
+        Logistics-->>UI: 200 Route options
+    else Map data unavailable
+        Maps-->>Logistics: Fallback route
+        Logistics-->>UI: 200 Manual route fallback
+    end
+```
+
+## What Good Looks Like
+
+- The courier always knows what is expected next and why a delivery is blocked.
+- Route, OTP, and earnings flows all show a traceable state, not just a button click.
+- Delivery problems are handled as visible exceptions, not hidden failures.

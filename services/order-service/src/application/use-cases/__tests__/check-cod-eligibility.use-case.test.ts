@@ -8,6 +8,7 @@ describe('CheckCODEligibilityUseCase', () => {
         buyerId: 'buyer-1',
         sellerId: 'seller-1',
         totalAmount: 50000,
+        deliveryFee: 12000,
         currency: 'TZS',
         deliveryAddress: {
             street: '123 Market Street',
@@ -31,7 +32,7 @@ describe('CheckCODEligibilityUseCase', () => {
             checkBuyerEligibility: jest.fn().mockResolvedValue({ eligible: true }),
             checkSellerEligibility: jest.fn().mockResolvedValue({ eligible: true }),
             checkOrderEligibility: jest.fn().mockResolvedValue({ eligible: true }),
-            calculateCommitmentFee: jest.fn().mockReturnValue(2500),
+            calculateCommitmentFee: jest.fn().mockImplementation((fee: number) => fee),
         };
 
         useCase = new CheckCODEligibilityUseCase(mockEligibilityEngine);
@@ -41,7 +42,7 @@ describe('CheckCODEligibilityUseCase', () => {
         const result = await useCase.execute(validInput);
 
         expect(result.eligible).toBe(true);
-        expect(result.commitmentFee).toBe(2500);
+        expect(result.commitmentFee).toBe(12000);
     });
 
     it('should return ineligible when buyer check fails', async () => {
@@ -105,16 +106,16 @@ describe('CheckCODEligibilityUseCase', () => {
     it('should calculate commitment fee for eligible orders', async () => {
         await useCase.execute(validInput);
 
-        expect(mockEligibilityEngine.calculateCommitmentFee).toHaveBeenCalledWith(50000);
+        expect(mockEligibilityEngine.calculateCommitmentFee).toHaveBeenCalledWith(12000);
     });
 
-    it('should handle different order amounts', async () => {
+    it('should keep commitment fee tied to the delivery fee even when order totals change', async () => {
         const amounts = [10000, 50000, 100000, 200000];
 
         for (const totalAmount of amounts) {
             jest.clearAllMocks();
             await useCase.execute({ ...validInput, totalAmount });
-            expect(mockEligibilityEngine.calculateCommitmentFee).toHaveBeenCalledWith(totalAmount);
+            expect(mockEligibilityEngine.calculateCommitmentFee).toHaveBeenCalledWith(12000);
         }
     });
 

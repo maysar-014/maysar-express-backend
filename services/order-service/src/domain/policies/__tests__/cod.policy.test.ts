@@ -8,8 +8,9 @@ describe('CODPolicy', () => {
     });
 
     const validOrder = {
-        paymentMethod: 'COD',
+        paymentMethod: 'cod',
         totalAmount: 50000,
+        deliveryFee: 12000,
         buyerId: 'user-123',
         deliveryAddress: 'Region A'
     };
@@ -18,6 +19,12 @@ describe('CODPolicy', () => {
         it('should skip validation if payment method is not COD', async () => {
             const result = await policy.validate({ ...validOrder, paymentMethod: 'CARD' });
             expect(result.valid).toBe(true);
+        });
+
+        it('should treat lowercase cod as COD', async () => {
+            const result = await policy.validate(validOrder);
+            expect(result.valid).toBe(true);
+            expect(result.errors).toHaveLength(0);
         });
 
         it('should fail if amount exceeds maximum', async () => {
@@ -30,6 +37,12 @@ describe('CODPolicy', () => {
             const result = await policy.validate({ ...validOrder, totalAmount: 999 }); // Min 1000
             expect(result.valid).toBe(false);
             expect(result.errors).toContainEqual(expect.stringContaining('below minimum limit'));
+        });
+
+        it('should fail if delivery fee is missing', async () => {
+            const result = await policy.validate({ ...validOrder, deliveryFee: undefined });
+            expect(result.valid).toBe(false);
+            expect(result.errors).toContain('Delivery fee must be provided for COD orders');
         });
 
         it('should fail if buyer not verified', async () => {

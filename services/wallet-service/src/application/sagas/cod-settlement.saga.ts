@@ -51,8 +51,8 @@ export interface CODSettlementPayload {
  * Manages the final financial adjustments after a COD delivery attempt.
  * 
  * Flow:
- * - If SUCCESS: Release the 5% commitment fee hold back to the buyer.
- * - If REFUSED: Capture the 5% hold as a penalty for time and logistics wasted.
+ * - If SUCCESS: Capture the delivery-fee commitment as the delivery charge.
+ * - If REFUSED: Capture the commitment as a refusal penalty.
  * - If DISPUTED: Keeps hold until resolution (manual).
  */
 export class CODSettlementSaga extends DistributedSagaOrchestrator<CODSettlementPayload> {
@@ -109,11 +109,12 @@ export class CODSettlementSaga extends DistributedSagaOrchestrator<CODSettlement
                     });
 
                     if (payload.deliveryStatus === 'SUCCESS') {
-                        await this.releaseHoldUseCase.execute({
+                        await this.captureHoldUseCase.execute({
                             holdId: payload.holdId,
                             userId: payload.buyerId,
-                            reason: `COD Commitment Released - Order ${payload.orderId} confirmed after dispute window.`,
-                            idempotencyKey: `cod_release_${payload.orderId}`,
+                            reason: `COD Delivery Charge Captured - Order ${payload.orderId} delivered successfully.`,
+                            idempotencyKey: `cod_delivery_charge_${payload.orderId}`,
+                            correlationId: sagaId,
                             auditInfo
                         });
                     } else if (payload.deliveryStatus === 'REFUSED') {

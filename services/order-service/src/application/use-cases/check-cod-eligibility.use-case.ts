@@ -5,6 +5,7 @@ export interface CheckCODEligibilityInput {
     buyerId: string;
     sellerId: string;
     totalAmount: number;
+    deliveryFee: number;
     currency: string;
     deliveryAddress: any;
     sellerAddress: any;
@@ -52,8 +53,8 @@ export class CheckCODEligibilityUseCase {
             return { eligible: false, reason: orderResult.reason };
         }
 
-        // Calculate commitment fee if eligible
-        const commitmentFee = this.eligibilityEngine.calculateCommitmentFee(input.totalAmount);
+        // Use the delivery fee as the COD commitment fee
+        const commitmentFee = this.eligibilityEngine.calculateCommitmentFee(input.deliveryFee);
 
         return {
             eligible: true,

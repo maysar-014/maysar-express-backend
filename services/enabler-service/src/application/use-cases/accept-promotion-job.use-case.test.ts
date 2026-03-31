@@ -11,7 +11,7 @@ const makeJob = () => PromotionJobEntity.create({
   type: 'PROMOTION',
   status: 'ACTIVE',
   startDate: new Date('2026-03-20T00:00:00.000Z'),
-  endDate: new Date('2026-03-30T00:00:00.000Z'),
+  endDate: new Date('2099-12-31T00:00:00.000Z'),
   timezone: 'Africa/Dar_es_Salaam',
   productIds: [],
   categoryIds: [],

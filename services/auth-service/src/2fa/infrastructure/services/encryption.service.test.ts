@@ -46,7 +46,9 @@ describe('EncryptionService', () => {
     const encrypted = service.encrypt('sensitive');
     const [iv, authTag, ciphertext] = encrypted.split(':');
 
-    const tampered = `${iv}:${authTag}:${ciphertext.slice(0, -1)}0`;
+    const lastChar = ciphertext[ciphertext.length - 1];
+    const replacement = lastChar === '0' ? '1' : '0';
+    const tampered = `${iv}:${authTag}:${ciphertext.slice(0, -1)}${replacement}`;
     expect(() => service.decrypt(tampered)).toThrow();
   });
 });

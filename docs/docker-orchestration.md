@@ -4,17 +4,34 @@ This project uses a tiered Docker Compose strategy to separate production concer
 
 ## Files
 
-- `docker-compose.yml`: The production-ready base configuration. It includes resource limits, security hardening, and internal network isolation.
-- `docker-compose.override.yml`: Local development overrides. It maps ports to the host and mounts the source code for hot-reloading.
+- `docker-compose.yml`: The default local/full-stack configuration. It brings up the monolith, PostgreSQL, Redis, MeiliSearch, Mailpit, Prometheus, and Jaeger with safe development defaults.
+- `docker-compose.override.yml`: Local development overrides. It maps ports to the host and enables hot-reloading for the application container.
 
 ## Usage
 
 ### Local Development
 To start the environment for development:
 ```bash
-docker compose up
+npm run docker:up
 ```
-This automatically merges `docker-compose.yml` and `docker-compose.override.yml`.
+This starts the full stack in detached mode and automatically merges `docker-compose.yml` and `docker-compose.override.yml`.
+
+The stack is self-contained:
+- Application: `http://localhost:3000`
+- Mail inbox: `http://localhost:8025`
+- MeiliSearch: `http://localhost:7700`
+- Prometheus: `http://localhost:9090`
+- Jaeger: `http://localhost:16686`
+
+To stop the stack:
+```bash
+npm run docker:down
+```
+
+To follow logs:
+```bash
+npm run docker:logs
+```
 
 ### Production Simulation
 To see how it would look in production (no host port mappings for DBs, resource limits active):
