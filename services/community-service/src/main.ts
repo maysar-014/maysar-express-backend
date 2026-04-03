@@ -6,6 +6,7 @@ import compression from 'compression';
 import { PrismaClient } from '@prisma/client';
 import winston from 'winston';
 import { createPrismaClient } from '@shared/database/prisma-client';
+import { createSafeFileTransports } from '../../../shared/logger/file-transports';
 
 // Infrastructure components
 import { PrismaPostRepository } from './infrastructure/repositories/prisma-post.repository';
@@ -95,13 +96,15 @@ class CommunityService {
             winston.format.simple()
           )
         }),
-        new winston.transports.File({
-          filename: 'logs/error.log',
-          level: 'error'
-        }),
-        new winston.transports.File({
-          filename: 'logs/combined.log'
-        })
+        ...createSafeFileTransports([
+          {
+            filename: 'logs/error.log',
+            level: 'error'
+          },
+          {
+            filename: 'logs/combined.log'
+          }
+        ])
       ]
     });
   }

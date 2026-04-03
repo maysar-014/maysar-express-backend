@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case';
 import { AuthenticateUserUseCase } from '../../application/use-cases/authenticate-user.use-case';
 import { makeId } from '@shared/ids/id';
+import { PasswordHash } from '../../domain/value-objects/password-hash.value-object';
 
 export class AuthController {
   constructor(
@@ -172,6 +173,17 @@ export class AuthController {
         error: {
           code: 'VALIDATION_ERROR',
           message: 'token, newPassword, and confirmPassword are required'
+        }
+      });
+      return;
+    }
+
+    if (!PasswordHash.isValidPassword(newPassword) || !PasswordHash.isValidPassword(confirmPassword) || newPassword !== confirmPassword) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'newPassword and confirmPassword must match and meet security requirements'
         }
       });
       return;

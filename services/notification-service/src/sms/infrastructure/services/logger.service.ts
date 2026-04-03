@@ -1,4 +1,5 @@
 import winston from 'winston';
+import { createSafeFileTransports } from '../../../../../../shared/logger/file-transports';
 
 export enum LogLevel {
     ERROR = 'error',
@@ -31,19 +32,19 @@ export class Logger {
                         winston.format.simple()
                     )
                 }),
-                ...(process.env.NODE_ENV === 'production' ? [
-                    new winston.transports.File({
+                ...(process.env.NODE_ENV === 'production' ? createSafeFileTransports([
+                    {
                         filename: 'logs/error.log',
                         level: 'error',
                         maxsize: 5242880,
                         maxFiles: 5
-                    }),
-                    new winston.transports.File({
+                    },
+                    {
                         filename: 'logs/combined.log',
                         maxsize: 5242880,
                         maxFiles: 5
-                    })
-                ] : [])
+                    }
+                ]) : [])
             ]
         });
     }

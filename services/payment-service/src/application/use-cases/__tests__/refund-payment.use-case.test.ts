@@ -17,6 +17,7 @@ describe('RefundPaymentUseCase', () => {
         status: PaymentStatus.COMPLETED,
         refundedAmount: 0,
         createdAt: new Date(),
+        completedAt: new Date('2026-03-28T12:00:00.000Z'),
         recordRefund: jest.fn(),
     };
 
@@ -108,6 +109,22 @@ describe('RefundPaymentUseCase', () => {
 
         expect(result.success).toBe(true);
         expect(result.refundAmount).toBe(40);
+    });
+
+    it('should use completedAt as the refund reference date when available', async () => {
+        await useCase.execute(validDTO);
+
+        expect(mockRefundPolicy.canRefund).toHaveBeenCalledWith(
+            PaymentStatus.COMPLETED,
+            100,
+            0,
+            mockPayment.completedAt
+        );
+        expect(mockRefundPolicy.calculateRefundAmount).toHaveBeenCalledWith(
+            100,
+            0,
+            mockPayment.completedAt
+        );
     });
 
     it('should handle partial refunds', async () => {

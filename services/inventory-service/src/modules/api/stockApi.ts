@@ -574,7 +574,9 @@ export class StockApi {
       const normalized = message.toLowerCase();
       const statusCode = normalized.includes('not found')
         ? 404
-        : (normalized.includes('must') || normalized.includes('invalid') || normalized.includes('cannot') || normalized.includes('exceed'))
+        : normalized.includes('exceed')
+          ? 409
+          : (normalized.includes('must') || normalized.includes('invalid') || normalized.includes('cannot'))
           ? 400
           : 500;
       res.status(statusCode).json({ error: message });

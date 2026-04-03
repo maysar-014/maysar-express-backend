@@ -189,6 +189,19 @@ describe('StockApi', () => {
       expect(mockRes.status).toHaveBeenCalledWith(400);
       expect(mockStockManager.updateStock).not.toHaveBeenCalled();
     });
+
+    it('should return 409 when stock update exceeds max stock', async () => {
+      mockReq.params = { variantId: validVariantId, warehouseId: validWarehouseId };
+      mockReq.body = { quantity: 10, operation: 'add', reason: 'Restock', reorderPoint: 15, maxStock: 250 };
+      mockStockManager.updateStock.mockRejectedValue(new Error('Stock update would exceed maximum stock limit of 250'));
+
+      await api.updateMaterialInventory(mockReq as Request, mockRes as Response);
+
+      expect(mockRes.status).toHaveBeenCalledWith(409);
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Stock update would exceed maximum stock limit of 250'
+      }));
+    });
   });
 
   describe('cancelReservation', () => {

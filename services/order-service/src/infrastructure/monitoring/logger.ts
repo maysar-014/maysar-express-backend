@@ -7,6 +7,7 @@ import winston from 'winston';
 import { loggingConfig } from '../../config/monitoring.config';
 import { AppError, ErrorType } from '../../domain/errors';
 import { LogContext } from '../../../../../shared/logger/logger';
+import { createSafeFileTransports } from '../../../../../shared/logger/file-transports';
 
 // Define log levels
 const levels = {
@@ -47,30 +48,6 @@ const consoleTransport = new winston.transports.Console({
   ),
 });
 
-// File transport for production
-const fileTransport = new winston.transports.File({
-  filename: loggingConfig.transports.filePath,
-  level: loggingConfig.level,
-  format: winston.format.combine(
-    winston.format.uncolorize(),
-    winston.format.json()
-  ),
-  maxsize: 5242880, // 5MB
-  maxFiles: loggingConfig.transports.maxFiles,
-});
-
-// Error-specific file transport
-const errorFileTransport = new winston.transports.File({
-  filename: loggingConfig.transports.filePath?.replace('.log', '-error.log') || 'logs/order-service-error.log',
-  level: 'error',
-  format: winston.format.combine(
-    winston.format.uncolorize(),
-    winston.format.json()
-  ),
-  maxsize: 5242880, // 5MB
-  maxFiles: 30,
-});
-
 // Create the logger
 export const logger = winston.createLogger({
   level: loggingConfig.level,
@@ -78,7 +55,28 @@ export const logger = winston.createLogger({
   format: customFormat,
   transports: [
     ...(loggingConfig.transports.console ? [consoleTransport] : []),
-    ...(loggingConfig.transports.file ? [fileTransport, errorFileTransport] : []),
+    ...(loggingConfig.transports.file ? createSafeFileTransports([
+      {
+        filename: loggingConfig.transports.filePath || 'logs/order-service.log',
+        level: loggingConfig.level,
+        format: winston.format.combine(
+          winston.format.uncolorize(),
+          winston.format.json()
+        ),
+        maxsize: 5242880, // 5MB
+        maxFiles: loggingConfig.transports.maxFiles,
+      },
+      {
+        filename: loggingConfig.transports.filePath?.replace('.log', '-error.log') || 'logs/order-service-error.log',
+        level: 'error',
+        format: winston.format.combine(
+          winston.format.uncolorize(),
+          winston.format.json()
+        ),
+        maxsize: 5242880, // 5MB
+        maxFiles: 30,
+      }
+    ]) : []),
   ],
   exitOnError: false,
 });

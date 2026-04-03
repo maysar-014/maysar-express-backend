@@ -39,12 +39,17 @@ export class KnowledgeController {
                 quotaRemaining: result.quotaRemaining,
             });
         } catch (error: any) {
-            if (error.message.includes('Insufficient reputation')) {
-                res.status(403).json({ error: error.message });
-            } else if (error.message.includes('Quota exceeded')) {
-                res.status(429).json({ error: error.message });
-            } else if (error.message.includes('Invalid') || error.message.includes('already exists')) {
-                res.status(400).json({ error: error.message });
+            const message = error instanceof Error ? error.message : String(error);
+            const normalized = message.toLowerCase();
+
+            if (normalized.includes('insufficient reputation')) {
+                res.status(403).json({ error: message });
+            } else if (normalized.includes('quota exceeded')) {
+                res.status(429).json({ error: message });
+            } else if (normalized.includes('already exists')) {
+                res.status(409).json({ error: message });
+            } else if (normalized.includes('invalid')) {
+                res.status(400).json({ error: message });
             } else {
                 next(error);
             }

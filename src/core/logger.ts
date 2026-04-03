@@ -1,4 +1,19 @@
 import winston from 'winston';
+import { createSafeFileTransports } from '../../shared/logger/file-transports';
+
+const isDev = process.env.NODE_ENV !== 'production';
+
+const consoleTransport = new winston.transports.Console({
+    format: isDev
+        ? winston.format.combine(
+            winston.format.colorize(),
+            winston.format.simple()
+        )
+        : winston.format.combine(
+            winston.format.uncolorize(),
+            winston.format.json()
+        ),
+});
 
 export const logger = winston.createLogger({
     level: process.env.LOG_LEVEL || 'info',
@@ -8,16 +23,10 @@ export const logger = winston.createLogger({
     ),
     defaultMeta: { service: 'maysar-monolith' },
     transports: [
-        new winston.transports.File({ filename: 'error.log', level: 'error' }),
-        new winston.transports.File({ filename: 'combined.log' }),
+        consoleTransport,
+        ...createSafeFileTransports([
+            { filename: 'error.log', level: 'error' },
+            { filename: 'combined.log' },
+        ]),
     ],
 });
-
-if (process.env.NODE_ENV !== 'production') {
-    logger.add(new winston.transports.Console({
-        format: winston.format.combine(
-            winston.format.colorize(),
-            winston.format.simple()
-        ),
-    }));
-}

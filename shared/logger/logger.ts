@@ -4,6 +4,7 @@
  */
 
 import winston from 'winston';
+import { createSafeFileTransports } from './file-transports';
 
 // ============================================================================
 // LOG CONTEXT
@@ -48,26 +49,28 @@ export function createServiceLogger(serviceName: string): winston.Logger {
 
     if (!isDev) {
         transportsArray.push(
-            new winston.transports.File({
-                filename: `logs/${serviceName}.log`,
-                level: logLevel,
-                format: winston.format.combine(
-                    winston.format.uncolorize(),
-                    winston.format.json()
-                ),
-                maxsize: 5242880, // 5MB
-                maxFiles: 30,
-            }),
-            new winston.transports.File({
-                filename: `logs/${serviceName}-error.log`,
-                level: 'error',
-                format: winston.format.combine(
-                    winston.format.uncolorize(),
-                    winston.format.json()
-                ),
-                maxsize: 5242880,
-                maxFiles: 30,
-            })
+            ...createSafeFileTransports([
+                {
+                    filename: `logs/${serviceName}.log`,
+                    level: logLevel,
+                    format: winston.format.combine(
+                        winston.format.uncolorize(),
+                        winston.format.json()
+                    ),
+                    maxsize: 5242880, // 5MB
+                    maxFiles: 30,
+                },
+                {
+                    filename: `logs/${serviceName}-error.log`,
+                    level: 'error',
+                    format: winston.format.combine(
+                        winston.format.uncolorize(),
+                        winston.format.json()
+                    ),
+                    maxsize: 5242880,
+                    maxFiles: 30,
+                }
+            ])
         );
     }
 

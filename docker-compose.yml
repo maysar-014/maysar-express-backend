@@ -53,6 +53,7 @@ x-app-env: &app-env
   OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY:-development-key}
   SERVICE_DISCOVERY_ENABLED: ${SERVICE_DISCOVERY_ENABLED:-true}
   SERVICE_DISCOVERY_SERVICE_NAMES: ${SERVICE_DISCOVERY_SERVICE_NAMES:-auth,catalog,order}
+  NODE_OPTIONS: ${NODE_OPTIONS:---max-old-space-size=1536}
 
 services:
   maysar-backend:
@@ -89,10 +90,10 @@ services:
       resources:
         limits:
           cpus: '0.4'
-          memory: 512M
+          memory: 2G
         reservations:
           cpus: '0.1'
-          memory: 128M
+          memory: 512M
     security_opt:
       - no-new-privileges:true
     cap_drop:

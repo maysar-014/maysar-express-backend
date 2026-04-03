@@ -30035,6 +30035,7 @@ paths:
                 adminReason:
                   type: string
                   minLength: 10
+              additionalProperties: false
             example:
               identifier: example
               type: ip
@@ -30137,6 +30138,7 @@ paths:
                     - security
                     - admin
                     - rotation
+              additionalProperties: false
             example:
               apiKey: sk_test_contract_api_key_1234567890
               reason: rotation

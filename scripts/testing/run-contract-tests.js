@@ -4,7 +4,9 @@ const { spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
+const net = require('net');
 const path = require('path');
+const { Client } = require('pg');
 const { normalizeOpenApiFile } = require('../contract/normalize-openapi');
 const { inspectOpenApi, writeAuditReports, formatAuditSummary } = require('./audit-openapi-contract');
 
@@ -78,6 +80,45 @@ const requestStatus = (urlString) => new Promise((resolve) => {
   }
 });
 
+const requestTcpStatus = (host, port) => new Promise((resolve) => {
+  try {
+    const socket = net.createConnection({ host, port });
+    socket.setTimeout(5000);
+    socket.once('connect', () => {
+      socket.end();
+      resolve(true);
+    });
+    socket.once('timeout', () => {
+      socket.destroy();
+      resolve(false);
+    });
+    socket.once('error', () => resolve(false));
+  } catch (_) {
+    resolve(false);
+  }
+});
+
+const requestDatabaseStatus = async (databaseUrl) => {
+  const client = new Client({
+    connectionString: databaseUrl,
+    connectionTimeoutMillis: 5000
+  });
+
+  try {
+    await client.connect();
+    await client.query('SELECT 1');
+    return true;
+  } catch (_) {
+    return false;
+  } finally {
+    try {
+      await client.end();
+    } catch (_) {
+      // Ignore disconnect failures while we are probing readiness.
+    }
+  }
+};
+
 const waitForServerReadiness = async () => {
   const readinessUrls = String(
     process.env.SCHEMATHESIS_READY_URLS
@@ -114,6 +155,44 @@ const waitForServerReadiness = async () => {
   readinessUrls.forEach((url, index) => {
     console.error(`- ${url}: ${finalStatuses[index] || 'unreachable'}`);
   });
+  process.exit(1);
+};
+
+const waitForDatabaseReadiness = async () => {
+  const databaseUrl = String(process.env.DATABASE_URL || '').trim();
+  if (!databaseUrl) return;
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(databaseUrl);
+  } catch (_) {
+    return;
+  }
+
+  if (parsedUrl.protocol === 'file:') return;
+
+  const host = parsedUrl.hostname;
+  const port = Number(parsedUrl.port || '5432');
+  if (!host || !Number.isFinite(port) || port <= 0) return;
+
+  const timeoutMs = Number(process.env.SCHEMATHESIS_DB_READY_TIMEOUT_MS || '300000');
+  const intervalMs = Number(process.env.SCHEMATHESIS_DB_READY_INTERVAL_MS || '1000');
+  const deadline = Date.now() + timeoutMs;
+
+  console.log('Waiting for database readiness...');
+
+  while (Date.now() < deadline) {
+    const isTcpReady = await requestTcpStatus(host, port);
+    if (isTcpReady && await requestDatabaseStatus(databaseUrl)) {
+      console.log(`- Ready: ${host}:${port}`);
+      return;
+    }
+
+    await sleep(intervalMs);
+  }
+
+  console.error('Database readiness check failed before seeding contract data.');
+  console.error(`- ${host}:${port}: unreachable`);
   process.exit(1);
 };
 
@@ -337,7 +416,7 @@ const runSchemathesis = async () => {
   const authMode = String(process.env.SCHEMATHESIS_AUTH_MODE || 'strict').trim().toLowerCase();
   const phaseList = parseCsvOption(phases);
   const requestTimeoutSeconds = process.env.SCHEMATHESIS_REQUEST_TIMEOUT_SECONDS
-    || (phaseList.some((phase) => phase === 'coverage' || phase === 'fuzzing') ? '60' : undefined);
+    || (phaseList.some((phase) => phase === 'coverage' || phase === 'fuzzing') ? '60' : '20');
   const includeStubbedCatalogPaths = toBool(process.env.SCHEMATHESIS_INCLUDE_STUBBED_CATALOG_PATHS, false);
   const globalIncludePathRegex = mergeRegexOption(
     process.env.SCHEMATHESIS_INCLUDE_PATH_REGEX,
@@ -495,10 +574,14 @@ const runSchemathesis = async () => {
   }
 };
 
-deployPrismaMigrations();
-seedContractData();
+const main = async () => {
+  deployPrismaMigrations();
+  await waitForDatabaseReadiness();
+  seedContractData();
+  await runSchemathesis();
+};
 
-runSchemathesis().catch((err) => {
+main().catch((err) => {
   console.error('Contract test runner failed:', err);
   process.exit(1);
 });

@@ -19,7 +19,7 @@ export class PasswordHash {
   }
 
   static isValidPassword(password: string): boolean {
-    return password.length >= 8;
+    return Array.from(password).length >= 8;
   }
 
   toString(): string {

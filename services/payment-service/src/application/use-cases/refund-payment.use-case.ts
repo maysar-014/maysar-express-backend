@@ -45,12 +45,14 @@ export class RefundPaymentUseCase {
             };
         }
 
+        const refundReferenceDate = payment.completedAt ?? payment.createdAt;
+
         // Step 2: Check refund eligibility
         const eligibility = this.refundPolicy.canRefund(
             payment.status,
             payment.amount,
             payment.refundedAmount,
-            payment.createdAt
+            refundReferenceDate
         );
 
         if (!eligibility.canRefund) {
@@ -75,7 +77,7 @@ export class RefundPaymentUseCase {
         const actualRefundAmount = this.refundPolicy.calculateRefundAmount(
             payment.amount,
             payment.refundedAmount,
-            payment.createdAt
+            refundReferenceDate
         );
 
         const refundAmount = Math.min(dto.amount, actualRefundAmount);

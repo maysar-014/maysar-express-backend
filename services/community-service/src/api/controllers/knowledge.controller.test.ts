@@ -88,7 +88,7 @@ describe('KnowledgeController', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Quota exceeded for ARTICLE' });
   });
 
-  it('maps invalid payload and duplicate-like errors to 400', async () => {
+  it('maps invalid payload to 400 and duplicate title errors to 409', async () => {
     submitArticleUseCase.execute.mockRejectedValue(new Error('Invalid sections payload'));
     const req = { user: { id: 'u1' }, body: {} } as unknown as Request;
     const res = makeResponse();
@@ -99,7 +99,7 @@ describe('KnowledgeController', () => {
     submitArticleUseCase.execute.mockRejectedValue(new Error('Title already exists'));
     const res2 = makeResponse();
     await controller.submitArticle(req, res2, next);
-    expect(res2.status).toHaveBeenCalledWith(400);
+    expect(res2.status).toHaveBeenCalledWith(409);
   });
 
   it('forwards unknown submitArticle errors to next', async () => {

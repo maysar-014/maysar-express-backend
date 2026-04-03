@@ -214,6 +214,22 @@ describe('AuthenticationEngine', () => {
             expect(result.success).toBe(true);
         });
 
+        it('should reject passwords shorter than eight Unicode characters', async () => {
+            const user = User.create({
+                id: 'user-1',
+                email: Email.create('test@example.com'),
+                passwordHash,
+                role: UserRole.BUYER
+            });
+            const expiresAt = new Date(Date.now() + 100000);
+            const shortUnicodePassword = String.fromCodePoint(0x1f642).repeat(4);
+
+            const result = await AuthenticationEngine.resetPassword(user, 'token', shortUnicodePassword, expiresAt);
+
+            expect(result.success).toBe(false);
+            expect(result.message).toContain('security requirements');
+        });
+
         it('should fail if token expired', async () => {
             const user = User.create({
                 id: 'user-1',

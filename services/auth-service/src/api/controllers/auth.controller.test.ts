@@ -251,6 +251,23 @@ describe('AuthController', () => {
       message: 'Password reset successful'
     });
 
+    const shortUnicodePassword = String.fromCodePoint(0x1f642).repeat(4);
+    const invalidResetReq = createRequest({
+      body: {
+        token: 'x'.repeat(32),
+        newPassword: shortUnicodePassword,
+        confirmPassword: shortUnicodePassword
+      }
+    });
+    await controller.resetPassword(invalidResetReq, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      error: expect.objectContaining({
+        code: 'VALIDATION_ERROR'
+      })
+    }));
+
     const enableReq = createRequest({ body: { password: 'StrongPass123!', totpCode: '123456' } });
     await controller.enableTwoFactor(enableReq, res);
     expect(res.status).toHaveBeenCalledWith(200);
