@@ -1,10 +1,10 @@
 OpenAPI Contract Audit
 - File: C:\Users\abdal\Desktop\maysar-express-backend\openapi.yaml
-- Operations: 489
-- Operations with request input: 344
+- Operations: 497
+- Operations with request input: 352
 - Operations without request input: 145
-- Input-bearing operations with request examples: 344
-- Input-bearing operations with authored request examples: 156
+- Input-bearing operations with request examples: 352
+- Input-bearing operations with authored request examples: 164
 - Input-bearing operations with generated request examples: 188
 - Input-bearing operations missing request examples: 0
 - Operations missing request schemas: 0
@@ -12,8 +12,8 @@ OpenAPI Contract Audit
 - Responses missing schemas: 0
 - Safe-method operations with request bodies: 0
 - Root security schemes: (none)
-- Operations with explicit public security: 161
-- Operations with explicit security requirements: 328
+- Operations with explicit public security: 165
+- Operations with explicit security requirements: 332
 - Operations without explicit security declarations: 0
 - Operations inheriting root security: 0
 - Likely-public operations inheriting root security: 0

@@ -21,6 +21,10 @@ COPY . .
 RUN npm run build
 RUN npm prune --omit=dev && npm cache clean --force
 
+# Development stage
+# Keeps devDependencies so `npm run dev` works with the compose override.
+FROM deps AS dev
+
 # Runtime stage
 FROM base AS runner
 RUN apk add --no-cache dumb-init \

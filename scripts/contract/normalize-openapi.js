@@ -311,7 +311,7 @@ const REQUEST_EXAMPLE_OVERRIDES = {
     ownerId: PRIMARY_USER_ID,
     taxId: TAX_ID_EXAMPLE,
     description: 'Seeded business for contract tests',
-    industry: 'Commerce',
+    industry: ['Commerce'],
     website: 'https://example.com/contract-business',
     email: 'business.contract@example.com',
     phoneNumber: '+255700000120'
@@ -665,6 +665,32 @@ const REQUEST_EXAMPLE_OVERRIDES = {
       country: 'TZ'
     }
   },
+  'POST /api/order/orders/cod/validate': {
+    buyerId: CONTRACT_USER_ID,
+    sellerId: PRIMARY_USER_ID,
+    totalAmount: 125000,
+    deliveryFee: 5000,
+    currency: 'TZS',
+    deliveryAddress: {
+      street: 'Uhuru Street',
+      city: 'Dar es Salaam',
+      postalCode: '11101',
+      country: 'TZ'
+    },
+    sellerAddress: {
+      street: 'Nyerere Road',
+      city: 'Dar es Salaam',
+      postalCode: '11102',
+      country: 'TZ'
+    },
+    items: [
+      {
+        productId: PRODUCT_ID,
+        quantity: 1,
+        price: 120000
+      }
+    ]
+  },
   'POST /api/payment/payments': {
     orderId: ORDER_ID,
     userId: PRIMARY_USER_ID,
@@ -972,7 +998,7 @@ const REQUEST_SCHEMA_OVERRIDES = {
   'POST /api/business-registry/businesses': {
     type: 'object',
     additionalProperties: false,
-    required: ['name', 'businessType', 'registrationNumber', 'ownerId'],
+            required: ['name', 'businessType', 'registrationNumber', 'ownerId', 'industry'],
     properties: {
       name: {
         type: 'string',
@@ -998,9 +1024,14 @@ const REQUEST_SCHEMA_OVERRIDES = {
         maxLength: 1000,
       },
       industry: {
-        type: 'string',
-        maxLength: 100,
-        pattern: NON_BLANK_PATTERN,
+        type: 'array',
+        minItems: 1,
+        uniqueItems: true,
+        items: {
+          type: 'string',
+          maxLength: 100,
+          pattern: NON_BLANK_PATTERN,
+        },
       },
       website: {
         type: 'string',
@@ -1050,6 +1081,142 @@ const REQUEST_SCHEMA_OVERRIDES = {
             },
             isPrimary: {
               type: 'boolean',
+            },
+          },
+        },
+      },
+    },
+  },
+  'POST /api/order/orders/cod/validate': {
+    type: 'object',
+    additionalProperties: false,
+    required: ['buyerId', 'sellerId', 'totalAmount', 'deliveryFee', 'deliveryAddress', 'sellerAddress', 'items'],
+    properties: {
+      buyerId: {
+        type: 'string',
+        minLength: 1,
+        pattern: '^usr_',
+        example: CONTRACT_USER_ID,
+      },
+      sellerId: {
+        type: 'string',
+        minLength: 1,
+        pattern: NON_BLANK_PATTERN,
+        example: PRIMARY_USER_ID,
+      },
+      totalAmount: {
+        type: 'number',
+        exclusiveMinimum: true,
+        minimum: 0,
+      },
+      deliveryFee: {
+        type: 'number',
+        exclusiveMinimum: true,
+        minimum: 0,
+      },
+      currency: {
+        type: 'string',
+        minLength: 3,
+        maxLength: 3,
+        pattern: '^[A-Z]{3}$',
+      },
+      deliveryAddress: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['street', 'city', 'postalCode', 'country'],
+        properties: {
+          street: {
+            type: 'string',
+            minLength: 1,
+            pattern: NON_BLANK_PATTERN,
+          },
+          city: {
+            type: 'string',
+            minLength: 1,
+            pattern: NON_BLANK_PATTERN,
+          },
+          postalCode: {
+            type: 'string',
+            minLength: 1,
+            pattern: NON_BLANK_PATTERN,
+          },
+          country: {
+            type: 'string',
+            minLength: 1,
+            pattern: NON_BLANK_PATTERN,
+          },
+        },
+      },
+      sellerAddress: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['street', 'city', 'postalCode', 'country'],
+        properties: {
+          street: {
+            type: 'string',
+            minLength: 1,
+            pattern: NON_BLANK_PATTERN,
+          },
+          city: {
+            type: 'string',
+            minLength: 1,
+            pattern: NON_BLANK_PATTERN,
+          },
+          postalCode: {
+            type: 'string',
+            minLength: 1,
+            pattern: NON_BLANK_PATTERN,
+          },
+          country: {
+            type: 'string',
+            minLength: 1,
+            pattern: NON_BLANK_PATTERN,
+          },
+        },
+      },
+      items: {
+        type: 'array',
+        minItems: 1,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['productId', 'quantity', 'price'],
+          properties: {
+            productId: {
+              type: 'string',
+              minLength: 1,
+              pattern: NON_BLANK_PATTERN,
+            },
+            quantity: {
+              type: 'integer',
+              minimum: 1,
+            },
+            price: {
+              oneOf: [
+                {
+                  type: 'number',
+                  exclusiveMinimum: true,
+                  minimum: 0,
+                },
+                {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: ['amount'],
+                  properties: {
+                    amount: {
+                      type: 'number',
+                      exclusiveMinimum: true,
+                      minimum: 0,
+                    },
+                    currency: {
+                      type: 'string',
+                      minLength: 3,
+                      maxLength: 3,
+                      pattern: '^[A-Z]{3}$',
+                    },
+                  },
+                },
+              ],
             },
           },
         },
@@ -2354,6 +2521,42 @@ const REQUEST_SCHEMA_OVERRIDES = {
   },
 };
 
+const buildSuccessEnvelopeSchema = (dataSchema) => ({
+  type: 'object',
+  additionalProperties: false,
+  required: ['success', 'data'],
+  properties: {
+    success: {
+      type: 'boolean',
+      const: true,
+    },
+    data: dataSchema,
+  },
+});
+
+const RESPONSE_SCHEMA_OVERRIDES = {
+  'GET /api/business-registry/public/sellers': {
+    '200': buildSuccessEnvelopeSchema({
+      $ref: '#/components/schemas/PublicSellerListResponse',
+    }),
+  },
+  'GET /api/business-registry/public/sellers/{sellerId}': {
+    '200': buildSuccessEnvelopeSchema({
+      $ref: '#/components/schemas/PublicSellerProfile',
+    }),
+  },
+  'GET /api/business-registry/public/sellers/{sellerId}/industries': {
+    '200': buildSuccessEnvelopeSchema({
+      $ref: '#/components/schemas/PublicSellerIndustries',
+    }),
+  },
+  'GET /api/business-registry/public/industries/{industry}/sellers': {
+    '200': buildSuccessEnvelopeSchema({
+      $ref: '#/components/schemas/PublicSellerListResponse',
+    }),
+  },
+};
+
 const PARAMETER_SCHEMA_OVERRIDES = {
   'POST /api/business-registry/businesses/{id}/verify': {
     id: {
@@ -2381,6 +2584,20 @@ const PARAMETER_SCHEMA_OVERRIDES = {
       in: 'path',
       required: true,
       schema: exactSystemIdSchema(BUSINESS_ID),
+    },
+  },
+  'GET /api/business-registry/public/sellers/{sellerId}': {
+    sellerId: {
+      in: 'path',
+      required: true,
+      schema: exactSystemIdSchema(PRIMARY_USER_ID),
+    },
+  },
+  'GET /api/business-registry/public/sellers/{sellerId}/industries': {
+    sellerId: {
+      in: 'path',
+      required: true,
+      schema: exactSystemIdSchema(PRIMARY_USER_ID),
     },
   },
   'POST /api/enabler/enablers/{enablerId}/listings': {
@@ -3178,6 +3395,35 @@ const applyParameterSchemaOverrides = (doc) => {
   }
 };
 
+const applyResponseSchemaOverrides = (doc) => {
+  for (const [operationKey, overrides] of Object.entries(RESPONSE_SCHEMA_OVERRIDES)) {
+    const [method, ...pathParts] = operationKey.split(' ');
+    const routePath = pathParts.join(' ');
+    const operation = doc.paths?.[routePath]?.[method.toLowerCase()];
+    if (!isPlainObject(operation)) continue;
+    if (!isPlainObject(operation.responses)) operation.responses = {};
+
+    for (const [statusCode, schema] of Object.entries(overrides || {})) {
+      const response = operation.responses[statusCode];
+      if (!isPlainObject(response)) continue;
+
+      response.content = isPlainObject(response.content) ? response.content : {};
+      const contentEntries = Object.entries(response.content);
+
+      if (contentEntries.length === 0) {
+        response.content['application/json'] = { schema: deepClone(schema) };
+        continue;
+      }
+
+      for (const [, mediaType] of contentEntries) {
+        if (isPlainObject(mediaType)) {
+          mediaType.schema = deepClone(schema);
+        }
+      }
+    }
+  }
+};
+
 const normalizeRequestExamples = (doc) => {
   const stats = {
     generatedExamplesBackfilled: 0,
@@ -3396,6 +3642,7 @@ const classifyServiceSecurity = (method, routePath) => {
   if (hasPathPrefix(routePath, '/api/business-registry')) {
     if (hasPathPrefix(routePath, '/api/business-registry/system/maintenance')) return SERVICE_KEY_SECURITY;
     if (hasPathPrefix(routePath, '/api/business-registry/health')) return PUBLIC_SECURITY;
+    if (hasPathPrefix(routePath, '/api/business-registry/public')) return PUBLIC_SECURITY;
     return BEARER_SECURITY;
   }
 
@@ -3668,6 +3915,10 @@ const OPENAPI_NORMALIZATION_TRANSFORMS = Object.freeze([
   {
     name: 'ensure-documented-response-statuses',
     apply: (doc) => ensureDocumentedResponseStatuses(doc),
+  },
+  {
+    name: 'apply-response-schema-overrides',
+    apply: (doc) => applyResponseSchemaOverrides(doc),
   },
   {
     name: 'remove-safe-method-request-bodies',

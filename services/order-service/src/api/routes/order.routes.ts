@@ -10,7 +10,9 @@ import { cacheConfig } from '../../config/monitoring.config';
 import { createMaintenanceRoutes } from './maintenance.routes';
 import { validateJoiRequest } from '@shared/middleware/joi-request-validation';
 
-const NON_BLANK_PATTERN = /^(?=.*\S).+$/;
+const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$/u;
+const safeVisibleString = Joi.string().min(1).pattern(SAFE_VISIBLE_STRING_PATTERN);
+const currencyCodeSchema = Joi.string().pattern(/^[A-Z]{3}$/);
 const contractAwareUserIdSchema = Joi.string().pattern(/^usr_/);
 
 const orderItemPriceSchema = Joi.alternatives().try(
@@ -23,22 +25,22 @@ const orderItemPriceSchema = Joi.alternatives().try(
 
 const createOrderBodySchema = Joi.object({
   buyerId: contractAwareUserIdSchema.required(),
-  sellerId: Joi.string().min(1).required(),
-  currency: Joi.string().length(3).optional(),
+  sellerId: safeVisibleString.required(),
+  currency: currencyCodeSchema.optional(),
   paymentMethod: Joi.string().valid('COD', 'WALLET', 'CARD', 'MOBILE_PAYMENT').required(),
   items: Joi.array().items(
     Joi.object({
-      productId: Joi.string().min(1).required(),
+      productId: safeVisibleString.required(),
       quantity: Joi.number().integer().min(1).required(),
       price: orderItemPriceSchema.required(),
       weight: Joi.number().min(0).required(),
     }).unknown(false)
   ).min(1).required(),
   deliveryAddress: Joi.object({
-    street: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
-    city: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
-    postalCode: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
-    country: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
+    street: safeVisibleString.required(),
+    city: safeVisibleString.required(),
+    postalCode: safeVisibleString.required(),
+    country: safeVisibleString.required(),
   }).unknown(false).required(),
   deliveryFee: Joi.number().greater(0).when('paymentMethod', {
     is: 'COD',
@@ -49,25 +51,25 @@ const createOrderBodySchema = Joi.object({
 
 const codValidationBodySchema = Joi.object({
   buyerId: contractAwareUserIdSchema.required(),
-  sellerId: Joi.string().min(1).required(),
+  sellerId: safeVisibleString.required(),
   totalAmount: Joi.number().greater(0).required(),
   deliveryFee: Joi.number().greater(0).required(),
-  currency: Joi.string().length(3).optional(),
+  currency: currencyCodeSchema.optional(),
   deliveryAddress: Joi.object({
-    street: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
-    city: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
-    postalCode: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
-    country: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
+    street: safeVisibleString.required(),
+    city: safeVisibleString.required(),
+    postalCode: safeVisibleString.required(),
+    country: safeVisibleString.required(),
   }).unknown(false).required(),
   sellerAddress: Joi.object({
-    street: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
-    city: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
-    postalCode: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
-    country: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
+    street: safeVisibleString.required(),
+    city: safeVisibleString.required(),
+    postalCode: safeVisibleString.required(),
+    country: safeVisibleString.required(),
   }).unknown(false).required(),
   items: Joi.array().items(
     Joi.object({
-      productId: Joi.string().min(1).required(),
+      productId: safeVisibleString.required(),
       quantity: Joi.number().integer().min(1).required(),
       price: orderItemPriceSchema.required(),
     }).unknown(false)
@@ -77,25 +79,25 @@ const codValidationBodySchema = Joi.object({
 const orderListQuerySchema = Joi.object({
   page: Joi.number().integer().min(1).optional(),
   limit: Joi.number().integer().min(1).max(100).optional(),
-  status: Joi.string().trim().pattern(NON_BLANK_PATTERN).optional(),
-  buyerId: Joi.string().trim().pattern(NON_BLANK_PATTERN).optional(),
+  status: safeVisibleString.optional(),
+  buyerId: safeVisibleString.optional(),
 }).unknown(false);
 
 const disputeResolveParamsSchema = Joi.object({
-  id: Joi.string().min(1).required(),
+  id: safeVisibleString.required(),
 }).unknown(false);
 
 const disputeResolveBodySchema = Joi.object({
-  resolution: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
-  decision: Joi.string().trim().pattern(NON_BLANK_PATTERN).required(),
+  resolution: safeVisibleString.required(),
+  decision: safeVisibleString.required(),
 }).unknown(false);
 
 const cancelOrderParamsSchema = Joi.object({
-  id: Joi.string().min(1).required(),
+  id: safeVisibleString.required(),
 }).unknown(false);
 
 const cancelOrderBodySchema = Joi.object({
-  reason: Joi.string().trim().pattern(NON_BLANK_PATTERN).optional(),
+  reason: safeVisibleString.optional(),
 }).unknown(false);
 
 const router = Router();

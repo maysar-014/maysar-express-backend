@@ -8,7 +8,7 @@ const isContractTestRequest = (req: Request): boolean =>
 
 const SAFE_VISIBLE_STRING_PATTERN = new RegExp('^(?=.*\\S)[^\\u0000-\\u001F\\u007F]+$', 'u');
 const safeVisibleString = Joi.string().min(1).pattern(SAFE_VISIBLE_STRING_PATTERN);
-const industryItemSchema = safeVisibleString.trim().lowercase();
+const industryItemSchema = safeVisibleString.trim().lowercase().max(100);
 
 const createBusinessSchema = Joi.object({
   name: safeVisibleString.min(2).max(200).required(),

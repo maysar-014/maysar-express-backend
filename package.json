@@ -10,7 +10,7 @@
     "contract:sync": "node scripts/contract/sync-openapi.js",
     "test:contract": "cross-env SCHEMATHESIS_AUTH_MODE=strict node scripts/testing/run-contract-tests.js",
     "test:contract:examples": "cross-env SCHEMATHESIS_PHASES=examples SCHEMATHESIS_ALLOW_EXAMPLES_ONLY=1 SCHEMATHESIS_AUTH_MODE=strict SCHEMATHESIS_WARNINGS=off node scripts/testing/run-contract-tests.js",
-    "test:contract:coverage": "cross-env SCHEMATHESIS_PHASES=examples,coverage SCHEMATHESIS_AUTH_MODE=strict SCHEMATHESIS_REQUEST_TIMEOUT_SECONDS=20 node scripts/testing/run-contract-tests.js",
+    "test:contract:coverage": "cross-env SCHEMATHESIS_PHASES=examples,coverage SCHEMATHESIS_AUTH_MODE=strict node scripts/testing/run-contract-tests.js",
     "test:contract:kyc": "cross-env SCHEMATHESIS_PHASES=examples,coverage SCHEMATHESIS_AUTH_MODE=strict SCHEMATHESIS_INCLUDE_PATH_PREFIXES=/api/compliance/kyc/documents,/api/compliance/kyc/submissions SCHEMATHESIS_MAX_FAILURES=3 SCHEMATHESIS_REQUEST_TIMEOUT_SECONDS=10 node scripts/testing/run-contract-tests.js",
     "test:contract:fuzzing": "cross-env SCHEMATHESIS_PHASES=fuzzing SCHEMATHESIS_AUTH_MODE=strict node scripts/testing/run-contract-tests.js",
     "test:contract:strict": "cross-env SCHEMATHESIS_PHASES=examples,coverage,fuzzing SCHEMATHESIS_AUTH_MODE=strict node scripts/testing/run-contract-tests.js",

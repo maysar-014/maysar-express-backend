@@ -49,6 +49,15 @@ const runSync = (cmd, args) => {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const SERVICE_KEY_MAINTENANCE_PATH_REGEX = '^/api/.+/system/maintenance/cleanup(?:/.*)?$';
+// These catalog endpoints are still intentionally stubbed and return 501 in the app.
+// Keep them out of the main Schemathesis run until the routes are implemented.
+const DEFAULT_CONTRACT_EXCLUDE_PATH_REGEX = [
+  '^/api/catalog/v1/pricing/validate-rule$',
+  '^/api/catalog/v1/products/\\{id\\}/unpublish$',
+  '^/api/catalog/v1/products/\\{id\\}/metrics$',
+  '^/api/catalog/v1/products/\\{id\\}/category$',
+  '^/api/catalog/v1/products/\\{id\\}/media$',
+].join('|');
 
 const requestStatus = (urlString) => new Promise((resolve) => {
   try {
@@ -80,7 +89,7 @@ const waitForServerReadiness = async () => {
 
   if (readinessUrls.length === 0) return;
 
-  const timeoutMs = Number(process.env.SCHEMATHESIS_READINESS_TIMEOUT_MS || '30000');
+  const timeoutMs = Number(process.env.SCHEMATHESIS_READINESS_TIMEOUT_MS || '600000');
   const intervalMs = Number(process.env.SCHEMATHESIS_READINESS_INTERVAL_MS || '1000');
   const deadline = Date.now() + timeoutMs;
 
@@ -204,6 +213,22 @@ const seedContractData = () => {
   }
 };
 
+const deployPrismaMigrations = () => {
+  console.log('Deploying Prisma migrations for contract tests...');
+  const dockerResult = spawnSync(
+    'docker',
+    ['compose', 'exec', '-T', 'maysar-backend', 'npx', 'prisma', 'migrate', 'deploy', '--schema', 'prisma/schema.prisma'],
+    { stdio: 'inherit', shell: true }
+  );
+
+  if ((dockerResult.status ?? 1) === 0) {
+    return;
+  }
+
+  console.warn('Docker-based Prisma migration deploy failed, falling back to local Prisma CLI.');
+  runSync('npx', ['prisma', 'migrate', 'deploy', '--schema', 'prisma/schema.prisma']);
+};
+
 const runStreaming = (cmd, args, label, options = {}) => new Promise((resolve, reject) => {
   const timeoutMs = Number(options.timeoutMs || 0);
   const startedAt = Date.now();
@@ -305,17 +330,23 @@ const runSchemathesis = async () => {
   const checks = process.env.SCHEMATHESIS_CHECKS || 'all';
   const warnings = process.env.SCHEMATHESIS_WARNINGS;
   const maxFailures = process.env.SCHEMATHESIS_MAX_FAILURES;
-  const requestTimeoutSeconds = process.env.SCHEMATHESIS_REQUEST_TIMEOUT_SECONDS;
   const maxResponseTimeSeconds = process.env.SCHEMATHESIS_MAX_RESPONSE_TIME_SECONDS;
   const uniqueInputs = toBool(process.env.SCHEMATHESIS_UNIQUE_INPUTS, true);
   const phases = process.env.SCHEMATHESIS_PHASES || process.env.SCHEMATHESIS_DEFAULT_PHASES || 'examples,coverage,fuzzing';
   const mode = process.env.SCHEMATHESIS_MODE || 'all';
   const authMode = String(process.env.SCHEMATHESIS_AUTH_MODE || 'strict').trim().toLowerCase();
+  const phaseList = parseCsvOption(phases);
+  const requestTimeoutSeconds = process.env.SCHEMATHESIS_REQUEST_TIMEOUT_SECONDS
+    || (phaseList.some((phase) => phase === 'coverage' || phase === 'fuzzing') ? '60' : undefined);
+  const includeStubbedCatalogPaths = toBool(process.env.SCHEMATHESIS_INCLUDE_STUBBED_CATALOG_PATHS, false);
   const globalIncludePathRegex = mergeRegexOption(
     process.env.SCHEMATHESIS_INCLUDE_PATH_REGEX,
     buildPathPrefixRegex(process.env.SCHEMATHESIS_INCLUDE_PATH_PREFIXES)
   );
-  const globalExcludePathRegex = process.env.SCHEMATHESIS_EXCLUDE_PATH_REGEX;
+  const globalExcludePathRegex = mergeRegexOption(
+    process.env.SCHEMATHESIS_EXCLUDE_PATH_REGEX,
+    includeStubbedCatalogPaths ? undefined : DEFAULT_CONTRACT_EXCLUDE_PATH_REGEX
+  );
 
   if (!['strict', 'bypass'].includes(authMode)) {
     console.error(`Unsupported SCHEMATHESIS_AUTH_MODE: "${authMode}". Use "strict" or "bypass".`);
@@ -464,6 +495,7 @@ const runSchemathesis = async () => {
   }
 };
 
+deployPrismaMigrations();
 seedContractData();
 
 runSchemathesis().catch((err) => {

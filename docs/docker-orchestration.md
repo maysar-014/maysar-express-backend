@@ -15,6 +15,7 @@ To start the environment for development:
 npm run docker:up
 ```
 This starts the full stack in detached mode and automatically merges `docker-compose.yml` and `docker-compose.override.yml`.
+The override uses the `dev` Docker stage so the backend keeps its dev dependencies and can run `npm run dev` inside the container.
 
 The stack is self-contained:
 - Application: `http://localhost:3000`

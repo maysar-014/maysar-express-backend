@@ -58,7 +58,7 @@ export class SmsController {
             if (result.success) {
                 return res.status(201).json(result);
             } else {
-                return res.status(400).json(result);
+                return res.status(503).json(result);
             }
         } catch (error) {
             next(error);

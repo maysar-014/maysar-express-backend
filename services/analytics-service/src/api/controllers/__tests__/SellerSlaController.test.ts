@@ -66,6 +66,42 @@ describe('SellerSlaController', () => {
     }));
   });
 
+  it('rejects out-of-range lookback days', async () => {
+    const controller = new SellerSlaController({ execute: executeMock });
+
+    const req = {
+      params: { sellerId: 'seller-1' },
+      query: { lookbackDays: '366' }
+    } as unknown as Request;
+    const res = makeRes();
+
+    await controller.getSellerSla(req, res);
+
+    expect(executeMock).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      error: expect.stringContaining('lookbackDays')
+    }));
+  });
+
+  it('rejects blank lookback days', async () => {
+    const controller = new SellerSlaController({ execute: executeMock });
+
+    const req = {
+      params: { sellerId: 'seller-1' },
+      query: { lookbackDays: '' }
+    } as unknown as Request;
+    const res = makeRes();
+
+    await controller.getSellerSla(req, res);
+
+    expect(executeMock).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      error: expect.stringContaining('lookbackDays')
+    }));
+  });
+
   it('returns a focused breaches view', async () => {
     const controller = new SellerSlaController({ execute: executeMock });
     const report = buildReport();

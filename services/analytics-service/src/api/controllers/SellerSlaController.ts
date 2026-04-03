@@ -6,20 +6,46 @@ import type {
 } from '../../application/dto/seller-sla.dto';
 import type { GetSellerSlaReport } from '../../application/use-cases/GetSellerSlaReport';
 
+const LOOKBACK_DAYS_MIN = 1;
+const LOOKBACK_DAYS_MAX = 365;
+
+class RequestValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'RequestValidationError';
+  }
+}
+
 const parseLookbackDays = (value: unknown): number | undefined => {
   const normalized = Array.isArray(value) ? value[0] : value;
-  if (typeof normalized !== 'string' && typeof normalized !== 'number') {
+  if (normalized === undefined || normalized === null) {
     return undefined;
   }
 
+  if (typeof normalized !== 'string' && typeof normalized !== 'number') {
+    throw new RequestValidationError('lookbackDays must be an integer between 1 and 365');
+  }
+
   const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : undefined;
+  if (!Number.isInteger(parsed) || parsed < LOOKBACK_DAYS_MIN || parsed > LOOKBACK_DAYS_MAX) {
+    throw new RequestValidationError('lookbackDays must be an integer between 1 and 365');
+  }
+
+  return parsed;
 };
 
 const readLookbackDays = (req: Request): number | undefined => {
-  const queryLookbackDays = parseLookbackDays((req.query as { lookbackDays?: unknown } | undefined)?.lookbackDays);
-  const bodyLookbackDays = parseLookbackDays((req.body as { lookbackDays?: unknown } | undefined)?.lookbackDays);
-  return queryLookbackDays ?? bodyLookbackDays;
+  const queryLookbackDays = (req.query as { lookbackDays?: unknown } | undefined)?.lookbackDays;
+  if (queryLookbackDays !== undefined) {
+    return parseLookbackDays(queryLookbackDays);
+  }
+
+  const bodyLookbackDays = (req.body as { lookbackDays?: unknown } | undefined)?.lookbackDays;
+  if (bodyLookbackDays !== undefined) {
+    return parseLookbackDays(bodyLookbackDays);
+  }
+
+  return undefined;
 };
 
 const buildReportEnvelope = (report: SellerSlaReport) => ({
@@ -66,12 +92,21 @@ export class SellerSlaController {
     });
   }
 
+  private handleError(res: Response, error: unknown, fallbackMessage: string): void {
+    if (error instanceof RequestValidationError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+
+    res.status(500).json({ error: fallbackMessage });
+  }
+
   async getSellerSla(req: Request, res: Response): Promise<void> {
     try {
       const { report } = await this.getExecutionResult(req, 'report');
       res.json(buildReportEnvelope(report));
-    } catch {
-      res.status(500).json({ error: 'Failed to fetch seller SLA report' });
+    } catch (error) {
+      this.handleError(res, error, 'Failed to fetch seller SLA report');
     }
   }
 
@@ -88,8 +123,8 @@ export class SellerSlaController {
         breaches: report.breaches,
         recommendations: report.recommendations
       });
-    } catch {
-      res.status(500).json({ error: 'Failed to fetch seller SLA breaches' });
+    } catch (error) {
+      this.handleError(res, error, 'Failed to fetch seller SLA breaches');
     }
   }
 
@@ -108,8 +143,8 @@ export class SellerSlaController {
         coverage: report.coverage,
         recommendations: report.recommendations
       });
-    } catch {
-      res.status(500).json({ error: 'Failed to fetch seller SLA readiness' });
+    } catch (error) {
+      this.handleError(res, error, 'Failed to fetch seller SLA readiness');
     }
   }
 
@@ -120,8 +155,8 @@ export class SellerSlaController {
         report: buildReportEnvelope(result.report),
         persistence: result.persistence
       });
-    } catch {
-      res.status(500).json({ error: 'Failed to evaluate seller SLA' });
+    } catch (error) {
+      this.handleError(res, error, 'Failed to evaluate seller SLA');
     }
   }
 }

@@ -52,4 +52,82 @@ describe('PayoutRepository', () => {
 
         expect(result).toBeDefined();
     });
+
+    it('should tolerate legacy bank details payloads when mapping payouts', async () => {
+        (mockPrisma.payout.findMany as jest.Mock).mockResolvedValue([
+            {
+                id: 'p1',
+                userId: 'usr_1',
+                userRole: 'seller',
+                amount: 100,
+                currency: 'TZS',
+                method: 'MOBILE_MONEY',
+                status: 'PENDING',
+                mobileMoneyDetails: {
+                    provider: 'MPESA',
+                    phoneNumber: '+255700000000',
+                    accountName: 'Contract User'
+                },
+                bankDetails: {
+                    bankName: 'Legacy Bank',
+                    bankCode: '001',
+                    accountNumber: '1234567890',
+                    accountName: 'Contract User'
+                },
+                fee: 0,
+                netAmount: 100
+            }
+        ]);
+
+        const result = await repository.findByUserId('usr_1');
+
+        expect(result).toHaveLength(1);
+        expect(result[0].bankDetails).toEqual(expect.objectContaining({
+            bankName: 'Legacy Bank',
+            accountNumber: '1234567890'
+        }));
+        expect(mockPiiService.decrypt).not.toHaveBeenCalled();
+    });
+
+    it('should skip invalid legacy rows when listing payouts', async () => {
+        (mockPrisma.payout.findMany as jest.Mock).mockResolvedValue([
+            {
+                id: 'bad-1',
+                userId: 'usr_1',
+                userRole: 'buyer',
+                amount: 100,
+                currency: 'TZS',
+                method: 'MOBILE_MONEY',
+                status: 'PENDING',
+                mobileMoneyDetails: {
+                    provider: 'MPESA',
+                    phoneNumber: '+255700000000',
+                    accountName: 'Contract User'
+                },
+                fee: 0,
+                netAmount: 100
+            },
+            {
+                id: 'p1',
+                userId: 'usr_1',
+                userRole: 'seller',
+                amount: 100,
+                currency: 'TZS',
+                method: 'MOBILE_MONEY',
+                status: 'PENDING',
+                mobileMoneyDetails: {
+                    provider: 'MPESA',
+                    phoneNumber: '+255700000000',
+                    accountName: 'Contract User'
+                },
+                fee: 0,
+                netAmount: 100
+            }
+        ]);
+
+        const result = await repository.findByUserId('usr_1');
+
+        expect(result).toHaveLength(1);
+        expect(result[0].id).toBe('p1');
+    });
 });

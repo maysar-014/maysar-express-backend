@@ -121,4 +121,166 @@ describe('setupOrderRoutes', () => {
     expect(cancelRes.status).toBe(200);
     expect(cancelRes.body.action).toBe('cancelOrder');
   });
+
+  it('rejects order creation requests with control characters in address fields', async () => {
+    const orderController = buildOrderController();
+    const codDisputeController = {
+      resolveDispute: jest.fn(async (_req: Request, res: Response) => res.status(200).json({ action: 'resolveDispute' }))
+    };
+
+    const app = express();
+    app.use(express.json());
+    app.use('/api', setupOrderRoutes(orderController as never, codDisputeController as never));
+
+    const invalidOrderPayload = {
+      ...validOrderPayload,
+      deliveryAddress: {
+        ...validOrderPayload.deliveryAddress,
+        postalCode: '\u001d'
+      }
+    };
+
+    const response = await request(app).post('/api/orders').set(contractHeaders).send(invalidOrderPayload);
+
+    expect(response.status).toBe(400);
+    expect(orderController.placeOrder).not.toHaveBeenCalled();
+  });
+
+  it('rejects COD validation requests with invalid product IDs', async () => {
+    const orderController = buildOrderController();
+    const codDisputeController = {
+      resolveDispute: jest.fn(async (_req: Request, res: Response) => res.status(200).json({ action: 'resolveDispute' }))
+    };
+
+    const app = express();
+    app.use(express.json());
+    app.use('/api', setupOrderRoutes(orderController as never, codDisputeController as never));
+
+    const invalidCodPayload = {
+      buyerId: 'usr_test_0001',
+      sellerId: 'usr_01ARZ3NDEKTSV4RRFFQ69G5FAV',
+      totalAmount: 125000,
+      deliveryFee: 5000,
+      currency: 'TZS',
+      deliveryAddress: {
+        street: 'Uhuru Street',
+        city: 'Dar es Salaam',
+        postalCode: '11101',
+        country: 'TZ'
+      },
+      sellerAddress: {
+        street: 'Nyerere Road',
+        city: 'Dar es Salaam',
+        postalCode: '11102',
+        country: 'TZ'
+      },
+      items: [
+        {
+          productId: '\n',
+          quantity: 1,
+          price: 120000
+        }
+      ]
+    };
+
+    const response = await request(app)
+      .post('/api/orders/cod/validate')
+      .set(contractHeaders)
+      .send(invalidCodPayload);
+
+    expect(response.status).toBe(400);
+    expect(orderController.validateCODELigibility).not.toHaveBeenCalled();
+  });
+
+  it('rejects COD validation requests with invalid currency codes', async () => {
+    const orderController = buildOrderController();
+    const codDisputeController = {
+      resolveDispute: jest.fn(async (_req: Request, res: Response) => res.status(200).json({ action: 'resolveDispute' }))
+    };
+
+    const app = express();
+    app.use(express.json());
+    app.use('/api', setupOrderRoutes(orderController as never, codDisputeController as never));
+
+    const invalidCodPayload = {
+      buyerId: 'usr_test_0001',
+      sellerId: 'usr_01ARZ3NDEKTSV4RRFFQ69G5FAV',
+      totalAmount: 125000,
+      deliveryFee: 5000,
+      currency: '000',
+      deliveryAddress: {
+        street: 'Uhuru Street',
+        city: 'Dar es Salaam',
+        postalCode: '11101',
+        country: 'TZ'
+      },
+      sellerAddress: {
+        street: 'Nyerere Road',
+        city: 'Dar es Salaam',
+        postalCode: '11102',
+        country: 'TZ'
+      },
+      items: [
+        {
+          productId: 'cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV',
+          quantity: 1,
+          price: 120000
+        }
+      ]
+    };
+
+    const response = await request(app)
+      .post('/api/orders/cod/validate')
+      .set(contractHeaders)
+      .send(invalidCodPayload);
+
+    expect(response.status).toBe(400);
+    expect(orderController.validateCODELigibility).not.toHaveBeenCalled();
+  });
+
+  it('rejects COD validation requests with control characters in address fields', async () => {
+    const orderController = buildOrderController();
+    const codDisputeController = {
+      resolveDispute: jest.fn(async (_req: Request, res: Response) => res.status(200).json({ action: 'resolveDispute' }))
+    };
+
+    const app = express();
+    app.use(express.json());
+    app.use('/api', setupOrderRoutes(orderController as never, codDisputeController as never));
+
+    const invalidCodPayload = {
+      buyerId: 'usr_test_0001',
+      sellerId: 'usr_01ARZ3NDEKTSV4RRFFQ69G5FAV',
+      totalAmount: 125000,
+      deliveryFee: 5000,
+      currency: 'TZS',
+      deliveryAddress: {
+        street: 'Uhuru Street',
+        city: 'Dar es Salaam',
+        postalCode: '\u001d',
+        country: 'TZ'
+      },
+      sellerAddress: {
+        street: 'Nyerere Road',
+        city: 'Dar es Salaam',
+        postalCode: '11102',
+        country: 'TZ'
+      },
+      items: [
+        {
+          productId: 'cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV',
+          quantity: 1,
+          price: 120000
+        }
+      ]
+    };
+
+    const response = await request(app)
+      .post('/api/orders/cod/validate')
+      .set(contractHeaders)
+      .send(invalidCodPayload);
+
+    expect(response.status).toBe(400);
+    expect(orderController.validateCODELigibility).not.toHaveBeenCalled();
+  });
 });

@@ -7372,7 +7372,146 @@ paths:
           application/json:
             schema:
               type: object
-            example: {}
+              additionalProperties: false
+              required:
+                - buyerId
+                - sellerId
+                - totalAmount
+                - deliveryFee
+                - deliveryAddress
+                - sellerAddress
+                - items
+              properties:
+                buyerId:
+                  type: string
+                  minLength: 1
+                  pattern: ^usr_
+                  example: usr_test_0001
+                sellerId:
+                  type: string
+                  minLength: 1
+                  pattern: ^(?=.*\S).+$
+                  example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                totalAmount:
+                  type: number
+                  exclusiveMinimum: true
+                  minimum: 0
+                deliveryFee:
+                  type: number
+                  exclusiveMinimum: true
+                  minimum: 0
+                currency:
+                  type: string
+                  minLength: 3
+                  maxLength: 3
+                  pattern: '^[A-Z]{3}$'
+                deliveryAddress:
+                  type: object
+                  additionalProperties: false
+                  required:
+                    - street
+                    - city
+                    - postalCode
+                    - country
+                  properties:
+                    street:
+                      type: string
+                      minLength: 1
+                      pattern: ^(?=.*\S).+$
+                    city:
+                      type: string
+                      minLength: 1
+                      pattern: ^(?=.*\S).+$
+                    postalCode:
+                      type: string
+                      minLength: 1
+                      pattern: ^(?=.*\S).+$
+                    country:
+                      type: string
+                      minLength: 1
+                      pattern: ^(?=.*\S).+$
+                sellerAddress:
+                  type: object
+                  additionalProperties: false
+                  required:
+                    - street
+                    - city
+                    - postalCode
+                    - country
+                  properties:
+                    street:
+                      type: string
+                      minLength: 1
+                      pattern: ^(?=.*\S).+$
+                    city:
+                      type: string
+                      minLength: 1
+                      pattern: ^(?=.*\S).+$
+                    postalCode:
+                      type: string
+                      minLength: 1
+                      pattern: ^(?=.*\S).+$
+                    country:
+                      type: string
+                      minLength: 1
+                      pattern: ^(?=.*\S).+$
+                items:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - productId
+                      - quantity
+                      - price
+                    properties:
+                      productId:
+                        type: string
+                        minLength: 1
+                        pattern: ^(?=.*\S).+$
+                      quantity:
+                        type: integer
+                        minimum: 1
+                      price:
+                        oneOf:
+                          - type: number
+                            exclusiveMinimum: true
+                            minimum: 0
+                          - type: object
+                            additionalProperties: false
+                            required:
+                              - amount
+                            properties:
+                              amount:
+                                type: number
+                                exclusiveMinimum: true
+                                minimum: 0
+                              currency:
+                                type: string
+                                minLength: 3
+                                maxLength: 3
+                                pattern: '^[A-Z]{3}$'
+            example:
+              buyerId: usr_test_0001
+              sellerId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              totalAmount: 125000
+              deliveryFee: 5000
+              currency: TZS
+              deliveryAddress:
+                street: Uhuru Street
+                city: Dar es Salaam
+                postalCode: '11101'
+                country: TZ
+              sellerAddress:
+                street: Nyerere Road
+                city: Dar es Salaam
+                postalCode: '11102'
+                country: TZ
+              items:
+                - productId: cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                  quantity: 1
+                  price: 120000
             x-codex-generated-example: true
       responses:
         '200':
@@ -18591,7 +18730,7 @@ paths:
       tags:
         - Seller Discovery
       summary: Browse public sellers
-      description: Returns active, verified sellers with public business profiles. Supports filtering by industry, industries, and search terms.
+      description: 'Returns active, verified sellers with public business profiles. Supports filtering by industry, industries, and search terms.'
       parameters:
         - name: industry
           in: query
@@ -18604,7 +18743,7 @@ paths:
           required: false
           schema:
             type: string
-          example: retail,logistics
+          example: 'retail,logistics'
         - name: q
           in: query
           required: false
@@ -18632,7 +18771,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PublicSellerListResponse'
+                type: object
+                additionalProperties: false
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: '#/components/schemas/PublicSellerListResponse'
         '400':
           description: Validation error
           content:
@@ -18644,6 +18793,7 @@ paths:
             application/json:
               schema: {}
       security: []
+    parameters: []
   '/api/business-registry/public/sellers/{sellerId}':
     get:
       tags:
@@ -18656,6 +18806,10 @@ paths:
           required: true
           schema:
             type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
           example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
       responses:
         '200':
@@ -18663,7 +18817,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PublicSellerProfile'
+                type: object
+                additionalProperties: false
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: '#/components/schemas/PublicSellerProfile'
         '400':
           description: Validation error
           content:
@@ -18680,6 +18844,17 @@ paths:
             application/json:
               schema: {}
       security: []
+    parameters:
+      - name: sellerId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          enum:
+            - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
   '/api/business-registry/public/sellers/{sellerId}/industries':
     get:
       tags:
@@ -18692,6 +18867,10 @@ paths:
           required: true
           schema:
             type: string
+            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            enum:
+              - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
           example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
       responses:
         '200':
@@ -18699,7 +18878,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PublicSellerIndustries'
+                type: object
+                additionalProperties: false
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: '#/components/schemas/PublicSellerIndustries'
         '400':
           description: Validation error
           content:
@@ -18716,6 +18905,17 @@ paths:
             application/json:
               schema: {}
       security: []
+    parameters:
+      - name: sellerId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          enum:
+            - usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
   '/api/business-registry/public/industries/{industry}/sellers':
     get:
       tags:
@@ -18756,7 +18956,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PublicSellerListResponse'
+                type: object
+                additionalProperties: false
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: '#/components/schemas/PublicSellerListResponse'
         '400':
           description: Validation error
           content:
@@ -18768,6 +18978,13 @@ paths:
             application/json:
               schema: {}
       security: []
+    parameters:
+      - name: industry
+        in: path
+        required: true
+        schema:
+          type: string
+        example: example-industry
   '/api/business-registry/owner/{ownerId}':
     get:
       tags:
@@ -31572,6 +31789,7 @@ paths:
                 - businessType
                 - registrationNumber
                 - ownerId
+                - industry
               properties:
                 name:
                   type: string
@@ -31601,9 +31819,13 @@ paths:
                   type: string
                   maxLength: 1000
                 industry:
-                  type: string
-                  maxLength: 100
-                  pattern: ^(?=.*\S).+$
+                  type: array
+                  minItems: 1
+                  uniqueItems: true
+                  items:
+                    type: string
+                    maxLength: 100
+                    pattern: ^(?=.*\S).+$
                 website:
                   type: string
                   format: uri
@@ -31658,7 +31880,8 @@ paths:
               ownerId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
               taxId: '900134695'
               description: Seeded business for contract tests
-              industry: Commerce
+              industry:
+                - Commerce
               website: 'https://example.com/contract-business'
               email: business.contract@example.com
               phoneNumber: '+255700000120'

@@ -9,7 +9,7 @@ export const referralQuerySchema = Joi.object({
 export const generateReferralBodySchema = Joi.object({
   includeQR: Joi.boolean().optional(),
   landingPath: Joi.string().trim().pattern(/^\/[A-Za-z0-9\-._~/?=&%]*$/).optional(),
-  campaignName: Joi.string().trim().max(120).pattern(NON_BLANK_PATTERN).optional()
+  campaignName: Joi.string().max(120).pattern(NON_BLANK_PATTERN).optional()
 }).unknown(false);
 
 export const trackReferralEventBodySchema = Joi.object({

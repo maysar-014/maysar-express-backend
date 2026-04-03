@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { IPayoutRepository } from '../../domain/ports/payout.repository.port';
 import { Payout, PayoutStatus, PayoutMethod } from '../../domain/entities/payout.entity';
+import type { BankDetails } from '../../domain/entities/payout.entity';
 import { PiiEncryptionService } from '../../../../../shared/encryption/pii-encryption.service';
 
 export class PayoutRepository implements IPayoutRepository {
@@ -44,7 +45,7 @@ export class PayoutRepository implements IPayoutRepository {
 
         if (!data) return null;
 
-        return this.mapToEntity(data);
+        return this.tryMapToEntity(data);
     }
 
     async findByUserId(userId: string, limit: number = 20): Promise<Payout[]> {
@@ -54,7 +55,9 @@ export class PayoutRepository implements IPayoutRepository {
             take: limit
         });
 
-        return data.map((item: any) => this.mapToEntity(item));
+        return data
+            .map((item: any) => this.tryMapToEntity(item))
+            .filter((item): item is Payout => item !== null);
     }
 
     async findByUserIdAndRole(userId: string, userRole: string, limit: number = 20): Promise<Payout[]> {
@@ -64,7 +67,9 @@ export class PayoutRepository implements IPayoutRepository {
             take: limit
         });
 
-        return data.map((item: any) => this.mapToEntity(item));
+        return data
+            .map((item: any) => this.tryMapToEntity(item))
+            .filter((item): item is Payout => item !== null);
     }
 
     async update(payout: Payout): Promise<void> {
@@ -86,6 +91,51 @@ export class PayoutRepository implements IPayoutRepository {
         });
     }
 
+    private parseBankDetails(value: unknown): BankDetails | undefined {
+        if (!value) {
+            return undefined;
+        }
+
+        if (typeof value === 'object') {
+            return value as BankDetails;
+        }
+
+        if (typeof value !== 'string') {
+            return undefined;
+        }
+
+        const candidates: string[] = [];
+        if (value.includes(':')) {
+            try {
+                candidates.push(this.piiService.decrypt(value));
+            } catch {
+                // Fall back to the raw value below.
+            }
+        }
+        candidates.push(value);
+
+        for (const candidate of candidates) {
+            try {
+                const parsed = JSON.parse(candidate);
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    return parsed as BankDetails;
+                }
+            } catch {
+                // Try the next representation.
+            }
+        }
+
+        return undefined;
+    }
+
+    private tryMapToEntity(data: any): Payout | null {
+        try {
+            return this.mapToEntity(data);
+        } catch {
+            return null;
+        }
+    }
+
     private mapToEntity(data: any): Payout {
         const amount = Number(data.amount ?? 0);
         const fee = Number(data.fee ?? 0);
@@ -101,7 +151,7 @@ export class PayoutRepository implements IPayoutRepository {
             currency: data.currency,
             method: PayoutRepository.normalizeMethod(data.method),
             status: PayoutRepository.normalizeStatus(data.status),
-            bankDetails: data.bankDetails ? JSON.parse(this.piiService.decrypt(data.bankDetails)) : undefined,
+            bankDetails: this.parseBankDetails(data.bankDetails),
             mobileMoneyDetails: data.mobileMoneyDetails as any,
             reference: data.reference,
             processedAt: data.processedAt,

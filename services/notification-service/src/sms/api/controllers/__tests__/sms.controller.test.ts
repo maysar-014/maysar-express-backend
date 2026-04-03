@@ -84,7 +84,7 @@ describe('SmsController', () => {
             }));
         });
 
-        it('should return 400 when use case fails', async () => {
+        it('should return 503 when the provider fails', async () => {
             req.body = {
                 phoneNumber: '+255612834684',
                 message: 'Test'
@@ -97,7 +97,7 @@ describe('SmsController', () => {
 
             await controller.send(req as Request, res as Response, next);
 
-            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.status).toHaveBeenCalledWith(503);
         });
     });
 

@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-03-25T14:39:22.005Z",
+  "generatedAt": "2026-04-02T19:23:07.379Z",
   "openApiPath": "C:\\Users\\abdal\\Desktop\\maysar-express-backend\\openapi.yaml",
-  "totalOperations": 489,
+  "totalOperations": 497,
   "requestExampleCoverage": {
-    "operationsWithRequestInput": 344,
+    "operationsWithRequestInput": 352,
     "operationsWithoutRequestInput": 145,
-    "withExamples": 344,
-    "authoredExamples": 156,
+    "withExamples": 352,
+    "authoredExamples": 164,
     "generatedExamples": 188,
     "missingExamples": 0,
     "operations": [],
@@ -3903,8 +3903,8 @@
   },
   "authCoverage": {
     "rootSecuritySchemes": [],
-    "explicitlyPublicOperations": 161,
-    "explicitlyProtectedOperations": 328,
+    "explicitlyPublicOperations": 165,
+    "explicitlyProtectedOperations": 332,
     "operationsWithoutExplicitSecurity": 0,
     "operationsWithoutExplicitSecurityList": [],
     "inheritedSecurityOperations": 0,

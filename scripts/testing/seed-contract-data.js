@@ -471,7 +471,7 @@ const upsertBusinessRegistryRecords = async () => {
     await prisma.businessRegistry_ComplianceRecord.deleteMany({ where: { businessId: id } });
     await prisma.businessDocument.deleteMany({ where: { businessId: id } });
     await prisma.businessAddress.deleteMany({ where: { businessId: id } });
-    await prisma.business.delete({ where: { id } });
+    await prisma.business.deleteMany({ where: { id } });
   }
 
   await prisma.business.upsert({
@@ -486,7 +486,7 @@ const upsertBusinessRegistryRecords = async () => {
       complianceStatus: 'COMPLIANT',
       ownerId: OPENAPI_USER_ID,
       description: 'Seeded business for contract tests',
-      industry: 'Commerce',
+      industry: ['Commerce'],
       website: 'https://example.com/contract-business',
       email: 'business.contract@example.com',
       phoneNumber: '+255700000120'
@@ -502,7 +502,7 @@ const upsertBusinessRegistryRecords = async () => {
       complianceStatus: 'COMPLIANT',
       ownerId: OPENAPI_USER_ID,
       description: 'Seeded business for contract tests',
-      industry: 'Commerce',
+      industry: ['Commerce'],
       website: 'https://example.com/contract-business',
       email: 'business.contract@example.com',
       phoneNumber: '+255700000120'

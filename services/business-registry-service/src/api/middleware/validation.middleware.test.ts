@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import {
   validateBusinessIdParam,
   validateCreateBusinessDocument,
+  validateCreateBusiness,
   validateReactivateBusiness,
   validateSuspendBusiness,
 } from './validation.middleware';
@@ -73,6 +74,24 @@ describe('business validation middleware', () => {
     const res = createResponse();
 
     validateBusinessIdParam(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('rejects business industries that exceed the documented maximum length', () => {
+    const req = {
+      body: {
+        name: 'Contract Business',
+        businessType: 'SOLE_PROPRIETORSHIP',
+        registrationNumber: 'TZ-DAR-123456',
+        ownerId: 'usr_01ARZ3NDEKTSV4RRFFQ69G5FAV',
+        industry: ['a'.repeat(101)]
+      },
+    } as unknown as Request;
+    const res = createResponse();
+
+    validateCreateBusiness(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(next).not.toHaveBeenCalled();

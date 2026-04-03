@@ -1,7 +1,7 @@
 services:
   maysar-backend:
     build:
-      target: builder # Use builder stage for development (source code access)
+      target: dev # Keep devDependencies so `npm run dev` can run inside the container
     environment:
       NODE_ENV: development
       DEBUG: 'app:*'
