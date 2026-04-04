@@ -28,6 +28,7 @@ import { FeedEngine } from './domain/engines/feed-engine';
 import { tracingService, correlationMiddleware } from '../../../shared/tracing/openTelemetry';
 import { register as metricsRegistry } from './infrastructure/monitoring/metrics';
 import { createRateLimitMiddleware } from './api/middleware/rate-limiting.middleware';
+import { serializeError } from '../../../shared/logger/error-utils';
 
 /**
  * Community Service Main Application
@@ -71,8 +72,9 @@ class CommunityService {
       this.logger.info('Shared event bus initialized');
 
     } catch (error) {
-
-      this.logger.error('Failed to initialize infrastructure:', error);
+      this.logger.error('Failed to initialize infrastructure:', {
+        error: serializeError(error),
+      });
       process.exit(1);
     }
   }
@@ -194,8 +196,7 @@ class CommunityService {
     // Global error handler
     this.app.use((error: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
       this.logger.error('Unhandled error:', {
-        error: error.message,
-        stack: error.stack,
+        error: serializeError(error),
         url: req.url,
         method: req.method,
         ip: req.ip
@@ -209,13 +210,24 @@ class CommunityService {
 
     // Unhandled promise rejections
     process.on('unhandledRejection', (reason, promise) => {
-      this.logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+      const serializedReason = serializeError(reason);
+      console.error('[FATAL] Unhandled Rejection:', {
+        reason: serializedReason,
+      });
+      this.logger.error('Unhandled Rejection at:', {
+        reason: serializedReason,
+        promise: '[Promise]',
+      });
       process.exit(1);
     });
 
     // Uncaught exceptions
     process.on('uncaughtException', (error) => {
-      this.logger.error('Uncaught Exception:', error);
+      const serializedError = serializeError(error);
+      console.error('[FATAL] Uncaught Exception:', serializedError);
+      this.logger.error('Uncaught Exception:', {
+        error: serializedError,
+      });
       process.exit(1);
     });
   }
@@ -252,7 +264,9 @@ class CommunityService {
       process.exit(0);
 
     } catch (error) {
-      this.logger.error('Error during shutdown:', error);
+      this.logger.error('Error during shutdown:', {
+        error: serializeError(error),
+      });
       process.exit(1);
     }
   }

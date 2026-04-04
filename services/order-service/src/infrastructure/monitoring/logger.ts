@@ -5,9 +5,10 @@
 
 import winston from 'winston';
 import { loggingConfig } from '../../config/monitoring.config';
-import { AppError, ErrorType } from '../../domain/errors';
+import { AppError } from '../../domain/errors';
 import { LogContext } from '../../../../../shared/logger/logger';
 import { createSafeFileTransports } from '../../../../../shared/logger/file-transports';
+import { normalizeLogMeta, serializeError } from '../../../../../shared/logger/error-utils';
 
 // Define log levels
 const levels = {
@@ -90,6 +91,8 @@ export class Logger {
   }
 
   private formatMessage(message: string, meta?: LogContext & Record<string, any>): any {
+    const normalizedMeta = normalizeLogMeta(meta);
+
     return {
       message,
       context: this.context,
@@ -99,20 +102,25 @@ export class Logger {
       sagaId: meta?.sagaId,
       eventId: meta?.eventId,
       executionTime: meta?.executionTime,
-      ...meta,
+      ...(normalizedMeta ?? {}),
     };
   }
 
   error(message: string, error?: any, meta?: any): void {
-    const logData = this.formatMessage(message, {
-      ...meta,
-      error: error instanceof AppError ? {
-        type: error.type,
-        severity: error.severity,
-        context: error.context,
-        stack: error.stack,
-      } : error,
-    });
+    const logMeta = { ...meta } as Record<string, any>;
+
+    if (typeof error !== 'undefined') {
+      logMeta.error = error instanceof AppError
+        ? {
+          type: error.type,
+          severity: error.severity,
+          context: error.context,
+          stack: error.stack,
+        }
+        : serializeError(error);
+    }
+
+    const logData = this.formatMessage(message, logMeta);
     logger.error(message, logData);
   }
 
@@ -279,12 +287,18 @@ export function flushLogs(): Promise<void> {
 
 // Handle uncaught exceptions and unhandled rejections
 process.on('uncaughtException', (error) => {
-  appLogger.error('Uncaught Exception', error);
+  const serializedError = serializeError(error);
+  console.error('[FATAL] Uncaught Exception:', serializedError);
+  appLogger.error('Uncaught Exception', serializedError);
   flushLogs().finally(() => process.exit(1));
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  appLogger.error('Unhandled Rejection', { reason, promise });
+  const serializedReason = serializeError(reason);
+  appLogger.error('Unhandled Rejection', {
+    reason: serializedReason,
+    promise: '[Promise]',
+  });
   // Don't exit on unhandled rejections in production
   if (process.env.NODE_ENV === 'production') {
     appLogger.warn('Continuing after unhandled rejection in production');
