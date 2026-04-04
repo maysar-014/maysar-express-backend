@@ -5,6 +5,7 @@
 
 import winston from 'winston';
 import { createSafeFileTransports } from './file-transports';
+import { isErrorLike, normalizeLogMeta, serializeError } from './error-utils';
 
 // ============================================================================
 // LOG CONTEXT
@@ -102,6 +103,8 @@ export class ServiceLogger {
     }
 
     private formatMessage(message: string, meta?: LoggerMeta): Record<string, unknown> {
+        const normalizedMeta = normalizeLogMeta(meta) || {};
+
         return {
             message,
             context: this.context,
@@ -112,26 +115,24 @@ export class ServiceLogger {
             sagaId: meta?.sagaId,
             eventId: meta?.eventId,
             executionTime: meta?.executionTime,
-            ...meta,
+            ...normalizedMeta,
         };
     }
 
     error(message: string, errorOrMeta?: Error | Record<string, unknown>, meta?: LoggerMeta): void {
-        let actualError: Error | undefined;
+        let actualError: Record<string, unknown> | undefined;
         let actualMeta: LoggerMeta = meta || {};
 
-        if (errorOrMeta instanceof Error) {
-            actualError = errorOrMeta;
+        if (errorOrMeta instanceof Error || isErrorLike(errorOrMeta)) {
+            actualError = serializeError(errorOrMeta);
         } else if (errorOrMeta && typeof errorOrMeta === 'object') {
             // If second arg is an object but not an Error, treat it as metadata
-            actualMeta = { ...errorOrMeta, ...actualMeta };
+            actualMeta = { ...(errorOrMeta as Record<string, unknown>), ...actualMeta };
         }
 
         const logData = this.formatMessage(message, {
             ...actualMeta,
             error: actualError
-                ? { name: actualError.name, message: actualError.message, stack: actualError.stack }
-                : undefined
         });
         this.winstonLogger.error(message, logData);
     }

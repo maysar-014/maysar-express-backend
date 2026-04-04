@@ -1,5 +1,6 @@
 import winston from 'winston';
 import { createSafeFileTransports } from '../../../../../shared/logger/file-transports';
+import { normalizeLogMeta } from '../../../../../shared/logger/error-utils';
 
 export enum LogLevel {
     ERROR = 'error',
@@ -50,7 +51,7 @@ export class Logger {
     }
 
     error(message: string, meta?: Record<string, any>): void {
-        this.logger.error(message, meta);
+        this.logger.error(message, normalizeLogMeta(meta));
     }
 
     warn(message: string, meta?: Record<string, any>): void {

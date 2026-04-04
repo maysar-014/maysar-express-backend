@@ -10,6 +10,7 @@ import { validateEnv } from './config/env-validation';
 import { ServiceModule } from './core/module.interface';
 import * as services from '../services';
 import { createLogger } from '../shared/logger/logger';
+import { serializeError } from '../shared/logger/error-utils';
 import { initializeEventRegistry } from '../shared/events/registry';
 
 const bootstrapLogger = createLogger('Bootstrap', 'core');
@@ -90,21 +91,26 @@ async function bootstrap() {
         const keepAliveOnCrash = process.env.NODE_ENV !== 'production';
 
         process.on('unhandledRejection', (reason) => {
-            bootstrapLogger.error('Unhandled Promise Rejection', reason as any);
+            const serializedReason = serializeError(reason);
+            console.error('[FATAL] Unhandled Promise Rejection:', serializedReason);
+            bootstrapLogger.error('Unhandled Promise Rejection', serializedReason);
             if (!keepAliveOnCrash) {
                 void shutdown();
             }
         });
 
         process.on('uncaughtException', (error) => {
-            bootstrapLogger.error('Uncaught Exception', error);
+            const serializedError = serializeError(error);
+            console.error('[FATAL] Uncaught Exception:', serializedError);
+            bootstrapLogger.error('Uncaught Exception', serializedError);
             if (!keepAliveOnCrash) {
                 void shutdown();
             }
         });
 
     } catch (error) {
-        bootstrapLogger.error('Failed to bootstrap application:', error);
+        console.error('[FATAL] Failed to bootstrap application:', serializeError(error));
+        bootstrapLogger.error('Failed to bootstrap application:', serializeError(error));
         process.exit(1);
     }
 }
