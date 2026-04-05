@@ -6,6 +6,38 @@ import { metricsRegistry } from '../metrics/metrics.factory';
 import { createLogger } from '../logger/logger';
 import { isOutboxProcessorEnabled } from '../runtime/background-workers';
 
+const PRISMA_INFRASTRUCTURE_ERROR_CODES = new Set([
+    'P1000',
+    'P1001',
+    'P1002',
+    'P1003',
+    'P1008',
+    'P1010',
+    'P1011',
+    'P1013',
+    'P1014',
+    'P1015',
+    'P1017',
+    'P2021',
+    'P2022',
+    'P2023',
+    'P2024',
+    'P3021',
+    'P3022',
+    'P3023',
+    'P3024',
+    'P6008'
+]);
+
+const INFRASTRUCTURE_MESSAGE_PATTERNS = [
+    "can't reach database server",
+    'database server',
+    'econnrefused',
+    'connect etimedout',
+    'timed out fetching a new connection from the connection pool',
+    'server has closed the connection'
+];
+
 export const outboxDelay = new Histogram({
     name: 'outbox_event_processing_delay_seconds',
     help: 'Delay between event creation and processing in seconds',
@@ -165,13 +197,41 @@ export class OutboxProcessor {
         const name = error instanceof Error ? error.name : '';
         const normalizedMessage = message.toLowerCase();
         const normalizedName = name.toLowerCase();
+        const code = this.getErrorCode(error);
+
+        if (
+            normalizedName.includes('prismaclientinitializationerror')
+            || normalizedName.includes('prismaclientrustpanicerror')
+        ) {
+            return true;
+        }
+
+        if (
+            normalizedName.includes('prismaclientknownrequesterror')
+            && code !== undefined
+            && PRISMA_INFRASTRUCTURE_ERROR_CODES.has(code)
+        ) {
+            return true;
+        }
+
+        if (
+            normalizedName.includes('prismaclientunknownrequesterror')
+            && INFRASTRUCTURE_MESSAGE_PATTERNS.some((pattern) => normalizedMessage.includes(pattern))
+        ) {
+            return true;
+        }
 
         return (
-            normalizedName.includes('prismaclientinitializationerror')
-            || normalizedMessage.includes("can't reach database server")
-            || normalizedMessage.includes('database server')
-            || normalizedMessage.includes('econnrefused')
-            || normalizedMessage.includes('connect etimedout')
+            INFRASTRUCTURE_MESSAGE_PATTERNS.some((pattern) => normalizedMessage.includes(pattern))
         );
+    }
+
+    private getErrorCode(error: unknown): string | undefined {
+        if (typeof error !== 'object' || error === null) {
+            return undefined;
+        }
+
+        const code = (error as { code?: unknown }).code;
+        return typeof code === 'string' ? code : undefined;
     }
 }
