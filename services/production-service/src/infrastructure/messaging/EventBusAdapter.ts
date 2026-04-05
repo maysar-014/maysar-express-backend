@@ -1,5 +1,5 @@
-import { EventEmitter } from 'events';
-import { randomUUID } from 'crypto';
+import { EventEmitter } from 'node:events';
+import { randomUUID } from 'node:crypto';
 import { EventEnvelope, EventHandler, IEventBus, SubscriptionOptions } from '@shared-events/eventBus';
 
 interface LegacyEventLike {

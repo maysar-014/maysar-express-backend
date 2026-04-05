@@ -11,6 +11,7 @@ import { IEventPublisher } from './messaging/event-publisher';
 // Implementations
 import { PrismaSmsRepository } from './repositories/prisma-sms.repository';
 import { AfricasTalkingSmsProvider } from './providers/africastalking-sms.provider';
+import { MockSmsProvider } from './providers/mock-sms.provider';
 import { EventPublisher } from './messaging/event-publisher';
 
 // Policies
@@ -74,31 +75,40 @@ if (!smsGlobal.__smsEnvLogged) {
     );
 }
 if (smsProviderName !== 'africastalking') {
-    throw new Error(`Unsupported SMS provider "${smsProviderName}". Configure SMS_PROVIDER=africastalking.`);
+    if (smsProviderName === 'mock') {
+        container.bind<ISmsProvider>(TYPES.SmsProvider).toConstantValue(new MockSmsProvider());
+    } else {
+        throw new Error(`Unsupported SMS provider "${smsProviderName}". Configure SMS_PROVIDER=africastalking.`);
+    }
 }
 
 const apiKey = process.env.AFRICASTALKING_API_KEY || process.env.SMS_SERVICE_API_KEY;
 
-const provider = (() => {
+if (smsProviderName === 'africastalking') {
     if (!apiKey) {
-        throw new Error('Missing AFRICASTALKING_API_KEY (or SMS_SERVICE_API_KEY). SMS provider cannot be initialized.');
+        if (isProduction) {
+            throw new Error('Missing AFRICASTALKING_API_KEY (or SMS_SERVICE_API_KEY). SMS provider cannot be initialized.');
+        }
+
+        process.stdout.write(
+            '[sms] AFRICASTALKING_API_KEY missing; falling back to MockSmsProvider for non-production environment.\n'
+        );
+        container.bind<ISmsProvider>(TYPES.SmsProvider).toConstantValue(new MockSmsProvider());
+    } else {
+        container.bind<ISmsProvider>(TYPES.SmsProvider).toConstantValue(new AfricasTalkingSmsProvider({
+            username: resolvedUsername,
+            apiKey,
+            senderId: process.env.AFRICASTALKING_SENDER_ID,
+            environment: africasTalkingEnv,
+            baseUrl: resolvedBaseUrl,
+            bulkSMSMode: parseOptionalInt(process.env.AFRICASTALKING_BULK_SMS_MODE),
+            enqueue: parseOptionalInt(process.env.AFRICASTALKING_ENQUEUE),
+            keyword: process.env.AFRICASTALKING_KEYWORD,
+            linkId: process.env.AFRICASTALKING_LINK_ID,
+            retryDurationInHours: parseOptionalInt(process.env.AFRICASTALKING_RETRY_DURATION_HOURS)
+        }));
     }
-
-    return new AfricasTalkingSmsProvider({
-        username: resolvedUsername,
-        apiKey,
-        senderId: process.env.AFRICASTALKING_SENDER_ID,
-        environment: africasTalkingEnv,
-        baseUrl: resolvedBaseUrl,
-        bulkSMSMode: parseOptionalInt(process.env.AFRICASTALKING_BULK_SMS_MODE),
-        enqueue: parseOptionalInt(process.env.AFRICASTALKING_ENQUEUE),
-        keyword: process.env.AFRICASTALKING_KEYWORD,
-        linkId: process.env.AFRICASTALKING_LINK_ID,
-        retryDurationInHours: parseOptionalInt(process.env.AFRICASTALKING_RETRY_DURATION_HOURS)
-    });
-})();
-
-container.bind<ISmsProvider>(TYPES.SmsProvider).toConstantValue(provider);
+}
 
 // Policies
 container.bind<RetryPolicy>(TYPES.RetryPolicy).toConstantValue(new RetryPolicy({
