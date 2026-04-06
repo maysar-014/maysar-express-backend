@@ -35,6 +35,8 @@ describe('config index', () => {
     expect(config.port).toBe(4100);
     expect(config.database.url).toBe('postgresql://db/test');
     expect(config.redis.url).toBe('redis://localhost:6379/2');
+    expect(config.cors.credentials).toBe(true);
+    expect(config.cors.origin).toEqual(expect.arrayContaining(['http://localhost:3000']));
   });
 
   it('reports validation errors for weak jwt and missing conditional credentials', async () => {

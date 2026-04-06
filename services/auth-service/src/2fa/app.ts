@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { Container } from 'inversify';
 import { InversifyExpressServer } from 'inversify-express-utils';
+import { createTrustedCorsOptions } from '@shared/utils/cors';
 import { healthRoutes } from './api/routes/health.routes';
 import { errorHandler, validationErrorHandler } from './api/middleware/error.middleware';
 import { requestLogger } from './api/middleware/request-logger.middleware';
@@ -18,7 +19,7 @@ export class TwoFactorServiceApplication {
 
         this.server.setConfig((app) => {
             app.use(helmet());
-            app.use(cors({ origin: '*', credentials: true }));
+            app.use(cors(createTrustedCorsOptions()));
             app.use(compression());
             app.use(express.json({ limit: '10mb' }));
             app.use(express.urlencoded({ extended: true, limit: '10mb' }));

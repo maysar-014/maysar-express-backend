@@ -9,14 +9,14 @@ File:
 
 Applied middleware:
 - `helmet()` with default configuration
-- `cors({ origin: <CORS_ORIGIN or false> })`
+- `cors(createTrustedCorsOptions())`
 - `compression()`
 - `cookieParser()`
 
 Notes:
 - `helmet()` sets a standard set of security headers using its default policy set.
-- CORS origins are derived from `CORS_ORIGIN` env, split by comma. If not provided, CORS is disabled by passing `false` to the middleware.
-- The monolith does not enable `credentials` in CORS (no `credentials: true` in the current config).
+- CORS origins are resolved through `shared/utils/cors.ts`, which trusts explicit environment origins, localhost development hosts, and `*.maysar.co.tz` subdomains.
+- The monolith enables `credentials: true` so the OAuth state and verifier cookies can round-trip during Google sign-in.
 
 ## Auth Service (`services/auth-service/src/main.ts`)
 
@@ -35,10 +35,10 @@ Helmet configuration:
   - `preload: true`
 
 Auth service CORS:
-- Reads config from `config.cors`
+- Reads config from `shared/utils/cors.ts`
 - Allows methods: `GET`, `POST`, `PUT`, `DELETE`, `PATCH`, `OPTIONS`
 - Allowed headers include `X-CSRF-Token`
-- `credentials` is controlled by `config.cors.credentials`
+- `credentials: true`
 
 ## Logging and Security Signals
 

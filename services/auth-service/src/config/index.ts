@@ -4,6 +4,7 @@ import { securityConfig } from './security.config';
 import { monitoringConfig } from './monitoring.config';
 import { authzConfigManager, AuthorizationConfigManager } from './authorization.config';
 import { googleOAuthConfig, validateGoogleOAuthConfig, initializeGoogleOAuthConfig } from './google-oauth.config';
+import { getTrustedCorsOrigins } from '@shared/utils/cors';
 
 // Load environment variables
 dotenv.config();
@@ -105,8 +106,8 @@ export const config = {
 
   // CORS
   cors: {
-    origin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(','),
-    credentials: process.env.CORS_CREDENTIALS === 'true'
+    origin: getTrustedCorsOrigins(),
+    credentials: true
   },
 
   // Logging

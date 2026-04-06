@@ -63,6 +63,7 @@ import { initializeDatabase } from './infrastructure/database/connection';
 import { initializeRedis } from './infrastructure/cache/connection';
 import { metricsRegistry } from './infrastructure/monitoring/metrics';
 import { serviceDiscovery } from './infrastructure/services/service-discovery.service';
+import { createTrustedCorsOptions } from '@shared/utils/cors';
 
 // Load environment variables
 dotenv.config();
@@ -93,12 +94,7 @@ app.use(helmet({
 }));
 
 // CORS configuration
-app.use(cors({
-  origin: config.cors.origin,
-  credentials: config.cors.credentials,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-ID', 'X-CSRF-Token']
-}));
+app.use(cors(createTrustedCorsOptions()));
 
 // Compression middleware
 app.use(compression({

@@ -9,6 +9,7 @@ import { moduleRegistry } from './core/module-registry';
 import { prisma } from './config/prisma';
 import { correlationMiddleware } from '../shared/tracing/openTelemetry';
 import { appLogger } from '../shared/logger/logger';
+import { createTrustedCorsOptions } from '../shared/utils/cors';
 import { requestLoggingMiddleware, performanceMonitoringMiddleware} from '../services/order-service/src/middleware/logging.middleware';
 import { i18next, i18nextMiddleware } from '../shared/i18n/i18n';
 import { csrfTokenMiddleware, getOrCreateCsrfToken } from '../shared/middleware/csrf.middleware';
@@ -22,10 +23,7 @@ export const createApp = () => {
     // Global Middleware
     app.use(correlationMiddleware());
     app.use(i18nextMiddleware.handle(i18next));
-    const corsOrigin = process.env.CORS_ORIGIN
-        ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-        : false;
-    app.use(cors({ origin: corsOrigin }));
+    app.use(cors(createTrustedCorsOptions()));
     app.use(helmet());
     app.use(compression());
     app.use(requestLoggingMiddleware);

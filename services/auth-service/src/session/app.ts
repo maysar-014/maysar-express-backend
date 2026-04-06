@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { Container } from 'inversify';
 import { InversifyExpressServer } from 'inversify-express-utils';
+import { createTrustedCorsOptions } from '@shared/utils/cors';
 import { healthRoutes } from './api/routes/health.routes';
 import { errorHandler, validationErrorHandler } from './api/middleware/error.middleware';
 import { requestLogger } from './api/middleware/request-logger.middleware';
@@ -21,10 +22,7 @@ export class SessionServiceApplication {
             app.use(helmet());
 
             // CORS
-            app.use(cors({
-                origin: '*', // Adjust as needed
-                credentials: true
-            }));
+            app.use(cors(createTrustedCorsOptions()));
 
             // Compression
             app.use(compression());
