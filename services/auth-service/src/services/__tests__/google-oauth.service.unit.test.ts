@@ -42,7 +42,7 @@ jest.mock('../../config/google-oauth.config', () => ({
   googleOAuthConfig: {
     clientId: 'test_client_id',
     clientSecret: 'test_client_secret',
-    callbackUrl: 'http://localhost:3001/auth/google/callback',
+    callbackUrl: 'http://localhost:3001/api/auth/oauth/callback',
     scopes: ['openid', 'profile', 'email'],
     prompt: 'consent',
     accessType: 'offline',
@@ -59,7 +59,7 @@ jest.mock('../../config/google-oauth.config', () => ({
 // Mock the Google Auth Library
 jest.mock('google-auth-library', () => ({
   OAuth2Client: jest.fn().mockImplementation(() => ({
-    generateAuthUrl: jest.fn().mockReturnValue('https://accounts.google.com/o/oauth2/auth?client_id=test_client_id&redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fauth%2Fgoogle%2Fcallback&scope=openid+profile+email&response_type=code&access_type=offline&prompt=consent'),
+    generateAuthUrl: jest.fn().mockReturnValue('https://accounts.google.com/o/oauth2/auth?client_id=test_client_id&redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fapi%2Fauth%2Foauth%2Fcallback&scope=openid+profile+email&response_type=code&access_type=offline&prompt=consent'),
     getToken: jest.fn(),
     setCredentials: jest.fn(),
     verifyIdToken: jest.fn()
@@ -92,7 +92,7 @@ describe('GoogleOAuthService - Unit Tests', () => {
 
       expect(authUrl).toContain('https://accounts.google.com/o/oauth2/auth');
       expect(authUrl).toContain('client_id=test_client_id');
-      expect(authUrl).toContain('redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fauth%2Fgoogle%2Fcallback');
+      expect(authUrl).toContain('redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fapi%2Fauth%2Foauth%2Fcallback');
       expect(authUrl).toContain('scope=openid+profile+email');
       expect(authUrl).toContain('response_type=code');
       expect(authUrl).toContain('access_type=offline');

@@ -27,11 +27,13 @@ describe('google oauth config', () => {
     delete process.env.GOOGLE_OAUTH_CLIENT_ID;
     delete process.env.GOOGLE_OAUTH_CLIENT_SECRET;
     delete process.env.GOOGLE_OAUTH_CALLBACK_URL;
+    delete process.env.BASE_URL;
+    delete process.env.PLATFORM_BASE_URL;
 
     const { googleOAuthConfig, validateGoogleOAuthConfig } = await loadConfigModule();
     const validation = validateGoogleOAuthConfig();
 
-    expect(googleOAuthConfig.callbackUrl).toBe('http://localhost:3001/auth/google/callback');
+    expect(googleOAuthConfig.callbackUrl).toBe('http://localhost:3001/api/auth/oauth/callback');
     expect(googleOAuthConfig.scopes).toEqual(['openid', 'profile', 'email']);
     expect(googleOAuthConfig.state).toBe(false);
     expect(googleOAuthConfig.verificationEmail).toBe(true);
@@ -40,6 +42,57 @@ describe('google oauth config', () => {
       expect.arrayContaining([
         'GOOGLE_OAUTH_CLIENT_ID is required',
         'GOOGLE_OAUTH_CLIENT_SECRET is required'
+      ])
+    );
+  });
+
+  it('uses the staging base url when callback is not explicitly configured', async () => {
+    process.env.NODE_ENV = 'staging';
+    process.env.BASE_URL = 'https://api-staging.maysar.co.tz';
+    process.env.GOOGLE_OAUTH_CLIENT_ID = '1234567890-example.apps.googleusercontent.com';
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'super-secret-value';
+    delete process.env.GOOGLE_OAUTH_CALLBACK_URL;
+
+    const { googleOAuthConfig, validateGoogleOAuthConfig } = await loadConfigModule();
+    const validation = validateGoogleOAuthConfig();
+
+    expect(googleOAuthConfig.callbackUrl).toBe('https://api-staging.maysar.co.tz/api/auth/oauth/callback');
+    expect(validation.isValid).toBe(true);
+    expect(validation.errors).toEqual([]);
+  });
+
+  it('rejects localhost oauth callbacks in staging', async () => {
+    process.env.NODE_ENV = 'staging';
+    process.env.BASE_URL = 'https://api-staging.maysar.co.tz';
+    process.env.GOOGLE_OAUTH_CLIENT_ID = '1234567890-example.apps.googleusercontent.com';
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'super-secret-value';
+    process.env.GOOGLE_OAUTH_CALLBACK_URL = 'http://localhost:3001/api/auth/oauth/callback';
+
+    const { validateGoogleOAuthConfig } = await loadConfigModule();
+    const validation = validateGoogleOAuthConfig();
+
+    expect(validation.isValid).toBe(false);
+    expect(validation.errors).toEqual(
+      expect.arrayContaining([
+        'GOOGLE_OAUTH_CALLBACK_URL must not use localhost in staging'
+      ])
+    );
+  });
+
+  it('rejects legacy oauth callback paths in staging', async () => {
+    process.env.NODE_ENV = 'staging';
+    process.env.BASE_URL = 'https://api-staging.maysar.co.tz';
+    process.env.GOOGLE_OAUTH_CLIENT_ID = '1234567890-example.apps.googleusercontent.com';
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'super-secret-value';
+    process.env.GOOGLE_OAUTH_CALLBACK_URL = 'https://api-staging.maysar.co.tz/auth/google/callback';
+
+    const { validateGoogleOAuthConfig } = await loadConfigModule();
+    const validation = validateGoogleOAuthConfig();
+
+    expect(validation.isValid).toBe(false);
+    expect(validation.errors).toEqual(
+      expect.arrayContaining([
+        'GOOGLE_OAUTH_CALLBACK_URL must point to /api/auth/oauth/callback in staging'
       ])
     );
   });
@@ -93,7 +146,7 @@ describe('google oauth config', () => {
     process.env.NODE_ENV = 'development';
     process.env.GOOGLE_OAUTH_CLIENT_ID = '1234567890-example.apps.googleusercontent.com';
     process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'super-secret-value';
-    process.env.GOOGLE_OAUTH_CALLBACK_URL = 'https://example.com/auth/google/callback';
+    process.env.GOOGLE_OAUTH_CALLBACK_URL = 'https://example.com/api/auth/oauth/callback';
     process.env.GOOGLE_OAUTH_PROMPT = 'consent';
     process.env.GOOGLE_OAUTH_ACCESS_TYPE = 'offline';
     process.env.GOOGLE_OAUTH_ENABLE_STATE = 'true';

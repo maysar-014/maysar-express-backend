@@ -61,7 +61,7 @@ jest.mock('../../config/google-oauth.config', () => ({
   googleOAuthConfig: {
     clientId: 'test_client_id',
     clientSecret: 'test_client_secret',
-    callbackUrl: 'http://localhost:3001/auth/google/callback',
+    callbackUrl: 'http://localhost:3001/api/auth/oauth/callback',
     scopes: ['openid', 'profile', 'email'],
     prompt: 'consent',
     accessType: 'offline',

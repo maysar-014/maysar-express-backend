@@ -20,6 +20,8 @@ const REQUIRED_KEYS = [
   'JWT_SECRET',
   'USER_SERVICE_JWT_SECRET',
   'AUTH_SERVICE_SESSION_SECRET',
+  'GOOGLE_OAUTH_CLIENT_ID',
+  'GOOGLE_OAUTH_CLIENT_SECRET',
   'CATALOG_SERVICE_DB_HOST',
   'CATALOG_SERVICE_DB_PORT',
   'CATALOG_SERVICE_DB_NAME',
@@ -60,6 +62,13 @@ const PLACEHOLDER_MARKERS = [
   'placeholder'
 ];
 
+const DEFAULT_STAGING_BASE_URL = 'https://api-staging.maysar.co.tz';
+const GOOGLE_OAUTH_CALLBACK_PATH = '/api/auth/oauth/callback';
+const GOOGLE_OAUTH_CALLBACK_PATHS = new Set([
+  '/api/auth/oauth/callback',
+  '/api/v1/auth/oauth/callback'
+]);
+
 function fail(message, details) {
   console.error(`\n[staging-preflight] ${message}`);
   for (const detail of details) {
@@ -98,11 +107,59 @@ if (parsed.PESAPAL_URL && !/pesapal/i.test(parsed.PESAPAL_URL)) {
   issues.push('PESAPAL_URL must point to a Pesapal endpoint');
 }
 
+const resolveBaseUrl = () => {
+  const explicitBaseUrl = (parsed.BASE_URL || parsed.PLATFORM_BASE_URL || '').trim();
+  if (explicitBaseUrl) {
+    return explicitBaseUrl;
+  }
+
+  return DEFAULT_STAGING_BASE_URL;
+};
+
+const resolveGoogleOAuthCallbackUrl = () => {
+  const explicitCallbackUrl = (parsed.GOOGLE_OAUTH_CALLBACK_URL || '').trim();
+  const baseUrl = resolveBaseUrl();
+
+  try {
+    if (explicitCallbackUrl) {
+      return new URL(explicitCallbackUrl).toString();
+    }
+
+    return new URL(GOOGLE_OAUTH_CALLBACK_PATH, baseUrl).toString();
+  } catch {
+    return null;
+  }
+};
+
 const nonLocalUrls = ['BASE_URL', 'DATABASE_URL', 'REDIS_URL'];
 for (const key of nonLocalUrls) {
   const value = parsed[key] || '';
   if (/localhost|127\.0\.0\.1/i.test(value)) {
     issues.push(`${key} must not use localhost/127.0.0.1 for staging`);
+  }
+}
+
+const effectiveGoogleOAuthCallbackUrl = resolveGoogleOAuthCallbackUrl();
+if (!effectiveGoogleOAuthCallbackUrl) {
+  issues.push('GOOGLE_OAUTH_CALLBACK_URL must be a valid URL');
+} else {
+  try {
+    const callbackUrl = new URL(effectiveGoogleOAuthCallbackUrl);
+    const baseUrl = new URL(resolveBaseUrl());
+
+    if (/localhost|127\.0\.0\.1/i.test(callbackUrl.hostname)) {
+      issues.push('GOOGLE_OAUTH_CALLBACK_URL must not use localhost/127.0.0.1 for staging');
+    }
+
+    if (!GOOGLE_OAUTH_CALLBACK_PATHS.has(callbackUrl.pathname)) {
+      issues.push('GOOGLE_OAUTH_CALLBACK_URL must point to /api/auth/oauth/callback in staging');
+    }
+
+    if (callbackUrl.origin !== baseUrl.origin) {
+      issues.push('GOOGLE_OAUTH_CALLBACK_URL must share the same origin as BASE_URL in staging');
+    }
+  } catch {
+    issues.push('GOOGLE_OAUTH_CALLBACK_URL must be a valid URL');
   }
 }
 

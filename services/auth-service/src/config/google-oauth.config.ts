@@ -28,8 +28,7 @@ export interface GoogleOAuthConfig {
 // Environment validation for Google OAuth
 const requiredGoogleOAuthEnvVars = [
   'GOOGLE_OAUTH_CLIENT_ID',
-  'GOOGLE_OAUTH_CLIENT_SECRET',
-  'GOOGLE_OAUTH_CALLBACK_URL'
+  'GOOGLE_OAUTH_CLIENT_SECRET'
 ];
 
 const missingGoogleOAuthEnvVars = requiredGoogleOAuthEnvVars.filter(envVar => !process.env[envVar]);
@@ -38,11 +37,54 @@ if (missingGoogleOAuthEnvVars.length > 0) {
   console.warn(`⚠️  Google OAuth configuration warning: Missing environment variables: ${missingGoogleOAuthEnvVars.join(', ')}`);
 }
 
+const GOOGLE_OAUTH_CALLBACK_PATH = '/api/auth/oauth/callback';
+const GOOGLE_OAUTH_CALLBACK_PATHS = new Set([
+  '/api/auth/oauth/callback',
+  '/api/v1/auth/oauth/callback'
+]);
+const LOCALHOST_HOSTNAMES = new Set(['localhost', '127.0.0.1']);
+
+const normalizeBaseUrl = (candidate: string | undefined, fallback: string): string => {
+  const value = (candidate || '').trim();
+  if (!value) {
+    return fallback;
+  }
+
+  try {
+    const parsed = new URL(value);
+    return parsed.toString().replace(/\/$/, '');
+  } catch {
+    return fallback;
+  }
+};
+
+const resolveOAuthBaseUrl = (): string => {
+  const environment = process.env.NODE_ENV;
+  const fallbackBaseUrl =
+    environment === 'staging'
+      ? 'https://api-staging.maysar.co.tz'
+      : environment === 'production'
+        ? 'https://api.maysar.co.tz'
+        : 'http://localhost:3001';
+
+  return normalizeBaseUrl(process.env.BASE_URL || process.env.PLATFORM_BASE_URL, fallbackBaseUrl);
+};
+
+const buildDefaultCallbackUrl = (): string => new URL(GOOGLE_OAUTH_CALLBACK_PATH, resolveOAuthBaseUrl()).toString();
+
+const parseUrl = (value: string): URL | null => {
+  try {
+    return new URL(value);
+  } catch {
+    return null;
+  }
+};
+
 export const googleOAuthConfig: GoogleOAuthConfig = {
   // Required configuration
   clientId: process.env.GOOGLE_OAUTH_CLIENT_ID || '',
   clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET || '',
-  callbackUrl: process.env.GOOGLE_OAUTH_CALLBACK_URL || 'http://localhost:3001/auth/google/callback',
+  callbackUrl: process.env.GOOGLE_OAUTH_CALLBACK_URL || buildDefaultCallbackUrl(),
   
   // OAuth 2.0 scopes - minimal required scopes for user authentication
   scopes: [
@@ -91,13 +133,22 @@ export function validateGoogleOAuthConfig(): { isValid: boolean; errors: string[
   }
 
   // Callback URL validation
-  if (!googleOAuthConfig.callbackUrl) {
-    errors.push('GOOGLE_OAUTH_CALLBACK_URL is required');
+  const callbackUrl = parseUrl(googleOAuthConfig.callbackUrl);
+  if (!callbackUrl) {
+    errors.push('GOOGLE_OAUTH_CALLBACK_URL must be a valid URL');
   } else {
-    try {
-      new URL(googleOAuthConfig.callbackUrl);
-    } catch (error) {
-      errors.push('GOOGLE_OAUTH_CALLBACK_URL must be a valid URL');
+    if (process.env.NODE_ENV === 'staging' && LOCALHOST_HOSTNAMES.has(callbackUrl.hostname)) {
+      errors.push('GOOGLE_OAUTH_CALLBACK_URL must not use localhost in staging');
+    }
+
+    const callbackPath = callbackUrl.pathname.replace(/\/+$/, '') || '/';
+    if (process.env.NODE_ENV === 'staging' && !GOOGLE_OAUTH_CALLBACK_PATHS.has(callbackPath)) {
+      errors.push('GOOGLE_OAUTH_CALLBACK_URL must point to /api/auth/oauth/callback in staging');
+    }
+
+    const configuredBaseUrl = parseUrl(resolveOAuthBaseUrl());
+    if (process.env.NODE_ENV === 'staging' && configuredBaseUrl && callbackUrl.origin !== configuredBaseUrl.origin) {
+      errors.push('GOOGLE_OAUTH_CALLBACK_URL must share the same origin as BASE_URL in staging');
     }
   }
 
