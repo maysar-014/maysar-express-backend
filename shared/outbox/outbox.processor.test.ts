@@ -178,23 +178,28 @@ describe('OutboxProcessor', () => {
     expect(outbox.getPendingEvents).toHaveBeenCalledTimes(2);
   });
 
-  it('pauses polling after Prisma schema errors', async () => {
+  it('stops polling after Prisma schema errors', async () => {
     outbox.getPendingEvents.mockRejectedValue(Object.assign(new Error('The table `order_outbox_events` does not exist in the current database.'), {
       name: 'PrismaClientKnownRequestError',
       code: 'P2021'
     }));
+    const stopSpy = jest.spyOn(processor, 'stop');
 
     processor.start();
     jest.advanceTimersByTime(1_000);
     await Promise.resolve();
+    await Promise.resolve();
     expect(outbox.getPendingEvents).toHaveBeenCalledTimes(1);
+    expect(stopSpy).toHaveBeenCalledTimes(1);
 
     jest.advanceTimersByTime(5_000);
+    await Promise.resolve();
     await Promise.resolve();
     expect(outbox.getPendingEvents).toHaveBeenCalledTimes(1);
 
     jest.advanceTimersByTime(60_000);
     await Promise.resolve();
-    expect(outbox.getPendingEvents).toHaveBeenCalledTimes(2);
+    await Promise.resolve();
+    expect(outbox.getPendingEvents).toHaveBeenCalledTimes(1);
   });
 });

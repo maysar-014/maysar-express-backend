@@ -14,6 +14,11 @@ const DEFAULT_OPTIONS: SagaRecoveryWorkerOptions = {
     maxRecoveryAttempts: 3
 };
 
+const PRISMA_SCHEMA_ERROR_CODES = new Set([
+    'P2021',
+    'P2022'
+]);
+
 export class SagaRecoveryWorker {
     private options: SagaRecoveryWorkerOptions;
     private intervalHandle: ReturnType<typeof setInterval> | null = null;
@@ -50,14 +55,10 @@ export class SagaRecoveryWorker {
         console.log(`SagaRecoveryWorker started (poll: ${this.options.pollIntervalMs}ms, threshold: ${this.options.stuckThresholdMs}ms)`);
 
         // Run immediately on start
-        this.recover().catch(err => {
-            console.error('SagaRecoveryWorker initial recovery failed:', err);
-        });
+        void this.runRecoveryCycle('initial recovery');
 
         this.intervalHandle = setInterval(() => {
-            this.recover().catch(err => {
-                console.error('SagaRecoveryWorker recovery cycle failed:', err);
-            });
+            void this.runRecoveryCycle('recovery cycle');
         }, this.options.pollIntervalMs);
     }
 
@@ -107,5 +108,44 @@ export class SagaRecoveryWorker {
                 console.error(`SagaRecoveryWorker: failed to resume saga ${saga.sagaId}:`, error);
             }
         }
+    }
+
+    private async runRecoveryCycle(label: 'initial recovery' | 'recovery cycle'): Promise<void> {
+        try {
+            await this.recover();
+        } catch (error) {
+            if (this.isSchemaError(error)) {
+                this.disablePermanently('SagaRecoveryWorker disabled because the saga schema is missing or out of date. Run database migrations and restart the service.', error);
+                return;
+            }
+
+            console.error(`SagaRecoveryWorker ${label} failed:`, error);
+        }
+    }
+
+    private isSchemaError(error: unknown): boolean {
+        const name = error instanceof Error ? error.name : '';
+        const normalizedName = name.toLowerCase();
+        const code = this.getErrorCode(error);
+
+        return (
+            normalizedName.includes('prismaclientknownrequesterror')
+            && code !== undefined
+            && PRISMA_SCHEMA_ERROR_CODES.has(code)
+        );
+    }
+
+    private disablePermanently(message: string, error: unknown): void {
+        console.error(message, error);
+        this.stop();
+    }
+
+    private getErrorCode(error: unknown): string | undefined {
+        if (typeof error !== 'object' || error === null) {
+            return undefined;
+        }
+
+        const code = (error as { code?: unknown }).code;
+        return typeof code === 'string' ? code : undefined;
     }
 }

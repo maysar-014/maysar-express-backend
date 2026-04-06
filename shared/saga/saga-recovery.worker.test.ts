@@ -171,4 +171,29 @@ describe('SagaRecoveryWorker', () => {
     expect(repo.findStuck).not.toHaveBeenCalled();
     expect(logSpy).toHaveBeenCalledWith('SagaRecoveryWorker disabled: no registered saga types');
   });
+
+  it('stops polling after Prisma schema errors', async () => {
+    const repo = {
+      findStuck: jest.fn().mockRejectedValue(Object.assign(new Error('The table `saga_logs` does not exist in the current database.'), {
+        name: 'PrismaClientKnownRequestError',
+        code: 'P2021'
+      }))
+    };
+    const worker = new SagaRecoveryWorker(repo as any, new Map([['OrderSaga', {} as any]]), {
+      pollIntervalMs: 1000
+    });
+    const stopSpy = jest.spyOn(worker, 'stop');
+
+    worker.start();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(repo.findStuck).toHaveBeenCalledTimes(1);
+    expect(stopSpy).toHaveBeenCalledTimes(1);
+
+    jest.advanceTimersByTime(1000);
+    await Promise.resolve();
+
+    expect(repo.findStuck).toHaveBeenCalledTimes(1);
+  });
 });

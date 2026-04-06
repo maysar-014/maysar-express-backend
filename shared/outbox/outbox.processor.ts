@@ -4,6 +4,7 @@ import { TransactionalOutbox } from './outboxPattern';
 import { Counter, Histogram } from 'prom-client';
 import { metricsRegistry } from '../metrics/metrics.factory';
 import { createLogger } from '../logger/logger';
+import { serializeError } from '../logger/error-utils';
 import { isOutboxProcessorEnabled } from '../runtime/background-workers';
 
 const PRISMA_INFRASTRUCTURE_ERROR_CODES = new Set([
@@ -27,6 +28,11 @@ const PRISMA_INFRASTRUCTURE_ERROR_CODES = new Set([
     'P3023',
     'P3024',
     'P6008'
+]);
+
+const PRISMA_SCHEMA_ERROR_CODES = new Set([
+    'P2021',
+    'P2022'
 ]);
 
 const INFRASTRUCTURE_MESSAGE_PATTERNS = [
@@ -133,6 +139,11 @@ export class OutboxProcessor {
         try {
             await this.processOutboxEvents();
         } catch (error) {
+            if (this.isSchemaError(error)) {
+                this.disablePermanently('Outbox processor disabled because the outbox schema is missing or out of date. Run database migrations and restart the service.', error);
+                return;
+            }
+
             if (this.isInfrastructureError(error)) {
                 this.pauseUntil = Date.now() + this.config.infrastructureBackoffMs;
                 this.logger.error('Error in outbox processing loop', error);
@@ -224,6 +235,23 @@ export class OutboxProcessor {
         return (
             INFRASTRUCTURE_MESSAGE_PATTERNS.some((pattern) => normalizedMessage.includes(pattern))
         );
+    }
+
+    private isSchemaError(error: unknown): boolean {
+        const name = error instanceof Error ? error.name : '';
+        const normalizedName = name.toLowerCase();
+        const code = this.getErrorCode(error);
+
+        return (
+            normalizedName.includes('prismaclientknownrequesterror')
+            && code !== undefined
+            && PRISMA_SCHEMA_ERROR_CODES.has(code)
+        );
+    }
+
+    private disablePermanently(message: string, error: unknown): void {
+        this.logger.error(message, serializeError(error));
+        this.stop();
     }
 
     private getErrorCode(error: unknown): string | undefined {
