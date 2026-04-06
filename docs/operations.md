@@ -8,6 +8,8 @@
 - Source-of-truth note: if a path below disagrees with the current service README or OpenAPI file, treat the service docs as current and regenerate this playbook next.
 - This document provides step-by-step intent and response behavior for both happy and unhappy paths.
 
+Public email auth routes are direct calls: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`, and `GET /api/auth/oauth/initiate` do not require a CSRF preflight. Any "CSRF Bootstrap" step below applies only to session-bound browser mutations.
+
 ## Folder Coverage Summary
 
 | Operation Group | Count |

@@ -37,6 +37,9 @@ export const createAuthRoutes = (authController: AuthControllerHandlers): Router
   // ============================================================================
   // AUTHENTICATION OPERATIONS
   // ============================================================================
+  // Public email-based auth flows are intentionally CSRF-free.
+  // They do not depend on an existing browser session, so forcing a CSRF token
+  // here only adds friction for clients signing in or recovering access by email.
 
   /**
    * User registration
@@ -45,7 +48,6 @@ export const createAuthRoutes = (authController: AuthControllerHandlers): Router
   router.post(
     '/register',
     rateLimit({ windowMs: 15 * 60 * 1000, max: registerLimitMax, prefix: 'rl:register:' }),
-    csrfValidationMiddleware,
     validateRequest({
       body: {
         email: { type: 'string', required: true, format: 'email' },
@@ -77,7 +79,6 @@ export const createAuthRoutes = (authController: AuthControllerHandlers): Router
       skipSuccessfulRequests: true,
       prefix: 'rl:login:'
     }),
-    csrfValidationMiddleware,
     validateRequest({
       body: {
         email: { type: 'string', required: true, format: 'email' },
@@ -133,7 +134,6 @@ export const createAuthRoutes = (authController: AuthControllerHandlers): Router
   router.post(
     '/forgot-password',
     rateLimit({ windowMs: 60 * 60 * 1000, max: 3, prefix: 'rl:forgot-pwd:' }), // 3 requests per hour
-    csrfValidationMiddleware,
     validateRequest({
       body: {
         email: { type: 'string', required: true, format: 'email' }
@@ -148,7 +148,6 @@ export const createAuthRoutes = (authController: AuthControllerHandlers): Router
    */
   router.post(
     '/reset-password',
-    csrfValidationMiddleware,
     validateRequest({
       body: {
         token: { type: 'string', required: true, minLength: 32 },

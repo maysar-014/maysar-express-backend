@@ -41,9 +41,12 @@ src/
 ## API Endpoints
 
 ```
-POST /api/auth/login              # Authenticate user, issue JWT + refresh token
+POST /api/auth/login              # Public email login, issue JWT + refresh token
+POST /api/auth/register           # Public email registration, create account
 POST /api/auth/logout             # Invalidate session and refresh token
 POST /api/auth/refresh            # Rotate refresh token, issue new access token
+GET  /api/auth/oauth/initiate     # Public OAuth entry point
+GET  /api/auth/oauth/callback     # OAuth redirect callback
 POST /api/auth/verify-2fa         # Verify OTP or TOTP code
 POST /api/auth/setup-2fa          # Initialize 2FA for a user
 POST /api/auth/backup-codes       # Generate backup codes

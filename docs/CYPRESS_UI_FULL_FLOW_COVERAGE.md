@@ -117,9 +117,11 @@ For each flow below, create at least:
 | NOTIF-02 | All | Preferences and opt-out | notification preferences |
 | WAL-01 | Buyer/Seller/Enabler | Wallet balance/top-up/hold/release/capture/payout | wallet, payment, payout |
 
+Public auth entry points are exercised directly in Cypress. `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `POST /api/v1/auth/forgot-password`, `POST /api/v1/auth/reset-password`, and `GET /api/auth/oauth/initiate` do not require a CSRF preflight or an authenticated session.
+
 ## 7. Detailed Flow Requirements
 
-### AUTH-01 Login, Token, Session Verify
+### AUTH-01 Public Login, Token, Session Verify
 - UI pages: login form, post-login landing.
 - API hooks:
   - `POST /api/v1/auth/login`
@@ -139,7 +141,7 @@ For each flow below, create at least:
   - revoked session cannot call protected routes,
   - refresh rotates token and keeps UI session seamless.
 
-### AUTH-03 Forgot/Reset Password
+### AUTH-03 Public Forgot/Reset Password
 - API hooks:
   - `POST /api/v1/auth/forgot-password`
   - `POST /api/v1/auth/reset-password`

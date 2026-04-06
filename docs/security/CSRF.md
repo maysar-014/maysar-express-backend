@@ -10,7 +10,13 @@ The canonical CSRF implementation lives in `C:\Users\abdal\Desktop\maysar-expres
 It is mounted in:
 - Monolith app: `C:\Users\abdal\Desktop\maysar-express-backend\src\app.ts`
 - Auth service: `C:\Users\abdal\Desktop\maysar-express-backend\services\auth-service\src\main.ts`
-- Auth routes explicitly validate CSRF: `C:\Users\abdal\Desktop\maysar-express-backend\services\auth-service\src\api\routes\auth.routes.ts`
+- Auth routes validate CSRF only on session-bound actions in `C:\Users\abdal\Desktop\maysar-express-backend\services\auth-service\src\api\routes\auth.routes.ts`
+
+Public email auth flows are intentionally exempt from CSRF so clients do not need a pre-issued token to register, sign in, or start password recovery:
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/forgot-password`
+- `POST /api/auth/reset-password`
 
 ### Catalog service (secondary / separate)
 There is a separate SecurityMiddleware with a JWT-based CSRF check in `C:\Users\abdal\Desktop\maysar-express-backend\services\catalog-service\src\middleware\security.middleware.ts`.
@@ -68,10 +74,13 @@ Additionally, `CSRF_ALLOW_HEADER_ONLY=1` forces header-only acceptance in any en
 
 ## Client Usage Examples
 
+### Public email auth flows
+The endpoints listed above do not require `X-CSRF-Token`. Call them directly with the JSON body they need.
+
 ### Browser or SPA flow (recommended)
 1. Call `GET /csrf` (monolith) or any GET endpoint that sets the cookie.
 2. Read the cookie (`csrf-token`) in frontend JS.
-3. Send it as `X-CSRF-Token` on all unsafe requests.
+3. Send it as `X-CSRF-Token` on unsafe requests that are tied to an existing session.
 
 Example:
 ```ts
@@ -81,14 +90,10 @@ const token = document.cookie
   .find(c => c.startsWith('csrf-token='))
   ?.split('=')[1];
 
-await fetch('/api/auth/register', {
+await fetch('/api/auth/logout', {
   method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-CSRF-Token': token || ''
-  },
-  credentials: 'include',
-  body: JSON.stringify(payload)
+  headers: { 'X-CSRF-Token': token || '' },
+  credentials: 'include'
 });
 ```
 

@@ -19,8 +19,8 @@ Note: Backend also includes Courier, Enabler, Superuser, System, Agent roles. Th
 API access patterns:
 - Base URL (dev): `http://localhost:3000` from `api-contract.yaml`.
 - Base URL (prod): `https://api.maysar.co.tz` from `api-contract.yaml`.
-- Authentication: Bearer JWT required on most endpoints; `POST /api/auth/login` issues tokens.
-- Session bootstrap: `GET /health` is used in operations as a CSRF/bootstrap entry point.
+- Authentication: Bearer JWT required on most endpoints; `POST /api/auth/register` and `POST /api/auth/login` are public entry points that do not require CSRF.
+- Session bootstrap: stateful browser mutations may use `/csrf`, but public email auth flows do not need a pre-issued CSRF token.
 
 System domains detected:
 - Authentication: login, logout, refresh, session verify, 2FA enable/disable/verify, password reset.
@@ -170,6 +170,14 @@ Rate Limits: Not specified
 
 **Auth**
 
+Endpoint: POST /api/auth/register
+Role Access: Public
+Purpose: Create a new account
+Request: Body { email*, phoneNumber*, firstName*, lastName*, password*, role?, phone?, profile? }
+Response: 201 -> Not specified
+Errors: 400, 409
+Rate Limits: Not specified
+
 Endpoint: POST /api/auth/2fa/disable
 Role Access: ADMIN, BUYER, SELLER, SUPPLIER
 Purpose: Disable 2FA
@@ -203,11 +211,19 @@ Errors: None specified
 Rate Limits: Not specified
 
 Endpoint: POST /api/auth/login
-Role Access: BUYER, COURIER, ENABLER, SELLER, SUPPLIER, SYSTEM
-Purpose: User login
+Role Access: Public
+Purpose: User login and token issue
 Request: Body { email*, password*, totpCode }
 Response: 200 -> Not specified
 Errors: 401
+Rate Limits: Not specified
+
+Endpoint: GET /api/auth/oauth/initiate
+Role Access: Public
+Purpose: Start OAuth sign-in flow
+Request: Query params: role?
+Response: 200 -> Not specified
+Errors: 400
 Rate Limits: Not specified
 
 Endpoint: POST /api/auth/logout

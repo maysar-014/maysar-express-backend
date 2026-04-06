@@ -14,7 +14,7 @@ export class GoogleOAuthRoutes {
   }
 
   private initializeRoutes(): void {
-    // Initiate Google OAuth flow
+    // Public entry point: anyone can start OAuth here without auth or CSRF.
     this.router.get('/initiate', this.controller.initiateOAuth.bind(this.controller));
 
     // Handle Google OAuth callback

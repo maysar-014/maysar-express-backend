@@ -54,14 +54,44 @@ describe('Auth Routes Integration', () => {
         app.use('/api/v1/auth', createAuthRoutes(authController));
     });
 
+    describe('POST /api/v1/auth/register', () => {
+        const registerData = {
+            email: 'new-user@example.com',
+            phoneNumber: '+255700000000',
+            firstName: 'New',
+            lastName: 'User',
+            password: 'password123',
+            role: 'buyer'
+        };
+
+        it('should register a user without requiring CSRF', async () => {
+            mockRegisterUseCase.execute.mockResolvedValue('new-user-id');
+
+            const response = await request(app)
+                .post('/api/v1/auth/register')
+                .send(registerData);
+
+            expect(response.status).toBe(201);
+            expect(response.body).toEqual({ success: true, userId: 'new-user-id' });
+            expect(mockRegisterUseCase.execute).toHaveBeenCalledWith({
+                email: registerData.email,
+                role: registerData.role,
+                profile: {
+                    phoneNumber: registerData.phoneNumber,
+                    firstName: registerData.firstName,
+                    lastName: registerData.lastName
+                }
+            });
+        });
+    });
+
     describe('POST /api/v1/auth/login', () => {
         const loginData = {
             email: 'test@example.com',
             password: 'password123',
         };
 
-        it('should authenticate user successfully', async () => {
-            // Arrange
+        it('should authenticate user successfully without requiring CSRF', async () => {
             const mockResult = {
                 success: true,
                 accessToken: 'access-token',
@@ -71,13 +101,10 @@ describe('Auth Routes Integration', () => {
             } as unknown as Awaited<ReturnType<AuthenticateUserUseCase['execute']>>;
             mockAuthenticateUseCase.execute.mockResolvedValue(mockResult);
 
-            // Act
             const response = await request(app)
                 .post('/api/v1/auth/login')
-                .set('x-contract-test', '1')
                 .send(loginData);
 
-            // Assert
             expect(response.status).toBe(200);
             expect(response.body).toEqual({
                 success: true,
@@ -92,48 +119,37 @@ describe('Auth Routes Integration', () => {
         });
 
         it('should return 401 on failed authentication', async () => {
-            // Arrange
             const mockResult = {
                 success: false,
                 message: 'Invalid credentials',
             };
             mockAuthenticateUseCase.execute.mockResolvedValue(mockResult);
 
-            // Act
             const response = await request(app)
                 .post('/api/v1/auth/login')
-                .set('x-contract-test', '1')
                 .send(loginData);
 
-            // Assert
             expect(response.status).toBe(401);
             expect(response.body).toEqual(mockResult);
         });
 
         it('should return 400 when request body is invalid', async () => {
-            // Act
             const response = await request(app)
                 .post('/api/v1/auth/login')
-                .set('x-contract-test', '1')
                 .send({ email: 'invalid-email', password: 'short' }); // Invalid email format & short password
 
-            // Assert
             expect(response.status).toBe(400);
             expect(response.body.success).toBe(false);
             expect(response.body.message).toBe('Validation failed');
         });
 
         it('should handle internal server errors', async () => {
-            // Arrange
             mockAuthenticateUseCase.execute.mockRejectedValue(new Error('Internal error'));
 
-            // Act
             const response = await request(app)
                 .post('/api/v1/auth/login')
-                .set('x-contract-test', '1')
                 .send(loginData);
 
-            // Assert
             expect(response.status).toBe(500);
             expect(response.body.success).toBe(false);
         });

@@ -136,6 +136,7 @@ userSyncHandlers.registerHandlers();
 
 // API routes
 app.use('/api/v1/auth', authRoutes);
+// Public OAuth aliases are kept for compatibility with existing frontend and contract clients.
 app.use('/api/v1/auth/oauth', googleOAuthRoutes);
 app.use('/api/auth/oauth', googleOAuthRoutes);
 app.use('/api/v1/admin', requireRoleOrService(['admin', 'system']), adminRoutes);

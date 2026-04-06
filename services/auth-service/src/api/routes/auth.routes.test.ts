@@ -59,9 +59,12 @@ describe('auth.routes', () => {
     jest.clearAllMocks();
   });
 
-  it('creates expected auth route map with middleware wiring', () => {
+  it('creates expected auth route map with middleware wiring', async () => {
     const controller = makeController();
     const router = createAuthRoutes(controller);
+    const app = express();
+    app.use(express.json());
+    app.use('/api/v1/auth', router);
 
     const endpoints = router.stack
       .filter(layer => (layer as { route?: { path: string } }).route)
@@ -83,6 +86,17 @@ describe('auth.routes', () => {
         '/stats'
       ])
     );
+
+    const loginRes = await request(app).post('/api/v1/auth/login').send({
+      email: 'user@example.com',
+      password: 'password123'
+    });
+    expect(loginRes.status).toBe(200);
+    expect(mockCsrfValidation).not.toHaveBeenCalled();
+
+    const logoutRes = await request(app).post('/api/v1/auth/logout').send({});
+    expect(logoutRes.status).toBe(200);
+    expect(mockCsrfValidation).toHaveBeenCalledTimes(1);
   });
 
   it('dispatches representative auth endpoints to provided controller', async () => {

@@ -25,6 +25,7 @@ This doc covers access control for all platform users. It aligns with the auth a
 
 ## Flow Notes
 
+- `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`, and `GET /api/auth/oauth/initiate` are public entry points. The UI should call them directly; no CSRF token is required before these requests.
 - Role-based authorization is separate from authentication.
 - A valid token does not override a suspended account.
 - Every security-sensitive operation should emit an audit record.
@@ -105,4 +106,3 @@ sequenceDiagram
 - The user always knows whether they are signed in, challenged, or blocked.
 - The UI never silently continues after a failed login or revoked token.
 - Security events are visible to admins and support teams through audit logs.
-
