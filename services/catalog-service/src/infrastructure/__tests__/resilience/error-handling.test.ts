@@ -197,7 +197,7 @@ describe('Infrastructure Layer Resilience Tests', () => {
           originalName: 'large-file.jpg',
           encoding: '7bit',
           mimeType: 'image/jpeg',
-          size: 10 * 1024 * 1024, // 10MB - exceeds limit
+          size: 10 * 1024 * 1024 + 1, // 10MB + 1 byte - exceeds the default 10MB limit
           buffer: Buffer.from('large-file-data')
         },
         {

@@ -12,11 +12,11 @@ import { requestLogger } from './api/middleware/request-logger.middleware';
 import { validationErrorHandler } from './api/middleware/validation.middleware';
 import { correlationMiddleware, tracingService } from '../../../shared/tracing/openTelemetry';
 import { metricsRegistry } from './infrastructure/monitoring/metrics';
-import { eventBus } from '@shared/events/eventBus';
 import type { DistributedSagaOrchestrator } from '@shared/saga/saga.orchestrator';
 import { PrismaUserRepository } from './infrastructure/repositories/prisma-user.repository';
 import { PiiEncryptionService } from '@shared/encryption/pii-encryption.service';
 import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
+import { isSagaRecoveryEnabled } from '@shared/runtime/background-workers';
 
 /**
  * User Service - Enterprise-grade user management microservice
@@ -230,6 +230,11 @@ class UserServiceApplication {
 
     // Initialize Saga Recovery Worker
     try {
+      if (!isSagaRecoveryEnabled()) {
+        logger.info('Saga Recovery Worker disabled by configuration');
+        return;
+      }
+
       const { UserRegistrationSaga } = await import('./application/sagas/user-registration.saga');
       const { TwoFactorSetupSaga } = await import('./application/sagas/two-factor-setup.saga');
       const { SecurityPolicyBreachSaga } = await import('./application/sagas/security-policy-breach.saga');

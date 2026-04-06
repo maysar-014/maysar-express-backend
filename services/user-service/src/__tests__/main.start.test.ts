@@ -24,11 +24,12 @@ describe('main start and graceful shutdown', () => {
       return { close: () => {} } as any;
     });
 
-    jest.spyOn(logger, 'info').mockImplementation(() => {});
+    const infoSpy = jest.spyOn(logger, 'info').mockImplementation(() => {});
 
     await application.start();
 
     expect(initSpy).toHaveBeenCalled();
+    expect(infoSpy).toHaveBeenCalledWith('Saga Recovery Worker disabled by configuration');
     // simulate SIGTERM to trigger graceful shutdown
     process.emit('SIGTERM');
     // allow handlers to run

@@ -23,6 +23,7 @@ process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret-for-testing-only-do-not-use-in-production';
 process.env.PII_ENCRYPTION_KEY = process.env.PII_ENCRYPTION_KEY || 'test-pii-encryption-key-for-user-service';
 process.env.PII_HMAC_SECRET = process.env.PII_HMAC_SECRET || 'test-pii-hmac-secret-for-user-service';
+process.env.ENABLE_SAGA_RECOVERY = process.env.ENABLE_SAGA_RECOVERY || 'false';
 process.env.METRICS_ENABLED = process.env.METRICS_ENABLED || 'false';
 process.env.LOG_LEVEL = process.env.LOG_LEVEL || 'error'; // Minimize log noise in tests
 
