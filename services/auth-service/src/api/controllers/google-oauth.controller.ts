@@ -2,12 +2,30 @@ import { Request, Response } from 'express';
 import { GoogleOAuthService } from '../../services/google-oauth.service';
 import { logger } from '../../infrastructure/services/logger.service';
 import { UserRole } from '../../domain/entities/user.types';
+import { googleOAuthSecurity } from '../../config/google-oauth.config';
 
 const isContractTestRequest = (req: Request): boolean => {
   const header = req.headers?.['x-contract-test'];
   const value = Array.isArray(header) ? header[0] : header;
   return (value === '1' || value === 'true') && process.env.NODE_ENV !== 'production';
 };
+
+const OAUTH_COOKIE_PATH = '/api';
+const OAUTH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: OAUTH_COOKIE_PATH,
+  maxAge: 10 * 60 * 1000
+};
+const OAUTH_CLEAR_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: OAUTH_COOKIE_PATH
+};
+const OAUTH_CODE_VERIFIER_COOKIE = 'oauth_code_verifier';
+const OAUTH_ROLE_COOKIE = 'oauth_role';
 
 export class GoogleOAuthController {
   private googleOAuthService: GoogleOAuthService;
@@ -58,6 +76,52 @@ export class GoogleOAuthController {
     };
   }
 
+  private getCookieValue(req: Request, name: string): string | undefined {
+    const cookieValue = (req as Request & { cookies?: Record<string, unknown> }).cookies?.[name];
+    if (typeof cookieValue === 'string' && cookieValue.length > 0) {
+      return cookieValue;
+    }
+
+    const header = req.headers?.cookie;
+    const rawCookie = Array.isArray(header) ? header.join('; ') : typeof header === 'string' ? header : undefined;
+    if (!rawCookie) {
+      return undefined;
+    }
+
+    const cookie = rawCookie
+      .split(';')
+      .map(part => part.trim())
+      .find(part => part.startsWith(`${name}=`));
+
+    if (!cookie) {
+      return undefined;
+    }
+
+    const value = decodeURIComponent(cookie.slice(name.length + 1));
+    return value || undefined;
+  }
+
+  private setOAuthCookies(res: Response, state: string, codeVerifier: string, role: string): void {
+    res.cookie(googleOAuthSecurity.csrf.cookieName, state, OAUTH_COOKIE_OPTIONS);
+    res.cookie(OAUTH_CODE_VERIFIER_COOKIE, codeVerifier, OAUTH_COOKIE_OPTIONS);
+    res.cookie(OAUTH_ROLE_COOKIE, role, OAUTH_COOKIE_OPTIONS);
+  }
+
+  private clearOAuthCookies(res: Response): void {
+    res.clearCookie(googleOAuthSecurity.csrf.cookieName, OAUTH_CLEAR_COOKIE_OPTIONS);
+    res.clearCookie(OAUTH_CODE_VERIFIER_COOKIE, OAUTH_CLEAR_COOKIE_OPTIONS);
+    res.clearCookie(OAUTH_ROLE_COOKIE, OAUTH_CLEAR_COOKIE_OPTIONS);
+  }
+
+  private resolveSelectedRole(req: Request, role?: string): string | null {
+    const cookieRole = this.getCookieValue(req, OAUTH_ROLE_COOKIE);
+    if (cookieRole && typeof role === 'string' && cookieRole !== role) {
+      return null;
+    }
+
+    return cookieRole || (typeof role === 'string' ? role : 'buyer');
+  }
+
   /**
    * Initiate Google OAuth flow with optional role selection
    */
@@ -75,15 +139,17 @@ export class GoogleOAuthController {
         return;
       }
 
-      const authUrl = this.googleOAuthService.getAuthUrl();
+      const selectedRole = typeof role === 'string' ? role : 'buyer';
+      const { authUrl, state, codeVerifier } = await this.googleOAuthService.createAuthRequest();
+      this.setOAuthCookies(res, state, codeVerifier, selectedRole);
       
       res.json({
         success: true,
         authUrl,
-        selectedRole: role || 'buyer (default)',
+        selectedRole: typeof role === 'string' ? role : 'buyer (default)',
         message: 'Google OAuth initiated successfully'
       });
-      } catch (error) {
+    } catch (error) {
       logger.error('Failed to initiate Google OAuth', error as Error);
       res.status(500).json({
         success: false,
@@ -98,7 +164,7 @@ export class GoogleOAuthController {
    */
   async handleCallback(req: Request, res: Response): Promise<void> {
     try {
-      const { code, role } = req.query;
+      const { code, role, state } = req.query;
 
       if (!code || typeof code !== 'string') {
         res.status(400).json({
@@ -129,6 +195,7 @@ export class GoogleOAuthController {
           return;
         }
 
+        this.clearOAuthCookies(res);
         res.json({
           success: true,
           user: contractUser,
@@ -138,7 +205,39 @@ export class GoogleOAuthController {
         return;
       }
 
-      const { user, token } = await this.googleOAuthService.handleCallback(code, role as string);
+      const cookieState = this.getCookieValue(req, googleOAuthSecurity.csrf.cookieName);
+      const queryState = typeof state === 'string' ? state : undefined;
+      if (!cookieState || !queryState || cookieState !== queryState) {
+        this.clearOAuthCookies(res);
+        res.status(400).json({
+          success: false,
+          message: 'Invalid OAuth state'
+        });
+        return;
+      }
+
+      const codeVerifier = this.getCookieValue(req, OAUTH_CODE_VERIFIER_COOKIE);
+      if (!codeVerifier) {
+        this.clearOAuthCookies(res);
+        res.status(400).json({
+          success: false,
+          message: 'OAuth code verifier is required'
+        });
+        return;
+      }
+
+      const selectedRole = this.resolveSelectedRole(req, typeof role === 'string' ? role : undefined);
+      if (!selectedRole) {
+        this.clearOAuthCookies(res);
+        res.status(400).json({
+          success: false,
+          message: 'OAuth role mismatch'
+        });
+        return;
+      }
+      const { user, token } = await this.googleOAuthService.handleCallback(code, selectedRole, codeVerifier);
+
+      this.clearOAuthCookies(res);
 
       res.json({
         success: true,
@@ -152,7 +251,8 @@ export class GoogleOAuthController {
         token,
         message: 'Google OAuth authentication successful'
       });
-      } catch (error) {
+    } catch (error) {
+      this.clearOAuthCookies(res);
       logger.error('Google OAuth callback failed', error as Error);
       res.status(401).json({
         success: false,

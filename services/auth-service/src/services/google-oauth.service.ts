@@ -1,5 +1,5 @@
 import { randomBytes } from 'crypto';
-import { OAuth2Client } from 'google-auth-library';
+import { CodeChallengeMethod, OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import { UserEntity } from '../domain/entities/user.entity';
 import { UserServiceClient, createUserServiceClient } from '../infrastructure/clients/user-service.client';
@@ -15,6 +15,13 @@ export interface GoogleUserProfile {
   family_name?: string;
   picture?: string;
   locale?: string;
+}
+
+export interface GoogleOAuthInitiationResult {
+  authUrl: string;
+  state: string;
+  codeVerifier: string;
+  codeChallenge: string;
 }
 
 export class GoogleOAuthService {
@@ -34,18 +41,54 @@ export class GoogleOAuthService {
     return this.oauth2Client.generateAuthUrl({
       access_type: googleOAuthConfig.accessType,
       scope: googleOAuthConfig.scopes,
-      prompt: googleOAuthConfig.prompt
+      prompt: googleOAuthConfig.prompt,
+      response_type: googleOAuthConfig.responseType
     });
   }
 
-  async handleCallback(code: string, role?: string): Promise<{ user: UserEntity; token: string }> {
+  async createAuthRequest(requestedState?: string): Promise<GoogleOAuthInitiationResult> {
+    const { codeVerifier, codeChallenge } = await this.oauth2Client.generateCodeVerifierAsync();
+    const state = requestedState || randomBytes(16).toString('hex');
+
+    if (!codeChallenge) {
+      throw new Error('Failed to generate OAuth code challenge');
+    }
+
+    const authUrl = this.oauth2Client.generateAuthUrl({
+      access_type: googleOAuthConfig.accessType,
+      scope: googleOAuthConfig.scopes,
+      prompt: googleOAuthConfig.prompt,
+      response_type: googleOAuthConfig.responseType,
+      state,
+      include_granted_scopes: true,
+      code_challenge: codeChallenge,
+      code_challenge_method: CodeChallengeMethod.S256
+    });
+
+    return {
+      authUrl,
+      state,
+      codeVerifier,
+      codeChallenge
+    };
+  }
+
+  async handleCallback(code: string, role?: string, codeVerifier?: string): Promise<{ user: UserEntity; token: string }> {
     try {
       // Exchange authorization code for tokens
-      const { tokens } = await this.oauth2Client.getToken(code);
+      const { tokens } = codeVerifier
+        ? await this.oauth2Client.getToken({ code, codeVerifier })
+        : await this.oauth2Client.getToken(code);
+
+      if (!tokens.id_token) {
+        throw new Error('Missing Google ID token');
+      }
+
       this.oauth2Client.setCredentials(tokens);
 
       // Get user profile
-      const userProfile = await this.getUserProfile(tokens.id_token!);
+      const userProfile = await this.getUserProfile(tokens.id_token);
+      this.validateProfileRestrictions(userProfile);
 
       // Find or create user via User Service
       let user = await this.userServiceClient.findUserByEmail(userProfile.email);
@@ -66,6 +109,21 @@ export class GoogleOAuthService {
     } catch (error) {
       console.error('Google OAuth callback error:', error);
       throw new Error('Authentication failed');
+    }
+  }
+
+  private validateProfileRestrictions(profile: GoogleUserProfile): void {
+    if (googleOAuthConfig.verificationEmail && profile.verified_email === false) {
+      throw new Error('Google account email must be verified');
+    }
+
+    if (googleOAuthConfig.allowedDomains.length > 0) {
+      const emailDomain = profile.email.split('@').pop()?.toLowerCase();
+      const allowedDomains = googleOAuthConfig.allowedDomains.map(domain => domain.toLowerCase());
+
+      if (!emailDomain || !allowedDomains.includes(emailDomain)) {
+        throw new Error('Google account domain is not allowed');
+      }
     }
   }
 

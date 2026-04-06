@@ -22,6 +22,7 @@ import { requestLogger } from './api/middleware/logging.middleware';
 
 // Import routes
 import { createAuthRoutes } from './api/routes/auth.routes';
+import { googleOAuthRoutes } from './api/routes/google-oauth.routes';
 import { AuthController } from './api/controllers/auth.controller';
 import { RegisterUserUseCase } from './application/use-cases/register-user.use-case';
 import { AuthenticateUserUseCase } from './application/use-cases/authenticate-user.use-case';
@@ -139,6 +140,8 @@ userSyncHandlers.registerHandlers();
 
 // API routes
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/auth/oauth', googleOAuthRoutes);
+app.use('/api/auth/oauth', googleOAuthRoutes);
 app.use('/api/v1/admin', requireRoleOrService(['admin', 'system']), adminRoutes);
 app.use('/api/v1/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(authPrisma));
 

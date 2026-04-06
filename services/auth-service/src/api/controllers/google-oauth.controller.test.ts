@@ -7,6 +7,7 @@ const mockLoggerError = jest.fn();
 jest.mock('../../services/google-oauth.service', () => ({
   GoogleOAuthService: jest.fn().mockImplementation(() => ({
     getAuthUrl: (...args: unknown[]) => mockGetAuthUrl(...args),
+    createAuthRequest: (...args: unknown[]) => mockGetAuthUrl(...args),
     handleCallback: (...args: unknown[]) => mockHandleCallback(...args)
   }))
 }));
@@ -20,12 +21,28 @@ jest.mock('../../infrastructure/services/logger.service', () => ({
   }
 }));
 
+jest.mock('../../config/google-oauth.config', () => ({
+  googleOAuthSecurity: {
+    csrf: {
+      cookieName: 'oauth_state',
+      cookieOptions: {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'lax',
+        maxAge: 600000
+      }
+    }
+  }
+}));
+
 import { GoogleOAuthController } from './google-oauth.controller';
 
 const createResponse = (): Response => {
   const response = {
     status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis()
+    json: jest.fn().mockReturnThis(),
+    cookie: jest.fn().mockReturnThis(),
+    clearCookie: jest.fn().mockReturnThis()
   };
   return response as unknown as Response;
 };
@@ -33,7 +50,12 @@ const createResponse = (): Response => {
 describe('GoogleOAuthController', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetAuthUrl.mockReturnValue('https://accounts.google.com/o/oauth2/v2/auth');
+    mockGetAuthUrl.mockResolvedValue({
+      authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+      state: 'oauth-state-123',
+      codeVerifier: 'code-verifier-123',
+      codeChallenge: 'code-challenge-123'
+    });
   });
 
   it('rejects invalid role in initiateOAuth', async () => {
@@ -60,6 +82,21 @@ describe('GoogleOAuthController', () => {
     await controller.initiateOAuth(req, res);
 
     expect(mockGetAuthUrl).toHaveBeenCalled();
+    expect(res.cookie).toHaveBeenCalledWith(
+      'oauth_state',
+      'oauth-state-123',
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax', path: '/api' })
+    );
+    expect(res.cookie).toHaveBeenCalledWith(
+      'oauth_code_verifier',
+      'code-verifier-123',
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax', path: '/api' })
+    );
+    expect(res.cookie).toHaveBeenCalledWith(
+      'oauth_role',
+      'buyer',
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax', path: '/api' })
+    );
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
@@ -98,7 +135,14 @@ describe('GoogleOAuthController', () => {
 
   it('returns authenticated user payload from callback', async () => {
     const controller = new GoogleOAuthController();
-    const req = { query: { code: 'code-1', role: 'seller' } } as unknown as Request;
+    const req = {
+      query: { code: 'code-1', role: 'seller', state: 'oauth-state-123' },
+      cookies: {
+        oauth_state: 'oauth-state-123',
+        oauth_code_verifier: 'code-verifier-123',
+        oauth_role: 'seller'
+      }
+    } as unknown as Request;
     const res = createResponse();
     mockHandleCallback.mockResolvedValue({
       user: {
@@ -114,7 +158,10 @@ describe('GoogleOAuthController', () => {
 
     await controller.handleCallback(req, res);
 
-    expect(mockHandleCallback).toHaveBeenCalledWith('code-1', 'seller');
+    expect(mockHandleCallback).toHaveBeenCalledWith('code-1', 'seller', 'code-verifier-123');
+    expect(res.clearCookie).toHaveBeenCalledWith('oauth_state', expect.objectContaining({ path: '/api' }));
+    expect(res.clearCookie).toHaveBeenCalledWith('oauth_code_verifier', expect.objectContaining({ path: '/api' }));
+    expect(res.clearCookie).toHaveBeenCalledWith('oauth_role', expect.objectContaining({ path: '/api' }));
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
@@ -126,6 +173,30 @@ describe('GoogleOAuthController', () => {
           isEmailVerified: true
         },
         token: 'jwt-token'
+      })
+    );
+  });
+
+  it('rejects OAuth callback when the state cookie does not match', async () => {
+    const controller = new GoogleOAuthController();
+    const req = {
+      query: { code: 'code-1', role: 'seller', state: 'state-a' },
+      cookies: {
+        oauth_state: 'state-b',
+        oauth_code_verifier: 'code-verifier-123',
+        oauth_role: 'seller'
+      }
+    } as unknown as Request;
+    const res = createResponse();
+
+    await controller.handleCallback(req, res);
+
+    expect(mockHandleCallback).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        message: 'Invalid OAuth state'
       })
     );
   });
@@ -145,6 +216,9 @@ describe('GoogleOAuthController', () => {
     await controller.handleCallback(req, res);
 
     expect(mockHandleCallback).not.toHaveBeenCalled();
+    expect(res.clearCookie).toHaveBeenCalledWith('oauth_state', expect.objectContaining({ path: '/api' }));
+    expect(res.clearCookie).toHaveBeenCalledWith('oauth_code_verifier', expect.objectContaining({ path: '/api' }));
+    expect(res.clearCookie).toHaveBeenCalledWith('oauth_role', expect.objectContaining({ path: '/api' }));
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
@@ -160,7 +234,14 @@ describe('GoogleOAuthController', () => {
 
   it('maps callback failures to unauthorized response', async () => {
     const controller = new GoogleOAuthController();
-    const req = { query: { code: 'bad-code' } } as unknown as Request;
+    const req = {
+      query: { code: 'bad-code', state: 'oauth-state-123' },
+      cookies: {
+        oauth_state: 'oauth-state-123',
+        oauth_code_verifier: 'code-verifier-123',
+        oauth_role: 'buyer'
+      }
+    } as unknown as Request;
     const res = createResponse();
     mockHandleCallback.mockRejectedValue(new Error('invalid_grant'));
 

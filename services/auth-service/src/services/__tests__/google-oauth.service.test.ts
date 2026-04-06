@@ -6,6 +6,7 @@ import { OAuth2Client } from 'google-auth-library';
 
 const mockOAuth2Client = {
   generateAuthUrl: jest.fn().mockReturnValue('https://accounts.google.com/o/oauth2/v2/auth'),
+  generateCodeVerifierAsync: jest.fn(),
   getToken: jest.fn(),
   setCredentials: jest.fn(),
   verifyIdToken: jest.fn()
@@ -28,7 +29,10 @@ jest.mock('../../infrastructure/clients/user-service.client', () => ({
 }));
 
 jest.mock('google-auth-library', () => ({
-  OAuth2Client: jest.fn(() => mockOAuth2Client)
+  OAuth2Client: jest.fn(() => mockOAuth2Client),
+  CodeChallengeMethod: {
+    S256: 'S256'
+  }
 }));
 
 jest.mock('jsonwebtoken', () => ({
@@ -83,6 +87,11 @@ describe('GoogleOAuthService', () => {
     };
     (createUserServiceClient as jest.Mock).mockReturnValue(mockUserServiceClient);
     mockOAuth2Client.generateAuthUrl.mockReturnValue('https://accounts.google.com/o/oauth2/v2/auth');
+    mockOAuth2Client.generateCodeVerifierAsync.mockReset();
+    mockOAuth2Client.generateCodeVerifierAsync.mockResolvedValue({
+      codeVerifier: 'code-verifier-123',
+      codeChallenge: 'code-challenge-123'
+    });
     mockOAuth2Client.getToken.mockReset();
     mockOAuth2Client.getToken.mockResolvedValue({
       tokens: {
@@ -120,7 +129,30 @@ describe('GoogleOAuthService', () => {
       expect(mockOAuth2Client.generateAuthUrl).toHaveBeenCalledWith({
         access_type: 'offline',
         scope: ['openid', 'profile', 'email'],
-        prompt: 'consent'
+        prompt: 'consent',
+        response_type: 'code'
+      });
+    });
+  });
+
+  describe('createAuthRequest', () => {
+    it('should return a PKCE-protected Google OAuth request bundle', async () => {
+      const result = await googleOAuthService.createAuthRequest('state-123');
+
+      expect(result.authUrl).toContain('accounts.google.com');
+      expect(result.state).toBe('state-123');
+      expect(result.codeVerifier).toBe('code-verifier-123');
+      expect(result.codeChallenge).toBe('code-challenge-123');
+      expect(mockOAuth2Client.generateCodeVerifierAsync).toHaveBeenCalled();
+      expect(mockOAuth2Client.generateAuthUrl).toHaveBeenCalledWith({
+        access_type: 'offline',
+        scope: ['openid', 'profile', 'email'],
+        prompt: 'consent',
+        response_type: 'code',
+        state: 'state-123',
+        include_granted_scopes: true,
+        code_challenge: 'code-challenge-123',
+        code_challenge_method: 'S256'
       });
     });
   });
@@ -145,12 +177,16 @@ describe('GoogleOAuthService', () => {
       mockUserServiceClient.findUserByEmail.mockResolvedValue(null);
       mockUserServiceClient.createUser.mockResolvedValue(mockUserServiceUser);
 
-      const result = await googleOAuthService.handleCallback(mockCode);
+      const result = await googleOAuthService.handleCallback(mockCode, undefined, 'code-verifier-123');
 
       expect(result).toHaveProperty('user');
       expect(result).toHaveProperty('token');
       expect(result.user.email).toBe('test@example.com');
       expect(result.user.name).toBe('Test User');
+      expect(mockOAuth2Client.getToken).toHaveBeenCalledWith({
+        code: mockCode,
+        codeVerifier: 'code-verifier-123'
+      });
       expect(mockUserServiceClient.createUser).toHaveBeenCalledWith({
         email: 'test@example.com',
         password: expect.any(String),
@@ -186,7 +222,7 @@ describe('GoogleOAuthService', () => {
       mockUserServiceClient.findUserByEmail.mockResolvedValue(mockExistingUser);
       mockUserServiceClient.updateUser.mockResolvedValue(mockUpdatedUser);
 
-      const result = await googleOAuthService.handleCallback(mockCode);
+      const result = await googleOAuthService.handleCallback(mockCode, undefined, 'code-verifier-123');
 
       expect(result).toHaveProperty('user');
       expect(result.user.name).toBe('Test User');
@@ -214,7 +250,7 @@ describe('GoogleOAuthService', () => {
       // Mock existing user found
       mockUserServiceClient.findUserByEmail.mockResolvedValue(mockExistingUser);
 
-      const result = await googleOAuthService.handleCallback(mockCode);
+      const result = await googleOAuthService.handleCallback(mockCode, undefined, 'code-verifier-123');
 
       expect(result).toHaveProperty('user');
       expect(result.user.name).toBe('Test User');
@@ -238,8 +274,12 @@ describe('GoogleOAuthService', () => {
       mockUserServiceClient.findUserByEmail.mockResolvedValue(null);
       mockUserServiceClient.createUser.mockResolvedValue(mockUserServiceUser);
 
-      const result = await googleOAuthService.handleCallback(mockCode, mockRole);
+      const result = await googleOAuthService.handleCallback(mockCode, mockRole, 'code-verifier-123');
 
+      expect(mockOAuth2Client.getToken).toHaveBeenCalledWith({
+        code: mockCode,
+        codeVerifier: 'code-verifier-123'
+      });
       expect(mockUserServiceClient.createUser).toHaveBeenCalledWith({
         email: 'test@example.com',
         password: expect.any(String),
@@ -256,7 +296,7 @@ describe('GoogleOAuthService', () => {
 
       const newService = new GoogleOAuthService();
 
-      await expect(newService.handleCallback(mockCode)).rejects.toThrow('Authentication failed');
+      await expect(newService.handleCallback(mockCode, undefined, 'code-verifier-123')).rejects.toThrow('Authentication failed');
     });
 
     it('should handle invalid Google token gracefully', async () => {
@@ -268,7 +308,7 @@ describe('GoogleOAuthService', () => {
 
       const newService = new GoogleOAuthService();
 
-      await expect(newService.handleCallback(mockCode)).rejects.toThrow('Authentication failed');
+      await expect(newService.handleCallback(mockCode, undefined, 'code-verifier-123')).rejects.toThrow('Authentication failed');
     });
 
     it('should handle user service errors gracefully', async () => {
@@ -277,7 +317,7 @@ describe('GoogleOAuthService', () => {
       // Mock user service error
       mockUserServiceClient.findUserByEmail.mockRejectedValue(new Error('Database connection failed'));
 
-      await expect(googleOAuthService.handleCallback(mockCode)).rejects.toThrow('Authentication failed');
+      await expect(googleOAuthService.handleCallback(mockCode, undefined, 'code-verifier-123')).rejects.toThrow('Authentication failed');
     });
   });
 
