@@ -7,6 +7,20 @@ const mockUserRepository = {
     save: jest.fn()
 };
 
+jest.mock('../../../infrastructure/repositories/user-service.repository', () => ({
+    UserServiceRepository: jest.fn().mockImplementation(() => ({
+        findByEmail: jest.fn(),
+        save: jest.fn()
+    }))
+}));
+
+jest.mock('../../../infrastructure/services/service-discovery', () => ({
+    getUserServiceClient: jest.fn().mockReturnValue(null),
+    serviceDiscovery: {
+        getUserServiceClient: jest.fn().mockReturnValue(null)
+    }
+}));
+
 // Mock speakeasy
 jest.mock('speakeasy', () => ({
     totp: {
@@ -18,10 +32,24 @@ import * as speakeasy from 'speakeasy';
 
 describe('AuthenticateUserUseCase', () => {
     let useCase: AuthenticateUserUseCase;
+    const previousJwtSecret = process.env.JWT_SECRET;
+
+    beforeAll(() => {
+        process.env.JWT_SECRET = 'test-jwt-secret-for-authenticate-user-use-case';
+    });
 
     beforeEach(() => {
         jest.clearAllMocks();
         useCase = new AuthenticateUserUseCase(mockUserRepository as any);
+    });
+
+    afterAll(() => {
+        if (previousJwtSecret === undefined) {
+            delete process.env.JWT_SECRET;
+            return;
+        }
+
+        process.env.JWT_SECRET = previousJwtSecret;
     });
 
     const mockUser = (overrides = {}) => ({
