@@ -69,8 +69,10 @@ class UserServiceApplication {
         const allowedOrigins = [
           'http://localhost:3000',     // Development frontend
           'https://maysar.com',        // Production domain
+          'https://maysar.co.tz',      // Current production domain
           'https://admin.maysar.com',  // Admin console
-          'https://api.maysar.com'     // API gateway
+          'https://api.maysar.com',    // API gateway
+          'https://maysar-web-app-maysar-014-maysar-014s-projects.vercel.app' // Staging frontend
         ];
 
         // Check if origin is allowed
@@ -78,8 +80,8 @@ class UserServiceApplication {
           return callback(null, true);
         }
 
-        // Allow all subdomains of maysar.com
-        if (origin.endsWith('.maysar.com')) {
+        // Allow all subdomains of the legacy and current production domains
+        if (origin.endsWith('.maysar.com') || origin.endsWith('.maysar.co.tz')) {
           return callback(null, true);
         }
 

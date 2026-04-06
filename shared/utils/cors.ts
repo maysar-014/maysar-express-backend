@@ -9,6 +9,11 @@ const DEFAULT_LOCAL_ORIGINS = [
     'http://127.0.0.1:3200'
 ];
 
+const TRUSTED_EXACT_ORIGINS = [
+    // Stable staging frontend deployment
+    'https://maysar-web-app-maysar-014-maysar-014s-projects.vercel.app'
+];
+
 const TRUSTED_DOMAIN_PATTERN = /^https?:\/\/([a-z0-9-]+\.)*maysar\.co\.tz(?::\d+)?$/i;
 
 const normalizeOrigin = (value: string): string => value.trim().replace(/\/$/, '');
@@ -29,6 +34,7 @@ export const getTrustedCorsOrigins = (extraOrigins: string[] = []): string[] => 
     ];
 
     return Array.from(new Set([
+        ...TRUSTED_EXACT_ORIGINS,
         ...envOrigins,
         ...extraOrigins.map(normalizeOrigin),
         ...DEFAULT_LOCAL_ORIGINS

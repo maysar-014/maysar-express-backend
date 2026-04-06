@@ -28,6 +28,19 @@ describe('UserServiceApplication (main.ts)', () => {
     expect(res.headers['access-control-allow-origin']).toBe(origin);
   });
 
+  test('CORS allows live and staging origins', async () => {
+    const origins = [
+      'https://maysar.co.tz',
+      'https://maysar-web-app-maysar-014-maysar-014s-projects.vercel.app'
+    ];
+
+    for (const origin of origins) {
+      const res = await request(app).get('/').set('Origin', origin);
+      expect(res.status).toBe(200);
+      expect(res.headers['access-control-allow-origin']).toBe(origin);
+    }
+  });
+
   test('CORS denies unknown origins (returns error)', async () => {
     const origin = 'http://evil.com';
     const res = await request(app).get('/').set('Origin', origin);

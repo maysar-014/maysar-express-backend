@@ -20,11 +20,14 @@ describe('shared/utils/cors', () => {
 
     expect(allowedOrigins).toEqual(
       expect.arrayContaining([
+        'https://maysar-web-app-maysar-014-maysar-014s-projects.vercel.app',
         'https://dashboard.example.com',
         'https://extra.example.com',
         'http://localhost:3000'
       ])
     );
+    expect(isTrustedCorsOrigin('https://maysar.co.tz', allowedOrigins)).toBe(true);
+    expect(isTrustedCorsOrigin('https://maysar-web-app-maysar-014-maysar-014s-projects.vercel.app', allowedOrigins)).toBe(true);
     expect(isTrustedCorsOrigin('https://app-staging.maysar.co.tz', allowedOrigins)).toBe(true);
     expect(isTrustedCorsOrigin('http://localhost:3000', allowedOrigins)).toBe(true);
     expect(isTrustedCorsOrigin('https://evil.example.com', allowedOrigins)).toBe(false);
