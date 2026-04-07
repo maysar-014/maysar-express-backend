@@ -30,13 +30,14 @@ export interface AuthMiddlewareConfig {
   enableServiceAuth: boolean;
   serviceAuthHeader: string;
   allowedServiceKeys: string[];
+  deviceFingerprintSalt: string;
 }
 
 /**
  * Default Authentication Configuration
  */
 export const DEFAULT_AUTH_CONFIG: AuthMiddlewareConfig = {
-  jwtSecret: process.env.JWT_SECRET || 'default-secret-change-in-production',
+  jwtSecret: process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex'),
   jwtAlgorithm: 'HS256',
   tokenExpirationTime: 15 * 60 * 1000, // 15 minutes
   enableTokenBlacklisting: true,
@@ -48,7 +49,8 @@ export const DEFAULT_AUTH_CONFIG: AuthMiddlewareConfig = {
   enableApiKeyAuth: true,
   enableServiceAuth: true,
   serviceAuthHeader: 'X-Service-Key',
-  allowedServiceKeys: process.env.ALLOWED_SERVICE_KEYS?.split(',') || []
+  allowedServiceKeys: process.env.ALLOWED_SERVICE_KEYS?.split(',') || [],
+  deviceFingerprintSalt: process.env.DEVICE_FINGERPRINT_SALT || crypto.randomBytes(32).toString('hex')
 };
 
 // =====================================================================================
@@ -149,7 +151,13 @@ export class AuthenticationMiddleware {
 
         // Check if token is blacklisted
         if (this.config.enableTokenBlacklisting) {
-          const isBlacklisted = await this.checkTokenBlacklist(token);
+          let isBlacklisted = false;
+          try {
+            isBlacklisted = await this.checkTokenBlacklist(token);
+          } catch (error) {
+            logger.error('Token blacklist validation failed', { error: error instanceof Error ? error.message : String(error) });
+            return this.sendUnauthorized(res, 'TOKEN_BLACKLIST_CHECK_FAILED', 'Authentication token validation is temporarily unavailable');
+          }
           if (isBlacklisted) {
             return this.sendUnauthorized(res, 'TOKEN_BLACKLISTED', 'Token has been revoked');
           }
@@ -442,7 +450,7 @@ export class AuthenticationMiddleware {
       return response.isBlacklisted;
     } catch (error) {
       logger.error('Token blacklist check failed', { error: error instanceof Error ? error.message : String(error) });
-      return false; // Fail open for availability
+      throw new Error('Token blacklist check failed');
     }
   }
 
@@ -483,17 +491,25 @@ export class AuthenticationMiddleware {
       req.ip,
       req.headers['accept-language']
     ].join('|');
-    return crypto.createHash('md5').update(fingerprint).digest('hex');
+    return crypto.createHash('sha256').update(`${this.config.deviceFingerprintSalt}|${fingerprint}`).digest('hex');
   }
 
   /**
    * Generate Session ID
    */
   private generateSessionId(): string {
-    return crypto.createHash('sha256')
-      .update(`${Date.now()}-${Math.random()}`)
-      .digest('hex')
-      .substring(0, 32);
+    return crypto.randomBytes(16).toString('hex');
+  }
+
+  /**
+   * Normalize header values to a trimmed string.
+   */
+  private getHeaderValue(value: string | string[] | undefined): string | undefined {
+    if (Array.isArray(value)) {
+      return value[0]?.trim();
+    }
+
+    return value?.trim();
   }
 
   /**
@@ -501,7 +517,25 @@ export class AuthenticationMiddleware {
    * Requires an external geo-IP service integration; returns undefined when not configured.
    */
   private getGeoLocation(_req: Request): { country: string; region: string; city: string } | undefined {
-    return undefined;
+    const country = this.getHeaderValue(_req.headers['cf-ipcountry'])
+      || this.getHeaderValue(_req.headers['x-vercel-ip-country'])
+      || this.getHeaderValue(_req.headers['x-country'])
+      || this.getHeaderValue(_req.headers['x-geo-country']);
+    const region = this.getHeaderValue(_req.headers['x-vercel-ip-country-region'])
+      || this.getHeaderValue(_req.headers['x-region'])
+      || this.getHeaderValue(_req.headers['x-geo-region']);
+    const city = this.getHeaderValue(_req.headers['x-city'])
+      || this.getHeaderValue(_req.headers['x-geo-city']);
+
+    if (!country && !region && !city) {
+      return undefined;
+    }
+
+    return {
+      country: (country || 'unknown').toUpperCase(),
+      region: region || 'unknown',
+      city: city || 'unknown'
+    };
   }
 
   /**

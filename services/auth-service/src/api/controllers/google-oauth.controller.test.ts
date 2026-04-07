@@ -2,13 +2,17 @@ import type { Request, Response } from 'express';
 
 const mockGetAuthUrl = jest.fn();
 const mockHandleCallback = jest.fn();
+const mockRefreshAccessToken = jest.fn();
+const mockRevokeToken = jest.fn();
 const mockLoggerError = jest.fn();
 
 jest.mock('../../services/google-oauth.service', () => ({
   GoogleOAuthService: jest.fn().mockImplementation(() => ({
     getAuthUrl: (...args: unknown[]) => mockGetAuthUrl(...args),
     createAuthRequest: (...args: unknown[]) => mockGetAuthUrl(...args),
-    handleCallback: (...args: unknown[]) => mockHandleCallback(...args)
+    handleCallback: (...args: unknown[]) => mockHandleCallback(...args),
+    refreshAccessToken: (...args: unknown[]) => mockRefreshAccessToken(...args),
+    revokeToken: (...args: unknown[]) => mockRevokeToken(...args)
   }))
 }));
 
@@ -56,6 +60,12 @@ describe('GoogleOAuthController', () => {
       codeVerifier: 'code-verifier-123',
       codeChallenge: 'code-challenge-123'
     });
+    mockRefreshAccessToken.mockResolvedValue({
+      accessToken: 'oauth-access-token',
+      refreshToken: 'oauth-refresh-token',
+      expiresIn: 3600
+    });
+    mockRevokeToken.mockResolvedValue(undefined);
   });
 
   it('rejects invalid role in initiateOAuth', async () => {
@@ -258,9 +268,14 @@ describe('GoogleOAuthController', () => {
     );
   });
 
-  it('returns not-implemented responses for refresh/revoke endpoints', async () => {
+  it('refreshes and revokes tokens using the OAuth service', async () => {
     const controller = new GoogleOAuthController();
-    const req = {} as Request;
+    const req = {
+      body: {
+        refreshToken: 'refresh-token',
+        token: 'access-token'
+      }
+    } as Request;
     const res = createResponse();
 
     await controller.refreshToken(req, res);
@@ -268,6 +283,23 @@ describe('GoogleOAuthController', () => {
 
     expect(res.status).toHaveBeenNthCalledWith(1, 200);
     expect(res.status).toHaveBeenNthCalledWith(2, 200);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    expect(mockRefreshAccessToken).toHaveBeenCalledWith('refresh-token');
+    expect(mockRevokeToken).toHaveBeenCalledWith('access-token');
+    expect(res.json).toHaveBeenNthCalledWith(1,
+      expect.objectContaining({
+        success: true,
+        accessToken: 'oauth-access-token',
+        refreshToken: 'oauth-refresh-token',
+        tokenType: 'Bearer',
+        expiresIn: 3600
+      })
+    );
+    expect(res.json).toHaveBeenNthCalledWith(2,
+      expect.objectContaining({
+        success: true,
+        revoked: true,
+        message: 'OAuth access revoked'
+      })
+    );
   });
 });

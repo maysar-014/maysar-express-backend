@@ -50,5 +50,6 @@ export class GoogleOAuthRoutes {
   }
 }
 
-// Export for use in main app
-export const googleOAuthRoutes = new GoogleOAuthRoutes().getRouter();
+// Factory used by the application bootstrap so the OAuth stack is only created
+// after configuration validation has completed.
+export const createGoogleOAuthRoutes = (): Router => new GoogleOAuthRoutes().getRouter();

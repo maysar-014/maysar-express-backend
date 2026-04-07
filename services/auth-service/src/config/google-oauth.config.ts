@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -97,7 +98,7 @@ export const googleOAuthConfig: GoogleOAuthConfig = {
   prompt: process.env.GOOGLE_OAUTH_PROMPT as 'consent' | 'none' | 'select_account' || 'consent',
   accessType: process.env.GOOGLE_OAUTH_ACCESS_TYPE as 'online' | 'offline' || 'offline', // 'offline' for refresh tokens
   responseType: 'code', // Authorization code flow
-  state: process.env.GOOGLE_OAUTH_ENABLE_STATE === 'true', // CSRF protection
+  state: process.env.GOOGLE_OAUTH_ENABLE_STATE !== 'false', // CSRF protection enabled by default
   
   // Email verification requirements
   verificationEmail: process.env.GOOGLE_OAUTH_REQUIRE_VERIFIED_EMAIL !== 'false',
@@ -216,7 +217,7 @@ export const googleOAuthSecurity = {
   // Session Configuration
   session: {
     name: 'google_oauth_session',
-    secret: process.env.SESSION_SECRET || 'default-session-secret-change-in-production',
+    secret: process.env.AUTH_SERVICE_SESSION_SECRET || process.env.SESSION_SECRET || randomBytes(32).toString('hex'),
     maxAge: googleOAuthConfig.sessionTimeout,
     secure: process.env.NODE_ENV === 'production'
   },

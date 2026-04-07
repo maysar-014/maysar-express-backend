@@ -48,7 +48,9 @@ export class GoogleOAuthService {
 
   async createAuthRequest(requestedState?: string): Promise<GoogleOAuthInitiationResult> {
     const { codeVerifier, codeChallenge } = await this.oauth2Client.generateCodeVerifierAsync();
-    const state = requestedState || randomBytes(16).toString('hex');
+    const state = googleOAuthConfig.state
+      ? (requestedState || randomBytes(16).toString('hex'))
+      : undefined;
 
     if (!codeChallenge) {
       throw new Error('Failed to generate OAuth code challenge');
@@ -59,15 +61,15 @@ export class GoogleOAuthService {
       scope: googleOAuthConfig.scopes,
       prompt: googleOAuthConfig.prompt,
       response_type: googleOAuthConfig.responseType,
-      state,
       include_granted_scopes: true,
       code_challenge: codeChallenge,
-      code_challenge_method: CodeChallengeMethod.S256
+      code_challenge_method: CodeChallengeMethod.S256,
+      ...(state ? { state } : {})
     });
 
     return {
       authUrl,
-      state,
+      state: state || '',
       codeVerifier,
       codeChallenge
     };
@@ -155,7 +157,6 @@ export class GoogleOAuthService {
     const lastName = profile.family_name ?? profile.name.split(' ').slice(1).join(' ') ?? '';
     const userData = {
       email: profile.email,
-      password: this.generateRandomPassword(), // Generate temporary password for OAuth users
       role: role || 'buyer', // Default to buyer role if not specified
       firstName,
       lastName,
@@ -254,8 +255,25 @@ export class GoogleOAuthService {
 
   private createJWTToken(payload: any): string {
     const expiresIn = (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'];
-    return jwt.sign(payload, process.env.JWT_SECRET!, {
-      expiresIn
+    const algorithm = (process.env.JWT_ALGORITHM || 'HS256') as jwt.Algorithm;
+    const usesAsymmetricSigning = algorithm.startsWith('RS') || algorithm.startsWith('ES');
+    const signingSecret = usesAsymmetricSigning
+      ? process.env.JWT_PRIVATE_KEY
+      : process.env.JWT_SECRET;
+
+    if (!signingSecret) {
+      throw new Error(
+        usesAsymmetricSigning
+          ? 'JWT_PRIVATE_KEY is required when JWT_ALGORITHM uses asymmetric signing.'
+          : 'JWT_SECRET is required to sign Google OAuth tokens.'
+      );
+    }
+
+    return jwt.sign(payload, signingSecret, {
+      expiresIn,
+      algorithm,
+      issuer: process.env.JWT_ISSUER || 'maysar-auth-service',
+      ...(process.env.JWT_AUDIENCE ? { audience: process.env.JWT_AUDIENCE } : {})
     });
   }
 
@@ -263,5 +281,40 @@ export class GoogleOAuthService {
     // Get permissions from authz config manager
     const roleConfig = authzConfigManager.getRole(user.role);
     return roleConfig?.permissions?.map(p => `${p.resource}:${p.action}`) || [];
+  }
+
+  public async refreshAccessToken(refreshToken: string): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+  }> {
+    if (!refreshToken) {
+      throw new Error('Refresh token is required');
+    }
+
+    this.oauth2Client.setCredentials({ refresh_token: refreshToken });
+    const { credentials } = await this.oauth2Client.refreshAccessToken();
+
+    if (!credentials.access_token) {
+      throw new Error('Failed to refresh Google access token');
+    }
+
+    const expiresIn = credentials.expiry_date
+      ? Math.max(0, Math.floor((credentials.expiry_date - Date.now()) / 1000))
+      : 3600;
+
+    return {
+      accessToken: credentials.access_token,
+      refreshToken: credentials.refresh_token || refreshToken,
+      expiresIn
+    };
+  }
+
+  public async revokeToken(token: string): Promise<void> {
+    if (!token) {
+      throw new Error('Token is required');
+    }
+
+    await this.oauth2Client.revokeToken(token);
   }
 }

@@ -3,11 +3,15 @@ import { User, UserRole } from '../../entities/user.entity';
 import { AuthenticationPolicy } from '../../policies/authentication.policy';
 import { PasswordHash } from '../../value-objects/password-hash.value-object';
 import { Email } from '../../value-objects/email.value-object';
+import * as speakeasy from 'speakeasy';
+
+const mockTotpVerify = jest.spyOn(speakeasy.totp, 'verify');
 
 describe('AuthenticationEngine', () => {
     let passwordHash: PasswordHash;
 
     beforeEach(async () => {
+        mockTotpVerify.mockReturnValue(true);
         passwordHash = await PasswordHash.fromPlainPassword('password123');
         jest.spyOn(AuthenticationPolicy, 'canAuthenticate').mockReturnValue(true);
         jest.spyOn(AuthenticationPolicy, 'canChangePassword').mockReturnValue(true);
@@ -18,6 +22,10 @@ describe('AuthenticationEngine', () => {
 
     afterEach(() => {
         jest.clearAllMocks();
+    });
+
+    afterAll(() => {
+        mockTotpVerify.mockRestore();
     });
 
     describe('authenticateUser', () => {
@@ -91,6 +99,31 @@ describe('AuthenticationEngine', () => {
             const result = await AuthenticationEngine.authenticateUser(user, 'password123', '123456');
 
             expect(result.success).toBe(true);
+            expect(mockTotpVerify).toHaveBeenCalledWith(expect.objectContaining({
+                secret: 'secret',
+                encoding: 'base32',
+                token: '123456',
+                window: 1
+            }));
+        });
+
+        it('should fail when 2FA code is invalid', async () => {
+            mockTotpVerify.mockReturnValueOnce(false);
+
+            const user = User.create({
+                id: 'user-1',
+                email: Email.create('test@example.com'),
+                passwordHash,
+                role: UserRole.BUYER,
+                twoFactorEnabled: true,
+                twoFactorSecret: 'secret'
+            });
+
+            const result = await AuthenticationEngine.authenticateUser(user, 'password123', '654321');
+
+            expect(result.success).toBe(false);
+            expect(result.requiresTwoFactor).toBe(true);
+            expect(result.message).toContain('Invalid two-factor authentication code');
         });
 
         it('should block authentication when policy denies', async () => {

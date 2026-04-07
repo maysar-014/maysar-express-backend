@@ -23,7 +23,7 @@ jest.mock('../../infrastructure/services/logger.service', () => ({
   }
 }));
 
-import { GoogleOAuthRoutes, googleOAuthRoutes } from './google-oauth.routes';
+import { GoogleOAuthRoutes, createGoogleOAuthRoutes } from './google-oauth.routes';
 
 describe('google-oauth.routes', () => {
   beforeEach(() => {
@@ -46,7 +46,7 @@ describe('google-oauth.routes', () => {
   it('dispatches oauth endpoints to controller methods', async () => {
     const app = express();
     app.use(express.json());
-    app.use('/oauth', googleOAuthRoutes);
+    app.use('/oauth', createGoogleOAuthRoutes());
 
     const initRes = await request(app).get('/oauth/initiate');
     expect(initRes.status).toBe(200);

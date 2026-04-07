@@ -35,7 +35,7 @@ describe('google oauth config', () => {
 
     expect(googleOAuthConfig.callbackUrl).toBe('http://localhost:3001/api/auth/oauth/callback');
     expect(googleOAuthConfig.scopes).toEqual(['openid', 'profile', 'email']);
-    expect(googleOAuthConfig.state).toBe(false);
+    expect(googleOAuthConfig.state).toBe(true);
     expect(googleOAuthConfig.verificationEmail).toBe(true);
     expect(validation.isValid).toBe(false);
     expect(validation.errors).toEqual(

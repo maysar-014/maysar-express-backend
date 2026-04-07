@@ -46,6 +46,10 @@ export class GoogleOAuthController {
       : [];
   }
 
+  private isStateProtectionEnabled(): boolean {
+    return googleOAuthSecurity.csrf.enabled !== false;
+  }
+
   private buildContractTestCallbackUser(req: Request, role?: string) {
     const userId =
       this.getHeaderValue(req.headers['x-user-id'])
@@ -101,8 +105,10 @@ export class GoogleOAuthController {
     return value || undefined;
   }
 
-  private setOAuthCookies(res: Response, state: string, codeVerifier: string, role: string): void {
-    res.cookie(googleOAuthSecurity.csrf.cookieName, state, OAUTH_COOKIE_OPTIONS);
+  private setOAuthCookies(res: Response, state: string | undefined, codeVerifier: string, role: string): void {
+    if (this.isStateProtectionEnabled() && state) {
+      res.cookie(googleOAuthSecurity.csrf.cookieName, state, OAUTH_COOKIE_OPTIONS);
+    }
     res.cookie(OAUTH_CODE_VERIFIER_COOKIE, codeVerifier, OAUTH_COOKIE_OPTIONS);
     res.cookie(OAUTH_ROLE_COOKIE, role, OAUTH_COOKIE_OPTIONS);
   }
@@ -205,15 +211,17 @@ export class GoogleOAuthController {
         return;
       }
 
-      const cookieState = this.getCookieValue(req, googleOAuthSecurity.csrf.cookieName);
-      const queryState = typeof state === 'string' ? state : undefined;
-      if (!cookieState || !queryState || cookieState !== queryState) {
-        this.clearOAuthCookies(res);
-        res.status(400).json({
-          success: false,
-          message: 'Invalid OAuth state'
-        });
-        return;
+      if (this.isStateProtectionEnabled()) {
+        const cookieState = this.getCookieValue(req, googleOAuthSecurity.csrf.cookieName);
+        const queryState = typeof state === 'string' ? state : undefined;
+        if (!cookieState || !queryState || cookieState !== queryState) {
+          this.clearOAuthCookies(res);
+          res.status(400).json({
+            success: false,
+            message: 'Invalid OAuth state'
+          });
+          return;
+        }
       }
 
       const codeVerifier = this.getCookieValue(req, OAUTH_CODE_VERIFIER_COOKIE);
@@ -269,12 +277,22 @@ export class GoogleOAuthController {
     try {
       const refreshToken = typeof req.body?.refreshToken === 'string' ? req.body.refreshToken : undefined;
 
+      if (!refreshToken) {
+        res.status(400).json({
+          success: false,
+          message: 'Refresh token is required'
+        });
+        return;
+      }
+
+      const refreshedTokens = await this.googleOAuthService.refreshAccessToken(refreshToken);
+
       res.status(200).json({
         success: true,
-        accessToken: `oauth-access-${Date.now()}`,
-        refreshToken: refreshToken || `oauth-refresh-${Date.now()}`,
+        accessToken: refreshedTokens.accessToken,
+        refreshToken: refreshedTokens.refreshToken,
         tokenType: 'Bearer',
-        expiresIn: 3600,
+        expiresIn: refreshedTokens.expiresIn,
         message: 'OAuth token refreshed'
       });
     } catch (error) {
@@ -293,9 +311,20 @@ export class GoogleOAuthController {
   async revokeAccess(req: Request, res: Response): Promise<void> {
     try {
       const token = typeof req.body?.token === 'string' ? req.body.token : undefined;
+
+      if (!token) {
+        res.status(400).json({
+          success: false,
+          message: 'Token is required'
+        });
+        return;
+      }
+
+      await this.googleOAuthService.revokeToken(token);
+
       res.status(200).json({
         success: true,
-        revoked: Boolean(token),
+        revoked: true,
         message: 'OAuth access revoked'
       });
     } catch (error) {

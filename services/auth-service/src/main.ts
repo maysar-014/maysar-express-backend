@@ -22,7 +22,7 @@ import { requestLogger } from './api/middleware/logging.middleware';
 
 // Import routes
 import { createAuthRoutes } from './api/routes/auth.routes';
-import { googleOAuthRoutes } from './api/routes/google-oauth.routes';
+import { createGoogleOAuthRoutes } from './api/routes/google-oauth.routes';
 import { AuthController } from './api/controllers/auth.controller';
 import { RegisterUserUseCase } from './application/use-cases/register-user.use-case';
 import { AuthenticateUserUseCase } from './application/use-cases/authenticate-user.use-case';
@@ -64,6 +64,7 @@ import { initializeRedis } from './infrastructure/cache/connection';
 import { metricsRegistry } from './infrastructure/monitoring/metrics';
 import { serviceDiscovery } from './infrastructure/services/service-discovery.service';
 import { createTrustedCorsOptions } from '@shared/utils/cors';
+import { initializeGoogleOAuthConfig } from './config/google-oauth.config';
 
 // Load environment variables
 dotenv.config();
@@ -136,9 +137,6 @@ userSyncHandlers.registerHandlers();
 
 // API routes
 app.use('/api/v1/auth', authRoutes);
-// Public OAuth aliases are kept for compatibility with existing frontend and contract clients.
-app.use('/api/v1/auth/oauth', googleOAuthRoutes);
-app.use('/api/auth/oauth', googleOAuthRoutes);
 app.use('/api/v1/admin', requireRoleOrService(['admin', 'system']), adminRoutes);
 app.use('/api/v1/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(authPrisma));
 
@@ -245,6 +243,9 @@ async function startServer() {
     // Initialize tracing
     tracingService.start();
 
+    // Validate Google OAuth configuration before wiring the OAuth routes.
+    initializeGoogleOAuthConfig();
+
     // Initialize infrastructure
     logger.info('Initializing infrastructure...');
 
@@ -269,6 +270,11 @@ async function startServer() {
     } else {
       logger.info('Service discovery disabled');
     }
+
+    // Public OAuth aliases are kept for compatibility with existing frontend and contract clients.
+    const googleOAuthRoutes = createGoogleOAuthRoutes();
+    app.use('/api/v1/auth/oauth', googleOAuthRoutes);
+    app.use('/api/auth/oauth', googleOAuthRoutes);
 
     // Start HTTP server
     server = app.listen(config.port, () => {

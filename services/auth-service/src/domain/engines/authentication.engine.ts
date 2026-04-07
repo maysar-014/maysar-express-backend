@@ -4,6 +4,8 @@ import { PasswordHash } from '../value-objects/password-hash.value-object';
 import { PhoneNumber } from '../value-objects/phone-number.value-object';
 import { AuthenticationPolicy } from '../policies/authentication.policy';
 import { getModelPrefix, makeId } from '@shared/ids/id';
+import { randomBytes } from 'crypto';
+import * as speakeasy from 'speakeasy';
 
 /**
  * Authentication Engine - Orchestrates authentication algorithms and policies
@@ -522,14 +524,23 @@ export class AuthenticationEngine {
    * Generates secure reset token
    */
   private static generateSecureToken(): string {
-    return `reset_${Date.now()}_${Math.random().toString(36).substring(2, 18)}`;
+    return `reset_${Date.now()}_${randomBytes(16).toString('hex')}`;
   }
 
   /**
-   * Verifies TOTP code (simplified implementation)
+   * Verifies TOTP code using Speakeasy
    */
   private static async verifyTotpCode(secret: string, code: string): Promise<boolean> {
-    return /^\d{6}$/.test(code);
+    try {
+      return speakeasy.totp.verify({
+        secret,
+        encoding: 'base32',
+        token: code,
+        window: 1
+      });
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -538,7 +549,7 @@ export class AuthenticationEngine {
   private static generateBackupCodes(): string[] {
     const codes: string[] = [];
     for (let i = 0; i < 10; i++) {
-      codes.push(Math.random().toString(36).substring(2, 10).toUpperCase());
+      codes.push(randomBytes(5).toString('hex').toUpperCase());
     }
     return codes;
   }

@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { logger } from '../infrastructure/services/logger.service';
 
 /**
@@ -10,7 +11,7 @@ export interface AuthMiddlewareConfigInterface {
   // JWT Configuration
   jwt: {
     secret: string;
-    algorithm: 'HS256' | 'HS384' | 'HS512';
+    algorithm: 'HS256' | 'HS384' | 'HS512' | 'RS256' | 'ES256';
     expirationTime: number;
     refreshExpirationTime: number;
   };
@@ -84,10 +85,28 @@ export interface AuthMiddlewareConfigInterface {
 /**
  * Default Authentication Middleware Configuration
  */
+const resolveSecret = (envName: string): string => {
+  const value = process.env[envName]?.trim();
+  if (value) {
+    return value;
+  }
+
+  return randomBytes(32).toString('hex');
+};
+
+const resolveEnabled = (envName: string, fallback: boolean): boolean => {
+  const raw = process.env[envName];
+  if (raw === undefined) {
+    return fallback;
+  }
+
+  return ['true', '1', 'yes', 'y'].includes(raw.toLowerCase());
+};
+
 export const DEFAULT_AUTH_MIDDLEWARE_CONFIG: AuthMiddlewareConfigInterface = {
   // JWT Configuration
   jwt: {
-    secret: process.env.JWT_SECRET || 'default-secret-change-in-production',
+    secret: resolveSecret('JWT_SECRET'),
     algorithm: 'HS256',
     expirationTime: 15 * 60 * 1000, // 15 minutes
     refreshExpirationTime: 7 * 24 * 60 * 60 * 1000 // 7 days
@@ -95,7 +114,7 @@ export const DEFAULT_AUTH_MIDDLEWARE_CONFIG: AuthMiddlewareConfigInterface = {
 
   // Token Blacklisting Configuration
   tokenBlacklisting: {
-    enabled: process.env.ENABLE_TOKEN_BLACKLISTING === 'true',
+    enabled: resolveEnabled('ENABLE_TOKEN_BLACKLISTING', true),
     storageType: (process.env.TOKEN_BLACKLIST_STORAGE as any) || 'memory',
     cleanupInterval: parseInt(process.env.TOKEN_BLACKLIST_CLEANUP_INTERVAL || '3600000'), // 1 hour
     maxBlacklistedTokens: parseInt(process.env.MAX_BLACKLISTED_TOKENS || '10000')
@@ -104,7 +123,7 @@ export const DEFAULT_AUTH_MIDDLEWARE_CONFIG: AuthMiddlewareConfigInterface = {
   // API Key Configuration
   apiKey: {
     enabled: process.env.ENABLE_API_KEYS === 'true',
-    secret: process.env.API_KEY_SECRET || 'api-key-secret-change-in-production',
+    secret: resolveSecret('API_KEY_SECRET'),
     expirationTime: parseInt(process.env.API_KEY_EXPIRATION || '2592000000'), // 30 days
     maxKeysPerService: parseInt(process.env.MAX_API_KEYS_PER_SERVICE || '10'),
     allowedServices: process.env.ALLOWED_SERVICES?.split(',') || []
@@ -112,7 +131,7 @@ export const DEFAULT_AUTH_MIDDLEWARE_CONFIG: AuthMiddlewareConfigInterface = {
 
   // Brute Force Protection Configuration
   bruteForce: {
-    enabled: process.env.ENABLE_BRUTE_FORCE_PROTECTION === 'true',
+    enabled: resolveEnabled('ENABLE_BRUTE_FORCE_PROTECTION', true),
     maxAttempts: parseInt(process.env.BRUTE_FORCE_MAX_ATTEMPTS || '5'),
     lockoutTime: parseInt(process.env.BRUTE_FORCE_LOCKOUT_TIME || '900000'), // 15 minutes
     windowTime: parseInt(process.env.BRUTE_FORCE_WINDOW_TIME || '900000'), // 15 minutes
@@ -122,9 +141,9 @@ export const DEFAULT_AUTH_MIDDLEWARE_CONFIG: AuthMiddlewareConfigInterface = {
 
   // Device Tracking Configuration
   deviceTracking: {
-    enabled: process.env.ENABLE_DEVICE_TRACKING === 'true',
+    enabled: resolveEnabled('ENABLE_DEVICE_TRACKING', true),
     maxDevicesPerUser: parseInt(process.env.MAX_DEVICES_PER_USER || '5'),
-    deviceFingerprintSalt: process.env.DEVICE_FINGERPRINT_SALT || 'device-fingerprint-salt',
+    deviceFingerprintSalt: resolveSecret('DEVICE_FINGERPRINT_SALT'),
     suspiciousActivityThreshold: parseInt(process.env.SUSPICIOUS_ACTIVITY_THRESHOLD || '3'),
     geoLocationEnabled: process.env.ENABLE_GEOLOCATION === 'true',
     cleanupInterval: parseInt(process.env.DEVICE_TRACKING_CLEANUP_INTERVAL || '86400000') // 24 hours
@@ -132,7 +151,7 @@ export const DEFAULT_AUTH_MIDDLEWARE_CONFIG: AuthMiddlewareConfigInterface = {
 
   // Session Management Configuration
   session: {
-    enabled: process.env.ENABLE_SESSION_MANAGEMENT === 'true',
+    enabled: resolveEnabled('ENABLE_SESSION_MANAGEMENT', true),
     expirationTime: parseInt(process.env.SESSION_EXPIRATION_TIME || '28800000'), // 8 hours
     extendOnActivity: process.env.SESSION_EXTEND_ON_ACTIVITY !== 'false',
     maxConcurrentSessions: parseInt(process.env.MAX_CONCURRENT_SESSIONS || '3'),
@@ -141,7 +160,7 @@ export const DEFAULT_AUTH_MIDDLEWARE_CONFIG: AuthMiddlewareConfigInterface = {
 
   // Rate Limiting Configuration
   rateLimiting: {
-    enabled: process.env.ENABLE_RATE_LIMITING === 'true',
+    enabled: resolveEnabled('ENABLE_RATE_LIMITING', true),
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000'), // 1 minute
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
     skipSuccessfulRequests: process.env.RATE_LIMIT_SKIP_SUCCESSFUL !== 'false',
@@ -260,6 +279,10 @@ export class AuthMiddlewareConfig {
       if (!this.config.apiKey.secret || this.config.apiKey.secret === 'api-key-secret-change-in-production') {
         errors.push('API key secret should be changed from default value');
       }
+    }
+
+    if (this.config.deviceTracking.deviceFingerprintSalt === 'device-fingerprint-salt') {
+      errors.push('Device fingerprint salt should be changed from default value');
     }
 
     // Validate brute force protection configuration

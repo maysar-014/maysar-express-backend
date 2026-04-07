@@ -9,7 +9,9 @@ const mockOAuth2Client = {
   generateCodeVerifierAsync: jest.fn(),
   getToken: jest.fn(),
   setCredentials: jest.fn(),
-  verifyIdToken: jest.fn()
+  verifyIdToken: jest.fn(),
+  refreshAccessToken: jest.fn(),
+  revokeToken: jest.fn()
 };
 
 var mockJwtSign: jest.Mock;
@@ -78,8 +80,10 @@ jest.mock('../../config/google-oauth.config', () => ({
 describe('GoogleOAuthService', () => {
   let googleOAuthService: GoogleOAuthService;
   let mockUserServiceClient: any;
+  const previousJwtSecret = process.env.JWT_SECRET;
 
   beforeEach(() => {
+    process.env.JWT_SECRET = 'test-jwt-secret-for-google-oauth-service';
     mockUserServiceClient = {
       findUserByEmail: jest.fn(),
       createUser: jest.fn(),
@@ -121,6 +125,15 @@ describe('GoogleOAuthService', () => {
     jest.clearAllMocks();
   });
 
+  afterAll(() => {
+    if (previousJwtSecret === undefined) {
+      delete process.env.JWT_SECRET;
+      return;
+    }
+
+    process.env.JWT_SECRET = previousJwtSecret;
+  });
+
   describe('getAuthUrl', () => {
     it('should return a valid Google OAuth URL with required parameters', () => {
       const authUrl = googleOAuthService.getAuthUrl();
@@ -157,6 +170,53 @@ describe('GoogleOAuthService', () => {
     });
   });
 
+  describe('refreshAccessToken', () => {
+    it('should refresh access token and keep the original refresh token when none is returned', async () => {
+      mockOAuth2Client.refreshAccessToken.mockResolvedValue({
+        credentials: {
+          access_token: 'new-access-token',
+          expiry_date: Date.now() + 7200_000
+        }
+      });
+
+      const result = await googleOAuthService.refreshAccessToken('refresh-token');
+
+      expect(mockOAuth2Client.setCredentials).toHaveBeenCalledWith({
+        refresh_token: 'refresh-token'
+      });
+      expect(mockOAuth2Client.refreshAccessToken).toHaveBeenCalled();
+      expect(result.accessToken).toBe('new-access-token');
+      expect(result.refreshToken).toBe('refresh-token');
+      expect(result.expiresIn).toBeGreaterThan(0);
+    });
+
+    it('should return a rotated refresh token when Google provides one', async () => {
+      mockOAuth2Client.refreshAccessToken.mockResolvedValue({
+        credentials: {
+          access_token: 'rotated-access-token',
+          refresh_token: 'rotated-refresh-token',
+          expiry_date: Date.now() + 7200_000
+        }
+      });
+
+      const result = await googleOAuthService.refreshAccessToken('refresh-token');
+
+      expect(result.accessToken).toBe('rotated-access-token');
+      expect(result.refreshToken).toBe('rotated-refresh-token');
+      expect(result.expiresIn).toBeGreaterThan(0);
+    });
+  });
+
+  describe('revokeToken', () => {
+    it('should revoke the provided token through Google OAuth client', async () => {
+      mockOAuth2Client.revokeToken.mockResolvedValue(undefined);
+
+      await googleOAuthService.revokeToken('access-token');
+
+      expect(mockOAuth2Client.revokeToken).toHaveBeenCalledWith('access-token');
+    });
+  });
+
   describe('handleCallback', () => {
     it('should handle valid authorization code and create new user', async () => {
       const mockCode = 'valid_auth_code';
@@ -189,7 +249,6 @@ describe('GoogleOAuthService', () => {
       });
       expect(mockUserServiceClient.createUser).toHaveBeenCalledWith({
         email: 'test@example.com',
-        password: expect.any(String),
         role: UserRole.BUYER,
         firstName: 'Test',
         lastName: 'User'
@@ -282,7 +341,6 @@ describe('GoogleOAuthService', () => {
       });
       expect(mockUserServiceClient.createUser).toHaveBeenCalledWith({
         email: 'test@example.com',
-        password: expect.any(String),
         role: UserRole.SELLER,
         firstName: 'Test',
         lastName: 'User'
@@ -391,7 +449,6 @@ describe('GoogleOAuthService', () => {
 
       expect(mockUserServiceClient.createUser).toHaveBeenCalledWith({
         email: 'test@example.com',
-        password: expect.any(String),
         role: UserRole.BUYER,
         firstName: 'Test',
         lastName: 'User'
@@ -429,7 +486,6 @@ describe('GoogleOAuthService', () => {
 
       expect(mockUserServiceClient.createUser).toHaveBeenCalledWith({
         email: 'test@example.com',
-        password: expect.any(String),
         role: UserRole.SELLER,
         firstName: 'Test',
         lastName: 'User'
@@ -437,7 +493,7 @@ describe('GoogleOAuthService', () => {
       expect(result.role).toBe(UserRole.SELLER);
     });
 
-    it('should generate secure random password for OAuth users', async () => {
+    it('should create OAuth users without storing a password', async () => {
       const mockProfile = {
         id: '123456789',
         email: 'test@example.com',
@@ -467,17 +523,12 @@ describe('GoogleOAuthService', () => {
       expect(mockUserServiceClient.createUser).toHaveBeenCalledWith(
         expect.objectContaining({
           email: 'test@example.com',
-          password: expect.any(String),
           role: UserRole.BUYER,
           firstName: 'Test',
           lastName: 'User'
         })
       );
-
-      const callArgs = mockUserServiceClient.createUser.mock.calls[0][0];
-      expect(callArgs.password).toBeDefined();
-      expect(callArgs.password.length).toBe(16);
-      expect(typeof callArgs.password).toBe('string');
+      expect(mockUserServiceClient.createUser.mock.calls[0][0]).not.toHaveProperty('password');
     });
   });
 

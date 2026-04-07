@@ -34,7 +34,7 @@ export const securityConfig = {
 
   // JWT Security
   jwt: {
-    algorithm: 'HS256',
+    algorithm: (process.env.JWT_ALGORITHM as 'HS256' | 'RS256' | 'ES256') || 'HS256',
     issuer: process.env.JWT_ISSUER || 'maysar-auth-service',
     audience: process.env.JWT_AUDIENCE || 'maysar-platform',
     clockTolerance: 30, // seconds

@@ -167,6 +167,33 @@ describe('AuthenticationMiddleware', () => {
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
+
+    it('should return 401 when blacklist validation is unavailable', async () => {
+      const token = 'blacklist-check-failure-token';
+
+      mockRequest.headers = {
+        authorization: `Bearer ${token}`
+      };
+
+      mockAuthServiceClient.checkTokenBlacklist.mockRejectedValue(new Error('Redis down'));
+
+      const authenticateMiddleware = new AuthenticationMiddleware({
+        enableTokenBlacklisting: true
+      }).authenticate();
+
+      await authenticateMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        success: false,
+        error: {
+          code: 'TOKEN_BLACKLIST_CHECK_FAILED',
+          message: 'Authentication token validation is temporarily unavailable'
+        }
+      });
+      expect(mockAuthServiceClient.validateToken).not.toHaveBeenCalled();
+      expect(mockNext).not.toHaveBeenCalled();
+    });
   });
 
   describe('optionalAuthenticate()', () => {

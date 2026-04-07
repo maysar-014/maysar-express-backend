@@ -62,16 +62,20 @@ jest.mock('google-auth-library', () => ({
     generateAuthUrl: jest.fn().mockReturnValue('https://accounts.google.com/o/oauth2/auth?client_id=test_client_id&redirect_uri=http%3A%2F%2Flocalhost%3A3001%2Fapi%2Fauth%2Foauth%2Fcallback&scope=openid+profile+email&response_type=code&access_type=offline&prompt=consent'),
     getToken: jest.fn(),
     setCredentials: jest.fn(),
-    verifyIdToken: jest.fn()
+    verifyIdToken: jest.fn(),
+    refreshAccessToken: jest.fn(),
+    revokeToken: jest.fn()
   }))
 }));
 
 describe('GoogleOAuthService - Unit Tests', () => {
   let googleOAuthService: GoogleOAuthService;
+  const previousJwtSecret = process.env.JWT_SECRET;
 
   beforeEach(() => {
     // Clear all mocks
     jest.clearAllMocks();
+    process.env.JWT_SECRET = 'test-jwt-secret-for-google-oauth-service-unit';
 
     // Create service instance
     googleOAuthService = new GoogleOAuthService();
@@ -84,6 +88,15 @@ describe('GoogleOAuthService - Unit Tests', () => {
     mockUserServiceClient.findUserByEmail.mockReset();
     mockUserServiceClient.createUser.mockReset();
     mockUserServiceClient.updateUser.mockReset();
+  });
+
+  afterAll(() => {
+    if (previousJwtSecret === undefined) {
+      delete process.env.JWT_SECRET;
+      return;
+    }
+
+    process.env.JWT_SECRET = previousJwtSecret;
   });
 
   describe('getAuthUrl', () => {
@@ -131,8 +144,7 @@ describe('GoogleOAuthService - Unit Tests', () => {
         email: 'test@example.com',
         firstName: 'Test',
         lastName: 'User',
-        role: UserRole.BUYER,
-        password: expect.any(String)
+        role: UserRole.BUYER
       });
 
       expect(result).toBeInstanceOf(UserEntity);
@@ -162,8 +174,7 @@ describe('GoogleOAuthService - Unit Tests', () => {
         email: 'test@example.com',
         firstName: 'Test',
         lastName: 'User',
-        role: UserRole.SELLER,
-        password: expect.any(String)
+        role: UserRole.SELLER
       });
 
       expect(result.role).toBe(UserRole.SELLER);
@@ -189,7 +200,7 @@ describe('GoogleOAuthService - Unit Tests', () => {
 
       expect(mockUserServiceClient.createUser).toHaveBeenCalledWith(
         expect.objectContaining({
-          password: expect.stringMatching(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{16}$/)
+          role: UserRole.BUYER
         })
       );
     });

@@ -264,13 +264,6 @@ export class AuthenticateUserUseCase {
       return await user.passwordHash.verifyPassword(_password);
     }
 
-    const bypass =
-      process.env.AUTH_BYPASS_PASSWORD === 'true' ||
-      process.env.NODE_ENV !== 'production';
-    if (bypass) {
-      return true;
-    }
-
     throw new Error('Password verification is not configured. Provide a real credential validation flow.');
   }
 
@@ -304,16 +297,23 @@ export class AuthenticateUserUseCase {
       iat: Math.floor(Date.now() / 1000)
     };
 
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw new Error('JWT_SECRET is required to issue tokens.');
-    }
-
     const issuer = process.env.JWT_ISSUER || 'maysar-auth-service';
     const audience = process.env.JWT_AUDIENCE;
+    const algorithm = (process.env.JWT_ALGORITHM || 'HS256') as jwt.Algorithm;
+    const usesAsymmetricSigning = algorithm.startsWith('RS') || algorithm.startsWith('ES');
+    const jwtSecret = usesAsymmetricSigning ? process.env.JWT_PRIVATE_KEY : process.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      throw new Error(
+        usesAsymmetricSigning
+          ? 'JWT_PRIVATE_KEY is required when JWT_ALGORITHM uses asymmetric signing.'
+          : 'JWT_SECRET is required to issue tokens.'
+      );
+    }
 
     const accessToken = jwt.sign(payload, jwtSecret, {
       expiresIn: '15m',
+      algorithm,
       issuer,
       ...(audience ? { audience } : {})
     });
@@ -326,6 +326,7 @@ export class AuthenticateUserUseCase {
       jwtSecret,
       {
         expiresIn: '7d',
+        algorithm,
         issuer,
         ...(audience ? { audience } : {})
       }
