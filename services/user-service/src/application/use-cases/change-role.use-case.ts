@@ -10,6 +10,7 @@ export interface ChangeRoleInput {
   userId: string;
   newRole: string;
   changedBy: string;
+  changedByRoles?: string[];
   promotionReason?: string | undefined;
 }
 
@@ -38,9 +39,16 @@ export class ChangeRoleUseCase {
       }
 
       // Only admins can change roles
-      const admin = await this.userRepository.findById(input.changedBy);
-      if (admin?.role !== 'system') {
-        return { success: false, message: 'Only administrators can change user roles' };
+      const requestingRoles = (input.changedByRoles || [])
+        .map((role) => String(role).trim().toLowerCase())
+        .filter(Boolean);
+      const hasPrivilegedRole = requestingRoles.some((role) => role === 'admin' || role === 'system');
+
+      if (!hasPrivilegedRole) {
+        const admin = await this.userRepository.findById(input.changedBy);
+        if (admin?.role !== 'system') {
+          return { success: false, message: 'Only administrators can change user roles' };
+        }
       }
 
       // Validate role

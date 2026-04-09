@@ -7,6 +7,7 @@ export namespace ChangeRoleDTO {
   export interface Request {
     newRole: string;
     changedBy: string;
+    changedByRoles?: string[];
     promotionReason?: string;
   }
 

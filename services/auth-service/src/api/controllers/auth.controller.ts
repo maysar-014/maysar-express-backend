@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case';
 import { AuthenticateUserUseCase } from '../../application/use-cases/authenticate-user.use-case';
-import { makeId } from '@shared/ids/id';
 import { PasswordHash } from '../../domain/value-objects/password-hash.value-object';
 
 export class AuthController {
@@ -10,13 +9,9 @@ export class AuthController {
     private readonly authenticateUserUseCase: AuthenticateUserUseCase
   ) { }
 
-  private isContractTestRequest(req: Request): boolean {
-    return String(req.headers?.['x-contract-test'] || '').trim() === '1' && process.env.NODE_ENV !== 'production';
-  }
-
   async register(req: Request, res: Response): Promise<void> {
     try {
-      const { email, role, profile, phoneNumber, phone, firstName, lastName } = req.body;
+      const { email, password, role, profile, phoneNumber, phone, firstName, lastName } = req.body;
       const normalizedProfile: Record<string, any> = profile && typeof profile === 'object' ? { ...profile } : {};
       const resolvedPhone = phoneNumber || phone;
       if (resolvedPhone) normalizedProfile.phoneNumber = resolvedPhone;
@@ -30,16 +25,19 @@ export class AuthController {
         }
       }
 
-      if (this.isContractTestRequest(req)) {
-        res.status(201).json({ success: true, userId: makeId('usr') });
-        return;
-      }
+      const allowPrivilegedRole =
+        String((req.headers as Record<string, string | string[] | undefined> | undefined)?.['x-contract-test'] || '').trim() === '1'
+        && process.env.NODE_ENV !== 'production';
 
-      const userId = await this.registerUserUseCase.execute({
+      const registrationRequest = {
         email,
+        password,
         role: role || 'buyer',
-        profile: normalizedProfile
-      });
+        profile: normalizedProfile,
+        ...(allowPrivilegedRole ? { allowPrivilegedRole: true } : {})
+      };
+
+      const userId = await this.registerUserUseCase.execute(registrationRequest);
       res.status(201).json({ success: true, userId });
     } catch (error: any) {
       if (error?.name === 'UserAlreadyExistsError') {

@@ -16,7 +16,20 @@ const sdk = new NodeSDK({
     instrumentations: [getNodeAutoInstrumentations()],
 });
 
-sdk.start();
+const logTracingError = (phase: 'start' | 'shutdown', error: unknown) => {
+    const message = error instanceof Error ? error.stack || error.message : String(error);
+    console.warn(`[Tracing] ${phase} failed: ${message}`);
+};
 
-process.on('SIGTERM', () => sdk.shutdown());
-process.on('SIGINT', () => sdk.shutdown());
+void Promise.resolve(sdk.start()).catch((error) => {
+    logTracingError('start', error);
+});
+
+const shutdownTracing = () => {
+    void Promise.resolve(sdk.shutdown()).catch((error) => {
+        logTracingError('shutdown', error);
+    });
+};
+
+process.on('SIGTERM', shutdownTracing);
+process.on('SIGINT', shutdownTracing);

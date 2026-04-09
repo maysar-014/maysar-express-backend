@@ -36,6 +36,7 @@ describe('AuthController', () => {
     const req = createRequest({
       body: {
         email: 'new@example.com',
+        password: 'SecurePassword123!',
         role: 'buyer',
         profile: { name: 'New User' }
       }
@@ -46,33 +47,12 @@ describe('AuthController', () => {
 
     expect(registerUserUseCase.execute).toHaveBeenCalledWith({
       email: 'new@example.com',
+      password: 'SecurePassword123!',
       role: 'buyer',
       profile: { name: 'New User', firstName: 'New', lastName: 'User' }
     });
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith({ success: true, userId: 'new-user-id' });
-  });
-
-  it('register short-circuits contract-test requests', async () => {
-    const controller = new AuthController(registerUserUseCase as any, authenticateUserUseCase as any);
-    const req = createRequest({
-      headers: { 'x-contract-test': '1' } as any,
-      body: {
-        email: 'new@example.com',
-        role: 'buyer',
-        profile: { name: 'New User' }
-      }
-    });
-    const res = createResponse();
-
-    await controller.register(req, res);
-
-    expect(registerUserUseCase.execute).not.toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith({
-      success: true,
-      userId: expect.stringMatching(/^usr_[0-9A-HJKMNP-TV-Z]{26}$/)
-    });
   });
 
   it('register maps thrown errors to 400 responses', async () => {

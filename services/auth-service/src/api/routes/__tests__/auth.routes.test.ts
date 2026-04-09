@@ -75,6 +75,7 @@ describe('Auth Routes Integration', () => {
             expect(response.body).toEqual({ success: true, userId: 'new-user-id' });
             expect(mockRegisterUseCase.execute).toHaveBeenCalledWith({
                 email: registerData.email,
+                password: registerData.password,
                 role: registerData.role,
                 profile: {
                     phoneNumber: registerData.phoneNumber,

@@ -4,11 +4,14 @@ import { eventBus, EventEnvelope } from '@shared/events/eventBus';
 import { v4 as uuidv4 } from 'uuid';
 import { makeId } from '@shared/ids/id';
 import { generatePublicUserCode } from '@shared/ids/public-codes';
+import { PasswordHash } from '../../domain/value-objects/password-hash.value-object';
 
 export interface RegisterUserRequest {
     email: string;
+    password: string;
     role?: string;
     profile?: any;
+    allowPrivilegedRole?: boolean;
 }
 
 export class RegisterUserUseCase {
@@ -24,9 +27,13 @@ export class RegisterUserUseCase {
             throw err;
         }
 
-        const primaryRole = 'buyer';
         const requestedRole =
             typeof request.role === 'string' ? request.role.trim().toLowerCase() : '';
+        const allowPrivilegedRole = request.allowPrivilegedRole === true;
+        const primaryRole =
+            allowPrivilegedRole && requestedRole === 'system'
+                ? 'system'
+                : 'buyer';
         const additionalRoles =
             requestedRole && requestedRole !== primaryRole ? [requestedRole] : [];
 
@@ -47,6 +54,8 @@ export class RegisterUserUseCase {
             status: 'PENDING_VERIFICATION',
             profile: normalizedProfile
         });
+
+        user.changePassword(await PasswordHash.fromPlainPassword(request.password));
 
         await this.userRepository.save(user);
 

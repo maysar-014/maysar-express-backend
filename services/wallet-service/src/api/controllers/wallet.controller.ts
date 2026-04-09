@@ -260,7 +260,18 @@ export class WalletController {
                 limit: typeof source.limit === 'number' ? source.limit : 20,
                 page: typeof source.page === 'number' ? source.page : 1
             });
-            res.status(200).json(result);
+            const transactions = Array.isArray(result.transactions)
+                ? result.transactions.map((transaction: any) => (
+                    typeof transaction?.toObject === 'function'
+                        ? transaction.toObject()
+                        : transaction
+                ))
+                : [];
+
+            res.status(200).json({
+                ...result,
+                transactions
+            });
         } catch (error: unknown) {
             const message = this.getErrorMessage(error);
             res.status(this.mapWalletErrorStatus(message)).json({ success: false, error: message });

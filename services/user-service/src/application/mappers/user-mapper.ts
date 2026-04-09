@@ -106,6 +106,7 @@ export class UserMapper {
       publicCode: userData.publicCode ?? undefined,
       email: Email.create(userData.email),
       phoneNumber: PhoneNumber.create(userData.phoneNumber || ''),
+      passwordHash: userData.passwordHash ?? undefined,
       firstName: userData.firstName || '',
       lastName: userData.lastName || '',
       dateOfBirth: userData.dateOfBirth,
@@ -125,7 +126,7 @@ export class UserMapper {
    * Map User entities to database format
    */
   static toPersistence(user: User): any {
-    return {
+    const data: Record<string, any> = {
       id: user.id,
       publicCode: user.publicCode,
       email: user.email.value,
@@ -146,6 +147,10 @@ export class UserMapper {
       lockoutUntil: user.metadata.accountLockedUntil,
       lastLoginAt: user.lastLoginAt
     };
+    if (user.passwordHash !== undefined) {
+      data.passwordHash = user.passwordHash;
+    }
+    return data;
   }
 
   /**

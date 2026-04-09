@@ -4,6 +4,7 @@ import { sagaEventHandler } from '../sagas/saga-event-handler';
 import { logger } from '../../infrastructure/services/logger.service';
 import { EmailService } from '../../infrastructure/services/email.service';
 import { NotificationServiceClient } from '../sagas/service-clients';
+import { PasswordHash } from '../../domain/value-objects/password-hash.value-object';
 
 export interface ChangePasswordInput {
   userId: string;
@@ -48,7 +49,8 @@ export class ChangePasswordUseCase {
       }
 
       // Update password
-      await this.userRepository.updatePassword(input.userId, input.newPassword);
+      const passwordHash = await PasswordHash.fromPlainPassword(input.newPassword);
+      await this.userRepository.updatePassword(input.userId, passwordHash.toString());
 
       // Publish password changed event to trigger saga
       const reason = input.reason || (isOwner ? 'user_initiated' : 'admin_reset');

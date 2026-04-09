@@ -18,6 +18,7 @@ export interface TraceContext {
 export class TracingService {
   private sdk: NodeSDK;
   private tracer = trace.getTracer('maysar-platform');
+  private logger = createLogger('TracingService', 'shared');
 
   constructor(serviceName: string) {
     this.sdk = new NodeSDK({
@@ -34,13 +35,37 @@ export class TracingService {
   }
 
   start(): void {
-    const logger = createLogger('TracingService', 'shared');
-    this.sdk.start();
-    logger.info(`Tracing initialized for ${this.sdk['_resource'].attributes[SemanticResourceAttributes.SERVICE_NAME]}`);
+    const serviceName = this.sdk['_resource'].attributes[SemanticResourceAttributes.SERVICE_NAME];
+
+    try {
+      const startResult = this.sdk.start();
+      void Promise.resolve(startResult).catch((error) => {
+        this.logger.error('Tracing start failed', {
+          error: error instanceof Error ? error.message : String(error)
+        });
+      });
+      this.logger.info(`Tracing initialized for ${serviceName}`);
+    } catch (error) {
+      this.logger.error('Tracing start failed', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
   }
 
   stop(): Promise<void> {
-    return this.sdk.shutdown();
+    try {
+      const shutdownResult = this.sdk.shutdown();
+      return Promise.resolve(shutdownResult).catch((error) => {
+        this.logger.error('Tracing shutdown failed', {
+          error: error instanceof Error ? error.message : String(error)
+        });
+      });
+    } catch (error) {
+      this.logger.error('Tracing shutdown failed', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return Promise.resolve();
+    }
   }
 
   createSpan(name: string, parentContext?: TraceContext) {

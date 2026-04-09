@@ -27,6 +27,7 @@ export class ChangeRoleController {
         userId: id,
         newRole: requestBody.newRole,
         changedBy: requestBody.changedBy,
+        changedByRoles: requestBody.changedByRoles,
         promotionReason: requestBody.promotionReason
       };
 

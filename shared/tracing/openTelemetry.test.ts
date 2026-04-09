@@ -1,6 +1,7 @@
 const sdkStart = jest.fn();
 const sdkShutdown = jest.fn().mockResolvedValue(undefined);
 const loggerInfo = jest.fn();
+const loggerError = jest.fn();
 const spanSetStatus = jest.fn();
 const spanRecordException = jest.fn();
 const spanEnd = jest.fn();
@@ -72,7 +73,7 @@ jest.mock('uuid', () => ({
 jest.mock('../logger/logger', () => ({
   createLogger: jest.fn(() => ({
     info: loggerInfo,
-    error: jest.fn()
+    error: loggerError
   }))
 }));
 
@@ -107,12 +108,37 @@ describe('TracingService', () => {
     expect(loggerInfo).toHaveBeenCalledWith(expect.stringContaining('Tracing initialized for community-service'));
   });
 
+  it('swallows sdk start rejection and logs the failure', async () => {
+    sdkStart.mockRejectedValueOnce(new Error('start failed'));
+    const service = new TracingService('community-service');
+
+    service.start();
+    await Promise.resolve();
+
+    expect(loggerError).toHaveBeenCalledWith(
+      'Tracing start failed',
+      expect.objectContaining({ error: 'start failed' })
+    );
+  });
+
   it('stops sdk via shutdown', async () => {
     const service = new TracingService('order-service');
 
     await service.stop();
 
     expect(sdkShutdown).toHaveBeenCalledTimes(1);
+  });
+
+  it('swallows sdk shutdown rejection and resolves cleanly', async () => {
+    sdkShutdown.mockRejectedValueOnce(new Error('shutdown failed'));
+    const service = new TracingService('order-service');
+
+    await expect(service.stop()).resolves.toBeUndefined();
+
+    expect(loggerError).toHaveBeenCalledWith(
+      'Tracing shutdown failed',
+      expect.objectContaining({ error: 'shutdown failed' })
+    );
   });
 
   it('creates span and correlation metadata without parent context', () => {

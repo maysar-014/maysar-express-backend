@@ -1,10 +1,17 @@
 
 import { z } from 'zod';
-import { zodId } from '@shared/validation/id';
+import { isSystemId, zodId } from '@shared/validation/id';
+
+const MAYSAR_ORDER_ID_PATTERN = /^MSR-ORD-\d{8}-\d{6}-[A-F0-9]{4}$/;
+
+export const orderIdSchema = z.string().refine(
+    (value) => isSystemId(value) || MAYSAR_ORDER_ID_PATTERN.test(value),
+    { message: 'Invalid ID format' }
+);
 
 export const createPaymentSchema = z.object({
     body: z.object({
-        orderId: zodId(),
+        orderId: orderIdSchema,
         userId: zodId().optional(),
         amount: z.number().positive(),
         currency: z.string().length(3).default('TZS'),

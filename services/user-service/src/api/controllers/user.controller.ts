@@ -544,7 +544,8 @@ export class UserController {
       const result = await this.changeRoleUseCase.execute({
         userId: id,
         newRole: req.body.newRole || (this.isContractTestRequest(req) ? this.getAlternateContractTestRole(currentUser?.role as string | undefined) : undefined),
-        changedBy: this.getRequestingUserId(req) as string
+        changedBy: this.getRequestingUserId(req) as string,
+        changedByRoles: this.getRequestingRoles(req)
       });
       if (this.isContractTestRequest(req) && !result.success && result.message?.toLowerCase().includes('already has this role')) {
         const latestUser = await this.getContractTestUser(req, id);

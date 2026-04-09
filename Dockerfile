@@ -9,11 +9,22 @@ WORKDIR /app
 # Install and cache dependencies
 FROM base AS deps
 RUN apk add --no-cache python3 make g++
-RUN npm install -g npm@11.11.0
+# Reuse the npm cache across builds and make registry fetches more resilient.
+ENV npm_config_audit=false \
+    npm_config_fund=false \
+    npm_config_progress=false \
+    npm_config_fetch_retries=5 \
+    npm_config_fetch_retry_factor=2 \
+    npm_config_fetch_retry_mintimeout=20000 \
+    npm_config_fetch_retry_maxtimeout=120000 \
+    npm_config_cache=/root/.npm
+RUN --mount=type=cache,target=/root/.npm,sharing=locked npm install -g npm@11.11.0
 COPY package*.json ./
 COPY scripts ./scripts
 COPY prisma ./prisma
-RUN npm ci
+# Cypress downloads its browser binary during install, which is unnecessary for
+# the backend container and can fail in restricted build environments.
+RUN --mount=type=cache,target=/root/.npm,sharing=locked CYPRESS_INSTALL_BINARY=0 npm ci --prefer-offline --no-audit --no-fund
 
 # Build application
 FROM deps AS builder

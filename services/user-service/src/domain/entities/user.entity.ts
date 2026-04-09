@@ -16,6 +16,7 @@ export class User implements Entity {
   public readonly publicCode?: string | undefined;
   public readonly email: Email;
   public readonly phoneNumber: PhoneNumber;
+  public readonly passwordHash?: string;
   public readonly firstName: string;
   public readonly lastName: string;
   public readonly dateOfBirth?: Date | undefined;
@@ -46,6 +47,7 @@ export class User implements Entity {
     publicCode?: string | undefined;
     email: Email;
     phoneNumber: PhoneNumber;
+    passwordHash?: string;
     firstName: string;
     lastName: string;
     dateOfBirth?: Date | undefined;
@@ -75,6 +77,7 @@ export class User implements Entity {
     this.publicCode = props.publicCode;
     this.email = props.email;
     this.phoneNumber = props.phoneNumber;
+    this.passwordHash = props.passwordHash;
     this.firstName = props.firstName;
     this.lastName = props.lastName;
     this.dateOfBirth = props.dateOfBirth;
@@ -109,6 +112,7 @@ export class User implements Entity {
     publicCode?: string;
     email: Email;
     phoneNumber: PhoneNumber;
+    passwordHash?: string;
     firstName: string;
     lastName: string;
     dateOfBirth?: Date;
@@ -132,6 +136,7 @@ export class User implements Entity {
       publicCode: props.publicCode,
       email: props.email,
       phoneNumber: props.phoneNumber,
+      passwordHash: props.passwordHash,
       firstName: props.firstName,
       lastName: props.lastName,
       dateOfBirth: props.dateOfBirth,

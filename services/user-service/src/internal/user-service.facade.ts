@@ -56,10 +56,13 @@ const normalizeDate = (value?: string | Date | null): Date | null => {
   return value instanceof Date ? value : new Date(value);
 };
 
-const mapUserForAuth = (user: any) => {
+const mapUserForAuth = (user: any, options?: { includePasswordHash?: boolean }) => {
   const dto = UserMapper.toResponseDto(user);
   return {
     ...dto,
+    ...(options?.includePasswordHash && typeof user.passwordHash === 'string' && user.passwordHash.length > 0
+      ? { passwordHash: user.passwordHash }
+      : {}),
     isEmailVerified: dto.emailVerified,
     isPhoneVerified: dto.phoneVerified,
     failedLoginAttempts: dto.metadata?.loginAttempts ?? 0,
@@ -72,17 +75,17 @@ const mapUserForAuth = (user: any) => {
 
 export async function findUserById(userId: string): Promise<any | null> {
   const user = await context.userRepository.findById(userId);
-  return user ? mapUserForAuth(user) : null;
+  return user ? mapUserForAuth(user, { includePasswordHash: true }) : null;
 }
 
 export async function findUserByEmail(email: string): Promise<any | null> {
   const user = await context.userRepository.findByEmail(email);
-  return user ? mapUserForAuth(user) : null;
+  return user ? mapUserForAuth(user, { includePasswordHash: true }) : null;
 }
 
 export async function createUser(userData: {
   email: string;
-  password?: string;
+  passwordHash?: string;
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
@@ -97,7 +100,13 @@ export async function createUser(userData: {
     dateOfBirth: userData.dateOfBirth ? new Date(userData.dateOfBirth) : undefined,
     role: userData.role as any
   } as any);
-  return mapUserForAuth(created);
+
+  if (typeof userData.passwordHash === 'string' && userData.passwordHash.length > 0) {
+    await context.userRepository.updatePassword(created.id, userData.passwordHash);
+  }
+
+  const persisted = await context.userRepository.findById(created.id);
+  return mapUserForAuth(persisted ?? created);
 }
 
 export async function updateUserAuthState(

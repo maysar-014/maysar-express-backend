@@ -10,7 +10,7 @@ import { AuthenticateUserUseCase } from './src/application/use-cases/authenticat
 import { createAuthRoutes } from './src/api/routes/auth.routes';
 import { adminRoutes } from './src/api/routes/admin.routes';
 import { authMiddlewareRoutes } from './src/api/routes/auth-middleware.routes';
-import { googleOAuthRoutes } from './src/api/routes/google-oauth.routes';
+import { createGoogleOAuthRoutes } from './src/api/routes/google-oauth.routes';
 import { healthRoutes as authHealthRoutes } from './src/api/routes/health.routes';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { UserServiceRepository } from './src/infrastructure/repositories/user-service.repository';
@@ -109,7 +109,7 @@ export const AuthModule: Module = {
             // Additional auth route groups (previously unmounted)
             mainRouter.use('/admin', adminRoutes);
             mainRouter.use('/', authMiddlewareRoutes);
-            mainRouter.use('/oauth', googleOAuthRoutes);
+            mainRouter.use('/oauth', createGoogleOAuthRoutes());
             mainRouter.use('/health', authHealthRoutes);
             mainRouter.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(authPrisma));
 

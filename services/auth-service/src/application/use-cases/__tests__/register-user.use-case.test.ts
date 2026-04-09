@@ -25,6 +25,7 @@ describe('RegisterUserUseCase', () => {
 
     const userId = await useCase.execute({
       email: 'new@example.com',
+      password: 'SecurePassword123!',
       role: 'seller',
       profile: { name: 'New User' }
     });
@@ -34,6 +35,7 @@ describe('RegisterUserUseCase', () => {
 
     const savedUser = mockUserRepository.save.mock.calls[0][0];
     expect(savedUser.role).toBe('buyer');
+    expect(savedUser.passwordHash).toBeDefined();
     expect(savedUser.profile).toEqual(
       expect.objectContaining({
         name: 'New User',
@@ -56,16 +58,56 @@ describe('RegisterUserUseCase', () => {
     );
   });
 
+  it('registers a privileged system role when contract privileges are allowed', async () => {
+    mockUserRepository.findByEmail.mockResolvedValue(null);
+
+    const userId = await useCase.execute({
+      email: 'system@example.com',
+      password: 'SecurePassword123!',
+      role: 'system',
+      allowPrivilegedRole: true,
+      profile: { name: 'System User' }
+    });
+
+    expect(userId).toBeDefined();
+    expect(mockUserRepository.save).toHaveBeenCalledTimes(1);
+
+    const savedUser = mockUserRepository.save.mock.calls[0][0];
+    expect(savedUser.role).toBe('system');
+    expect(savedUser.passwordHash).toBeDefined();
+    expect(savedUser.profile).toEqual(
+      expect.objectContaining({
+        name: 'System User',
+        roles: ['system']
+      })
+    );
+    expect(savedUser.profile.requestedRole).toBeUndefined();
+
+    expect(eventBus.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'UserRegistered.v1',
+        data: expect.objectContaining({
+          role: 'system',
+          profile: expect.objectContaining({
+            roles: ['system']
+          })
+        })
+      })
+    );
+  });
+
   it('registers with only buyer role when no additional role is requested', async () => {
     mockUserRepository.findByEmail.mockResolvedValue(null);
 
     await useCase.execute({
       email: 'buyer@example.com',
+      password: 'SecurePassword123!',
       profile: { name: 'Buyer User' }
     });
 
     const savedUser = mockUserRepository.save.mock.calls[0][0];
     expect(savedUser.role).toBe('buyer');
+    expect(savedUser.passwordHash).toBeDefined();
     expect(savedUser.profile).toEqual(
       expect.objectContaining({
         name: 'Buyer User',
@@ -81,6 +123,7 @@ describe('RegisterUserUseCase', () => {
     await expect(
       useCase.execute({
         email: 'new@example.com',
+        password: 'SecurePassword123!',
         role: 'seller',
         profile: { name: 'New User' }
       })

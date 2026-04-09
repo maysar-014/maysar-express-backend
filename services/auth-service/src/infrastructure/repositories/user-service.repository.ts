@@ -2,6 +2,7 @@ import { AuthUser, UserRole, UserStatus } from '../../domain/entities/user.types
 import { IUserRepository } from '../../domain/repositories';
 import { UserServiceClient } from '../clients/user-service.client';
 import { logger } from '../services/logger.service';
+import { PasswordHash } from '../../domain/value-objects/password-hash.value-object';
 import axios from 'axios';
 import { getServiceBaseUrl } from '../../../../../shared/config/service-base-url';
 
@@ -73,6 +74,7 @@ export class UserServiceRepository implements IUserRepository {
         const authUser = this.mapRegistrationUserToAuthUser(user);
         const profile = user.profile && typeof user.profile === 'object' ? user.profile : {};
         const phoneNumber = profile.phoneNumber || profile.phone || profile.mobile;
+        const passwordHash = user.passwordHash?.toString?.();
         let firstName = profile.firstName;
         let lastName = profile.lastName;
 
@@ -88,11 +90,14 @@ export class UserServiceRepository implements IUserRepository {
         if (!firstName || !lastName) {
           throw new Error('First and last name are required for registration');
         }
+        if (!passwordHash) {
+          throw new Error('Password hash is required for registration');
+        }
 
         if (typeof this.userServiceClient.createUser === 'function') {
           await this.userServiceClient.createUser({
             email: authUser.email,
-            password: 'TempPassword123!',
+            passwordHash,
             role: authUser.role,
             phoneNumber,
             firstName,
@@ -156,7 +161,10 @@ export class UserServiceRepository implements IUserRepository {
   private mapToAuthUser(userData: any): AuthUser {
     const role = this.normalizeRole(userData.role);
     const status = this.normalizeStatus(userData.status);
-    return {
+    const passwordHash = typeof userData.passwordHash === 'string' && userData.passwordHash.length > 0
+      ? new PasswordHash(userData.passwordHash)
+      : undefined;
+    const mapped: AuthUser & { passwordHash?: PasswordHash } = {
       id: userData.id,
       publicCode: userData.publicCode,
       email: String(userData.email || '').toLowerCase(),
@@ -170,8 +178,10 @@ export class UserServiceRepository implements IUserRepository {
       lockoutUntil: userData.lockoutUntil ? new Date(userData.lockoutUntil) : undefined,
       lastLoginAt: userData.lastLoginAt ? new Date(userData.lastLoginAt) : undefined,
       createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
-      updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date()
+      updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
+      ...(passwordHash ? { passwordHash } : {})
     };
+    return mapped as AuthUser;
   }
 
   private async lookupUserByEmail(email: string): Promise<any | null> {
@@ -198,7 +208,10 @@ export class UserServiceRepository implements IUserRepository {
     const role = this.normalizeRole(userData.role);
     const status = this.normalizeStatus(userData.status);
     const metadata = userData.metadata || {};
-    return {
+    const passwordHash = typeof userData.passwordHash === 'string' && userData.passwordHash.length > 0
+      ? new PasswordHash(userData.passwordHash)
+      : undefined;
+    const mapped: AuthUser & { passwordHash?: PasswordHash } = {
       id: userData.id,
       publicCode: userData.publicCode,
       email: String(userData.email || '').toLowerCase(),
@@ -212,8 +225,10 @@ export class UserServiceRepository implements IUserRepository {
       lockoutUntil: metadata.accountLockedUntil ? new Date(metadata.accountLockedUntil) : undefined,
       lastLoginAt: userData.lastLoginAt ? new Date(userData.lastLoginAt) : undefined,
       createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
-      updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date()
+      updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
+      ...(passwordHash ? { passwordHash } : {})
     };
+    return mapped as AuthUser;
   }
 
   private looksLikeRegistrationUser(user: any): boolean {

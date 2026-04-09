@@ -1058,6 +1058,7 @@ export class PrismaUserRepository implements IUserRepository {
       publicCode: userData.publicCode ?? undefined,
       email: Email.create(this.piiService.decrypt(userData.email)),
       phoneNumber: userData.phoneNumber ? PhoneNumber.create(this.piiService.decrypt(userData.phoneNumber)) : PhoneNumber.create(''),
+      passwordHash: userData.passwordHash ?? undefined,
       firstName: userData.firstName || '',
       lastName: userData.lastName || '',
       dateOfBirth: userData.dateOfBirth || undefined,
@@ -1088,10 +1089,10 @@ export class PrismaUserRepository implements IUserRepository {
    * Map domain User entity to Prisma create input
    */
     private mapToPrismaCreateData(user: User): any {
-      return {
-        id: user.id,
-        publicCode: user.publicCode ?? null,
-        email: this.piiService.encrypt(user.email.value),
+    return {
+      id: user.id,
+      publicCode: user.publicCode ?? null,
+      email: this.piiService.encrypt(user.email.value),
       phoneNumber: user.phoneNumber?.value ? this.piiService.encrypt(user.phoneNumber.value) : null,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -1112,9 +1113,9 @@ export class PrismaUserRepository implements IUserRepository {
    * Map domain User entity to Prisma update input
    */
     private mapToPrismaUpdateData(user: User): any {
-      return {
+      const data: Record<string, any> = {
         publicCode: user.publicCode ?? null,
-        email: this.piiService.encrypt(user.email.value),
+      email: this.piiService.encrypt(user.email.value),
       phoneNumber: user.phoneNumber?.value ? this.piiService.encrypt(user.phoneNumber.value) : null,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -1127,6 +1128,10 @@ export class PrismaUserRepository implements IUserRepository {
       isPhoneVerified: user.phoneVerified,
       updatedAt: new Date()
     };
+    if (user.passwordHash !== undefined) {
+      data.passwordHash = user.passwordHash;
+    }
+    return data;
   }
 
   /**

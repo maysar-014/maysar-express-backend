@@ -15,8 +15,11 @@ import { initializeEventRegistry } from '../shared/events/registry';
 
 const bootstrapLogger = createLogger('Bootstrap', 'core');
 
+console.log('[BOOTSTRAP] main.ts loaded');
+
 async function bootstrap() {
     try {
+        console.log('[BOOTSTRAP] validateEnv start');
         validateEnv();
         bootstrapLogger.info('Starting Maysar Express Backend Monolith...');
 
@@ -36,11 +39,13 @@ async function bootstrap() {
         // Create and start app
         const app = createApp();
         const port = process.env.PORT || 3000;
+        const host = process.env.HOST || '0.0.0.0';
 
-        const server = app.listen(port, () => {
-            bootstrapLogger.info(`Server running at http://localhost:${port}`);
-            bootstrapLogger.info(`Health check available at http://localhost:${port}/health`);
-            bootstrapLogger.info(`Readiness probe at http://localhost:${port}/ready`);
+        const server = app.listen(port, host, () => {
+            const baseUrl = host === '0.0.0.0' ? `http://localhost:${port}` : `http://${host}:${port}`;
+            bootstrapLogger.info(`Server running at ${baseUrl}`);
+            bootstrapLogger.info(`Health check available at ${baseUrl}/health`);
+            bootstrapLogger.info(`Readiness probe at ${baseUrl}/ready`);
         });
 
         server.on('clientError', (error: NodeJS.ErrnoException, socket: import('net').Socket) => {

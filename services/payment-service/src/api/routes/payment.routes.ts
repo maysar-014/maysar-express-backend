@@ -15,6 +15,7 @@ import { asyncHandler } from '@shared/middleware/async-handler';
 import { validateRequest } from '../middleware/validation.middleware';
 import { z } from 'zod';
 import { zodId } from '@shared/validation/id';
+import { orderIdSchema } from '../validators/payment.validator';
 import { requireWebhookIdempotencyKey, validatePesapalWebhookRequest } from './pesapal-webhook.middleware';
 
 const idempotencyMiddleware = new IdempotencyMiddleware(process.env.REDIS_URL!);
@@ -95,7 +96,7 @@ const paymentMethodMinimums: Partial<Record<z.infer<typeof paymentMethodSchema>,
 
 const createPaymentRequestSchema = {
     body: z.object({
-        orderId: zodId(),
+        orderId: orderIdSchema,
         userId: zodId().optional(),
         amount: z.number().positive(),
         currency: z.string().length(3).default('TZS'),
@@ -126,7 +127,7 @@ const paymentIdParamsSchema = z.object({
 }).strict();
 
 const paymentOrderParamsSchema = z.object({
-    orderId: zodId()
+    orderId: orderIdSchema
 }).strict();
 
 const refundPaymentRequestSchema = {

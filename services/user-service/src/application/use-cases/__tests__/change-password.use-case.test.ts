@@ -10,7 +10,7 @@ describe('ChangePasswordUseCase', () => {
     const mockEmailService: any = { sendEmail: jest.fn() };
     const mockNotificationClient: any = { notify: jest.fn() };
     const sut = new ChangePasswordUseCase(repo, mockEmailService, mockNotificationClient);
-    const out = await sut.execute({ userId: 'x', newPassword: 'newpass123', changedBy: 'u1' });
+    const out = await sut.execute({ userId: 'x', newPassword: 'NewPass123!', changedBy: 'u1' });
     expect(out.success).toBe(false);
     expect(out.message).toContain('User not found');
   });
@@ -24,7 +24,7 @@ describe('ChangePasswordUseCase', () => {
     const mockEmailService: any = { sendEmail: jest.fn().mockResolvedValue(undefined) };
     const mockNotificationClient: any = { notify: jest.fn().mockResolvedValue(undefined) };
     const sut = new ChangePasswordUseCase(repo, mockEmailService, mockNotificationClient);
-    const out = await sut.execute({ userId: 'u1', newPassword: 'newpass123', changedBy: 'u1' });
+    const out = await sut.execute({ userId: 'u1', newPassword: 'NewPass123!', changedBy: 'u1' });
     expect(out.success).toBe(true);
   });
 
@@ -38,7 +38,7 @@ describe('ChangePasswordUseCase', () => {
     const mockEmailService: any = { sendEmail: jest.fn().mockResolvedValue(undefined) };
     const mockNotificationClient: any = { notify: jest.fn().mockResolvedValue(undefined) };
     const sut = new ChangePasswordUseCase(repo, mockEmailService, mockNotificationClient);
-    const out = await sut.execute({ userId: 'u1', newPassword: 'newpass123', changedBy: 'admin' });
+    const out = await sut.execute({ userId: 'u1', newPassword: 'NewPass123!', changedBy: 'admin' });
     expect(out.success).toBe(true);
   });
 
@@ -49,7 +49,7 @@ describe('ChangePasswordUseCase', () => {
     const mockEmailService: any = { sendEmail: jest.fn().mockResolvedValue(undefined) };
     const mockNotificationClient: any = { notify: jest.fn().mockResolvedValue(undefined) };
     const sut = new ChangePasswordUseCase(repo, mockEmailService, mockNotificationClient);
-    const out = await sut.execute({ userId: 'u1', newPassword: 'newpass123', changedBy: 'other' });
+    const out = await sut.execute({ userId: 'u1', newPassword: 'NewPass123!', changedBy: 'other' });
     expect(out.success).toBe(false);
     expect(out.message).toContain('Insufficient permissions');
   });
@@ -70,7 +70,7 @@ describe('ChangePasswordUseCase', () => {
     const mockEmailService: any = { sendEmail: jest.fn() };
     const mockNotificationClient: any = { notify: jest.fn() };
     const sut = new ChangePasswordUseCase(repo, mockEmailService, mockNotificationClient);
-    const out = await sut.execute({ userId: 'u1', newPassword: 'newpass123', changedBy: 'u1' });
+    const out = await sut.execute({ userId: 'u1', newPassword: 'NewPass123!', changedBy: 'u1' });
     expect(out.success).toBe(false);
   });
 });

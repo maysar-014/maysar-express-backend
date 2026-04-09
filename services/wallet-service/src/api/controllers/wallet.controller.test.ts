@@ -73,6 +73,44 @@ describe('WalletController', () => {
     expect(notFoundRes.status).toHaveBeenCalledWith(404);
   });
 
+  it('getStatement returns plain transaction objects', async () => {
+    getStatementUseCase.execute.mockResolvedValueOnce({
+      transactions: [
+        {
+          toObject: () => ({
+            id: 'wal_tra_1',
+            amount: 5000,
+            type: 'CREDIT'
+          })
+        }
+      ],
+      totalCount: 1
+    });
+
+    const res = makeRes();
+    await controller.getStatement(
+      makeReq({
+        method: 'GET',
+        query: { limit: '10', page: '1' }
+      }),
+      res
+    );
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transactions: [
+          expect.objectContaining({
+            id: 'wal_tra_1',
+            amount: 5000,
+            type: 'CREDIT'
+          })
+        ],
+        totalCount: 1
+      })
+    );
+  });
+
   it('topUp enforces role eligibility and maps use-case role errors to 403', async () => {
     const roleMissingRes = makeRes();
     await controller.topUp(

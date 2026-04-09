@@ -16,7 +16,24 @@ export class ModuleRegistry {
         for (const module of this.modules) {
             try {
                 registryLogger.info(`Initializing ${module.name}...`);
-                await module.initialize();
+                const start = Date.now();
+                const timeoutMs = Number(process.env.MODULE_INIT_TIMEOUT_MS || 0);
+                const initPromise = module.initialize();
+
+                if (timeoutMs > 0) {
+                    await Promise.race([
+                        initPromise,
+                        new Promise((_, reject) => {
+                            setTimeout(() => {
+                                reject(new Error(`Initialization timed out after ${timeoutMs}ms`));
+                            }, timeoutMs);
+                        })
+                    ]);
+                } else {
+                    await initPromise;
+                }
+
+                registryLogger.info(`Initialized ${module.name} in ${Date.now() - start}ms.`);
             } catch (error) {
                 registryLogger.error(`Failed to initialize module ${module.name}:`, error);
                 const allowFailure =

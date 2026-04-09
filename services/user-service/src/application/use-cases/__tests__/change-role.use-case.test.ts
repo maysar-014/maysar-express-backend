@@ -29,6 +29,27 @@ describe('ChangeRoleUseCase', () => {
     expect(out.message).toContain('administrator');
   });
 
+  it('allows role change when caller roles already include admin privileges', async () => {
+    const user = UserFactory.create({ id: 'u1', role: UserRole.BUYER });
+    const repo: any = {
+      findById: jest.fn((id) => Promise.resolve(id === 'u1' ? user : null)),
+      updateRole: jest.fn().mockResolvedValue(undefined)
+    };
+    const mockEmailService: any = { sendEmail: jest.fn().mockResolvedValue(undefined) };
+    const mockNotificationClient: any = { notify: jest.fn().mockResolvedValue(undefined) };
+    const sut = new ChangeRoleUseCase(repo, makePublisher(), mockEmailService, mockNotificationClient);
+
+    const out = await sut.execute({
+      userId: 'u1',
+      newRole: 'seller',
+      changedBy: 'auth-admin-123',
+      changedByRoles: ['admin', 'system']
+    });
+
+    expect(out.success).toBe(true);
+    expect(repo.updateRole).toHaveBeenCalledWith('u1', 'seller');
+  });
+
   it('rejects invalid role', async () => {
     const user = UserFactory.create({ id: 'u1' });
     const admin = UserFactory.createAdmin({ id: 'admin' });
