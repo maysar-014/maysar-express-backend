@@ -18,13 +18,13 @@ ENV npm_config_audit=false \
     npm_config_fetch_retry_mintimeout=20000 \
     npm_config_fetch_retry_maxtimeout=120000 \
     npm_config_cache=/root/.npm
-RUN --mount=type=cache,target=/root/.npm,sharing=locked npm install -g npm@11.11.0
+RUN --mount=type=cache,id=npm-cache,target=/root/.npm,sharing=locked npm install -g npm@11.11.0
 COPY package*.json ./
 COPY scripts ./scripts
 COPY prisma ./prisma
 # Cypress downloads its browser binary during install, which is unnecessary for
 # the backend container and can fail in restricted build environments.
-RUN --mount=type=cache,target=/root/.npm,sharing=locked CYPRESS_INSTALL_BINARY=0 npm ci --prefer-offline --no-audit --no-fund
+RUN --mount=type=cache,id=npm-cache,target=/root/.npm,sharing=locked CYPRESS_INSTALL_BINARY=0 npm ci --prefer-offline --no-audit --no-fund
 
 # Build application
 FROM deps AS builder
