@@ -79,6 +79,42 @@ describe('google oauth config', () => {
     );
   });
 
+  it('rejects localhost oauth callbacks in production', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.BASE_URL = 'https://api.maysar.co.tz';
+    process.env.GOOGLE_OAUTH_CLIENT_ID = '1234567890-example.apps.googleusercontent.com';
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'super-secret-value';
+    process.env.GOOGLE_OAUTH_CALLBACK_URL = 'https://localhost/api/auth/oauth/callback';
+
+    const { validateGoogleOAuthConfig } = await loadConfigModule();
+    const validation = validateGoogleOAuthConfig();
+
+    expect(validation.isValid).toBe(false);
+    expect(validation.errors).toEqual(
+      expect.arrayContaining([
+        'GOOGLE_OAUTH_CALLBACK_URL must not use localhost in production'
+      ])
+    );
+  });
+
+  it('rejects non-https oauth callbacks in production', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.BASE_URL = 'https://api.maysar.co.tz';
+    process.env.GOOGLE_OAUTH_CLIENT_ID = '1234567890-example.apps.googleusercontent.com';
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'super-secret-value';
+    process.env.GOOGLE_OAUTH_CALLBACK_URL = 'http://api.maysar.co.tz/api/auth/oauth/callback';
+
+    const { validateGoogleOAuthConfig } = await loadConfigModule();
+    const validation = validateGoogleOAuthConfig();
+
+    expect(validation.isValid).toBe(false);
+    expect(validation.errors).toEqual(
+      expect.arrayContaining([
+        'GOOGLE_OAUTH_CALLBACK_URL must use https in production'
+      ])
+    );
+  });
+
   it('rejects legacy oauth callback paths in staging', async () => {
     process.env.NODE_ENV = 'staging';
     process.env.BASE_URL = 'https://api-staging.maysar.co.tz';

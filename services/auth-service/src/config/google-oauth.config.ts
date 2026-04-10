@@ -138,18 +138,25 @@ export function validateGoogleOAuthConfig(): { isValid: boolean; errors: string[
   if (!callbackUrl) {
     errors.push('GOOGLE_OAUTH_CALLBACK_URL must be a valid URL');
   } else {
-    if (process.env.NODE_ENV === 'staging' && LOCALHOST_HOSTNAMES.has(callbackUrl.hostname)) {
-      errors.push('GOOGLE_OAUTH_CALLBACK_URL must not use localhost in staging');
+    const isStaging = process.env.NODE_ENV === 'staging';
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    if ((isStaging || isProduction) && LOCALHOST_HOSTNAMES.has(callbackUrl.hostname)) {
+      errors.push(`GOOGLE_OAUTH_CALLBACK_URL must not use localhost in ${isProduction ? 'production' : 'staging'}`);
+    }
+
+    if (isProduction && callbackUrl.protocol !== 'https:') {
+      errors.push('GOOGLE_OAUTH_CALLBACK_URL must use https in production');
     }
 
     const callbackPath = callbackUrl.pathname.replace(/\/+$/, '') || '/';
-    if (process.env.NODE_ENV === 'staging' && !GOOGLE_OAUTH_CALLBACK_PATHS.has(callbackPath)) {
-      errors.push('GOOGLE_OAUTH_CALLBACK_URL must point to /api/auth/oauth/callback in staging');
+    if ((isStaging || isProduction) && !GOOGLE_OAUTH_CALLBACK_PATHS.has(callbackPath)) {
+      errors.push(`GOOGLE_OAUTH_CALLBACK_URL must point to /api/auth/oauth/callback in ${isProduction ? 'production' : 'staging'}`);
     }
 
     const configuredBaseUrl = parseUrl(resolveOAuthBaseUrl());
-    if (process.env.NODE_ENV === 'staging' && configuredBaseUrl && callbackUrl.origin !== configuredBaseUrl.origin) {
-      errors.push('GOOGLE_OAUTH_CALLBACK_URL must share the same origin as BASE_URL in staging');
+    if ((isStaging || isProduction) && configuredBaseUrl && callbackUrl.origin !== configuredBaseUrl.origin) {
+      errors.push(`GOOGLE_OAUTH_CALLBACK_URL must share the same origin as BASE_URL in ${isProduction ? 'production' : 'staging'}`);
     }
   }
 

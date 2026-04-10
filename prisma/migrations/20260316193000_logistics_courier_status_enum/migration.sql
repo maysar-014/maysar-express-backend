@@ -17,6 +17,9 @@ SET "status" = CASE
 END;
 
 ALTER TABLE "logistics_couriers"
+  ALTER COLUMN "status" DROP DEFAULT;
+
+ALTER TABLE "logistics_couriers"
   ALTER COLUMN "status" TYPE "Logistics_CourierStatus"
   USING ("status"::text::"Logistics_CourierStatus");
 

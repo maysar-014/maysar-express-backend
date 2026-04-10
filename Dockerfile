@@ -30,6 +30,9 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked CYPRESS_INSTALL_BINARY=0
 FROM deps AS builder
 COPY . .
 RUN npm run build
+RUN mkdir -p /tmp/railway-prisma \
+    && cp -R node_modules/prisma /tmp/railway-prisma/prisma \
+    && cp -R node_modules/@prisma/engines /tmp/railway-prisma/engines
 RUN npm prune --omit=dev && npm cache clean --force
 
 # Development stage
@@ -51,6 +54,10 @@ WORKDIR /app
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
+COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nodejs:nodejs /app/scripts/railway ./scripts/railway
+COPY --from=builder --chown=nodejs:nodejs /tmp/railway-prisma/prisma ./node_modules/prisma
+COPY --from=builder --chown=nodejs:nodejs /tmp/railway-prisma/engines ./node_modules/@prisma/engines
 
 USER nodejs
 

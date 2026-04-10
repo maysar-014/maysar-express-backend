@@ -158,5 +158,5 @@ export async function emailExists(email: string): Promise<boolean> {
 
 export async function searchUsers(query: string, limit = 50): Promise<any[]> {
   const users = await context.userRepository.search(query, limit, 0);
-  return users.map(mapUserForAuth);
+  return users.map((user) => mapUserForAuth(user));
 }

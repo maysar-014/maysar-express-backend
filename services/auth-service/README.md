@@ -79,6 +79,15 @@ npm run test:auth-service:integration
 npm run test:auth-service:coverage
 ```
 
+To smoke-test the real Google OAuth client ID, secret, and redirect URI against Google's token endpoint:
+
+```bash
+npm run google-oauth:smoke
+npm run google-oauth:smoke -- --dry-run
+```
+
+The smoke test validates the configured Google OAuth settings, prints the authorization URL, and can exchange a real callback code to verify the ID token and userinfo response without creating or updating users.
+
 ## Documentation
 
 | File | Description |

@@ -38,7 +38,7 @@ async function bootstrap() {
 
         // Create and start app
         const app = createApp();
-        const port = process.env.PORT || 3000;
+        const port = Number(process.env.PORT || 3000);
         const host = process.env.HOST || '0.0.0.0';
 
         const server = app.listen(port, host, () => {

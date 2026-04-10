@@ -1,3 +1,47 @@
+-- The live Railway database still has the legacy UUID-based enabler tables.
+-- The current app code and Prisma schema use prefixed string IDs, so we
+-- realign the empty enabler tables here before creating enabler_tasks.
+ALTER TABLE IF EXISTS "enabler_analytics" DROP CONSTRAINT IF EXISTS "enabler_analytics_enablerId_fkey";
+ALTER TABLE IF EXISTS "enabler_commissions" DROP CONSTRAINT IF EXISTS "enabler_commissions_enablerId_fkey";
+ALTER TABLE IF EXISTS "enabler_commissions" DROP CONSTRAINT IF EXISTS "enabler_commissions_enablerOrderId_fkey";
+ALTER TABLE IF EXISTS "enabler_orders" DROP CONSTRAINT IF EXISTS "enabler_orders_enablerId_fkey";
+ALTER TABLE IF EXISTS "enabler_policies" DROP CONSTRAINT IF EXISTS "enabler_policies_enablerId_fkey";
+ALTER TABLE IF EXISTS "enabler_product_listings" DROP CONSTRAINT IF EXISTS "enabler_product_listings_enablerId_fkey";
+
+ALTER TABLE IF EXISTS "enabler_profiles"
+    ALTER COLUMN "id" TYPE VARCHAR(64) USING "id"::text;
+
+ALTER TABLE IF EXISTS "enabler_product_listings"
+    ALTER COLUMN "id" TYPE VARCHAR(64) USING "id"::text,
+    ALTER COLUMN "enablerId" TYPE VARCHAR(64) USING "enablerId"::text,
+    ALTER COLUMN "productId" TYPE VARCHAR(64) USING "productId"::text,
+    ALTER COLUMN "sellerId" TYPE VARCHAR(64) USING "sellerId"::text;
+
+ALTER TABLE IF EXISTS "enabler_orders"
+    ALTER COLUMN "id" TYPE VARCHAR(64) USING "id"::text,
+    ALTER COLUMN "enablerId" TYPE VARCHAR(64) USING "enablerId"::text,
+    ALTER COLUMN "orderId" TYPE VARCHAR(64) USING "orderId"::text,
+    ALTER COLUMN "sellerId" TYPE VARCHAR(64) USING "sellerId"::text,
+    ALTER COLUMN "buyerId" TYPE VARCHAR(64) USING "buyerId"::text,
+    ALTER COLUMN "productListingId" TYPE VARCHAR(64) USING "productListingId"::text;
+
+ALTER TABLE IF EXISTS "enabler_commissions"
+    ALTER COLUMN "id" TYPE VARCHAR(64) USING "id"::text,
+    ALTER COLUMN "enablerId" TYPE VARCHAR(64) USING "enablerId"::text,
+    ALTER COLUMN "enablerOrderId" TYPE VARCHAR(64) USING "enablerOrderId"::text,
+    ALTER COLUMN "commissionId" TYPE VARCHAR(64) USING "commissionId"::text,
+    ALTER COLUMN "approvedBy" TYPE VARCHAR(64) USING "approvedBy"::text,
+    ALTER COLUMN "payoutId" TYPE VARCHAR(64) USING "payoutId"::text;
+
+ALTER TABLE IF EXISTS "enabler_policies"
+    ALTER COLUMN "id" TYPE VARCHAR(64) USING "id"::text,
+    ALTER COLUMN "enablerId" TYPE VARCHAR(64) USING "enablerId"::text,
+    ALTER COLUMN "createdBy" TYPE VARCHAR(64) USING "createdBy"::text;
+
+ALTER TABLE IF EXISTS "enabler_analytics"
+    ALTER COLUMN "id" TYPE VARCHAR(64) USING "id"::text,
+    ALTER COLUMN "enablerId" TYPE VARCHAR(64) USING "enablerId"::text;
+
 CREATE TABLE IF NOT EXISTS "production_bulk_order_requests" (
     "id" VARCHAR(64) NOT NULL,
     "supplierId" VARCHAR(64) NOT NULL,
@@ -88,6 +132,44 @@ CREATE TABLE IF NOT EXISTS "enabler_tasks" (
     CONSTRAINT "enabler_tasks_enablerId_fkey" FOREIGN KEY ("enablerId")
       REFERENCES "enabler_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+
+ALTER TABLE IF EXISTS "enabler_tasks"
+    DROP CONSTRAINT IF EXISTS "enabler_tasks_enablerId_fkey";
+
+ALTER TABLE IF EXISTS "enabler_tasks"
+    ADD CONSTRAINT "enabler_tasks_enablerId_fkey"
+    FOREIGN KEY ("enablerId")
+    REFERENCES "enabler_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE IF EXISTS "enabler_analytics"
+    ADD CONSTRAINT "enabler_analytics_enablerId_fkey"
+    FOREIGN KEY ("enablerId")
+    REFERENCES "enabler_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE IF EXISTS "enabler_commissions"
+    ADD CONSTRAINT "enabler_commissions_enablerId_fkey"
+    FOREIGN KEY ("enablerId")
+    REFERENCES "enabler_profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE IF EXISTS "enabler_commissions"
+    ADD CONSTRAINT "enabler_commissions_enablerOrderId_fkey"
+    FOREIGN KEY ("enablerOrderId")
+    REFERENCES "enabler_orders"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE IF EXISTS "enabler_orders"
+    ADD CONSTRAINT "enabler_orders_enablerId_fkey"
+    FOREIGN KEY ("enablerId")
+    REFERENCES "enabler_profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE IF EXISTS "enabler_policies"
+    ADD CONSTRAINT "enabler_policies_enablerId_fkey"
+    FOREIGN KEY ("enablerId")
+    REFERENCES "enabler_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE IF EXISTS "enabler_product_listings"
+    ADD CONSTRAINT "enabler_product_listings_enablerId_fkey"
+    FOREIGN KEY ("enablerId")
+    REFERENCES "enabler_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "production_bulk_order_quotes_requestId_supplierId_key"
     ON "production_bulk_order_quotes"("requestId", "supplierId");
