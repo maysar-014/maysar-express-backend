@@ -35,6 +35,7 @@ export interface UserMetadata {
   loginAttempts: number;
   lastFailedLoginAttempt?: Date | undefined;
   accountLockedUntil?: Date | undefined;
+  roles?: UserRole[] | undefined;
   emailVerificationAttempts?: number | undefined;
   phoneVerificationAttempts?: number | undefined;
   passwordChangeRequired?: boolean | undefined;

@@ -16,10 +16,9 @@ const normalizeRoles = (roles: unknown): string[] => {
 export function createRoleRequestRouter(prisma: PrismaClient): Router {
   const router = Router();
 
-  router.use(requireAuth);
-
   router.post(
     '/role-requests',
+    requireAuth,
     validateRequest({
       body: {
         role: { type: 'string', required: true, enum: [...requestableRoles] },
@@ -114,6 +113,7 @@ export function createRoleRequestRouter(prisma: PrismaClient): Router {
 
   router.get(
     '/role-requests',
+    requireAuth,
     validateRequest({
       query: {
         status: { type: 'string', required: false, enum: [...requestStatuses] },

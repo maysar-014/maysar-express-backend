@@ -240,7 +240,8 @@ describe('GoogleOAuthService', () => {
       const result = await googleOAuthService.handleCallback(mockCode, undefined, 'code-verifier-123');
 
       expect(result).toHaveProperty('user');
-      expect(result).toHaveProperty('token');
+      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('refreshToken');
       expect(result.user.email).toBe('test@example.com');
       expect(result.user.name).toBe('Test User');
       expect(mockOAuth2Client.getToken).toHaveBeenCalledWith({
@@ -728,7 +729,7 @@ describe('GoogleOAuthService', () => {
     });
   });
 
-  describe('generateAuthToken', () => {
+  describe('generateTokens', () => {
     it('should generate a JWT with permissions', () => {
       const mockUser = new UserEntity({
         id: 'user_123',
@@ -744,10 +745,11 @@ describe('GoogleOAuthService', () => {
         updatedAt: new Date()
       });
 
-      const token = googleOAuthService['generateAuthToken'](mockUser);
+      const { accessToken, refreshToken } = googleOAuthService['generateTokens'](mockUser);
 
-      expect(token).toBe('mock-jwt-token');
-      expect(mockJwtSign).toHaveBeenCalled();
+      expect(accessToken).toBe('mock-jwt-token');
+      expect(refreshToken).toBe('mock-jwt-token');
+      expect(mockJwtSign).toHaveBeenCalledTimes(2);
     });
   });
 

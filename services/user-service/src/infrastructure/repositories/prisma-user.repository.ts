@@ -1,7 +1,7 @@
 import { PrismaClient, User_UserRole, User_UserStatus } from '@prisma/client';
 import { IUserRepository, UserAddress } from '../../domain/repositories';
 import { User, UserRole, UserStatus } from '../../domain/entities/user.entity';
-import { UserPreferences } from '../../domain/types/user.types';
+import { UserPreferences, UserRole as UserMetadataRole } from '../../domain/types/user.types';
 import { Email } from '../../domain/value-objects/email.value-object';
 import { PhoneNumber } from '../../domain/value-objects/phone-number.value-object';
 import { Address } from '../../domain/value-objects/address.value-object';
@@ -1046,11 +1046,13 @@ export class PrismaUserRepository implements IUserRepository {
     // Note: Addresses are returned separately through getUserAddresses()
     // For domain entity mapping, we don't include addresses here
     const addresses: Address[] = [];
+    const roles = this.extractMetadataRoles(userData);
     const metadata = {
       accountAge: 0,
       loginAttempts: userData.failedLoginAttempts ?? 0,
       lastFailedLoginAttempt: undefined,
-      accountLockedUntil: userData.lockoutUntil || undefined
+      accountLockedUntil: userData.lockoutUntil || undefined,
+      roles
     };
 
     return new User({
@@ -1083,6 +1085,37 @@ export class PrismaUserRepository implements IUserRepository {
       codSuspendedUntil: userData.codSuspendedUntil || undefined,
       codPermanentlyDisabled: userData.codPermanentlyDisabled
     });
+  }
+
+  private extractMetadataRoles(userData: any): UserMetadataRole[] {
+    const attributes = userData?.attributes && typeof userData.attributes === 'object'
+      ? userData.attributes
+      : {};
+    const metadata = userData?.metadata && typeof userData.metadata === 'object'
+      ? userData.metadata
+      : {};
+    const candidates = [
+      (attributes as Record<string, unknown>).roles,
+      (attributes as Record<string, unknown>).allowedRoles,
+      (metadata as Record<string, unknown>).roles,
+      userData?.roles
+    ];
+    const allowedRoles = new Set(Object.values(UserMetadataRole) as string[]);
+
+    const normalized = candidates
+      .flatMap((candidate) => {
+        if (Array.isArray(candidate)) {
+          return candidate;
+        }
+        if (typeof candidate === 'string') {
+          return candidate.split(',');
+        }
+        return [];
+      })
+      .map((role) => String(role).trim().toLowerCase())
+      .filter((role) => allowedRoles.has(role));
+
+    return Array.from(new Set(normalized)) as UserMetadataRole[];
   }
 
   /**

@@ -75,7 +75,7 @@ export class GoogleOAuthService {
     };
   }
 
-  async handleCallback(code: string, role?: string, codeVerifier?: string): Promise<{ user: UserEntity; token: string }> {
+  async handleCallback(code: string, role?: string, codeVerifier?: string): Promise<{ user: UserEntity; accessToken: string; refreshToken: string }> {
     try {
       // Exchange authorization code for tokens
       const { tokens } = codeVerifier
@@ -103,10 +103,10 @@ export class GoogleOAuthService {
         user = this.mapUserServiceUserToAuthUser(updatedUser ?? user);
       }
 
-      // Generate JWT token using authz config manager
-      const token = this.generateAuthToken(user);
+      // Generate JWT tokens using authz config manager
+      const tokensResult = this.generateTokens(user);
 
-      return { user, token };
+      return { user, accessToken: tokensResult.accessToken, refreshToken: tokensResult.refreshToken };
 
     } catch (error) {
       console.error('Google OAuth callback error:', error);
@@ -238,49 +238,83 @@ export class GoogleOAuthService {
     return passwordChars.join('');
   }
 
-  private generateAuthToken(user: UserEntity): string {
-    // Use authz config manager to get permissions based on role
+  private generateTokens(user: UserEntity): { accessToken: string; refreshToken: string } {
     const roleConfig = authzConfigManager.getRole(user.role);
     const permissions = roleConfig?.permissions || [];
-    
-    // Generate token with user context
-    return this.createJWTToken({
+    const roles = this.resolveUserRoles(user);
+    const payload = {
       userId: user.id,
       email: user.email,
       role: user.role,
+      roles,
       permissions: permissions.map(p => `${p.resource}:${p.action}`),
-      // Note: googleId would need to be stored separately since it's not in AuthUser
-    });
-  }
+      iat: Math.floor(Date.now() / 1000)
+    };
 
-  private createJWTToken(payload: any): string {
-    const expiresIn = (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'];
     const algorithm = (process.env.JWT_ALGORITHM || 'HS256') as jwt.Algorithm;
     const usesAsymmetricSigning = algorithm.startsWith('RS') || algorithm.startsWith('ES');
-    const signingSecret = usesAsymmetricSigning
+    const jwtSecret = usesAsymmetricSigning
       ? process.env.JWT_PRIVATE_KEY
       : process.env.JWT_SECRET;
 
-    if (!signingSecret) {
+    if (!jwtSecret) {
       throw new Error(
         usesAsymmetricSigning
           ? 'JWT_PRIVATE_KEY is required when JWT_ALGORITHM uses asymmetric signing.'
-          : 'JWT_SECRET is required to sign Google OAuth tokens.'
+          : 'JWT_SECRET is required to sign tokens.'
       );
     }
+    
+    const issuer = process.env.JWT_ISSUER || 'maysar-auth-service';
+    const audience = process.env.JWT_AUDIENCE;
 
-    return jwt.sign(payload, signingSecret, {
-      expiresIn,
+    const accessToken = jwt.sign(payload, jwtSecret, {
+      expiresIn: '15m',
       algorithm,
-      issuer: process.env.JWT_ISSUER || 'maysar-auth-service',
-      ...(process.env.JWT_AUDIENCE ? { audience: process.env.JWT_AUDIENCE } : {})
+      issuer,
+      ...(audience ? { audience } : {})
     });
+
+    const refreshToken = jwt.sign(
+      {
+        userId: user.id,
+        type: 'refresh'
+      },
+      jwtSecret,
+      {
+        expiresIn: '7d',
+        algorithm,
+        issuer,
+        ...(audience ? { audience } : {})
+      }
+    );
+
+    return { accessToken, refreshToken };
   }
+
 
   private getUserPermissions(user: UserEntity): string[] {
     // Get permissions from authz config manager
     const roleConfig = authzConfigManager.getRole(user.role);
     return roleConfig?.permissions?.map(p => `${p.resource}:${p.action}`) || [];
+  }
+
+  private resolveUserRoles(user: UserEntity): string[] {
+    const metadataRoles = user.metadata?.roles;
+    const candidateRoles = Array.isArray(metadataRoles)
+      ? metadataRoles
+      : typeof metadataRoles === 'string'
+        ? metadataRoles.split(',')
+        : [];
+    const normalizedRoles = candidateRoles
+      .map((role) => String(role).trim().toLowerCase())
+      .filter(Boolean);
+
+    if (normalizedRoles.length > 0) {
+      return Array.from(new Set(normalizedRoles));
+    }
+
+    return [String(user.role || '').trim().toLowerCase()].filter(Boolean);
   }
 
   public async refreshAccessToken(refreshToken: string): Promise<{

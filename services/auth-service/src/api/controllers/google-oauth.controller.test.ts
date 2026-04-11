@@ -163,7 +163,8 @@ describe('GoogleOAuthController', () => {
         isEmailVerified: true,
         ignoredField: 'hidden'
       },
-      token: 'jwt-token'
+      accessToken: 'jwt-token',
+      refreshToken: 'test-refresh-token'
     });
 
     await controller.handleCallback(req, res);
@@ -182,8 +183,13 @@ describe('GoogleOAuthController', () => {
           status: 'active',
           isEmailVerified: true
         },
-        token: 'jwt-token'
+        accessToken: 'jwt-token'
       })
+    );
+    expect(res.cookie).toHaveBeenCalledWith(
+      'refreshToken',
+      'test-refresh-token',
+      expect.objectContaining({ httpOnly: true, sameSite: 'strict' })
     );
   });
 
@@ -237,7 +243,7 @@ describe('GoogleOAuthController', () => {
           email: 'seller@example.com',
           role: 'seller'
         }),
-        token: 'contract-oauth-code-2'
+        accessToken: 'contract-oauth-code-2'
       })
     );
   });

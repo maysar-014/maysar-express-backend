@@ -161,6 +161,7 @@ export class UserServiceRepository implements IUserRepository {
   private mapToAuthUser(userData: any): AuthUser {
     const role = this.normalizeRole(userData.role);
     const status = this.normalizeStatus(userData.status);
+    const metadata = this.normalizeMetadata(userData, role);
     const passwordHash = typeof userData.passwordHash === 'string' && userData.passwordHash.length > 0
       ? new PasswordHash(userData.passwordHash)
       : undefined;
@@ -177,6 +178,7 @@ export class UserServiceRepository implements IUserRepository {
       failedLoginAttempts: userData.failedLoginAttempts || 0,
       lockoutUntil: userData.lockoutUntil ? new Date(userData.lockoutUntil) : undefined,
       lastLoginAt: userData.lastLoginAt ? new Date(userData.lastLoginAt) : undefined,
+      metadata,
       createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
       updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
       ...(passwordHash ? { passwordHash } : {})
@@ -207,7 +209,7 @@ export class UserServiceRepository implements IUserRepository {
   private mapResponseToAuthUser(userData: any): AuthUser {
     const role = this.normalizeRole(userData.role);
     const status = this.normalizeStatus(userData.status);
-    const metadata = userData.metadata || {};
+    const metadata = this.normalizeMetadata(userData, role);
     const passwordHash = typeof userData.passwordHash === 'string' && userData.passwordHash.length > 0
       ? new PasswordHash(userData.passwordHash)
       : undefined;
@@ -224,6 +226,7 @@ export class UserServiceRepository implements IUserRepository {
       failedLoginAttempts: metadata.loginAttempts || 0,
       lockoutUntil: metadata.accountLockedUntil ? new Date(metadata.accountLockedUntil) : undefined,
       lastLoginAt: userData.lastLoginAt ? new Date(userData.lastLoginAt) : undefined,
+      metadata,
       createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
       updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
       ...(passwordHash ? { passwordHash } : {})
@@ -250,8 +253,57 @@ export class UserServiceRepository implements IUserRepository {
       failedLoginAttempts: 0,
       createdAt: user.createdAt ? new Date(user.createdAt) : now,
       updatedAt: user.updatedAt ? new Date(user.updatedAt) : now,
-      metadata: { profile: user.profile || {} }
+      metadata: this.normalizeMetadata(user, this.normalizeRole(user.role))
     };
+  }
+
+  private normalizeMetadata(userData: any, fallbackRole?: UserRole): Record<string, any> {
+    const baseMetadata = userData?.metadata && typeof userData.metadata === 'object'
+      ? { ...userData.metadata }
+      : {};
+    const attributes = userData?.attributes && typeof userData.attributes === 'object'
+      ? userData.attributes
+      : {};
+    const profile = userData?.profile && typeof userData.profile === 'object'
+      ? userData.profile
+      : {};
+    const rolesSource = baseMetadata.roles ?? userData?.roles ?? attributes.roles ?? attributes.allowedRoles;
+    const roles = this.normalizeRoles(
+      rolesSource ?? (profile as Record<string, unknown>).roles ?? (profile as Record<string, unknown>).allowedRoles,
+      fallbackRole
+    );
+
+    return {
+      ...baseMetadata,
+      accountAge: typeof baseMetadata.accountAge === 'number' ? baseMetadata.accountAge : 0,
+      loginAttempts: typeof baseMetadata.loginAttempts === 'number'
+        ? baseMetadata.loginAttempts
+        : (userData?.failedLoginAttempts || 0),
+      lastFailedLoginAttempt: baseMetadata.lastFailedLoginAttempt
+        ? new Date(baseMetadata.lastFailedLoginAttempt)
+        : undefined,
+      accountLockedUntil: baseMetadata.accountLockedUntil
+        ? new Date(baseMetadata.accountLockedUntil)
+        : (userData?.lockoutUntil ? new Date(userData.lockoutUntil) : undefined),
+      roles
+    };
+  }
+
+  private normalizeRoles(roles: unknown, fallbackRole?: UserRole): UserRole[] {
+    const candidateRoles = Array.isArray(roles)
+      ? roles
+      : typeof roles === 'string'
+        ? roles.split(',')
+        : [];
+    const normalizedRoles = candidateRoles
+      .map((role) => this.normalizeRole(role))
+      .filter((role, index, array) => array.indexOf(role) === index);
+
+    if (normalizedRoles.length > 0) {
+      return normalizedRoles;
+    }
+
+    return fallbackRole ? [fallbackRole] : [UserRole.BUYER];
   }
 
   private normalizeRole(role: unknown): UserRole {

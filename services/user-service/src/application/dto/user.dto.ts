@@ -130,6 +130,7 @@ export interface UserResponseDto {
     loginAttempts: number;
     lastFailedLoginAttempt?: Date;
     accountLockedUntil?: Date;
+    roles?: UserRole[];
   };
   lastLoginAt?: Date;
   createdAt: Date;
@@ -172,6 +173,7 @@ export interface AuthUserDto {
   status: UserStatus;
   emailVerified: boolean;
   phoneVerified: boolean;
+  roles?: UserRole[];
   preferredLanguage: string;
   preferredCurrency: string;
   businessId?: string;

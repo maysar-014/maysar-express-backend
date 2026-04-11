@@ -1,7 +1,6 @@
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { Prisma, PrismaClient } from '@prisma/client';
-import { makeId } from '../../shared/ids/id';
 
 const SEED_MARKER = 'maysar-staging-training';
 const PRODUCT_SLUG_PREFIX = 'maysar-tz-';
@@ -550,6 +549,19 @@ function seedId(prefix: string, value: string): string {
   return raw.slice(0, 64).replace(/_+$/g, '');
 }
 
+function seedUuid(prefix: string, value: string): string {
+  const hash = crypto.createHash('sha1').update(`${prefix}:${value}`).digest('hex').slice(0, 32);
+  const versioned = `4${hash.slice(13, 16)}`;
+  const variantByte = ((parseInt(hash.slice(16, 18), 16) & 0x3f) | 0x80).toString(16).padStart(2, '0');
+  return [
+    hash.slice(0, 8),
+    hash.slice(8, 12),
+    versioned,
+    `${variantByte}${hash.slice(18, 20)}`,
+    hash.slice(20, 32)
+  ].join('-');
+}
+
 const daysAgo = (days: number, base = new Date()): Date => new Date(base.getTime() - days * 24 * 60 * 60 * 1000);
 const daysFrom = (base: Date, days: number): Date => new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
 const hoursAgo = (hours: number, base = new Date()): Date => new Date(base.getTime() - hours * 60 * 60 * 1000);
@@ -853,7 +865,11 @@ const buildTrainingSeedPlan = (seedNow: Date): TrainingSeedPlan => {
       profileType: 'system-admin',
       authority: 'full-system-access',
       canManageAllRoles: true,
-      allowedRoles: TRAINING_ALL_ROLES
+      allowedRoles: TRAINING_ALL_ROLES,
+      roles: TRAINING_ALL_ROLES,
+      primaryRole: 'seller',
+      marketRoles: ['seller', 'supplier'],
+      canSwitchRoles: true
     },
     address: {
       street: TRAINING_ADMIN_PROFILE.street,
@@ -1356,11 +1372,13 @@ const main = async (): Promise<void> => {
   }
 
   const seedNow = now();
-  const plan = buildTrainingSeedPlan(seedNow);
+  const trainingPlan = buildTrainingSeedPlan(seedNow);
+  const catalogPlan = buildCatalogSeedPlan(seedNow, trainingPlan);
 
   if (dryRun) {
-    printPlanSummary(plan);
-    console.log(`- admin user id: ${plan.admin.id}`);
+    printPlanSummary(trainingPlan);
+    printCatalogSeedSummary(catalogPlan);
+    console.log(`- admin user id: ${trainingPlan.admin.id}`);
     return;
   }
 
@@ -1373,22 +1391,24 @@ const main = async (): Promise<void> => {
   const prisma = new PrismaClient();
 
   try {
-    await persistTrainingSeed(prisma, plan);
-    console.log('[seed] training data seeded successfully');
-    console.log(`- admin: ${plan.admin.email}`);
-    console.log(`- training modules: ${plan.trainingModules.length}`);
-    console.log(`- completed records: ${plan.trainingRecords.filter((record) => record.status === 'COMPLETED').length}`);
-    console.log(`- badges: ${plan.trainingBadges.length}`);
+    await persistTrainingSeed(prisma, trainingPlan);
+    await persistCatalogSeed(prisma, catalogPlan);
+    const adminRoles = Array.isArray((trainingPlan.admin.userAttributes as Record<string, unknown>).roles)
+      ? (trainingPlan.admin.userAttributes as Record<string, unknown>).roles as string[]
+      : [];
+    console.log('[seed] staging data seeded successfully');
+    console.log(`- admin: ${trainingPlan.admin.email}`);
+    console.log(`- roles: ${adminRoles.length}`);
+    console.log(`- training modules: ${trainingPlan.trainingModules.length}`);
+    console.log(`- catalog categories: ${catalogPlan.categories.length}`);
+    console.log(`- catalog products: ${catalogPlan.products.length}`);
+    console.log(`- catalog variants: ${catalogPlan.variants.length}`);
+    console.log(`- catalog media refs: ${catalogPlan.mediaRefs.length}`);
+    console.log(`- catalog stock items: ${catalogPlan.stockItems.length}`);
   } finally {
     await prisma.$disconnect();
   }
 };
-
-void main().catch((error: unknown) => {
-  console.error('[seed] failed to seed training data');
-  console.error(error);
-  process.exit(1);
-});
 
 const ADMIN_PROFILE = {
   email: 'admin@maysar.co.tz',
@@ -1546,7 +1566,7 @@ const SELLER_PROFILES = [
 
 const WAREHOUSES: WarehouseSeed[] = [
   {
-    id: makeId('inv_war'),
+    id: seedUuid('inv_war', 'MYS-TZ-DAR-CTR'),
     code: 'MYS-TZ-DAR-CTR',
     name: 'Dar es Salaam Central Distribution',
     type: 'central',
@@ -1563,7 +1583,7 @@ const WAREHOUSES: WarehouseSeed[] = [
     operatingHours: { monFri: '07:00-19:00', sat: '08:00-16:00', sun: 'Closed' }
   },
   {
-    id: makeId('inv_war'),
+    id: seedUuid('inv_war', 'MYS-TZ-ARU-RGN'),
     code: 'MYS-TZ-ARU-RGN',
     name: 'Arusha Regional Hub',
     type: 'regional',
@@ -1580,7 +1600,7 @@ const WAREHOUSES: WarehouseSeed[] = [
     operatingHours: { monFri: '07:00-18:00', sat: '08:00-14:00', sun: 'Closed' }
   },
   {
-    id: makeId('inv_war'),
+    id: seedUuid('inv_war', 'MYS-TZ-MWZ-RGN'),
     code: 'MYS-TZ-MWZ-RGN',
     name: 'Mwanza Lake Zone Hub',
     type: 'regional',
@@ -1597,7 +1617,7 @@ const WAREHOUSES: WarehouseSeed[] = [
     operatingHours: { monFri: '07:00-18:00', sat: '08:00-14:00', sun: 'Closed' }
   },
   {
-    id: makeId('inv_war'),
+    id: seedUuid('inv_war', 'MYS-TZ-MBY-RGN'),
     code: 'MYS-TZ-MBY-RGN',
     name: 'Mbeya Southern Hub',
     type: 'regional',
@@ -1807,3 +1827,489 @@ const GROUPS: GroupSeed[] = [
     ]
   }
 ];
+
+type CatalogSeedPlan = {
+  owner: {
+    id: string;
+    email: string;
+    roles: string[];
+    primaryRole: string;
+    marketRoles: string[];
+  };
+  businesses: BusinessRow[];
+  businessAddresses: BusinessAddressRow[];
+  businessDocuments: BusinessDocumentRow[];
+  businessComplianceRecords: BusinessComplianceRow[];
+  warehouses: WarehouseSeed[];
+  categories: CategoryRow[];
+  products: ProductRow[];
+  variants: VariantRow[];
+  mediaRefs: MediaRow[];
+  stockItems: StockRow[];
+  counts: Record<string, number>;
+};
+
+const IDL_SCORE_BY_GROUP: Record<string, number> = {
+  'food-staples': 25,
+  beverages: 24,
+  'fresh-produce': 24,
+  spices: 23,
+  beauty: 24,
+  fashion: 21,
+  'home-kitchen': 22,
+  electronics: 23,
+  agriculture: 24,
+  building: 20
+};
+
+const CATALOG_CHANNELS = [
+  { key: 'retail', label: 'Retail Pack', priceMultiplier: 1, stockMultiplier: 1 },
+  { key: 'wholesale', label: 'Wholesale Pack', priceMultiplier: 1.14, stockMultiplier: 1.4 }
+] as const;
+
+const CATALOG_BATCH_SIZE = 250;
+const CATALOG_EXPIRY_GROUPS = new Set(['food-staples', 'beverages', 'fresh-produce', 'spices', 'beauty', 'agriculture']);
+
+const chunkArray = <T>(items: T[], size: number): T[][] => {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+};
+
+const buildCatalogSeedPlan = (seedNow: Date, trainingPlan: TrainingSeedPlan): CatalogSeedPlan => {
+  const owner = trainingPlan.admin;
+  const businesses: BusinessRow[] = [];
+  const businessAddresses: BusinessAddressRow[] = [];
+  const businessDocuments: BusinessDocumentRow[] = [];
+  const businessComplianceRecords: BusinessComplianceRow[] = [];
+  const warehouses = WAREHOUSES.map((warehouse) => ({ ...warehouse }));
+  const categories: CategoryRow[] = [];
+  const products: ProductRow[] = [];
+  const variants: VariantRow[] = [];
+  const mediaRefs: MediaRow[] = [];
+  const stockItems: StockRow[] = [];
+  const categoriesBySlug = new Map<string, CategoryRow>();
+  const ownerRoles = Array.from(new Set(TRAINING_ALL_ROLES));
+  const businessId = seedId('biz', owner.email);
+  const catalogSellerId = seedUuid('seller', owner.email);
+  const businessName = 'Maysar Integrated Supply Co.';
+  const ownerBusinessAddressId = seedId('biz_addr', owner.email);
+
+  const business: BusinessRow = {
+    id: businessId,
+    ownerId: owner.id,
+    name: businessName,
+    businessType: 'SOLE_PROPRIETORSHIP',
+    registrationNumber: 'TZ-DSM-20260011',
+    taxId: '100000999',
+    status: 'ACTIVE',
+    verificationStatus: 'VERIFIED',
+    complianceStatus: 'COMPLIANT',
+    description: 'Verified Tanzanian seller and supplier account for the staging marketplace catalog.',
+    industry: GROUPS.map((group) => group.key),
+    website: 'https://maysar.co.tz',
+    email: owner.email,
+    phoneNumber: owner.phoneNumber,
+    verifiedAt: seedNow,
+    verifiedBy: owner.email,
+    attributes: {
+      seedMarker: SEED_MARKER,
+      ownerEmail: owner.email,
+      catalogSellerId,
+      ownerRoles,
+      allowedRoles: ownerRoles,
+      marketRoles: ['seller', 'supplier'],
+      primaryRole: 'seller',
+      idlPolicy: 'INCOME_DEPENDENCY_LOOP',
+      idlClassification: 'strong',
+      sellerAndSupplierOwner: true
+    }
+  };
+
+  businesses.push(business);
+  businessAddresses.push({
+    id: ownerBusinessAddressId,
+    businessId,
+    type: 'MAIN',
+    street: owner.address.street,
+    city: owner.address.city,
+    region: owner.address.state,
+    postalCode: owner.address.postalCode,
+    country: owner.address.country,
+    isPrimary: true
+  });
+  businessDocuments.push(
+    {
+      id: seedId('biz_doc', `${owner.email}:registration`),
+      businessId,
+      type: 'REGISTRATION_CERTIFICATE',
+      fileName: `${slugify(businessName)}-registration-certificate.pdf`,
+      fileUrl: `https://documents.maysar.co.tz/business/${slugify(owner.email)}/registration-certificate.pdf`,
+      status: 'APPROVED',
+      uploadedAt: daysAgo(14, seedNow),
+      verifiedAt: daysAgo(14, seedNow)
+    },
+    {
+      id: seedId('biz_doc', `${owner.email}:tax`),
+      businessId,
+      type: 'TAX_CERTIFICATE',
+      fileName: `${slugify(businessName)}-tax-certificate.pdf`,
+      fileUrl: `https://documents.maysar.co.tz/business/${slugify(owner.email)}/tax-certificate.pdf`,
+      status: 'APPROVED',
+      uploadedAt: daysAgo(14, seedNow),
+      verifiedAt: daysAgo(14, seedNow)
+    },
+    {
+      id: seedId('biz_doc', `${owner.email}:license`),
+      businessId,
+      type: 'BUSINESS_LICENSE',
+      fileName: `${slugify(businessName)}-business-license.pdf`,
+      fileUrl: `https://documents.maysar.co.tz/business/${slugify(owner.email)}/business-license.pdf`,
+      status: 'APPROVED',
+      uploadedAt: daysAgo(14, seedNow),
+      verifiedAt: daysAgo(14, seedNow)
+    }
+  );
+  businessComplianceRecords.push(
+    {
+      id: seedId('biz_cmp', `${owner.email}:tax-compliance`),
+      businessId,
+      type: 'TAX_COMPLIANCE',
+      status: 'COMPLIANT',
+      checkedAt: daysAgo(7, seedNow),
+      expiresAt: daysFrom(daysAgo(7, seedNow), 365),
+      notes: 'Seeded staging account cleared for Tanzanian supply operations.'
+    },
+    {
+      id: seedId('biz_cmp', `${owner.email}:business-license`),
+      businessId,
+      type: 'BUSINESS_LICENSE',
+      status: 'COMPLIANT',
+      checkedAt: daysAgo(7, seedNow),
+      expiresAt: daysFrom(daysAgo(7, seedNow), 365),
+      notes: 'Business licence verified for multi-role marketplace ownership.'
+    }
+  );
+
+  GROUPS.forEach((group, groupIndex) => {
+    const rootCategoryId = seedUuid('cat', group.slug);
+    const rootCategory: CategoryRow = {
+      id: rootCategoryId,
+      parentId: null,
+      name: group.name,
+      slug: group.slug,
+      description: group.description,
+      imageUrl: buildImageUrl('unsplash', group.imageTokens, `${group.slug}:root`),
+      displayOrder: groupIndex * 100,
+      isActive: true,
+      seoMetadata: {
+        seedMarker: SEED_MARKER,
+        categoryLevel: 'root',
+        groupKey: group.key,
+        idlScore: IDL_SCORE_BY_GROUP[group.slug] ?? 20,
+        marketLoop: 'high-frequency-repeat-purchase'
+      }
+    };
+    categories.push(rootCategory);
+    categoriesBySlug.set(group.slug, rootCategory);
+
+    group.families.forEach((family, familyIndex) => {
+      const familySlug = `${group.slug}-${family.slug}`;
+      const familyCategoryId = seedUuid('cat', familySlug);
+      const familyCategory: CategoryRow = {
+        id: familyCategoryId,
+        parentId: rootCategoryId,
+        name: family.name,
+        slug: familySlug,
+        description: family.description,
+        imageUrl: buildImageUrl('loremflickr', family.imageTokens, `${group.slug}:${family.slug}:family`),
+        displayOrder: groupIndex * 100 + familyIndex + 1,
+        isActive: true,
+        seoMetadata: {
+          seedMarker: SEED_MARKER,
+          categoryLevel: 'family',
+          groupKey: group.key,
+          familySlug: family.slug,
+          idlScore: IDL_SCORE_BY_GROUP[group.slug] ?? 20,
+          marketLoop: 'repeat-demand'
+        }
+      };
+      categories.push(familyCategory);
+      categoriesBySlug.set(familySlug, familyCategory);
+    });
+  });
+
+  let sequence = 0;
+  GROUPS.forEach((group, groupIndex) => {
+    const groupScore = IDL_SCORE_BY_GROUP[group.slug] ?? 20;
+    group.families.forEach((family, familyIndex) => {
+      const familyCategory = categoriesBySlug.get(`${group.slug}-${family.slug}`);
+      if (!familyCategory) {
+        throw new Error(`Missing catalog category for ${group.slug}/${family.slug}`);
+      }
+
+      const warehouse = warehouses[(group.sellerIndex + familyIndex) % warehouses.length];
+
+      group.brands.forEach((brand, brandIndex) => {
+        group.labels.forEach((label, labelIndex) => {
+          CATALOG_CHANNELS.forEach((channel) => {
+            sequence += 1;
+            const sourceKey = `${group.slug}:${family.slug}:${brand}:${label}:${channel.key}:${sequence}`;
+            const productSlug = slugify(`maysar-tz-${group.slug}-${family.slug}-${brand}-${label}-${channel.key}-${sequence}`);
+            const productId = seedUuid('prd', sourceKey);
+            const variantId = seedUuid('prv', sourceKey);
+            const title = `${brand} ${family.name} ${label} ${channel.label}`;
+            const basePrice = group.priceBase + familyIndex * group.priceStep;
+            const brandAdjustment = (brandIndex + 1) * Math.max(60, Math.round(group.priceStep * 0.12));
+            const labelAdjustment = labelIndex * Math.max(40, Math.round(group.priceStep * 0.08));
+            const channelAdjustment = Math.round(basePrice * (channel.priceMultiplier - 1));
+            const priceValue = basePrice + brandAdjustment + labelAdjustment + channelAdjustment;
+            const compareAtValue = Math.max(priceValue + Math.max(150, Math.round(priceValue * 0.18)), priceValue + 100);
+            const costPriceValue = Math.max(50, Math.round(priceValue * 0.62));
+            const availableBase = group.stockBase + familyIndex * group.stockStep + brandIndex * 8 + labelIndex * 3;
+            const quantityAvailable = clamp(Math.round(availableBase * channel.stockMultiplier), 20, 9999);
+            const quantityReserved = Math.floor(quantityAvailable * 0.08);
+            const quantityDamaged = Math.floor(quantityAvailable * 0.02);
+            const quantityOnOrder = Math.floor(quantityAvailable * (channel.key === 'wholesale' ? 0.16 : 0.07));
+            const reorderPoint = Math.max(12, Math.floor(quantityAvailable * 0.18));
+            const maxStock = quantityAvailable + reorderPoint * 4;
+            const isPerishable = CATALOG_EXPIRY_GROUPS.has(group.slug);
+            const expiryDate = isPerishable ? daysFrom(seedNow, 120 + familyIndex * 14 + labelIndex * 5) : null;
+            const imageTokens = buildImageTokens(group.name, family.name, brand, label, channel.label, 'Tanzania');
+            const primaryImage = buildImageUrl('unsplash', imageTokens, `${sourceKey}:primary`);
+            const secondaryImage = buildImageUrl('loremflickr', imageTokens, `${sourceKey}:secondary`);
+            const tags = Array.from(new Set([
+              group.key,
+              group.slug,
+              family.slug,
+              brand,
+              String(label).toLowerCase(),
+              channel.key,
+              'tanzania',
+              'idl',
+              'repeat-purchase',
+              'maysar'
+            ]));
+            const description = `${family.description} ${channel.label.toLowerCase()} from ${brand} for Tanzanian retailers, resellers, and households that depend on frequent replenishment.`;
+
+            products.push({
+              id: productId,
+              sellerId: catalogSellerId,
+              title,
+              description,
+              categoryId: familyCategory.id,
+              brand,
+              model: `${brand} ${family.slug} ${label}`.slice(0, 100),
+              status: 'published',
+              visibility: 'public',
+              seoMetadata: {
+                seedMarker: SEED_MARKER,
+                groupSlug: group.slug,
+                familySlug: family.slug,
+                channel: channel.key,
+                idlScore: groupScore,
+                warehouseCode: warehouse.code,
+                restockCycleDays: isPerishable ? 14 : 30,
+                market: 'Tanzania',
+                ownerEmail: owner.email
+              },
+              tags,
+              gtin: null,
+              mpn: null,
+              isbn: null,
+              fingerprint: shortHash(sourceKey, 32),
+              fingerprintVersion: 1,
+              slug: productSlug,
+              seoTitle: `${title} in Tanzania | ${brand}`,
+              shortSeoDescription: `${brand} ${family.name} ${label} pack for Tanzanian retail and wholesale restocking.`,
+              generatedDescription: `Reliable ${family.name.toLowerCase()} listing tuned for repeat purchase cycles, simple ordering, and high-turnover Tanzanian commerce.`,
+              qualityScore: clamp(80 + Math.floor(groupScore / 2) + (channel.key === 'wholesale' ? 2 : 0) - (labelIndex % 4), 80, 99),
+              enablerEnabled: false,
+              enablerCommissionRate: null
+            });
+
+            variants.push({
+              id: variantId,
+              productId,
+              sku: `${SKU_PREFIX}${compactCode(group.slug, 4)}-${compactCode(family.slug, 4)}-${compactCode(brand, 4)}-${compactCode(String(label), 4)}-${channel.key === 'wholesale' ? 'W' : 'R'}-${String(sequence).padStart(4, '0')}`,
+              name: `${channel.label} ${label}`,
+              price: money(priceValue),
+              compareAtPrice: money(compareAtValue),
+              costPrice: money(costPriceValue),
+              inventoryPolicy: 'deny',
+              weight: parseWeight(String(label)),
+              dimensions: {
+                unit: 'cm',
+                length: 18 + groupIndex + familyIndex + brandIndex,
+                width: 10 + labelIndex,
+                height: 6 + (channel.key === 'wholesale' ? 3 : 0)
+              },
+              attributes: {
+                seedMarker: SEED_MARKER,
+                groupSlug: group.slug,
+                familySlug: family.slug,
+                brand,
+                label,
+                channel: channel.key,
+                idlScore: groupScore,
+                countryOfOrigin: 'Tanzania',
+                restockCycleDays: isPerishable ? 14 : 30
+              },
+              images: [primaryImage, secondaryImage],
+              status: 'active'
+            });
+
+            mediaRefs.push(
+              {
+                id: seedUuid('med', `${sourceKey}:primary`),
+                entityType: 'product',
+                entityId: productId,
+                mediaType: 'image',
+                url: primaryImage,
+                altText: `${title} primary product image`,
+                displayOrder: 0,
+                isPrimary: true,
+                metadata: {
+                  seedMarker: SEED_MARKER,
+                  provider: 'unsplash',
+                  groupSlug: group.slug,
+                  familySlug: family.slug,
+                  channel: channel.key
+                },
+                uploadedBy: catalogSellerId
+              },
+              {
+                id: seedUuid('med', `${sourceKey}:secondary`),
+                entityType: 'product',
+                entityId: productId,
+                mediaType: 'image',
+                url: secondaryImage,
+                altText: `${title} alternate product image`,
+                displayOrder: 1,
+                isPrimary: false,
+                metadata: {
+                  seedMarker: SEED_MARKER,
+                  provider: 'loremflickr',
+                  groupSlug: group.slug,
+                  familySlug: family.slug,
+                  channel: channel.key
+                },
+                uploadedBy: catalogSellerId
+              }
+            );
+
+            stockItems.push({
+              id: seedUuid('stk', sourceKey),
+              productVariantId: variantId,
+              warehouseId: warehouse.id,
+              sku: `${SKU_PREFIX}${compactCode(group.slug, 4)}-${compactCode(family.slug, 4)}-${compactCode(brand, 4)}-${String(sequence).padStart(4, '0')}`,
+              quantityAvailable,
+              quantityReserved,
+              quantityDamaged,
+              quantityOnOrder,
+              reorderPoint,
+              maxStock,
+              unitCost: money(costPriceValue),
+              lastInventoryCount: seedNow,
+              expiryDate,
+              batchNumber: `BATCH-${shortHash(sourceKey, 10)}`,
+              locationCode: `${warehouse.code}-${compactCode(family.slug, 4)}-${String(sequence).padStart(4, '0')}`,
+              status: 'active',
+              metadata: {
+                seedMarker: SEED_MARKER,
+                groupSlug: group.slug,
+                familySlug: family.slug,
+                channel: channel.key,
+                warehouseCode: warehouse.code,
+                ownerEmail: owner.email,
+                idlScore: groupScore
+              }
+            });
+          });
+        });
+      });
+    });
+  });
+
+  return {
+    owner: {
+      id: owner.id,
+      email: owner.email,
+      roles: ownerRoles,
+      primaryRole: 'seller',
+      marketRoles: ['seller', 'supplier']
+    },
+    businesses,
+    businessAddresses,
+    businessDocuments,
+    businessComplianceRecords,
+    warehouses,
+    categories,
+    products,
+    variants,
+    mediaRefs,
+    stockItems,
+    counts: {
+      businesses: businesses.length,
+      businessAddresses: businessAddresses.length,
+      businessDocuments: businessDocuments.length,
+      businessComplianceRecords: businessComplianceRecords.length,
+      warehouses: warehouses.length,
+      categories: categories.length,
+      products: products.length,
+      variants: variants.length,
+      mediaRefs: mediaRefs.length,
+      stockItems: stockItems.length
+    }
+  };
+};
+
+const printCatalogSeedSummary = (plan: CatalogSeedPlan): void => {
+  console.log('[seed] catalog dry-run summary');
+  console.log(`- owner: ${plan.owner.email} (${plan.owner.primaryRole})`);
+  console.log(`- roles: ${plan.owner.roles.length}`);
+  console.log(`- businesses: ${plan.businesses.length}`);
+  console.log(`- warehouses: ${plan.warehouses.length}`);
+  console.log(`- categories: ${plan.categories.length}`);
+  console.log(`- products: ${plan.products.length}`);
+  console.log(`- variants: ${plan.variants.length}`);
+  console.log(`- media refs: ${plan.mediaRefs.length}`);
+  console.log(`- stock items: ${plan.stockItems.length}`);
+};
+
+const persistCatalogSeed = async (prisma: PrismaClient, plan: CatalogSeedPlan): Promise<void> => {
+  const insertMany = async <T>(
+    rows: T[],
+    insertChunk: (chunk: T[]) => Promise<unknown>
+  ): Promise<void> => {
+    for (const chunk of chunkArray(rows, CATALOG_BATCH_SIZE)) {
+      if (chunk.length === 0) {
+        continue;
+      }
+      await insertChunk(chunk);
+    }
+  };
+
+  await prisma.business.createMany({ data: plan.businesses as any, skipDuplicates: true });
+  await prisma.businessAddress.createMany({ data: plan.businessAddresses as any, skipDuplicates: true });
+  await prisma.businessDocument.createMany({ data: plan.businessDocuments as any, skipDuplicates: true });
+  await prisma.businessRegistry_ComplianceRecord.createMany({
+    data: plan.businessComplianceRecords as any,
+    skipDuplicates: true
+  });
+  await prisma.inventory_Warehouse.createMany({ data: plan.warehouses as any, skipDuplicates: true });
+  await prisma.category.createMany({ data: plan.categories as any, skipDuplicates: true });
+
+  await insertMany(plan.products as any, async (chunk) => prisma.product.createMany({ data: chunk as any, skipDuplicates: true }));
+  await insertMany(plan.variants as any, async (chunk) => prisma.productVariant.createMany({ data: chunk as any, skipDuplicates: true }));
+  await insertMany(plan.mediaRefs as any, async (chunk) => prisma.mediaRef.createMany({ data: chunk as any, skipDuplicates: true }));
+  await insertMany(plan.stockItems as any, async (chunk) => prisma.inventory_StockItem.createMany({ data: chunk as any, skipDuplicates: true }));
+};
+
+void main().catch((error: unknown) => {
+  console.error('[seed] failed to seed staging data');
+  console.error(error);
+  process.exit(1);
+});

@@ -290,10 +290,12 @@ export class AuthenticateUserUseCase {
    */
   private generateTokens(user: AuthUser): { accessToken: string; refreshToken: string } {
     // Simplified token generation - in production use proper JWT library
+    const roles = this.resolveUserRoles(user);
     const payload = {
       userId: user.id,
       email: user.email,
       role: user.role,
+      roles,
       iat: Math.floor(Date.now() / 1000)
     };
 
@@ -333,5 +335,23 @@ export class AuthenticateUserUseCase {
     );
 
     return { accessToken, refreshToken };
+  }
+
+  private resolveUserRoles(user: AuthUser): string[] {
+    const metadataRoles = user.metadata?.roles;
+    const candidateRoles = Array.isArray(metadataRoles)
+      ? metadataRoles
+      : typeof metadataRoles === 'string'
+        ? metadataRoles.split(',')
+        : [];
+    const normalizedRoles = candidateRoles
+      .map((role) => String(role).trim().toLowerCase())
+      .filter(Boolean);
+
+    if (normalizedRoles.length > 0) {
+      return Array.from(new Set(normalizedRoles));
+    }
+
+    return [String(user.role || '').trim().toLowerCase()].filter(Boolean);
   }
 }

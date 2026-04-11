@@ -205,7 +205,7 @@ export class GoogleOAuthController {
         res.json({
           success: true,
           user: contractUser,
-          token: `contract-oauth-${code}`,
+          accessToken: `contract-oauth-${code}`,
           message: 'Google OAuth authentication successful'
         });
         return;
@@ -243,9 +243,19 @@ export class GoogleOAuthController {
         });
         return;
       }
-      const { user, token } = await this.googleOAuthService.handleCallback(code, selectedRole, codeVerifier);
+      const { user, accessToken, refreshToken } = await this.googleOAuthService.handleCallback(code, selectedRole, codeVerifier);
 
       this.clearOAuthCookies(res);
+
+      if (refreshToken) {
+        const cookieOptions = {
+          httpOnly: true,
+          sameSite: 'strict' as const,
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 7 * 24 * 60 * 60 * 1000
+        };
+        res.cookie('refreshToken', refreshToken, cookieOptions);
+      }
 
       res.json({
         success: true,
@@ -256,7 +266,7 @@ export class GoogleOAuthController {
           status: user.status,
           isEmailVerified: user.isEmailVerified
         },
-        token,
+        accessToken,
         message: 'Google OAuth authentication successful'
       });
     } catch (error) {

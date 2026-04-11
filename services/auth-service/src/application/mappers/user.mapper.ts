@@ -1,7 +1,12 @@
 import { User } from '../../domain/entities/user.entity';
+import { PasswordHash } from '../../domain/value-objects/password-hash.value-object';
 
 export class UserMapper {
     public static toDomain(raw: any): User {
+        const passwordHash = typeof raw.passwordHash === 'string' && raw.passwordHash.length > 0 
+           ? new PasswordHash(raw.passwordHash) 
+           : undefined;
+
         return User.create({
             id: raw.id,
             publicCode: raw.publicCode ?? undefined,
@@ -9,7 +14,8 @@ export class UserMapper {
             role: raw.role,
             status: raw.status || raw.accountStatus, // Map from possible field names
             profile: raw.profile,
-            kycStatus: raw.kycStatus
+            kycStatus: raw.kycStatus,
+            ...(passwordHash ? { passwordHash } : {})
         });
     }
 
@@ -21,7 +27,8 @@ export class UserMapper {
             role: user.role,
             accountStatus: user.status,
             profile: user.profile,
-            kycStatus: user.kycStatus
+            kycStatus: user.kycStatus,
+            passwordHash: user.passwordHash?.toString()
         };
     }
 }

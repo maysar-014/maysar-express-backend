@@ -1,4 +1,5 @@
 import { User } from '../../domain/entities/user.entity';
+import { UserMetadata, UserRole } from '../../domain/types/user.types';
 import { Email } from '../../domain/value-objects/email.value-object';
 import { PhoneNumber } from '../../domain/value-objects/phone-number.value-object';
 import { Address } from '../../domain/value-objects/address.value-object';
@@ -21,6 +22,22 @@ import {
  * User Mapper - Converts between domain entities and DTOs
  */
 export class UserMapper {
+  private static resolveMetadataRoles(metadata: UserMetadata | Record<string, unknown> | undefined): UserRole[] {
+    const metadataRecord = (metadata || {}) as Record<string, unknown>;
+    const rawRoles = metadataRecord.roles ?? metadataRecord.allowedRoles;
+    const candidateRoles = Array.isArray(rawRoles)
+      ? rawRoles
+      : typeof rawRoles === 'string'
+        ? rawRoles.split(',')
+        : [];
+    const allowedRoles = new Set(Object.values(UserRole) as string[]);
+    const normalizedRoles = candidateRoles
+      .map((role) => String(role).trim().toLowerCase())
+      .filter((role) => allowedRoles.has(role));
+
+    return Array.from(new Set(normalizedRoles)) as UserRole[];
+  }
+
   /**
    * Map CreateUserDto to User entity
    */
@@ -67,7 +84,8 @@ export class UserMapper {
         accountAge: user.metadata.accountAge,
         loginAttempts: user.metadata.loginAttempts,
         lastFailedLoginAttempt: user.metadata.lastFailedLoginAttempt || new Date(0),
-        accountLockedUntil: user.metadata.accountLockedUntil || new Date(0)
+        accountLockedUntil: user.metadata.accountLockedUntil || new Date(0),
+        roles: this.resolveMetadataRoles(user.metadata)
       },
       lastLoginAt: user.lastLoginAt || new Date(0),
       createdAt: user.createdAt,
@@ -194,6 +212,7 @@ export class UserMapper {
       phoneVerified: user.phoneVerified,
       preferredLanguage: user.preferredLanguage,
       preferredCurrency: user.preferredCurrency,
+      roles: this.resolveMetadataRoles(user.metadata),
       ...(user.businessId !== undefined && { businessId: user.businessId }),
       ...(user.lastLoginAt !== undefined && { lastLoginAt: user.lastLoginAt }),
       addresses: user.addresses
