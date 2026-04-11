@@ -149,6 +149,11 @@ export class GoogleOAuthController {
       const { authUrl, state, codeVerifier } = await this.googleOAuthService.createAuthRequest();
       this.setOAuthCookies(res, state, codeVerifier, selectedRole);
       
+      if (req.query.redirect === 'true' || req.query.redirect === '1') {
+        res.redirect(authUrl);
+        return;
+      }
+
       res.json({
         success: true,
         authUrl,
