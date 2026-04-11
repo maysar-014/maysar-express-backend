@@ -46,7 +46,8 @@ const createResponse = (): Response => {
     status: jest.fn().mockReturnThis(),
     json: jest.fn().mockReturnThis(),
     cookie: jest.fn().mockReturnThis(),
-    clearCookie: jest.fn().mockReturnThis()
+    clearCookie: jest.fn().mockReturnThis(),
+    redirect: jest.fn().mockReturnThis()
   };
   return response as unknown as Response;
 };
@@ -191,6 +192,41 @@ describe('GoogleOAuthController', () => {
       'test-refresh-token',
       expect.objectContaining({ httpOnly: true, sameSite: 'strict' })
     );
+  });
+
+  it('redirects to the frontend callback when returnTo is encoded in the oauth state', async () => {
+    const controller = new GoogleOAuthController();
+    const returnTo = 'https://maysar.co.tz/sw/oauth/callback';
+    const encodedReturnTo = Buffer.from(returnTo, 'utf8').toString('base64url');
+    const combinedState = `oauth-state-123.${encodedReturnTo}`;
+    const req = {
+      query: { code: 'code-1', role: 'seller', state: combinedState },
+      cookies: {
+        oauth_state: combinedState,
+        oauth_code_verifier: 'code-verifier-123',
+        oauth_role: 'seller'
+      }
+    } as unknown as Request;
+    const res = createResponse();
+    mockHandleCallback.mockResolvedValue({
+      user: {
+        id: 'u1',
+        email: 'seller@example.com',
+        role: 'seller',
+        status: 'active',
+        isEmailVerified: true
+      },
+      accessToken: 'jwt-token',
+      refreshToken: 'test-refresh-token'
+    });
+
+    await controller.handleCallback(req, res);
+
+    expect(res.redirect).toHaveBeenCalledWith(
+      303,
+      expect.stringContaining('https://maysar.co.tz/sw/oauth/callback#accessToken=jwt-token&refreshToken=test-refresh-token')
+    );
+    expect(res.json).not.toHaveBeenCalled();
   });
 
   it('rejects OAuth callback when the state cookie does not match', async () => {

@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { Request, Response } from 'express';
 import { GoogleOAuthService } from '../../services/google-oauth.service';
 import { logger } from '../../infrastructure/services/logger.service';
@@ -26,6 +27,7 @@ const OAUTH_CLEAR_COOKIE_OPTIONS = {
 };
 const OAUTH_CODE_VERIFIER_COOKIE = 'oauth_code_verifier';
 const OAUTH_ROLE_COOKIE = 'oauth_role';
+const STATE_SEPARATOR = '.';
 
 export class GoogleOAuthController {
   private googleOAuthService: GoogleOAuthService;
@@ -44,6 +46,67 @@ export class GoogleOAuthController {
     return header
       ? header.split(',').map(role => role.trim()).filter(Boolean)
       : [];
+  }
+
+  private getFrontendBaseUrl(): string | null {
+    const candidate = process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_APP_URL;
+    if (!candidate) return null;
+
+    try {
+      return new URL(candidate).toString().replace(/\/$/, '');
+    } catch {
+      return null;
+    }
+  }
+
+  private resolveReturnTo(value: unknown): string | null {
+    const raw = this.getHeaderValue(value);
+    if (!raw) {
+      return null;
+    }
+
+    const frontendBase = this.getFrontendBaseUrl();
+    try {
+      const parsed = frontendBase ? new URL(raw, frontendBase) : new URL(raw);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return null;
+      }
+
+      if (frontendBase && parsed.origin !== new URL(frontendBase).origin) {
+        return null;
+      }
+
+      return parsed.toString().replace(/\/$/, '');
+    } catch {
+      return null;
+    }
+  }
+
+  private encodeStateWithReturnTo(state: string, returnTo?: string | null): string {
+    if (!returnTo) {
+      return state;
+    }
+
+    return `${state}${STATE_SEPARATOR}${Buffer.from(returnTo, 'utf8').toString('base64url')}`;
+  }
+
+  private decodeReturnToFromState(state: string | undefined): string | null {
+    if (!state) {
+      return null;
+    }
+
+    const separatorIndex = state.indexOf(STATE_SEPARATOR);
+    if (separatorIndex <= 0 || separatorIndex === state.length - 1) {
+      return null;
+    }
+
+    const encodedReturnTo = state.slice(separatorIndex + 1);
+    try {
+      const decoded = Buffer.from(encodedReturnTo, 'base64url').toString('utf8');
+      return this.resolveReturnTo(decoded);
+    } catch {
+      return null;
+    }
   }
 
   private isStateProtectionEnabled(): boolean {
@@ -146,7 +209,10 @@ export class GoogleOAuthController {
       }
 
       const selectedRole = typeof role === 'string' ? role : 'buyer';
-      const { authUrl, state, codeVerifier } = await this.googleOAuthService.createAuthRequest();
+      const returnTo = this.resolveReturnTo(req.query.returnTo);
+      const stateSeed = randomBytes(16).toString('hex');
+      const requestedState = this.encodeStateWithReturnTo(stateSeed, returnTo);
+      const { authUrl, state, codeVerifier } = await this.googleOAuthService.createAuthRequest(requestedState);
       this.setOAuthCookies(res, state, codeVerifier, selectedRole);
       
       if (req.query.redirect === 'true' || req.query.redirect === '1') {
@@ -260,6 +326,18 @@ export class GoogleOAuthController {
           maxAge: 7 * 24 * 60 * 60 * 1000
         };
         res.cookie('refreshToken', refreshToken, cookieOptions);
+      }
+
+      const returnTo = this.decodeReturnToFromState(typeof state === 'string' ? state : undefined);
+      if (returnTo) {
+        const redirectUrl = new URL(returnTo);
+        redirectUrl.hash = new URLSearchParams({
+          accessToken,
+          refreshToken,
+        }).toString();
+
+        res.redirect(303, redirectUrl.toString());
+        return;
       }
 
       res.json({
