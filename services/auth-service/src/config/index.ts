@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import path from 'path';
 import { databaseConfig } from './database.config';
 import { securityConfig } from './security.config';
 import { monitoringConfig } from './monitoring.config';
@@ -7,6 +8,7 @@ import { googleOAuthConfig, validateGoogleOAuthConfig, initializeGoogleOAuthConf
 import { getTrustedCorsOrigins } from '@shared/utils/cors';
 
 // Load environment variables
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 dotenv.config();
 
 /**

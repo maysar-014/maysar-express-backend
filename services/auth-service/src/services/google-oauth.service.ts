@@ -108,9 +108,11 @@ export class GoogleOAuthService {
 
       return { user, accessToken: tokensResult.accessToken, refreshToken: tokensResult.refreshToken };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Google OAuth callback error:', error);
-      throw new Error('Authentication failed');
+      // Surface the actual error message if possible to help with debugging
+      const errorMessage = error?.response?.data?.error_description || error?.message || 'Authentication failed';
+      throw new Error(`Authentication failed: ${errorMessage}`);
     }
   }
 

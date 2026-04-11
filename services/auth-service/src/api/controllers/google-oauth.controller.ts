@@ -355,10 +355,27 @@ export class GoogleOAuthController {
     } catch (error) {
       this.clearOAuthCookies(res);
       logger.error('Google OAuth callback failed', error as Error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const returnTo = this.decodeReturnToFromState(typeof state === 'string' ? state : undefined) 
+                       || this.getFrontendBaseUrl() 
+                       || '/';
+
+      if (returnTo) {
+        try {
+          const errorRedirect = new URL(returnTo);
+          errorRedirect.searchParams.set('auth_error', errorMessage);
+          res.redirect(303, errorRedirect.toString());
+          return;
+        } catch (urlError) {
+          // Fallback if URL parsing fails
+        }
+      }
+
       res.status(401).json({
         success: false,
         message: 'Google OAuth authentication failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMessage
       });
     }
   }

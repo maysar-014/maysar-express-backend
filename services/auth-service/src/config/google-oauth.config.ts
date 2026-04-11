@@ -1,7 +1,9 @@
 import { randomBytes } from 'crypto';
 import dotenv from 'dotenv';
+import path from 'path';
 
 // Load environment variables
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 dotenv.config();
 
 /**
@@ -9,7 +11,6 @@ dotenv.config();
  * Professional configuration for Google OAuth 2.0 integration
  * Includes validation, security measures, and production-ready settings
  */
-
 export interface GoogleOAuthConfig {
   clientId: string;
   clientSecret: string;
@@ -66,7 +67,7 @@ const resolveOAuthBaseUrl = (): string => {
       ? 'https://api-staging.maysar.co.tz'
       : environment === 'production'
         ? 'https://api.maysar.co.tz'
-        : 'http://localhost:3001';
+        : 'http://localhost:3000';
 
   return normalizeBaseUrl(process.env.BASE_URL || process.env.PLATFORM_BASE_URL, fallbackBaseUrl);
 };
