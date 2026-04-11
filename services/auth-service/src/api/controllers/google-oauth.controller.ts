@@ -357,6 +357,7 @@ export class GoogleOAuthController {
       logger.error('Google OAuth callback failed', error as Error);
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const state = req.query.state;
       const returnTo = this.decodeReturnToFromState(typeof state === 'string' ? state : undefined) 
                        || this.getFrontendBaseUrl() 
                        || '/';
