@@ -18,9 +18,6 @@ export const CheckoutModule: Module = {
     name: 'checkout-service',
     initialize: async () => {
         console.log('Initializing checkout-service module');
-    },
-    routes: (() => {
-        const router = Router();
 
         const cartRepository = new PrismaCartRepository(prisma);
         const checkoutRepository = new PrismaCheckoutRepository(prisma);
@@ -31,38 +28,26 @@ export const CheckoutModule: Module = {
         const checkoutController = new CheckoutController(checkoutRepository, eventBus, cartRepository);
         new CheckoutEventHandlers(eventBus, checkoutRepository, checkoutOrderRepository);
 
+        const router = Router();
         router.use('/health', healthRoutes);
         router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
         router.get('/metrics', async (_req, res) => {
             res.set('Content-Type', metricsRegistry.contentType);
             res.end(await metricsRegistry.metrics());
         });
-
-        // Require authentication for checkout flows
         router.use(requireAuth);
         router.use('/', createCheckoutRoutes(cartController, checkoutController));
 
-        return router;
-    })(),
-    routeAliases: (() => {
-        const cartRepository = new PrismaCartRepository(prisma);
-        const cartController = new CartController(cartRepository);
         const aliasRouter = Router();
-
         aliasRouter.use(requireAuth);
         aliasRouter.use('/', createCartRoutes(cartController));
 
-        return [
-            {
-                path: '/api/cart',
-                router: aliasRouter
-            }
-        ];
-    })(),
+        CheckoutModule.routes = router;
+        CheckoutModule.routeAliases = [{ path: '/api/cart', router: aliasRouter }];
+    },
+    routes: Router(),
+    routeAliases: [],
     shutdown: async () => {
         console.log('Shutting down checkout-service module');
     }
 };
-
-
-

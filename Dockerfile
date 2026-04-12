@@ -22,9 +22,7 @@ RUN --mount=type=cache,id=s/f16defe0-3cda-4477-9ce2-74289cd6d0ac-/root/.npm,targ
 COPY package*.json ./
 COPY scripts ./scripts
 COPY prisma ./prisma
-# Cypress downloads its browser binary during install, which is unnecessary for
-# the backend container and can fail in restricted build environments.
-RUN --mount=type=cache,id=s/f16defe0-3cda-4477-9ce2-74289cd6d0ac-/root/.npm,target=/root/.npm,sharing=locked CYPRESS_INSTALL_BINARY=0 npm ci --prefer-offline --no-audit --no-fund
+RUN --mount=type=cache,id=s/f16defe0-3cda-4477-9ce2-74289cd6d0ac-/root/.npm,target=/root/.npm,sharing=locked npm ci --prefer-offline --no-audit --no-fund
 
 # Build application
 FROM deps AS builder
@@ -62,7 +60,7 @@ COPY --from=builder --chown=nodejs:nodejs /tmp/railway-prisma/engines ./node_mod
 USER nodejs
 
 # Health check with timeout and explicit error handling
-HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
   CMD ["node", "-e", "const http=require('http');const port=process.env.PORT||3000;const req=http.get({host:'127.0.0.1',port,path:'/health',timeout:4000},res=>process.exit(res.statusCode===200?0:1));req.on('timeout',()=>req.destroy(new Error('timeout')));req.on('error',()=>process.exit(1));"]
 
 EXPOSE 3000

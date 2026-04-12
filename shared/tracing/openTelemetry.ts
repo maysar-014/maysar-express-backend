@@ -1,8 +1,9 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { trace, context, SpanStatusCode, SpanKind, Span } from '@opentelemetry/api';
 import { v4 as uuidv4 } from 'uuid';
 import { NextFunction, Request, Response } from 'express';
@@ -27,23 +28,21 @@ export class TracingService {
         [SemanticResourceAttributes.SERVICE_VERSION]: process.env.SERVICE_VERSION || '1.0.0',
         [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development'
       }),
-      traceExporter: new JaegerExporter({
-        endpoint: process.env.JAEGER_ENDPOINT || 'http://localhost:14268/api/traces'
+      traceExporter: new OTLPTraceExporter({
+        url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://jaeger:4318/v1/traces',
       }),
-      instrumentations: [getNodeAutoInstrumentations()]
+      instrumentations: [
+        new HttpInstrumentation(),
+        new ExpressInstrumentation(),
+      ],
     });
   }
 
   start(): void {
-    const serviceName = this.sdk['_resource'].attributes[SemanticResourceAttributes.SERVICE_NAME];
+    const serviceName = (this.sdk as any)['_resource']?.attributes?.[SemanticResourceAttributes.SERVICE_NAME] ?? 'unknown';
 
     try {
-      const startResult = this.sdk.start();
-      void Promise.resolve(startResult).catch((error) => {
-        this.logger.error('Tracing start failed', {
-          error: error instanceof Error ? error.message : String(error)
-        });
-      });
+      sdk.start();
       this.logger.info(`Tracing initialized for ${serviceName}`);
     } catch (error) {
       this.logger.error('Tracing start failed', {
@@ -54,8 +53,7 @@ export class TracingService {
 
   stop(): Promise<void> {
     try {
-      const shutdownResult = this.sdk.shutdown();
-      return Promise.resolve(shutdownResult).catch((error) => {
+      return Promise.resolve(this.sdk.shutdown()).catch((error) => {
         this.logger.error('Tracing shutdown failed', {
           error: error instanceof Error ? error.message : String(error)
         });
@@ -139,6 +137,24 @@ export function correlationMiddleware() {
     next();
   };
 }
+
+// Shared SDK instance used by TracingService.start() — kept separate so
+// compliance-service calling tracingService.start() does not spin up a
+// second SDK on top of the one already started in src/tracing.ts.
+const sdk = new NodeSDK({
+  resource: new Resource({
+    [SemanticResourceAttributes.SERVICE_NAME]: process.env.SERVICE_NAME || 'maysar-service',
+    [SemanticResourceAttributes.SERVICE_VERSION]: process.env.SERVICE_VERSION || '1.0.0',
+    [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
+  }),
+  traceExporter: new OTLPTraceExporter({
+    url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://jaeger:4318/v1/traces',
+  }),
+  instrumentations: [
+    new HttpInstrumentation(),
+    new ExpressInstrumentation(),
+  ],
+});
 
 // Global tracing service instance
 export const tracingService = new TracingService(

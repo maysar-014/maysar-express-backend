@@ -397,9 +397,7 @@ export class User implements Entity {
       errors.push('Invalid email format');
     }
 
-    if (!this.phoneNumber) {
-      errors.push('Phone number is required');
-    } else if (!this.phoneNumber.isValid()) {
+    if (this.phoneNumber && this.phoneNumber.value !== '' && !this.phoneNumber.isValid()) {
       errors.push('Invalid phone number format');
     }
 

@@ -8,30 +8,30 @@ import { eventBus } from '../../shared/events/eventBus';
 import { createPrismaClient } from '@shared/database/prisma-client';
 import { requireAuth } from '@shared/middleware/auth-context.middleware';
 
-// Initialize Tracing
-tracingService.start();
-
-const prisma = createPrismaClient();
+let prisma: PrismaClient;
 
 export const ComplianceModule: Module = {
     name: 'compliance-service',
     initialize: async () => {
         console.log('Initializing compliance-service module');
-    },
-    routes: (() => {
+        tracingService.start();
+        prisma = createPrismaClient();
+
         const router = Router();
         router.use(correlationMiddleware());
-        router.get('/metrics', async (req, res) => {
+        router.get('/metrics', async (_req, res) => {
             res.set('Content-Type', metricsRegistry.contentType);
             res.end(await metricsRegistry.metrics());
         });
         const complianceApp = createApp(prisma, eventBus);
         router.use(requireAuth);
         router.use(complianceApp);
-        return router;
-    })(),
+
+        ComplianceModule.routes = router;
+    },
+    routes: Router(),
     shutdown: async () => {
         console.log('Shutting down compliance-service module');
-        await prisma.$disconnect();
+        await prisma?.$disconnect();
     }
 };

@@ -56,8 +56,6 @@ import { createPrismaClient } from '@shared/database/prisma-client';
 import { getModelPrefix, isSystemId, makeId } from '@shared/ids/id';
 import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
-const prisma = createPrismaClient();
-
 class PrismaCategoryRepository implements CategoryRepository {
     constructor(private readonly client: PrismaClient) {}
 
@@ -121,25 +119,14 @@ class PrismaMediaRepository implements MediaRepository {
 class PrismaSearchService implements SearchService {
     constructor(private readonly client: PrismaClient) {}
 
-    async index(_document: any): Promise<void> {
-        return;
-    }
+    async index(_document: any): Promise<void> { return; }
 
     async search(query: string, filters: any, pagination: any): Promise<any> {
         const where: any = {};
-
-        if (query) {
-            where.title = { contains: query, mode: 'insensitive' };
-        }
-        if (filters?.category) {
-            where.categoryId = filters.category;
-        }
-        if (filters?.seller) {
-            where.sellerId = filters.seller;
-        }
-        if (filters?.excludeProduct) {
-            where.id = { not: filters.excludeProduct };
-        }
+        if (query) { where.title = { contains: query, mode: 'insensitive' }; }
+        if (filters?.category) { where.categoryId = filters.category; }
+        if (filters?.seller) { where.sellerId = filters.seller; }
+        if (filters?.excludeProduct) { where.id = { not: filters.excludeProduct }; }
 
         const products = await this.client.product.findMany({
             where,
@@ -165,13 +152,8 @@ class PrismaSearchService implements SearchService {
         }));
     }
 
-    async remove(_id: string): Promise<void> {
-        return;
-    }
-
-    async update(_id: string, _updates: any): Promise<void> {
-        return;
-    }
+    async remove(_id: string): Promise<void> { return; }
+    async update(_id: string, _updates: any): Promise<void> { return; }
 }
 
 const idGenerator: IdGenerator = {
@@ -196,144 +178,119 @@ const dateTimeService: DateTimeService = {
     format: (date: Date, _format: string) => date.toISOString()
 };
 
-const catalogWiring = (() => {
-    const productRepository = new PrismaProductRepository(prisma);
-    const categoryRepository = new PrismaCategoryRepository(prisma);
-    const categoryAttributeRepository = new PrismaCategoryAttributeRepository(prisma);
-    const productAttributeRepository = new PrismaProductAttributeRepository(prisma);
-    const mediaRepository = new PrismaMediaRepository(prisma);
-    const fallbackSearchService = new PrismaSearchService(prisma);
-    const searchConfig: SearchConfig = {
-        provider: externalServicesConfig.search.provider,
-        indexName: externalServicesConfig.search.meilisearch?.indexName || 'catalog',
-        timeout: externalServicesConfig.search.meilisearch?.requestTimeout || 30000,
-        apiKey: externalServicesConfig.search.meilisearch?.apiKey,
-        host: externalServicesConfig.search.meilisearch?.host,
-        port: externalServicesConfig.search.meilisearch?.port,
-        protocol: externalServicesConfig.search.meilisearch?.protocol,
-        meilisearch: externalServicesConfig.search.meilisearch ? {
-            host: externalServicesConfig.search.meilisearch.host,
-            port: externalServicesConfig.search.meilisearch.port,
-            protocol: externalServicesConfig.search.meilisearch.protocol,
-            apiKey: externalServicesConfig.search.meilisearch.apiKey,
-            indexName: externalServicesConfig.search.meilisearch.indexName,
-            requestTimeout: externalServicesConfig.search.meilisearch.requestTimeout
-        } : undefined
-    };
-    const searchProvider = SearchProviderFactory.createDefault(searchConfig);
-    const searchService: SearchService = externalServicesConfig.search.enabled
-        ? new MeilisearchSearchService(searchProvider, {
-            indexName: searchConfig.indexName || 'catalog',
-            fallback: fallbackSearchService
-        })
-        : fallbackSearchService;
-    const catalogOutboxRepository = new CatalogOutboxRepository(prisma);
-    const eventPublisher = EventPublisherFactory.createDefault(
-        {},
-        idGenerator,
-        dateTimeService,
-        catalogOutboxRepository
-    );
-
-    const createProductUseCase = new CreateProductUseCase(
-        productRepository,
-        categoryRepository,
-        categoryAttributeRepository,
-        productAttributeRepository,
-        eventPublisher,
-        idGenerator,
-        dateTimeService
-    );
-    const getProductUseCase = new GetProductUseCase(productRepository, mediaRepository, searchService);
-    const getProductsBySellerUseCase = new GetProductsBySellerUseCase(productRepository);
-    const searchProductsUseCase = new SearchProductsUseCase(productRepository, categoryRepository, searchService);
-    const loadCategoryAttributesUseCase = new LoadCategoryAttributesUseCase(
-        categoryAttributeRepository,
-        categoryRepository
-    );
-    const previewGeneratedDescriptionUseCase = new PreviewGeneratedDescriptionUseCase({
-        findCategoryById: (categoryId: string) => categoryRepository.findById(categoryId),
-        findCategoryAttributesByCategory: (categoryId: string) => categoryAttributeRepository.findByCategory(categoryId)
-    });
-
-    const productMapper = new ProductMapper();
-    const matchAuditRepository = new PrismaProductMatchAuditRepository(prisma);
-    const matchConfirmationRepository = new PrismaMatchConfirmationRepository(prisma);
-    const matchProductUseCase = new MatchProductUseCase(
-        productRepository as any,
-        matchAuditRepository,
-        matchConfirmationRepository
-    );
-    const confirmMatchUseCase = new ConfirmProductMatchUseCase(
-        matchConfirmationRepository,
-        matchAuditRepository
-    );
-    const createProductWithMatchingUseCase = new CreateProductWithMatchingUseCase(
-        matchProductUseCase,
-        productRepository as any
-    );
-
-    const productController = ProductControllerFactory.create(
-        createProductUseCase,
-        getProductUseCase,
-        getProductsBySellerUseCase,
-        searchProductsUseCase,
-        productMapper,
-        loadCategoryAttributesUseCase,
-        previewGeneratedDescriptionUseCase,
-        createProductWithMatchingUseCase
-    );
-
-    const searchController = new SearchController();
-    const matchingController = new ProductMatchingController(
-        matchProductUseCase,
-        confirmMatchUseCase,
-        matchAuditRepository
-    );
-    const buyBoxRepository = new PrismaBuyBoxRepository(prisma);
-    const buyBoxEventPublisher = new BuyBoxEventPublisher(eventBus as any);
-    const buyBoxUseCase = new ComputeBuyBoxUseCase(
-        buyBoxRepository,
-        buyBoxEventPublisher as any,
-        BuyBoxWeights.defaults()
-    );
-    const buyBoxController = new BuyBoxController(buyBoxUseCase, buyBoxRepository);
-    const storefrontController = new SellerStorefrontController();
-    const pricingController = new PricingController();
-
-    return {
-        productController,
-        searchController,
-        matchingController,
-        buyBoxController,
-        storefrontController,
-        pricingController,
-        productRepository,
-        categoryRepository,
-        mediaRepository,
-        searchService,
-        eventPublisher
-    };
-})();
-
 let outboxProcessor: OutboxProcessor | null = null;
-
-// Campaign service integration
-let campaignRoutes: Router | null = null;
-try {
-    campaignRoutes = createCampaignRoutes();
-} catch (e) {
-    // Basic logger not yet available here safely if it depends on infrastructure, 
-    // but we can use appLogger or just wait until init.
-    // For now, let's just keep the catch quiet or use a temporary logger.
-}
-
-// Pricing service integration
 
 export const CatalogModule: Module = {
     name: 'catalog-service',
     initialize: async () => {
         logger.info('Initializing catalog-service module (fully merged)');
+
+        const prisma = createPrismaClient();
+
+        // Wire dependency graph
+        const productRepository = new PrismaProductRepository(prisma);
+        const categoryRepository = new PrismaCategoryRepository(prisma);
+        const categoryAttributeRepository = new PrismaCategoryAttributeRepository(prisma);
+        const productAttributeRepository = new PrismaProductAttributeRepository(prisma);
+        const mediaRepository = new PrismaMediaRepository(prisma);
+        const fallbackSearchService = new PrismaSearchService(prisma);
+        const searchConfig: SearchConfig = {
+            provider: externalServicesConfig.search.provider,
+            indexName: externalServicesConfig.search.meilisearch?.indexName || 'catalog',
+            timeout: externalServicesConfig.search.meilisearch?.requestTimeout || 30000,
+            apiKey: externalServicesConfig.search.meilisearch?.apiKey,
+            host: externalServicesConfig.search.meilisearch?.host,
+            port: externalServicesConfig.search.meilisearch?.port,
+            protocol: externalServicesConfig.search.meilisearch?.protocol,
+            meilisearch: externalServicesConfig.search.meilisearch ? {
+                host: externalServicesConfig.search.meilisearch.host,
+                port: externalServicesConfig.search.meilisearch.port,
+                protocol: externalServicesConfig.search.meilisearch.protocol,
+                apiKey: externalServicesConfig.search.meilisearch.apiKey,
+                indexName: externalServicesConfig.search.meilisearch.indexName,
+                requestTimeout: externalServicesConfig.search.meilisearch.requestTimeout
+            } : undefined
+        };
+        const searchProvider = SearchProviderFactory.createDefault(searchConfig);
+        const searchService: SearchService = externalServicesConfig.search.enabled
+            ? new MeilisearchSearchService(searchProvider, {
+                indexName: searchConfig.indexName || 'catalog',
+                fallback: fallbackSearchService
+            })
+            : fallbackSearchService;
+        const catalogOutboxRepository = new CatalogOutboxRepository(prisma);
+        const eventPublisher = EventPublisherFactory.createDefault(
+            {},
+            idGenerator,
+            dateTimeService,
+            catalogOutboxRepository
+        );
+
+        const createProductUseCase = new CreateProductUseCase(
+            productRepository,
+            categoryRepository,
+            categoryAttributeRepository,
+            productAttributeRepository,
+            eventPublisher,
+            idGenerator,
+            dateTimeService
+        );
+        const getProductUseCase = new GetProductUseCase(productRepository, mediaRepository, searchService);
+        const getProductsBySellerUseCase = new GetProductsBySellerUseCase(productRepository);
+        const searchProductsUseCase = new SearchProductsUseCase(productRepository, categoryRepository, searchService);
+        const loadCategoryAttributesUseCase = new LoadCategoryAttributesUseCase(
+            categoryAttributeRepository,
+            categoryRepository
+        );
+        const previewGeneratedDescriptionUseCase = new PreviewGeneratedDescriptionUseCase({
+            findCategoryById: (categoryId: string) => categoryRepository.findById(categoryId),
+            findCategoryAttributesByCategory: (categoryId: string) => categoryAttributeRepository.findByCategory(categoryId)
+        });
+
+        const productMapper = new ProductMapper();
+        const matchAuditRepository = new PrismaProductMatchAuditRepository(prisma);
+        const matchConfirmationRepository = new PrismaMatchConfirmationRepository(prisma);
+        const matchProductUseCase = new MatchProductUseCase(
+            productRepository as any,
+            matchAuditRepository,
+            matchConfirmationRepository
+        );
+        const confirmMatchUseCase = new ConfirmProductMatchUseCase(
+            matchConfirmationRepository,
+            matchAuditRepository
+        );
+        const createProductWithMatchingUseCase = new CreateProductWithMatchingUseCase(
+            matchProductUseCase,
+            productRepository as any
+        );
+
+        const productController = ProductControllerFactory.create(
+            createProductUseCase,
+            getProductUseCase,
+            getProductsBySellerUseCase,
+            searchProductsUseCase,
+            productMapper,
+            loadCategoryAttributesUseCase,
+            previewGeneratedDescriptionUseCase,
+            createProductWithMatchingUseCase
+        );
+
+        const searchController = new SearchController();
+        const matchingController = new ProductMatchingController(
+            matchProductUseCase,
+            confirmMatchUseCase,
+            matchAuditRepository
+        );
+        const buyBoxRepository = new PrismaBuyBoxRepository(prisma);
+        const buyBoxEventPublisher = new BuyBoxEventPublisher(eventBus as any);
+        const buyBoxUseCase = new ComputeBuyBoxUseCase(
+            buyBoxRepository,
+            buyBoxEventPublisher as any,
+            BuyBoxWeights.defaults()
+        );
+        const buyBoxController = new BuyBoxController(buyBoxUseCase, buyBoxRepository);
+        const storefrontController = new SellerStorefrontController();
+        const pricingController = new PricingController();
 
         // Initialize event registry
         initializeEventRegistry();
@@ -353,14 +310,6 @@ export const CatalogModule: Module = {
             logger.warn('Campaign handlers not initialized:', e);
         }
 
-        // Initialize pricing
-        try {
-            // Additional pricing init if needed
-            logger.info('Pricing module initialized');
-        } catch (e) {
-            logger.warn('Pricing handlers not initialized:', e);
-        }
-
         // Initialize and start OutboxProcessor
         try {
             const outbox = new TransactionalOutbox(prisma, 'catalogOutboxEvent');
@@ -377,18 +326,18 @@ export const CatalogModule: Module = {
 
             const sagaFactory = createSagaFactory({
                 sagaLogRepository,
-                productRepository: catalogWiring.productRepository as import('./src/domain/interfaces').ProductRepository,
-                categoryRepository: catalogWiring.categoryRepository as import('./src/domain/interfaces').CategoryRepository,
-                mediaRepository: catalogWiring.mediaRepository as import('./src/domain/interfaces').MediaRepository,
-                searchService: catalogWiring.searchService as import('./src/domain/interfaces').SearchService,
-                eventPublisher: catalogWiring.eventPublisher as import('./src/domain/interfaces').DomainEventPublisher,
+                productRepository: productRepository as import('./src/domain/interfaces').ProductRepository,
+                categoryRepository: categoryRepository as import('./src/domain/interfaces').CategoryRepository,
+                mediaRepository: mediaRepository as import('./src/domain/interfaces').MediaRepository,
+                searchService: searchService as import('./src/domain/interfaces').SearchService,
+                eventPublisher: eventPublisher as import('./src/domain/interfaces').DomainEventPublisher,
                 idGenerator,
                 dateTimeService,
             });
 
             const productPublishingSaga = sagaFactory.getProductPublishingSaga();
             const bulkProductUpdateSaga = sagaFactory.getBulkProductUpdateSaga();
-            
+
             const orchestratorRegistry = new Map<string, DistributedSagaOrchestrator<unknown>>();
             orchestratorRegistry.set('ProductPublishing', productPublishingSaga as DistributedSagaOrchestrator<unknown>);
             orchestratorRegistry.set('BulkProductUpdate', bulkProductUpdateSaga as DistributedSagaOrchestrator<unknown>);
@@ -403,29 +352,34 @@ export const CatalogModule: Module = {
         } catch (e) {
             logger.warn('⚠️ Failed to initialize Saga Recovery Worker', { error: e });
         }
-    },
-    routes: (() => {
+
+        // Build router
         const router = Router();
 
-        // Mount campaign routes under /campaigns
-        if (campaignRoutes) {
-            router.use('/campaigns', campaignRoutes);
+        // Campaign routes
+        try {
+            const campaignRoutes = createCampaignRoutes();
+            if (campaignRoutes) {
+                router.use('/campaigns', campaignRoutes);
+            }
+        } catch (e) {
+            logger.warn('Failed to mount campaign routes:', e);
         }
 
-        // Mount pricing routes under /pricing
+        // Pricing routes
         if (pricingRoutes) {
             router.use('/pricing', pricingRoutes);
             router.use('/pricing/health', pricingHealthRoutes);
         }
 
-        // Mount catalog API routes (previously unmounted in monolith)
+        // Catalog API routes
         try {
-            router.use(createProductRoutes(catalogWiring.productController as any));
-            router.use(createSearchRoutes(catalogWiring.searchController as any));
-            router.use(new MatchingRoutes(catalogWiring.matchingController as any).getRouter());
-            router.use(new BuyBoxRoutes(catalogWiring.buyBoxController as any).getRouter());
-            router.use('/sellers', createSellerStorefrontRoutes(catalogWiring.storefrontController as any));
-            router.use(createCatalogPricingRoutes(catalogWiring.pricingController as any));
+            router.use(createProductRoutes(productController as any));
+            router.use(createSearchRoutes(searchController as any));
+            router.use(new MatchingRoutes(matchingController as any).getRouter());
+            router.use(new BuyBoxRoutes(buyBoxController as any).getRouter());
+            router.use('/sellers', createSellerStorefrontRoutes(storefrontController as any));
+            router.use(createCatalogPricingRoutes(pricingController as any));
         } catch (e) {
             logger.warn('Failed to mount catalog API routes, falling back to degraded handler:', e);
             router.all('/v1/*', (_req, res) => {
@@ -437,8 +391,7 @@ export const CatalogModule: Module = {
             });
         }
 
-        // Health checks
-        router.get('/health', (req, res) => {
+        router.get('/health', (_req, res) => {
             res.json({
                 status: 'ok',
                 service: 'catalog-service',
@@ -449,8 +402,9 @@ export const CatalogModule: Module = {
         router.use(createCatalogHealthRoutes());
         router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createCatalogMaintenanceRoutes(prisma));
 
-        return router;
-    })(),
+        CatalogModule.routes = router;
+    },
+    routes: Router(),
     shutdown: async () => {
         logger.info('Shutting down catalog-service module');
         if (outboxProcessor) {
@@ -458,5 +412,3 @@ export const CatalogModule: Module = {
         }
     }
 };
-
-

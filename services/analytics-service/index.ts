@@ -30,78 +30,72 @@ import { SupplierAnalyticsSaga } from './src/application/sagas/SupplierAnalytics
 import { EnablerAnalyticsSaga } from './src/application/sagas/EnablerAnalyticsSaga';
 import { AnalyticsController } from './src/api/controllers/AnalyticsController';
 
-const analyticsWiring = (() => {
-    const eventBus = new EventBusAdapter();
-
-    const sellerRepo = new SellerAnalyticsRepository();
-    const courierRepo = new CourierAnalyticsRepository();
-    const supplierRepo = new SupplierAnalyticsRepository();
-    const enablerRepo = new EnablerAnalyticsRepository();
-    const metricRepo = new MetricRepository();
-    const eventRepo = new AnalyticsEventRepository();
-
-    const sellerEngine = new SellerAnalyticsEngine();
-    const courierEngine = new CourierAnalyticsEngine();
-    const enablerEngine = new EnablerAnalyticsEngine();
-    const metricService = new MetricCalculationService();
-    const statsAlgorithm = new StatisticalAlgorithm();
-    const generalEngine = new AnalyticsProcessingEngine(metricService, statsAlgorithm);
-
-    const getSellerDashboard = new GetSellerDashboard(sellerRepo);
-    const getSalesAnalytics = new GetSalesAnalytics(sellerRepo);
-    const getSupplierAnalytics = new GetSupplierAnalytics(supplierRepo);
-    const getCourierAnalytics = new GetCourierAnalytics(courierRepo);
-    const processAnalyticsEvent = new ProcessAnalyticsEventUseCase(
-        generalEngine,
-        eventRepo,
-        metricRepo,
-        eventBus
-    );
-
-    const subscriber = new EventSubscriber(eventBus, processAnalyticsEvent);
-
-    const sagas = {
-        seller: new SellerAnalyticsSaga(eventBus, sellerEngine, sellerRepo),
-        courier: new CourierAnalyticsSaga(eventBus, courierEngine, courierRepo),
-        supplier: new SupplierAnalyticsSaga(eventBus, supplierRepo),
-        enabler: new EnablerAnalyticsSaga(eventBus, enablerEngine, enablerRepo)
-    };
-
-    const controller = new AnalyticsController(
-        getSellerDashboard,
-        getSalesAnalytics,
-        getSupplierAnalytics,
-        getCourierAnalytics
-    );
-
-    return { eventBus, subscriber, sagas, controller };
-})();
-
 export const AnalyticsModule: Module = {
     name: 'analytics-service',
     initialize: async () => {
         console.log('Initializing analytics-service module');
-        analyticsWiring.subscriber.initialize();
-    },
-    routes: (() => {
-        const router = Router();
 
-        router.use(createAnalyticsRoutes(analyticsWiring.controller));
+        const eventBus = new EventBusAdapter();
+
+        const sellerRepo = new SellerAnalyticsRepository();
+        const courierRepo = new CourierAnalyticsRepository();
+        const supplierRepo = new SupplierAnalyticsRepository();
+        const enablerRepo = new EnablerAnalyticsRepository();
+        const metricRepo = new MetricRepository();
+        const eventRepo = new AnalyticsEventRepository();
+
+        const sellerEngine = new SellerAnalyticsEngine();
+        const courierEngine = new CourierAnalyticsEngine();
+        const enablerEngine = new EnablerAnalyticsEngine();
+        const metricService = new MetricCalculationService();
+        const statsAlgorithm = new StatisticalAlgorithm();
+        const generalEngine = new AnalyticsProcessingEngine(metricService, statsAlgorithm);
+
+        const getSellerDashboard = new GetSellerDashboard(sellerRepo);
+        const getSalesAnalytics = new GetSalesAnalytics(sellerRepo);
+        const getSupplierAnalytics = new GetSupplierAnalytics(supplierRepo);
+        const getCourierAnalytics = new GetCourierAnalytics(courierRepo);
+        const processAnalyticsEvent = new ProcessAnalyticsEventUseCase(
+            generalEngine,
+            eventRepo,
+            metricRepo,
+            eventBus
+        );
+
+        const subscriber = new EventSubscriber(eventBus, processAnalyticsEvent);
+
+        const _sagas = {
+            seller: new SellerAnalyticsSaga(eventBus, sellerEngine, sellerRepo),
+            courier: new CourierAnalyticsSaga(eventBus, courierEngine, courierRepo),
+            supplier: new SupplierAnalyticsSaga(eventBus, supplierRepo),
+            enabler: new EnablerAnalyticsSaga(eventBus, enablerEngine, enablerRepo)
+        };
+
+        const controller = new AnalyticsController(
+            getSellerDashboard,
+            getSalesAnalytics,
+            getSupplierAnalytics,
+            getCourierAnalytics
+        );
+
+        subscriber.initialize();
+
+        const router = Router();
+        router.use(createAnalyticsRoutes(controller));
         router.use(sellerDashboardRoutes);
         router.use(sellerProfitabilityRoutes);
         router.use(sellerSlaRoutes);
-
         router.get('/health', (_req, res) => {
             res.json({ status: 'healthy', service: 'analytics-service', timestamp: new Date().toISOString() });
         });
-
         router.get('/metrics', async (_req, res) => {
             res.set('Content-Type', metricsRegistry.contentType);
             res.end(await metricsRegistry.metrics());
         });
 
-        return router;
-    })(),
+        AnalyticsModule.routes = router;
+    },
+    routes: Router(),
     shutdown: async () => {
         console.log('Shutting down analytics-service module');
     }

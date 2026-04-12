@@ -12,7 +12,7 @@ export class PhoneNumber implements ValueObject<string> {
   constructor(phoneNumber: string) {
     const normalized = this.normalize(phoneNumber);
     
-    if (!this.isValidFormat(normalized)) {
+    if (normalized !== '' && !this.isValidFormat(normalized)) {
       throw new Error(`Invalid phone number format: ${phoneNumber}`);
     }
 

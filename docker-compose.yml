@@ -18,7 +18,7 @@ x-app-env: &app-env
   ALLOWED_SERVICE_KEYS: ${ALLOWED_SERVICE_KEYS:-dev-service-key}
   CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://localhost:3100,http://localhost:3200}
   METRICS_ENABLED: ${METRICS_ENABLED:-true}
-  JAEGER_ENDPOINT: ${JAEGER_ENDPOINT:-http://jaeger:14268/api/traces}
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4318/v1/traces}
   SEARCH_PROVIDER: ${SEARCH_PROVIDER:-meilisearch}
   MEILISEARCH_HOST: ${MEILISEARCH_HOST:-meilisearch}
   MEILISEARCH_PORT: ${MEILISEARCH_PORT:-7700}
@@ -61,7 +61,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: runner
-    image: maysar-backend:latest
+    image: maysar-dtn:latest
     environment:
       <<: *app-env
       SEARCH_PROVIDER: meilisearch
@@ -73,7 +73,7 @@ services:
       redis:
         condition: service_healthy
       meilisearch:
-        condition: service_started
+        condition: service_healthy
       mailpit:
         condition: service_started
     networks:
@@ -89,10 +89,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.4'
+          cpus: '1.5'
           memory: 2G
         reservations:
-          cpus: '0.1'
+          cpus: '0.5'
           memory: 512M
     security_opt:
       - no-new-privileges:true
@@ -166,6 +166,12 @@ services:
     networks:
       - backend-network
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   mailpit:
     image: axllent/mailpit:latest
@@ -200,6 +206,7 @@ services:
       COLLECTOR_ZIPKIN_HOST_PORT: :9411
     ports:
       - "16686:16686"
+      - "4318:4318"
       - "14268:14268"
     networks:
       - backend-network

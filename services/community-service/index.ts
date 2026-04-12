@@ -30,7 +30,7 @@ import { getModelPrefix, makeId } from '@shared/ids/id';
 import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 let outboxProcessor: OutboxProcessor | null = null;
-const prisma = createPrismaClient();
+let prisma: PrismaClient;
 
 class EventBusPublisher {
     constructor(private readonly bus: typeof eventBus) {}
@@ -250,72 +250,70 @@ class PrismaExpertProfileProvider {
     }
 }
 
-const communityWiring = (() => {
-    const articleRepository = new PrismaKnowledgeArticleRepository(prisma);
-    const profileRepository = new PrismaBusinessProfileRepository(prisma);
-    const quotaRepository = new PrismaEngagementQuotaRepository(prisma);
-    const threadRepository = new PrismaDiscussionThreadRepository(prisma);
-    const challengeRepository = new PrismaBusinessChallengeRepository(prisma);
-    const answerRepository = new PrismaThreadAnswerRepository(prisma);
-
-    const eventPublisher = new EventBusPublisher(eventBus);
-    const expertProvider = new PrismaExpertProfileProvider(prisma);
-    const trainingServiceClient = new HttpTrainingServiceClient();
-    const businessRegistryClient = new HttpBusinessRegistryClient();
-
-    const submitArticleUseCase = new SubmitKnowledgeArticleUseCase(
-        articleRepository,
-        profileRepository as any,
-        quotaRepository as any,
-        eventPublisher
-    );
-    const createThreadUseCase = new CreateDiscussionThreadUseCase(
-        threadRepository,
-        quotaRepository as any,
-        profileRepository as any,
-        expertProvider as any,
-        eventPublisher
-    );
-    const answerQuestionUseCase = new AnswerQuestionUseCase(
-        threadRepository as any,
-        answerRepository as any,
-        profileRepository as any,
-        eventPublisher
-    );
-    const proposeChallengeUseCase = new ProposeBusinessChallengeUseCase(
-        challengeRepository,
-        profileRepository as any,
-        quotaRepository as any,
-        expertProvider as any,
-        eventPublisher
-    );
-    const validateExpertiseUseCase = new ValidateExpertiseUseCase(
-        profileRepository as any,
-        trainingServiceClient,
-        businessRegistryClient,
-        eventPublisher
-    );
-    const discoverContentUseCase = new DiscoverContentUseCase(
-        profileRepository as any,
-        new PrismaContentRepository(prisma) as any,
-        new PrismaUserInteractionRepository(prisma) as any
-    );
-
-    return {
-        knowledgeController: new KnowledgeController(submitArticleUseCase),
-        communityController: new CommunityController(
-            proposeChallengeUseCase,
-            validateExpertiseUseCase,
-            discoverContentUseCase
-        ),
-        discussionsController: new DiscussionsController(createThreadUseCase, answerQuestionUseCase)
-    };
-})();
-
 export const CommunityModule: Module = {
     name: 'community-service',
     initialize: async () => {
         console.log('Initializing community-service module');
+
+        prisma = createPrismaClient();
+
+        const articleRepository = new PrismaKnowledgeArticleRepository(prisma);
+        const profileRepository = new PrismaBusinessProfileRepository(prisma);
+        const quotaRepository = new PrismaEngagementQuotaRepository(prisma);
+        const threadRepository = new PrismaDiscussionThreadRepository(prisma);
+        const challengeRepository = new PrismaBusinessChallengeRepository(prisma);
+        const answerRepository = new PrismaThreadAnswerRepository(prisma);
+
+        const eventPublisher = new EventBusPublisher(eventBus);
+        const expertProvider = new PrismaExpertProfileProvider(prisma);
+        const trainingServiceClient = new HttpTrainingServiceClient();
+        const businessRegistryClient = new HttpBusinessRegistryClient();
+
+        const submitArticleUseCase = new SubmitKnowledgeArticleUseCase(
+            articleRepository,
+            profileRepository as any,
+            quotaRepository as any,
+            eventPublisher
+        );
+        const createThreadUseCase = new CreateDiscussionThreadUseCase(
+            threadRepository,
+            quotaRepository as any,
+            profileRepository as any,
+            expertProvider as any,
+            eventPublisher
+        );
+        const answerQuestionUseCase = new AnswerQuestionUseCase(
+            threadRepository as any,
+            answerRepository as any,
+            profileRepository as any,
+            eventPublisher
+        );
+        const proposeChallengeUseCase = new ProposeBusinessChallengeUseCase(
+            challengeRepository,
+            profileRepository as any,
+            quotaRepository as any,
+            expertProvider as any,
+            eventPublisher
+        );
+        const validateExpertiseUseCase = new ValidateExpertiseUseCase(
+            profileRepository as any,
+            trainingServiceClient,
+            businessRegistryClient,
+            eventPublisher
+        );
+        const discoverContentUseCase = new DiscoverContentUseCase(
+            profileRepository as any,
+            new PrismaContentRepository(prisma) as any,
+            new PrismaUserInteractionRepository(prisma) as any
+        );
+
+        const knowledgeController = new KnowledgeController(submitArticleUseCase);
+        const communityController = new CommunityController(
+            proposeChallengeUseCase,
+            validateExpertiseUseCase,
+            discoverContentUseCase
+        );
+        const discussionsController = new DiscussionsController(createThreadUseCase, answerQuestionUseCase);
 
         try {
             const outbox = new TransactionalOutbox(prisma, 'outboxEvent');
@@ -325,11 +323,9 @@ export const CommunityModule: Module = {
         } catch (e) {
             console.error('Failed to start community-service outbox processor:', e);
         }
-    },
-    routes: (() => {
+
         const router = Router();
 
-        // Health + metrics
         router.get('/health', (_req, res) => {
             res.json({ status: 'healthy', service: 'community-service', timestamp: new Date().toISOString() });
         });
@@ -340,14 +336,14 @@ export const CommunityModule: Module = {
         });
 
         router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(prisma));
-
-        router.use('/knowledge', createKnowledgeRouter(communityWiring.knowledgeController as never));
-        router.use('/', createCommunityRouter(communityWiring.communityController as never));
-        router.use('/discussions', createDiscussionsRouter(communityWiring.discussionsController as never));
+        router.use('/knowledge', createKnowledgeRouter(knowledgeController as never));
+        router.use('/', createCommunityRouter(communityController as never));
+        router.use('/discussions', createDiscussionsRouter(discussionsController as never));
         router.use('/posts', postsRoutes);
 
-        return router;
-    })(),
+        CommunityModule.routes = router;
+    },
+    routes: Router(),
     shutdown: async () => {
         console.log('Shutting down community-service module');
         if (outboxProcessor) {
@@ -355,5 +351,3 @@ export const CommunityModule: Module = {
         }
     }
 };
-
-

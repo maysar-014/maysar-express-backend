@@ -1,8 +1,9 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 
 const sdk = new NodeSDK({
     resource: new Resource({
@@ -10,10 +11,13 @@ const sdk = new NodeSDK({
         [SemanticResourceAttributes.SERVICE_VERSION]: process.env.SERVICE_VERSION || '1.0.0',
         [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
     }),
-    traceExporter: new JaegerExporter({
-        endpoint: process.env.JAEGER_ENDPOINT || 'http://localhost:14268/api/traces',
+    traceExporter: new OTLPTraceExporter({
+        url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://jaeger:4318/v1/traces',
     }),
-    instrumentations: [getNodeAutoInstrumentations()],
+    instrumentations: [
+        new HttpInstrumentation(),
+        new ExpressInstrumentation(),
+    ],
 });
 
 const logTracingError = (phase: 'start' | 'shutdown', error: unknown) => {
@@ -21,12 +25,14 @@ const logTracingError = (phase: 'start' | 'shutdown', error: unknown) => {
     console.warn(`[Tracing] ${phase} failed: ${message}`);
 };
 
-void Promise.resolve(sdk.start()).catch((error) => {
+try {
+    sdk.start();
+} catch (error) {
     logTracingError('start', error);
-});
+}
 
 const shutdownTracing = () => {
-    void Promise.resolve(sdk.shutdown()).catch((error) => {
+    void sdk.shutdown().catch((error) => {
         logTracingError('shutdown', error);
     });
 };

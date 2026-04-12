@@ -10,37 +10,31 @@ import { Container as PaymentContainer } from './src/container';
 import { createPrismaClient } from '@shared/database/prisma-client';
 import { requireAuth, requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
-const prisma = createPrismaClient();
-const eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, prisma);
-
-export { eventIdempotency };
+let _eventIdempotency: EventIdempotency;
 
 export const PaymentModule: Module = {
     name: 'payment-service',
     initialize: async () => {
         logger.info('Initializing payment-service module');
+
+        const prisma = createPrismaClient();
+        _eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, prisma);
+
         const container = PaymentContainer.getInstance();
         container.sagaEventHandler.setupSubscriptions().catch((err: Error) => {
             logger.error('Failed to setup saga subscriptions:', err);
         });
         container.paymentEventHandlers.registerHandlers();
-        // eventIdempotency is available for injection into PaymentProcessingSaga
-        // when it is instantiated by the service's internal wiring.
-    },
-    routes: (() => {
+
         const router = Router();
 
         router.use('/health', healthRoutes);
-
         router.get('/metrics', async (_req, res) => {
             res.set('Content-Type', metricsRegistry.contentType);
             res.end(await metricsRegistry.metrics());
         });
 
-        const container = PaymentContainer.getInstance();
-
         try {
-            // Lazy load to avoid env-dependent side effects during module import
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const createPaymentRoutes = require('./src/api/routes/payment.routes').createPaymentRoutes;
             router.use('/payments/webhooks', createWebhookRoutes(container.webhookController));
@@ -59,12 +53,13 @@ export const PaymentModule: Module = {
 
         router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
 
-        return router;
-    })(),
+        PaymentModule.routes = router;
+    },
+    routes: Router(),
     shutdown: async () => {
         logger.info('Shutting down payment-service module');
     }
 };
 
-
-
+// Exported for injection into PaymentProcessingSaga when instantiated by internal wiring
+export { _eventIdempotency as eventIdempotency };

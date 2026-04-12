@@ -29,80 +29,79 @@ import { eventBus } from '../../shared/events/eventBus';
 import type { ISmsProvider } from './src/sms/infrastructure/providers/sms-provider.interface';
 import { requireAuth, requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
-const notificationRepository = new PrismaNotificationRepository();
-const templateRepository = new PrismaTemplateRepository();
-const preferenceRepository = new PrismaPreferenceRepository();
-const validationService = new NotificationValidationService();
-const deliveryPolicy = new NotificationDeliveryPolicy();
-
-async function sendViaChannel(notification: Notification): Promise<void> {
-    const content = notification.content.getValue();
-    const subject = notification.subject;
-    if (notification.channel === 'email' && notification.deliveryAddress) {
-        const { EmailProviderAdapter } = await import('./src/infrastructure/adapters/email-provider.adapter');
-        const email = new EmailProviderAdapter();
-        await email.send(notification.deliveryAddress.getValue(), subject, content);
-    } else if (notification.channel === 'sms' && notification.deliveryAddress) {
-        const { container } = await import('./src/sms/infrastructure/container');
-        const { TYPES } = await import('./src/sms/infrastructure/types');
-        const provider = container.get<ISmsProvider>(TYPES.SmsProvider);
-        const response = await provider.send(notification.deliveryAddress.getValue(), content);
-        if (!response.isSuccess()) {
-            throw new Error(`SMS send failed: ${response.getErrorMessage() || 'Unknown error'}`);
-        }
-    } else if (notification.channel === 'push' && notification.deliveryAddress) {
-        const { PushProviderAdapter } = await import('./src/infrastructure/adapters/push-provider.adapter');
-        const push = new PushProviderAdapter();
-        await push.send(notification.deliveryAddress.getValue(), { title: subject, body: content });
-    }
-}
-
-async function recordMetrics(notificationId: string, channel: string): Promise<void> {
-    logger.debug('Record delivery metrics', { notificationId, channel });
-}
-
-async function triggerDeliverySaga(notification: Notification): Promise<void> {
-    await executeNotificationDeliverySaga(
-        notification,
-        notificationRepository,
-        preferenceRepository,
-        validationService,
-        sendViaChannel,
-        recordMetrics
-    );
-}
-
-const sendNotificationUseCase = new SendNotificationUseCase(
-    notificationRepository,
-    preferenceRepository,
-    validationService,
-    deliveryPolicy,
-    triggerDeliverySaga
-);
-const getHistoryUseCase = new GetNotificationHistoryUseCase(notificationRepository);
-const retryFailedUseCase = new RetryFailedNotificationUseCase(
-    notificationRepository,
-    deliveryPolicy,
-    triggerDeliverySaga
-);
-const createTemplateUseCase = new CreateTemplateUseCase(templateRepository, validationService);
-const updatePreferenceUseCase = new UpdatePreferenceUseCase(preferenceRepository);
-
-const notificationController = new NotificationController(
-    sendNotificationUseCase,
-    getHistoryUseCase,
-    retryFailedUseCase,
-    notificationRepository
-);
-const templateController = new TemplateController(createTemplateUseCase, templateRepository);
-const preferenceController = new PreferenceController(updatePreferenceUseCase, preferenceRepository);
-
-
 export const NotificationModule: Module = {
     name: 'notification-service',
     initialize: async () => {
         logger.info('Initializing notification-service module (fully merged)');
         await DatabaseConnection.initialize();
+
+        const notificationRepository = new PrismaNotificationRepository();
+        const templateRepository = new PrismaTemplateRepository();
+        const preferenceRepository = new PrismaPreferenceRepository();
+        const validationService = new NotificationValidationService();
+        const deliveryPolicy = new NotificationDeliveryPolicy();
+
+        async function sendViaChannel(notification: Notification): Promise<void> {
+            const content = notification.content.getValue();
+            const subject = notification.subject;
+            if (notification.channel === 'email' && notification.deliveryAddress) {
+                const { EmailProviderAdapter } = await import('./src/infrastructure/adapters/email-provider.adapter');
+                const email = new EmailProviderAdapter();
+                await email.send(notification.deliveryAddress.getValue(), subject, content);
+            } else if (notification.channel === 'sms' && notification.deliveryAddress) {
+                const { container } = await import('./src/sms/infrastructure/container');
+                const { TYPES } = await import('./src/sms/infrastructure/types');
+                const provider = container.get<ISmsProvider>(TYPES.SmsProvider);
+                const response = await provider.send(notification.deliveryAddress.getValue(), content);
+                if (!response.isSuccess()) {
+                    throw new Error(`SMS send failed: ${response.getErrorMessage() || 'Unknown error'}`);
+                }
+            } else if (notification.channel === 'push' && notification.deliveryAddress) {
+                const { PushProviderAdapter } = await import('./src/infrastructure/adapters/push-provider.adapter');
+                const push = new PushProviderAdapter();
+                await push.send(notification.deliveryAddress.getValue(), { title: subject, body: content });
+            }
+        }
+
+        async function recordMetrics(notificationId: string, channel: string): Promise<void> {
+            logger.debug('Record delivery metrics', { notificationId, channel });
+        }
+
+        async function triggerDeliverySaga(notification: Notification): Promise<void> {
+            await executeNotificationDeliverySaga(
+                notification,
+                notificationRepository,
+                preferenceRepository,
+                validationService,
+                sendViaChannel,
+                recordMetrics
+            );
+        }
+
+        const sendNotificationUseCase = new SendNotificationUseCase(
+            notificationRepository,
+            preferenceRepository,
+            validationService,
+            deliveryPolicy,
+            triggerDeliverySaga
+        );
+        const getHistoryUseCase = new GetNotificationHistoryUseCase(notificationRepository);
+        const retryFailedUseCase = new RetryFailedNotificationUseCase(
+            notificationRepository,
+            deliveryPolicy,
+            triggerDeliverySaga
+        );
+        const createTemplateUseCase = new CreateTemplateUseCase(templateRepository, validationService);
+        const updatePreferenceUseCase = new UpdatePreferenceUseCase(preferenceRepository);
+
+        const notificationController = new NotificationController(
+            sendNotificationUseCase,
+            getHistoryUseCase,
+            retryFailedUseCase,
+            notificationRepository
+        );
+        const templateController = new TemplateController(createTemplateUseCase, templateRepository);
+        const preferenceController = new PreferenceController(updatePreferenceUseCase, preferenceRepository);
 
         // Initialize SMS service
         try {
@@ -169,23 +168,17 @@ export const NotificationModule: Module = {
         } catch (error) {
             logger.warn('Failed to initialize Saga Recovery Worker', { error });
         }
-    },
-    routes: (() => {
+
         const router = Router();
 
-        // Mount SMS routes under /sms
         router.use('/sms', createSmsRouter());
         router.use('/sms/health', smsHealthRoutes);
-
-        // Mount notification API routes (previously unmounted)
         router.use('/notifications', requireAuth, createNotificationRoutes(notificationController));
         router.use('/templates', requireAuth, createTemplateRoutes(templateController));
         router.use('/preferences', requireAuth, createPreferenceRoutes(preferenceController));
         router.use('/health', notificationHealthRoutes);
         router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
-
-        // Fallback health summary (kept for compatibility)
-        router.get('/health-summary', (req, res) => {
+        router.get('/health-summary', (_req, res) => {
             res.json({
                 status: 'ok',
                 service: 'notification-service',
@@ -194,8 +187,9 @@ export const NotificationModule: Module = {
             });
         });
 
-        return router;
-    })(),
+        NotificationModule.routes = router;
+    },
+    routes: Router(),
     shutdown: async () => {
         logger.info('Shutting down notification-service module');
         try {
@@ -213,6 +207,3 @@ export const NotificationModule: Module = {
         }
     }
 };
-
-
-

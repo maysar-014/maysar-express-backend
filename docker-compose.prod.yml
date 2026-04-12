@@ -3,7 +3,7 @@ version: '3.8'
 services:
   maysar-backend:
     build: .
-    image: maysar-backend:latest
+    image: maysar-dtn:latest
     restart: unless-stopped
     environment:
       # See .env.example for required configuration

@@ -15,7 +15,7 @@ services:
       - .:/app
       - /app/node_modules # Anonymous volume to protect container's node_modules
       - ./prisma:/app/prisma
-    command: node -r ts-node/register/transpile-only -r dotenv/config -r tsconfig-paths/register src/main.ts
+    command: npx tsx src/main.ts
     restart: "no" # Don't restart in dev to see errors clearly
 
   postgres:

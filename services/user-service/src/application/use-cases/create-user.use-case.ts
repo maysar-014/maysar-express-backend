@@ -120,7 +120,7 @@ export class CreateUserUseCase {
       throw new UserValidationError('Invalid email format');
     }
 
-    if (!phoneNumber || !this.isValidPhoneNumber(phoneNumber)) {
+    if (phoneNumber && !this.isValidPhoneNumber(phoneNumber)) {
       throw new UserValidationError('Invalid phone number format');
     }
 
@@ -140,10 +140,10 @@ export class CreateUserUseCase {
   /**
    * Check for existing user
    */
-  private async checkExistingUser(email: string, phoneNumber: string): Promise<void> {
+  private async checkExistingUser(email: string, phoneNumber?: string): Promise<void> {
     const [emailExists, phoneExists] = await Promise.all([
       this.userRepository.emailExists(email),
-      this.userRepository.phoneExists(phoneNumber)
+      phoneNumber ? this.userRepository.phoneExists(phoneNumber) : Promise.resolve(false)
     ]);
 
     if (emailExists || phoneExists) {
@@ -160,7 +160,7 @@ export class CreateUserUseCase {
       throw new UserValidationError('Email address appears to be suspicious');
     }
 
-    if (this.userSecurityPolicy.isSuspiciousPhoneNumber(createUserDto.phoneNumber)) {
+    if (createUserDto.phoneNumber && this.userSecurityPolicy.isSuspiciousPhoneNumber(createUserDto.phoneNumber)) {
       throw new UserValidationError('Phone number appears to be suspicious');
     }
 

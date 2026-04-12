@@ -19,34 +19,36 @@ import { InventoryOutboxRepository } from './src/infrastructure/messaging/invent
 import { metricsRegistry } from './src/infrastructure/monitoring/metrics';
 
 let outboxProcessor: OutboxProcessor | null = null;
-const prisma = createPrismaClient();
-const inventoryOutboxRepository = new InventoryOutboxRepository(prisma);
-const stockManager = new StockManager(prisma as any, eventBus, inventoryOutboxRepository);
-const warehouseManager = new WarehouseManager(prisma as any);
-const redisReservationMode = resolveRedisReservationMode();
-const redisStockEngineBundle = redisReservationMode === 'off' ? null : createRedisStockEngine();
-const reservationEngine = new ReservationEngine(
-    prisma as any,
-    stockManager,
-    warehouseManager,
-    eventBus,
-    redisStockEngineBundle?.stockEngine,
-    redisStockEngineBundle?.redisClient,
-    redisReservationMode
-);
-const stockApi = new StockApi(prisma as any, stockManager, reservationEngine, warehouseManager);
-const eventIdempotency = process.env.REDIS_URL
-    ? new EventIdempotency(process.env.REDIS_URL, prisma)
-    : null;
-const inventoryEventHandlers = eventIdempotency
-    ? new InventoryEventHandlers(stockManager, reservationEngine, eventIdempotency)
-    : null;
-void inventoryEventHandlers;
+let prisma: PrismaClient;
 
 export const InventoryModule: Module = {
     name: 'inventory-service',
     initialize: async () => {
         console.log('Initializing inventory-service module');
+
+        prisma = createPrismaClient();
+        const inventoryOutboxRepository = new InventoryOutboxRepository(prisma);
+        const stockManager = new StockManager(prisma as any, eventBus, inventoryOutboxRepository);
+        const warehouseManager = new WarehouseManager(prisma as any);
+        const redisReservationMode = resolveRedisReservationMode();
+        const redisStockEngineBundle = redisReservationMode === 'off' ? null : createRedisStockEngine();
+        const reservationEngine = new ReservationEngine(
+            prisma as any,
+            stockManager,
+            warehouseManager,
+            eventBus,
+            redisStockEngineBundle?.stockEngine,
+            redisStockEngineBundle?.redisClient,
+            redisReservationMode
+        );
+        const stockApi = new StockApi(prisma as any, stockManager, reservationEngine, warehouseManager);
+        const eventIdempotency = process.env.REDIS_URL
+            ? new EventIdempotency(process.env.REDIS_URL, prisma)
+            : null;
+        const inventoryEventHandlers = eventIdempotency
+            ? new InventoryEventHandlers(stockManager, reservationEngine, eventIdempotency)
+            : null;
+        void inventoryEventHandlers;
 
         try {
             const outbox = new TransactionalOutbox(prisma, 'inventory_OutboxEvent');
@@ -56,8 +58,7 @@ export const InventoryModule: Module = {
         } catch (e) {
             console.error('Failed to start inventory-service outbox processor:', e);
         }
-    },
-    routes: (() => {
+
         const router = Router();
         router.use('/health', healthRoutes);
         router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(prisma));
@@ -94,8 +95,10 @@ export const InventoryModule: Module = {
         apiRouter.get('/analytics/stock-levels', (req, res) => stockApi.getStockAnalytics(req, res));
 
         router.use('/', apiRouter);
-        return router;
-    })(),
+
+        InventoryModule.routes = router;
+    },
+    routes: Router(),
     shutdown: async () => {
         console.log('Shutting down inventory-service module');
         if (outboxProcessor) {
@@ -103,5 +106,3 @@ export const InventoryModule: Module = {
         }
     }
 };
-
-

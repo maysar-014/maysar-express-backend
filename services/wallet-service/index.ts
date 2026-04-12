@@ -9,26 +9,22 @@ import { Container } from './src/container';
 import { createPrismaClient } from '@shared/database/prisma-client';
 import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
-const prisma = createPrismaClient();
-const eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, prisma);
-
-export { eventIdempotency };
+let prisma: PrismaClient;
+let _eventIdempotency: EventIdempotency;
 
 export const WalletModule: Module = {
     name: 'wallet-service',
     initialize: async () => {
         console.log('Initializing wallet-service module');
-        // eventIdempotency is available for injection into PaymentCompletedHandler
-        // when it is instantiated by the service's internal wiring.
-    },
-    routes: (() => {
+
+        prisma = createPrismaClient();
+        _eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, prisma);
+
         const router = Router();
         router.use('/health', healthRoutes);
         router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(prisma));
 
         try {
-            // Lazy load to avoid env-dependent side effects during module import
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
             const container = Container.getInstance();
             router.use('/wallets', createWalletRoutes(container.walletController));
         } catch (error) {
@@ -42,11 +38,13 @@ export const WalletModule: Module = {
             });
         }
 
-        return router;
-    })(),
+        WalletModule.routes = router;
+    },
+    routes: Router(),
     shutdown: async () => {
         console.log('Shutting down wallet-service module');
     }
 };
 
-
+// Exported for injection into PaymentCompletedHandler when instantiated by internal wiring
+export { _eventIdempotency as eventIdempotency };
