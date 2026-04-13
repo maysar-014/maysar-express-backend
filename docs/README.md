@@ -4,6 +4,8 @@ Central navigation for all Maysar platform documentation. These pages describe t
 
 ## Getting Started
 
+- [Developer Training](developer-training/README.md) - Guided tutorials for onboarding, architecture, testing, and feature work
+
 - [Developer Guide](DEVELOPER_GUIDE.md) — Architecture overview, local setup, adding modules
 - [Modeling Quick Start](MODELING_QUICK_START.md) — How to create and update Mermaid diagrams
 - [Diagram Maintenance Guide](DIAGRAM_MAINTENANCE_GUIDE.md) — Diagram update workflow and conventions

@@ -4,6 +4,8 @@
 
 The codebase runs as a modular monolith. `src/main.ts` boots the process, `services/index.ts` registers the modules, and `src/app.ts` mounts them under `/api/{service-name}`. Modules communicate through the shared in-process event bus and shared saga/outbox helpers.
 
+For a guided onboarding path with hands-on tutorials, start with [docs/developer-training/README.md](developer-training/README.md).
+
 ## Getting Started
 
 ```bash
