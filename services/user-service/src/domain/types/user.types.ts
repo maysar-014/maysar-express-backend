@@ -28,6 +28,16 @@ export enum UserStatus {
 }
 
 /**
+ * KYC status for progressive verification
+ */
+export enum KycStatus {
+  NONE = 'none',
+  PENDING = 'pending',
+  VERIFIED = 'verified',
+  REJECTED = 'rejected'
+}
+
+/**
  * User metadata for tracking account information
  */
 export interface UserMetadata {
@@ -48,6 +58,13 @@ export interface UserMetadata {
   lastProfileUpdate?: Date | undefined;
   termsAcceptedVersion?: string | undefined;
   privacyPolicyAcceptedVersion?: string | undefined;
+}
+
+export interface KycData {
+  fullName?: string | undefined;
+  nationalId?: string | undefined;
+  businessName?: string | undefined;
+  documents?: string[] | undefined;
 }
 
 /**

@@ -7,7 +7,6 @@ export { CatalogModule } from './catalog-service'; // Now includes campaign-serv
 export { CheckoutModule } from './checkout-service';
 export { CommissionModule } from './commission-service';
 export { CommunityModule } from './community-service';
-export { ComplianceModule } from './compliance-service';
 export { EnablerModule } from './enabler-service';
 export { InventoryModule } from './inventory-service';
 export { LogisticsModule } from './logistics-service';
@@ -17,6 +16,7 @@ export { OrderModule } from './order-service';
 export { PaymentModule } from './payment-service';
 export { PayoutModule } from './payout-service';
 export { ProductionModule } from './production-service';
+export { KycModule } from './kyc-service';
 // SessionModule merged into AuthModule
 // SmsModule merged into NotificationModule
 export { SupportModule } from './support-service';

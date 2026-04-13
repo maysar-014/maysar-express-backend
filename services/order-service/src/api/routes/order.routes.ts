@@ -9,6 +9,7 @@ import { cacheInvalidation, cacheResponse } from '../../middleware/caching.middl
 import { cacheConfig } from '../../config/monitoring.config';
 import { createMaintenanceRoutes } from './maintenance.routes';
 import { validateJoiRequest } from '@shared/middleware/joi-request-validation';
+import { requireKycLevel } from '../../../../kyc-service/src/api/middleware/kyc-gate.middleware';
 
 const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$/u;
 const safeVisibleString = Joi.string().min(1).pattern(SAFE_VISIBLE_STRING_PATTERN);
@@ -143,6 +144,7 @@ export const setupOrderRoutes = (orderController: OrderController, codDisputeCon
   router.post(
     '/orders',
     validateJoiRequest({ body: createOrderBodySchema }),
+    requireKycLevel(3),
     asyncHandler((req, res) => orderController.placeOrder(req, res))
   );
 

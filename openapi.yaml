@@ -38171,192 +38171,31 @@ paths:
       security:
         - BearerAuth: []
     parameters: []
-  /api/compliance/kyc/submissions:
+  /api/kyc/submit:
     post:
       tags:
-        - Compliance
-      summary: POST /api/compliance/kyc/submissions
+        - KYC
+      summary: POST /api/kyc/submit
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: false
-              required:
-                - userId
-                - documentType
-              anyOf:
-                - required:
-                    - documentUrl
-                - required:
-                    - fileUrl
-              properties:
-                userId:
-                  type: string
-                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
-                documentType:
-                  type: string
-                  enum:
-                    - national_id
-                    - passport
-                    - drivers_license
-                    - proof_of_address
-                documentUrl:
-                  type: string
-                  format: uri
-                fileUrl:
-                  type: string
-                  format: uri
-                fileName:
-                  type: string
-                  minLength: 1
-                mimeType:
-                  type: string
-                  minLength: 1
-                fileSizeBytes:
-                  type: integer
-                  minimum: 1
-                issuingCountry:
-                  type: string
-                  pattern: '^[A-Za-z]{2,3}$'
-                documentNumber:
-                  type: string
-                  minLength: 3
-                issuedAt:
-                  type: string
-                  format: date-time
-                expiresAt:
-                  type: string
-                  format: date-time
-                metadata:
-                  type: object
+              $ref: '#/components/schemas/KycSubmitRequest'
             example:
-              userId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
-              documentType: national_id
-              fileUrl: 'https://example.com/kyc/contract-kyc-document.pdf'
-              fileName: contract-kyc-document.pdf
-              mimeType: application/pdf
-            x-codex-generated-example: true
-          multipart/form-data:
-            schema:
-              type: object
-              additionalProperties: false
-              required:
-                - userId
-                - documentType
-                - file
-                - mimeType
-              properties:
-                userId:
-                  type: string
-                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
-                documentType:
-                  type: string
-                  enum:
-                    - national_id
-                    - passport
-                    - drivers_license
-                    - proof_of_address
-                file:
-                  type: string
-                  format: binary
-                fileName:
-                  type: string
-                  minLength: 1
-                mimeType:
-                  type: string
-                  minLength: 1
-                fileSizeBytes:
-                  type: integer
-                  minimum: 1
-                issuingCountry:
-                  type: string
-                  pattern: '^[A-Za-z]{2,3}$'
-                documentNumber:
-                  type: string
-                  minLength: 3
-                issuedAt:
-                  type: string
-                  format: date-time
-                expiresAt:
-                  type: string
-                  format: date-time
-                metadata:
-                  type: object
-            example:
-              userId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
-              documentType: national_id
-              file: contract-kyc-document.pdf
-              fileName: contract-kyc-document.pdf
-              mimeType: application/pdf
+              fullName: Ada Lovelace
+              nationalId: A1234567
+              businessName: Maysar Traders
+              documents:
+                - https://example.com/documents/id-front.pdf
             x-codex-generated-example: true
       responses:
-        '201':
-          description: Created
+        '200':
+          description: Success
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - success
-                  - submissionId
-                  - verificationId
-                  - status
-                  - data
-                properties:
-                  success:
-                    type: boolean
-                  submissionId:
-                    type: string
-                  verificationId:
-                    type: string
-                  status:
-                    type: string
-                    enum:
-                      - pending
-                      - under_review
-                      - approved
-                      - rejected
-                  data:
-                    type: object
-                    required:
-                      - userId
-                      - documentType
-                      - documentUrl
-                      - submittedAt
-                      - verificationStatus
-                    properties:
-                      userId:
-                        type: string
-                      documentType:
-                        type: string
-                      documentUrl:
-                        type: string
-                        format: uri
-                      fileName:
-                        type: string
-                        nullable: true
-                      mimeType:
-                        type: string
-                        nullable: true
-                      fileSizeBytes:
-                        type: integer
-                        nullable: true
-                      documentAccessUrl:
-                        type: string
-                      storageProvider:
-                        type: string
-                        enum:
-                          - local
-                          - s3
-                          - cloudflare
-                        nullable: true
-                      submittedAt:
-                        type: string
-                        format: date-time
-                      verificationStatus:
-                        type: string
+                $ref: '#/components/schemas/KycSubmitResponse'
             text/plain:
               schema: {}
         '400':
@@ -38426,266 +38265,22 @@ paths:
       security:
         - BearerAuth: []
     parameters: []
-  /api/compliance/kyc/documents:
-    post:
+  /api/kyc/status:
+    get:
       tags:
-        - Compliance
-      summary: POST /api/compliance/kyc/documents
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: false
-              required:
-                - userId
-                - documentType
-              anyOf:
-                - required:
-                    - documentUrl
-                - required:
-                    - fileUrl
-              properties:
-                userId:
-                  type: string
-                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
-                documentType:
-                  type: string
-                  enum:
-                    - national_id
-                    - passport
-                    - drivers_license
-                    - proof_of_address
-                documentUrl:
-                  type: string
-                  format: uri
-                fileUrl:
-                  type: string
-                  format: uri
-                fileName:
-                  type: string
-                  minLength: 1
-                mimeType:
-                  type: string
-                  minLength: 1
-                fileSizeBytes:
-                  type: integer
-                  minimum: 1
-                issuingCountry:
-                  type: string
-                  pattern: '^[A-Za-z]{2,3}$'
-                documentNumber:
-                  type: string
-                  minLength: 3
-                issuedAt:
-                  type: string
-                  format: date-time
-                expiresAt:
-                  type: string
-                  format: date-time
-                metadata:
-                  type: object
-            example:
-              userId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
-              documentType: national_id
-              fileUrl: 'https://example.com/kyc/contract-kyc-document.pdf'
-              fileName: contract-kyc-document.pdf
-              mimeType: application/pdf
-            x-codex-generated-example: true
-          multipart/form-data:
-            schema:
-              type: object
-              additionalProperties: false
-              required:
-                - userId
-                - documentType
-                - file
-                - mimeType
-              properties:
-                userId:
-                  type: string
-                  pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
-                documentType:
-                  type: string
-                  enum:
-                    - national_id
-                    - passport
-                    - drivers_license
-                    - proof_of_address
-                file:
-                  type: string
-                  format: binary
-                fileName:
-                  type: string
-                  minLength: 1
-                mimeType:
-                  type: string
-                  minLength: 1
-                fileSizeBytes:
-                  type: integer
-                  minimum: 1
-                issuingCountry:
-                  type: string
-                  pattern: '^[A-Za-z]{2,3}$'
-                documentNumber:
-                  type: string
-                  minLength: 3
-                issuedAt:
-                  type: string
-                  format: date-time
-                expiresAt:
-                  type: string
-                  format: date-time
-                metadata:
-                  type: object
-            example:
-              userId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
-              documentType: national_id
-              file: contract-kyc-document.pdf
-              fileName: contract-kyc-document.pdf
-              mimeType: application/pdf
-            x-codex-generated-example: true
+        - KYC
+      summary: GET /api/kyc/status
       responses:
-        '201':
-          description: Created
+        '200':
+          description: Success
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - success
-                  - submissionId
-                  - verificationId
-                  - status
-                  - data
-                properties:
-                  success:
-                    type: boolean
-                  submissionId:
-                    type: string
-                  verificationId:
-                    type: string
-                  status:
-                    type: string
-                    enum:
-                      - pending
-                      - under_review
-                      - approved
-                      - rejected
-                  data:
-                    type: object
-                    required:
-                      - userId
-                      - documentType
-                      - documentUrl
-                      - submittedAt
-                      - verificationStatus
-                    properties:
-                      userId:
-                        type: string
-                      documentType:
-                        type: string
-                      documentUrl:
-                        type: string
-                        format: uri
-                      fileName:
-                        type: string
-                        nullable: true
-                      mimeType:
-                        type: string
-                        nullable: true
-                      fileSizeBytes:
-                        type: integer
-                        nullable: true
-                      documentAccessUrl:
-                        type: string
-                      storageProvider:
-                        type: string
-                        enum:
-                          - local
-                          - s3
-                          - cloudflare
-                        nullable: true
-                      submittedAt:
-                        type: string
-                        format: date-time
-                      verificationStatus:
-                        type: string
+                $ref: '#/components/schemas/KycStatusResponse'
             text/plain:
               schema: {}
         '400':
           description: Validation error
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '422':
-          description: Unprocessable Entity
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-      security:
-        - BearerAuth: []
-      parameters: []
-    parameters: []
-  '/api/compliance/kyc/documents/{verificationId}/content':
-    get:
-      tags:
-        - Compliance
-      summary: 'GET /api/compliance/kyc/documents/{verificationId}/content'
-      responses:
-        '200':
-          description: Document content
-          content:
-            application/pdf:
-              schema:
-                type: string
-                format: binary
-            image/jpeg:
-              schema:
-                type: string
-                format: binary
-            image/png:
-              schema:
-                type: string
-                format: binary
-            image/webp:
-              schema:
-                type: string
-                format: binary
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-            text/plain:
-              schema: {}
-        '302':
-          description: Redirect to signed document URL
           content:
             application/json:
               schema: {}
@@ -38712,6 +38307,20 @@ paths:
               schema: {}
             text/plain:
               schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
         '422':
           description: Unprocessable Entity
           content:
@@ -38726,41 +38335,39 @@ paths:
               schema: {}
             text/plain:
               schema: {}
-      parameters:
-        - in: path
-          name: verificationId
-          required: true
-          schema:
-            type: string
-            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
-            enum:
-              - kyc_01ARZ3NDEKTSV4RRFFQ69G5FAV
-            example: kyc_01ARZ3NDEKTSV4RRFFQ69G5FAV
-          example: kyc_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        '501':
+          description: Not Implemented
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      parameters: []
       security:
         - BearerAuth: []
-    parameters:
-      - name: verificationId
-        in: path
-        required: true
-        schema:
-          type: string
-          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
-          enum:
-            - kyc_01ARZ3NDEKTSV4RRFFQ69G5FAV
-          example: kyc_01ARZ3NDEKTSV4RRFFQ69G5FAV
-        example: kyc_01ARZ3NDEKTSV4RRFFQ69G5FAV
-  '/api/compliance/kyc-status/{userId}':
-    get:
+    parameters: []
+  /api/kyc/admin/{userId}:
+    patch:
       tags:
-        - Compliance
-      summary: 'GET /api/compliance/kyc-status/{userId}'
+        - KYC
+      summary: PATCH /api/kyc/admin/{userId}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KycAdminVerifyRequest'
+            example:
+              action: approve
+              kycLevel: 1
+            x-codex-generated-example: true
       responses:
         '200':
           description: Success
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/KycAdminVerifyResponse'
             text/plain:
               schema: {}
         '400':
@@ -38841,203 +38448,7 @@ paths:
         required: true
         schema:
           type: string
-        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
-  /api/compliance/manual-review:
-    post:
-      tags:
-        - Compliance
-      summary: POST /api/compliance/manual-review
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - userId
-                - decision
-                - reviewerId
-              properties:
-                userId:
-                  type: string
-                  minLength: 1
-                decision:
-                  type: string
-                  enum:
-                    - approved
-                    - rejected
-                    - under_review
-                reviewerId:
-                  type: string
-                  minLength: 1
-            example:
-              userId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
-              decision: approved
-              reviewerId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
-            x-codex-generated-example: true
-      responses:
-        '200':
-          description: Created
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '400':
-          description: Validation error
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '405':
-          description: Method Not Allowed
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '409':
-          description: Conflict
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '422':
-          description: OK
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '501':
-          description: Not Implemented
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-      parameters: []
-      security:
-        - BearerAuth: []
-    parameters: []
-  /api/compliance/manual-review/pending:
-    get:
-      tags:
-        - Compliance
-      summary: GET /api/compliance/manual-review/pending
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '400':
-          description: Validation error
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '405':
-          description: Method Not Allowed
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '409':
-          description: Conflict
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '422':
-          description: Unprocessable Entity
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-        '501':
-          description: Not Implemented
-          content:
-            application/json:
-              schema: {}
-            text/plain:
-              schema: {}
-      parameters: []
-      security:
-        - BearerAuth: []
-    parameters: []
-  /api/compliance/market-record:
+        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV  /api/compliance/market-record:
     post:
       tags:
         - Compliance
@@ -49994,3 +49405,202 @@ components:
             $ref: '#/components/schemas/PublicSellerSummary'
         pagination:
           $ref: '#/components/schemas/PublicSellerPagination'
+
+    KycStatus:
+      type: string
+      enum:
+        - none
+        - pending
+        - verified
+        - rejected
+    KycData:
+      type: object
+      additionalProperties: false
+      properties:
+        fullName:
+          type: string
+        nationalId:
+          type: string
+        businessName:
+          type: string
+        documents:
+          type: array
+          items:
+            type: string
+            format: uri
+    KycLevelLimits:
+      type: object
+      additionalProperties: false
+      required:
+        - maxListings
+        - maxTransactions
+        - maxEarnings
+      properties:
+        maxListings:
+          type: integer
+        maxTransactions:
+          type: integer
+        maxEarnings:
+          type: number
+    UserKycFields:
+      type: object
+      additionalProperties: false
+      required:
+        - kycStatus
+        - kycLevel
+        - kycLimitMaxListings
+        - kycLimitMaxTransactions
+        - kycLimitMaxEarnings
+      properties:
+        kycStatus:
+          $ref: '#/components/schemas/KycStatus'
+        kycLevel:
+          type: integer
+        kycSubmittedAt:
+          type: string
+          format: date-time
+          nullable: true
+        kycVerifiedAt:
+          type: string
+          format: date-time
+          nullable: true
+        kycData:
+          $ref: '#/components/schemas/KycData'
+        kycNationalId:
+          type: string
+          nullable: true
+        kycLimitMaxListings:
+          type: integer
+        kycLimitMaxTransactions:
+          type: integer
+        kycLimitMaxEarnings:
+          type: number
+    KycSubmitRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - fullName
+        - nationalId
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+          maxLength: 200
+        nationalId:
+          type: string
+          minLength: 2
+          maxLength: 128
+        businessName:
+          type: string
+          minLength: 2
+          maxLength: 200
+        documents:
+          type: array
+          items:
+            type: string
+            format: uri
+    KycSubmitResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - success
+        - status
+      properties:
+        success:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/KycStatus'
+    KycAdminVerifyRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - action
+      properties:
+        action:
+          type: string
+          enum:
+            - approve
+            - reject
+        kycLevel:
+          type: integer
+          minimum: 1
+          maximum: 3
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 500
+    KycAdminVerifyResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - success
+        - status
+        - level
+      properties:
+        success:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/KycStatus'
+        level:
+          type: integer
+    KycStatusDetails:
+      type: object
+      additionalProperties: false
+      required:
+        - userId
+        - kycStatus
+        - kycLevel
+        - limits
+        - restrictedFeatures
+        - nextRequiredAction
+      properties:
+        userId:
+          type: string
+        kycStatus:
+          $ref: '#/components/schemas/KycStatus'
+        kycLevel:
+          type: integer
+        kycSubmittedAt:
+          type: string
+          format: date-time
+          nullable: true
+        kycVerifiedAt:
+          type: string
+          format: date-time
+          nullable: true
+        kycData:
+          $ref: '#/components/schemas/KycData'
+        kycNationalId:
+          type: string
+          nullable: true
+        kycLimitMaxListings:
+          type: integer
+        kycLimitMaxTransactions:
+          type: integer
+        kycLimitMaxEarnings:
+          type: number
+        limits:
+          $ref: '#/components/schemas/KycLevelLimits'
+        restrictedFeatures:
+          type: array
+          items:
+            type: string
+        nextRequiredAction:
+          type: string
+          enum:
+            - submit_kyc
+            - complete_verification
+            - complete_higher_verification
+            - contact_support
+            - none
+    KycStatusResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - success
+        - data
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/KycStatusDetails'

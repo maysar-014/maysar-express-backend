@@ -1,5 +1,5 @@
 import { User } from '../../domain/entities/user.entity';
-import { UserMetadata, UserRole } from '../../domain/types/user.types';
+import { UserMetadata, UserRole, KycStatus, KycData } from '../../domain/types/user.types';
 import { Email } from '../../domain/value-objects/email.value-object';
 import { PhoneNumber } from '../../domain/value-objects/phone-number.value-object';
 import { Address } from '../../domain/value-objects/address.value-object';
@@ -80,6 +80,15 @@ export class UserMapper {
       preferredCurrency: user.preferredCurrency,
       addresses: user.addresses,
       businessId: user.businessId || '',
+      kycStatus: user.kycStatus,
+      kycLevel: user.kycLevel,
+      kycSubmittedAt: user.kycSubmittedAt,
+      kycVerifiedAt: user.kycVerifiedAt,
+      kycData: user.kycData,
+      kycNationalId: user.kycNationalId,
+      kycLimitMaxListings: user.kycLimitMaxListings,
+      kycLimitMaxTransactions: user.kycLimitMaxTransactions,
+      kycLimitMaxEarnings: user.kycLimitMaxEarnings,
       metadata: {
         accountAge: user.metadata.accountAge,
         loginAttempts: user.metadata.loginAttempts,
@@ -133,6 +142,15 @@ export class UserMapper {
       preferredCurrency: userData.timezone || 'UTC',
       addresses,
       businessId: userData.businessId,
+      kycStatus: userData.kycStatus ?? KycStatus.NONE,
+      kycLevel: userData.kycLevel ?? 0,
+      kycSubmittedAt: userData.kycSubmittedAt || undefined,
+      kycVerifiedAt: userData.kycVerifiedAt || undefined,
+      kycData: (userData.kycData as KycData | undefined) || undefined,
+      kycNationalId: userData.kycNationalId || undefined,
+      kycLimitMaxListings: userData.kycLimitMaxListings ?? 5,
+      kycLimitMaxTransactions: userData.kycLimitMaxTransactions ?? 1,
+      kycLimitMaxEarnings: Number(userData.kycLimitMaxEarnings ?? 0),
       metadata: {
         loginAttempts: userData.failedLoginAttempts || 0,
         accountLockedUntil: userData.lockoutUntil || undefined
@@ -163,7 +181,16 @@ export class UserMapper {
       businessId: user.businessId,
       failedLoginAttempts: user.metadata.loginAttempts,
       lockoutUntil: user.metadata.accountLockedUntil,
-      lastLoginAt: user.lastLoginAt
+      lastLoginAt: user.lastLoginAt,
+      kycStatus: user.kycStatus,
+      kycLevel: user.kycLevel,
+      kycSubmittedAt: user.kycSubmittedAt,
+      kycVerifiedAt: user.kycVerifiedAt,
+      kycData: user.kycData,
+      kycNationalId: user.kycNationalId,
+      kycLimitMaxListings: user.kycLimitMaxListings,
+      kycLimitMaxTransactions: user.kycLimitMaxTransactions,
+      kycLimitMaxEarnings: user.kycLimitMaxEarnings
     };
     if (user.passwordHash !== undefined) {
       data.passwordHash = user.passwordHash;
@@ -188,6 +215,15 @@ export class UserMapper {
       phoneVerified: user.phoneVerified,
       preferredLanguage: user.preferredLanguage,
       preferredCurrency: user.preferredCurrency,
+      kycStatus: user.kycStatus,
+      kycLevel: user.kycLevel,
+      kycSubmittedAt: user.kycSubmittedAt,
+      kycVerifiedAt: user.kycVerifiedAt,
+      kycData: user.kycData,
+      kycNationalId: user.kycNationalId,
+      kycLimitMaxListings: user.kycLimitMaxListings,
+      kycLimitMaxTransactions: user.kycLimitMaxTransactions,
+      kycLimitMaxEarnings: user.kycLimitMaxEarnings,
       ...(user.businessId !== undefined && { businessId: user.businessId }),
       ...(user.lastLoginAt !== undefined && { lastLoginAt: user.lastLoginAt }),
       createdAt: user.createdAt,
@@ -213,6 +249,15 @@ export class UserMapper {
       preferredLanguage: user.preferredLanguage,
       preferredCurrency: user.preferredCurrency,
       roles: this.resolveMetadataRoles(user.metadata),
+      kycStatus: user.kycStatus,
+      kycLevel: user.kycLevel,
+      kycSubmittedAt: user.kycSubmittedAt,
+      kycVerifiedAt: user.kycVerifiedAt,
+      kycData: user.kycData,
+      kycNationalId: user.kycNationalId,
+      kycLimitMaxListings: user.kycLimitMaxListings,
+      kycLimitMaxTransactions: user.kycLimitMaxTransactions,
+      kycLimitMaxEarnings: user.kycLimitMaxEarnings,
       ...(user.businessId !== undefined && { businessId: user.businessId }),
       ...(user.lastLoginAt !== undefined && { lastLoginAt: user.lastLoginAt }),
       addresses: user.addresses

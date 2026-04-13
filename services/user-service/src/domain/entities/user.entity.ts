@@ -2,10 +2,10 @@ import { Entity } from '../interfaces';
 import { Email } from '../value-objects/email.value-object';
 import { PhoneNumber } from '../value-objects/phone-number.value-object';
 import { Address } from '../value-objects/address.value-object';
-import { UserStatus, UserRole, UserMetadata } from '../types/user.types';
+import { UserStatus, UserRole, UserMetadata, KycStatus, KycData } from '../types/user.types';
 
 // Re-export types for convenience
-export { UserStatus, UserRole, UserMetadata } from '../types/user.types';
+export { UserStatus, UserRole, UserMetadata, KycStatus, KycData } from '../types/user.types';
 
 /**
  * User Entity
@@ -41,6 +41,15 @@ export class User implements Entity {
   public readonly codLastOrderAt?: Date | undefined;
   public readonly codSuspendedUntil?: Date | undefined;
   public readonly codPermanentlyDisabled: boolean;
+  public readonly kycStatus: KycStatus;
+  public readonly kycLevel: number;
+  public readonly kycSubmittedAt?: Date | undefined;
+  public readonly kycVerifiedAt?: Date | undefined;
+  public readonly kycData?: KycData | undefined;
+  public readonly kycNationalId?: string | undefined;
+  public readonly kycLimitMaxListings: number;
+  public readonly kycLimitMaxTransactions: number;
+  public readonly kycLimitMaxEarnings: number;
 
   constructor(props: {
     id: string;
@@ -72,6 +81,15 @@ export class User implements Entity {
     codLastOrderAt?: Date | undefined;
     codSuspendedUntil?: Date | undefined;
     codPermanentlyDisabled?: boolean;
+    kycStatus?: KycStatus;
+    kycLevel?: number;
+    kycSubmittedAt?: Date | undefined;
+    kycVerifiedAt?: Date | undefined;
+    kycData?: KycData | undefined;
+    kycNationalId?: string | undefined;
+    kycLimitMaxListings?: number;
+    kycLimitMaxTransactions?: number;
+    kycLimitMaxEarnings?: number;
   }) {
     this.id = props.id;
     this.publicCode = props.publicCode;
@@ -102,6 +120,15 @@ export class User implements Entity {
     this.codLastOrderAt = props.codLastOrderAt;
     this.codSuspendedUntil = props.codSuspendedUntil;
     this.codPermanentlyDisabled = props.codPermanentlyDisabled ?? false;
+    this.kycStatus = props.kycStatus ?? KycStatus.NONE;
+    this.kycLevel = props.kycLevel ?? 0;
+    this.kycSubmittedAt = props.kycSubmittedAt;
+    this.kycVerifiedAt = props.kycVerifiedAt;
+    this.kycData = props.kycData;
+    this.kycNationalId = props.kycNationalId;
+    this.kycLimitMaxListings = props.kycLimitMaxListings ?? 5;
+    this.kycLimitMaxTransactions = props.kycLimitMaxTransactions ?? 1;
+    this.kycLimitMaxEarnings = props.kycLimitMaxEarnings ?? 0;
   }
 
   /**
@@ -130,6 +157,15 @@ export class User implements Entity {
     codLastOrderAt?: Date;
     codSuspendedUntil?: Date;
     codPermanentlyDisabled?: boolean;
+    kycStatus?: KycStatus;
+    kycLevel?: number;
+    kycSubmittedAt?: Date;
+    kycVerifiedAt?: Date;
+    kycData?: KycData;
+    kycNationalId?: string;
+    kycLimitMaxListings?: number;
+    kycLimitMaxTransactions?: number;
+    kycLimitMaxEarnings?: number;
   }): User {
     return new User({
       id: props.id,
@@ -164,7 +200,16 @@ export class User implements Entity {
       codTotalOrders: props.codTotalOrders ?? 0,
       codLastOrderAt: props.codLastOrderAt,
       codSuspendedUntil: props.codSuspendedUntil,
-      codPermanentlyDisabled: props.codPermanentlyDisabled ?? false
+      codPermanentlyDisabled: props.codPermanentlyDisabled ?? false,
+      kycStatus: props.kycStatus ?? KycStatus.NONE,
+      kycLevel: props.kycLevel ?? 0,
+      kycSubmittedAt: props.kycSubmittedAt,
+      kycVerifiedAt: props.kycVerifiedAt,
+      kycData: props.kycData,
+      kycNationalId: props.kycNationalId,
+      kycLimitMaxListings: props.kycLimitMaxListings ?? 5,
+      kycLimitMaxTransactions: props.kycLimitMaxTransactions ?? 1,
+      kycLimitMaxEarnings: props.kycLimitMaxEarnings ?? 0
     });
   }
 

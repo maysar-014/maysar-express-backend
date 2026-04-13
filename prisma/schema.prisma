@@ -1135,6 +1135,23 @@ model Compliance_ComplianceAuditLog {
   @@map("compliance_audit_logs")
 }
 
+model Kyc_AuditLog {
+  id             String   @id @default(cuid()) @db.VarChar(64)
+  userId         String   @db.VarChar(64)
+  action         String
+  previousLevel  Int?
+  newLevel       Int?
+  previousStatus String?
+  newStatus      String?
+  performedBy    String?  @db.VarChar(64)
+  reason         String?
+  metadata       Json?
+  timestamp      DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@map("kyc_audit_logs")
+}
+
 model Compliance_DataProcessingRecord {
   id               String   @id @default(cuid()) @db.VarChar(64)
   purpose          String
@@ -1999,6 +2016,15 @@ model User_User {
   codLastOrderAt          DateTime?
   codSuspendedUntil       DateTime?
   codPermanentlyDisabled  Boolean                       @default(false)
+  kycStatus               User_KycStatus                @default(NONE)
+  kycLevel                Int                           @default(0)
+  kycSubmittedAt          DateTime?
+  kycVerifiedAt           DateTime?
+  kycData                 Json?
+  kycNationalId           String?                       @unique @db.VarChar(128)
+  kycLimitMaxListings     Int                           @default(5)
+  kycLimitMaxTransactions Int                           @default(1)
+  kycLimitMaxEarnings     Decimal                       @default(0) @db.Decimal(12, 2)
   attributes              Json?
   createdAt               DateTime                      @default(now())
   updatedAt               DateTime                      @updatedAt
@@ -3541,6 +3567,13 @@ enum User_AddressType {
   WORK     @map("work")
   BILLING  @map("billing")
   SHIPPING @map("shipping")
+}
+
+enum User_KycStatus {
+  NONE     @map("none")
+  PENDING  @map("pending")
+  VERIFIED @map("verified")
+  REJECTED @map("rejected")
 }
 
 enum Wallet_WalletStatus {

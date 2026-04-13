@@ -11,6 +11,7 @@ import { IdempotencyMiddleware } from '@shared/middleware/idempotency';
 import { getSharedRedisClient, resolveRedisUrl } from '@shared/redis/ioredis-client';
 import { shouldBypassRateLimit } from '@shared/middleware/rate-limit.util';
 import { asyncHandler } from '@shared/middleware/async-handler';
+import { requireKycLevel } from '../../../../kyc-service/src/api/middleware/kyc-gate.middleware';
 
 const idempotencyMiddleware = new IdempotencyMiddleware(process.env.REDIS_URL!);
 const redisClient = getSharedRedisClient(resolveRedisUrl(process.env.REDIS_URL));
@@ -130,6 +131,7 @@ export function createWalletRoutes(controller: WalletController): Router {
     router.post('/:userId/payout',
         AuthorizationMiddleware.authorizeWalletAccess(),
         AuthorizationMiddleware.authorizeRole(['enabler']),
+        requireKycLevel(2),
         validateRequest({
             params: WalletValidator.walletUserParams,
             body: WalletValidator.initiatePayout

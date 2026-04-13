@@ -11,6 +11,7 @@ import { requireAuth } from '@shared/middleware/auth-context.middleware';
 import { asyncHandler } from '@shared/middleware/async-handler';
 import { validateJoiRequest } from '@shared/middleware/joi-request-validation';
 import { joiId } from '@shared/validation/id';
+import { requireKycLevel } from '../../../../kyc-service/src/api/middleware/kyc-gate.middleware';
 
 // Initialize dependencies (In real app, use DI container)
 import { PrismaEnablerRepository } from '../../infrastructure/repositories/prisma-enabler.repository';
@@ -167,6 +168,7 @@ router.use('/:enablerId', validateJoiRequest({ params: enablerIdParamsSchema }),
 router.post(
   '/:enablerId/listings',
   validateJoiRequest({ body: listingBodySchema }),
+  requireKycLevel(1),
   asyncHandler((req, res) => listingController.listProduct(req, res))
 );
 router.get('/:enablerId/listings', asyncHandler((req, res) => listingController.getListings(req, res)));

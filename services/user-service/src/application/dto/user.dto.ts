@@ -1,4 +1,4 @@
-import { UserStatus, UserRole } from '../../domain/types/user.types';
+import { UserStatus, UserRole, KycData, KycStatus } from '../../domain/types/user.types';
 import { Address } from '../../domain/value-objects/address.value-object';
 
 /**
@@ -125,6 +125,15 @@ export interface UserResponseDto {
   preferredCurrency: string;
   addresses: Address[];
   businessId?: string;
+  kycStatus?: KycStatus;
+  kycLevel?: number;
+  kycSubmittedAt?: Date;
+  kycVerifiedAt?: Date;
+  kycData?: KycData;
+  kycNationalId?: string;
+  kycLimitMaxListings?: number;
+  kycLimitMaxTransactions?: number;
+  kycLimitMaxEarnings?: number;
   metadata: {
     accountAge: number;
     loginAttempts: number;
@@ -154,6 +163,15 @@ export interface UserSummaryDto {
   preferredLanguage: string;
   preferredCurrency: string;
   businessId?: string;
+  kycStatus?: KycStatus;
+  kycLevel?: number;
+  kycSubmittedAt?: Date;
+  kycVerifiedAt?: Date;
+  kycData?: KycData;
+  kycNationalId?: string;
+  kycLimitMaxListings?: number;
+  kycLimitMaxTransactions?: number;
+  kycLimitMaxEarnings?: number;
   lastLoginAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -177,6 +195,15 @@ export interface AuthUserDto {
   preferredLanguage: string;
   preferredCurrency: string;
   businessId?: string;
+  kycStatus?: KycStatus;
+  kycLevel?: number;
+  kycSubmittedAt?: Date;
+  kycVerifiedAt?: Date;
+  kycData?: KycData;
+  kycNationalId?: string;
+  kycLimitMaxListings?: number;
+  kycLimitMaxTransactions?: number;
+  kycLimitMaxEarnings?: number;
   lastLoginAt?: Date;
   addresses: Address[];
 }

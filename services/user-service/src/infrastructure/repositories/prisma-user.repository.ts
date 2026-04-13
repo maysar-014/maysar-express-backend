@@ -1,7 +1,7 @@
 import { PrismaClient, User_UserRole, User_UserStatus } from '@prisma/client';
 import { IUserRepository, UserAddress } from '../../domain/repositories';
 import { User, UserRole, UserStatus } from '../../domain/entities/user.entity';
-import { UserPreferences, UserRole as UserMetadataRole } from '../../domain/types/user.types';
+import { UserPreferences, UserRole as UserMetadataRole, KycStatus } from '../../domain/types/user.types';
 import { Email } from '../../domain/value-objects/email.value-object';
 import { PhoneNumber } from '../../domain/value-objects/phone-number.value-object';
 import { Address } from '../../domain/value-objects/address.value-object';
@@ -1083,7 +1083,16 @@ export class PrismaUserRepository implements IUserRepository {
       codTotalOrders: userData.codTotalOrders,
       codLastOrderAt: userData.codLastOrderAt || undefined,
       codSuspendedUntil: userData.codSuspendedUntil || undefined,
-      codPermanentlyDisabled: userData.codPermanentlyDisabled
+      codPermanentlyDisabled: userData.codPermanentlyDisabled,
+      kycStatus: (userData.kycStatus as KycStatus) || KycStatus.NONE,
+      kycLevel: userData.kycLevel ?? 0,
+      kycSubmittedAt: userData.kycSubmittedAt || undefined,
+      kycVerifiedAt: userData.kycVerifiedAt || undefined,
+      kycData: (userData.kycData as Record<string, unknown> | undefined) || undefined,
+      kycNationalId: userData.kycNationalId || undefined,
+      kycLimitMaxListings: userData.kycLimitMaxListings ?? 5,
+      kycLimitMaxTransactions: userData.kycLimitMaxTransactions ?? 1,
+      kycLimitMaxEarnings: Number(userData.kycLimitMaxEarnings ?? 0)
     });
   }
 
@@ -1136,6 +1145,15 @@ export class PrismaUserRepository implements IUserRepository {
       timezone: user.preferredCurrency,
       isEmailVerified: user.emailVerified,
       isPhoneVerified: user.phoneVerified,
+      kycStatus: user.kycStatus,
+      kycLevel: user.kycLevel,
+      kycSubmittedAt: user.kycSubmittedAt,
+      kycVerifiedAt: user.kycVerifiedAt,
+      kycData: user.kycData ?? null,
+      kycNationalId: user.kycNationalId ?? null,
+      kycLimitMaxListings: user.kycLimitMaxListings,
+      kycLimitMaxTransactions: user.kycLimitMaxTransactions,
+      kycLimitMaxEarnings: user.kycLimitMaxEarnings,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       passwordHash: ''
@@ -1159,6 +1177,15 @@ export class PrismaUserRepository implements IUserRepository {
       timezone: user.preferredCurrency,
       isEmailVerified: user.emailVerified,
       isPhoneVerified: user.phoneVerified,
+      kycStatus: user.kycStatus,
+      kycLevel: user.kycLevel,
+      kycSubmittedAt: user.kycSubmittedAt,
+      kycVerifiedAt: user.kycVerifiedAt,
+      kycData: user.kycData ?? null,
+      kycNationalId: user.kycNationalId ?? null,
+      kycLimitMaxListings: user.kycLimitMaxListings,
+      kycLimitMaxTransactions: user.kycLimitMaxTransactions,
+      kycLimitMaxEarnings: user.kycLimitMaxEarnings,
       updatedAt: new Date()
     };
     if (user.passwordHash !== undefined) {
