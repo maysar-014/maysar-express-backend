@@ -34,6 +34,12 @@ import { GetProductUseCase, GetProductsBySellerUseCase } from './src/application
 import { SearchProductsUseCase } from './src/application/use-cases/search-products.use-case';
 import { LoadCategoryAttributesUseCase } from './src/application/use-cases/load-category-attributes.use-case';
 import { PreviewGeneratedDescriptionUseCase } from './src/application/use-cases/preview-generated-description.use-case';
+import {
+    ListCategoriesUseCase,
+    CreateCategoryUseCase,
+    UpdateCategoryUseCase,
+    DeleteCategoryUseCase
+} from './src/application/use-cases/manage-categories.use-case';
 import { CreateProductWithMatchingUseCase } from './src/application/use-cases/create-product-with-matching.use-case';
 import { MatchProductUseCase } from './src/application/use-cases/match-product.use-case';
 import { ConfirmProductMatchUseCase } from './src/application/use-cases/confirm-product-match.use-case';
@@ -60,6 +66,10 @@ class PrismaCategoryRepository implements CategoryRepository {
     constructor(private readonly client: PrismaClient) {}
 
     async save(category: any): Promise<any> {
+        if (!category.id) {
+            return this.client.category.create({ data: category });
+        }
+
         return this.client.category.upsert({
             where: { id: category.id },
             create: category,
@@ -72,7 +82,12 @@ class PrismaCategoryRepository implements CategoryRepository {
     }
 
     async findAll(): Promise<any[]> {
-        return this.client.category.findMany();
+        return this.client.category.findMany({
+            orderBy: [
+                { displayOrder: 'asc' },
+                { name: 'asc' }
+            ]
+        });
     }
 
     async findBySlug(slug: string): Promise<any | null> {
@@ -85,6 +100,11 @@ class PrismaCategoryRepository implements CategoryRepository {
 
     async update(id: string, updates: any): Promise<any> {
         return this.client.category.update({ where: { id }, data: updates });
+    }
+
+    async delete(id: string): Promise<boolean> {
+        await this.client.category.delete({ where: { id } });
+        return true;
     }
 }
 
@@ -246,6 +266,10 @@ export const CatalogModule: Module = {
             findCategoryById: (categoryId: string) => categoryRepository.findById(categoryId),
             findCategoryAttributesByCategory: (categoryId: string) => categoryAttributeRepository.findByCategory(categoryId)
         });
+        const listCategoriesUseCase = new ListCategoriesUseCase(categoryRepository);
+        const createCategoryUseCase = new CreateCategoryUseCase(categoryRepository);
+        const updateCategoryUseCase = new UpdateCategoryUseCase(categoryRepository);
+        const deleteCategoryUseCase = new DeleteCategoryUseCase(categoryRepository, productRepository);
 
         const productMapper = new ProductMapper();
         const matchAuditRepository = new PrismaProductMatchAuditRepository(prisma);
@@ -272,7 +296,11 @@ export const CatalogModule: Module = {
             productMapper,
             loadCategoryAttributesUseCase,
             previewGeneratedDescriptionUseCase,
-            createProductWithMatchingUseCase
+            createProductWithMatchingUseCase,
+            listCategoriesUseCase,
+            createCategoryUseCase,
+            updateCategoryUseCase,
+            deleteCategoryUseCase
         );
 
         const searchController = new SearchController();

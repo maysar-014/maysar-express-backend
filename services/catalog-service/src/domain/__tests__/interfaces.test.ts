@@ -118,6 +118,10 @@ class MockCategoryRepository implements CategoryRepository {
   async update(id: string, updates: TestRecord): Promise<TestRecord> {
     return { id, ...updates };
   }
+
+  async delete(id: string): Promise<boolean> {
+    return Boolean(id);
+  }
 }
 
 class MockSellerRepository implements SellerRepository {

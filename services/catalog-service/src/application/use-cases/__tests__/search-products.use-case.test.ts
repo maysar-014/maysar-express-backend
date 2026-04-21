@@ -46,7 +46,8 @@ describe('SearchProductsUseCase', () => {
       findAll: jest.fn(),
       findBySlug: jest.fn(),
       findSubcategories: jest.fn(),
-      update: jest.fn()
+      update: jest.fn(),
+      delete: jest.fn()
     };
 
     mockSearchService = {

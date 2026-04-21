@@ -4174,6 +4174,291 @@ paths:
               schema: {}
       parameters: []
     parameters: []
+  /api/catalog/v1/categories:
+    get:
+      tags:
+      - Products
+      summary: List categories
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        label:
+                          type: string
+                        icon:
+                          type: string
+                          nullable: true
+                  meta:
+                    type: object
+                    properties:
+                      timestamp:
+                        type: string
+                        format: date-time
+                      requestId:
+                        type: string
+                        nullable: true
+            text/plain:
+              schema: {}
+        '405':
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security: []
+    post:
+      tags:
+      - Products
+      summary: Create category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - label
+              properties:
+                label:
+                  type: string
+                icon:
+                  type: string
+                  nullable: true
+                description:
+                  type: string
+                  nullable: true
+                parentId:
+                  type: string
+                  nullable: true
+                displayOrder:
+                  type: integer
+                isActive:
+                  type: boolean
+                slug:
+                  type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+      - BearerAuth: []
+    parameters: []
+  /api/catalog/v1/categories/{id}:
+    put:
+      tags:
+      - Products
+      summary: Update category
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label:
+                  type: string
+                icon:
+                  type: string
+                  nullable: true
+                description:
+                  type: string
+                  nullable: true
+                parentId:
+                  type: string
+                  nullable: true
+                displayOrder:
+                  type: integer
+                isActive:
+                  type: boolean
+                slug:
+                  type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+      - BearerAuth: []
+    delete:
+      tags:
+      - Products
+      summary: Delete category
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+      - BearerAuth: []
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
   /api/catalog/v1/categories/{categoryId}/attributes:
     get:
       tags:

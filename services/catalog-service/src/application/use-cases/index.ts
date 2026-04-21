@@ -10,6 +10,7 @@ export * from './get-product.use-case';
 export * from './search-products.use-case';
 export * from './load-category-attributes.use-case';
 export * from './preview-generated-description.use-case';
+export * from './manage-categories.use-case';
 
 /**
  * Use Case Factory Interface

@@ -62,6 +62,28 @@ export function createProductRoutes(
     productName: nonEmptyString,
     structuredAttributes: z.record(z.any())
   }).strict();
+  const nullableNonEmptyString = z.union([nonEmptyString, z.null()]);
+  const createCategorySchema = z.object({
+    label: nonEmptyString,
+    icon: nullableNonEmptyString.optional(),
+    description: z.union([z.string(), z.null()]).optional(),
+    parentId: nullableNonEmptyString.optional(),
+    displayOrder: z.coerce.number().int().min(0).optional(),
+    isActive: z.boolean().optional(),
+    slug: nonEmptyString.optional()
+  }).strict();
+  const updateCategorySchema = z.object({
+    label: nonEmptyString.optional(),
+    icon: nullableNonEmptyString.optional(),
+    description: z.union([z.string(), z.null()]).optional(),
+    parentId: nullableNonEmptyString.optional(),
+    displayOrder: z.coerce.number().int().min(0).optional(),
+    isActive: z.boolean().optional(),
+    slug: nonEmptyString.optional()
+  }).strict().refine(
+    (body) => Object.keys(body).length > 0,
+    { message: 'Request body required' }
+  );
   const updateProductSchema = z.object({
     name: nonEmptyString.optional(),
     description: z.string().optional(),
@@ -103,7 +125,7 @@ export function createProductRoutes(
   const bulkDeleteSchema = z.object({
     productIds: z.array(nonEmptyString).min(1)
   }).strict();
-  const updateCategorySchema = z.object({
+  const updateProductCategorySchema = z.object({
     categoryId: zodId()
   }).strict();
   const optionalNonBlankNumber = (numberSchema: z.ZodNumber) => z.preprocess((value) => {
@@ -321,6 +343,53 @@ export function createProductRoutes(
   );
 
   /**
+   * List Categories
+   * GET /v1/categories
+   */
+  router.get(`${apiPrefix}/categories`,
+    ...commonMiddleware,
+    cache,
+    async (req, res) => {
+      await productController.listCategories(req, res);
+    }
+  );
+
+  /**
+   * Create Category
+   * POST /v1/categories
+   */
+  router.post(`${apiPrefix}/categories`,
+    ...adminMiddleware,
+    validateSchemaRequest(createCategorySchema),
+    async (req, res) => {
+      await productController.createCategory(req, res);
+    }
+  );
+
+  /**
+   * Update Category
+   * PUT /v1/categories/:id
+   */
+  router.put(`${apiPrefix}/categories/:id`,
+    ...adminMiddleware,
+    validateSchemaRequest(updateCategorySchema),
+    async (req, res) => {
+      await productController.updateCategory(req, res);
+    }
+  );
+
+  /**
+   * Delete Category
+   * DELETE /v1/categories/:id
+   */
+  router.delete(`${apiPrefix}/categories/:id`,
+    ...adminMiddleware,
+    async (req, res) => {
+      await productController.deleteCategory(req, res);
+    }
+  );
+
+  /**
    * Load Category Attributes
    * GET /v1/categories/:categoryId/attributes
    */
@@ -466,7 +535,7 @@ export function createProductRoutes(
    */
   router.put(`${apiPrefix}/products/:id/category`,
     ...sellerMiddleware,
-    validateSchemaRequest(updateCategorySchema),
+    validateSchemaRequest(updateProductCategorySchema),
     async (req, res) => {
       res.status(501).json({
         success: false,
@@ -577,6 +646,10 @@ export const PRODUCT_ROUTES_METADATA = {
     // Search & Discovery
     { method: 'GET', path: '/products/search', description: 'Search products', auth: 'public' },
     { method: 'GET', path: '/sellers/:sellerId/products', description: 'Get seller products', auth: 'public' },
+    { method: 'GET', path: '/categories', description: 'List categories', auth: 'public' },
+    { method: 'POST', path: '/categories', description: 'Create category', auth: 'admin' },
+    { method: 'PUT', path: '/categories/:id', description: 'Update category', auth: 'admin' },
+    { method: 'DELETE', path: '/categories/:id', description: 'Delete category', auth: 'admin' },
     { method: 'GET', path: '/categories/:categoryId/attributes', description: 'Load category attributes', auth: 'public' },
     { method: 'POST', path: '/products/preview-description', description: 'Preview generated description', auth: 'seller' },
 

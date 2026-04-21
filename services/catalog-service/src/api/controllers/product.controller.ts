@@ -12,7 +12,15 @@ import {
   GetProductsBySellerUseCase,
   SearchProductsUseCase,
   LoadCategoryAttributesUseCase,
-  PreviewGeneratedDescriptionUseCase
+  PreviewGeneratedDescriptionUseCase,
+  ListCategoriesUseCase,
+  CreateCategoryUseCase,
+  UpdateCategoryUseCase,
+  DeleteCategoryUseCase,
+  CategoryValidationError,
+  CategoryNotFoundError,
+  CategoryConflictError,
+  CategoryDeletionBlockedError
 } from '../../application/use-cases';
 import { CreateProductWithMatchingUseCase } from '../../application/use-cases/create-product-with-matching.use-case';
 import {
@@ -99,6 +107,10 @@ export class ProductController {
     private readonly loadCategoryAttributesUseCase: LoadCategoryAttributesUseCase,
     private readonly previewGeneratedDescriptionUseCase: PreviewGeneratedDescriptionUseCase,
     private readonly createProductWithMatchingUseCase?: CreateProductWithMatchingUseCase,
+    private readonly listCategoriesUseCase?: ListCategoriesUseCase,
+    private readonly createCategoryUseCase?: CreateCategoryUseCase,
+    private readonly updateCategoryUseCase?: UpdateCategoryUseCase,
+    private readonly deleteCategoryUseCase?: DeleteCategoryUseCase,
     config: Partial<ProductControllerConfig> = {}
   ) {
     this.config = { ...DEFAULT_PRODUCT_CONTROLLER_CONFIG, ...config };
@@ -554,6 +566,122 @@ export class ProductController {
   }
 
   /**
+   * List Categories
+   * GET /api/categories
+   */
+  async listCategories(req: Request, res: Response): Promise<void> {
+    try {
+      const categories = await this.listCategoriesUseCase?.execute(false) || [];
+      res.status(200).json({
+        success: true,
+        data: categories,
+        meta: { timestamp: new Date(), requestId: this.getRequestId(req) }
+      });
+    } catch (error) {
+      console.error('ProductController.listCategories error:', error);
+      this.sendInternalError(res, error as Error);
+    }
+  }
+
+  /**
+   * Create Category
+   * POST /api/categories
+   */
+  async createCategory(req: Request, res: Response): Promise<void> {
+    try {
+      const category = await this.createCategoryUseCase?.execute(req.body);
+      res.status(201).json({
+        success: true,
+        data: category,
+        meta: { timestamp: new Date(), requestId: this.getRequestId(req) }
+      });
+    } catch (error) {
+      if (error instanceof CategoryValidationError) {
+        this.sendValidationError(res, [error.message]);
+        return;
+      }
+      if (error instanceof CategoryNotFoundError) {
+        this.sendNotFoundError(res, error.message);
+        return;
+      }
+      if (error instanceof CategoryConflictError || error instanceof CategoryDeletionBlockedError) {
+        this.sendBusinessRuleError(res, error.message);
+        return;
+      }
+      console.error('ProductController.createCategory error:', error);
+      this.sendInternalError(res, error as Error);
+    }
+  }
+
+  /**
+   * Update Category
+   * PUT /api/categories/:id
+   */
+  async updateCategory(req: Request, res: Response): Promise<void> {
+    try {
+      const categoryId = req.params.id;
+      if (!categoryId) {
+        this.sendValidationError(res, ['Category ID is required']);
+        return;
+      }
+
+      const category = await this.updateCategoryUseCase?.execute(categoryId, req.body);
+      res.status(200).json({
+        success: true,
+        data: category,
+        meta: { timestamp: new Date(), requestId: this.getRequestId(req) }
+      });
+    } catch (error) {
+      if (error instanceof CategoryValidationError) {
+        this.sendValidationError(res, [error.message]);
+        return;
+      }
+      if (error instanceof CategoryNotFoundError) {
+        this.sendNotFoundError(res, error.message);
+        return;
+      }
+      if (error instanceof CategoryConflictError || error instanceof CategoryDeletionBlockedError) {
+        this.sendBusinessRuleError(res, error.message);
+        return;
+      }
+      console.error('ProductController.updateCategory error:', error);
+      this.sendInternalError(res, error as Error);
+    }
+  }
+
+  /**
+   * Delete Category
+   * DELETE /api/categories/:id
+   */
+  async deleteCategory(req: Request, res: Response): Promise<void> {
+    try {
+      const categoryId = req.params.id;
+      if (!categoryId) {
+        this.sendValidationError(res, ['Category ID is required']);
+        return;
+      }
+
+      const result = await this.deleteCategoryUseCase?.execute(categoryId);
+      res.status(200).json({
+        success: true,
+        data: result,
+        meta: { timestamp: new Date(), requestId: this.getRequestId(req) }
+      });
+    } catch (error) {
+      if (error instanceof CategoryNotFoundError) {
+        this.sendNotFoundError(res, error.message);
+        return;
+      }
+      if (error instanceof CategoryConflictError || error instanceof CategoryDeletionBlockedError) {
+        this.sendBusinessRuleError(res, error.message);
+        return;
+      }
+      console.error('ProductController.deleteCategory error:', error);
+      this.sendInternalError(res, error as Error);
+    }
+  }
+
+  /**
    * Preview Generated Description
    * POST /api/products/preview-description
    */
@@ -899,6 +1027,10 @@ export class ProductControllerFactory {
     loadCategoryAttributesUseCase: LoadCategoryAttributesUseCase,
     previewGeneratedDescriptionUseCase: PreviewGeneratedDescriptionUseCase,
     createProductWithMatchingUseCase?: CreateProductWithMatchingUseCase,
+    listCategoriesUseCase?: ListCategoriesUseCase,
+    createCategoryUseCase?: CreateCategoryUseCase,
+    updateCategoryUseCase?: UpdateCategoryUseCase,
+    deleteCategoryUseCase?: DeleteCategoryUseCase,
     config: Partial<ProductControllerConfig> = {}
   ): ProductController {
     return new ProductController(
@@ -910,6 +1042,10 @@ export class ProductControllerFactory {
       loadCategoryAttributesUseCase,
       previewGeneratedDescriptionUseCase,
       createProductWithMatchingUseCase,
+      listCategoriesUseCase,
+      createCategoryUseCase,
+      updateCategoryUseCase,
+      deleteCategoryUseCase,
       config
     );
   }

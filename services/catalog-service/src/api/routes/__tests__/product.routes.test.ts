@@ -20,6 +20,10 @@ const mockProductController = {
   createProduct: jest.fn(),
   getProduct: jest.fn(),
   getProductsBySeller: jest.fn(),
+  listCategories: jest.fn(),
+  createCategory: jest.fn(),
+  updateCategory: jest.fn(),
+  deleteCategory: jest.fn(),
   searchProducts: jest.fn(),
   updateProduct: jest.fn(),
   deleteProduct: jest.fn(),
@@ -76,7 +80,7 @@ describe('Product Routes', () => {
     it('should have correct route metadata', () => {
       expect(PRODUCT_ROUTES_METADATA.version).toBe('v1');
       expect(PRODUCT_ROUTES_METADATA.prefix).toBe('/v1');
-      expect(PRODUCT_ROUTES_METADATA.routes).toHaveLength(18);
+      expect(PRODUCT_ROUTES_METADATA.routes).toHaveLength(22);
       expect(PRODUCT_ROUTES_METADATA.middleware).toEqual([
         'authentication',
         'authorization',
@@ -382,6 +386,24 @@ describe('Product Routes', () => {
         expect(response.text).toBe('');
       });
     });
+
+    describe('GET /v1/categories - List Categories', () => {
+      it('should delegate to controller listCategories method', async () => {
+        mockProductController.listCategories.mockImplementation(async (_req, res) => {
+          res.status(200).json({
+            success: true,
+            data: [{ id: 'cat-1', label: 'Electronics', icon: 'icon.png' }]
+          });
+        });
+
+        const response = await request(app)
+          .get('/v1/categories');
+
+        expect(mockProductController.listCategories).toHaveBeenCalled();
+        expect(response.status).toBe(200);
+        expect(response.body.data[0].label).toBe('Electronics');
+      });
+    });
   });
 
   describe('Media Management', () => {
@@ -411,6 +433,62 @@ describe('Product Routes', () => {
   });
 
   describe('Category Management', () => {
+    describe('POST /v1/categories - Create Category', () => {
+      it('should delegate to controller createCategory method', async () => {
+        mockProductController.createCategory.mockImplementation(async (_req, res) => {
+          res.status(201).json({
+            success: true,
+            data: { id: 'cat-1', label: 'Electronics', icon: 'icon.png' }
+          });
+        });
+
+        const response = await request(app)
+          .post('/v1/categories')
+          .set('Authorization', 'Bearer valid-token-123')
+          .send({ label: 'Electronics', icon: 'icon.png' });
+
+        expect(mockProductController.createCategory).toHaveBeenCalled();
+        expect(response.status).toBe(201);
+      });
+    });
+
+    describe('PUT /v1/categories/:id - Update Category', () => {
+      it('should delegate to controller updateCategory method', async () => {
+        mockProductController.updateCategory.mockImplementation(async (_req, res) => {
+          res.status(200).json({
+            success: true,
+            data: { id: 'cat-1', label: 'Updated', icon: null }
+          });
+        });
+
+        const response = await request(app)
+          .put('/v1/categories/cat-1')
+          .set('Authorization', 'Bearer valid-token-123')
+          .send({ label: 'Updated' });
+
+        expect(mockProductController.updateCategory).toHaveBeenCalled();
+        expect(response.status).toBe(200);
+      });
+    });
+
+    describe('DELETE /v1/categories/:id - Delete Category', () => {
+      it('should delegate to controller deleteCategory method', async () => {
+        mockProductController.deleteCategory.mockImplementation(async (_req, res) => {
+          res.status(200).json({
+            success: true,
+            data: { categoryId: 'cat-1', deleted: true }
+          });
+        });
+
+        const response = await request(app)
+          .delete('/v1/categories/cat-1')
+          .set('Authorization', 'Bearer valid-token-123');
+
+        expect(mockProductController.deleteCategory).toHaveBeenCalled();
+        expect(response.status).toBe(200);
+      });
+    });
+
     describe('PUT /v1/products/:id/category - Update Product Category', () => {
       it('should return not implemented status', async () => {
         const response = await request(app)
@@ -521,7 +599,7 @@ describe('Product Routes', () => {
 
     it('should include search and discovery routes', () => {
       const searchRoutes = PRODUCT_ROUTES_METADATA.routes.filter(route =>
-        route.path.includes('/search') || route.path.includes('/sellers')
+        route.path.includes('/search') || route.path.includes('/sellers') || route.path === '/categories'
       );
 
       expect(searchRoutes.length).toBeGreaterThan(0);

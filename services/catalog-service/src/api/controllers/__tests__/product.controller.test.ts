@@ -8,6 +8,10 @@ describe('ProductController', () => {
   const mockProductMapper = {};
   const mockLoadCategoryAttributesUseCase = { execute: jest.fn() };
   const mockPreviewGeneratedDescriptionUseCase = { execute: jest.fn() };
+  const mockListCategoriesUseCase = { execute: jest.fn() };
+  const mockCreateCategoryUseCase = { execute: jest.fn() };
+  const mockUpdateCategoryUseCase = { execute: jest.fn() };
+  const mockDeleteCategoryUseCase = { execute: jest.fn() };
 
   let controller: ProductController;
 
@@ -36,8 +40,92 @@ describe('ProductController', () => {
       mockSearchProductsUseCase as any,
       mockProductMapper as any,
       mockLoadCategoryAttributesUseCase as any,
-      mockPreviewGeneratedDescriptionUseCase as any
+      mockPreviewGeneratedDescriptionUseCase as any,
+      undefined,
+      mockListCategoriesUseCase as any,
+      mockCreateCategoryUseCase as any,
+      mockUpdateCategoryUseCase as any,
+      mockDeleteCategoryUseCase as any
     );
+  });
+
+  describe('listCategories', () => {
+    it('should list categories', async () => {
+      mockListCategoriesUseCase.execute.mockResolvedValue([
+        { id: 'cat-1', label: 'Electronics', icon: 'icon.png' }
+      ]);
+
+      const req = makeReq();
+      const res = makeRes();
+
+      await controller.listCategories(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: true,
+        data: [{ id: 'cat-1', label: 'Electronics', icon: 'icon.png' }]
+      }));
+    });
+  });
+
+  describe('createCategory', () => {
+    it('should create category', async () => {
+      mockCreateCategoryUseCase.execute.mockResolvedValue({
+        id: 'cat-1',
+        label: 'Electronics',
+        icon: 'icon.png',
+        slug: 'electronics',
+        description: null,
+        parentId: null,
+        displayOrder: 0,
+        isActive: true,
+      });
+
+      const req = makeReq({ body: { label: 'Electronics', icon: 'icon.png' } });
+      const res = makeRes();
+
+      await controller.createCategory(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+  });
+
+  describe('updateCategory', () => {
+    it('should update category', async () => {
+      mockUpdateCategoryUseCase.execute.mockResolvedValue({
+        id: 'cat-1',
+        label: 'Updated',
+        icon: null,
+        slug: 'updated',
+        description: null,
+        parentId: null,
+        displayOrder: 0,
+        isActive: true,
+      });
+
+      const req = makeReq({ params: { id: 'cat-1' }, body: { label: 'Updated' } });
+      const res = makeRes();
+
+      await controller.updateCategory(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+  });
+
+  describe('deleteCategory', () => {
+    it('should delete category', async () => {
+      mockDeleteCategoryUseCase.execute.mockResolvedValue({
+        categoryId: 'cat-1',
+        deleted: true,
+      });
+
+      const req = makeReq({ params: { id: 'cat-1' } });
+      const res = makeRes();
+
+      await controller.deleteCategory(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
   });
 
   describe('loadCategoryAttributes', () => {

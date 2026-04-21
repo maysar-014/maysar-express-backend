@@ -120,6 +120,13 @@ export interface CategoryRepository {
    * @returns Promise resolving to updated category
    */
   update(id: string, updates: DomainRecord): Promise<DomainRecord>;
+
+  /**
+   * Delete category
+   * @param id Category identifier
+   * @returns Promise resolving to success status
+   */
+  delete(id: string): Promise<boolean>;
 }
 
 /**
