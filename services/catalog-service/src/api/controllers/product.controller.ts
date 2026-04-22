@@ -292,6 +292,9 @@ export class ProductController {
           type: product.type,
           tags: product.tags || [],
           status: product.status,
+          thumbnailUrl: product.thumbnailUrl
+            || product.media?.[0]?.url
+            || product.mediaUrls?.[0],
           createdAt: product.createdAt
         }));
 
@@ -358,6 +361,7 @@ export class ProductController {
           type: product.type,
           tags: product.tags || [],
           status: product.status,
+          thumbnailUrl: product.thumbnailUrl || product.mediaUrls?.[0],
           createdAt: product.createdAt
         }));
 
@@ -903,7 +907,13 @@ export class ProductController {
       attributes: productDetails.attributes || {},
       status: productDetails.status,
       visibility: 'public', // Default visibility
-      media: productDetails.media || [],
+      media: productDetails.media || (productDetails.mediaUrls || []).map((url: string, index: number) => ({
+        id: `${productDetails.id}-media-${index}`,
+        url,
+        type: 'image',
+        order: index,
+        isPrimary: index === 0
+      })),
       inventory: productDetails.inventory || {
         available: 0,
         reserved: 0,

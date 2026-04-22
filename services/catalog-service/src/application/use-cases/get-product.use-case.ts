@@ -22,6 +22,16 @@ type ProductRecord = {
   categoryId?: string;
   type?: string;
   tags?: string[];
+  images?: string[];
+  mediaUrls?: string[];
+  thumbnailUrl?: string;
+  media?: Array<{
+    id?: string;
+    url?: string;
+    type?: string;
+    order?: number;
+    isPrimary?: boolean;
+  }>;
   attributes?: Record<string, unknown>;
   status?: string;
   createdAt?: Date;
@@ -78,7 +88,10 @@ export interface ProductDetails {
     url: string;
     type: string;
     order: number;
+    isPrimary?: boolean;
   }>;
+  mediaUrls?: string[];
+  thumbnailUrl?: string;
   inventory?: {
     available: number;
     reserved: number;
@@ -174,6 +187,17 @@ export class GetProductUseCase {
     // Include media if requested
     if (request.includeMedia) {
       details.media = await this.loadProductMedia(normalizedProduct.id);
+      if (details.media.length === 0 && Array.isArray(normalizedProduct.media)) {
+        details.media = normalizedProduct.media;
+      }
+    }
+
+    if (!details.media && Array.isArray(normalizedProduct.media)) {
+      details.media = normalizedProduct.media;
+    }
+    if (Array.isArray(normalizedProduct.mediaUrls)) {
+      details.mediaUrls = normalizedProduct.mediaUrls;
+      details.thumbnailUrl = normalizedProduct.thumbnailUrl || normalizedProduct.mediaUrls[0];
     }
 
 
@@ -205,6 +229,8 @@ export class GetProductUseCase {
         tags: candidate.getTags?.() || [],
         attributes: defaultVariant.getAttributes?.() || {},
         status: String(candidate.getStatus?.()?.toString?.() || 'draft'),
+        mediaUrls: [],
+        thumbnailUrl: undefined,
         createdAt: candidate.getCreatedAt?.() ?? new Date(),
         updatedAt: candidate.getUpdatedAt?.() ?? new Date()
       };
@@ -224,6 +250,23 @@ export class GetProductUseCase {
       tags: candidate.tags || [],
       attributes: candidate.attributes || {},
       status: String(candidate.status || 'draft'),
+      media: Array.isArray(candidate.media) ? candidate.media.map((item, index) => ({
+        id: String(item.id ?? `${candidate.id || 'product'}-media-${index}`),
+        url: String(item.url ?? ''),
+        type: String(item.type ?? 'image'),
+        order: Number(item.order ?? index),
+        isPrimary: Boolean(item.isPrimary ?? index === 0)
+      })) : undefined,
+      mediaUrls: Array.isArray(candidate.mediaUrls)
+        ? candidate.mediaUrls
+        : Array.isArray(candidate.images)
+          ? candidate.images
+          : [],
+      thumbnailUrl: String(
+        candidate.thumbnailUrl
+        || (Array.isArray(candidate.mediaUrls) ? candidate.mediaUrls[0] : undefined)
+        || (Array.isArray(candidate.images) ? candidate.images[0] : '')
+      ) || undefined,
       createdAt: candidate.createdAt ?? new Date(),
       updatedAt: candidate.updatedAt ?? new Date()
     };
@@ -404,6 +447,8 @@ export class GetProductsBySellerUseCase {
         tags: candidate.getTags?.() || [],
         attributes: defaultVariant.getAttributes?.() || {},
         status: String(candidate.getStatus?.()?.toString?.() || 'draft'),
+        mediaUrls: [],
+        thumbnailUrl: undefined,
         createdAt: candidate.getCreatedAt?.() ?? new Date(),
         updatedAt: candidate.getUpdatedAt?.() ?? new Date()
       };
@@ -423,6 +468,23 @@ export class GetProductsBySellerUseCase {
       tags: candidate.tags || [],
       attributes: candidate.attributes || {},
       status: String(candidate.status || 'draft'),
+      media: Array.isArray(candidate.media) ? candidate.media.map((item, index) => ({
+        id: String(item.id ?? `${candidate.id || 'product'}-media-${index}`),
+        url: String(item.url ?? ''),
+        type: String(item.type ?? 'image'),
+        order: Number(item.order ?? index),
+        isPrimary: Boolean(item.isPrimary ?? index === 0)
+      })) : undefined,
+      mediaUrls: Array.isArray(candidate.mediaUrls)
+        ? candidate.mediaUrls
+        : Array.isArray(candidate.images)
+          ? candidate.images
+          : [],
+      thumbnailUrl: String(
+        candidate.thumbnailUrl
+        || (Array.isArray(candidate.mediaUrls) ? candidate.mediaUrls[0] : undefined)
+        || (Array.isArray(candidate.images) ? candidate.images[0] : '')
+      ) || undefined,
       createdAt: candidate.createdAt ?? new Date(),
       updatedAt: candidate.updatedAt ?? new Date()
     };

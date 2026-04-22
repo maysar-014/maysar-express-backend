@@ -48,6 +48,8 @@ export interface SearchResult {
   type: string;
   tags: string[];
   status: string;
+  mediaUrls?: string[];
+  thumbnailUrl?: string;
   relevanceScore?: number;
   inventoryStatus?: 'in_stock' | 'low_stock' | 'out_of_stock';
   createdAt: Date;

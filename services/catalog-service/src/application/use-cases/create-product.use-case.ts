@@ -30,6 +30,10 @@ export interface ProductPersistenceDto {
   status: string;
   visibility: string;
   tags: string[];
+  seoMetadata?: Record<string, unknown>;
+  mediaUrls?: string[];
+  basePrice?: number;
+  currency?: string;
   enablerEnabled?: boolean;
   enablerCommissionRate?: number;
   createdAt: Date;
@@ -187,6 +191,15 @@ export class CreateProductUseCase {
         status: 'published',
         visibility: 'public',
         tags: [],
+        seoMetadata: {
+          currency: dto.currency || 'TZS',
+          supplierLocation: dto.supplierLocation,
+          minimumOrderQuantity: dto.minimumOrderQuantity,
+          mediaUrls: dto.mediaUrls || []
+        },
+        mediaUrls: dto.mediaUrls || [],
+        basePrice: dto.price,
+        currency: dto.currency || 'TZS',
         enablerEnabled: dto.enablerEnabled ?? false,
         enablerCommissionRate: dto.enablerCommissionRate,
         createdAt: now,

@@ -150,6 +150,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
           seoTitle: persistenceDto.seoTitle,
           shortSeoDescription: persistenceDto.shortSeoDescription,
           generatedDescription: persistenceDto.generatedDescription,
+          seoMetadata: persistenceDto.seoMetadata ?? undefined,
           qualityScore: persistenceDto.qualityScore,
           status: persistenceDto.status,
           visibility: persistenceDto.visibility,
@@ -158,6 +159,26 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
           enablerCommissionRate: persistenceDto.enablerCommissionRate ?? null,
           createdAt: persistenceDto.createdAt,
           updatedAt: persistenceDto.updatedAt
+        }
+      });
+
+      await tx.productVariant.create({
+        data: {
+          id: `${productId}-default-variant`,
+          productId,
+          sku: `${persistenceDto.slug}-default`,
+          name: persistenceDto.title,
+          price: persistenceDto.basePrice ?? 0,
+          compareAtPrice: null,
+          costPrice: null,
+          inventoryPolicy: InventoryPolicy.deny,
+          weight: null,
+          dimensions: null,
+          attributes: {
+            currency: persistenceDto.currency ?? 'TZS'
+          },
+          images: this.extractMediaUrls(persistenceDto),
+          status: VariantStatus.active
         }
       });
 
@@ -445,6 +466,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       ? productData.variants.map((variant: any) => this.normalizeVariantRecord(variant))
       : [];
     const defaultVariant = variants[0];
+    const mediaUrls = this.extractMediaUrls(productData);
     const name = productData.name || productData.title || '';
     const priceSource = productData.price ?? defaultVariant?.price ?? 0;
     const currencySource = productData.currency ?? defaultVariant?.currency ?? 'USD';
@@ -465,6 +487,16 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
         amount: this.resolveNumericValue(priceSource, 0) ?? 0,
         currency: this.resolveCurrency(currencySource)
       },
+      images: mediaUrls,
+      mediaUrls,
+      thumbnailUrl: mediaUrls[0],
+      media: mediaUrls.map((url: string, index: number) => ({
+        id: `${productData.id}-media-${index}`,
+        url,
+        type: 'image',
+        order: index,
+        isPrimary: index === 0
+      })),
       variants,
       category: productData.category ?? null,
       createdAt: productData.createdAt ?? new Date(),
@@ -497,13 +529,47 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       sku: variantData.sku,
       name: variantData.name,
       price,
+      currency: this.resolveCurrency(variantData.attributes),
       compareAtPrice,
       costPrice,
       inventoryQuantity,
       stock: inventoryQuantity,
+      images: Array.isArray(variantData.images) ? variantData.images.filter((image: unknown) => typeof image === 'string') : [],
       attributes: variantData.attributes || {},
       status: variantData.status || VariantStatus.active
     };
+  }
+
+  private extractMediaUrls(productData: any): string[] {
+    const candidates: unknown[] = [];
+
+    if (Array.isArray(productData?.mediaUrls)) {
+      candidates.push(...productData.mediaUrls);
+    }
+
+    if (productData?.seoMetadata && typeof productData.seoMetadata === 'object') {
+      const seoMetadata = productData.seoMetadata as Record<string, unknown>;
+      if (Array.isArray(seoMetadata.mediaUrls)) {
+        candidates.push(...seoMetadata.mediaUrls);
+      }
+    }
+
+    if (Array.isArray(productData?.variants)) {
+      for (const variant of productData.variants) {
+        if (Array.isArray(variant?.images)) {
+          candidates.push(...variant.images);
+        }
+      }
+    }
+
+    return Array.from(
+      new Set(
+        candidates
+          .filter((value): value is string => typeof value === 'string')
+          .map((value) => value.trim())
+          .filter(Boolean)
+      )
+    );
   }
 
   private resolveNumericValue(value: any, fallback?: number): number | undefined {
@@ -541,6 +607,10 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
 
     if (value && typeof value === 'object' && typeof value.currency === 'string') {
       return value.currency;
+    }
+
+    if (value && typeof value === 'object' && value.attributes && typeof value.attributes.currency === 'string') {
+      return value.attributes.currency;
     }
 
     return fallback;
