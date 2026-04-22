@@ -8,6 +8,21 @@ import { Address } from '../../domain/value-objects/address.value-object';
 import { logger } from '../services/logger.service';
 import { PiiEncryptionService } from '../../../../../shared/encryption/pii-encryption.service';
 
+type PrismaUserKycStatus = 'PENDING' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED';
+
+function toPrismaUserKycStatus(value?: string | null): PrismaUserKycStatus {
+  const normalized = String(value ?? '').trim().toUpperCase();
+
+  if (normalized === 'NONE') return 'PENDING';
+  if (normalized === 'PENDING') return 'PENDING';
+  if (normalized === 'UNDER_REVIEW') return 'UNDER_REVIEW';
+  if (normalized === 'VERIFIED') return 'APPROVED';
+  if (normalized === 'APPROVED') return 'APPROVED';
+  if (normalized === 'REJECTED') return 'REJECTED';
+
+  return 'PENDING';
+}
+
 /**
  * Prisma User Repository Implementation
  * Implements the domain IUserRepository interface using Prisma ORM
@@ -1145,7 +1160,7 @@ export class PrismaUserRepository implements IUserRepository {
       timezone: user.preferredCurrency,
       isEmailVerified: user.emailVerified,
       isPhoneVerified: user.phoneVerified,
-      kycStatus: user.kycStatus,
+      kycStatus: toPrismaUserKycStatus(user.kycStatus),
       kycLevel: user.kycLevel,
       kycSubmittedAt: user.kycSubmittedAt,
       kycVerifiedAt: user.kycVerifiedAt,
@@ -1177,7 +1192,6 @@ export class PrismaUserRepository implements IUserRepository {
       timezone: user.preferredCurrency,
       isEmailVerified: user.emailVerified,
       isPhoneVerified: user.phoneVerified,
-      kycStatus: user.kycStatus,
       kycLevel: user.kycLevel,
       kycSubmittedAt: user.kycSubmittedAt,
       kycVerifiedAt: user.kycVerifiedAt,
@@ -1188,6 +1202,9 @@ export class PrismaUserRepository implements IUserRepository {
       kycLimitMaxEarnings: user.kycLimitMaxEarnings,
       updatedAt: new Date()
     };
+    if (user.kycStatus !== undefined) {
+      data.kycStatus = toPrismaUserKycStatus(user.kycStatus);
+    }
     if (user.passwordHash !== undefined) {
       data.passwordHash = user.passwordHash;
     }
