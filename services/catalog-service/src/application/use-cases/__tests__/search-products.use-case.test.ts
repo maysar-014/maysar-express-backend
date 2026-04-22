@@ -148,6 +148,39 @@ describe('SearchProductsUseCase', () => {
       expect(result.searchMetadata.executionTime).toBeGreaterThanOrEqual(0);
     });
 
+    it('should preserve image fields in paginated search results', async () => {
+      const request: SearchProductsRequest = {
+        query: 'sneakers',
+        filters: {},
+        sorting: { field: 'relevance', direction: 'desc' },
+        pagination: { page: 1, limit: 20 }
+      };
+
+      mockSearchService.search.mockResolvedValue([
+        {
+          id: 'product-image-1',
+          name: 'Safari Sneakers',
+          description: 'Comfortable casual sneakers',
+          price: { amount: 54000, currency: 'TZS' },
+          categoryId: 'category-footwear',
+          sellerId: 'seller-1',
+          type: 'physical',
+          tags: ['sneakers'],
+          status: 'published',
+          mediaUrls: ['https://images.example.com/sneaker-1.jpg'],
+          thumbnailUrl: 'https://images.example.com/sneaker-thumb.jpg',
+          score: 0.99,
+          createdAt: new Date('2026-04-22T19:41:07.326Z')
+        }
+      ] as unknown as DomainRecord);
+
+      const result = await useCase.execute(request);
+
+      expect(result.status).toBe('success');
+      expect(result.results[0].mediaUrls).toEqual(['https://images.example.com/sneaker-1.jpg']);
+      expect(result.results[0].thumbnailUrl).toBe('https://images.example.com/sneaker-thumb.jpg');
+    });
+
     it('should perform filter-only search without query', async () => {
       // Given: Search request without text query
       const request: SearchProductsRequest = {

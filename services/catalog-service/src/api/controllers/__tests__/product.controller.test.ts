@@ -381,9 +381,25 @@ describe('ProductController', () => {
     it('should search products', async () => {
       mockSearchProductsUseCase.execute.mockResolvedValue({
         status: 'success',
-        results: [],
-        total: 0,
-        pagination: { page: 1, limit: 20, totalPages: 0 },
+        results: [
+          {
+            id: 'product-1',
+            name: 'Azam Sunflower Cooking Oil 5L',
+            price: { amount: 19800, currency: 'TZS' },
+            categoryId: 'category-1',
+            sellerId: 'seller-1',
+            type: 'physical',
+            tags: ['cod-available'],
+            status: 'published',
+            mediaUrls: ['https://images.example.com/azam-oil.jpg'],
+            thumbnailUrl: 'https://images.example.com/azam-oil-thumb.jpg',
+            createdAt: new Date('2026-04-22T19:40:35.904Z')
+          }
+        ],
+        total: 1,
+        pagination: { page: 1, limit: 20, totalPages: 1, hasNext: false, hasPrev: false },
+        searchMetadata: { query: 'oil', executionTime: 12, totalResults: 1 },
+        facets: { categories: [], priceRanges: [], productTypes: [], tags: [] },
       });
 
       const req = makeReq({ query: { q: 'oil' } });
@@ -392,6 +408,15 @@ describe('ProductController', () => {
       await controller.searchProducts(req as any, res as any);
 
       expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: [
+            expect.objectContaining({
+              thumbnailUrl: 'https://images.example.com/azam-oil-thumb.jpg'
+            })
+          ]
+        })
+      );
     });
   });
 });

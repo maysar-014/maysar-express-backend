@@ -359,6 +359,14 @@ export class SearchProductsUseCase {
       type: product.type,
       tags: product.tags || [],
       status: product.status,
+      mediaUrls: Array.isArray(product.mediaUrls)
+        ? product.mediaUrls
+        : Array.isArray(product.images)
+          ? product.images
+          : [],
+      thumbnailUrl: product.thumbnailUrl
+        || (Array.isArray(product.mediaUrls) ? product.mediaUrls[0] : undefined)
+        || (Array.isArray(product.images) ? product.images[0] : undefined),
       relevanceScore: product.score || product.relevanceScore,
       createdAt: product.createdAt
     }));
