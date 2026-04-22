@@ -55,7 +55,7 @@ import { BuyBoxWeights } from './src/domain/value-objects/buy-box-weights.value-
 import { BuyBoxEventPublisher } from './src/infrastructure/messaging/buy-box-event-publisher';
 import { CatalogOutboxRepository } from './src/infrastructure/messaging/catalog-outbox.repository';
 import { externalServicesConfig } from './src/config/external-services.config';
-import { SearchProviderFactory, SearchConfig } from './src/infrastructure/providers/search.provider';
+import { SearchHealthMonitor, SearchProviderFactory, SearchConfig } from './src/infrastructure/providers/search.provider';
 import { MeilisearchSearchService } from './src/infrastructure/services/search.service';
 import type { CategoryRepository, MediaRepository, SearchService, IdGenerator, DateTimeService } from './src/domain/interfaces';
 import { createPrismaClient } from '@shared/database/prisma-client';
@@ -232,6 +232,7 @@ export const CatalogModule: Module = {
             } : undefined
         };
         const searchProvider = SearchProviderFactory.createDefault(searchConfig);
+        const searchHealthMonitor = new SearchHealthMonitor(searchProvider);
         const searchService: SearchService = externalServicesConfig.search.enabled
             ? new MeilisearchSearchService(searchProvider, {
                 indexName: searchConfig.indexName || 'catalog',
@@ -427,7 +428,11 @@ export const CatalogModule: Module = {
                 timestamp: new Date().toISOString()
             });
         });
-        router.use(createCatalogHealthRoutes());
+        router.use(createCatalogHealthRoutes({
+            searchHealthCheck: () => searchHealthMonitor.getHealthStatus(),
+            searchProvider: searchConfig.provider,
+            searchIndexName: searchConfig.indexName || 'catalog'
+        }));
         router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createCatalogMaintenanceRoutes(prisma));
 
         CatalogModule.routes = router;

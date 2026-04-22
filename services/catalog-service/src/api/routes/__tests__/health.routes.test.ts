@@ -398,6 +398,77 @@ describe('Health Routes', () => {
     });
   });
 
+  describe('GET /api/health/search', () => {
+    it('should return configured search health status', async () => {
+      const searchApp = express();
+      searchApp.use(express.json());
+      searchApp.use('/api', createHealthRoutes({
+        searchHealthCheck: jest.fn().mockResolvedValue({
+          status: 'healthy',
+          cluster: 'green',
+          responseTime: 12,
+          indexCount: 1,
+          documentCount: 42
+        }),
+        searchProvider: 'meilisearch',
+        searchIndexName: 'catalog'
+      }));
+
+      const response = await request(searchApp)
+        .get('/api/health/search')
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        success: true,
+        data: {
+          provider: 'meilisearch',
+          indexName: 'catalog',
+          status: 'healthy',
+          cluster: 'green',
+          responseTime: 12,
+          indexCount: 1,
+          documentCount: 42,
+          checkedAt: expect.any(String)
+        }
+      });
+    });
+
+    it('should return 503 when search health is not configured', async () => {
+      const response = await request(app)
+        .get('/api/health/search')
+        .expect(503);
+
+      expect(response.body).toMatchObject({
+        success: false,
+        error: {
+          code: 'SEARCH_HEALTH_NOT_CONFIGURED'
+        }
+      });
+    });
+
+    it('should return 503 when search health check fails', async () => {
+      const searchApp = express();
+      searchApp.use(express.json());
+      searchApp.use('/api', createHealthRoutes({
+        searchHealthCheck: jest.fn().mockRejectedValue(new Error('Search backend unavailable')),
+        searchProvider: 'meilisearch',
+        searchIndexName: 'catalog'
+      }));
+
+      const response = await request(searchApp)
+        .get('/api/health/search')
+        .expect(503);
+
+      expect(response.body).toMatchObject({
+        success: false,
+        error: {
+          code: 'SEARCH_HEALTH_CHECK_FAILED',
+          message: 'Search backend unavailable'
+        }
+      });
+    });
+  });
+
   describe('Error handling', () => {
     it('should handle invalid endpoints', async () => {
       const response = await request(app)

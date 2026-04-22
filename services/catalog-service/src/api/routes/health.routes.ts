@@ -14,6 +14,15 @@ export interface HealthRoutesConfig {
   apiVersion: string;
   enableDetailedHealth: boolean;
   healthCheckInterval: number;
+  searchHealthCheck?: () => Promise<{
+    status: 'healthy' | 'degraded' | 'unhealthy';
+    cluster: 'green' | 'yellow' | 'red';
+    responseTime: number;
+    indexCount: number;
+    documentCount: number;
+  }>;
+  searchProvider?: string;
+  searchIndexName?: string;
 }
 
 /**
@@ -304,6 +313,55 @@ export function createHealthRoutes(
     }
   );
 
+  /**
+   * Search Health
+   * GET /health/search
+   */
+  router.get('/health/search',
+    async (req: Request, res: Response) => {
+      const meta = createRequestMeta(req);
+
+      if (!routesConfig.searchHealthCheck) {
+        res.status(503).json({
+          success: false,
+          error: {
+            code: 'SEARCH_HEALTH_NOT_CONFIGURED',
+            message: 'Search health check is not configured'
+          },
+          meta
+        });
+        return;
+      }
+
+      try {
+        const health = await routesConfig.searchHealthCheck();
+        const statusCode = health.status === 'unhealthy' ? 503 : 200;
+
+        res.status(statusCode).json({
+          success: health.status !== 'unhealthy',
+          data: {
+            provider: routesConfig.searchProvider || 'unknown',
+            indexName: routesConfig.searchIndexName || 'unknown',
+            ...health,
+            checkedAt: meta.timestamp
+          },
+          meta
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown search health error';
+
+        res.status(503).json({
+          success: false,
+          error: {
+            code: 'SEARCH_HEALTH_CHECK_FAILED',
+            message
+          },
+          meta
+        });
+      }
+    }
+  );
+
   router.use((req: Request, res: Response) => {
     const meta = createRequestMeta(req);
 
@@ -340,7 +398,8 @@ export const HEALTH_ROUTES_METADATA = {
     { method: 'GET', path: '/health/ready', description: 'Readiness probe', auth: 'none' },
     { method: 'GET', path: '/health/live', description: 'Liveness probe', auth: 'none' },
     { method: 'GET', path: '/health/metrics', description: 'System metrics', auth: 'none' },
-    { method: 'GET', path: '/health/version', description: 'Version information', auth: 'none' }
+    { method: 'GET', path: '/health/version', description: 'Version information', auth: 'none' },
+    { method: 'GET', path: '/health/search', description: 'Search provider health', auth: 'none' }
   ],
   middleware: [],
   healthChecks: [
@@ -348,6 +407,7 @@ export const HEALTH_ROUTES_METADATA = {
     'readiness_probe',
     'liveness_probe',
     'system_metrics',
-    'version_info'
+    'version_info',
+    'search_health'
   ]
 };
