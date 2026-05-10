@@ -1,52 +1,95 @@
 /* eslint-disable no-console */
-import './tracing'; // MUST be first — before any other imports
+import './tracing'; // MUST be first - before any other imports
 import './instrument';
 import 'dotenv/config';
 import './config/normalize-database-url';
 import 'reflect-metadata';
-import { createApp } from './app';
+import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { moduleRegistry } from './core/module-registry';
 import { validateEnv } from './config/env-validation';
-import { ServiceModule } from './core/module.interface';
-import * as services from '../services';
+import type { ServiceModule } from './core/module.interface';
 import { createLogger } from '../shared/logger/logger';
 import { serializeError } from '../shared/logger/error-utils';
 import { initializeEventRegistry } from '../shared/events/registry';
 
 const bootstrapLogger = createLogger('Bootstrap', 'core');
+const port = Number(process.env.PORT || 3000);
+const host = process.env.HOST || '0.0.0.0';
+const baseUrl = host === '0.0.0.0' ? `http://localhost:${port}` : `http://${host}:${port}`;
+
+type RequestHandler = (req: IncomingMessage, res: ServerResponse) => void;
+
+const writeJson = (res: ServerResponse, statusCode: number, payload: Record<string, unknown>) => {
+    const body = JSON.stringify(payload);
+    res.statusCode = statusCode;
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Length', Buffer.byteLength(body));
+    res.end(body);
+};
+
+let currentHandler: RequestHandler = (req, res) => {
+    const url = req.url || '/';
+
+    if (url === '/health') {
+        writeJson(res, 200, {
+            success: true,
+            status: 'starting',
+            message: 'Bootstrap in progress'
+        });
+        return;
+    }
+
+    if (url === '/ready') {
+        writeJson(res, 503, {
+            success: false,
+            status: 'starting',
+            message: 'Application modules are still initializing'
+        });
+        return;
+    }
+
+    writeJson(res, 503, {
+        success: false,
+        status: 'starting',
+        message: 'Application bootstrap in progress'
+    });
+};
+
+const server = createServer((req, res) => currentHandler(req, res));
 
 console.log('[BOOTSTRAP] main.ts loaded');
 
 async function bootstrap() {
     try {
+        server.listen(port, host, () => {
+            bootstrapLogger.info(`Bootstrap shell listening at ${baseUrl}`);
+        });
+
         console.log('[BOOTSTRAP] validateEnv start');
         validateEnv();
         bootstrapLogger.info('Starting Maysar Express Backend Monolith...');
 
-        // Initialize event registry before modules
+        // Initialize event registry before modules.
         initializeEventRegistry();
 
-        // Auto-register all services imported from services/index
+        // Defer the monolith service graph import until after the bootstrap shell
+        // is already accepting requests on the port.
+        const services = await import('../services');
+
         Object.values(services).forEach((serviceModule: ServiceModule) => {
             if (serviceModule && serviceModule.name && typeof serviceModule.initialize === 'function') {
                 moduleRegistry.register(serviceModule);
             }
         });
 
-        // Initialize all modules
         await moduleRegistry.initializeAll();
 
-        // Create and start app
+        const { createApp } = await import('./app');
         const app = createApp();
-        const port = Number(process.env.PORT || 3000);
-        const host = process.env.HOST || '0.0.0.0';
-
-        const server = app.listen(port, host, () => {
-            const baseUrl = host === '0.0.0.0' ? `http://localhost:${port}` : `http://${host}:${port}`;
-            bootstrapLogger.info(`Server running at ${baseUrl}`);
-            bootstrapLogger.info(`Health check available at ${baseUrl}/health`);
-            bootstrapLogger.info(`Readiness probe at ${baseUrl}/ready`);
-        });
+        currentHandler = app as unknown as RequestHandler;
+        bootstrapLogger.info(`Server running at ${baseUrl}`);
+        bootstrapLogger.info(`Health check available at ${baseUrl}/health`);
+        bootstrapLogger.info(`Readiness probe at ${baseUrl}/ready`);
 
         server.on('clientError', (error: NodeJS.ErrnoException, socket: import('net').Socket) => {
             bootstrapLogger.warn('HTTP client error', {
@@ -80,7 +123,6 @@ async function bootstrap() {
             );
         });
 
-        // Graceful shutdown
         const shutdown = async () => {
             bootstrapLogger.info('Received shutdown signal');
             server.close(() => {
@@ -112,7 +154,6 @@ async function bootstrap() {
                 void shutdown();
             }
         });
-
     } catch (error) {
         console.error('[FATAL] Failed to bootstrap application:', serializeError(error));
         bootstrapLogger.error('Failed to bootstrap application:', serializeError(error));

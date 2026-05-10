@@ -48,7 +48,12 @@ Triggers:
 
 Behavior:
 - Deploys the exact commit SHA that passed `CI` on `staging`.
-- Uses Railway CLI (`railway up --ci`) with Railway project/service/environment targeting.
+- Runs staging preflight using `.env.staging` content from secret.
+- Syncs the repository to the staging host over SSH.
+- Writes `.env.staging` on the staging host.
+- Deploys using Docker Compose:
+  - `docker-compose.yml`
+  - `docker-compose.staging.yml`
 - Optional health check using `HEALTHCHECK_URL` secret.
 
 ### `Deploy Production` workflow
@@ -79,10 +84,12 @@ Create two GitHub Environments:
 
 | Secret Name | Description | Example |
 |---|---|---|
-| `RAILWAY_TOKEN` | Railway project/workspace token with deploy permissions | `railway_...` |
-| `RAILWAY_PROJECT_ID` | Railway project ID for staging deploy target | `11111111-2222-3333-4444-555555555555` |
-| `RAILWAY_ENVIRONMENT` | Railway environment name or ID | `staging` |
-| `RAILWAY_SERVICE` | Railway service name or ID to deploy | `maysar-api` |
+| `SSH_HOST` | Staging deployment server hostname/IP | `203.0.113.20` |
+| `SSH_PORT` | SSH port (optional, default 22) | `22` |
+| `SSH_USER` | SSH login user | `ubuntu` |
+| `SSH_PRIVATE_KEY` | Private key used by runner for SSH | OpenSSH private key |
+| `DEPLOY_PATH` | Absolute path where app will be synced | `/opt/maysar-express-backend-staging` |
+| `ENV_FILE` | Full multi-line staging environment file content | `.env.staging` content |
 | `HEALTHCHECK_URL` | Optional post-deploy health endpoint | `https://staging.example.com/health` |
 
 ### Production environment secrets
@@ -99,9 +106,9 @@ Create two GitHub Environments:
 
 Notes:
 - Use different secret values between staging and production.
-- In Railway service settings, set trigger branch to `staging` and enable `Wait for CI`.
+- Keep `SSH_*`, `DEPLOY_PATH`, `ENV_FILE`, and `HEALTHCHECK_URL` scoped per GitHub environment.
 
-## 4. Remote Host Requirements (Production Only)
+## 4. Remote Host Requirements (Staging And Production)
 
 The production host must have:
 - Docker Engine
@@ -120,25 +127,25 @@ The production workflow sync excludes:
 
 1. Create and protect branches: `dev`, `staging`, `prod`.
 2. Configure GitHub environments and secrets.
-3. Configure Railway staging service branch trigger to `staging` and enable `Wait for CI`.
-4. On production server, ensure `DEPLOY_PATH` parent exists and has proper permissions.
-5. Merge a small change into `staging` to test `Deploy Staging`.
-6. Validate health endpoint and service availability.
-7. Promote to `prod` and verify `Deploy Production`.
+3. On staging and production servers, ensure each `DEPLOY_PATH` parent exists and has proper permissions.
+4. Merge a small change into `staging` to test `Deploy Staging`.
+5. Validate health endpoint and service availability.
+6. Promote to `prod` and verify `Deploy Production`.
 
 ## 6. Operational Notes
 
-- Staging deploy command (GitHub Actions):
-  - `npx --yes @railway/cli@latest up --ci --project ... --environment ... --service ...`
+- Staging deployment script used on remote host:
+  - `scripts/deploy/remote-compose-deploy.sh staging`
 - Production deployment script used on remote host:
-  - `scripts/deploy/remote-compose-deploy.sh`
+  - `scripts/deploy/remote-compose-deploy.sh production`
 - Production preflight script:
   - `scripts/production/preflight-env.js`
+- Staging preflight script:
+  - `scripts/staging/preflight-env.js`
 
 If deployment fails:
 1. Check workflow logs in Actions.
-2. For staging (Railway), inspect Railway deployment/build logs and verify `RAILWAY_*` secrets.
-3. For production, SSH to target server and inspect:
+2. For staging or production, SSH to target server and inspect:
    - `docker compose ... ps`
    - `docker compose ... logs --tail=200`
-4. Verify required secrets and health check endpoint values.
+3. Verify required secrets and health check endpoint values.

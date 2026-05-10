@@ -29,6 +29,7 @@ const parseLimit = (value: string | undefined, fallback: number): number => {
 const isProduction = process.env.NODE_ENV === 'production';
 const registerLimitMax = parseLimit(process.env.AUTH_REGISTER_RATE_LIMIT_MAX, isProduction ? 10 : 60);
 const loginLimitMax = parseLimit(process.env.AUTH_LOGIN_RATE_LIMIT_MAX, isProduction ? 5 : 60);
+const forgotPasswordLimitMax = parseLimit(process.env.AUTH_FORGOT_PASSWORD_RATE_LIMIT_MAX, isProduction ? 3 : 20);
 
 // Export factory function instead of router instance directly
 export const createAuthRoutes = (authController: AuthControllerHandlers): Router => {
@@ -92,10 +93,10 @@ export const createAuthRoutes = (authController: AuthControllerHandlers): Router
   /**
    * User logout
    * POST /api/v1/auth/logout
+   * No CSRF required — logout is always safe to allow (it destroys session, not creates one)
    */
   router.post(
     '/logout',
-    csrfValidationMiddleware,
     asyncHandler(authController.logout.bind(authController))
   );
 
@@ -133,7 +134,7 @@ export const createAuthRoutes = (authController: AuthControllerHandlers): Router
    */
   router.post(
     '/forgot-password',
-    rateLimit({ windowMs: 60 * 60 * 1000, max: 3, prefix: 'rl:forgot-pwd:' }), // 3 requests per hour
+    rateLimit({ windowMs: 60 * 60 * 1000, max: forgotPasswordLimitMax, prefix: 'rl:forgot-pwd:' }),
     validateRequest({
       body: {
         email: { type: 'string', required: true, format: 'email' }

@@ -6,6 +6,16 @@ import { OrderFulfillmentSaga } from '../sagas/order-fulfillment.saga';
 import { CODEligibilityEngine } from '../../domain/engines/cod-eligibility.engine';
 import { CODCommitmentService } from '../../domain/services/cod-commitment.service';
 
+/**
+ * Generates a cryptographically random 6-digit delivery confirmation code.
+ * This code is shown to the buyer and must be provided to the courier at delivery.
+ */
+function generateDeliveryCode(): string {
+  const min = 100000;
+  const max = 999999;
+  return String(Math.floor(Math.random() * (max - min + 1)) + min);
+}
+
 export interface PlaceOrderRequest {
   buyerId: string;
   sellerId: string;
@@ -30,6 +40,7 @@ export interface PlaceOrderResponse {
   orderId: string;
   status: string;
   trackingNumber?: string;
+  deliveryCode: string;
 }
 
 export class PlaceOrderUseCase {
@@ -38,7 +49,8 @@ export class PlaceOrderUseCase {
     private readonly eventPublisher: EventPublisher,
     private readonly sagaOrchestrator: OrderFulfillmentSaga,
     private readonly codEligibilityEngine: CODEligibilityEngine,
-    private readonly codCommitmentService: CODCommitmentService
+    private readonly codCommitmentService: CODCommitmentService,
+    private readonly walletClient?: import('../../../infrastructure/integrations/wallet-service.client').WalletServiceClient
   ) { }
 
   async execute(request: PlaceOrderRequest): Promise<PlaceOrderResponse> {
@@ -86,7 +98,22 @@ export class PlaceOrderUseCase {
       codHoldId = await this.codCommitmentService.secureCommitment(request.buyerId, orderId, codCommitmentFee, currency);
     }
 
+    // WALLET payment: debit the buyer's wallet synchronously before creating the order
+    if (request.paymentMethod === 'WALLET' && this.walletClient) {
+      try {
+        await this.walletClient.debitWallet(
+          request.buyerId,
+          totalAmount,
+          currency,
+          `Payment for order ${orderId}`
+        );
+      } catch (error: any) {
+        throw new Error(`Wallet payment failed: ${error.message}`);
+      }
+    }
+
     // Create order data
+    const deliveryCode = generateDeliveryCode();
     const orderData = {
       id: orderId,
       trackingNumber,
@@ -96,6 +123,7 @@ export class PlaceOrderUseCase {
       codCommitmentFee: codCommitmentFee > 0 ? codCommitmentFee : undefined,
       codCommitmentPaid: !!codHoldId,
       codCommitmentHoldId: codHoldId,
+      deliveryCode,
       totalWeight: request.items.reduce((sum, item) => sum + (item.weight * item.quantity), 0),
       items: request.items.map(item => ({
         productId: item.productId,
@@ -127,7 +155,8 @@ export class PlaceOrderUseCase {
     return {
       orderId: order.id,
       status: order.status,
-      trackingNumber: order.trackingNumber
+      trackingNumber: order.trackingNumber,
+      deliveryCode
     };
   }
 

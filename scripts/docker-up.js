@@ -19,12 +19,53 @@ const trackedFiles = [
   '.dockerignore'
 ];
 
+const trackedDirectories = [
+  'src',
+  'services',
+  'shared',
+  'shared-contracts',
+  'config',
+  'prisma',
+  'scripts'
+];
+
 function readTrackedFile(relativePath) {
   const absolutePath = path.join(repoRoot, relativePath);
   if (!fs.existsSync(absolutePath)) {
     return null;
   }
   return fs.readFileSync(absolutePath);
+}
+
+function hashDirectory(relativePath, hash) {
+  const absolutePath = path.join(repoRoot, relativePath);
+  if (!fs.existsSync(absolutePath)) {
+    hash.update(relativePath);
+    hash.update('\0missing-dir\0');
+    return;
+  }
+
+  const walk = (currentRelativePath) => {
+    const currentAbsolutePath = path.join(repoRoot, currentRelativePath);
+    const entries = fs.readdirSync(currentAbsolutePath, { withFileTypes: true })
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    for (const entry of entries) {
+      const entryRelativePath = path.join(currentRelativePath, entry.name);
+      hash.update(entryRelativePath);
+      hash.update('\0');
+
+      if (entry.isDirectory()) {
+        walk(entryRelativePath);
+        continue;
+      }
+
+      hash.update(fs.readFileSync(path.join(repoRoot, entryRelativePath)));
+      hash.update('\0');
+    }
+  };
+
+  walk(relativePath);
 }
 
 function buildFingerprint() {
@@ -42,6 +83,10 @@ function buildFingerprint() {
     }
 
     hash.update('\0');
+  }
+
+  for (const relativePath of trackedDirectories) {
+    hashDirectory(relativePath, hash);
   }
 
   return hash.digest('hex');

@@ -45,6 +45,7 @@ export class PrismaOrderRepository implements OrderRepository {
         } as any,
         cancelledAt: order.cancelledAt,
         cancellationReason: order.cancelReason,
+        deliveryCode: (order as any).deliveryCode ?? null,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         items: {
@@ -195,6 +196,8 @@ export class PrismaOrderRepository implements OrderRepository {
       totalWeight: prismaOrder.totalWeight,
       cancelledAt: prismaOrder.cancelledAt,
       cancellationReason: prismaOrder.cancellationReason,
+      deliveryCode: prismaOrder.deliveryCode ?? undefined,
+      deliveryCodeUsedAt: prismaOrder.deliveryCodeUsedAt ?? undefined,
       paymentMethod: this.toDomainPaymentMethod(prismaOrder.paymentMethod),
       deliveryAddress: {
         street: deliveryAddress.street,
@@ -308,7 +311,7 @@ export class PrismaOrderRepository implements OrderRepository {
       COD: 'cod',
       CARD: 'card',
       MOBILE_MONEY: 'mobile_money',
-      WALLET: 'card'
+      WALLET: 'wallet'
     };
     return map[String(method)] ?? 'cod';
   }

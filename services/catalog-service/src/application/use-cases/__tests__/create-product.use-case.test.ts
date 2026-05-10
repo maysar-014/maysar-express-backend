@@ -9,7 +9,7 @@ describe('CreateProductUseCase', () => {
     brand: 'Acme',
     productName: 'Acme Blender',
     minimumOrderQuantity: 1,
-    supplierLocation: 'Dar es Salaam',
+    supplierLocationId: 'addr-1',
     structuredAttributes: {
       color: 'Black',
       material: 'Steel'
@@ -39,6 +39,18 @@ describe('CreateProductUseCase', () => {
     const mockEventPublisher = {
       publish: jest.fn().mockResolvedValue(undefined)
     };
+    const mockSellerLocationRepository = {
+      findByIdForSeller: jest.fn().mockResolvedValue({
+        id: 'addr-1',
+        sellerId: 'seller-1',
+        businessId: 'biz-1',
+        city: 'Dar es Salaam',
+        region: 'Dar es Salaam',
+        country: 'Tanzania',
+        displayName: 'Dar es Salaam',
+        isPrimary: true
+      })
+    };
     const mockIdGenerator = {
       generate: jest.fn()
         .mockReturnValueOnce('event-1')
@@ -47,24 +59,37 @@ describe('CreateProductUseCase', () => {
     const mockDateTimeService = {
       now: jest.fn().mockReturnValue(new Date('2026-01-01T00:00:00.000Z'))
     };
+    const mockCatalogSearchIndexer = {
+      syncProductById: jest.fn().mockResolvedValue('indexed')
+    };
 
     const useCase = new CreateProductUseCase(
       mockProductRepository,
       mockCategoryRepository,
       mockCategoryAttributeRepository,
       {},
+      mockSellerLocationRepository,
       mockEventPublisher,
       mockIdGenerator,
-      mockDateTimeService
+      mockDateTimeService,
+      mockCatalogSearchIndexer
     );
 
     const result = await useCase.execute(buildDto());
 
     expect(result.status).toBe('success');
     expect(isSystemId(result.productId)).toBe(true);
-    expect(mockProductRepository.saveWithAttributesTransaction).toHaveBeenCalled();
+    expect(mockProductRepository.saveWithAttributesTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        supplierLocationId: 'addr-1',
+        supplierLocation: 'Dar es Salaam'
+      }),
+      result.productId,
+      expect.any(Array)
+    );
     expect(mockEventPublisher.publish).toHaveBeenCalledTimes(2);
     expect(mockIdGenerator.generate).toHaveBeenCalledTimes(2);
+    expect(mockCatalogSearchIndexer.syncProductById).toHaveBeenCalledWith(result.productId);
   });
 
   it('returns validation error when category is missing', async () => {
@@ -73,6 +98,16 @@ describe('CreateProductUseCase', () => {
       { findById: jest.fn().mockResolvedValue(null) },
       { findByCategory: jest.fn() },
       {},
+      { findByIdForSeller: jest.fn().mockResolvedValue({
+        id: 'addr-1',
+        sellerId: 'seller-1',
+        businessId: 'biz-1',
+        city: 'Dar es Salaam',
+        region: 'Dar es Salaam',
+        country: 'Tanzania',
+        displayName: 'Dar es Salaam',
+        isPrimary: true
+      }) },
       { publish: jest.fn() },
       { generate: jest.fn().mockReturnValue('id-1') },
       { now: jest.fn().mockReturnValue(new Date()) }
@@ -82,5 +117,44 @@ describe('CreateProductUseCase', () => {
 
     expect(result.status).toBe('validation_error');
     expect(result.violations).toContain('Category not found');
+  });
+
+  it('returns validation error when supplier location ID is missing', async () => {
+    const useCase = new CreateProductUseCase(
+      { saveWithAttributesTransaction: jest.fn() },
+      { findById: jest.fn() },
+      { findByCategory: jest.fn() },
+      {},
+      { findByIdForSeller: jest.fn() },
+      { publish: jest.fn() },
+      { generate: jest.fn().mockReturnValue('id-1') },
+      { now: jest.fn().mockReturnValue(new Date()) }
+    );
+
+    const result = await useCase.execute({
+      ...buildDto(),
+      supplierLocationId: '   '
+    });
+
+    expect(result.status).toBe('validation_error');
+    expect(result.violations).toContain('Supplier location ID is required');
+  });
+
+  it('returns validation error when saved supplier location does not belong to seller', async () => {
+    const useCase = new CreateProductUseCase(
+      { saveWithAttributesTransaction: jest.fn() },
+      { findById: jest.fn().mockResolvedValue({ id: 'cat-1', name: 'Kitchen', slug: 'kitchen' }) },
+      { findByCategory: jest.fn().mockResolvedValue([]) },
+      {},
+      { findByIdForSeller: jest.fn().mockResolvedValue(null) },
+      { publish: jest.fn() },
+      { generate: jest.fn().mockReturnValue('id-1') },
+      { now: jest.fn().mockReturnValue(new Date()) }
+    );
+
+    const result = await useCase.execute(buildDto());
+
+    expect(result.status).toBe('validation_error');
+    expect(result.violations).toContain('Saved supplier location not found for seller');
   });
 });

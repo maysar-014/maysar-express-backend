@@ -40,6 +40,7 @@ export interface AuthUser {
   publicCode?: string;
   email: string;
   name?: string; // Full name for display purposes
+  phoneNumber?: string;
   role: UserRole;
   status: UserStatus;
   isEmailVerified: boolean;

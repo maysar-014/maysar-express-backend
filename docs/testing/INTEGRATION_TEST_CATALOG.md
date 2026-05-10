@@ -126,11 +126,11 @@
 
 ---
 
-### 5. File Storage - Railway Volumes
+### 5. File Storage - Persistent Volumes
 **Service**: Catalog Service, User Service, Compliance Service  
 **Integration Type**: File System  
 **Environment Variables**:
-- `STORAGE_PATH` (Railway volume mount path)
+- `STORAGE_PATH` (mounted storage path)
 - `MAX_FILE_SIZE`
 
 **Test Scenarios**:

@@ -1,6 +1,9 @@
-# Maysar Infrastructure - OCI Migration
+# Maysar Infrastructure
 
-This directory contains the infrastructure-as-code setup for deploying Maysar to **Oracle Cloud Infrastructure (OCI)** using the **Always Free** tier.
+This directory contains infrastructure-as-code for multiple deployment targets:
+
+- `infra/terraform/` for the legacy OCI-focused environment
+- `infra/terraform/aws/` for a production-oriented AWS environment
 
 ## Architecture Overview
 

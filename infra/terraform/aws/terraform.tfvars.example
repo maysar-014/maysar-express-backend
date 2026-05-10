@@ -1,0 +1,25 @@
+aws_region            = "us-east-1"
+project_name          = "maysar"
+environment           = "production"
+availability_zones    = ["us-east-1a", "us-east-1b"]
+public_subnet_cidrs   = ["10.20.0.0/24", "10.20.1.0/24"]
+private_subnet_cidrs  = ["10.20.10.0/24", "10.20.11.0/24"]
+
+custom_domain_name = "api.example.com"
+route53_zone_id    = "Z1234567890ABC"
+
+app_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/maysar-prod:latest"
+
+frontend_url = "https://app.example.com"
+cors_origin  = "https://app.example.com,https://admin.example.com"
+
+pesapal_consumer_key    = "replace-me"
+pesapal_consumer_secret = "replace-me"
+pesapal_ipn_id          = "replace-me"
+
+alarm_email_endpoints = ["ops@example.com"]
+
+tags = {
+  Owner = "platform"
+  CostCenter = "production"
+}

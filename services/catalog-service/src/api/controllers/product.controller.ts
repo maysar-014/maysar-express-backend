@@ -11,6 +11,9 @@ import {
   GetProductUseCase,
   GetProductsBySellerUseCase,
   SearchProductsUseCase,
+  UpdateProductUseCase,
+  DeleteProductUseCase,
+  PublishProductUseCase,
   LoadCategoryAttributesUseCase,
   PreviewGeneratedDescriptionUseCase,
   ListCategoriesUseCase,
@@ -111,7 +114,10 @@ export class ProductController {
     private readonly createCategoryUseCase?: CreateCategoryUseCase,
     private readonly updateCategoryUseCase?: UpdateCategoryUseCase,
     private readonly deleteCategoryUseCase?: DeleteCategoryUseCase,
-    config: Partial<ProductControllerConfig> = {}
+    config: Partial<ProductControllerConfig> = {},
+    private readonly updateProductUseCase?: UpdateProductUseCase,
+    private readonly deleteProductUseCase?: DeleteProductUseCase,
+    private readonly publishProductUseCase?: PublishProductUseCase
   ) {
     this.config = { ...DEFAULT_PRODUCT_CONTROLLER_CONFIG, ...config };
   }
@@ -289,12 +295,16 @@ export class ProductController {
           price: product.price,
           categoryId: product.categoryId,
           sellerId: product.sellerId,
+          supplierLocationId: product.supplierLocationId,
+          supplierLocation: product.supplierLocation,
           type: product.type,
           tags: product.tags || [],
           status: product.status,
           thumbnailUrl: product.thumbnailUrl
             || product.media?.[0]?.url
             || product.mediaUrls?.[0],
+          inventoryStatus: product.inventory?.status,
+          inventoryAvailable: product.inventory?.available,
           createdAt: product.createdAt
         }));
 
@@ -357,11 +367,21 @@ export class ProductController {
           name: product.name,
           price: product.price,
           categoryId: product.categoryId,
+          categoryName: product.categoryName,
           sellerId: product.sellerId,
+          sellerName: product.sellerName,
+          supplierLocationId: product.supplierLocationId,
+          supplierLocation: product.supplierLocation,
           type: product.type,
           tags: product.tags || [],
           status: product.status,
           thumbnailUrl: product.thumbnailUrl || product.mediaUrls?.[0],
+          inventoryStatus: product.inventoryStatus,
+          inventoryAvailable: product.inventoryAvailable,
+          codAccepted: product.codAccepted,
+          condition: product.condition,
+          averageRating: product.averageRating ?? null,
+          reviewCount: product.reviewCount ?? 0,
           createdAt: product.createdAt
         }));
 
@@ -419,8 +439,23 @@ export class ProductController {
       // Map to DTO
       const updateDto = this.mapToUpdateProductDto(req.body, productId);
 
-      // Note: In a real implementation, you would have an UpdateProductUseCase
-      // For now, we'll simulate the update
+      if (!this.updateProductUseCase) {
+        this.sendNotImplemented(res, 'Update product is not configured');
+        return;
+      }
+
+      const result = await this.updateProductUseCase.execute(updateDto);
+
+      if (result.status === 'not_found') {
+        this.sendNotFoundError(res, 'Product not found');
+        return;
+      }
+
+      if (result.status === 'not_supported') {
+        this.sendNotImplemented(res, 'Update product is not supported');
+        return;
+      }
+
       const response: ApiResponse<{ productId: string; updated: boolean }> = {
         success: true,
         data: { productId, updated: true },
@@ -451,8 +486,17 @@ export class ProductController {
         return;
       }
 
-      // Note: In a real implementation, you would have a DeleteProductUseCase
-      // For now, we'll simulate the deletion
+      if (!this.deleteProductUseCase) {
+        this.sendNotImplemented(res, 'Delete product is not configured');
+        return;
+      }
+
+      const result = await this.deleteProductUseCase.execute(productId);
+      if (result.status === 'not_found') {
+        this.sendNotFoundError(res, 'Product not found');
+        return;
+      }
+
       const response: ApiResponse<{ productId: string; deleted: boolean }> = {
         success: true,
         data: { productId, deleted: true },
@@ -483,8 +527,17 @@ export class ProductController {
         return;
       }
 
-      // Note: In a real implementation, you would have a PublishProductUseCase
-      // This would use the product publishing saga
+      if (!this.publishProductUseCase) {
+        this.sendNotImplemented(res, 'Publish product is not configured');
+        return;
+      }
+
+      const result = await this.publishProductUseCase.execute(productId);
+      if (result.status === 'not_found') {
+        this.sendNotFoundError(res, 'Product not found');
+        return;
+      }
+
       const response: ApiResponse<{ productId: string; published: boolean }> = {
         success: true,
         data: { productId, published: true },
@@ -721,6 +774,9 @@ export class ProductController {
       if (!body.categoryId) errors.push('Category ID is required');
       if (!body.brand) errors.push('Brand is required');
       if (!body.productName) errors.push('Product name is required');
+      if (!body.supplierLocationId || typeof body.supplierLocationId !== 'string' || body.supplierLocationId.trim().length === 0) {
+        errors.push('Supplier location ID is required');
+      }
       if (!body.structuredAttributes) errors.push('Structured attributes are required');
       if (!body.mediaUrls || body.mediaUrls.length === 0) errors.push('At least one media URL is required');
       if (!body.price || body.price <= 0) errors.push('Valid price is required');
@@ -743,6 +799,10 @@ export class ProductController {
 
     if (body.price !== undefined && (typeof body.price !== 'number' || body.price <= 0)) {
       errors.push('Product price must be a positive number');
+    }
+
+    if (body.supplierLocation !== undefined && (typeof body.supplierLocation !== 'string' || body.supplierLocation.trim().length === 0)) {
+      errors.push('Supplier location must be a non-empty string');
     }
 
       if (body.tags && !Array.isArray(body.tags)) {
@@ -823,6 +883,8 @@ export class ProductController {
       price: body.price,
       currency: body.currency || 'USD',
       categoryId: body.categoryId,
+      supplierLocationId: body.supplierLocationId?.trim(),
+      supplierLocation: body.supplierLocation?.trim(),
       type: body.type,
       tags: body.tags || [],
       mediaUrls: body.mediaUrls || [],
@@ -841,6 +903,7 @@ export class ProductController {
         price: body.price,
         currency: body.currency,
         categoryId: body.categoryId,
+        supplierLocation: body.supplierLocation?.trim(),
         tags: body.tags,
         attributes: body.attributes,
         seoTitle: body.seoTitle,
@@ -896,6 +959,8 @@ export class ProductController {
       id: productDetails.id,
       sellerId: productDetails.sellerId,
       sellerName: productDetails.sellerName,
+      supplierLocationId: productDetails.supplierLocationId,
+      supplierLocation: productDetails.supplierLocation,
       name: productDetails.name,
       description: productDetails.description,
       price: productDetails.price,
@@ -914,6 +979,11 @@ export class ProductController {
         order: index,
         isPrimary: index === 0
       })),
+      ratings: productDetails.ratings || {
+        average: null,
+        count: 0,
+        distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+      },
       inventory: productDetails.inventory || {
         available: 0,
         reserved: 0,
@@ -937,7 +1007,9 @@ export class ProductController {
       recommendations: productDetails.recommendations || [],
       createdAt: productDetails.createdAt,
       updatedAt: productDetails.updatedAt,
-      publishedAt: productDetails.publishedAt
+      publishedAt: productDetails.publishedAt,
+      codAccepted: productDetails.codAccepted === true,
+      condition: (productDetails.condition ?? 'new') as 'new' | 'used' | 'refurbished' | 'damaged'
     };
   }
 
@@ -1041,7 +1113,10 @@ export class ProductControllerFactory {
     createCategoryUseCase?: CreateCategoryUseCase,
     updateCategoryUseCase?: UpdateCategoryUseCase,
     deleteCategoryUseCase?: DeleteCategoryUseCase,
-    config: Partial<ProductControllerConfig> = {}
+    config: Partial<ProductControllerConfig> = {},
+    updateProductUseCase?: UpdateProductUseCase,
+    deleteProductUseCase?: DeleteProductUseCase,
+    publishProductUseCase?: PublishProductUseCase
   ): ProductController {
     return new ProductController(
       createProductUseCase,
@@ -1056,7 +1131,10 @@ export class ProductControllerFactory {
       createCategoryUseCase,
       updateCategoryUseCase,
       deleteCategoryUseCase,
-      config
+      config,
+      updateProductUseCase,
+      deleteProductUseCase,
+      publishProductUseCase
     );
   }
 }

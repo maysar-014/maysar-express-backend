@@ -88,8 +88,8 @@ async function initializeService() {
       // For development, provide helpful guidance instead of crashing
       if (process.env.NODE_ENV === 'development') {
         logger.info('\n💡 Development Setup Options:');
-        logger.info('   � Check DATABASE_URL in .env.local');
-        logger.info('   � Verify PostgreSQL is accessible');
+        logger.info('   � Check DATABASE_URL in .env.local');
+        logger.info('   � Verify PostgreSQL is accessible');
         logger.info('   • Run unit tests only: npm run test:unit');
         logger.info('\n📖 See README.md for detailed setup instructions');
       }
@@ -123,13 +123,15 @@ async function initializeService() {
     const { sagaLogRepository } = await import('./infrastructure/repositories/saga.repository');
     const { PesapalAdapter } = await import('./infrastructure/providers/pesapal.adapter');
     const { SettlementService } = await import('./domain/engines/settlement.engine');
-    
+    const { WalletServiceClient: WalletClientClass } = await import('./infrastructure/integrations/wallet-service.client');
+
     const pesapalAdapter = new PesapalAdapter();
     const settlementRepository = new OrderSettlementRepository(databaseManager.getPrisma());
     const settlementService = new SettlementService(settlementRepository);
-    
+
     const paymentRepository = new OrderPaymentRepository(databaseManager.getPrisma());
-    const paymentSaga = new PaymentSaga(pesapalAdapter, paymentRepository);
+    const walletClientForSaga = new WalletClientClass();
+    const paymentSaga = new PaymentSaga(pesapalAdapter, paymentRepository, walletClientForSaga);
     const settlementSaga = new SettlementSaga(settlementService);
     const trainingSaga = new TrainingSaga(
       sagaLogRepository,
@@ -163,6 +165,53 @@ async function initializeService() {
     eventBus.subscribe('Delivery.Success.v1', async (e: any) => sagaReplyHandler.handleDeliverySuccess(e));
     eventBus.subscribe('Delivery.Failure.v1', async (e: any) => sagaReplyHandler.handleDeliveryFailed(e));
 
+    // Subscribe to Payment.Command.v1 to trigger PaymentSaga
+    // This bridges OrderFulfillmentSaga → PaymentSaga
+    eventBus.subscribe('Payment.Command.v1', async (envelope: any) => {
+      try {
+        const data = envelope?.data || envelope?.payload || envelope;
+        const { orderId, buyerId, amount, sagaId: parentSagaId } = data;
+
+        if (!orderId || !buyerId) {
+          logger.warn('Payment.Command.v1 missing orderId or buyerId', { data });
+          return;
+        }
+
+        // Fetch the order to get payment method and currency
+        const order = await orderRepository.findById(orderId);
+        if (!order) {
+          logger.warn('Payment.Command.v1: order not found', { orderId });
+          await eventBus.publish('Payment.Failure.v1', { sagaId: parentSagaId, orderId, reason: 'Order not found' });
+          return;
+        }
+
+        const { Payment, PaymentMethod, PaymentStatus } = await import('./domain/entities/payment.entity');
+        const { makeId, getModelPrefix } = await import('@shared/ids/id');
+
+        const payment = new Payment({
+          id: makeId(getModelPrefix('Order_Payment')),
+          orderId,
+          buyerId,
+          amount: Number((order as any).totalAmount?.amount ?? amount ?? 0),
+          currency: (order as any).totalAmount?.currency ?? 'TZS',
+          method: (order as any).paymentMethod === 'wallet' ? PaymentMethod.WALLET
+                : (order as any).paymentMethod === 'cod' ? PaymentMethod.COD
+                : PaymentMethod.CARD,
+          status: PaymentStatus.PENDING
+        });
+
+        await paymentSaga.start(payment.id, { payment });
+
+        // Wait briefly for the saga steps to complete (wallet debit is synchronous within the saga)
+        // Then notify OrderFulfillmentSaga of success
+        await eventBus.publish('Payment.Success.v1', { sagaId: parentSagaId, orderId, paymentId: payment.id });
+      } catch (err: any) {
+        logger.error('Payment.Command.v1 handler failed', { error: err.message });
+        const data = envelope?.data || envelope?.payload || envelope;
+        await eventBus.publish('Payment.Failure.v1', { sagaId: data?.sagaId, orderId: data?.orderId, reason: err.message });
+      }
+    });
+
     const { CODEligibilityEngine } = await import('./domain/engines/cod-eligibility.engine');
     const { CheckCODEligibilityUseCase } = await import('./application/use-cases/check-cod-eligibility.use-case');
     const { CODCommitmentService } = await import('./domain/services/cod-commitment.service');
@@ -187,7 +236,8 @@ async function initializeService() {
       eventPublisher,
       orderFulfillmentSaga,
       codEligibilityEngine,
-      codCommitmentService
+      codCommitmentService,
+      walletServiceClient
     );
     const orderController = new OrderController(placeOrderUseCase, checkCODEligibilityUseCase);
 

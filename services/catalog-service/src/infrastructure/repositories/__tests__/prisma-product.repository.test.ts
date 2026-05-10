@@ -79,6 +79,9 @@ describe('PrismaProductRepository', () => {
       sellerId: 'seller-123',
       title: 'Test Product',
       description: 'Test product description',
+      supplierLocationId: 'addr-123',
+      supplierLocation: 'Dar es Salaam',
+      seoMetadata: { supplierLocation: 'Dar es Salaam' },
       categoryId: 'cat-123',
       status: 'published',
       visibility: 'public',
@@ -110,6 +113,9 @@ describe('PrismaProductRepository', () => {
       sellerId: 'seller-123',
       title: 'Test Product',
       description: 'Test product description',
+      supplierLocationId: 'addr-123',
+      supplierLocation: 'Dar es Salaam',
+      seoMetadata: { supplierLocation: 'Dar es Salaam' },
       categoryId: 'cat-123',
       status: 'published',
       visibility: 'public',
@@ -626,8 +632,26 @@ describe('PrismaProductRepository', () => {
       expect(result).toBeDefined();
       expect(result.id).toBe('prod-123');
       expect(result.title).toBe('Test Product');
+      expect(result.supplierLocationId).toBe('addr-123');
+      expect(result.supplierLocation).toBe('Dar es Salaam');
       expect(result.variants).toHaveLength(1);
       expect(result.variants[0].price).toBe(99.99);
+    });
+
+    it('should fall back to seoMetadata supplier location for legacy products', async () => {
+      const legacyProduct = {
+        ...mockPrismaProduct,
+        supplierLocationId: null,
+        supplierLocation: null,
+        seoMetadata: { supplierLocationId: 'addr-legacy', supplierLocation: 'Mwanza' }
+      };
+      mockPrisma.product.findUnique.mockResolvedValue(legacyProduct);
+
+      const result = await repository.findById('prod-123');
+
+      expect(result).toBeDefined();
+      expect(result.supplierLocationId).toBe('addr-legacy');
+      expect(result.supplierLocation).toBe('Mwanza');
     });
 
     it('should handle products without category', async () => {

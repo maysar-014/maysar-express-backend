@@ -121,6 +121,12 @@ export const setupOrderRoutes = (orderController: OrderController, codDisputeCon
   router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
   router.use(requireAuth);
 
+  // Register confirm-delivery BEFORE idempotency middleware — it's a one-time action gated by the code itself
+  router.post(
+    '/orders/:id/confirm-delivery',
+    asyncHandler((req, res) => orderController.confirmDelivery(req, res))
+  );
+
   const redisUrl = process.env.REDIS_URL;
   if (redisUrl) {
     const idempotencyMiddleware = new IdempotencyMiddleware(redisUrl);

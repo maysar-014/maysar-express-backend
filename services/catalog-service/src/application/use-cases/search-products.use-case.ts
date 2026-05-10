@@ -9,6 +9,7 @@ import {
   CategoryRepository,
   SearchService
 } from '../../domain/interfaces';
+import { ProductReviewRepository } from '../../domain/repositories/product-review.repository.interface';
 
 export interface SearchProductsRequest {
   query?: string;
@@ -45,6 +46,8 @@ export interface SearchResult {
   categoryId: string;
   categoryName?: string;
   sellerId: string;
+  supplierLocationId?: string;
+  supplierLocation?: string;
   type: string;
   tags: string[];
   status: string;
@@ -52,6 +55,11 @@ export interface SearchResult {
   thumbnailUrl?: string;
   relevanceScore?: number;
   inventoryStatus?: 'in_stock' | 'low_stock' | 'out_of_stock';
+  inventoryAvailable?: number;
+  codAccepted?: boolean;
+  condition?: 'new' | 'used' | 'refurbished' | 'damaged';
+  averageRating?: number | null;
+  reviewCount?: number;
   createdAt: Date;
 }
 
@@ -89,7 +97,8 @@ export class SearchProductsUseCase {
   constructor(
     private readonly productRepository: ProductRepository,
     private readonly categoryRepository: CategoryRepository,
-    private readonly searchService: SearchService
+    private readonly searchService: SearchService,
+    private readonly reviewRepository?: ProductReviewRepository
   ) {}
 
   async execute(request: SearchProductsRequest): Promise<SearchProductsResponse> {
@@ -114,12 +123,36 @@ export class SearchProductsUseCase {
       // Apply pagination
       const paginatedResults = this.applyPagination(sortedResults, request.pagination);
 
+      // Enrich with review aggregate stats (averageRating, reviewCount)
+      let enrichedResults = paginatedResults.results;
+      if (this.reviewRepository) {
+        try {
+          const statsMap = new Map<string, { averageRating: number | null; reviewCount: number }>();
+          await Promise.all(
+            enrichedResults.map(async (product) => {
+              const stats = await this.reviewRepository!.getAggregateStats(product.id);
+              statsMap.set(product.id, {
+                averageRating: stats.averageRating,
+                reviewCount: stats.reviewCount
+              });
+            })
+          );
+          enrichedResults = enrichedResults.map(product => ({
+            ...product,
+            averageRating: statsMap.get(product.id)?.averageRating ?? null,
+            reviewCount: statsMap.get(product.id)?.reviewCount ?? 0
+          }));
+        } catch {
+          // Non-fatal — proceed without review stats
+        }
+      }
+
       // Build facets
       const facets = await this.buildFacets(sortedResults, request.filters);
 
       // Build response
       const response: SearchProductsResponse = {
-        results: paginatedResults.results,
+        results: enrichedResults,
         total: paginatedResults.total,
         facets,
         pagination: {
@@ -206,7 +239,26 @@ export class SearchProductsUseCase {
           }
         );
 
-        return this.normalizeSearchResults(searchResults);
+        const rawHits = this.normalizeSearchResults(searchResults);
+
+        // Meilisearch returns raw indexed docs without enriched variants/stock.
+        // Re-fetch from the repository by ID to get fully enriched records.
+        if (rawHits.length > 0) {
+          const ids = rawHits.map((h: any) => h.id).filter(Boolean);
+          try {
+            const enriched = await Promise.all(ids.map((id: string) => this.productRepository.findById(id)));
+            const enrichedMap = new Map(
+              enriched.filter(Boolean).map((p: any) => [p.id, p])
+            );
+            // Preserve Meilisearch relevance order, fall back to raw hit if not found
+            return rawHits.map((hit: any) => enrichedMap.get(hit.id) ?? hit);
+          } catch {
+            // If re-fetch fails, return raw hits (inventory will show out_of_stock)
+            return rawHits;
+          }
+        }
+
+        return rawHits;
       }
 
       return this.normalizeSearchResults(await this.productRepository.search(
@@ -346,30 +398,52 @@ export class SearchProductsUseCase {
     const paginatedResults = results.slice(startIndex, endIndex);
 
     // Convert to SearchResult format
-    const searchResults: SearchResult[] = paginatedResults.map(product => ({
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      price: {
-        amount: product.price?.amount || 0,
-        currency: product.price?.currency || 'USD'
-      },
-      categoryId: product.categoryId,
-      sellerId: product.sellerId,
-      type: product.type,
-      tags: product.tags || [],
-      status: product.status,
-      mediaUrls: Array.isArray(product.mediaUrls)
-        ? product.mediaUrls
-        : Array.isArray(product.images)
-          ? product.images
-          : [],
-      thumbnailUrl: product.thumbnailUrl
-        || (Array.isArray(product.mediaUrls) ? product.mediaUrls[0] : undefined)
-        || (Array.isArray(product.images) ? product.images[0] : undefined),
-      relevanceScore: product.score || product.relevanceScore,
-      createdAt: product.createdAt
-    }));
+    const searchResults: SearchResult[] = paginatedResults.map(product => {
+      // Calculate inventory status from enriched variant stock data
+      const variants: any[] = Array.isArray(product.variants) ? product.variants : [];
+      const totalAvailable = variants.reduce(
+        (sum: number, v: any) => sum + Math.max(0, Number(v.inventoryQuantity ?? v.stock ?? 0)),
+        0
+      );
+      let inventoryStatus: 'in_stock' | 'low_stock' | 'out_of_stock' = 'out_of_stock';
+      if (totalAvailable > 0) {
+        const reorderPoint = Number(product.reorderPoint ?? variants[0]?.reorderPoint ?? 0);
+        inventoryStatus = reorderPoint > 0 && totalAvailable <= reorderPoint ? 'low_stock' : 'in_stock';
+      }
+
+      return {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: {
+          amount: product.price?.amount || 0,
+          currency: product.price?.currency || 'USD'
+        },
+        categoryId: product.categoryId,
+        categoryName: product.categoryName ?? product.category?.name ?? undefined,
+        sellerId: product.sellerId,
+        sellerName: product.sellerName ?? undefined,
+        supplierLocationId: product.supplierLocationId,
+        supplierLocation: product.supplierLocation,
+        type: product.type,
+        tags: product.tags || [],
+        status: product.status,
+        mediaUrls: Array.isArray(product.mediaUrls)
+          ? product.mediaUrls
+          : Array.isArray(product.images)
+            ? product.images
+            : [],
+        thumbnailUrl: product.thumbnailUrl
+          || (Array.isArray(product.mediaUrls) ? product.mediaUrls[0] : undefined)
+          || (Array.isArray(product.images) ? product.images[0] : undefined),
+        relevanceScore: product.score || product.relevanceScore,
+        inventoryStatus,
+        inventoryAvailable: totalAvailable,
+        codAccepted: product.codAccepted === true,
+        condition: (product.condition ?? 'new') as 'new' | 'used' | 'refurbished' | 'damaged',
+        createdAt: product.createdAt
+      };
+    });
 
     return { results: searchResults, total };
   }

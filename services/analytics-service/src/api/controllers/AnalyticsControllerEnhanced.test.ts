@@ -1,4 +1,5 @@
 const profitabilityDashboardExecuteMock = jest.fn();
+const founderDashboardExecuteMock = jest.fn();
 const revenueHealthExecuteMock = jest.fn();
 const growthExecuteMock = jest.fn();
 const retentionExecuteMock = jest.fn();
@@ -13,6 +14,12 @@ jest.mock('../../infrastructure/repositories/SellerAnalyticsRepository', () => (
 jest.mock('../../application/use-cases/GetSellerProfitabilityDashboard', () => ({
   GetSellerProfitabilityDashboard: jest.fn().mockImplementation(() => ({
     execute: profitabilityDashboardExecuteMock
+  }))
+}));
+
+jest.mock('../../application/use-cases/GetFounderOperatingSystemDashboard', () => ({
+  GetFounderOperatingSystemDashboard: jest.fn().mockImplementation(() => ({
+    execute: founderDashboardExecuteMock
   }))
 }));
 
@@ -98,6 +105,17 @@ describe('AnalyticsController', () => {
     expect(revenueRes.json).toHaveBeenCalledWith({ medianRevenue: 400, arpsMonthly: 22 });
   });
 
+  it('returns the founder operating system dashboard for admin panel consumption', async () => {
+    founderDashboardExecuteMock.mockResolvedValue({ title: 'Maysar Daily Operating System' });
+    const controller = new AnalyticsController();
+    const res = makeRes();
+
+    await controller.getFounderOperatingSystem({} as any, res);
+
+    expect(founderDashboardExecuteMock).toHaveBeenCalledTimes(1);
+    expect(res.json).toHaveBeenCalledWith({ title: 'Maysar Daily Operating System' });
+  });
+
   it('returns red flags computed from aggregated metrics', async () => {
     revenueHealthExecuteMock.mockResolvedValue({ medianRevenue: 150, arpsMonthly: 9 });
     retentionExecuteMock.mockResolvedValue({ churnRateMonthly: 12, retentionRate90Days: 0.7 });
@@ -133,6 +151,17 @@ describe('AnalyticsController', () => {
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({ error: 'Failed to fetch growth indicators' });
+  });
+
+  it('returns 500 when founder operating system retrieval fails', async () => {
+    founderDashboardExecuteMock.mockRejectedValue(new Error('dashboard-failed'));
+    const controller = new AnalyticsController();
+    const res = makeRes();
+
+    await controller.getFounderOperatingSystem({} as any, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Failed to fetch founder operating system dashboard' });
   });
 });
 

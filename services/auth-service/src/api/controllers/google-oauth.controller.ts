@@ -227,11 +227,22 @@ export class GoogleOAuthController {
         message: 'Google OAuth initiated successfully'
       });
     } catch (error) {
-      logger.error('Failed to initiate Google OAuth', error as Error);
+      const errorContext = {
+        query: {
+          role: req.query.role,
+          redirect: req.query.redirect,
+          returnTo: req.query.returnTo
+        },
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
+      };
+      logger.error('Failed to initiate Google OAuth', errorContext);
+      
       res.status(500).json({
         success: false,
-        message: 'Failed to initiate Google OAuth',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: 'Google Sign-in is temporarily unavailable. Our team has been notified.',
+        code: 'OAUTH_INITIATION_FAILED',
+        ...(process.env.NODE_ENV === 'development' ? { details: errorContext.message } : {})
       });
     }
   }

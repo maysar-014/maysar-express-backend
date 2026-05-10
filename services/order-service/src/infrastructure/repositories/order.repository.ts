@@ -40,6 +40,7 @@ export class OrderRepositoryImpl implements OrderRepository {
         codProofGpsLng: order.codProofGpsLng,
         codProofTimestamp: order.codProofTimestamp,
         codCommitmentHoldId: order.codCommitmentHoldId,
+        deliveryCode: (order as any).deliveryCode || null,
         version: 0,
       },
     });
@@ -168,6 +169,8 @@ export class OrderRepositoryImpl implements OrderRepository {
       codProofGpsLng: data.codProofGpsLng ?? undefined,
       codProofTimestamp: data.codProofTimestamp ?? undefined,
       codCommitmentHoldId: data.codCommitmentHoldId ?? undefined,
+      deliveryCode: (data as any).deliveryCode ?? undefined,
+      deliveryCodeUsedAt: (data as any).deliveryCodeUsedAt ?? undefined,
     });
   }
 

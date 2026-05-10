@@ -70,6 +70,8 @@ describe('GetProductUseCase', () => {
       const mockProduct = {
         id: productId,
         sellerId: 'seller-456',
+        supplierLocationId: 'addr-1',
+        supplierLocation: 'Dar es Salaam',
         name: 'Test Product',
         description: 'A test product',
         price: { amount: 99.99, currency: 'USD' },
@@ -96,9 +98,11 @@ describe('GetProductUseCase', () => {
       // Then: Should return product details
       expect(result.status).toBe('success');
       expect(result.message).toBe('Product retrieved successfully');
-      expect(result.product).toEqual({
+      expect(result.product).toEqual(expect.objectContaining({
         id: productId,
         sellerId: 'seller-456',
+        supplierLocationId: 'addr-1',
+        supplierLocation: 'Dar es Salaam',
         name: 'Test Product',
         description: 'A test product',
         price: { amount: 99.99, currency: 'USD' },
@@ -109,7 +113,7 @@ describe('GetProductUseCase', () => {
         status: 'active',
         createdAt: mockProduct.createdAt,
         updatedAt: mockProduct.updatedAt
-      });
+      }));
 
       expect(mockProductRepository.findById).toHaveBeenCalledWith(productId);
     });
@@ -120,6 +124,8 @@ describe('GetProductUseCase', () => {
       const mockProduct = {
         id: productId,
         sellerId: 'seller-456',
+        supplierLocationId: 'addr-2',
+        seoMetadata: { supplierLocation: 'Mwanza' },
         name: 'Product with Media',
         description: 'Product description',
         price: { amount: 149.99, currency: 'USD' },
@@ -151,6 +157,8 @@ describe('GetProductUseCase', () => {
 
       // Then: Should include media in response
       expect(result.status).toBe('success');
+      expect(result.product?.supplierLocationId).toBe('addr-2');
+      expect(result.product?.supplierLocation).toBe('Mwanza');
       expect(result.product?.media).toHaveLength(2);
       expect(result.product?.media).toEqual([
         { id: 'media-1', url: 'https://example.com/image1.jpg', type: 'image', order: 0 },
@@ -321,8 +329,10 @@ describe('GetProductsBySellerUseCase', () => {
       const sellerId = 'seller-123';
       const mockProducts = [
         {
-          id: 'product-1',
-          sellerId,
+        id: 'product-1',
+        sellerId,
+        supplierLocationId: 'addr-1',
+        supplierLocation: 'Dar es Salaam',
           name: 'Product 1',
           description: 'Description 1',
           price: { amount: 99.99, currency: 'USD' },
@@ -335,8 +345,10 @@ describe('GetProductsBySellerUseCase', () => {
           updatedAt: new Date('2024-01-01')
         },
         {
-          id: 'product-2',
-          sellerId,
+        id: 'product-2',
+        sellerId,
+        supplierLocationId: 'addr-2',
+        supplierLocation: 'Arusha',
           name: 'Product 2',
           description: 'Description 2',
           price: { amount: 149.99, currency: 'USD' },
@@ -360,6 +372,8 @@ describe('GetProductsBySellerUseCase', () => {
       expect(result.products).toHaveLength(2);
       expect(result.total).toBe(2);
       expect(result.products[0].id).toBe('product-1');
+      expect(result.products[0].supplierLocationId).toBe('addr-1');
+      expect(result.products[0].supplierLocation).toBe('Dar es Salaam');
       expect(result.products[1].id).toBe('product-2');
     });
 

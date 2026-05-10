@@ -1,0 +1,5 @@
+bucket         = "maysar-terraform-state-prod"
+key            = "production/aws/terraform.tfstate"
+region         = "us-east-1"
+dynamodb_table = "maysar-terraform-locks"
+encrypt        = true

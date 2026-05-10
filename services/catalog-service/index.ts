@@ -22,16 +22,21 @@ import { createSellerStorefrontRoutes } from './src/api/routes/seller-storefront
 import { createPricingRoutes as createCatalogPricingRoutes } from './src/api/routes/pricing.routes';
 import { createHealthRoutes as createCatalogHealthRoutes } from './src/api/routes/health.routes';
 import { createMaintenanceRoutes as createCatalogMaintenanceRoutes } from './src/api/routes/maintenance.routes';
+import { createReviewRoutes } from './src/api/routes/review.routes';
 import { ProductControllerFactory } from './src/api/controllers/product.controller';
 import { SearchController } from './src/api/controllers/search.controller';
 import { ProductMatchingController } from './src/api/controllers/product-matching.controller';
 import { BuyBoxController } from './src/api/controllers/buy-box.controller';
 import { SellerStorefrontController } from './src/api/controllers/seller-storefront.controller';
 import { PricingController } from './src/api/controllers/pricing.controller';
+import { ReviewController } from './src/api/controllers/review.controller';
 import { ProductMapper } from './src/application/mappers/product-mapper';
 import { CreateProductUseCase } from './src/application/use-cases/create-product.use-case';
 import { GetProductUseCase, GetProductsBySellerUseCase } from './src/application/use-cases/get-product.use-case';
 import { SearchProductsUseCase } from './src/application/use-cases/search-products.use-case';
+import { SubmitProductReviewUseCase } from './src/application/use-cases/submit-product-review.use-case';
+import { GetProductReviewsUseCase } from './src/application/use-cases/get-product-reviews.use-case';
+import { ModerateReviewUseCase } from './src/application/use-cases/moderate-review.use-case';
 import { LoadCategoryAttributesUseCase } from './src/application/use-cases/load-category-attributes.use-case';
 import { PreviewGeneratedDescriptionUseCase } from './src/application/use-cases/preview-generated-description.use-case';
 import {
@@ -40,16 +45,24 @@ import {
     UpdateCategoryUseCase,
     DeleteCategoryUseCase
 } from './src/application/use-cases/manage-categories.use-case';
+import {
+    UpdateProductUseCase,
+    DeleteProductUseCase,
+    PublishProductUseCase
+} from './src/application/use-cases/manage-product-indexing.use-case';
+import { CatalogSearchIndexer } from './src/infrastructure/services/catalog-search-indexer.service';
 import { CreateProductWithMatchingUseCase } from './src/application/use-cases/create-product-with-matching.use-case';
 import { MatchProductUseCase } from './src/application/use-cases/match-product.use-case';
 import { ConfirmProductMatchUseCase } from './src/application/use-cases/confirm-product-match.use-case';
 import { ComputeBuyBoxUseCase } from './src/application/use-cases/compute-buy-box.use-case';
 import { PrismaProductRepository } from './src/infrastructure/repositories/prisma-product.repository';
+import { PrismaProductReviewRepository } from './src/infrastructure/repositories/prisma-product-review.repository';
 import { PrismaCategoryAttributeRepository } from './src/infrastructure/repositories/prisma-category-attribute.repository';
 import { PrismaProductAttributeRepository } from './src/infrastructure/repositories/prisma-product-attribute.repository';
 import { PrismaProductMatchAuditRepository } from './src/infrastructure/repositories/prisma-product-match-audit.repository';
 import { PrismaMatchConfirmationRepository } from './src/infrastructure/repositories/prisma-match-confirmation.repository';
 import { PrismaBuyBoxRepository } from './src/infrastructure/repositories/prisma-buy-box.repository';
+import { PrismaSellerLocationRepository } from './src/infrastructure/repositories/prisma-seller-location.repository';
 import { EventPublisherFactory } from './src/infrastructure/messaging/event-publisher';
 import { BuyBoxWeights } from './src/domain/value-objects/buy-box-weights.value-object';
 import { BuyBoxEventPublisher } from './src/infrastructure/messaging/buy-box-event-publisher';
@@ -212,6 +225,7 @@ export const CatalogModule: Module = {
         const categoryRepository = new PrismaCategoryRepository(prisma);
         const categoryAttributeRepository = new PrismaCategoryAttributeRepository(prisma);
         const productAttributeRepository = new PrismaProductAttributeRepository(prisma);
+        const sellerLocationRepository = new PrismaSellerLocationRepository(prisma);
         const mediaRepository = new PrismaMediaRepository(prisma);
         const fallbackSearchService = new PrismaSearchService(prisma);
         const searchConfig: SearchConfig = {
@@ -239,6 +253,12 @@ export const CatalogModule: Module = {
                 fallback: fallbackSearchService
             })
             : fallbackSearchService;
+        const catalogSearchIndexer = new CatalogSearchIndexer(
+            prisma,
+            searchService,
+            searchConfig.indexName || 'catalog',
+            searchProvider
+        );
         const catalogOutboxRepository = new CatalogOutboxRepository(prisma);
         const eventPublisher = EventPublisherFactory.createDefault(
             {},
@@ -252,13 +272,22 @@ export const CatalogModule: Module = {
             categoryRepository,
             categoryAttributeRepository,
             productAttributeRepository,
+            sellerLocationRepository,
             eventPublisher,
             idGenerator,
-            dateTimeService
+            dateTimeService,
+            catalogSearchIndexer
         );
-        const getProductUseCase = new GetProductUseCase(productRepository, mediaRepository, searchService);
+
+        // Review system repository — must be declared before use cases that depend on it
+        const reviewRepository = new PrismaProductReviewRepository(prisma);
+
+        const getProductUseCase = new GetProductUseCase(productRepository, mediaRepository, searchService, reviewRepository);
         const getProductsBySellerUseCase = new GetProductsBySellerUseCase(productRepository);
-        const searchProductsUseCase = new SearchProductsUseCase(productRepository, categoryRepository, searchService);
+        const searchProductsUseCase = new SearchProductsUseCase(productRepository, categoryRepository, searchService, reviewRepository);
+        const updateProductUseCase = new UpdateProductUseCase(productRepository as any, catalogSearchIndexer);
+        const deleteProductUseCase = new DeleteProductUseCase(productRepository as any, catalogSearchIndexer);
+        const publishProductUseCase = new PublishProductUseCase(productRepository as any, catalogSearchIndexer);
         const loadCategoryAttributesUseCase = new LoadCategoryAttributesUseCase(
             categoryAttributeRepository,
             categoryRepository
@@ -301,7 +330,11 @@ export const CatalogModule: Module = {
             listCategoriesUseCase,
             createCategoryUseCase,
             updateCategoryUseCase,
-            deleteCategoryUseCase
+            deleteCategoryUseCase,
+            {},
+            updateProductUseCase,
+            deleteProductUseCase,
+            publishProductUseCase
         );
 
         const searchController = new SearchController();
@@ -320,6 +353,12 @@ export const CatalogModule: Module = {
         const buyBoxController = new BuyBoxController(buyBoxUseCase, buyBoxRepository);
         const storefrontController = new SellerStorefrontController();
         const pricingController = new PricingController();
+
+        // Review system use cases and controller
+        const submitReviewUseCase = new SubmitProductReviewUseCase(productRepository, reviewRepository);
+        const getReviewsUseCase = new GetProductReviewsUseCase(reviewRepository);
+        const moderateReviewUseCase = new ModerateReviewUseCase(reviewRepository);
+        const reviewController = new ReviewController(submitReviewUseCase, getReviewsUseCase, moderateReviewUseCase);
 
         // Initialize event registry
         initializeEventRegistry();
@@ -409,6 +448,7 @@ export const CatalogModule: Module = {
             router.use(new BuyBoxRoutes(buyBoxController as any).getRouter());
             router.use('/sellers', createSellerStorefrontRoutes(storefrontController as any));
             router.use(createCatalogPricingRoutes(pricingController as any));
+            router.use(createReviewRoutes(reviewController));
         } catch (e) {
             logger.warn('Failed to mount catalog API routes, falling back to degraded handler:', e);
             router.all('/v1/*', (_req, res) => {

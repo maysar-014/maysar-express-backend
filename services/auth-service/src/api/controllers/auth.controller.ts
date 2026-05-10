@@ -96,12 +96,12 @@ export class AuthController {
         };
 
         if (result.refreshToken) {
+          // Set as HttpOnly cookie for browser clients
           res.cookie('refreshToken', result.refreshToken, cookieOptions);
         }
 
-        // Remove refreshToken from response body if present
-        const { refreshToken, ...responseBody } = result;
-        res.json(responseBody);
+        // Include refreshToken in response body for non-cookie clients (mobile, API)
+        res.json(result);
       } else {
         res.status(401).json(result);
       }

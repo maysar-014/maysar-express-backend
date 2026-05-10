@@ -232,6 +232,7 @@ describe('ProductController', () => {
           brand: 'Azam',
           productName: 'Oil',
           minimumOrderQuantity: 10,
+          supplierLocationId: 'addr-1',
           supplierLocation: 'Dar es Salaam',
           structuredAttributes: { volume: '5L' },
           mediaUrls: ['url'],
@@ -268,6 +269,7 @@ describe('ProductController', () => {
           brand: 'Azam',
           productName: 'Oil',
           minimumOrderQuantity: 10,
+          supplierLocationId: 'addr-1',
           supplierLocation: 'Dar es Salaam',
           structuredAttributes: { volume: '5L' },
           mediaUrls: ['url'],
@@ -292,6 +294,7 @@ describe('ProductController', () => {
           brand: 'Azam',
           productName: 'Oil',
           minimumOrderQuantity: 10,
+          supplierLocationId: 'addr-1',
           supplierLocation: 'Dar es Salaam',
           structuredAttributes: { volume: '5L' },
           mediaUrls: ['url'],
@@ -314,7 +317,9 @@ describe('ProductController', () => {
         product: {
           id: 'prod-1',
           sellerId: 'seller-1',
+          supplierLocationId: 'addr-1',
           sellerName: 'Seller One',
+          supplierLocation: 'Dar es Salaam',
           name: 'Oil',
           description: 'Premium cooking oil',
           price: 15000,
@@ -344,6 +349,49 @@ describe('ProductController', () => {
       await controller.getProduct(req as any, res as any);
 
       expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('should expose supplier location ID in product response', async () => {
+      mockGetProductUseCase.execute.mockResolvedValue({
+        status: 'success',
+        product: {
+          id: 'prod-1',
+          sellerId: 'seller-1',
+          supplierLocationId: 'addr-1',
+          supplierLocation: 'Dar es Salaam',
+          name: 'Oil',
+          description: 'Premium cooking oil',
+          price: { amount: 15000, currency: 'TZS' },
+          categoryId: 'cat-1',
+          type: 'simple',
+          tags: [],
+          attributes: {},
+          status: 'active',
+          media: [],
+          inventory: { available: 0, reserved: 0, total: 0, status: 'out_of_stock' },
+          shipping: {},
+          seo: {},
+          analytics: {},
+          ratings: {},
+          reviews: [],
+          recommendations: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+
+      const req = makeReq({ params: { id: 'prod-1' }, query: {} });
+      const res = makeRes();
+
+      await controller.getProduct(req as any, res as any);
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            supplierLocationId: 'addr-1'
+          })
+        })
+      );
     });
 
     it('should return 404 for not found', async () => {
@@ -388,6 +436,7 @@ describe('ProductController', () => {
             price: { amount: 19800, currency: 'TZS' },
             categoryId: 'category-1',
             sellerId: 'seller-1',
+            supplierLocation: 'Dar es Salaam',
             type: 'physical',
             tags: ['cod-available'],
             status: 'published',
@@ -412,6 +461,7 @@ describe('ProductController', () => {
         expect.objectContaining({
           data: [
             expect.objectContaining({
+              supplierLocation: 'Dar es Salaam',
               thumbnailUrl: 'https://images.example.com/azam-oil-thumb.jpg'
             })
           ]

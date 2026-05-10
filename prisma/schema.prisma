@@ -228,6 +228,8 @@ model Auth_User {
   status           Auth_UserStatus @default(PENDING_VERIFICATION)
   twoFactorEnabled Boolean         @default(false)
   twoFactorSecret  String?
+  phoneNumber      String?
+  isPhoneVerified  Boolean         @default(false)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -377,6 +379,7 @@ model BusinessAddress {
   createdAt  DateTime                     @default(now())
   updatedAt  DateTime                     @updatedAt
   business   Business                     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  suppliedProducts Product[]              @relation("ProductSupplierLocation")
 
   @@map("businessregistry_business_addresses")
 }
@@ -466,6 +469,8 @@ model Product {
   sellerId              String                @db.VarChar(64)
   title                 String                @db.VarChar(255)
   description           String?
+  supplierLocationId    String?               @db.VarChar(64)
+  supplierLocation      String?               @db.VarChar(100)
   categoryId            String                @db.VarChar(64)
   brand                 String?               @db.VarChar(100)
   model                 String?               @db.VarChar(100)
@@ -485,10 +490,13 @@ model Product {
   qualityScore          Int                   @default(0)
   enablerEnabled        Boolean               @default(false)
   enablerCommissionRate Decimal?              @db.Decimal(5, 4)
+  codAccepted           Boolean               @default(false)
+  condition             String                @default("new") @db.VarChar(20)
   createdAt             DateTime              @default(now()) @db.Timestamp(6)
   updatedAt             DateTime              @updatedAt @db.Timestamp(6)
   variants              ProductVariant[]
   category              Category              @relation(fields: [categoryId], references: [id])
+  supplierLocationRef   BusinessAddress?      @relation("ProductSupplierLocation", fields: [supplierLocationId], references: [id], onDelete: SetNull)
   structuredAttributes  ProductAttribute[]
 
   @@unique([categoryId, fingerprint])
@@ -497,6 +505,7 @@ model Product {
   @@index([isbn])
   @@index([brand, model, categoryId])
   @@index([slug])
+  @@index([supplierLocationId])
   @@map("catalog_products")
 }
 
@@ -596,6 +605,39 @@ model Catalog_MatchConfirmation {
   @@index([sellerId, status])
   @@index([expiresAt])
   @@map("catalog_match_confirmations")
+}
+
+model Catalog_ProductReview {
+  id               String                    @id @default(cuid()) @db.VarChar(64)
+  productId        String                    @db.VarChar(64)
+  buyerId          String                    @db.VarChar(64)
+  rating           Int
+  comment          String?
+  moderationStatus Catalog_ModerationStatus  @default(VISIBLE)
+  submittedAt      DateTime                  @default(now()) @db.Timestamp(6)
+  updatedAt        DateTime                  @updatedAt @db.Timestamp(6)
+
+  moderationLogs   Catalog_ReviewModerationLog[]
+
+  @@unique([productId, buyerId])
+  @@index([productId, moderationStatus])
+  @@index([buyerId])
+  @@map("catalog_product_reviews")
+}
+
+model Catalog_ReviewModerationLog {
+  id             String                   @id @default(cuid()) @db.VarChar(64)
+  reviewId       String                   @db.VarChar(64)
+  adminId        String                   @db.VarChar(64)
+  previousStatus Catalog_ModerationStatus
+  newStatus      Catalog_ModerationStatus
+  actionAt       DateTime                 @default(now()) @db.Timestamp(6)
+
+  review         Catalog_ProductReview    @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+  @@index([adminId])
+  @@map("catalog_review_moderation_logs")
 }
 
 model CategoryAttribute {
@@ -1632,6 +1674,8 @@ model Order_Order {
   codCommitmentHoldId    String?
   cancelledAt            DateTime?
   cancellationReason     String?
+  deliveryCode           String?             @db.VarChar(6)
+  deliveryCodeUsedAt     DateTime?
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
   version                Int                 @default(0)
@@ -3191,6 +3235,12 @@ enum Catalog_Visibility {
   public
   private
   unlisted
+}
+
+enum Catalog_ModerationStatus {
+  VISIBLE
+  FLAGGED
+  HIDDEN
 }
 
 enum Catalog_InventoryPolicy {

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Module } from '../../src/core/module.interface';
 import { createAnalyticsRoutes } from './src/api/routes/analyticsRoutes';
+import adminDashboardAliasRoutes from './src/api/routes/adminDashboardAliasRoutes';
 import sellerDashboardRoutes from './src/api/routes/sellerDashboardRoutes';
 import sellerProfitabilityRoutes from './src/api/routes/sellerProfitabilityRoutes';
 import sellerSlaRoutes from './src/api/routes/sellerSlaRoutes';
@@ -94,8 +95,10 @@ export const AnalyticsModule: Module = {
         });
 
         AnalyticsModule.routes = router;
+        AnalyticsModule.routeAliases = [{ path: '/api/admin', router: adminDashboardAliasRoutes }];
     },
     routes: Router(),
+    routeAliases: [],
     shutdown: async () => {
         console.log('Shutting down analytics-service module');
     }

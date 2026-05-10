@@ -45,6 +45,10 @@ export class Order {
   public codProofTimestamp?: Date;
   public codCommitmentHoldId?: string;
 
+  // Delivery confirmation code — shown to buyer, verified by courier at delivery
+  public deliveryCode?: string;
+  public deliveryCodeUsedAt?: Date;
+
   constructor(data: any) {
     // ID must be provided - no infrastructure dependencies in domain
     if (!data.id) {
@@ -89,6 +93,8 @@ export class Order {
     this.codProofGpsLng = data.codProofGpsLng;
     if (data.codProofTimestamp) this.codProofTimestamp = new Date(data.codProofTimestamp);
     this.codCommitmentHoldId = data.codCommitmentHoldId;
+    this.deliveryCode = data.deliveryCode;
+    if (data.deliveryCodeUsedAt) this.deliveryCodeUsedAt = new Date(data.deliveryCodeUsedAt);
   }
 
   updateStatus(newStatus: OrderStatus): void {

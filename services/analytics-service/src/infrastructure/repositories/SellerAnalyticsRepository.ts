@@ -161,6 +161,130 @@ export class SellerAnalyticsRepository {
         return prisma.order_Order.count();
     }
 
+    async getOrdersCount(startDate: Date, endDate: Date) {
+        return prisma.order_Order.count({
+            where: {
+                createdAt: {
+                    gte: startDate,
+                    lte: endDate
+                }
+            }
+        });
+    }
+
+    async getCheckoutSessionCount(startDate: Date, endDate: Date) {
+        const delegate = (prisma as any).checkout_CheckoutSession;
+        if (!delegate || typeof delegate.count !== 'function') {
+            return 0;
+        }
+
+        return delegate.count({
+            where: {
+                createdAt: {
+                    gte: startDate,
+                    lte: endDate
+                }
+            }
+        });
+    }
+
+    async getBuyerConversionRate(startDate: Date, endDate: Date) {
+        const [orders, checkouts] = await Promise.all([
+            this.getOrdersCount(startDate, endDate),
+            this.getCheckoutSessionCount(startDate, endDate)
+        ]);
+
+        if (checkouts === 0) {
+            return 0;
+        }
+
+        return Number(((orders / checkouts) * 100).toFixed(2));
+    }
+
+    async getDailyActiveUsersCount(days: number = 1) {
+        const threshold = new Date();
+        threshold.setDate(threshold.getDate() - days);
+
+        const delegate = (prisma as any).user_Session;
+        if (!delegate || typeof delegate.findMany !== 'function') {
+            return 0;
+        }
+
+        const sessions = await delegate.findMany({
+            where: {
+                createdAt: {
+                    gte: threshold
+                }
+            },
+            distinct: ['userId'],
+            select: {
+                userId: true
+            }
+        });
+
+        return sessions.length;
+    }
+
+    async getTotalSellersCount() {
+        return prisma.user_User.count({
+            where: {
+                role: 'SELLER'
+            }
+        });
+    }
+
+    async getSupportTicketsCreatedCount(startDate: Date, endDate: Date) {
+        return prisma.support_Ticket.count({
+            where: {
+                createdAt: {
+                    gte: startDate,
+                    lte: endDate
+                }
+            }
+        });
+    }
+
+    async getSupportTicketsResolvedCount(startDate: Date, endDate: Date) {
+        return prisma.support_Ticket.count({
+            where: {
+                resolvedAt: {
+                    gte: startDate,
+                    lte: endDate
+                }
+            }
+        });
+    }
+
+    async getOpenSupportTicketsCount() {
+        return prisma.support_Ticket.count({
+            where: {
+                status: {
+                    in: ['OPEN', 'IN_PROGRESS']
+                }
+            }
+        });
+    }
+
+    async getSellerMetricsRollup() {
+        const aggregate = await prisma.analytics_SellerMetrics.aggregate({
+            _avg: {
+                conversionRate: true,
+                cartAbandonment: true,
+                pendingCustomerQuestions: true
+            },
+            _sum: {
+                lowConversionProductCount: true
+            }
+        });
+
+        return {
+            avgConversionRate: aggregate._avg.conversionRate ?? 0,
+            avgCartAbandonment: aggregate._avg.cartAbandonment ?? 0,
+            avgPendingCustomerQuestions: aggregate._avg.pendingCustomerQuestions ?? 0,
+            totalLowConversionProducts: aggregate._sum.lowConversionProductCount ?? 0
+        };
+    }
+
     async getActiveSellersCount(days: number = 30) {
         const dateThreshold = new Date();
         dateThreshold.setDate(dateThreshold.getDate() - days);

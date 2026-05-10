@@ -17,14 +17,18 @@ export interface StructuredCreateProductDto {
   brand: string;
   productName: string;
   minimumOrderQuantity: number;
-  supplierLocation: string;
+  supplierLocationId?: string;
+  supplierLocation?: string;
   structuredAttributes: Record<string, string>;
   mediaUrls: string[];
   price: number;
   currency?: string;
+  inventoryCount?: number;
   seoKeywordsOverride?: string[];
   enablerEnabled?: boolean;
   enablerCommissionRate?: number;
+  codAccepted?: boolean;
+  condition?: 'new' | 'used' | 'refurbished' | 'damaged';
 }
 
 /**
@@ -77,6 +81,8 @@ export interface CreateProductDto {
   price: number;
   currency?: string;
   categoryId: string;
+  supplierLocationId?: string;
+  supplierLocation?: string;
   type: ProductType;
   tags: string[];
   mediaUrls: string[];
@@ -99,6 +105,7 @@ export interface UpdateProductDto {
   price?: number;
   currency?: string;
   categoryId?: string;
+  supplierLocation?: string;
   tags?: string[];
   mediaUrls?: string[];
   attributes?: Record<string, unknown>;
@@ -123,11 +130,19 @@ export interface ProductSummaryDto {
   categoryName?: string;
   sellerId: string;
   sellerName?: string;
+  supplierLocationId?: string;
+  supplierLocation?: string;
   type: string;
   tags: string[];
   status: string;
   thumbnailUrl?: string;
   averageRating?: number;
+  reviewCount?: number;
+  inventoryStatus?: 'in_stock' | 'low_stock' | 'out_of_stock';
+  inventoryAvailable?: number;
+  codAccepted?: boolean;
+  condition?: 'new' | 'used' | 'refurbished' | 'damaged';
+  averageRating?: number | null;
   reviewCount?: number;
   createdAt: Date;
 }
@@ -140,6 +155,8 @@ export interface ProductDetailsDto {
   id: string;
   sellerId: string;
   sellerName?: string;
+  supplierLocationId?: string;
+  supplierLocation?: string;
   name: string;
   description: string;
   price: {
@@ -230,6 +247,8 @@ export interface ProductDetailsDto {
   createdAt: Date;
   updatedAt: Date;
   publishedAt?: Date;
+  codAccepted?: boolean;
+  condition?: 'new' | 'used' | 'refurbished' | 'damaged';
 }
 
 /**

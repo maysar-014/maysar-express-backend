@@ -1,21 +1,23 @@
 services:
   maysar-backend:
     build:
-      target: dev # Keep devDependencies so `npm run dev` can run inside the container
+      target: builder # Use compiled app artifacts from the image for faster startup
+    env_file:
+      - .env
     environment:
       NODE_ENV: development
       DEBUG: 'app:*'
       MEILISEARCH_API_KEY: dev-master-key
       ALLOW_MODULE_INIT_FAILURES: 'true'
       MODULE_INIT_TIMEOUT_MS: '15000'
+      ENABLE_BACKGROUND_WORKERS: ${ENABLE_BACKGROUND_WORKERS:-false}
+      ENABLE_OUTBOX_PROCESSOR: ${ENABLE_OUTBOX_PROCESSOR:-false}
+      ENABLE_SAGA_RECOVERY: ${ENABLE_SAGA_RECOVERY:-false}
+      DOCKER_DEV_MODE: ${DOCKER_DEV_MODE:-compiled}
       PORT: '3001'
     ports:
       - "3000:3001"
-    volumes:
-      - .:/app
-      - /app/node_modules # Anonymous volume to protect container's node_modules
-      - ./prisma:/app/prisma
-    command: npx tsx src/main.ts
+    command: node scripts/dev-container-start.js
     restart: "no" # Don't restart in dev to see errors clearly
 
   postgres:

@@ -3,6 +3,7 @@ import { sagaLogRepository } from '../../infrastructure/repositories/saga.reposi
 import { Payment, PaymentStatus, PaymentMethod } from '../../domain/entities/payment.entity';
 import { PesapalAdapter } from '../../infrastructure/providers/pesapal.adapter';
 import { OrderPaymentRepository } from '../../infrastructure/repositories/order-payment.repository';
+import { WalletServiceClient } from '../../infrastructure/integrations/wallet-service.client';
 
 export interface PaymentSagaPayload {
   payment: Payment;
@@ -13,7 +14,8 @@ export class PaymentSaga extends DistributedSagaOrchestrator<PaymentSagaPayload>
 
   constructor(
     private pesapalAdapter: PesapalAdapter,
-    private paymentRepository?: OrderPaymentRepository
+    private paymentRepository?: OrderPaymentRepository,
+    private walletClient?: WalletServiceClient
   ) {
     super(sagaLogRepository, 'order-service');
   }
@@ -117,8 +119,22 @@ export class PaymentSaga extends DistributedSagaOrchestrator<PaymentSagaPayload>
   }
 
   private async processWalletPayment(payment: Payment): Promise<{ success: boolean; transactionId?: string; error?: string }> {
-    // Implementation logic for wallet payment
-    return { success: true, transactionId: `WLT_${Date.now()}` };
+    if (!this.walletClient) {
+      console.warn('[PaymentSaga] WalletServiceClient not injected — falling back to stub');
+      return { success: true, transactionId: `WLT_STUB_${Date.now()}` };
+    }
+
+    try {
+      const transactionId = await this.walletClient.debitWallet(
+        payment.buyerId,
+        payment.amount,
+        payment.currency,
+        `Payment for order ${payment.orderId}`
+      );
+      return { success: true, transactionId };
+    } catch (error: any) {
+      return { success: false, error: error.message || 'Wallet debit failed' };
+    }
   }
 
   private async persistPayment(payment: Payment): Promise<void> {

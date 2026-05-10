@@ -10,9 +10,15 @@ const prismaCliPath = path.join(rootDir, 'node_modules', 'prisma', 'build', 'ind
 const prismaEnginesPath = path.join(rootDir, 'node_modules', '@prisma', 'engines');
 
 const dryRun = process.argv.includes('--dry-run');
-const maxAttempts = Number(process.env.RAILWAY_MIGRATE_MAX_ATTEMPTS || 5);
-const baseDelayMs = Number(process.env.RAILWAY_MIGRATE_BASE_DELAY_MS || 5000);
-const maxDelayMs = Number(process.env.RAILWAY_MIGRATE_MAX_DELAY_MS || 30000);
+const maxAttempts = Number(
+  process.env.DEPLOY_MIGRATE_MAX_ATTEMPTS || process.env.RAILWAY_MIGRATE_MAX_ATTEMPTS || 5
+);
+const baseDelayMs = Number(
+  process.env.DEPLOY_MIGRATE_BASE_DELAY_MS || process.env.RAILWAY_MIGRATE_BASE_DELAY_MS || 5000
+);
+const maxDelayMs = Number(
+  process.env.DEPLOY_MIGRATE_MAX_DELAY_MS || process.env.RAILWAY_MIGRATE_MAX_DELAY_MS || 30000
+);
 
 const transientErrorPatterns = [
   /P1001/i,
@@ -29,9 +35,10 @@ const transientErrorPatterns = [
 ];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const logPrefix = '[deploy-predeploy]';
 
 const fail = (message) => {
-  console.error(`[railway-predeploy] ${message}`);
+  console.error(`${logPrefix} ${message}`);
   process.exit(1);
 };
 
@@ -49,9 +56,9 @@ assertFileExists(prismaCliPath, 'Prisma CLI');
 assertFileExists(prismaEnginesPath, 'Prisma engines');
 
 if (dryRun) {
-  console.log('[railway-predeploy] Dry run enabled');
+  console.log(`${logPrefix} Dry run enabled`);
   console.log(
-    `[railway-predeploy] Would run: ${process.execPath} ${prismaCliPath} migrate deploy --schema ${schemaPath}`
+    `${logPrefix} Would run: ${process.execPath} ${prismaCliPath} migrate deploy --schema ${schemaPath}`
   );
   process.exit(0);
 }
@@ -85,7 +92,7 @@ const runMigrations = () => {
 const main = async () => {
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     console.log(
-      `[railway-predeploy] Applying Prisma migrations (attempt ${attempt}/${maxAttempts})`
+      `${logPrefix} Applying Prisma migrations (attempt ${attempt}/${maxAttempts})`
     );
 
     const result = runMigrations();
@@ -93,12 +100,12 @@ const main = async () => {
     const combinedOutput = `${result.stdout || ''}\n${result.stderr || ''}`;
 
     if (exitCode === 0) {
-      console.log('[railway-predeploy] Prisma migrations applied successfully');
+      console.log(`${logPrefix} Prisma migrations applied successfully`);
       return;
     }
 
     const transient = isTransientFailure(combinedOutput);
-    console.error(`[railway-predeploy] Prisma migrate deploy failed with exit code ${exitCode}`);
+    console.error(`${logPrefix} Prisma migrate deploy failed with exit code ${exitCode}`);
 
     if (!transient || attempt === maxAttempts) {
       process.exit(exitCode);
@@ -106,13 +113,13 @@ const main = async () => {
 
     const backoffMs = Math.min(baseDelayMs * 2 ** (attempt - 1), maxDelayMs);
     console.warn(
-      `[railway-predeploy] Transient error detected, retrying in ${Math.round(backoffMs / 1000)}s`
+      `${logPrefix} Transient error detected, retrying in ${Math.round(backoffMs / 1000)}s`
     );
     await sleep(backoffMs);
   }
 };
 
 main().catch((error) => {
-  console.error('[railway-predeploy] Unexpected migration failure:', error);
+  console.error(`${logPrefix} Unexpected migration failure:`, error);
   process.exit(1);
 });

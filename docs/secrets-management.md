@@ -31,16 +31,12 @@ This document defines how secrets are classified, stored, and injected across al
 | `METRICS_ENABLED`             | Enable Prometheus metrics        | `[ENV VAR]`                   | Application runtime            |
 | `SERVICE_NAME`                | Service identifier               | `[ENV VAR]`                   | Application runtime            |
 | `SERVICE_VERSION`             | Application version              | `[ENV VAR]`                   | Application runtime            |
-| `RAILWAY_TOKEN`               | Railway token for staging deploy | `[SECRETS MANAGER - CI/CD]`   | `deploy-staging.yml` |
-| `RAILWAY_PROJECT_ID`          | Railway project ID (staging)     | `[SECRETS MANAGER - CI/CD]`   | `deploy-staging.yml` |
-| `RAILWAY_ENVIRONMENT`         | Railway environment (staging)    | `[ENV VAR / SECRET]`          | `deploy-staging.yml` |
-| `RAILWAY_SERVICE`             | Railway service name/ID          | `[ENV VAR / SECRET]`          | `deploy-staging.yml` |
-| `SSH_HOST`                    | Deployment host/IP               | `[SECRETS MANAGER - CI/CD]`   | `deploy-production.yml` |
-| `SSH_PORT`                    | Deployment SSH port              | `[ENV VAR / SECRET]`          | `deploy-production.yml` |
-| `SSH_USER`                    | Deployment SSH user              | `[SECRETS MANAGER - CI/CD]`   | `deploy-production.yml` |
-| `SSH_PRIVATE_KEY`             | Deployment private key           | `[SECRETS MANAGER - CI/CD]`   | `deploy-production.yml` |
-| `DEPLOY_PATH`                 | Deployment target directory      | `[ENV VAR / SECRET]`          | `deploy-production.yml` |
-| `ENV_FILE`                    | Full production env file content | `[SECRETS MANAGER - CI/CD]`   | `deploy-production.yml` |
+| `SSH_HOST`                    | Deployment host/IP               | `[SECRETS MANAGER - CI/CD]`   | `deploy-staging.yml`, `deploy-production.yml` |
+| `SSH_PORT`                    | Deployment SSH port              | `[ENV VAR / SECRET]`          | `deploy-staging.yml`, `deploy-production.yml` |
+| `SSH_USER`                    | Deployment SSH user              | `[SECRETS MANAGER - CI/CD]`   | `deploy-staging.yml`, `deploy-production.yml` |
+| `SSH_PRIVATE_KEY`             | Deployment private key           | `[SECRETS MANAGER - CI/CD]`   | `deploy-staging.yml`, `deploy-production.yml` |
+| `DEPLOY_PATH`                 | Deployment target directory      | `[ENV VAR / SECRET]`          | `deploy-staging.yml`, `deploy-production.yml` |
+| `ENV_FILE`                    | Full environment file content    | `[SECRETS MANAGER - CI/CD]`   | `deploy-staging.yml`, `deploy-production.yml` |
 | `HEALTHCHECK_URL`             | Post-deploy health endpoint      | `[ENV VAR / SECRET]`          | `deploy-staging.yml`, `deploy-production.yml` |
 
 ---
@@ -124,16 +120,12 @@ Add these in **GitHub â†’ Settings â†’ Secrets and Variables â†’ 
 
 | Secret Name        | Description                      | Used In                                       |
 | ------------------ | -------------------------------- | --------------------------------------------- |
-| `RAILWAY_TOKEN` | Railway token for staging deploy | `deploy-staging.yml` |
-| `RAILWAY_PROJECT_ID` | Railway project ID (staging target) | `deploy-staging.yml` |
-| `RAILWAY_ENVIRONMENT` | Railway environment (staging) | `deploy-staging.yml` |
-| `RAILWAY_SERVICE` | Railway service name/ID | `deploy-staging.yml` |
-| `SSH_HOST` | Deployment server host/IP | `deploy-production.yml` |
-| `SSH_PORT` | Deployment SSH port (optional, defaults to 22) | `deploy-production.yml` |
-| `SSH_USER` | SSH login user | `deploy-production.yml` |
-| `SSH_PRIVATE_KEY` | Private SSH key used by GitHub Actions | `deploy-production.yml` |
-| `DEPLOY_PATH` | Absolute path where project is deployed on host | `deploy-production.yml` |
-| `ENV_FILE` | Full production env file content | `deploy-production.yml` |
+| `SSH_HOST` | Deployment server host/IP | `deploy-staging.yml`, `deploy-production.yml` |
+| `SSH_PORT` | Deployment SSH port (optional, defaults to 22) | `deploy-staging.yml`, `deploy-production.yml` |
+| `SSH_USER` | SSH login user | `deploy-staging.yml`, `deploy-production.yml` |
+| `SSH_PRIVATE_KEY` | Private SSH key used by GitHub Actions | `deploy-staging.yml`, `deploy-production.yml` |
+| `DEPLOY_PATH` | Absolute path where project is deployed on host | `deploy-staging.yml`, `deploy-production.yml` |
+| `ENV_FILE` | Full environment file content for the target environment | `deploy-staging.yml`, `deploy-production.yml` |
 | `HEALTHCHECK_URL` | Optional post-deploy health endpoint | `deploy-staging.yml`, `deploy-production.yml` |
 
 ### Workflow References

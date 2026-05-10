@@ -21,6 +21,8 @@ export class CODReputationEngine {
     private readonly SUCCESS_BONUS = 5;
     private readonly REFUSAL_PENALTY = -10;
     private readonly FRAUD_PENALTY = -20;
+    private readonly MIN_ELIGIBILITY_SCORE = 50;
+    private readonly MIN_SUCCESSFUL_ORDERS = 3;
     private readonly SUSPENSION_THRESHOLD = 30;
     private readonly BAN_THRESHOLD = 10;
     private readonly SUSPENSION_DAYS = 30;
@@ -85,7 +87,12 @@ export class CODReputationEngine {
     /**
      * Determines if a user is eligible for COD based on their current status.
      */
-    isEligible(score: number, suspendedUntil?: Date, permanentlyDisabled: boolean = false): { eligible: boolean; reason?: string } {
+    isEligible(
+        score: number,
+        successfulOrders: number,
+        suspendedUntil?: Date,
+        permanentlyDisabled: boolean = false
+    ): { eligible: boolean; reason?: string } {
         if (permanentlyDisabled) {
             return { eligible: false, reason: 'COD is permanently disabled for this account' };
         }
@@ -94,8 +101,18 @@ export class CODReputationEngine {
             return { eligible: false, reason: `COD access is suspended until ${suspendedUntil.toISOString()}` };
         }
 
-        if (score < this.SUSPENSION_THRESHOLD) {
-            return { eligible: false, reason: 'Reputation score too low' };
+        if (score < this.MIN_ELIGIBILITY_SCORE) {
+            return {
+                eligible: false,
+                reason: `COD reputation score (${score}) is below required minimum of ${this.MIN_ELIGIBILITY_SCORE}`
+            };
+        }
+
+        if (successfulOrders < this.MIN_SUCCESSFUL_ORDERS) {
+            return {
+                eligible: false,
+                reason: `Buyer must have at least ${this.MIN_SUCCESSFUL_ORDERS} successful orders to unlock COD privilege`
+            };
         }
 
         return { eligible: true };

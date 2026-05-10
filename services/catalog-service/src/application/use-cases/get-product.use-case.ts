@@ -9,9 +9,12 @@ import {
   MediaRepository,
   SearchService
 } from '../../domain/interfaces';
+import { ProductReviewRepository } from '../../domain/repositories/product-review.repository.interface';
 type ProductRecord = {
   id?: string;
   sellerId?: string;
+  supplierLocationId?: string;
+  supplierLocation?: string;
   name?: string;
   description?: string;
   price?: {
@@ -33,6 +36,7 @@ type ProductRecord = {
     isPrimary?: boolean;
   }>;
   attributes?: Record<string, unknown>;
+  seoMetadata?: Record<string, unknown> | null;
   status?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -71,6 +75,8 @@ export interface GetProductRequest {
 export interface ProductDetails {
   id: string;
   sellerId: string;
+  supplierLocationId?: string;
+  supplierLocation?: string;
   name: string;
   description: string;
   price: {
@@ -95,7 +101,13 @@ export interface ProductDetails {
   inventory?: {
     available: number;
     reserved: number;
+    total: number;
     status: 'in_stock' | 'low_stock' | 'out_of_stock';
+  };
+  ratings?: {
+    average: number | null;
+    count: number;
+    distribution: { 1: number; 2: number; 3: number; 4: number; 5: number };
   };
   recommendations?: Array<{
     productId: string;
@@ -122,7 +134,8 @@ export class GetProductUseCase {
   constructor(
     private readonly productRepository: ProductRepository,
     private readonly mediaRepository: MediaRepository,
-    private readonly searchService?: SearchService
+    private readonly searchService?: SearchService,
+    private readonly reviewRepository?: ProductReviewRepository
   ) {}
 
   async execute(request: GetProductRequest): Promise<GetProductResponse> {
@@ -144,7 +157,7 @@ export class GetProductUseCase {
         };
       }
 
-      // Build product details
+      // Build product details (inventory is calculated inside buildProductDetails)
       const productDetails = await this.buildProductDetails(product, request);
 
       return {
@@ -166,9 +179,31 @@ export class GetProductUseCase {
   private async buildProductDetails(product: ProductRecord, request: GetProductRequest): Promise<ProductDetails> {
     const normalizedProduct = this.normalizeProductRecord(product);
 
+    // Calculate inventory from enriched variant stock data (populated by repository.enrichWithStock)
+    const rawProduct = product as any;
+    const variants: any[] = Array.isArray(rawProduct.variants) ? rawProduct.variants : [];
+    const totalAvailable = variants.reduce(
+      (sum: number, v: any) => sum + Math.max(0, Number(v.inventoryQuantity ?? v.stock ?? 0)),
+      0
+    );
+    const totalReserved = variants.reduce(
+      (sum: number, v: any) => sum + Math.max(0, Number(v.quantityReserved ?? 0)),
+      0
+    );
+
+    // Determine stock status based on available quantity and reorder point
+    let stockStatus: 'in_stock' | 'low_stock' | 'out_of_stock' = 'out_of_stock';
+    if (totalAvailable > 0) {
+      // Use reorderPoint from product or first variant if available
+      const reorderPoint = Number(rawProduct.reorderPoint ?? variants[0]?.reorderPoint ?? 0);
+      stockStatus = reorderPoint > 0 && totalAvailable <= reorderPoint ? 'low_stock' : 'in_stock';
+    }
+
     const details: ProductDetails = {
       id: normalizedProduct.id,
       sellerId: normalizedProduct.sellerId,
+      supplierLocationId: normalizedProduct.supplierLocationId,
+      supplierLocation: normalizedProduct.supplierLocation,
       name: normalizedProduct.name,
       description: normalizedProduct.description,
       price: {
@@ -180,9 +215,31 @@ export class GetProductUseCase {
       tags: normalizedProduct.tags || [],
       attributes: normalizedProduct.attributes || {},
       status: normalizedProduct.status,
+      inventory: {
+        available: totalAvailable,
+        reserved: totalReserved,
+        total: totalAvailable + totalReserved,
+        status: stockStatus
+      },
       createdAt: normalizedProduct.createdAt,
       updatedAt: normalizedProduct.updatedAt
     };
+
+    // Enrich with review aggregate stats
+    if (this.reviewRepository) {
+      try {
+        const stats = await this.reviewRepository.getAggregateStats(normalizedProduct.id);
+        details.ratings = {
+          average: stats.averageRating,
+          count: stats.reviewCount,
+          distribution: stats.ratingDistribution
+        };
+      } catch {
+        details.ratings = { average: null, count: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
+      }
+    } else {
+      details.ratings = { average: null, count: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
+    }
 
     // Include media if requested
     if (request.includeMedia) {
@@ -200,8 +257,6 @@ export class GetProductUseCase {
       details.thumbnailUrl = normalizedProduct.thumbnailUrl || normalizedProduct.mediaUrls[0];
     }
 
-
-
     // Include recommendations if requested
     if (request.includeRecommendations && this.searchService) {
       details.recommendations = await this.loadProductRecommendations(normalizedProduct);
@@ -218,6 +273,8 @@ export class GetProductUseCase {
       return {
         id: String(candidate.getId().toString()),
         sellerId: String(candidate.getSellerId?.().toString?.() || ''),
+        supplierLocationId: undefined,
+        supplierLocation: undefined,
         name: candidate.getName?.() || '',
         description: candidate.getDescription?.() || '',
         price: {
@@ -239,6 +296,8 @@ export class GetProductUseCase {
     return {
       id: String(candidate.id ?? ''),
       sellerId: String(candidate.sellerId ?? ''),
+      supplierLocationId: this.resolveSupplierLocationId(candidate),
+      supplierLocation: this.resolveSupplierLocation(candidate),
       name: candidate.name ?? '',
       description: candidate.description ?? '',
       price: {
@@ -270,6 +329,32 @@ export class GetProductUseCase {
       createdAt: candidate.createdAt ?? new Date(),
       updatedAt: candidate.updatedAt ?? new Date()
     };
+  }
+
+  private resolveSupplierLocation(candidate: ProductRecord): string | undefined {
+    if (typeof candidate.supplierLocation === 'string' && candidate.supplierLocation.trim().length > 0) {
+      return candidate.supplierLocation.trim();
+    }
+
+    const metadataLocation = candidate.seoMetadata?.supplierLocation;
+    if (typeof metadataLocation === 'string' && metadataLocation.trim().length > 0) {
+      return metadataLocation.trim();
+    }
+
+    return undefined;
+  }
+
+  private resolveSupplierLocationId(candidate: ProductRecord): string | undefined {
+    if (typeof candidate.supplierLocationId === 'string' && candidate.supplierLocationId.trim().length > 0) {
+      return candidate.supplierLocationId.trim();
+    }
+
+    const metadataLocationId = candidate.seoMetadata?.supplierLocationId;
+    if (typeof metadataLocationId === 'string' && metadataLocationId.trim().length > 0) {
+      return metadataLocationId.trim();
+    }
+
+    return undefined;
   }
 
   private async loadProductMedia(productId: string): Promise<Array<{
@@ -436,6 +521,8 @@ export class GetProductsBySellerUseCase {
       return {
         id: String(candidate.getId().toString()),
         sellerId: String(candidate.getSellerId?.().toString?.() || ''),
+        supplierLocationId: undefined,
+        supplierLocation: undefined,
         name: candidate.getName?.() || '',
         description: candidate.getDescription?.() || '',
         price: {
@@ -457,6 +544,8 @@ export class GetProductsBySellerUseCase {
     return {
       id: String(candidate.id ?? ''),
       sellerId: String(candidate.sellerId ?? ''),
+      supplierLocationId: this.resolveSupplierLocationId(candidate),
+      supplierLocation: this.resolveSupplierLocation(candidate),
       name: candidate.name ?? '',
       description: candidate.description ?? '',
       price: {
@@ -488,5 +577,31 @@ export class GetProductsBySellerUseCase {
       createdAt: candidate.createdAt ?? new Date(),
       updatedAt: candidate.updatedAt ?? new Date()
     };
+  }
+
+  private resolveSupplierLocation(candidate: ProductRecord): string | undefined {
+    if (typeof candidate.supplierLocation === 'string' && candidate.supplierLocation.trim().length > 0) {
+      return candidate.supplierLocation.trim();
+    }
+
+    const metadataLocation = candidate.seoMetadata?.supplierLocation;
+    if (typeof metadataLocation === 'string' && metadataLocation.trim().length > 0) {
+      return metadataLocation.trim();
+    }
+
+    return undefined;
+  }
+
+  private resolveSupplierLocationId(candidate: ProductRecord): string | undefined {
+    if (typeof candidate.supplierLocationId === 'string' && candidate.supplierLocationId.trim().length > 0) {
+      return candidate.supplierLocationId.trim();
+    }
+
+    const metadataLocationId = candidate.seoMetadata?.supplierLocationId;
+    if (typeof metadataLocationId === 'string' && metadataLocationId.trim().length > 0) {
+      return metadataLocationId.trim();
+    }
+
+    return undefined;
   }
 }

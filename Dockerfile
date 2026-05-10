@@ -20,7 +20,7 @@ ENV npm_config_audit=false \
     npm_config_cache=/root/.npm
 RUN --mount=type=cache,id=s/f16defe0-3cda-4477-9ce2-74289cd6d0ac-/root/.npm,target=/root/.npm,sharing=locked npm install -g npm@11.11.0
 COPY package*.json ./
-COPY scripts ./scripts
+COPY scripts/scrub-lockfile-funding.js ./scripts/scrub-lockfile-funding.js
 COPY prisma ./prisma
 RUN --mount=type=cache,id=s/f16defe0-3cda-4477-9ce2-74289cd6d0ac-/root/.npm,target=/root/.npm,sharing=locked npm ci --prefer-offline --no-audit --no-fund
 
@@ -28,9 +28,9 @@ RUN --mount=type=cache,id=s/f16defe0-3cda-4477-9ce2-74289cd6d0ac-/root/.npm,targ
 FROM deps AS builder
 COPY . .
 RUN npm run build
-RUN mkdir -p /tmp/railway-prisma \
-    && cp -R node_modules/prisma /tmp/railway-prisma/prisma \
-    && cp -R node_modules/@prisma/engines /tmp/railway-prisma/engines
+RUN mkdir -p /tmp/runtime-prisma \
+    && cp -R node_modules/prisma /tmp/runtime-prisma/prisma \
+    && cp -R node_modules/@prisma/engines /tmp/runtime-prisma/engines
 RUN npm prune --omit=dev && npm cache clean --force
 
 # Development stage
@@ -53,9 +53,9 @@ COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nodejs:nodejs /app/scripts/railway ./scripts/railway
-COPY --from=builder --chown=nodejs:nodejs /tmp/railway-prisma/prisma ./node_modules/prisma
-COPY --from=builder --chown=nodejs:nodejs /tmp/railway-prisma/engines ./node_modules/@prisma/engines
+COPY --from=builder --chown=nodejs:nodejs /app/scripts/deploy/predeploy.js ./scripts/deploy/predeploy.js
+COPY --from=builder --chown=nodejs:nodejs /tmp/runtime-prisma/prisma ./node_modules/prisma
+COPY --from=builder --chown=nodejs:nodejs /tmp/runtime-prisma/engines ./node_modules/@prisma/engines
 
 USER nodejs
 

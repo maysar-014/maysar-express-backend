@@ -5,7 +5,7 @@ This project uses a tiered Docker Compose strategy to separate production concer
 ## Files
 
 - `docker-compose.yml`: The default local/full-stack configuration. It brings up the monolith, PostgreSQL, Redis, MeiliSearch, Mailpit, Prometheus, and Jaeger with safe development defaults.
-- `docker-compose.override.yml`: Local development overrides. It maps ports to the host and enables hot-reloading for the application container.
+- `docker-compose.override.yml`: Local development overrides. It maps ports to the host and runs the backend from compiled image artifacts for a faster startup path.
 
 ## Usage
 
@@ -15,7 +15,8 @@ To start the environment for development:
 npm run docker:up
 ```
 This starts the full stack in detached mode and automatically merges `docker-compose.yml` and `docker-compose.override.yml`.
-The override uses the `dev` Docker stage so the backend keeps its dev dependencies and can run `npm run dev` inside the container.
+The override now uses the built application artifacts from the image, which makes port `3000` available much faster than booting the whole monolith through `tsx` inside the container.
+`npm run docker:up` also fingerprints the source tree now, so code changes trigger a rebuild automatically.
 
 The stack is self-contained:
 - Application: `http://localhost:3000`

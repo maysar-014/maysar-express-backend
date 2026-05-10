@@ -6,6 +6,7 @@ import { GetGrowthIndicators } from '../../application/use-cases/GetGrowthIndica
 import { GetRetentionMetrics } from '../../application/use-cases/GetRetentionMetrics';
 import { GetFinancialMetrics } from '../../application/use-cases/GetFinancialMetrics';
 import { GetHappinessSignals } from '../../application/use-cases/GetHappinessSignals';
+import { GetFounderOperatingSystemDashboard } from '../../application/use-cases/GetFounderOperatingSystemDashboard';
 import { RevenueHealthEngine } from '../../domain/engines/RevenueHealthEngine';
 import { GrowthIndicatorsEngine } from '../../domain/engines/GrowthIndicatorsEngine';
 import { RetentionEngine } from '../../domain/engines/RetentionEngine';
@@ -133,6 +134,31 @@ export class AnalyticsController {
             res.json({ flags, timestamp: new Date() });
         } catch (error) {
             res.status(500).json({ error: 'Failed to fetch red flags' });
+        }
+    }
+
+    async getFounderOperatingSystem(_req: Request, res: Response) {
+        try {
+            const revenueHealthUseCase = new GetRevenueHealthMetrics(this.repository, this.revenueHealthEngine);
+            const growthIndicatorsUseCase = new GetGrowthIndicators(this.repository, this.growthIndicatorsEngine);
+            const retentionMetricsUseCase = new GetRetentionMetrics(this.repository, this.retentionEngine);
+            const financialMetricsUseCase = new GetFinancialMetrics(this.repository, this.financialMetricsEngine);
+            const happinessSignalsUseCase = new GetHappinessSignals(this.repository, this.sellerHappinessEngine);
+
+            const useCase = new GetFounderOperatingSystemDashboard(
+                this.repository,
+                revenueHealthUseCase,
+                growthIndicatorsUseCase,
+                retentionMetricsUseCase,
+                financialMetricsUseCase,
+                happinessSignalsUseCase,
+                this.redFlagEngine
+            );
+
+            const dashboard = await useCase.execute();
+            res.json(dashboard);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to fetch founder operating system dashboard' });
         }
     }
 }

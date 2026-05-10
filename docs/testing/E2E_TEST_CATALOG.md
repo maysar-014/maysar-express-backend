@@ -537,7 +537,7 @@
 - Africa's Talking test account
 - SMTP test server
 - Firebase test project
-- Railway volumes (file storage)
+- Persistent mounted volumes (file storage)
 
 ### Test Tools
 - Supertest for API calls

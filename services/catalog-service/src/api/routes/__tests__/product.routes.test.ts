@@ -104,11 +104,16 @@ describe('Product Routes', () => {
           .set('Authorization', 'Bearer valid-token-123')
           .send({
             sellerId: 'seller-123',
-            name: 'Test Product',
-            description: 'Test description',
-            price: 99.99,
             categoryId: 'cat-123',
-            type: 'physical'
+            brand: 'Azam',
+            productName: 'Test Product',
+            minimumOrderQuantity: 1,
+            supplierLocationId: 'addr-123',
+            supplierLocation: 'Dar es Salaam',
+            structuredAttributes: { packSize: '5L' },
+            mediaUrls: ['https://images.example.com/product.jpg'],
+            price: 99.99,
+            currency: 'TZS'
           });
 
         expect(mockProductController.createProduct).toHaveBeenCalled();

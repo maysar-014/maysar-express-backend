@@ -8,6 +8,7 @@
 export * from './create-product.use-case';
 export * from './get-product.use-case';
 export * from './search-products.use-case';
+export * from './manage-product-indexing.use-case';
 export * from './load-category-attributes.use-case';
 export * from './preview-generated-description.use-case';
 export * from './manage-categories.use-case';
@@ -142,3 +143,8 @@ export abstract class BaseUseCase {
     };
   }
 }
+
+// Product Review Use Cases
+export * from './submit-product-review.use-case';
+export * from './get-product-reviews.use-case';
+export * from './moderate-review.use-case';

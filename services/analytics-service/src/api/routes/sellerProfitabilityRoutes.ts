@@ -21,5 +21,6 @@ router.get('/seller-profitability/happiness', asyncHandler((req, res) => control
 
 // Admin endpoints
 router.get('/admin/dashboard/red-flags', requireRole(['admin']), asyncHandler((req, res) => controller.getRedFlags(req, res)));
+router.get('/admin/dashboard/founder-operating-system', requireRole(['admin']), asyncHandler((req, res) => controller.getFounderOperatingSystem(req, res)));
 
 export default router;

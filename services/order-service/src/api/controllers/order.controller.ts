@@ -121,6 +121,7 @@ export class OrderController {
       res.status(201).json({
         id: response.orderId,
         trackingNumber: response.trackingNumber,
+        deliveryCode: response.deliveryCode,
         buyerId: request.buyerId,
         sellerId: request.sellerId,
         status: response.status,
@@ -151,6 +152,68 @@ export class OrderController {
     }
   }
 
+  /**
+   * POST /orders/:id/confirm-delivery
+   * Courier submits the 6-digit delivery code to confirm delivery and trigger payment
+   */
+  async confirmDelivery(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { deliveryCode } = req.body;
+
+      if (!deliveryCode || typeof deliveryCode !== 'string' || !/^\d{6}$/.test(deliveryCode)) {
+        res.status(400).json({ error: 'INVALID_DELIVERY_CODE', message: 'deliveryCode must be a 6-digit number.' });
+        return;
+      }
+
+      const order = await this.orderRepository.findById(id);
+      if (!order) {
+        res.status(404).json({ error: 'ORDER_NOT_FOUND', message: 'Order not found.' });
+        return;
+      }
+
+      // Check order is in a deliverable state
+      const deliverableStatuses = ['PENDING', 'CONFIRMED', 'OUT_FOR_DELIVERY', 'pending', 'confirmed', 'out_for_delivery', 'ASSIGNED', 'assigned'];
+      if (!deliverableStatuses.includes((order as any).status)) {
+        res.status(409).json({ error: 'INVALID_ORDER_STATE', message: `Order cannot be confirmed in status: ${(order as any).status}` });
+        return;
+      }
+
+      // Check code hasn't already been used
+      if ((order as any).deliveryCodeUsedAt) {
+        res.status(409).json({ error: 'DELIVERY_CODE_ALREADY_USED', message: 'This delivery code has already been used.' });
+        return;
+      }
+
+      // Verify the code
+      if ((order as any).deliveryCode !== deliveryCode) {
+        res.status(401).json({ error: 'INVALID_DELIVERY_CODE', message: 'The delivery code is incorrect.' });
+        return;
+      }
+
+      // Mark delivery as confirmed
+      await (this.orderRepository as any).prisma.order_Order.update({
+        where: { id },
+        data: {
+          status: 'DELIVERED',
+          deliveryCodeUsedAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
+
+      res.status(200).json({
+        success: true,
+        orderId: id,
+        status: 'DELIVERED',
+        confirmedAt: new Date().toISOString(),
+        message: 'Delivery confirmed. Payment will be processed.'
+      });
+
+    } catch (error: any) {
+      res.status(500).json({ error: 'INTERNAL_ERROR', message: error?.message || 'An internal error occurred.' });
+    }
+  }
+
   async getOrder(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
@@ -165,7 +228,11 @@ export class OrderController {
         return;
       }
 
-      res.status(200).json(order);
+      res.status(200).json({
+        ...order,
+        deliveryCode: (order as any).deliveryCode ?? undefined,
+        deliveryCodeUsedAt: (order as any).deliveryCodeUsedAt ?? undefined
+      });
     } catch (error: any) {
       res.status(500).json({
         error: 'INTERNAL_ERROR',

@@ -39,6 +39,7 @@ import { EnablerAnalyticsSaga } from './application/sagas/EnablerAnalyticsSaga';
 // API
 import { AnalyticsController } from './api/controllers/AnalyticsController';
 import { createAnalyticsRoutes } from './api/routes/analyticsRoutes';
+import sellerProfitabilityRoutes from './api/routes/sellerProfitabilityRoutes';
 import sellerSlaRoutes from './api/routes/sellerSlaRoutes';
 
 async function bootstrap() {
@@ -106,6 +107,7 @@ async function bootstrap() {
 
   // Mount Routes
   app.use('/api', analyticsRoutes);
+  app.use('/api', sellerProfitabilityRoutes);
   app.use('/api', sellerSlaRoutes);
 
   // Health Check

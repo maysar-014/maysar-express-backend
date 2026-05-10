@@ -62,6 +62,33 @@ export function createProductRoutes(
     productName: nonEmptyString,
     structuredAttributes: z.record(z.any())
   }).strict();
+  const createProductSchema = z.object({
+    sellerId: nonEmptyString,
+    categoryId: nonEmptyString,
+    brand: nonEmptyString,
+    productName: nonEmptyString,
+    minimumOrderQuantity: z.number().positive(),
+    supplierLocationId: nonEmptyString,
+    supplierLocation: nonEmptyString.optional(),
+    structuredAttributes: z.record(nonEmptyString),
+    mediaUrls: z.array(nonEmptyString).min(1),
+    price: z.number().positive(),
+    currency: nonEmptyString.optional(),
+    seoKeywordsOverride: z.array(nonEmptyString).optional(),
+    inventoryCount: z.number().int().min(0).optional(),
+    enablerEnabled: z.boolean().optional(),
+    enablerCommissionRate: z.number().gt(0).lte(1).optional(),
+    codAccepted: z.boolean().optional(),
+    condition: z.enum(['new', 'used', 'refurbished', 'damaged']).optional()
+  }).strict().superRefine((body, ctx) => {
+    if (body.enablerEnabled && body.enablerCommissionRate === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['enablerCommissionRate'],
+        message: 'Enabler commission rate is required when enabler is enabled'
+      });
+    }
+  });
   const nullableNonEmptyString = z.union([nonEmptyString, z.null()]);
   const createCategorySchema = z.object({
     label: nonEmptyString,
@@ -90,12 +117,15 @@ export function createProductRoutes(
     price: z.number().positive().optional(),
     currency: nonEmptyString.optional(),
     categoryId: nonEmptyString.optional(),
+    supplierLocation: nonEmptyString.optional(),
     tags: z.array(z.string()).optional(),
     attributes: z.record(z.any()).optional(),
     seoTitle: z.string().optional(),
     seoDescription: z.string().optional(),
     enablerEnabled: z.boolean().optional(),
-    enablerCommissionRate: z.number().gt(0).lte(1).optional()
+    enablerCommissionRate: z.number().gt(0).lte(1).optional(),
+    codAccepted: z.boolean().optional(),
+    condition: z.enum(['new', 'used', 'refurbished', 'damaged']).optional()
   }).strict().refine(
     (body) => Object.keys(body).length > 0,
     { message: 'Request body required' }
@@ -226,7 +256,7 @@ export function createProductRoutes(
    */
   router.post(`${apiPrefix}/products`,
     ...sellerMiddleware,
-    validateSchemaRequest(nonEmptyObjectSchema),
+    validateSchemaRequest(createProductSchema),
     async (req, res) => {
       await productController.createProduct(req, res);
     }

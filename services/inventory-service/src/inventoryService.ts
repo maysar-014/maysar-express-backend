@@ -50,7 +50,74 @@ export class InventoryService {
   }
 
   private initializeEventHandlers(): void {
-    // Legacy initialization hook kept for backwards compatibility.
+    // Handle ProductCreated events to initialize inventory stock items for new products
+    subscribeLegacy('ProductCreated', async (event) => {
+      const { productId, variantId, sku, initialInventoryCount } = event.data;
+
+      if (!productId || !variantId) {
+        console.warn('[InventoryService] ProductCreated event missing productId or variantId — skipping stock initialization');
+        return;
+      }
+
+      try {
+        // Find the first available active warehouse to assign stock to
+        const warehouse = await this.prisma.inventory_Warehouse.findFirst({
+          where: { status: 'active' },
+          orderBy: { createdAt: 'asc' }
+        });
+
+        if (!warehouse) {
+          console.warn(`[InventoryService] No active warehouse found — cannot initialize stock for product ${productId}`);
+          return;
+        }
+
+        const quantity = Math.max(0, Number(initialInventoryCount ?? 0));
+        const stockId = makeId(getModelPrefix('Inventory_StockItem'));
+        const stockSku = sku || `${variantId}-stock`;
+
+        // Create the stock item — use upsert to be idempotent in case of duplicate events
+        await (this.prisma as any).inventory_StockItem.upsert({
+          where: {
+            productVariantId_warehouseId: {
+              productVariantId: variantId,
+              warehouseId: warehouse.id
+            }
+          },
+          update: {
+            // Don't overwrite existing stock on duplicate events
+            updatedAt: new Date()
+          },
+          create: {
+            id: stockId,
+            productVariantId: variantId,
+            warehouseId: warehouse.id,
+            sku: stockSku,
+            quantityAvailable: quantity,
+            quantityReserved: 0,
+            quantityDamaged: 0,
+            quantityOnOrder: 0,
+            reorderPoint: 0,
+            status: 'active'
+          }
+        });
+
+        console.log(`[InventoryService] Initialized stock for product ${productId}, variant ${variantId}: ${quantity} units at warehouse ${warehouse.id}`);
+
+        // Publish confirmation event
+        await eventBus.publish({
+          eventType: 'ProductInventoryInitialized',
+          data: {
+            productId,
+            variantId,
+            warehouseId: warehouse.id,
+            initialQuantity: quantity
+          }
+        });
+
+      } catch (error) {
+        console.error(`[InventoryService] Failed to initialize stock for product ${productId}:`, error instanceof Error ? error.message : String(error));
+      }
+    });
   }
 
   private initializeSellerSagaHandlers() {

@@ -6,6 +6,7 @@
  * Provides centralized monitoring for circuit breakers, external APIs, and system health
  */
 
+import { getHeapStatistics } from 'v8';
 import { circuitBreakerRegistry, CircuitBreakerMetrics } from './circuit-breaker';
 
 export interface SystemHealthMetrics {
@@ -309,24 +310,25 @@ export class InfrastructureMonitor {
   }
 
   private getMemoryUsage(): number {
-    // Get Node.js memory usage
     const memUsage = process.memoryUsage();
-    const used = memUsage.heapUsed;
-    const total = memUsage.heapTotal;
-    const usagePercent = (used / total) * 100;
+    const heapPressurePercent = (memUsage.heapUsed / Math.max(memUsage.heapTotal, 1)) * 100;
+    const heapLimitBytes = this.getHeapLimitBytes();
+    const usagePercent = (memUsage.rss / heapLimitBytes) * 100;
 
-    // Force garbage collection if memory usage is critically high
-    if (usagePercent > 95 && global.gc) {
+    // Heap pressure is still useful for deciding when a manual GC may help.
+    if (heapPressurePercent > 95 && global.gc) {
       console.log('Forcing garbage collection due to high memory usage');
       global.gc();
-      // Recalculate after GC
       const memAfterGC = process.memoryUsage();
-      const usedAfterGC = memAfterGC.heapUsed;
-      const totalAfterGC = memAfterGC.heapTotal;
-      return (usedAfterGC / totalAfterGC) * 100;
+      return Math.min(100, (memAfterGC.rss / heapLimitBytes) * 100);
     }
 
-    return usagePercent;
+    return Math.min(100, usagePercent);
+  }
+
+  private getHeapLimitBytes(): number {
+    const heapLimit = getHeapStatistics().heap_size_limit;
+    return Math.max(heapLimit, 1);
   }
 
   /**

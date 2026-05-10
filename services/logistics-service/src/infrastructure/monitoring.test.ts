@@ -8,6 +8,11 @@ const loadMonitoringModule = (registry: MockedRegistry) => {
   jest.doMock('./circuit-breaker', () => ({
     circuitBreakerRegistry: registry
   }), { virtual: true });
+  jest.doMock('v8', () => ({
+    getHeapStatistics: () => ({
+      heap_size_limit: 100
+    })
+  }));
 
   const setIntervalSpy = jest
     .spyOn(global, 'setInterval')
@@ -279,14 +284,14 @@ describe('InfrastructureMonitor', () => {
     const memSpy = jest
       .spyOn(process, 'memoryUsage')
       .mockReturnValueOnce({
-        rss: 0,
+        rss: 98,
         heapTotal: 100,
         heapUsed: 98,
         external: 0,
         arrayBuffers: 0
       } as NodeJS.MemoryUsage)
       .mockReturnValueOnce({
-        rss: 0,
+        rss: 40,
         heapTotal: 100,
         heapUsed: 40,
         external: 0,

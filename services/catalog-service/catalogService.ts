@@ -39,6 +39,21 @@ interface LegacySagaEvent extends Omit<EventEnvelope, 'data' | 'payload' | 'meta
 const asLegacyPayload = (value: unknown): LegacyPayload =>
   typeof value === 'object' && value !== null ? (value as LegacyPayload) : {};
 
+const requireSupplierLocation = (value: LegacyPayload, context: string): string => {
+  const candidate = typeof value.supplierLocation === 'string'
+    ? value.supplierLocation
+    : typeof value.location === 'string'
+      ? value.location
+      : '';
+  const normalized = candidate.trim();
+
+  if (!normalized) {
+    throw new Error(`supplierLocation is required for ${context}`);
+  }
+
+  return normalized;
+};
+
 const asLegacyEvent = (envelope: EventEnvelope): LegacySagaEvent => {
   const metadata = envelope.metadata;
   const metadataSagaId = typeof metadata?.sagaId === 'string' ? metadata.sagaId : undefined;
@@ -74,12 +89,15 @@ function initializeSellerSagaHandlers() {
   // Product Catalog Management Saga Events
   subscribeLegacy('ProductCreationStarted', async (event) => {
     const { sellerId, productName, category, sagaId } = event.payload;
+    const supplierLocation = requireSupplierLocation(event.payload, 'ProductCreationStarted');
 
     const product = await prisma.product.create({
       data: {
         title: String(productName),
         categoryId: String(category),
         sellerId: String(sellerId),
+        supplierLocation,
+        seoMetadata: { supplierLocation },
         slug: `legacy-${uuidv4()}`,
         tags: [],
         status: 'draft'
@@ -222,8 +240,19 @@ function initializeSellerSagaHandlers() {
 // Product management endpoints
 app.post('/api/products', async (req, res) => {
   try {
+    const supplierLocation = requireSupplierLocation(req.body, 'POST /api/products');
+    const seoMetadata = req.body?.seoMetadata && typeof req.body.seoMetadata === 'object'
+      ? req.body.seoMetadata
+      : {};
     const product = await prisma.product.create({
-      data: req.body,
+      data: {
+        ...req.body,
+        supplierLocation,
+        seoMetadata: {
+          ...seoMetadata,
+          supplierLocation
+        }
+      },
       include: { variants: true, category: true }
     });
     res.json(product);
@@ -392,11 +421,23 @@ function initializeEventHandlers() {
   // Product Catalog Management Saga Events
   subscribeLegacy('ProductCreationRequested', async (event) => {
     const { sellerId, productData, sagaId } = event.payload;
+    const supplierLocation = requireSupplierLocation(
+      asLegacyPayload(productData),
+      'ProductCreationRequested'
+    );
+    const seoMetadata = productData?.seoMetadata && typeof productData.seoMetadata === 'object'
+      ? productData.seoMetadata
+      : {};
 
     const product = await prisma.product.create({
       data: {
         ...productData,
         sellerId,
+        supplierLocation,
+        seoMetadata: {
+          ...seoMetadata,
+          supplierLocation
+        },
         status: 'draft'
       }
     });

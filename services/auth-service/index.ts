@@ -7,10 +7,15 @@ const port = process.env.PORT || 3001;
 import { AuthController } from './src/api/controllers/auth.controller';
 import { RegisterUserUseCase } from './src/application/use-cases/register-user.use-case';
 import { AuthenticateUserUseCase } from './src/application/use-cases/authenticate-user.use-case';
+import { InitiatePhoneVerificationUseCase } from './src/application/use-cases/initiate-phone-verification.use-case';
+import { VerifyPhoneOtpUseCase } from './src/application/use-cases/verify-phone-otp.use-case';
+import { PhoneVerificationController } from './src/api/controllers/phone-verification.controller';
+import { FirebaseAdminService } from './src/infrastructure/services/firebase-admin.service';
 import { createAuthRoutes } from './src/api/routes/auth.routes';
 import { adminRoutes } from './src/api/routes/admin.routes';
 import { authMiddlewareRoutes } from './src/api/routes/auth-middleware.routes';
 import { createGoogleOAuthRoutes } from './src/api/routes/google-oauth.routes';
+import { createPhoneRoutes } from './src/api/routes/phone.routes';
 import { healthRoutes as authHealthRoutes } from './src/api/routes/health.routes';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { UserServiceRepository } from './src/infrastructure/repositories/user-service.repository';
@@ -112,6 +117,13 @@ export const AuthModule: Module = {
             mainRouter.use('/oauth', createGoogleOAuthRoutes());
             mainRouter.use('/health', authHealthRoutes);
             mainRouter.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(authPrisma));
+
+            // Phone verification routes
+            const firebaseAdminService = FirebaseAdminService.getInstance();
+            const initiatePhoneVerificationUseCase = new InitiatePhoneVerificationUseCase(userRepository, logger);
+            const verifyPhoneOtpUseCase = new VerifyPhoneOtpUseCase(userRepository, firebaseAdminService, logger);
+            const phoneVerificationController = new PhoneVerificationController(initiatePhoneVerificationUseCase, verifyPhoneOtpUseCase);
+            mainRouter.use('/phone', createPhoneRoutes(phoneVerificationController));
 
             console.log('Consolidated 2FA and Session routes mounted successfully');
 

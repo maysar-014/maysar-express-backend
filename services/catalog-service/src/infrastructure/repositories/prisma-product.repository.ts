@@ -144,6 +144,8 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
           sellerId: persistenceDto.sellerId,
           title: persistenceDto.title,
           description: persistenceDto.description,
+          supplierLocationId: persistenceDto.supplierLocationId ?? null,
+          supplierLocation: persistenceDto.supplierLocation ?? null,
           categoryId: persistenceDto.categoryId,
           brand: persistenceDto.brand,
           slug: persistenceDto.slug,
@@ -157,6 +159,8 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
           tags: persistenceDto.tags,
           enablerEnabled: persistenceDto.enablerEnabled ?? false,
           enablerCommissionRate: persistenceDto.enablerCommissionRate ?? null,
+          codAccepted: persistenceDto.codAccepted ?? false,
+          condition: persistenceDto.condition ?? 'new',
           createdAt: persistenceDto.createdAt,
           updatedAt: persistenceDto.updatedAt
         }
@@ -211,7 +215,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
 
     if (!productData) return null;
 
-    return this.normalizeProductRecord(productData);
+    return this.enrichWithStock(this.normalizeProductRecord(productData));
   }
 
   /**
@@ -227,7 +231,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       orderBy: { createdAt: 'desc' }
     });
 
-    return productsData.map((product: any) => this.normalizeProductRecord(product));
+    return this.enrichManyWithStock(productsData.map((p: any) => this.normalizeProductRecord(p)));
   }
 
   /**
@@ -243,7 +247,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       orderBy: { createdAt: 'desc' }
     });
 
-    return productsData.map((product: any) => this.normalizeProductRecord(product));
+    return this.enrichManyWithStock(productsData.map((p: any) => this.normalizeProductRecord(p)));
   }
 
   /**
@@ -305,7 +309,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       this.prisma.product.count({ where })
     ]);
 
-    const products = productsData.map(product => this.normalizeProductRecord(product));
+    const products = await this.enrichManyWithStock(productsData.map(product => this.normalizeProductRecord(product)));
 
     return {
       products,
@@ -389,7 +393,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       }
     });
 
-    return productsData.map(product => this.normalizeProductRecord(product));
+    return this.enrichManyWithStock(productsData.map(product => this.normalizeProductRecord(product)));
   }
 
   /**
@@ -408,7 +412,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       }
     });
 
-    return productsData.map(product => this.normalizeProductRecord(product));
+    return this.enrichManyWithStock(productsData.map(product => this.normalizeProductRecord(product)));
   }
 
   /**
@@ -430,7 +434,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       }
     });
 
-    return productsData.map(product => this.normalizeProductRecord(product));
+    return this.enrichManyWithStock(productsData.map(product => this.normalizeProductRecord(product)));
   }
 
   // Private helper methods
@@ -487,6 +491,8 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
         amount: this.resolveNumericValue(priceSource, 0) ?? 0,
         currency: this.resolveCurrency(currencySource)
       },
+      supplierLocationId: this.resolveSupplierLocationId(productData),
+      supplierLocation: this.resolveSupplierLocation(productData),
       images: mediaUrls,
       mediaUrls,
       thumbnailUrl: mediaUrls[0],
@@ -499,6 +505,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       })),
       variants,
       category: productData.category ?? null,
+      categoryName: productData.category?.name ?? productData.category?.label ?? null,
       createdAt: productData.createdAt ?? new Date(),
       updatedAt: productData.updatedAt ?? new Date(),
       publishedAt: productData.publishedAt ?? productData.published_at,
@@ -508,8 +515,98 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       enablerEnabled: !!productData.enablerEnabled,
       enablerCommissionRate: productData.enablerCommissionRate !== undefined
         ? Number(productData.enablerCommissionRate)
-        : undefined
+        : undefined,
+      codAccepted: productData.codAccepted === true,
+      condition: productData.condition ?? 'new'
     };
+  }
+
+  async updateDetails(id: string, updates: Record<string, any>): Promise<any> {
+    const existing = await this.prisma.product.findUnique({
+      where: { id },
+      include: {
+        variants: {
+          orderBy: { createdAt: 'asc' }
+        }
+      }
+    });
+
+    if (!existing) {
+      return null;
+    }
+
+    const nextSeoMetadata = {
+      ...((existing.seoMetadata as Record<string, unknown> | null) || {})
+    };
+
+    if (updates.currency) {
+      nextSeoMetadata.currency = updates.currency;
+    }
+
+    if (typeof updates.supplierLocation === 'string') {
+      nextSeoMetadata.supplierLocation = updates.supplierLocation.trim();
+    }
+
+    const productData: Record<string, unknown> = {
+      updatedAt: new Date()
+    };
+
+    if (updates.name !== undefined) productData.title = updates.name;
+    if (updates.description !== undefined) productData.description = updates.description;
+    if (updates.categoryId !== undefined) productData.categoryId = updates.categoryId;
+    if (updates.supplierLocation !== undefined) productData.supplierLocation = updates.supplierLocation;
+    if (updates.tags !== undefined) productData.tags = updates.tags;
+    if (updates.seoTitle !== undefined) productData.seoTitle = updates.seoTitle;
+    if (updates.seoDescription !== undefined) productData.shortSeoDescription = updates.seoDescription;
+    if (updates.enablerEnabled !== undefined) productData.enablerEnabled = updates.enablerEnabled;
+    if (updates.enablerCommissionRate !== undefined) productData.enablerCommissionRate = updates.enablerCommissionRate;
+    if (updates.codAccepted !== undefined) productData.codAccepted = updates.codAccepted;
+    if (updates.condition !== undefined) productData.condition = updates.condition;
+    if (updates.currency !== undefined || updates.supplierLocation !== undefined) {
+      productData.seoMetadata = nextSeoMetadata;
+    }
+
+    return this.prisma.$transaction(async (tx: any) => {
+      await tx.product.update({
+        where: { id },
+        data: productData
+      });
+
+      const firstVariant = await tx.productVariant.findFirst({
+        where: { productId: id },
+        orderBy: { createdAt: 'asc' }
+      });
+
+      if (firstVariant && (updates.price !== undefined || updates.currency !== undefined || updates.attributes !== undefined)) {
+        const nextAttributes = {
+          ...((firstVariant.attributes as Record<string, unknown> | null) || {})
+        };
+
+        if (updates.attributes && typeof updates.attributes === 'object') {
+          Object.assign(nextAttributes, updates.attributes);
+        }
+
+        if (updates.currency) {
+          nextAttributes.currency = updates.currency;
+        }
+
+        await tx.productVariant.update({
+          where: { id: firstVariant.id },
+          data: {
+            price: updates.price !== undefined ? updates.price : firstVariant.price,
+            attributes: nextAttributes
+          }
+        });
+      }
+
+      return tx.product.findUnique({
+        where: { id },
+        include: {
+          category: true,
+          variants: true
+        }
+      });
+    });
   }
 
   private normalizeVariantRecord(variantData: any): any {
@@ -570,6 +667,36 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
           .filter(Boolean)
       )
     );
+  }
+
+  private resolveSupplierLocation(productData: any): string | undefined {
+    if (typeof productData?.supplierLocation === 'string' && productData.supplierLocation.trim().length > 0) {
+      return productData.supplierLocation.trim();
+    }
+
+    if (productData?.seoMetadata && typeof productData.seoMetadata === 'object') {
+      const supplierLocation = (productData.seoMetadata as Record<string, unknown>).supplierLocation;
+      if (typeof supplierLocation === 'string' && supplierLocation.trim().length > 0) {
+        return supplierLocation.trim();
+      }
+    }
+
+    return undefined;
+  }
+
+  private resolveSupplierLocationId(productData: any): string | undefined {
+    if (typeof productData?.supplierLocationId === 'string' && productData.supplierLocationId.trim().length > 0) {
+      return productData.supplierLocationId.trim();
+    }
+
+    if (productData?.seoMetadata && typeof productData.seoMetadata === 'object') {
+      const supplierLocationId = (productData.seoMetadata as Record<string, unknown>).supplierLocationId;
+      if (typeof supplierLocationId === 'string' && supplierLocationId.trim().length > 0) {
+        return supplierLocationId.trim();
+      }
+    }
+
+    return undefined;
   }
 
   private resolveNumericValue(value: any, fallback?: number): number | undefined {
@@ -680,6 +807,135 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
         productData.enablerCommissionRate ? Number(productData.enablerCommissionRate) : undefined
       );
     }
+
+  /**
+   * Fetch stock quantities for a batch of variant IDs and return a map
+   * variantId -> availableQuantity (quantityAvailable - quantityReserved, min 0)
+   */
+  private async fetchStockByVariantIds(variantIds: string[]): Promise<Map<string, number>> {
+    if (variantIds.length === 0) return new Map();
+
+    try {
+      const stockItems = await (this.prisma as any).inventory_StockItem.findMany({
+        where: { productVariantId: { in: variantIds } },
+        select: { productVariantId: true, quantityAvailable: true, quantityReserved: true }
+      });
+
+      const stockMap = new Map<string, number>();
+      for (const item of stockItems) {
+        const available = Math.max(0, (item.quantityAvailable ?? 0) - (item.quantityReserved ?? 0));
+        const current = stockMap.get(item.productVariantId) ?? 0;
+        stockMap.set(item.productVariantId, current + available);
+      }
+      return stockMap;
+    } catch (error) {
+      // Inventory service unavailable — degrade gracefully, products show out_of_stock
+      console.warn('[PrismaProductRepository] fetchStockByVariantIds failed, defaulting to empty stock map:', (error as Error).message);
+      return new Map();
+    }
+  }
+
+  /**
+   * Enrich a single normalised product record with live stock quantities.
+   */
+  private async enrichWithStock(product: any): Promise<any> {
+    try {
+      const variantIds: string[] = (product.variants ?? []).map((v: any) => v.id).filter(Boolean);
+      const stockMap = await this.fetchStockByVariantIds(variantIds);
+      const enriched = this.applyStockToProduct(product, stockMap);
+      const sellerNameMap = await this.fetchSellerNamesByIds(
+        product.sellerId ? [product.sellerId] : []
+      );
+      return { ...enriched, sellerName: sellerNameMap.get(product.sellerId) ?? null };
+    } catch (error) {
+      console.warn('[PrismaProductRepository] enrichWithStock failed, returning product without stock data:', (error as Error).message);
+      return { ...product, sellerName: null };
+    }
+  }
+
+  /**
+   * Fetch business display names for a batch of seller IDs.
+   * Falls back to user display name, then "Seller" if no business found.
+   * Returns a map of sellerId -> display name.
+   */
+  private async fetchSellerNamesByIds(sellerIds: string[]): Promise<Map<string, string>> {
+    if (sellerIds.length === 0) return new Map();
+
+    const businesses = await (this.prisma as any).business.findMany({
+      where: { ownerId: { in: sellerIds } },
+      select: { ownerId: true, name: true }
+    });
+
+    const map = new Map<string, string>();
+    for (const biz of businesses) {
+      if (biz.ownerId && biz.name) {
+        map.set(biz.ownerId, biz.name);
+      }
+    }
+
+    // For sellers without a business, fall back to User_User firstName+lastName
+    const missingIds = sellerIds.filter(id => !map.has(id));
+    if (missingIds.length > 0) {
+      try {
+        const users = await (this.prisma as any).user_User.findMany({
+          where: { id: { in: missingIds } },
+          select: { id: true, firstName: true, lastName: true, email: true }
+        });
+        for (const user of users) {
+          const name = [user.firstName, user.lastName].filter(Boolean).join(' ').trim()
+            || user.email?.split('@')[0]
+            || 'Seller';
+          map.set(user.id, name);
+        }
+      } catch {
+        // ignore — fallback below handles it
+      }
+
+      // Any still missing — use generic fallback
+      for (const id of missingIds) {
+        if (!map.has(id)) {
+          map.set(id, 'Seller');
+        }
+      }
+    }
+
+    return map;
+  }
+
+  /**
+   * Enrich a batch of normalised product records with live stock quantities.
+   * using a single DB query for all variants.
+   */
+  private async enrichManyWithStock(products: any[]): Promise<any[]> {
+    try {
+      const variantIds: string[] = products
+        .flatMap((p: any) => (p.variants ?? []).map((v: any) => v.id))
+        .filter(Boolean);
+      const stockMap = await this.fetchStockByVariantIds(variantIds);
+
+      const sellerIds = [...new Set(products.map((p: any) => p.sellerId).filter(Boolean))];
+      const sellerNameMap = await this.fetchSellerNamesByIds(sellerIds);
+
+      return products.map(p => {
+        const enriched = this.applyStockToProduct(p, stockMap);
+        return { ...enriched, sellerName: sellerNameMap.get(p.sellerId) ?? null };
+      });
+    } catch (error) {
+      console.warn('[PrismaProductRepository] enrichManyWithStock failed, returning products without stock data:', (error as Error).message);
+      return products.map(p => ({ ...p, sellerName: null }));
+    }
+  }
+
+  /**
+   * Apply a pre-fetched stock map to a normalised product record.
+   */
+  private applyStockToProduct(product: any, stockMap: Map<string, number>): any {
+    const enrichedVariants = (product.variants ?? []).map((variant: any) => {
+      const qty = stockMap.get(variant.id) ?? 0;
+      return { ...variant, inventoryQuantity: qty, stock: qty };
+    });
+    return { ...product, variants: enrichedVariants };
+  }
 
   private mapVisibilityToDomain(visibility: Visibility): ProductVisibility {
     switch (visibility) {

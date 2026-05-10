@@ -50,6 +50,10 @@ export const InventoryModule: Module = {
             : null;
         void inventoryEventHandlers;
 
+        // Register ProductCreated handler to auto-initialize stock items for new products
+        const { InventoryService } = await import('./src/inventoryService');
+        new InventoryService(prisma);
+
         try {
             const outbox = new TransactionalOutbox(prisma, 'inventory_OutboxEvent');
             outboxProcessor = new OutboxProcessor(prisma, outbox, eventBus, 'inventory-service');

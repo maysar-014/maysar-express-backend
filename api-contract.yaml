@@ -64,6 +64,8 @@ tags:
     description: Customer support
   - name: Enabler
     description: Enabler management
+  - name: Reviews
+    description: Product reviews and ratings
 paths:
   /health:
     get:
@@ -3611,6 +3613,21 @@ paths:
                       exclusiveMinimum: true
                       minimum: 0
                       maximum: 1
+                    inventoryCount:
+                      type: integer
+                      minimum: 0
+                      description: Initial stock quantity for the product variant
+                    codAccepted:
+                      type: boolean
+                      description: Whether this product supports cash on delivery
+                    condition:
+                      type: string
+                      enum:
+                        - new
+                        - used
+                        - refurbished
+                        - damaged
+                      description: Physical condition of the product
             example:
               sellerId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
               categoryId: obj_01ARZ3NDEKTSV4RRFFQ69G5FAV
@@ -3625,6 +3642,9 @@ paths:
                 - 'https://example.com/products/headphones-1.jpg'
               price: 120000
               currency: TZS
+              inventoryCount: 50
+              codAccepted: false
+              condition: new
             x-codex-generated-example: true
       responses:
         '200':
@@ -6092,6 +6112,263 @@ paths:
         schema:
           type: string
         example: cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/catalog/v1/products/{id}/reviews':
+    post:
+      tags:
+        - Reviews
+      summary: Submit a product review
+      description: Authenticated buyer submits a star rating and optional comment for a product they have purchased. Requires a DELIVERED order for the product.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - rating
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: Star rating from 1 (worst) to 5 (best)
+                comment:
+                  type: string
+                  maxLength: 2000
+                  description: Optional written review comment
+            example:
+              rating: 5
+              comment: Excellent product, fast delivery and exactly as described.
+      responses:
+        '201':
+          description: Review submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      productId:
+                        type: string
+                      rating:
+                        type: integer
+                      comment:
+                        type: string
+                        nullable: true
+                      moderationStatus:
+                        type: string
+                        enum: [VISIBLE, FLAGGED, HIDDEN]
+                      submittedAt:
+                        type: string
+                        format: date-time
+        '403':
+          description: Forbidden — seller self-review or no qualifying purchase
+          content:
+            application/json:
+              schema: {}
+        '409':
+          description: Conflict — review already exists for this buyer/product
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation error — invalid rating or comment too long
+          content:
+            application/json:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BearerAuth: []
+    get:
+      tags:
+        - Reviews
+      summary: List product reviews
+      description: Public endpoint returning paginated VISIBLE reviews for a product, ordered by submission date or rating.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+          example: 10
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [submittedAt, rating]
+            default: submittedAt
+          example: submittedAt
+      responses:
+        '200':
+          description: Paginated list of reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        rating:
+                          type: integer
+                          minimum: 1
+                          maximum: 5
+                        comment:
+                          type: string
+                          nullable: true
+                        displayName:
+                          type: string
+                          description: Reviewer display name (no PII)
+                        submittedAt:
+                          type: string
+                          format: date-time
+                  meta:
+                    type: object
+                    properties:
+                      pagination:
+                        type: object
+                        properties:
+                          totalCount:
+                            type: integer
+                          totalPages:
+                            type: integer
+                          currentPage:
+                            type: integer
+                          limit:
+                            type: integer
+        '422':
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+      security: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: cat_prd_01ARZ3NDEKTSV4RRFFQ69G5FAV
+  '/api/catalog/v1/reviews/{reviewId}/moderate':
+    put:
+      tags:
+        - Reviews
+      summary: Moderate a review
+      description: Admin-only endpoint to update a review's moderation status. All moderation actions are recorded in an audit log.
+      parameters:
+        - name: reviewId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: cuid_review_example
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - newStatus
+              properties:
+                newStatus:
+                  type: string
+                  enum: [VISIBLE, FLAGGED, HIDDEN]
+                  description: New moderation status for the review
+            example:
+              newStatus: HIDDEN
+      responses:
+        '200':
+          description: Review moderation status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      productId:
+                        type: string
+                      moderationStatus:
+                        type: string
+                        enum: [VISIBLE, FLAGGED, HIDDEN]
+                      updatedAt:
+                        type: string
+                        format: date-time
+        '403':
+          description: Forbidden — admin role required
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: Review not found
+          content:
+            application/json:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BearerAuth: []
+    parameters:
+      - name: reviewId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: cuid_review_example
   '/api/catalog/v1/products/{productId}/pricing':
     put:
       tags:

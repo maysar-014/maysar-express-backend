@@ -20,6 +20,8 @@ export interface ProductPersistenceDto {
   sellerId: string;
   title: string;
   description: string;
+  supplierLocationId?: string;
+  supplierLocation: string;
   categoryId: string;
   brand: string;
   slug: string;
@@ -36,6 +38,8 @@ export interface ProductPersistenceDto {
   currency?: string;
   enablerEnabled?: boolean;
   enablerCommissionRate?: number;
+  codAccepted?: boolean;
+  condition?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -85,19 +89,62 @@ interface DateTimeServiceLike {
   now(): Date;
 }
 
+interface CatalogSearchIndexerLike {
+  syncProductById(productId: string): Promise<'indexed' | 'removed' | 'skipped'>;
+}
+
+interface SavedSellerLocationRecord {
+  id: string;
+  sellerId: string;
+  businessId: string;
+  city: string;
+  region: string;
+  country: string;
+  displayName: string;
+  isPrimary: boolean;
+}
+
+interface SellerLocationRepositoryLike {
+  findByIdForSeller(locationId: string, sellerId: string): Promise<SavedSellerLocationRecord | null>;
+}
+
 export class CreateProductUseCase {
   constructor(
     private readonly productRepository: IProductRepository,
     private readonly categoryRepository: CategoryRepositoryLike,
     private readonly categoryAttributeRepository: CategoryAttributeRepositoryLike,
     private readonly productAttributeRepository: unknown,
+    private readonly sellerLocationRepository: SellerLocationRepositoryLike,
     private readonly eventPublisher: EventPublisherLike,
     private readonly idGenerator: IdGeneratorLike,
-    private readonly dateTimeService: DateTimeServiceLike
+    private readonly dateTimeService: DateTimeServiceLike,
+    private readonly catalogSearchIndexer?: CatalogSearchIndexerLike
   ) {}
 
   async execute(dto: StructuredCreateProductDto): Promise<CreateProductResponse> {
     try {
+      const supplierLocationId = dto.supplierLocationId?.trim();
+      if (!supplierLocationId) {
+        return {
+          productId: '',
+          status: 'validation_error',
+          message: 'Supplier location ID is required',
+          violations: ['Supplier location ID is required'],
+        };
+      }
+
+      const savedLocation = await this.sellerLocationRepository.findByIdForSeller(supplierLocationId, dto.sellerId);
+      if (!savedLocation) {
+        return {
+          productId: '',
+          status: 'validation_error',
+          message: 'Saved supplier location not found for seller',
+          violations: ['Saved supplier location not found for seller'],
+        };
+      }
+
+      const supplierLocation = savedLocation.displayName;
+
       const category = await this.categoryRepository.findById(dto.categoryId);
       if (!category) {
         return { productId: '', status: 'validation_error', message: 'Category not found', violations: ['Category not found'] };
@@ -181,6 +228,8 @@ export class CreateProductUseCase {
         sellerId: dto.sellerId,
         title: dto.productName,
         description: composedDescription,
+        supplierLocationId: savedLocation.id,
+        supplierLocation,
         categoryId: dto.categoryId,
         brand: dto.brand,
         slug: slug.getValue(),
@@ -193,7 +242,8 @@ export class CreateProductUseCase {
         tags: [],
         seoMetadata: {
           currency: dto.currency || 'TZS',
-          supplierLocation: dto.supplierLocation,
+          supplierLocationId: savedLocation.id,
+          supplierLocation,
           minimumOrderQuantity: dto.minimumOrderQuantity,
           mediaUrls: dto.mediaUrls || []
         },
@@ -202,6 +252,8 @@ export class CreateProductUseCase {
         currency: dto.currency || 'TZS',
         enablerEnabled: dto.enablerEnabled ?? false,
         enablerCommissionRate: dto.enablerCommissionRate,
+        codAccepted: dto.codAccepted ?? false,
+        condition: dto.condition ?? 'new',
         createdAt: now,
         updatedAt: now,
       };
@@ -214,6 +266,9 @@ export class CreateProductUseCase {
         }));
 
       await this.productRepository.saveWithAttributesTransaction(persistenceDto, productId, attributesToSave);
+
+      // The default variant ID is deterministic — matches what saveWithAttributesTransaction creates
+      const defaultVariantId = `${productId}-default-variant`;
 
       await this.eventPublisher.publish({
         eventId: this.idGenerator.generate(),
@@ -228,7 +283,11 @@ export class CreateProductUseCase {
           categoryId: dto.categoryId,
           brand: dto.brand,
           slug: slug.getValue(),
-          price: 0,
+          price: dto.price ?? 0,
+          // Variant and inventory info for inventory service to initialize stock
+          variantId: defaultVariantId,
+          sku: `${slug.getValue()}-default`,
+          initialInventoryCount: dto.inventoryCount ?? 0,
         },
       });
 
@@ -243,12 +302,17 @@ export class CreateProductUseCase {
           sellerId: dto.sellerId,
           slug: slug.getValue(),
           categorySlug: category.slug,
-          supplierLocation: dto.supplierLocation,
+          supplierLocationId: savedLocation.id,
+          supplierLocation,
           brand: dto.brand,
           seoTitle,
           qualityScore: qualityScore.getValue(),
         },
       });
+
+      if (this.catalogSearchIndexer && persistenceDto.status === 'published' && persistenceDto.visibility === 'public') {
+        await this.catalogSearchIndexer.syncProductById(productId);
+      }
 
       return {
         productId,
