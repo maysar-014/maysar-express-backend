@@ -1,200 +1,167 @@
 # Maysar Express — Logistics & Escrow Flowcharts
 
-> Covers: delivery lifecycle, COD escrow, route optimization, courier assignment, and dispute resolution.
+> **Evidence-based** — built from reading actual source files.
+> Sources: `services/logistics-service/src/domain/entities/delivery.entity.ts`, `services/logistics-service/src/api/routes/logistics.routes.ts`, `services/logistics-service/src/api/controllers/cod.controller.ts`, `events/CATALOG.md`
 
 ---
 
-## 1. Logistics End-to-End Flow
-
-```mermaid
-flowchart TD
-    ORDER_CONFIRMED["Order Confirmed\n(Payment Received / COD Locked)"] --> CREATE_SHIPMENT["Create Shipment\n(Logistics Service)"]
-
-    CREATE_SHIPMENT --> ROUTE_OPT["Route Optimization\n(Maps Service + ETA calc)"]
-    ROUTE_OPT --> COURIER_MATCH["Courier Matching\n(Availability · Vehicle · Zone)"]
-
-    COURIER_MATCH --> COURIER_FOUND{Courier\nAvailable?}
-    COURIER_FOUND -->|No| RETRY_ASSIGN["Retry Assignment\n(Expand radius)"]
-    RETRY_ASSIGN --> COURIER_MATCH
-    COURIER_FOUND -->|Yes| ASSIGN["Assign to Courier\n(Push notification)"]
-
-    ASSIGN --> COURIER_ACCEPT{Courier\nAccepts?}
-    COURIER_ACCEPT -->|Declined| REASSIGN["Reassign to\nNext Courier"]
-    REASSIGN --> COURIER_MATCH
-    COURIER_ACCEPT -->|Accepted| PICKUP_ROUTE["Courier Navigates\nto Pickup"]
-
-    PICKUP_ROUTE --> PICKUP_CONFIRM["Pickup Confirmed\n(Status: In Transit)"]
-    PICKUP_CONFIRM --> DELIVERY_ROUTE["Courier Navigates\nto Delivery Address"]
-
-    DELIVERY_ROUTE --> COD_ORDER{COD\nOrder?}
-    COD_ORDER -->|No| DELIVER["Deliver Package\n(Photo Proof)"]
-    COD_ORDER -->|Yes| COLLECT_CASH["Collect Cash\nfrom Buyer"]
-    COLLECT_CASH --> OTP_VERIFY["Verify OTP\n(Buyer provides code)"]
-    OTP_VERIFY --> OTP_VALID{OTP\nValid?}
-    OTP_VALID -->|No| OTP_FAIL["OTP Failed\n(Max 3 attempts)"]
-    OTP_FAIL --> ESCALATE["Escalate to Support\n(Delivery held)"]
-    OTP_VALID -->|Yes| DELIVER
-
-    DELIVER --> DELIVERY_COMPLETE["Delivery Complete ✅\n(GPS + Timestamp logged)"]
-    DELIVERY_COMPLETE --> SETTLE["Trigger Settlement\n(Release escrow / COD funds)"]
-    SETTLE --> NOTIFY_ALL["Notify Buyer · Seller · Courier"]
-
-    style ORDER_CONFIRMED fill:#2196F3,color:#fff
-    style DELIVERY_COMPLETE fill:#4CAF50,color:#fff
-    style ESCALATE fill:#F44336,color:#fff
-    style SETTLE fill:#9C27B0,color:#fff
-```
-
----
-
-## 2. COD Escrow State Machine
+## 1. Delivery Status Transitions (Actual — from delivery.entity.ts)
 
 ```mermaid
 stateDiagram-v2
-    [*] --> COD_INITIATED : Buyer selects COD
+    [*] --> pending : Delivery created
 
-    COD_INITIATED --> COMMITMENT_LOCKED : Wallet commitment created\n(Buyer's wallet hold)
-    COMMITMENT_LOCKED --> ORDER_DISPATCHED : Order confirmed & shipped
+    pending --> assigned : assignCourier(courierId)\n[validates: status must be 'pending']
+    assigned --> picked_up : markAsPickedUp()\n[validates: status must be 'assigned']
+    picked_up --> in_transit : (status update)
+    in_transit --> out_for_delivery : (status update)
+    out_for_delivery --> delivered : (delivery confirmed)
+    out_for_delivery --> failed : (delivery failed)
 
-    ORDER_DISPATCHED --> COURIER_ARRIVED : Courier at delivery address
-    COURIER_ARRIVED --> CASH_COLLECTED : Buyer pays cash
-    CASH_COLLECTED --> OTP_SUBMITTED : Courier enters OTP
+    pending --> cancelled : (order cancelled)
+    assigned --> cancelled : (order cancelled)
+    picked_up --> failed : (exception)
 
-    OTP_SUBMITTED --> OTP_VERIFIED : OTP matches
-    OTP_SUBMITTED --> OTP_FAILED : OTP invalid
+    delivered --> [*]
+    failed --> [*]
+    cancelled --> [*]
 
-    OTP_FAILED --> OTP_RETRY : Retry (attempt 2/3)
-    OTP_RETRY --> OTP_SUBMITTED
-    OTP_FAILED --> ESCALATED : Max retries exceeded
+    note right of assigned
+        timestamps.assigned = new Date()
+        courierId set
+    end note
 
-    OTP_VERIFIED --> FUNDS_RELEASED : Escrow released
-    FUNDS_RELEASED --> SELLER_CREDITED : Seller wallet credited
-    FUNDS_RELEASED --> COURIER_CREDITED : Courier earnings credited
-    SELLER_CREDITED --> [*]
-    COURIER_CREDITED --> [*]
+    note right of picked_up
+        timestamps.pickedUp = new Date()
+    end note
 
-    ESCALATED --> SUPPORT_REVIEW : Support investigates
-    SUPPORT_REVIEW --> MANUAL_RELEASE : Admin approves
-    SUPPORT_REVIEW --> REFUND_BUYER : Delivery failed
-    MANUAL_RELEASE --> SELLER_CREDITED
-    REFUND_BUYER --> [*]
+    note right of delivered
+        actualDeliveryTime = new Date()
+        timestamps.delivered = new Date()
+    end note
 ```
 
 ---
 
-## 3. Courier Assignment Algorithm
+## 2. Logistics API Routes (Actual — from logistics.routes.ts)
 
 ```mermaid
-flowchart TD
-    SHIPMENT["New Shipment Created\n(Pickup + Delivery coords)"] --> ZONE["Determine Delivery Zone\n(Maps Service)"]
+graph TB
+    subgraph V1Routes["Routes at /api/v1 (logistics.routes.ts)"]
+        subgraph Deliveries["/deliveries"]
+            D1["POST / — create delivery"]
+            D2["GET / — list deliveries\n(filter: status, courierId, page, limit)"]
+            D3["GET /:deliveryId — get delivery"]
+            D4["PUT /:deliveryId/status — update status\n(assigned/picked_up/in_transit/delivered/cancelled)"]
+        end
 
-    ZONE --> QUERY["Query Available Couriers\n(Status: online · Zone match)"]
-    QUERY --> SCORE["Score Each Courier"]
+        subgraph Routes["/routes"]
+            R1["POST /optimize — optimize route\n(deliveries[], startLocation, endLocation)"]
+            R2["GET /:routeId/alternatives — route alternatives"]
+            R3["PUT /:routeId/progress — update progress"]
+        end
 
-    subgraph Scoring["Courier Scoring Factors"]
-        DIST["📍 Distance to Pickup\n(Weighted: 40%)"]
-        RATING["⭐ Customer Rating\n(Weighted: 25%)"]
-        ONTIME["⏱️ On-time Rate\n(Weighted: 20%)"]
-        CAPACITY["📦 Vehicle Capacity\n(Weighted: 15%)"]
+        subgraph Couriers["/couriers"]
+            C1["GET /:courierId — get courier"]
+            C2["PUT /:courierId/status — update courier status\n(online/offline/busy/delivering/returning...)"]
+        end
+
+        subgraph Tracking["/tracking"]
+            T1["GET /:deliveryId/history — tracking history"]
+            T2["POST /:deliveryId/location — update location"]
+        end
+
+        subgraph Analytics["/analytics"]
+            A1["GET /performance — performance stats"]
+            A2["GET /couriers/:courierId — courier analytics"]
+        end
+
+        subgraph Earnings["/earnings"]
+            E1["POST / — record earnings"]
+            E2["GET /couriers/:courierId — courier earnings"]
+            E3["POST /calculate — calculate commissions"]
+        end
+
+        subgraph COD["/cod"]
+            COD1["POST /:deliveryId/otp — generate OTP\n(sends to buyer)"]
+            COD2["POST /:deliveryId/verify — verify OTP\n(requires: otp, location.lat, location.lng)"]
+        end
     end
 
-    Scoring --> SCORE
-    SCORE --> RANK["Rank Couriers\n(Top 3 candidates)"]
-    RANK --> OFFER["Send Assignment Offer\n(Push notification)"]
-
-    OFFER --> RESPONSE{Response\nwithin 60s?}
-    RESPONSE -->|Accepted| ASSIGNED["Courier Assigned ✅"]
-    RESPONSE -->|Declined| NEXT["Offer to Next\nCandidate"]
-    RESPONSE -->|Timeout| NEXT
-    NEXT --> OFFER
-
-    NEXT --> EXHAUSTED{All Candidates\nExhausted?}
-    EXHAUSTED -->|Yes| EXPAND["Expand Search Radius\n(+5km)"]
-    EXPAND --> QUERY
-    EXHAUSTED -->|No| OFFER
-
-    style ASSIGNED fill:#4CAF50,color:#fff
-    style EXPAND fill:#FF9800,color:#fff
+    style COD fill:#FF9800,color:#fff
+    style COD1 fill:#FF9800,color:#fff
+    style COD2 fill:#FF9800,color:#fff
 ```
 
 ---
 
-## 4. Delivery Status Tracking Flow
-
-```mermaid
-sequenceDiagram
-    actor Buyer
-    participant App as Buyer App
-    participant Logistics as Logistics Service
-    participant Courier as Courier App
-    participant Maps as Maps Service
-    participant Notif as Notification Service
-
-    Note over Buyer,Notif: Real-time Delivery Tracking
-
-    Courier->>Logistics: Update location (every 30s)
-    Logistics->>Maps: Calculate ETA from current position
-    Maps-->>Logistics: Updated ETA
-
-    Logistics->>App: Push location update
-    App->>Buyer: Show courier on map
-
-    Courier->>Logistics: Status: Arrived at pickup
-    Logistics->>Notif: Notify seller: courier arrived
-    Notif->>Seller: SMS/Push notification
-
-    Courier->>Logistics: Status: Picked up
-    Logistics->>Notif: Notify buyer: order picked up
-    Notif->>Buyer: SMS: "Your order is on the way"
-
-    Courier->>Logistics: Status: Arrived at delivery
-    Logistics->>Notif: Notify buyer: courier nearby
-    Notif->>Buyer: SMS: "Courier is at your door"
-
-    Courier->>Logistics: Status: Delivered + proof
-    Logistics->>Notif: Notify buyer: delivered
-    Notif->>Buyer: SMS/Push: "Order delivered ✅"
-    Logistics->>Notif: Notify seller: delivery complete
-```
-
----
-
-## 5. Escrow Release Decision Tree
+## 3. COD OTP Verification (Actual — from cod.controller.ts)
 
 ```mermaid
 flowchart TD
-    DELIVERY_EVENT["Delivery Event Received"] --> TYPE{Order\nType?}
+    COURIER["Courier at delivery address"] --> GEN_OTP["POST /api/v1/cod/:deliveryId/otp"]
+    GEN_OTP --> INIT_UC["InitiateCODDeliveryUseCase\n.execute({ deliveryId })"]
+    INIT_UC --> SEND_OTP["OTP generated\nSent to buyer via SMS"]
+    SEND_OTP --> COURIER_WAIT["Courier waits for buyer\nto provide OTP + cash"]
 
-    TYPE -->|"Prepaid\n(Card/Wallet/Mobile)"| PREPAID_CHECK["Verify Delivery\nConfirmation"]
-    TYPE -->|"COD"| COD_CHECK["Verify OTP\n+ Cash Collection"]
+    COURIER_WAIT --> VERIFY["POST /api/v1/cod/:deliveryId/verify\n{ otp, location: { lat, lng } }"]
 
-    PREPAID_CHECK --> PREPAID_CONFIRMED{Delivery\nConfirmed?}
-    PREPAID_CONFIRMED -->|Yes| RELEASE_PREPAID["Release Seller Funds\n(Immediate)"]
-    PREPAID_CONFIRMED -->|No| DISPUTE_WINDOW["Open Dispute Window\n(48 hours)"]
+    VERIFY --> VALIDATE{Required\nfields present?}
+    VALIDATE -->|"Missing otp or\nlocation.lat/lng"| BAD_REQ["400 Bad Request\n'Missing required verification data\n(otp, lat, lng)'"]
 
-    COD_CHECK --> COD_VERIFIED{OTP\nVerified?}
-    COD_VERIFIED -->|Yes| RELEASE_COD["Release COD Escrow\n+ Credit Courier"]
-    COD_VERIFIED -->|No| COD_ESCALATE["Escalate to Support\n(Hold funds)"]
+    VALIDATE -->|"All present"| VERIFY_UC["VerifyCODDeliveryUseCase\n.execute({ deliveryId, otp, location })"]
 
-    RELEASE_PREPAID --> COMMISSION_DEDUCT["Deduct Platform\nCommission (8%)"]
-    RELEASE_COD --> COMMISSION_DEDUCT
+    VERIFY_UC --> OTP_CHECK{OTP\nValid?}
+    OTP_CHECK -->|"Valid"| SUCCESS["200 OK\nDelivery closed\nWallet commitment released\nCOD reputation updated\nCODVerified event published"]
+    OTP_CHECK -->|"Invalid"| FAIL["Error response\n(404 if not found\n400 otherwise)"]
 
-    COMMISSION_DEDUCT --> ENABLER_CHECK{Enabler\nAttribution?}
-    ENABLER_CHECK -->|Yes| ENABLER_CREDIT["Credit Enabler\nCommission (15-20%)"]
-    ENABLER_CHECK -->|No| SELLER_CREDIT["Credit Seller\nFull Net Amount"]
-    ENABLER_CREDIT --> SELLER_CREDIT
+    style SUCCESS fill:#4CAF50,color:#fff
+    style BAD_REQ fill:#F44336,color:#fff
+    style FAIL fill:#F44336,color:#fff
+```
 
-    SELLER_CREDIT --> AVAILABLE["Funds Available\nfor Payout Request"]
+---
 
-    DISPUTE_WINDOW --> DISPUTE_RAISED{Dispute\nRaised?}
-    DISPUTE_RAISED -->|No| RELEASE_PREPAID
-    DISPUTE_RAISED -->|Yes| ADMIN_REVIEW["Admin Reviews\nDispute"]
-    ADMIN_REVIEW --> ADMIN_DECISION{Decision}
-    ADMIN_DECISION -->|Refund Buyer| REFUND["Process Refund"]
-    ADMIN_DECISION -->|Release to Seller| RELEASE_PREPAID
+## 4. Logistics Events (Actual — from events/CATALOG.md)
 
-    style RELEASE_PREPAID fill:#4CAF50,color:#fff
-    style RELEASE_COD fill:#4CAF50,color:#fff
-    style COD_ESCALATE fill:#F44336,color:#fff
-    style AVAILABLE fill:#2196F3,color:#fff
+```mermaid
+graph LR
+    subgraph LogisticsEvents["Logistics Domain Events"]
+        E1["logistics.pickup.assigned.v1\nProducer: logistics-service\nConsumers: courier-console, notification-service"]
+        E2["logistics.pickup.completed.v1\nProducer: logistics-service\nConsumers: order-service, notification-service"]
+        E3["logistics.delivery.attempted.v1\nProducer: logistics-service\nConsumers: order-service, notification-service"]
+        E4["logistics.delivery.completed.v1\nProducer: logistics-service\nConsumers: order-service, commission-service, trust-service"]
+    end
+
+    subgraph OrderSagaFlow["Order Fulfillment Saga Commands"]
+        CMD1["Delivery.Command.v1\n(published by OrderFulfillmentSaga\nStep 3: Delivery)"]
+        CMD2["DeliverySuccess\n(triggers saga step completion)"]
+    end
+
+    CMD1 --> E1
+    E4 --> CMD2
+
+    style E4 fill:#4CAF50,color:#fff
+    style CMD1 fill:#9B59B6,color:#fff
+```
+
+---
+
+## 5. Route Optimization Request (Actual — from logistics.routes.ts validators)
+
+```mermaid
+flowchart TD
+    REQ["POST /api/v1/routes/optimize"] --> VALIDATE["Joi Validation\n(validateJoiRequest)"]
+
+    subgraph Schema["optimizeRouteBodySchema (Joi)"]
+        DELIVERIES["deliveries[]\n- id: SYSTEM_ID_PATTERN required\n- address: non-blank string required\n- coordinates: { lat, lng } required"]
+        START["startLocation (optional)\n{ lat, lng, address }"]
+        END_LOC["endLocation (optional)\n{ lat, lng, address }"]
+    end
+
+    VALIDATE --> RouteCtrl["RouteController\n.optimizeRoute()"]
+    RouteCtrl --> MAPS["Maps Service\n(Google Maps API)"]
+    MAPS --> RESULT["Route alternatives\nwith ETA"]
+
+    style VALIDATE fill:#FF9800,color:#fff
 ```

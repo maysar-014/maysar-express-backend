@@ -1,10 +1,11 @@
 # Maysar Express — Database Relationship Diagrams
 
-> Each service owns its own isolated PostgreSQL schema. These diagrams show the key entity relationships within each domain.
+> **Evidence-based** — built directly from `prisma/schema.prisma` (3799 lines).
+> Only models confirmed present in the schema are shown. No invented tables.
 
 ---
 
-## 1. Core Commerce ERD (Auth + User + Catalog)
+## 1. Auth & User Domain (from schema.prisma)
 
 ```mermaid
 erDiagram
@@ -13,13 +14,19 @@ erDiagram
         string publicCode UK
         string email UK
         string passwordHash
-        enum role
-        enum status
+        enum role "BUYER|SELLER|COURIER|SUPPLIER|ENABLER|SYSTEM|ADMIN"
+        enum status "PENDING_VERIFICATION|ACTIVE|SUSPENDED|BANNED"
         string phoneNumber
         boolean isEmailVerified
         boolean isPhoneVerified
         boolean twoFactorEnabled
+        string twoFactorSecret
+        int failedLoginAttempts
+        datetime lockoutUntil
+        datetime lastLoginAt
+        datetime passwordChangedAt
         datetime createdAt
+        datetime updatedAt
     }
 
     Session {
@@ -27,34 +34,86 @@ erDiagram
         string userId FK
         string token UK
         string ipAddress
+        string userAgent
         datetime expiresAt
+        datetime createdAt
     }
 
     AuditLog {
         string id PK
         string userId FK
+        string email
         string action
         string ipAddress
+        string userAgent
         boolean success
+        string reason
+        json metadata
         datetime timestamp
     }
 
     User_TwoFactorAuth {
         string id PK
-        string userId FK
+        string userId FK_UK
         string method
         string secret
+        json backupCodes
         boolean isEnabled
+        boolean isVerified
+        string deviceName
         datetime lastUsedAt
     }
 
+    Auth_PasswordResetToken {
+        string id PK
+        string userId FK
+        string token UK
+        datetime expiresAt
+        boolean used
+    }
+
+    Auth_EmailVerificationToken {
+        string id PK
+        string userId FK
+        string token UK
+        datetime expiresAt
+        boolean used
+    }
+
+    Auth_RoleRequest {
+        string id PK
+        string userId FK
+        string requestedRole
+        string status "PENDING|APPROVED|REJECTED"
+        string justification
+        datetime reviewedAt
+        string reviewedBy
+    }
+
+    User ||--o{ Session : "has"
+    User ||--o{ AuditLog : "generates"
+    User ||--o| User_TwoFactorAuth : "has"
+    User ||--o{ Auth_PasswordResetToken : "has"
+    User ||--o{ Auth_EmailVerificationToken : "has"
+    User ||--o{ Auth_RoleRequest : "has"
+```
+
+---
+
+## 2. Catalog Domain (from schema.prisma)
+
+```mermaid
+erDiagram
     Category {
         string id PK
         string parentId FK
         string name
         string slug UK
-        boolean isActive
+        string description
+        string imageUrl
         int displayOrder
+        boolean isActive
+        json seoMetadata
     }
 
     Product {
@@ -62,22 +121,38 @@ erDiagram
         string sellerId
         string categoryId FK
         string title
-        enum status
         string slug UK
+        enum status "draft|active|inactive|archived"
+        enum visibility "public|private|hidden"
+        string brand
+        string model
+        string gtin
+        string mpn
+        string isbn
+        string fingerprint
+        int fingerprintVersion
         int qualityScore
-        boolean codAccepted
         boolean enablerEnabled
         decimal enablerCommissionRate
+        boolean codAccepted
+        string condition "new|used|refurbished"
+        string supplierLocationId FK
     }
 
     ProductVariant {
         string id PK
         string productId FK
         string sku UK
+        string name
         decimal price
         decimal compareAtPrice
-        enum inventoryPolicy
-        enum status
+        decimal costPrice
+        enum inventoryPolicy "deny|continue"
+        decimal weight
+        json dimensions
+        json attributes
+        json images
+        enum status "active|inactive|archived"
     }
 
     BuyBox {
@@ -88,36 +163,74 @@ erDiagram
         datetime lastComputedAt
     }
 
+    Catalog_BuyBoxAlternative {
+        string id PK
+        string buyBoxId FK
+        string sellerId
+        decimal score
+        int rank
+    }
+
     Catalog_ProductReview {
         string id PK
         string productId
         string buyerId
         int rating
         string comment
-        enum moderationStatus
+        enum moderationStatus "VISIBLE|HIDDEN|FLAGGED"
+        datetime submittedAt
     }
 
-    User ||--o{ Session : "has"
-    User ||--o{ AuditLog : "generates"
-    User ||--o| User_TwoFactorAuth : "has"
+    Catalog_ReviewModerationLog {
+        string id PK
+        string reviewId FK
+        string adminId
+        enum previousStatus
+        enum newStatus
+        datetime actionAt
+    }
+
+    CategoryAttribute {
+        string id PK
+        string categoryId FK
+        string name
+        string displayLabel
+        enum type
+        json options
+        boolean isRequired
+        int displayOrder
+    }
+
+    ProductAttribute {
+        string id PK
+        string productId FK
+        string attributeId FK
+        string value
+    }
+
     Category ||--o{ Category : "parent-child"
     Category ||--o{ Product : "contains"
+    Category ||--o{ CategoryAttribute : "defines"
     Product ||--o{ ProductVariant : "has"
     Product ||--o| BuyBox : "has"
     Product ||--o{ Catalog_ProductReview : "receives"
+    Product ||--o{ ProductAttribute : "has"
+    BuyBox ||--o{ Catalog_BuyBoxAlternative : "has"
+    Catalog_ProductReview ||--o{ Catalog_ReviewModerationLog : "has"
+    CategoryAttribute ||--o{ ProductAttribute : "used in"
 ```
 
 ---
 
-## 2. Order & Checkout ERD
+## 3. Order & Checkout Domain (from schema.prisma)
 
 ```mermaid
 erDiagram
     Checkout_Cart {
         string id PK
         string userId
-        string status
-        datetime expiresAt
+        string status "active|abandoned|converted"
+        datetime expiresAt "now() + 7 days"
     }
 
     Checkout_CartItem {
@@ -135,24 +248,28 @@ erDiagram
         string userId
         string enablerId
         string enablerCode
-        string status
+        string status "initiated|..."
         decimal subtotal
         decimal shippingCost
         decimal taxAmount
         decimal discountAmount
         decimal totalAmount
+        string paymentMethodId
         string paymentStatus
+        json metadata
+        datetime expiresAt "now() + 1 hour"
     }
 
     Checkout_Order {
         string id PK
         string checkoutSessionId
         string userId
-        string status
+        string status "pending|..."
         decimal subtotal
         decimal totalAmount
-        string paymentStatus
+        string paymentStatus "pending|..."
         string trackingNumber
+        json metadata
     }
 
     Checkout_OrderItem {
@@ -165,111 +282,15 @@ erDiagram
         decimal totalPrice
     }
 
-    Checkout_InventoryReservation {
-        string id PK
-        string checkoutId
-        string productId
-        string variantId
-        int quantity
-        string status
-        datetime expiresAt
-    }
-
     Checkout_Cart ||--o{ Checkout_CartItem : "contains"
     Checkout_Cart ||--o| Checkout_CheckoutSession : "becomes"
     Checkout_CheckoutSession ||--o| Checkout_Order : "creates"
     Checkout_Order ||--o{ Checkout_OrderItem : "has"
-    Checkout_CheckoutSession ||--o{ Checkout_InventoryReservation : "holds"
 ```
 
 ---
 
-## 3. Payment & Wallet ERD
-
-```mermaid
-erDiagram
-    Payment_Payment {
-        string id PK
-        string orderId
-        string userId
-        decimal amount
-        string currency
-        enum status
-        enum method
-        string gatewayRef
-        int version
-        datetime createdAt
-    }
-
-    Payment_Refund {
-        string id PK
-        string paymentId FK
-        decimal amount
-        string reason
-        enum status
-        datetime processedAt
-    }
-
-    Wallet_Wallet {
-        string id PK
-        string userId UK
-        string userType
-        decimal balance
-        decimal heldBalance
-        string currency
-        int version
-    }
-
-    Wallet_Transaction {
-        string id PK
-        string walletId FK
-        enum type
-        decimal amount
-        string referenceId
-        string referenceType
-        string description
-        enum status
-    }
-
-    Wallet_CODCommitment {
-        string id PK
-        string walletId FK
-        string orderId
-        decimal amount
-        enum status
-        datetime expiresAt
-    }
-
-    CommissionPayout {
-        string id PK
-        string recipientId
-        string recipientType
-        decimal amount
-        enum status
-        datetime scheduledDate
-        datetime processedDate
-    }
-
-    Commission {
-        string id PK
-        string orderId
-        string sellerId
-        decimal amount
-        decimal rate
-        enum type
-        enum status
-        string payoutId FK
-    }
-
-    Payment_Payment ||--o{ Payment_Refund : "has"
-    Wallet_Wallet ||--o{ Wallet_Transaction : "records"
-    Wallet_Wallet ||--o{ Wallet_CODCommitment : "holds"
-    Commission ||--o| CommissionPayout : "settled via"
-```
-
----
-
-## 4. Inventory & Logistics ERD
+## 4. Inventory Domain (from schema.prisma)
 
 ```mermaid
 erDiagram
@@ -277,9 +298,11 @@ erDiagram
         string id PK
         string code UK
         string name
-        enum type
-        enum status
         json address
+        enum type
+        enum status "active|inactive|maintenance"
+        json capacity
+        json operatingHours
     }
 
     Inventory_StockItem {
@@ -289,9 +312,13 @@ erDiagram
         string sku UK
         int quantityAvailable
         int quantityReserved
+        int quantityDamaged
+        int quantityOnOrder
         int reorderPoint
-        int version
-        enum status
+        int maxStock
+        decimal unitCost
+        enum status "active|inactive|discontinued"
+        int version "optimistic locking"
     }
 
     Inventory_Reservation {
@@ -301,143 +328,99 @@ erDiagram
         string productVariantId
         string warehouseId FK
         int quantityReserved
-        enum status
+        enum status "active|fulfilled|released|expired"
         datetime expiresAt
+        datetime fulfilledAt
     }
 
     Inventory_InventoryMovement {
         string id PK
         string productVariantId
         string warehouseId FK
-        enum movementType
+        enum movementType "IN|OUT|ADJUSTMENT|TRANSFER|DAMAGE|RETURN"
         int quantity
         string referenceType
         string referenceId
-    }
-
-    Logistics_Courier {
-        string id PK
-        string name
-        string phone UK
-        string email UK
-        enum status
-        string vehicleType
-        float currentLatitude
-        float currentLongitude
-        float onTimeDeliveryRate
-        float customerRating
-        int completedDeliveries
-    }
-
-    Logistics_Delivery {
-        string id PK
-        string orderId
-        string courierId FK
-        string status
-        string trackingNumber UK
-        boolean isCOD
-        decimal codAmount
-        boolean codCollected
-        boolean codOtpVerified
-        datetime actualDeliveryTime
-    }
-
-    Logistics_Earning {
-        string id PK
-        string courierId FK
-        decimal amount
-        string deliveryId
-        enum status
+        string reason
+        string performedBy
+        decimal unitCost
     }
 
     Inventory_Warehouse ||--o{ Inventory_StockItem : "stores"
     Inventory_Warehouse ||--o{ Inventory_Reservation : "holds"
     Inventory_Warehouse ||--o{ Inventory_InventoryMovement : "tracks"
     Inventory_StockItem ||--o{ Inventory_Reservation : "reserved by"
-    Logistics_Courier ||--o{ Logistics_Delivery : "handles"
-    Logistics_Courier ||--o{ Logistics_Earning : "earns"
+    Inventory_StockItem ||--o{ Inventory_InventoryMovement : "moved in"
 ```
 
 ---
 
-## 5. Business Registry & Compliance ERD
+## 5. Logistics Domain (from schema.prisma)
 
 ```mermaid
 erDiagram
-    Business {
+    Logistics_Courier {
         string id PK
         string name
-        enum businessType
-        string registrationNumber UK
-        string taxId UK
-        enum status
-        enum verificationStatus
-        enum complianceStatus
-        string ownerId
+        string phone UK
+        string email UK
+        enum status "online|offline|busy|delivering|returning"
+        string vehicleType
+        string vehicleLicensePlate
+        float vehicleCapacity
+        float currentLatitude
+        float currentLongitude
+        float onTimeDeliveryRate
+        float customerRating
+        int completedDeliveries
+        float totalEarnings
     }
 
-    BusinessAddress {
+    Logistics_Delivery {
         string id PK
-        string businessId FK
-        enum type
-        string street
-        string city
-        string region
-        string country
-        boolean isPrimary
+        string orderId
+        string courierId FK
+        string status "pending|assigned|picked_up|in_transit|delivered|failed|cancelled"
+        string trackingNumber UK
+        string pickupStreet
+        string pickupCity
+        float pickupLatitude
+        float pickupLongitude
+        string deliveryStreet
+        string deliveryCity
+        float deliveryLatitude
+        float deliveryLongitude
+        float packageWeight
+        float packageValue
+        boolean packageFragile
+        boolean isCOD
+        decimal codAmount
+        boolean codCollected
+        boolean codOtpVerified
+        float codProofGpsLat
+        float codProofGpsLng
+        datetime codProofTimestamp
+        string buyerId
+        string sellerId
+        string codCommitmentHoldId
     }
 
-    BusinessDocument {
+    Logistics_LocationHistory {
         string id PK
-        string businessId FK
-        enum type
-        string fileName
-        string fileUrl
-        enum status
+        string courierId FK
+        float latitude
+        float longitude
+        float accuracy
+        datetime timestamp
     }
 
-    BusinessRegistry_ComplianceRecord {
-        string id PK
-        string businessId FK
-        enum type
-        enum status
-        datetime checkedAt
-        datetime expiresAt
-    }
-
-    Compliance_KYCRecord {
-        string id PK
-        string userId
-        enum verificationStatus
-        datetime submittedAt
-        datetime verifiedAt
-        enum riskLevel
-    }
-
-    Compliance_AMLRecord {
-        string id PK
-        string userId UK
-        string sanctionsStatus
-        boolean pepStatus
-        float riskScore
-        datetime lastCheckAt
-    }
-
-    Compliance_TRARecord {
-        string id PK
-        string userId
-        string tin UK
-        string taxComplianceStatus
-    }
-
-    Business ||--o{ BusinessAddress : "has"
-    Business ||--o{ BusinessDocument : "submits"
-    Business ||--o{ BusinessRegistry_ComplianceRecord : "has"
+    Logistics_Courier ||--o{ Logistics_Delivery : "handles"
+    Logistics_Courier ||--o{ Logistics_LocationHistory : "tracks"
 ```
 
 ---
 
-## 6. Commission & Enabler ERD
+## 6. Commission Domain (from schema.prisma)
 
 ```mermaid
 erDiagram
@@ -447,9 +430,21 @@ erDiagram
         string sellerId
         decimal amount
         decimal rate
-        enum type
-        enum status
-        string payoutId
+        enum type "seller|enabler|courier|referral|task_assignment|task_completion"
+        enum status "pending|earned|paid|cancelled"
+        datetime paidAt
+        string payoutId FK
+    }
+
+    CommissionPayout {
+        string id PK
+        string recipientId
+        string recipientType "seller|enabler|courier"
+        decimal amount
+        enum status "pending|processing|completed|failed"
+        datetime scheduledDate
+        datetime processedDate
+        string reference
     }
 
     Commission_Referral {
@@ -457,9 +452,11 @@ erDiagram
         string referrerId
         string refereeId
         string referralCode UK
-        enum status
+        enum status "pending|completed|expired|cancelled"
         decimal rewardAmount
         boolean rewardPaid
+        datetime completedAt
+        datetime expiresAt
     }
 
     Commission_Reward {
@@ -467,27 +464,88 @@ erDiagram
         string userId
         enum type
         decimal amount
-        enum status
+        enum status "earned|redeemed|expired|cancelled"
         datetime expiresAt
+        datetime redeemedAt
+        string referenceId
     }
 
-    CommissionPayout {
-        string id PK
-        string recipientId
-        string recipientType
-        decimal amount
-        enum status
-        datetime scheduledDate
-    }
-
-    Checkout_CheckoutSession {
-        string id PK
-        string enablerId
-        string enablerCode
-        decimal totalAmount
-    }
-
-    Commission ||--o| CommissionPayout : "paid via"
+    Commission ||--o| CommissionPayout : "settled via"
     Commission_Referral ||--o{ Commission_Reward : "generates"
-    Checkout_CheckoutSession ||--o{ Commission : "triggers"
+```
+
+---
+
+## 7. Business Registry & Compliance (from schema.prisma)
+
+```mermaid
+erDiagram
+    Business {
+        string id PK
+        string name
+        enum businessType
+        string registrationNumber UK
+        string taxId UK
+        enum status "PENDING|ACTIVE|SUSPENDED|REJECTED|REVOKED"
+        enum verificationStatus "UNVERIFIED|PENDING|VERIFIED|REJECTED"
+        enum complianceStatus "UNDER_REVIEW|COMPLIANT|NON_COMPLIANT|SUSPENDED"
+        string ownerId
+        string[] industry
+        datetime verifiedAt
+        string verifiedBy
+    }
+
+    BusinessAddress {
+        string id PK
+        string businessId FK
+        enum type "MAIN|BRANCH|WAREHOUSE|REGISTERED"
+        string street
+        string city
+        string region
+        string country "default: Tanzania"
+        boolean isPrimary
+    }
+
+    BusinessDocument {
+        string id PK
+        string businessId FK
+        enum type
+        string fileName
+        string fileUrl
+        enum status "PENDING|APPROVED|REJECTED|EXPIRED"
+    }
+
+    Compliance_KYCRecord {
+        string id PK
+        string userId
+        enum verificationStatus "pending|in_review|approved|rejected|expired"
+        datetime submittedAt
+        datetime verifiedAt
+        string verifiedBy
+        json documents
+        string rejectionReason
+        enum riskLevel "low|medium|high|critical"
+    }
+
+    Compliance_AMLRecord {
+        string id PK
+        string userId UK
+        string sanctionsStatus "clear|flagged|blocked"
+        boolean pepStatus
+        float riskScore
+        datetime lastCheckAt
+        json flags
+    }
+
+    Compliance_TRARecord {
+        string id PK
+        string userId
+        string tin UK
+        string vrn
+        string taxComplianceStatus
+    }
+
+    Business ||--o{ BusinessAddress : "has"
+    Business ||--o{ BusinessDocument : "submits"
+    Business ||--o{ BusinessRegistry_ComplianceRecord : "has"
 ```

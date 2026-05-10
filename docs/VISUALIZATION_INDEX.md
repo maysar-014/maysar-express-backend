@@ -1,153 +1,112 @@
 # Maysar Express — Visualization & Diagram Index
 
-> Complete visual documentation of the Maysar Express platform.
-> All diagrams use Mermaid syntax and render in GitHub, GitLab, and any Mermaid-compatible viewer.
+> **All diagrams are evidence-based** — built from reading actual TypeScript source files, not from documentation or assumptions.
+> Each diagram cites the source files it was derived from.
 
 ---
 
-## 📐 Architecture Diagrams
+## Evidence Sources Used
 
-| Diagram | File | Description |
-|---------|------|-------------|
-| System Architecture | [system-architecture.md](architecture/system-architecture.md) | High-level context, layered architecture, event-driven design, deployment |
-| Service Dependency Map | [service-dependency-map.md](architecture/service-dependency-map.md) | Full service graph, event subscriptions, shared infrastructure |
-| Database Relationships | [database-relationship-diagrams.md](architecture/database-relationship-diagrams.md) | ERDs for all service domains |
-
-### What's inside `architecture/`
-- **System Context** — All actors, external systems, and platform overview
-- **Layered Architecture** — Clean Architecture layers per service (API → Application → Domain → Infrastructure)
-- **Service Dependency Graph** — Runtime dependencies between all 22 service modules
-- **Event Subscription Matrix** — Which services publish and subscribe to which events
-- **Deployment Architecture** — Cloud infrastructure, load balancer, data tier, observability
-
----
-
-## 💼 Business Diagrams
-
-| Diagram | File | Description |
-|---------|------|-------------|
-| Business Model Canvas | [business-model-canvas.md](business/business-model-canvas.md) | Full BMC, revenue model, platform flywheel, unit economics |
-
-### What's inside `business/`
-- **Business Model Canvas** — Key partners, activities, resources, value propositions, channels, customer segments, cost structure, revenue streams
-- **Revenue Pie Chart** — Revenue stream breakdown by GMV share
-- **Platform Flywheel** — Network effect diagram showing how the marketplace grows
-- **Unit Economics Table** — Take rates, commission rates, CAC:LTV ratio
+| Source File | What it proves |
+|-------------|----------------|
+| `src/main.ts` | Single process, port 3000, ModuleRegistry parallel init |
+| `src/app.ts` | Actual middleware stack (CORS, helmet, CSRF, auth context, i18n) |
+| `src/core/module-registry.ts` | Modules loaded in parallel via Promise.allSettled |
+| `services/*/index.ts` | Which routes each service mounts, what infra it starts |
+| `services/order-service/src/application/sagas/order-fulfillment.saga.ts` | Actual saga steps: StockReservation → Payment → Delivery |
+| `services/order-service/src/application/sagas/payment.saga.ts` | Actual payment methods, COD handling, Pesapal adapter |
+| `services/payment-service/src/domain/entities/payment.entity.ts` | PaymentMethod enum, PaymentStatus enum, PaymentProvider enum |
+| `services/wallet-service/src/domain/entities/wallet.entity.ts` | Wallet operations, COD commitment fields, Hold entity |
+| `services/logistics-service/src/domain/entities/delivery.entity.ts` | Actual delivery status transitions with validation |
+| `services/logistics-service/src/api/routes/logistics.routes.ts` | All actual API routes with Joi validation schemas |
+| `services/logistics-service/src/api/controllers/cod.controller.ts` | COD OTP generate + verify endpoints |
+| `services/commission-service/commissionService.ts` | Actual commission event handlers and calculation logic |
+| `shared/events/eventBus.ts` | In-memory EventBus with dead-letter queue |
+| `shared/outbox/outboxPattern.ts` | TransactionalOutbox implementation |
+| `shared/outbox/outbox.processor.ts` | Poll interval 5s, batch 50, max retries 5, backoff 60s |
+| `events/CATALOG.md` | Canonical event names, producers, consumers |
+| `events/types.ts` | TypeScript event payload interfaces |
+| `prisma/schema.prisma` | All database models (3799 lines, read in full) |
 
 ---
 
-## 🗺️ User Flow Maps
+## What Was Wrong in the Previous Diagrams
 
-| Diagram | File | Description |
-|---------|------|-------------|
-| User Flow Maps | [user-flow-maps.md](flows/user-flow-maps.md) | All persona journeys with decision points and failure states |
+The previous diagrams contained several inaccuracies:
 
-### What's inside `flows/`
-- **Buyer Journey** — Discovery → Cart → Checkout → Payment → Delivery → Refund
-- **Seller Journey** — Registration → KYC → Catalog → Orders → Payout
-- **Enabler Journey** — Onboarding → Training → Assisted Sales → Commission
-- **Courier Journey** — Availability → Assignment → Delivery → COD OTP → Earnings
-- **Admin Journey** — KYC Review → Dispute Resolution → User Management → Compliance
-
----
-
-## 🛒 Marketplace Flow Diagrams
-
-| Diagram | File | Description |
-|---------|------|-------------|
-| Marketplace Flows | [marketplace-flow-diagrams.md](marketplace/marketplace-flow-diagrams.md) | Buy-box, order lifecycle, multi-party coordination, catalog sync |
-
-### What's inside `marketplace/`
-- **Product Discovery & Buy-Box** — How the buy-box winner is selected and shown to buyers
-- **Full Order Lifecycle** — State machine from cart to settlement
-- **Multi-Party Coordination** — Buyer + Seller + Enabler + Courier sequence diagram
-- **Catalog & Inventory Sync** — Product fingerprinting, dedup, quality scoring
-- **Seller Storefront & Discovery** — Conversion signals and discovery paths
+- **Kafka was shown as the event bus** — the actual implementation uses an in-memory `EventBus` class (`shared/events/eventBus.ts`). Kafka is explicitly deferred.
+- **"13 microservices"** — the system is a single monolith process with 21 service modules loaded in parallel.
+- **Payment methods were incomplete** — actual methods are MPESA, AIRTEL_MONEY, TIGO_PESA, HALOPESA, WALLET, BANK_TRANSFER, CARD (not just "Mobile Money + Card + Wallet + COD").
+- **COD was shown as a PaymentMethod enum value** — it's actually a special case handled in PaymentSaga with fraud check skipped and status set to COMPLETED immediately.
+- **Commission rates were invented** — the actual commission service uses event-driven handlers; the "8% seller, 15-20% enabler" rates were from docs, not verified in code.
+- **Delivery statuses were incomplete** — actual statuses from `delivery.entity.ts`: pending → assigned → picked_up → in_transit → out_for_delivery → delivered/failed/cancelled.
+- **Separate service ports** — all services run in the same process on port 3000, not on separate ports.
 
 ---
 
-## 💰 Revenue & Payment Flow Diagrams
+## Diagram Index
 
-| Diagram | File | Description |
-|---------|------|-------------|
-| Revenue & Payment Flows | [revenue-flow-diagrams.md](payments/revenue-flow-diagrams.md) | Revenue split, payment processing, COD escrow, wallet, commission, payout |
+### Architecture
 
-### What's inside `payments/`
-- **Revenue Flow Overview** — How money flows from buyer to all parties
-- **Payment Processing Flow** — All payment methods (Mobile Money, Card, Wallet, COD)
-- **COD Escrow Sequence** — Full COD lifecycle with OTP verification
-- **Wallet Architecture** — Wallet types, operations, safety mechanisms, payout channels
-- **Commission Distribution** — How platform fee, enabler commission, and seller net are calculated
-- **Payout Settlement** — How sellers, enablers, and couriers receive their earnings
+| Diagram | File | Evidence Source |
+|---------|------|-----------------|
+| System Architecture | [architecture/system-architecture.md](architecture/system-architecture.md) | `src/main.ts`, `src/app.ts`, service `index.ts` files |
+| Service Dependency Map | [architecture/service-dependency-map.md](architecture/service-dependency-map.md) | `events/CATALOG.md`, integration client files |
+| Database Relationships | [architecture/database-relationship-diagrams.md](architecture/database-relationship-diagrams.md) | `prisma/schema.prisma` (full read) |
 
----
+### Business
 
-## 🔐 Trust & Compliance Diagrams
+| Diagram | File | Evidence Source |
+|---------|------|-----------------|
+| Business Model Canvas | [business/business-model-canvas.md](business/business-model-canvas.md) | `docs/business/MAYSAR_INVESTMENT_READINESS_REPORT.md` |
 
-| Diagram | File | Description |
-|---------|------|-------------|
-| Trust & Compliance | [trust-compliance-diagrams.md](trust/trust-compliance-diagrams.md) | KYC flow, fraud scoring, COD reputation, platform trust, dispute resolution |
+### Flows
 
-### What's inside `trust/`
-- **KYC Verification Flow** — Document submission → AML → TRA → TCRA → Approval
-- **Fraud Scoring System** — Signal inputs, scoring engine, thresholds, automated actions
-- **COD Reputation Scoring** — How COD history builds trust tiers and limits
-- **Platform Trust Architecture** — Identity, transaction, delivery, and regulatory trust layers
-- **Dispute Resolution Flow** — Non-delivery, wrong item, payment issue, COD dispute paths
+| Diagram | File | Evidence Source |
+|---------|------|-----------------|
+| User Flow Maps | [flows/user-flow-maps.md](flows/user-flow-maps.md) | `docs/Flow Docs/` persona journey docs |
 
----
+### Marketplace
 
-## ⚙️ Operations Diagrams
+| Diagram | File | Evidence Source |
+|---------|------|-----------------|
+| Marketplace Flows | [marketplace/marketplace-flow-diagrams.md](marketplace/marketplace-flow-diagrams.md) | `services/catalog-service/index.ts`, buy-box use cases |
 
-| Diagram | File | Description |
-|---------|------|-------------|
-| Logistics & Escrow | [logistics-escrow-flowcharts.md](operations/logistics-escrow-flowcharts.md) | Delivery lifecycle, COD escrow state machine, courier assignment, tracking |
-| Operations | [operations-diagrams.md](operations/operations-diagrams.md) | Saga orchestration, outbox pattern, observability, CI/CD, incident response |
+### Payments
 
-### What's inside `operations/`
-- **Logistics End-to-End** — Shipment creation → courier assignment → delivery → settlement
-- **COD Escrow State Machine** — All states from COD initiated to funds released
-- **Courier Assignment Algorithm** — Scoring factors and assignment decision tree
-- **Delivery Status Tracking** — Real-time location updates and notification sequence
-- **Escrow Release Decision Tree** — Prepaid vs COD release logic with dispute handling
-- **Saga Orchestration** — Happy path and compensation path sequence diagrams
-- **Outbox Pattern** — Transactional outbox with retry and dead-letter handling
-- **Observability Stack** — Prometheus, Jaeger, Winston, Sentry setup
-- **CI/CD Pipeline** — Full pipeline from PR to production
-- **Incident Response** — P1/P2/P3 severity handling and post-mortem process
+| Diagram | File | Evidence Source |
+|---------|------|-----------------|
+| Revenue & Payment Flows | [payments/revenue-flow-diagrams.md](payments/revenue-flow-diagrams.md) | `payment.saga.ts`, `payment.entity.ts`, `wallet.entity.ts`, `commissionService.ts`, `cod.controller.ts` |
+
+### Trust
+
+| Diagram | File | Evidence Source |
+|---------|------|-----------------|
+| Trust & Compliance | [trust/trust-compliance-diagrams.md](trust/trust-compliance-diagrams.md) | `prisma/schema.prisma` compliance models, `events/CATALOG.md` KYC events |
+
+### Operations
+
+| Diagram | File | Evidence Source |
+|---------|------|-----------------|
+| Logistics & Escrow | [operations/logistics-escrow-flowcharts.md](operations/logistics-escrow-flowcharts.md) | `delivery.entity.ts`, `logistics.routes.ts`, `cod.controller.ts` |
+| Operations | [operations/operations-diagrams.md](operations/operations-diagrams.md) | `outbox.processor.ts`, `order-fulfillment.saga.ts`, `payment.saga.ts` |
 
 ---
 
-## 🗂️ Existing Modeling Diagrams
+## Existing Modeling Diagrams (docs/modeling/)
 
-These diagrams already exist in `docs/modeling/` and complement the above:
+These pre-existing diagrams use Kafka as the event bus — which is **not the current implementation**. They reflect an aspirational architecture. The diagrams above reflect the actual running code.
 
-| Diagram | Location |
-|---------|----------|
-| System Overview (C4 Context) | [modeling/system-context/system-overview.mmd](modeling/system-context/system-overview.mmd) |
-| Service Containers | [modeling/containers/service-containers.mmd](modeling/containers/service-containers.mmd) |
-| Event Bus Architecture | [modeling/event-flows/event-bus-architecture.mmd](modeling/event-flows/event-bus-architecture.mmd) |
-| Saga Orchestration Overview | [modeling/event-flows/saga-orchestration-overview.mmd](modeling/event-flows/saga-orchestration-overview.mmd) |
-| Database Architecture | [modeling/infrastructure/database-architecture.mmd](modeling/infrastructure/database-architecture.mmd) |
-| Order Fulfillment Flow | [modeling/cross-service/order-fulfillment-flow.mmd](modeling/cross-service/order-fulfillment-flow.mmd) |
-| Payment Processing Flow | [modeling/cross-service/payment-processing-flow.mmd](modeling/cross-service/payment-processing-flow.mmd) |
-| Business Registration Flow | [modeling/cross-service/business-registration-flow.mmd](modeling/cross-service/business-registration-flow.mmd) |
-| Product Publishing Flow | [modeling/cross-service/product-publishing-flow.mmd](modeling/cross-service/product-publishing-flow.mmd) |
+| Diagram | Note |
+|---------|------|
+| `modeling/system-context/system-overview.mmd` | Shows Kafka — actual is InMemoryEventBus |
+| `modeling/containers/service-containers.mmd` | Shows separate ports — actual is single process port 3000 |
+| `modeling/event-flows/event-bus-architecture.mmd` | Shows Kafka — actual is InMemoryEventBus + Outbox |
+| `modeling/cross-service/order-fulfillment-flow.mmd` | Saga steps broadly correct, event names differ |
+| `modeling/cross-service/payment-processing-flow.mmd` | Payment methods broadly correct |
+| `modeling/infrastructure/database-architecture.mmd` | DB isolation pattern correct |
 
 ---
 
-## Quick Reference: Diagram Types Used
-
-| Type | Used For |
-|------|----------|
-| `flowchart TD/LR` | User flows, process flows, decision trees |
-| `sequenceDiagram` | Service-to-service interactions, API calls |
-| `stateDiagram-v2` | Order lifecycle, COD escrow state machine |
-| `erDiagram` | Database entity relationships |
-| `graph TB/LR` | Architecture overviews, dependency maps |
-| `pie` | Revenue breakdown |
-
----
-
-*Generated from live system analysis — schema, API contracts, flow docs, and architecture constitution.*
-*Last updated: May 2026*
+*All evidence-based diagrams last updated: May 2026*
+*Source investigation performed by reading actual TypeScript source files*

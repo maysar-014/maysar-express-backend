@@ -1,183 +1,276 @@
 # Maysar Express — Service Dependency Map
 
-> Shows runtime dependencies, event subscriptions, and data flow between all 22 service modules.
+> **Evidence-based** — built from reading actual source files.
+> Sources: service `index.ts` files, `shared/events/eventBus.ts`, `events/CATALOG.md`, `events/types.ts`, integration client files.
 
 ---
 
-## 1. Full Service Dependency Graph
+## 1. Actual Event Producer/Consumer Matrix
 
-```mermaid
-graph TB
-    subgraph Gateway["API Gateway Layer"]
-        GW["API Gateway :3000\n(Express + Auth Middleware)"]
-    end
-
-    subgraph CoreCommerce["Core Commerce Services"]
-        AUTH["Auth Service :3001\nJWT · Sessions · 2FA · RBAC"]
-        CATALOG["Catalog Service :3005\nProducts · Buy-box · Search · Pricing"]
-        CHECKOUT["Checkout Service :3009\nCart · Sessions · Discounts"]
-        ORDER["Order Service :3002\nOrder Lifecycle · Saga Orchestration"]
-        INVENTORY["Inventory Service :3003\nStock · Reservations · Warehouses"]
-    end
-
-    subgraph Financial["Financial Services"]
-        PAYMENT["Payment Service :3004\nPesapal · Fraud · Refunds"]
-        WALLET["Wallet Service\nBalances · COD Holds · Ledger"]
-        PAYOUT["Payout Service\nDisbursements · Reconciliation"]
-        COMMISSION["Commission Service :3008\nRates · Attribution · Settlement"]
-    end
-
-    subgraph Operations["Operations Services"]
-        LOGISTICS["Logistics Service :3007\nDeliveries · Couriers · COD · Routes"]
-        MAPS["Maps Service\nGeolocation · ETA · Routing"]
-        NOTIFICATION["Notification Service :3010\nEmail · SMS · Push · Firebase"]
-        ANALYTICS["Analytics Service :3011\nMetrics · Dashboards · Reports"]
-    end
-
-    subgraph TrustCompliance["Trust & Compliance"]
-        BUSINESS["Business Registry :3006\nKYC · Verification · Documents"]
-        COMPLIANCE["Compliance Service :3013\nAML · TCRA · TRA · GDPR"]
-        KYC["KYC Service\nDocument Verification"]
-        USER["User Service :3014\nProfiles · Addresses · Preferences"]
-    end
-
-    subgraph Network["Network Services"]
-        ENABLER["Enabler Service\nProfiles · Attribution · Listings"]
-        TRAINING["Training Service\nModules · Assessments · Certs"]
-        COMMUNITY["Community Service\nPosts · Reviews · Social"]
-        SUPPORT["Support Service\nTickets · SLA · Escalation"]
-        PRODUCTION["Production Service\nBulk Orders · Capacity · Quotes"]
-    end
-
-    %% Gateway routes
-    GW --> AUTH & CATALOG & CHECKOUT & ORDER & BUSINESS & ANALYTICS & USER & ENABLER & LOGISTICS & PAYMENT & WALLET & SUPPORT
-
-    %% Core order flow dependencies
-    CHECKOUT -->|"reserve stock"| INVENTORY
-    CHECKOUT -->|"create order"| ORDER
-    ORDER -->|"process payment"| PAYMENT
-    ORDER -->|"create shipment"| LOGISTICS
-    ORDER -->|"calculate commission"| COMMISSION
-    CATALOG -->|"check availability"| INVENTORY
-
-    %% Financial dependencies
-    PAYMENT -->|"debit/credit balance"| WALLET
-    PAYMENT -->|"COD commitment"| WALLET
-    COMMISSION -->|"credit earnings"| WALLET
-    WALLET -->|"disburse funds"| PAYOUT
-
-    %% Operations dependencies
-    LOGISTICS -->|"route optimization"| MAPS
-    LOGISTICS -->|"COD verification"| PAYMENT
-    LOGISTICS -->|"release escrow"| WALLET
-
-    %% Trust dependencies
-    BUSINESS -->|"compliance check"| COMPLIANCE
-    BUSINESS -->|"KYC verification"| KYC
-    USER -->|"identity sync"| AUTH
-
-    %% Network dependencies
-    ENABLER -->|"training status"| TRAINING
-    ENABLER -->|"commission attribution"| COMMISSION
-    ENABLER -->|"product listings"| CATALOG
-
-    %% Cross-cutting notifications
-    ORDER & PAYMENT & LOGISTICS --> NOTIFICATION
-    ORDER & PAYMENT & LOGISTICS & CATALOG --> ANALYTICS
-
-    style GW fill:#FF6B6B,color:#fff
-    style ORDER fill:#2196F3,color:#fff
-    style PAYMENT fill:#4CAF50,color:#fff
-    style WALLET fill:#9C27B0,color:#fff
-    style COMMISSION fill:#FF9800,color:#fff
-```
-
----
-
-## 2. Event Subscription Matrix
+> Evidence: `events/CATALOG.md` — canonical source of truth for all events.
 
 ```mermaid
 graph LR
-    subgraph Events["Domain Events Published"]
-        E1["OrderCreated"]
-        E2["StockReserved / StockReservationFailed"]
-        E3["PaymentCompleted / PaymentFailed"]
-        E4["OrderConfirmed / OrderCancelled"]
-        E5["ShipmentCreated / DeliveryCompleted"]
-        E6["CODVerified / CODVerificationFailed"]
-        E7["CommissionSettled"]
-        E8["RefundProcessed"]
-        E9["EnablerApproved / CertificationAwarded"]
-        E10["TicketCreated / TicketResolved"]
+    subgraph Producers["Event Producers"]
+        ORDER_SVC["order-service"]
+        PAY_SVC["payment-service"]
+        INV_SVC["inventory-service"]
+        LOG_SVC["logistics-service"]
+        AUTH_SVC["auth-service"]
+        COM_SVC["commission-service"]
+        COMP_SVC["compliance-service"]
     end
 
-    subgraph Subscribers["Service Subscribers"]
-        S_INV["Inventory Service\n← OrderCreated\n← OrderCancelled"]
-        S_PAY["Payment Service\n← OrderStockReserved"]
-        S_LOG["Logistics Service\n← OrderConfirmed"]
-        S_ORD["Order Service\n← StockReserved\n← PaymentCompleted\n← PaymentFailed"]
-        S_WAL["Wallet Service\n← PaymentCompleted\n← CODVerified\n← RefundProcessed"]
-        S_COM["Commission Service\n← OrderCompleted"]
-        S_NOT["Notification Service\n← ALL order events"]
-        S_ANA["Analytics Service\n← ALL events"]
+    subgraph Events["Domain Events (events/CATALOG.md)"]
+        E_OC["order.created.v1"]
+        E_OCA["order.cancelled.v1"]
+        E_OCO["order.completed.v1"]
+        E_PS["payment.succeeded.v1"]
+        E_PF["payment.failed.v1"]
+        E_PR["payment.refund.completed.v1"]
+        E_IR["inventory.reserved.v1"]
+        E_IRL["inventory.released.v1"]
+        E_ILS["inventory.low.stock.v1"]
+        E_LPA["logistics.pickup.assigned.v1"]
+        E_LDC["logistics.delivery.completed.v1"]
+        E_CC["commission.calculated.v1"]
+        E_CP["commission.paid.v1"]
+        E_SR["seller.registered.v1"]
+        E_SKA["seller.kyc.approved.v1"]
+        E_SA["seller.activated.v1"]
     end
 
-    E1 --> S_INV & S_ANA
-    E2 --> S_ORD & S_ANA
-    E3 --> S_ORD & S_WAL & S_NOT & S_ANA
-    E4 --> S_LOG & S_NOT & S_ANA
-    E5 --> S_WAL & S_COM & S_NOT & S_ANA
-    E6 --> S_WAL & S_NOT & S_ANA
-    E7 --> S_NOT & S_ANA
-    E8 --> S_NOT & S_ANA
+    subgraph Consumers["Event Consumers"]
+        C_INV["inventory-service"]
+        C_PAY["payment-service"]
+        C_ORD["order-service"]
+        C_LOG["logistics-service"]
+        C_COM["commission-service"]
+        C_NOT["notification-service"]
+        C_ANA["analytics-service"]
+        C_CAT["catalog-service"]
+        C_COMP["compliance-service"]
+    end
 
-    style S_NOT fill:#FF9800,color:#fff
-    style S_ANA fill:#9C27B0,color:#fff
+    ORDER_SVC --> E_OC & E_OCA & E_OCO
+    PAY_SVC --> E_PS & E_PF & E_PR
+    INV_SVC --> E_IR & E_IRL & E_ILS
+    LOG_SVC --> E_LPA & E_LDC
+    COM_SVC --> E_CC & E_CP
+    AUTH_SVC --> E_SR
+    COMP_SVC --> E_SKA
+
+    E_OC --> C_INV & C_PAY & C_NOT & C_ANA
+    E_OCA --> C_INV & C_PAY & C_NOT
+    E_OCO --> C_COM & C_ANA
+    E_PS --> C_ORD & C_COM & C_ANA
+    E_PF --> C_ORD & C_NOT
+    E_PR --> C_ORD & C_COM & C_NOT
+    E_IR --> C_ORD & C_ANA
+    E_IRL --> C_ORD
+    E_ILS --> C_NOT
+    E_LDC --> C_ORD & C_COM
+    E_CC --> C_ANA
+    E_SKA --> C_CAT & C_NOT
+
+    style C_NOT fill:#FF9800,color:#fff
+    style C_ANA fill:#9C27B0,color:#fff
 ```
 
 ---
 
-## 3. Shared Infrastructure Dependencies
+## 2. Synchronous Service Client Dependencies
+
+> Evidence: `services/order-service/src/infrastructure/integrations/` — actual HTTP client files.
 
 ```mermaid
 graph TB
-    subgraph Services["All Service Modules"]
-        SVC["22 Service Modules"]
+    subgraph OrderServiceClients["order-service HTTP Clients"]
+        AUTH_CLIENT["AuthServiceClient\n(auth verification)"]
+        USER_CLIENT["UserServiceClient\n(user profile, COD reputation)"]
+        LOG_CLIENT["LogisticsServiceClient\n(delivery creation)"]
+        WAL_CLIENT["WalletServiceClient\n(COD commitment, wallet debit)"]
     end
 
-    subgraph SharedInfra["Shared Infrastructure"]
-        PG["PostgreSQL\n(Per-service isolated DB)"]
-        REDIS["Redis\n(Shared cluster)"]
-        BUS["InMemoryEventBus\n(In-process)"]
-        OUTBOX["Outbox Processor\n(Per service)"]
-        SAGA["Saga Framework\n(Shared library)"]
-        AUDIT["Audit Logger\n(Shared library)"]
-        TRACING["OpenTelemetry\n(Jaeger)"]
-        METRICS["Prometheus\n(/metrics endpoint)"]
+    subgraph PaymentServiceClients["payment-service HTTP Clients"]
+        PESAPAL_ADAPTER["PesapalAdapter\n(card, mobile money)"]
+        WALLET_CLIENT2["WalletServiceClient\n(wallet debit)"]
     end
 
-    subgraph RedisUsage["Redis Usage by Service"]
-        R1["Auth: Sessions · Rate limits"]
-        R2["Inventory: Redlock · Reservations"]
-        R3["Payment: Idempotency keys"]
-        R4["Catalog: Product cache · Search cache"]
-        R5["Checkout: Cart sessions"]
-        R6["Order: Saga state cache"]
+    subgraph InventoryServiceClients["inventory-service"]
+        REDIS_ENGINE["RedisStockEngine\n(Redlock distributed locks)"]
     end
 
-    SVC --> PG
-    SVC --> REDIS
-    SVC --> BUS
-    SVC --> OUTBOX
-    SVC --> SAGA
-    SVC --> AUDIT
-    SVC --> TRACING
-    SVC --> METRICS
+    ORDER_SVC["order-service"] --> AUTH_CLIENT & USER_CLIENT & LOG_CLIENT & WAL_CLIENT
+    PAY_SVC["payment-service"] --> PESAPAL_ADAPTER & WALLET_CLIENT2
+    INV_SVC["inventory-service"] --> REDIS_ENGINE
 
-    REDIS --> RedisUsage
+    style PESAPAL_ADAPTER fill:#4CAF50,color:#fff
+    style REDIS_ENGINE fill:#DC382D,color:#fff
+```
 
-    style PG fill:#336791,color:#fff
-    style REDIS fill:#DC382D,color:#fff
-    style BUS fill:#9B59B6,color:#fff
-    style OUTBOX fill:#E67E22,color:#fff
+---
+
+## 3. Shared Infrastructure Usage (Actual)
+
+> Evidence: service `index.ts` files — which services start OutboxProcessor and SagaRecoveryWorker.
+
+```mermaid
+graph TB
+    subgraph OutboxUsers["Services with OutboxProcessor.start()"]
+        O1["order-service ✅"]
+        O2["payment-service ✅"]
+        O3["wallet-service ✅"]
+        O4["payout-service ✅"]
+        O5["catalog-service ✅"]
+        O6["inventory-service ✅"]
+        O7["community-service ✅"]
+        O8["auth-service ✅\n(via OutboxRepository)"]
+    end
+
+    subgraph SagaRecoveryUsers["Services with SagaRecoveryWorker.start()"]
+        S1["payment-service ✅\n(stuckThreshold: 5min\npollInterval: 60s)"]
+        S2["wallet-service ✅\n(stuckThreshold: 5min\npollInterval: 60s)"]
+    end
+
+    subgraph RedisUsers["Services using Redis"]
+        R1["auth-service\n(sessions, rate limits)"]
+        R2["inventory-service\n(Redlock, reservation engine)"]
+        R3["order-service\n(EventIdempotency)"]
+        R4["payment-service\n(EventIdempotency)"]
+        R5["logistics-service\n(rate limiting)"]
+        R6["catalog-service\n(search cache)"]
+    end
+
+    subgraph SharedLibs["Shared Libraries (shared/)"]
+        SL1["shared/events/eventBus.ts\n(EventBus singleton)"]
+        SL2["shared/outbox/outboxPattern.ts\n(TransactionalOutbox)"]
+        SL3["shared/outbox/outbox.processor.ts\n(OutboxProcessor)"]
+        SL4["shared/saga/saga.orchestrator.ts\n(DistributedSagaOrchestrator)"]
+        SL5["shared/saga/saga-recovery.worker.ts\n(SagaRecoveryWorker)"]
+        SL6["shared/middleware/idempotency.ts\n(EventIdempotency)"]
+        SL7["shared/middleware/auth-context.middleware.ts\n(attachAuthContext, requireAuth)"]
+        SL8["shared/tracing/openTelemetry.ts\n(correlationMiddleware)"]
+    end
+
+    OutboxUsers --> SL2 & SL3
+    SagaRecoveryUsers --> SL5
+    OutboxUsers & SagaRecoveryUsers --> SL1
+    RedisUsers --> SL6
+
+    style SL1 fill:#9B59B6,color:#fff
+    style SL2 fill:#E67E22,color:#fff
+    style SL4 fill:#16A085,color:#fff
+```
+
+---
+
+## 4. Auth Service — Actual Routes Mounted
+
+> Evidence: `services/auth-service/index.ts` — fully merged module.
+
+```mermaid
+graph TB
+    subgraph AuthModule["auth-service (fully merged module)"]
+        subgraph AuthRoutes["/api/auth"]
+            AR1["POST /register"]
+            AR2["POST /login"]
+            AR3["POST /logout"]
+            AR4["POST /refresh"]
+            AR5["GET /verify"]
+            AR6["POST /forgot-password"]
+            AR7["POST /reset-password"]
+        end
+
+        subgraph TwoFARoutes["/api/2fa"]
+            TF1["POST /setup"]
+            TF2["POST /verify-setup"]
+            TF3["POST /verify-login"]
+            TF4["POST /verify-backup"]
+            TF5["POST /disable"]
+            TF6["POST /regenerate-backup"]
+            TF7["GET /status"]
+        end
+
+        subgraph SessionRoutes["/api/sessions"]
+            SS1["GET / — list sessions"]
+            SS2["DELETE /:id — revoke session"]
+        end
+
+        subgraph PhoneRoutes["/api/phone (NEW)"]
+            PH1["POST /initiate\n(InitiatePhoneVerificationUseCase\n→ FirebaseAdminService)"]
+            PH2["POST /verify\n(VerifyPhoneOtpUseCase\n→ FirebaseAdminService)"]
+        end
+
+        subgraph OAuthRoutes["/api/oauth"]
+            OA1["GET /google — Google OAuth"]
+            OA2["GET /google/callback"]
+        end
+
+        subgraph OtherRoutes["Other Routes"]
+            OR1["/api/switch-role"]
+            OR2["/api/otp-verification"]
+            OR3["/api/role-request"]
+            OR4["/api/admin (admin routes)"]
+        end
+    end
+
+    style PhoneRoutes fill:#e3f2fd,stroke:#1565c0
+    style PH1 fill:#2196F3,color:#fff
+    style PH2 fill:#2196F3,color:#fff
+```
+
+---
+
+## 5. Catalog Service — Actual Routes Mounted
+
+> Evidence: `services/catalog-service/index.ts` — merged module (includes campaigns + pricing).
+
+```mermaid
+graph TB
+    subgraph CatalogModule["catalog-service (merged: catalog + campaigns + pricing)"]
+        subgraph ProductRoutes["/api/catalog/products"]
+            P1["POST / — create product\n(CreateProductUseCase\nor CreateProductWithMatchingUseCase)"]
+            P2["GET / — list products"]
+            P3["GET /:id — get product"]
+            P4["PUT /:id — update product\n(UpdateProductUseCase)"]
+            P5["DELETE /:id — delete product\n(DeleteProductUseCase)"]
+            P6["POST /:id/publish\n(PublishProductUseCase)"]
+        end
+
+        subgraph SearchRoutes["/api/catalog/search"]
+            S1["GET / — search products\n(MeilisearchSearchService)"]
+        end
+
+        subgraph ReviewRoutes["/api/catalog/reviews (NEW)"]
+            RV1["POST / — submit review\n(SubmitProductReviewUseCase)"]
+            RV2["GET /:productId — get reviews\n(GetProductReviewsUseCase)"]
+            RV3["PUT /:reviewId/moderate\n(ModerateReviewUseCase)"]
+        end
+
+        subgraph BuyBoxRoutes["/api/catalog/buy-box"]
+            BB1["POST /compute\n(ComputeBuyBoxUseCase)"]
+            BB2["GET /:productId"]
+        end
+
+        subgraph MatchingRoutes["/api/catalog/matching"]
+            M1["POST / — match product\n(MatchProductUseCase)"]
+            M2["POST /confirm\n(ConfirmProductMatchUseCase)"]
+        end
+
+        subgraph CampaignRoutes["/api/catalog/campaigns"]
+            CA1["Campaign CRUD routes"]
+        end
+
+        subgraph PricingRoutes["/api/catalog/pricing"]
+            PR1["Pricing calculation routes"]
+        end
+
+        subgraph StorefrontRoutes["/api/catalog/storefront"]
+            SF1["GET /:sellerId — seller storefront\n(SellerStorefrontController)"]
+        end
+    end
+
+    style ReviewRoutes fill:#e8f5e9,stroke:#2e7d32
+    style RV1 fill:#4CAF50,color:#fff
 ```

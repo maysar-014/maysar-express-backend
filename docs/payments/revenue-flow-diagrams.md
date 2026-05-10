@@ -1,229 +1,227 @@
 # Maysar Express — Revenue & Payment Flow Diagrams
 
-> Covers: payment processing, COD escrow, wallet mechanics, commission distribution, and payout flows.
+> **Evidence-based** — built from reading actual source files.
+> Sources: `services/order-service/src/application/sagas/payment.saga.ts`, `services/payment-service/src/domain/entities/payment.entity.ts`, `services/wallet-service/src/domain/entities/wallet.entity.ts`, `services/commission-service/commissionService.ts`, `services/logistics-service/src/api/controllers/cod.controller.ts`
 
 ---
 
-## 1. Revenue Flow Overview
+## 1. Payment Methods (Actual — from payment.entity.ts)
 
 ```mermaid
-flowchart TD
-    BUYER["🛒 Buyer Pays\n(Order Total)"] --> PLATFORM["Maysar Platform\n(Collects Full Amount)"]
+graph LR
+    subgraph Methods["PaymentMethod enum (payment.entity.ts)"]
+        MPESA["MPESA"]
+        AIRTEL["AIRTEL_MONEY"]
+        TIGO["TIGO_PESA"]
+        HALO["HALOPESA"]
+        WALLET["WALLET"]
+        BANK["BANK_TRANSFER"]
+        CARD["CARD"]
+    end
 
-    PLATFORM --> SPLIT["Revenue Split Engine\n(Commission Service)"]
+    subgraph Providers["PaymentProvider enum"]
+        PESAPAL["PESAPAL\n(Card, Mobile Money, Bank)"]
+        INTERNAL["INTERNAL_WALLET\n(Wallet payments)"]
+    end
 
-    SPLIT --> SELLER_SHARE["🏪 Seller Share\n(Order Total − 8% commission)"]
-    SPLIT --> PLATFORM_FEE["💰 Platform Fee\n(8% of order value)"]
-    SPLIT --> ENABLER_SHARE["🤝 Enabler Commission\n(15-20% if attributed)"]
-    SPLIT --> LOGISTICS_FEE["🚚 Logistics Fee\n(Delivery charge)"]
+    subgraph COD["COD (Cash on Delivery)"]
+        COD_NOTE["Not a PaymentMethod enum value\nHandled as special case in PaymentSaga:\nFraud check skipped\nStatus set to COMPLETED immediately\nWallet commitment held during delivery"]
+    end
 
-    PLATFORM_FEE --> PLATFORM_WALLET["Platform Revenue\nWallet"]
-    SELLER_SHARE --> SELLER_WALLET["Seller Wallet\n(Held until delivery)"]
-    ENABLER_SHARE --> ENABLER_WALLET["Enabler Wallet\n(Credited on completion)"]
-    LOGISTICS_FEE --> COURIER_WALLET["Courier Earnings\n(Per delivery)"]
+    MPESA & AIRTEL & TIGO & HALO & CARD & BANK --> PESAPAL
+    WALLET --> INTERNAL
 
-    SELLER_WALLET --> SELLER_PAYOUT["Seller Payout\n(Bank / Mobile Money)"]
-    ENABLER_WALLET --> ENABLER_PAYOUT["Enabler Payout\n(Bank / Mobile Money)"]
-    COURIER_WALLET --> COURIER_PAYOUT["Courier Payout\n(Weekly settlement)"]
-
-    style BUYER fill:#2196F3,color:#fff
-    style PLATFORM fill:#FF6B6B,color:#fff
-    style PLATFORM_FEE fill:#9C27B0,color:#fff
-    style SELLER_SHARE fill:#4CAF50,color:#fff
-    style ENABLER_SHARE fill:#FF9800,color:#fff
-    style LOGISTICS_FEE fill:#009688,color:#fff
+    style PESAPAL fill:#4CAF50,color:#fff
+    style INTERNAL fill:#2196F3,color:#fff
+    style COD_NOTE fill:#FF9800,color:#fff
 ```
 
 ---
 
-## 2. Payment Processing Flow (All Methods)
+## 2. Payment Processing Flow (Actual — from payment.saga.ts)
 
 ```mermaid
 flowchart TD
-    ORDER["Order Confirmed\n(Stock Reserved)"] --> PAYMENT_INIT["Payment Service\nInitiates Payment"]
+    ORDER_CREATED["Order Created\n(PaymentSaga triggered)"] --> FRAUD_CHECK{COD\nOrder?}
 
-    PAYMENT_INIT --> FRAUD["Fraud Check\n(Score · History · Limits)"]
-    FRAUD --> FRAUD_RESULT{Fraud\nCheck}
-    FRAUD_RESULT -->|Rejected| FRAUD_FAIL["Payment Rejected ❌\nOrder Cancelled\nStock Released"]
-    FRAUD_RESULT -->|Passed| METHOD{Payment\nMethod}
+    FRAUD_CHECK -->|"Yes (COD)"| COD_SKIP["Skip Fraud Check\nSet status = COMPLETED\nReturn immediately"]
+    FRAUD_CHECK -->|"No"| FRAUD["Fraud Check\n(amount > 1,000,000 TZS\n→ auto-reject)"]
 
-    METHOD -->|"Mobile Money\n(M-Pesa / Airtel)"| PESAPAL["Pesapal Gateway\nSTK Push / USSD"]
-    METHOD -->|"Card"| PESAPAL
-    METHOD -->|"Wallet"| WALLET_CHECK["Check Wallet Balance"]
-    METHOD -->|"COD"| COD_FLOW["COD Pre-Auth\nWallet Commitment Lock"]
+    FRAUD --> FRAUD_RESULT{Fraud\nResult}
+    FRAUD_RESULT -->|"Rejected"| FRAUD_FAIL["status = FAILED\nThrow error\nSaga compensates"]
+    FRAUD_RESULT -->|"Approved"| METHOD{Payment\nMethod}
 
-    PESAPAL --> GATEWAY_RESULT{Gateway\nResponse}
-    GATEWAY_RESULT -->|Success| PAYMENT_COMPLETE["Payment Completed ✅"]
-    GATEWAY_RESULT -->|Timeout| RETRY["Retry (3x)\nExponential Backoff"]
-    GATEWAY_RESULT -->|Failed| PAYMENT_FAIL["Payment Failed ❌\nStock Released"]
-    RETRY --> GATEWAY_RESULT
+    METHOD -->|"CARD or\nMOBILE_MONEY"| PESAPAL["PesapalAdapter\n.processPayment()\n(orderId, amount, currency\nbuyerId, phone, email)"]
+    METHOD -->|"WALLET"| WALLET_DEBIT["WalletServiceClient\n.debitWallet(buyerId, amount\ncurrency, description)"]
+    METHOD -->|"Other"| UNSUPPORTED["Throw: Unsupported\npayment method"]
 
-    WALLET_CHECK --> BALANCE{Sufficient\nBalance?}
-    BALANCE -->|No| PAYMENT_FAIL
-    BALANCE -->|Yes| WALLET_DEBIT["Debit Wallet\n(Optimistic Lock)"]
-    WALLET_DEBIT --> PAYMENT_COMPLETE
+    PESAPAL --> PAY_RESULT{Result}
+    WALLET_DEBIT --> PAY_RESULT
 
-    COD_FLOW --> COD_LOCK["Lock COD Commitment\n(Wallet Hold)"]
-    COD_LOCK --> COD_SCHEDULED["COD Scheduled ✅\nDelivery Proceeds"]
+    PAY_RESULT -->|"success"| COMPLETE["status = COMPLETED\ntransactionId saved"]
+    PAY_RESULT -->|"failure"| FAIL["status = FAILED\nThrow error"]
 
-    PAYMENT_COMPLETE --> NOTIFY["Notify Buyer & Seller\n(SMS + Push)"]
-    PAYMENT_COMPLETE --> ORDER_CONFIRM["Order Confirmed\nLogistics Triggered"]
+    FAIL --> COMPENSATE["Compensation:\npublishCommand('PaymentRefund.Command')\nif status was COMPLETED"]
 
-    style PAYMENT_COMPLETE fill:#4CAF50,color:#fff
-    style PAYMENT_FAIL fill:#F44336,color:#fff
+    style COD_SKIP fill:#FF9800,color:#fff
+    style COMPLETE fill:#4CAF50,color:#fff
     style FRAUD_FAIL fill:#F44336,color:#fff
-    style COD_SCHEDULED fill:#FF9800,color:#fff
+    style FAIL fill:#F44336,color:#fff
 ```
 
 ---
 
-## 3. COD (Cash on Delivery) Escrow Flow
+## 3. Payment Status Transitions (Actual — from payment.entity.ts)
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING : Payment created
+    PENDING --> PROCESSING : processPesapalPayment() called
+    PENDING --> COMPLETED : COD order (immediate)
+    PENDING --> COMPLETED : Wallet payment success
+    PROCESSING --> COMPLETED : Pesapal success
+    PROCESSING --> FAILED : Pesapal failure
+    PENDING --> FAILED : Fraud check rejected
+    COMPLETED --> REFUNDED : Full refund
+    COMPLETED --> PARTIALLY_REFUNDED : Partial refund
+    PENDING --> CANCELLED : Saga compensation
+    FAILED --> [*]
+    CANCELLED --> [*]
+    REFUNDED --> [*]
+    PARTIALLY_REFUNDED --> [*]
+```
+
+---
+
+## 4. Wallet Entity Operations (Actual — from wallet.entity.ts)
+
+```mermaid
+graph TB
+    subgraph WalletState["Wallet State"]
+        BAL["balance\n(total funds)"]
+        FROZEN["frozenAmount\n(COD commitments)"]
+        AVAIL["availableBalance\n= balance − frozenAmount"]
+        COD_LIMIT["codCommitmentLimit"]
+        COD_USED["codCommitmentUsed"]
+        COD_COUNT["codCommitmentCount"]
+        VERSION["version\n(optimistic locking)"]
+    end
+
+    subgraph WalletStatus["WalletStatus enum"]
+        ACTIVE["ACTIVE"]
+        FROZEN_S["FROZEN"]
+        SUSPENDED["SUSPENDED"]
+        CLOSED["CLOSED"]
+    end
+
+    subgraph Operations["Business Methods"]
+        CREDIT["credit(amount)\n→ balance += amount"]
+        DEBIT["debit(amount)\n→ checks availableBalance\n→ balance -= amount"]
+        FREEZE["freeze(amount)\n→ frozenAmount += amount"]
+        UNFREEZE["unfreeze(amount)\n→ frozenAmount -= amount"]
+        PLACE_HOLD["placeHold(Hold)\n→ creates time-limited hold\n→ frozenAmount += hold.amount"]
+        RELEASE_HOLD["releaseHold(holdId)\n→ frozenAmount -= hold.amount"]
+        CAPTURE_HOLD["captureHold(holdId)\n→ balance -= hold.amount\n→ frozenAmount -= hold.amount"]
+        USE_COD["useCODCommitment(amount)\n→ codCommitmentUsed += amount\n→ codCommitmentCount++\n→ frozenAmount += amount"]
+        RELEASE_COD["releaseCODCommitment(amount)\n→ codCommitmentUsed -= amount\n→ frozenAmount -= amount"]
+    end
+
+    WalletState --> Operations
+
+    style AVAIL fill:#4CAF50,color:#fff
+    style FROZEN fill:#FF9800,color:#fff
+    style USE_COD fill:#9C27B0,color:#fff
+```
+
+---
+
+## 5. COD Escrow Flow (Actual — from cod.controller.ts + logistics routes)
 
 ```mermaid
 sequenceDiagram
     actor Buyer
     actor Courier
-    participant Platform as Maysar Platform
-    participant Wallet as Wallet Service
-    participant Payment as Payment Service
-    participant Logistics as Logistics Service
+    participant LogisticsAPI as Logistics Service\n/api/v1/cod/:deliveryId
+    participant CODUseCase as InitiateCODDeliveryUseCase\n+ VerifyCODDeliveryUseCase
+    participant WalletSvc as Wallet Service
+    participant Bus as EventBus
 
-    Note over Buyer,Logistics: COD Order Lifecycle
+    Note over Buyer,Bus: COD Delivery Flow
 
-    Buyer->>Platform: Place COD Order
-    Platform->>Wallet: Lock COD Commitment\n(Buyer's wallet hold)
-    Wallet-->>Platform: Commitment ID created
-    Platform-->>Buyer: Order confirmed\n(COD scheduled)
+    Courier->>LogisticsAPI: POST /cod/:deliveryId/otp
+    LogisticsAPI->>CODUseCase: initiateCODDelivery({ deliveryId })
+    CODUseCase->>Buyer: Send OTP via SMS
+    LogisticsAPI-->>Courier: 200 { message: 'OTP generated and sent to buyer' }
 
-    Note over Courier,Logistics: Delivery Phase
+    Courier->>Buyer: Arrive, collect cash
+    Buyer->>Courier: Provide OTP
 
-    Logistics->>Courier: Assign delivery
-    Courier->>Logistics: Confirm pickup
-    Courier->>Buyer: Arrive at delivery address
+    Courier->>LogisticsAPI: POST /cod/:deliveryId/verify\n{ otp, location: { lat, lng } }
+    LogisticsAPI->>CODUseCase: verifyCODDelivery({ deliveryId, otp, location })
 
-    Note over Buyer,Courier: OTP Verification
-
-    Platform->>Buyer: Send OTP via SMS
-    Buyer->>Courier: Show OTP + Pay Cash
-    Courier->>Platform: Submit OTP + GPS proof
-
-    Platform->>Payment: Verify COD settlement
-    Payment->>Wallet: Release commitment hold
-    Wallet->>Wallet: Credit seller wallet\n(minus platform fee)
-    Wallet->>Wallet: Credit courier earnings
-
-    Payment-->>Platform: COD verified ✅
-    Platform-->>Buyer: Delivery confirmed
-    Platform-->>Courier: Earnings credited
-    Platform-->>Seller: Payment notification
-
-    Note over Buyer,Logistics: Failure Path
-
-    alt OTP Invalid / Expired
-        Courier->>Platform: OTP verification failed
-        Platform->>Logistics: Mark delivery failed
-        Platform->>Buyer: Resend OTP option
-        Platform->>Wallet: Keep commitment locked\n(pending resolution)
+    alt OTP valid + location valid
+        CODUseCase->>WalletSvc: Release COD commitment\n(releaseCODCommitment)
+        CODUseCase->>Bus: Publish CODVerified event
+        CODUseCase->>CODUseCase: Update delivery status → delivered
+        CODUseCase->>CODUseCase: Update COD reputation score
+        LogisticsAPI-->>Courier: 200 Delivery verified
+    else OTP invalid / missing location
+        LogisticsAPI-->>Courier: 400 Missing required verification data
     end
 ```
 
 ---
 
-## 4. Wallet Architecture
+## 6. Commission Service Event Handlers (Actual — from commissionService.ts)
 
 ```mermaid
-graph TB
-    subgraph WalletTypes["Wallet Types"]
-        BUYER_W["🛒 Buyer Wallet\n(COD commitments\n+ refund credits)"]
-        SELLER_W["🏪 Seller Wallet\n(Earnings held\nuntil delivery)"]
-        ENABLER_W["🤝 Enabler Wallet\n(Commission credits)"]
-        COURIER_W["🚴 Courier Wallet\n(Delivery earnings)"]
+flowchart TD
+    subgraph CourierFlow["Courier Commission Flow"]
+        CE["CourierEarningsUpdated\n(event)"] --> CC["CommissionCalculated\n(base: 50 × 0.8 = 40)"]
+        CC --> BA["BonusAssessed\n(random 0-20 bonus)"]
+        BA --> PS1["PayoutScheduled"]
     end
 
-    subgraph WalletOps["Wallet Operations"]
-        CREDIT["Credit\n(Payment received)"]
-        DEBIT["Debit\n(Payment made)"]
-        HOLD["Hold\n(COD commitment)"]
-        RELEASE["Release\n(Hold lifted)"]
-        TRANSFER["Transfer\n(Internal move)"]
+    subgraph EnablerFlow["Enabler Commission Flow"]
+        TC["TaskCreated\n(event)"] --> EM["EnablerMatched\n(published back)"]
+        TAA["TaskAssignmentAccepted\n(event)"] --> CR1["Commission record created\ntype: task_assignment\namount: 0"]
+        TCC["TaskCommissionCalculated\n(event)"] --> CR2["Commission record created\ntype: task_completion\namount: commission + qualityBonus"]
+        CR2 --> PS2["PayoutScheduled"]
     end
 
-    subgraph Safety["Safety Mechanisms"]
-        OPT_LOCK["Optimistic Locking\n(version column)"]
-        REDLOCK["Redlock\n(Distributed mutex)"]
-        IDEMPOTENCY["Idempotency Keys\n(Duplicate prevention)"]
-        AUDIT["Ledger Audit Trail\n(Every transaction logged)"]
+    subgraph SellerKYCFlow["Seller KYC Flow"]
+        SKD["SellerKYCDocumentsSubmitted"] --> SKV["SellerKYCValidationInitiated"]
+        SKV --> SKR["SellerKYCReviewCompleted"]
+        SKR --> SKU["SellerKYCStatusUpdated"]
+        SKU --> SKN["SellerKYCNotificationSent"]
     end
 
-    subgraph Payout["Payout Channels"]
-        BANK["Bank Transfer\n(TZS)"]
-        MPESA["M-Pesa\n(Mobile Money)"]
-        AIRTEL["Airtel Money"]
-    end
-
-    WalletTypes --> WalletOps
-    WalletOps --> Safety
-    SELLER_W & ENABLER_W & COURIER_W --> Payout
-
-    style OPT_LOCK fill:#FF9800,color:#fff
-    style REDLOCK fill:#F44336,color:#fff
-    style IDEMPOTENCY fill:#9C27B0,color:#fff
+    style PS1 fill:#4CAF50,color:#fff
+    style PS2 fill:#4CAF50,color:#fff
+    style CR2 fill:#2196F3,color:#fff
 ```
 
 ---
 
-## 5. Commission Distribution Flow
+## 7. Revenue Flow (Actual Event Catalog — events/CATALOG.md)
 
 ```mermaid
 flowchart LR
-    ORDER_COMPLETE["Order Completed\n(Delivery Confirmed)"] --> COMMISSION_SVC["Commission Service\nCalculates Distribution"]
+    ORDER_COMPLETE["order.completed.v1\n(order-service publishes)"] --> COMMISSION_SVC["commission-service\n(subscribes)"]
+    ORDER_COMPLETE --> ANALYTICS["analytics-service\n(subscribes)"]
 
-    COMMISSION_SVC --> CHECK_ENABLER{Enabler\nAttribution?}
+    COMMISSION_SVC --> CALC["commission.calculated.v1\n{ recipientId, recipientType,\namount, currency, rate }"]
+    CALC --> PAID["commission.paid.v1\n{ commissionId, recipientId,\namount, paidAt, paymentMethod }"]
 
-    CHECK_ENABLER -->|Yes| ENABLER_CALC["Enabler Commission\n15-20% of order value\n(Quality bonus up to +18%)"]
-    CHECK_ENABLER -->|No| NO_ENABLER["No Enabler\nCommission"]
-
-    COMMISSION_SVC --> SELLER_CALC["Seller Net\n= Order Total\n− Platform Fee (8%)\n− Enabler Commission\n− Logistics Fee"]
-
-    COMMISSION_SVC --> PLATFORM_CALC["Platform Revenue\n= 8% of order value"]
-
-    ENABLER_CALC --> ENABLER_WALLET["Credit Enabler Wallet"]
-    SELLER_CALC --> SELLER_WALLET["Credit Seller Wallet\n(Held until delivery)"]
-    PLATFORM_CALC --> PLATFORM_REVENUE["Platform Revenue\nAccount"]
-
-    SELLER_WALLET --> DELIVERY_CONFIRM{Delivery\nConfirmed?}
-    DELIVERY_CONFIRM -->|Yes| SELLER_RELEASE["Release to Seller\n(Available for payout)"]
-    DELIVERY_CONFIRM -->|No| HOLD["Keep on Hold\n(Dispute window)"]
-
-    style ORDER_COMPLETE fill:#4CAF50,color:#fff
-    style PLATFORM_REVENUE fill:#9C27B0,color:#fff
-    style SELLER_RELEASE fill:#2196F3,color:#fff
-```
-
----
-
-## 6. Payout Settlement Flow
-
-```mermaid
-sequenceDiagram
-    participant Seller
-    participant Platform as Payout Service
-    participant Wallet as Wallet Service
-    participant Bank as Bank / Mobile Money
-
-    Seller->>Platform: Request Payout\n(Amount + destination)
-    Platform->>Wallet: Check available balance\n(not held/committed)
-    Wallet-->>Platform: Balance confirmed
-
-    Platform->>Platform: Validate payout request\n(KYC status · limits · schedule)
-
-    alt Payout Approved
-        Platform->>Wallet: Debit seller wallet
-        Platform->>Bank: Initiate transfer\n(Pesapal / direct bank)
-        Bank-->>Platform: Transfer confirmed
-        Platform->>Seller: Payout notification ✅
-        Platform->>Platform: Record payout audit log
-    else Payout Rejected
-        Platform->>Seller: Rejection reason\n(KYC · limits · schedule)
+    subgraph Recipients["Commission Recipients (events/types.ts)"]
+        SELLER_R["seller"]
+        ENABLER_R["enabler"]
+        COURIER_R["courier"]
     end
+
+    CALC --> Recipients
+
+    style ORDER_COMPLETE fill:#2196F3,color:#fff
+    style CALC fill:#FF9800,color:#fff
+    style PAID fill:#4CAF50,color:#fff
 ```
