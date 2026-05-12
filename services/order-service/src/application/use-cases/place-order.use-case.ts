@@ -50,11 +50,12 @@ export class PlaceOrderUseCase {
     private readonly sagaOrchestrator: OrderFulfillmentSaga,
     private readonly codEligibilityEngine: CODEligibilityEngine,
     private readonly codCommitmentService: CODCommitmentService,
-    private readonly walletClient?: import('../../../infrastructure/integrations/wallet-service.client').WalletServiceClient
+    private readonly walletClient?: { debitWallet(userId: string, amount: number, currency: string, description: string): Promise<string> }
   ) { }
 
   async execute(request: PlaceOrderRequest): Promise<PlaceOrderResponse> {
     // ... (rest of logic)
+    console.log(`[PlaceOrderUseCase] execute called, paymentMethod: ${request.paymentMethod}, walletClient: ${this.walletClient ? 'PRESENT' : 'MISSING'}`);
     const orderId = IdGeneratorService.generateOrderId();
     const trackingNumber = await this.generateTrackingNumber();
     const currency = request.currency || 'TZS';
@@ -99,15 +100,21 @@ export class PlaceOrderUseCase {
     }
 
     // WALLET payment: debit the buyer's wallet synchronously before creating the order
-    if (request.paymentMethod === 'WALLET' && this.walletClient) {
+    if (request.paymentMethod === 'WALLET') {
+      if (!this.walletClient) {
+        throw new Error('WALLET payment method requires WalletServiceClient — dependency not injected');
+      }
       try {
-        await this.walletClient.debitWallet(
+        console.log(`[PlaceOrderUseCase] Debiting wallet for buyer ${request.buyerId}, amount: ${totalAmount} ${currency}`);
+        const txId = await this.walletClient.debitWallet(
           request.buyerId,
           totalAmount,
           currency,
           `Payment for order ${orderId}`
         );
+        console.log(`[PlaceOrderUseCase] Wallet debit successful, txId: ${txId}`);
       } catch (error: any) {
+        console.error(`[PlaceOrderUseCase] Wallet debit failed:`, error.message);
         throw new Error(`Wallet payment failed: ${error.message}`);
       }
     }

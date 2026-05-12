@@ -120,8 +120,7 @@ export class PaymentSaga extends DistributedSagaOrchestrator<PaymentSagaPayload>
 
   private async processWalletPayment(payment: Payment): Promise<{ success: boolean; transactionId?: string; error?: string }> {
     if (!this.walletClient) {
-      console.warn('[PaymentSaga] WalletServiceClient not injected — falling back to stub');
-      return { success: true, transactionId: `WLT_STUB_${Date.now()}` };
+      throw new Error('[PaymentSaga] WalletServiceClient not injected — cannot process WALLET payment');
     }
 
     try {

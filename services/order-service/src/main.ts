@@ -194,16 +194,81 @@ async function initializeService() {
           buyerId,
           amount: Number((order as any).totalAmount?.amount ?? amount ?? 0),
           currency: (order as any).totalAmount?.currency ?? 'TZS',
-          method: (order as any).paymentMethod === 'wallet' ? PaymentMethod.WALLET
-                : (order as any).paymentMethod === 'cod' ? PaymentMethod.COD
+          method: String((order as any).paymentMethod ?? '').toUpperCase() === 'WALLET' ? PaymentMethod.WALLET
+                : String((order as any).paymentMethod ?? '').toUpperCase() === 'COD'    ? PaymentMethod.COD
+                : String((order as any).paymentMethod ?? '').toUpperCase() === 'MOBILE_PAYMENT' ? PaymentMethod.MOBILE_MONEY
                 : PaymentMethod.CARD,
           status: PaymentStatus.PENDING
         });
 
-        await paymentSaga.start(payment.id, { payment });
+        // Await saga completion before publishing success.
+        // paymentSaga.start() fires executeNextStep as fire-and-forget, so we must
+        // subscribe to SagaCompleted / SagaFailed events for this specific sagaId
+        // and resolve/reject only after the ProcessPayment step actually finishes.
+        const paymentSagaId = await paymentSaga.start({ payment }, payment.id);
 
-        // Wait briefly for the saga steps to complete (wallet debit is synchronous within the saga)
-        // Then notify OrderFulfillmentSaga of success
+        await new Promise<void>((resolve, reject) => {
+          const TIMEOUT_MS = 30_000;
+          let settled = false;
+
+          const cleanup = (unsubscribeCompleted: () => void, unsubscribeFailed: () => void, timer: ReturnType<typeof setTimeout>) => {
+            if (!settled) {
+              settled = true;
+              clearTimeout(timer);
+              unsubscribeCompleted();
+              unsubscribeFailed();
+            }
+          };
+
+          // One-shot helpers: subscribe, then remove the handler after first match
+          const completedHandlerName = `PaymentSaga.${paymentSagaId}.Completed`;
+          const failedHandlerName = `PaymentSaga.${paymentSagaId}.Failed`;
+
+          const unsubscribeCompleted = () => {
+            const handlers = (eventBus as any).handlers?.get('SagaCompleted') as Array<{ name: string; handler: Function }> | undefined;
+            if (handlers) {
+              const idx = handlers.findIndex((h: { name: string }) => h.name === completedHandlerName);
+              if (idx !== -1) handlers.splice(idx, 1);
+            }
+          };
+
+          const unsubscribeFailed = () => {
+            const handlers = (eventBus as any).handlers?.get('SagaFailed') as Array<{ name: string; handler: Function }> | undefined;
+            if (handlers) {
+              const idx = handlers.findIndex((h: { name: string }) => h.name === failedHandlerName);
+              if (idx !== -1) handlers.splice(idx, 1);
+            }
+          };
+
+          const timer = setTimeout(() => {
+            cleanup(unsubscribeCompleted, unsubscribeFailed, timer);
+            reject(new Error(`PaymentSaga ${paymentSagaId} timed out after ${TIMEOUT_MS}ms`));
+          }, TIMEOUT_MS);
+
+          eventBus.subscribe('SagaCompleted', {
+            name: completedHandlerName,
+            handler: async (env: any) => {
+              const evtData = env?.data || env;
+              if (evtData?.sagaId === paymentSagaId) {
+                cleanup(unsubscribeCompleted, unsubscribeFailed, timer);
+                resolve();
+              }
+            }
+          });
+
+          eventBus.subscribe('SagaFailed', {
+            name: failedHandlerName,
+            handler: async (env: any) => {
+              const evtData = env?.data || env;
+              if (evtData?.sagaId === paymentSagaId) {
+                cleanup(unsubscribeCompleted, unsubscribeFailed, timer);
+                reject(new Error(evtData?.lastError || 'PaymentSaga failed'));
+              }
+            }
+          });
+        });
+
+        // Payment saga completed successfully — notify OrderFulfillmentSaga
         await eventBus.publish('Payment.Success.v1', { sagaId: parentSagaId, orderId, paymentId: payment.id });
       } catch (err: any) {
         logger.error('Payment.Command.v1 handler failed', { error: err.message });

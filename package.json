@@ -18,7 +18,6 @@
     "test:contract:strict:fastfail": "cross-env SCHEMATHESIS_PHASES=examples,coverage,fuzzing SCHEMATHESIS_AUTH_MODE=strict SCHEMATHESIS_MAX_FAILURES=1 node scripts/testing/run-contract-tests.js",
     "test:contract:bypass": "cross-env SCHEMATHESIS_PHASES=examples,coverage,fuzzing SCHEMATHESIS_AUTH_MODE=bypass node scripts/testing/run-contract-tests.js",
     "test:integration:module": "cross-env NODE_ENV=test jest tests/integration --runInBand --reporters=default",
-
     "test:perf:k6": "k6 run tests/performance/k6-smoke.js",
     "test:all": "npm run test:contract && npm run test:integration:module",
     "build": "tsc && tsc-alias && node scripts/copy-locales.js",
@@ -274,13 +273,11 @@
     "@types/qrcode": "^1.5.6",
     "@types/supertest": "^6.0.3",
     "@types/uuid": "^9.0.8",
-
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "cross-env": "^10.1.0",
-
-
     "eslint": "^9.0.0",
+    "fast-check": "^4.8.0",
     "glob": "^11.0.0",
     "jest": "^29.7.0",
     "jest-junit": "^16.0.0",
@@ -291,10 +288,10 @@
     "supertest": "^7.1.4",
     "testcontainers": "^11.11.0",
     "ts-jest": "^29.4.6",
-    "tsx": "^4.19.0",
     "ts-node-dev": "^2.0.0",
     "tsc-alias": "^1.8.8",
     "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.19.0",
     "typescript": "5.5"
   },
   "engines": {
