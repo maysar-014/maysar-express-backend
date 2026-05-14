@@ -57,6 +57,7 @@ export interface SearchResult {
   inventoryStatus?: 'in_stock' | 'low_stock' | 'out_of_stock';
   inventoryAvailable?: number;
   codAccepted?: boolean;
+  freeDelivery?: boolean;
   condition?: 'new' | 'used' | 'refurbished' | 'damaged';
   averageRating?: number | null;
   reviewCount?: number;
@@ -440,6 +441,7 @@ export class SearchProductsUseCase {
         inventoryStatus,
         inventoryAvailable: totalAvailable,
         codAccepted: product.codAccepted === true,
+        freeDelivery: product.freeDelivery === true,
         condition: (product.condition ?? 'new') as 'new' | 'used' | 'refurbished' | 'damaged',
         createdAt: product.createdAt
       };

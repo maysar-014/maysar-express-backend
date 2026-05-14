@@ -54,6 +54,14 @@ x-app-env: &app-env
   SERVICE_DISCOVERY_ENABLED: ${SERVICE_DISCOVERY_ENABLED:-true}
   SERVICE_DISCOVERY_SERVICE_NAMES: ${SERVICE_DISCOVERY_SERVICE_NAMES:-auth,catalog,order}
   NODE_OPTIONS: ${NODE_OPTIONS:---max-old-space-size=1536}
+  MINIO_ROOT_USER: ${MINIO_ROOT_USER:-maysar}
+  MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-maysar2026}
+  S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+  S3_REGION: ${S3_REGION:-us-east-1}
+  S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-maysar}
+  S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-maysar2026}
+  S3_BUCKET_CHAT_MEDIA: ${S3_BUCKET_CHAT_MEDIA:-chat-media}
+  S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
 
 services:
   maysar-backend:
@@ -212,6 +220,44 @@ services:
       - backend-network
     restart: always
 
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-maysar}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-maysar2026}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console  →  http://localhost:9001
+    networks:
+      - backend-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Creates the default chat-media bucket on first startup
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-maysar} ${MINIO_ROOT_PASSWORD:-maysar2026};
+        mc mb --ignore-existing local/chat-media;
+        mc anonymous set download local/chat-media;
+        echo 'MinIO bucket ready';
+      "
+    networks:
+      - backend-network
+    restart: "no"
+
 networks:
   backend-network:
     driver: bridge
@@ -223,3 +269,4 @@ volumes:
   redis_data:
   meili_data:
   mailpit_data:
+  minio_data:

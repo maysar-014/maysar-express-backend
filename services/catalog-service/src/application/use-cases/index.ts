@@ -148,3 +148,10 @@ export abstract class BaseUseCase {
 export * from './submit-product-review.use-case';
 export * from './get-product-reviews.use-case';
 export * from './moderate-review.use-case';
+
+// Buy Box Ranking Use Cases
+export * from './compute-buy-box-ranking.use-case';
+export * from './get-buy-box-history.use-case';
+export * from './manage-category-strategy.use-case';
+export * from './apply-buy-box-override.use-case';
+export * from './clear-anomaly-flag.use-case';

@@ -56,3 +56,35 @@ npm run staging:down
 - Module-level route prefixes should be documented as they appear after `src/app.ts` mounts the module.
 - Prefer the shared event bus over HTTP calls between modules.
 - When adding documentation, keep the monolith runtime and the module wrapper paths in sync.
+
+## Chat System
+
+The chat system is a dedicated `chat-service` module providing real-time commerce communication. It is mounted at `/api/chat/v1` and exposes a WebSocket endpoint at `/ws`.
+
+Full documentation: [`docs/chat-system/CHAT_SYSTEM.md`](chat-system/CHAT_SYSTEM.md)
+
+### Quick start
+
+```bash
+# Start MinIO (local S3) alongside other infra
+npm run infra:up
+
+# MinIO console → http://localhost:9001  (maysar / maysar2026)
+# chat-media bucket is created automatically
+```
+
+### Key env vars (already in .env after setup)
+
+```env
+S3_ENDPOINT=http://localhost:9000
+S3_ACCESS_KEY_ID=maysar
+S3_SECRET_ACCESS_KEY=maysar2026
+S3_BUCKET_CHAT_MEDIA=chat-media
+S3_FORCE_PATH_STYLE=true
+```
+
+### Running chat tests
+
+```bash
+npx jest --selectProjects=chat-service --no-coverage
+```

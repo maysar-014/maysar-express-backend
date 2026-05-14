@@ -274,3 +274,65 @@ graph TB
     style ReviewRoutes fill:#e8f5e9,stroke:#2e7d32
     style RV1 fill:#4CAF50,color:#fff
 ```
+
+---
+
+## 6. Chat Service — Routes and Dependencies
+
+> Evidence: `services/chat-service/src/api/routes/chat.routes.ts`, `services/chat-service/index.ts`
+
+```mermaid
+graph TB
+    subgraph ChatModule["chat-service"]
+        subgraph ChatRoutes["/api/chat/v1"]
+            CR1["POST /conversations — initiate"]
+            CR2["GET /conversations — list"]
+            CR3["GET /conversations/search — full-text"]
+            CR4["GET /conversations/:id — detail"]
+            CR5["PUT /conversations/:id/read — mark read"]
+            CR6["POST|DELETE /conversations/:id/mute"]
+            CR7["POST /conversations/:id/messages — send"]
+            CR8["GET /conversations/:id/messages — history"]
+            CR9["DELETE /conversations/:id/messages/:msgId"]
+            CR10["POST /messages/:msgId/report"]
+            CR11["POST /media/upload — image or voice note"]
+            CR12["POST|DELETE /users/:userId/block"]
+            CR13["GET|POST|DELETE /admin/blocklist/domains"]
+        end
+
+        subgraph WsRoute["WebSocket"]
+            WS1["/ws?userId=<id>\nor x-user-id header"]
+        end
+    end
+
+    subgraph ChatDeps["chat-service Dependencies"]
+        D1["PostgreSQL\n(chat_* tables via Prisma)"]
+        D2["Redis\n(presence, rate limits, pub/sub, blocklist)"]
+        D3["MinIO / S3\n(chat-media bucket)"]
+        D4["Meilisearch\n(chat_conversations index)"]
+        D5["notification-service\n(push → SMS → email fallback)"]
+        D6["catalog-service DB\n(product snapshot via shared Prisma)"]
+        D7["order-service DB\n(order snapshot via shared Prisma)"]
+        D8["EventBus\n(OrderDelivered, OrderCancelled\n→ auto-archive BUYER_COURIER)"]
+    end
+
+    ChatModule --> ChatDeps
+
+    style D2 fill:#DC382D,color:#fff
+    style D3 fill:#E67E22,color:#fff
+    style D4 fill:#16A085,color:#fff
+    style D8 fill:#9B59B6,color:#fff
+```
+
+### Redis Key Patterns
+
+| Key | Type | TTL | Purpose |
+|---|---|---|---|
+| `chat:presence:{userId}` | String | 60s | Online/offline presence |
+| `chat:ratelimit:conv:{userId}` | Counter | 3600s | 20 conversations/hr limit |
+| `chat:ratelimit:msg:{userId}` | Counter | 3600s | 200 messages/hr limit |
+| `chat:ratelimit:massmsg:{userId}:{hash}` | Counter | 300s | Mass-messaging detection |
+| `chat:conv:{conversationId}` | Pub/Sub | — | Real-time message fan-out |
+| `chat:blocklist:domains` | Set | — | Phishing domain blocklist |
+| `chat:penaltyscore:{userId}` | String | 3600s | Elevated spam score penalty |
+| `chat:freq:{userId}` | Counter | 300s | Message frequency (5-min window) |

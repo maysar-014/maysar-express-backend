@@ -7532,6 +7532,32 @@ paths:
                     country:
                       type: string
                       minLength: 1
+                deliveryFee:
+                  type: number
+                  minimum: 0
+                  description: >
+                    Delivery fee charged by the seller (TZS).
+                    If 0 or omitted, seller offers free delivery and logisticsEstimate must be provided.
+                    For COD orders: hold = deliveryFee (paid delivery) or logisticsEstimate (free delivery).
+                logisticsEstimate:
+                  type: number
+                  minimum: 0
+                  description: >
+                    Logistics service estimated delivery cost (TZS).
+                    Required for COD orders when deliveryFee = 0 (free delivery).
+                    Used to calculate the commitment fee held in the buyer's wallet.
+                commitmentPaymentMethod:
+                  type: string
+                  enum:
+                    - WALLET
+                    - MOBILE_PAYMENT
+                    - CARD
+                  description: >
+                    How the buyer pays the commitment/delivery fee upfront (COD orders only).
+                    WALLET: deducted from Maysar wallet balance (hold placed).
+                    MOBILE_PAYMENT: paid via mobile money through Pesapal.
+                    CARD: paid via card through Pesapal.
+                    Defaults to WALLET if not specified.
             example:
               buyerId: usr_test_0001
               sellerId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV

@@ -23,10 +23,12 @@ import { createPricingRoutes as createCatalogPricingRoutes } from './src/api/rou
 import { createHealthRoutes as createCatalogHealthRoutes } from './src/api/routes/health.routes';
 import { createMaintenanceRoutes as createCatalogMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { createReviewRoutes } from './src/api/routes/review.routes';
+import { createBuyBoxAdminRoutes } from './src/api/routes/buy-box-admin.routes';
 import { ProductControllerFactory } from './src/api/controllers/product.controller';
 import { SearchController } from './src/api/controllers/search.controller';
 import { ProductMatchingController } from './src/api/controllers/product-matching.controller';
 import { BuyBoxController } from './src/api/controllers/buy-box.controller';
+import { BuyBoxAdminController } from './src/api/controllers/buy-box-admin.controller';
 import { SellerStorefrontController } from './src/api/controllers/seller-storefront.controller';
 import { PricingController } from './src/api/controllers/pricing.controller';
 import { ReviewController } from './src/api/controllers/review.controller';
@@ -50,6 +52,11 @@ import {
     DeleteProductUseCase,
     PublishProductUseCase
 } from './src/application/use-cases/manage-product-indexing.use-case';
+import { ComputeBuyBoxRankingUseCase } from './src/application/use-cases/compute-buy-box-ranking.use-case';
+import { GetBuyBoxHistoryUseCase } from './src/application/use-cases/get-buy-box-history.use-case';
+import { ManageCategoryStrategyUseCase } from './src/application/use-cases/manage-category-strategy.use-case';
+import { ApplyBuyBoxOverrideUseCase } from './src/application/use-cases/apply-buy-box-override.use-case';
+import { ClearAnomalyFlagUseCase } from './src/application/use-cases/clear-anomaly-flag.use-case';
 import { CatalogSearchIndexer } from './src/infrastructure/services/catalog-search-indexer.service';
 import { CreateProductWithMatchingUseCase } from './src/application/use-cases/create-product-with-matching.use-case';
 import { MatchProductUseCase } from './src/application/use-cases/match-product.use-case';
@@ -62,6 +69,7 @@ import { PrismaProductAttributeRepository } from './src/infrastructure/repositor
 import { PrismaProductMatchAuditRepository } from './src/infrastructure/repositories/prisma-product-match-audit.repository';
 import { PrismaMatchConfirmationRepository } from './src/infrastructure/repositories/prisma-match-confirmation.repository';
 import { PrismaBuyBoxRepository } from './src/infrastructure/repositories/prisma-buy-box.repository';
+import { PrismaBuyBoxRankingRepository } from './src/infrastructure/repositories/prisma-buy-box-ranking.repository';
 import { PrismaSellerLocationRepository } from './src/infrastructure/repositories/prisma-seller-location.repository';
 import { EventPublisherFactory } from './src/infrastructure/messaging/event-publisher';
 import { BuyBoxWeights } from './src/domain/value-objects/buy-box-weights.value-object';
@@ -74,6 +82,12 @@ import type { CategoryRepository, MediaRepository, SearchService, IdGenerator, D
 import { createPrismaClient } from '@shared/database/prisma-client';
 import { getModelPrefix, isSystemId, makeId } from '@shared/ids/id';
 import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
+import { FraudDetector } from './src/domain/buy-box/fraud-detector';
+import { RankingEngine } from './src/domain/buy-box/ranking-engine';
+import { ExplorationAllocator } from './src/domain/buy-box/exploration-allocator';
+import { CategoryStrategyService } from './src/domain/buy-box/category-strategy.service';
+import { BuyBoxRecomputationJob } from './src/infrastructure/jobs/buy-box-recomputation.job';
+import { RollingAverageJob } from './src/infrastructure/jobs/rolling-average.job';
 
 class PrismaCategoryRepository implements CategoryRepository {
     constructor(private readonly client: PrismaClient) {}
@@ -351,6 +365,84 @@ export const CatalogModule: Module = {
             BuyBoxWeights.defaults()
         );
         const buyBoxController = new BuyBoxController(buyBoxUseCase, buyBoxRepository);
+
+        // ── Buy Box Ranking System (new multi-signal engine) ──────────────────
+        const buyBoxRankingRepository = new PrismaBuyBoxRankingRepository(prisma);
+        const fraudDetector = new FraudDetector();
+        const rankingEngine = new RankingEngine(fraudDetector, buyBoxRankingRepository);
+        const explorationAllocator = new ExplorationAllocator();
+        const categoryStrategyService = new CategoryStrategyService(buyBoxRankingRepository);
+
+        // Seed built-in category strategies (GROCERIES, ELECTRONICS, FASHION, MEDICINES, FURNITURE)
+        categoryStrategyService.seedDefaultStrategies().catch((e: unknown) => {
+            logger.warn('Failed to seed default category strategies:', e);
+        });
+
+        const computeBuyBoxRankingUseCase = new ComputeBuyBoxRankingUseCase(
+            rankingEngine,
+            categoryStrategyService,
+            explorationAllocator,
+            buyBoxRankingRepository
+        );
+        const getBuyBoxHistoryUseCase = new GetBuyBoxHistoryUseCase(buyBoxRankingRepository);
+        const manageCategoryStrategyUseCase = new ManageCategoryStrategyUseCase(categoryStrategyService);
+        const applyBuyBoxOverrideUseCase = new ApplyBuyBoxOverrideUseCase(buyBoxRankingRepository);
+        const clearAnomalyFlagUseCase = new ClearAnomalyFlagUseCase(buyBoxRankingRepository);
+
+        const buyBoxAdminController = new BuyBoxAdminController(
+            manageCategoryStrategyUseCase,
+            applyBuyBoxOverrideUseCase,
+            clearAnomalyFlagUseCase,
+            getBuyBoxHistoryUseCase
+        );
+
+        // Scheduled jobs
+        const buyBoxRecomputationJob = new BuyBoxRecomputationJob(computeBuyBoxRankingUseCase, prisma);
+        const rollingAverageJob = new RollingAverageJob(prisma);
+
+        // Run rolling averages immediately on startup (catches up on any missed window),
+        // then every 24 hours
+        rollingAverageJob.run().catch((e: unknown) => logger.warn('Initial rolling average run failed:', e));
+        const rollingAverageInterval = setInterval(() => {
+            rollingAverageJob.run().catch((e: unknown) => logger.warn('Rolling average job failed:', e));
+        }, 24 * 60 * 60 * 1000);
+
+        // Full Buy Box recomputation every 6 hours
+        const buyBoxRecomputationInterval = setInterval(() => {
+            buyBoxRecomputationJob.runFullRecomputation().catch((e: unknown) =>
+                logger.warn('Buy Box full recomputation failed:', e)
+            );
+        }, 6 * 60 * 60 * 1000);
+
+        // Subscribe to domain events for delta recomputation
+        // When a product is published/updated, recompute its Buy Box
+        eventBus.subscribe('ProductPublished', async (envelope: any) => {
+            const productId = envelope?.payload?.productId || envelope?.data?.productId;
+            const sellerId = envelope?.payload?.sellerId || envelope?.data?.sellerId;
+            if (productId) {
+                computeBuyBoxRankingUseCase.execute(productId, { productId }, 'DEFAULT')
+                    .catch((e: unknown) => logger.warn(`Buy Box recompute failed for product ${productId}:`, e));
+            }
+            if (sellerId) {
+                buyBoxRecomputationJob.runDeltaRecomputation(sellerId)
+                    .catch((e: unknown) => logger.warn(`Buy Box delta recompute failed for seller ${sellerId}:`, e));
+            }
+        });
+
+        // When an order is delivered, trigger delta recomputation for the seller
+        eventBus.subscribe('OrderDelivered', async (envelope: any) => {
+            const sellerId = envelope?.payload?.sellerId || envelope?.data?.sellerId;
+            if (sellerId) {
+                buyBoxRecomputationJob.runDeltaRecomputation(sellerId)
+                    .catch((e: unknown) => logger.warn(`Buy Box delta recompute failed for seller ${sellerId}:`, e));
+            }
+        });
+
+        // Store interval handles for clean shutdown
+        (CatalogModule as any)._buyBoxIntervals = [rollingAverageInterval, buyBoxRecomputationInterval];
+
+        logger.info('✅ Buy Box Ranking System initialized');
+        // ─────────────────────────────────────────────────────────────────────
         const storefrontController = new SellerStorefrontController();
         const pricingController = new PricingController();
 
@@ -449,6 +541,7 @@ export const CatalogModule: Module = {
             router.use('/sellers', createSellerStorefrontRoutes(storefrontController as any));
             router.use(createCatalogPricingRoutes(pricingController as any));
             router.use(createReviewRoutes(reviewController));
+            router.use(createBuyBoxAdminRoutes(buyBoxAdminController));
         } catch (e) {
             logger.warn('Failed to mount catalog API routes, falling back to degraded handler:', e);
             router.all('/v1/*', (_req, res) => {
@@ -482,6 +575,12 @@ export const CatalogModule: Module = {
         logger.info('Shutting down catalog-service module');
         if (outboxProcessor) {
             outboxProcessor.stop();
+        }
+        // Clear Buy Box scheduled job intervals
+        const intervals = (CatalogModule as any)._buyBoxIntervals as NodeJS.Timeout[] | undefined;
+        if (intervals) {
+            intervals.forEach(clearInterval);
+            logger.info('Buy Box scheduled jobs stopped');
         }
     }
 };

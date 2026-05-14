@@ -28,6 +28,7 @@
 | 17 | [Support Service](#17-support-service) | Support_Ticket, Support_TicketMessage, Support_TicketAttachment, Support_TicketStatusHistory, Support_SupportAgent, Support_OutboxEvent |
 | 18 | [Community Service](#18-community-service) | CommunityUser, Post, Comment, Community_Like, Community_Share, Community_Follow, Community_Bookmark, Community_Report, Community_Hashtag, Community_DiscussionThread, Community_ThreadAnswer, Community_KnowledgeArticle, Community_ArticleReview, Community_BusinessChallenge, Community_ChallengeSolution, Community_BusinessProfile, Community_EngagementQuota, Community_ContributionHistory, Community_UserInteraction, Community_PeerEndorsement |
 | 19 | [Compliance Service](#19-compliance-service) | Compliance_KYCRecord, Compliance_AMLRecord, Compliance_TRARecord, Compliance_TCRARecord, Compliance_MarketRecord, Compliance_SubjectRightsRequest, Compliance_ComplianceAuditLog, Compliance_DataRetentionPolicy, Compliance_DataDeletionLog, Compliance_DataProcessingRecord, Compliance_PrivacyImpactAssessment, Kyc_AuditLog |
+| 23 | [Chat Service](#23-chat-service) | Chat_Conversation, Chat_ConversationParticipant, Chat_Message, Chat_UserBlock, Chat_ModerationReport, Chat_SpamScoreLog, Chat_CheckoutLink |
 | 20 | [Analytics Service](#20-analytics-service) | Analytics_SellerMetrics, Analytics_SellerDailySales, Analytics_SellerProductPerformance, Analytics_SellerInventoryHealth, Analytics_SellerActionItem, Analytics_SalesAnalytics, Analytics_SupplierAnalytics, Analytics_CourierAnalytics, Analytics_EnablerAnalytics, Analytics_Metric, Analytics_Event |
 | 21 | [Production Service](#21-production-service) | Production_BulkOrderRequest, Production_BulkOrderQuote, Production_CapacitySnapshot |
 | 22 | [Shared Infrastructure](#22-shared-infrastructure) | SagaLog, SagaStepLog, SagaDeadLetter, EventLog, EventStore, SharedOutboxEvent, Global_OutboxEvent, OutboxEvent, Sms_Message |
@@ -2180,3 +2181,101 @@ All outbox tables have: `id`, `eventId` (unique), `eventType`, `eventData` (json
 
 *Source: `prisma/schema.prisma` — read in full (all 80+ models across all domains)*
 *Last updated: May 2026*
+
+---
+
+## 23. Chat Service
+
+```mermaid
+erDiagram
+    Chat_Conversation {
+        string id PK
+        string type
+        string moderationStatus
+        string relatedProductId
+        string relatedOrderId
+        string relatedShipmentId
+        string relatedSupplierRequestId
+        json metadata
+        datetime lastMessageAt
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Chat_ConversationParticipant {
+        string conversationId PK_FK
+        string userId PK
+        string role
+        datetime lastReadAt
+        boolean isMuted
+        datetime joinedAt
+    }
+
+    Chat_Message {
+        string id PK
+        string conversationId FK
+        string senderId
+        string type
+        string content
+        json metadata
+        string moderationStatus
+        int spamScore
+        boolean isDisputeEvidence
+        datetime deletedAt
+        datetime createdAt
+    }
+
+    Chat_UserBlock {
+        string blockerId PK
+        string blockedId PK
+        datetime createdAt
+    }
+
+    Chat_ModerationReport {
+        string id PK
+        string reporterId
+        string messageId
+        string conversationId
+        string reason
+        datetime reportedAt
+    }
+
+    Chat_SpamScoreLog {
+        string id PK
+        string messageId FK
+        int score
+        json signals
+        datetime computedAt
+    }
+
+    Chat_CheckoutLink {
+        string id PK
+        string conversationId
+        string messageId
+        string checkoutUrl
+        boolean isUsed
+        datetime expiresAt
+        datetime createdAt
+    }
+
+    Chat_Conversation ||--o{ Chat_ConversationParticipant : "has"
+    Chat_Conversation ||--o{ Chat_Message : "contains"
+    Chat_Message ||--o{ Chat_SpamScoreLog : "scored by"
+```
+
+### Enums
+
+| Enum | Values |
+|---|---|
+| `Chat_ConversationType` | `BUYER_SELLER`, `SELLER_SUPPLIER`, `BUYER_COURIER`, `SELLER_TEAM` |
+| `Chat_MessageType` | `TEXT`, `IMAGE`, `VOICE_NOTE`, `PRODUCT_CARD`, `ORDER_REFERENCE`, `LOCATION_PIN`, `QUICK_ACTION` |
+| `Chat_ModerationStatus` | `ACTIVE`, `FLAGGED`, `BLOCKED`, `ARCHIVED` |
+| `Chat_ParticipantRole` | `BUYER`, `SELLER`, `SUPPLIER`, `COURIER` |
+
+### Key indexes
+
+- `chat_conversations`: `relatedOrderId`, `relatedProductId`, `lastMessageAt`
+- `chat_messages`: `(conversationId, createdAt)`, `senderId`
+- `chat_conversation_participants`: `userId`
+- `chat_user_blocks`: `blockedId`
+- `chat_checkout_links`: `conversationId`, `expiresAt`

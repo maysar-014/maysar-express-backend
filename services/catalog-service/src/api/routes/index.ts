@@ -10,10 +10,12 @@ import { createProductRoutes } from './product.routes';
 import { MatchingRoutes } from './matching.routes';
 import { createSellerStorefrontRoutes } from './seller-storefront.routes';
 import { SellerStorefrontController } from '../controllers/seller-storefront.controller';
+import { createBuyBoxAdminRoutes } from './buy-box-admin.routes';
 
 export function createCatalogRoutes(dependencies: {
   productController: any;
   productMatchingController: any;
+  buyBoxAdminController: any;
 }): Router {
   const router = Router();
 
@@ -30,6 +32,9 @@ export function createCatalogRoutes(dependencies: {
   const storefrontRoutes = createSellerStorefrontRoutes(storefrontController);
   router.use('/sellers', storefrontRoutes);
 
+  // Mount buy-box admin routes
+  router.use(createBuyBoxAdminRoutes(dependencies.buyBoxAdminController));
+
   return router;
 }
 
@@ -37,3 +42,4 @@ export function createCatalogRoutes(dependencies: {
 export { createProductRoutes } from './product.routes';
 export { MatchingRoutes } from './matching.routes';
 export { createSellerStorefrontRoutes } from './seller-storefront.routes';
+export { createBuyBoxAdminRoutes } from './buy-box-admin.routes';

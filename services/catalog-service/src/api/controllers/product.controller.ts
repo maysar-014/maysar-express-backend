@@ -379,6 +379,7 @@ export class ProductController {
           inventoryStatus: product.inventoryStatus,
           inventoryAvailable: product.inventoryAvailable,
           codAccepted: product.codAccepted,
+          freeDelivery: product.freeDelivery === true,
           condition: product.condition,
           averageRating: product.averageRating ?? null,
           reviewCount: product.reviewCount ?? 0,
@@ -909,7 +910,9 @@ export class ProductController {
         seoTitle: body.seoTitle,
         seoDescription: body.seoDescription,
         enablerEnabled: body.enablerEnabled,
-        enablerCommissionRate: body.enablerCommissionRate
+        enablerCommissionRate: body.enablerCommissionRate,
+        codAccepted: body.codAccepted,
+        freeDelivery: body.freeDelivery,
       };
     }
 
@@ -1009,6 +1012,7 @@ export class ProductController {
       updatedAt: productDetails.updatedAt,
       publishedAt: productDetails.publishedAt,
       codAccepted: productDetails.codAccepted === true,
+      freeDelivery: productDetails.freeDelivery === true,
       condition: (productDetails.condition ?? 'new') as 'new' | 'used' | 'refurbished' | 'damaged'
     };
   }

@@ -55,6 +55,7 @@ flowchart LR
     User["User Module"]
     Order["Order Module"]
     Notification["Notification Module"]
+    Chat["Chat Module"]
     Bus["Event Bus (In-Process)"]
     Outbox["Outbox Tables (Per Module)"]
   end
@@ -66,6 +67,8 @@ flowchart LR
   Auth -->|Persist event| Outbox
   Order -->|Persist event| Outbox
   Bus -->|Deliver event| Notification
+  Bus -->|"OrderDelivered / OrderCancelled"| Chat
+  Chat -->|"notifyOfflineParticipants"| Notification
 ```
 
 ## How to Add a New Module (Communication Checklist)
@@ -80,3 +83,28 @@ flowchart LR
 - Event-driven flows should be preferred for side effects and eventual consistency.
 - Outbox processors handle retries if event publishing fails.
 
+
+## Chat Service Communication Patterns
+
+The `chat-service` follows the same in-process module pattern with two additional infrastructure dependencies:
+
+### Event subscriptions (async)
+
+```
+EventBus.subscribe('OrderDelivered')  → ArchiveCourierConversationsJob
+EventBus.subscribe('OrderCancelled') → ArchiveCourierConversationsJob
+```
+
+When an order is delivered or cancelled, the chat-service automatically archives the associated `BUYER_COURIER` conversation.
+
+### Notification integration (sync HTTP)
+
+The chat-service calls the `notification-service` HTTP API directly to deliver push/SMS/email notifications to offline participants. This is the only HTTP call the chat-service makes to another module — it goes through the internal service URL, not an external network hop.
+
+### Shared Prisma client (sync in-process)
+
+Product card snapshots and order reference snapshots are resolved by querying the shared PostgreSQL database directly via the shared Prisma client. This avoids an HTTP round-trip to catalog-service or order-service.
+
+### WebSocket fan-out (Redis Pub/Sub)
+
+Messages are published to `chat:conv:{conversationId}` Redis channels. The WsGateway subscribes to these channels and fans out to all connected WebSocket clients. This means multiple Node.js instances (if horizontally scaled) can all serve the same conversation without coordination overhead.

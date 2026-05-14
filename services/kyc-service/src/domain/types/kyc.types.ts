@@ -55,14 +55,16 @@ export interface KycStatusSnapshot {
 export const getKycLimitsForLevel = (level: number): KycLevelLimits => {
   switch (level) {
     case 1:
-      return { maxListings: 20, maxTransactions: 10, maxEarnings: 500000 };
+      return { maxListings: 20, maxTransactions: 50, maxEarnings: 500_000 };
     case 2:
-      return { maxListings: 100, maxTransactions: 50, maxEarnings: 5000000 };
+      return { maxListings: 100, maxTransactions: 500, maxEarnings: 5_000_000 };
     case 3:
-      return { maxListings: 9999, maxTransactions: 9999, maxEarnings: 50000000 };
+      return { maxListings: 9999, maxTransactions: 9999, maxEarnings: 50_000_000 };
     case 0:
     default:
-      return { maxListings: 5, maxTransactions: 1, maxEarnings: 0 };
+      // Level 0: enough to participate in the marketplace and complete first transactions.
+      // KYC is prompted after first order — not before.
+      return { maxListings: 5, maxTransactions: 10, maxEarnings: 100_000 };
   }
 };
 

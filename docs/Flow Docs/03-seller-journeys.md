@@ -162,3 +162,65 @@ sequenceDiagram
 - Rejections tell the seller what to fix, not just that something failed.
 - Revenue-related actions always show the system and human owners involved.
 
+
+---
+
+## Chat: Seller Responds to Buyer and Sends Product Card
+
+```mermaid
+sequenceDiagram
+    actor Seller
+    participant UI as Seller Dashboard
+    participant Chat as Chat Service
+    participant Catalog as Catalog DB
+    participant WS as WebSocket
+    actor Buyer
+
+    Seller->>UI: Open conversation from inbox
+    UI->>Chat: GET /api/chat/v1/conversations/:id/messages
+    Chat-->>UI: Message history (createdAt ASC)
+
+    Seller->>UI: Send product card
+    UI->>Chat: POST /api/chat/v1/conversations/:id/messages
+    Note over Chat: type=PRODUCT_CARD, metadata.productId=prod_xyz
+    Chat->>Catalog: Snapshot title, price, stockStatus, addToCartUrl
+    Chat->>Chat: Persist message with snapshot (immutable)
+    Chat->>WS: Publish to chat:conv:{id} Redis channel
+    WS-->>Buyer: { type: "message", data: { type: "PRODUCT_CARD", metadata: {...} } }
+```
+
+## Chat: Seller Sends Quote Bundle (Negotiation Mode)
+
+```mermaid
+sequenceDiagram
+    actor Seller
+    participant Chat as Chat Service
+    actor Buyer
+
+    Seller->>Chat: POST /conversations/:id/messages
+    Note over Chat: type=QUICK_ACTION, actionType=REQUEST_QUOTE
+    Note over Chat: metadata.checkoutUrl = single-use cart URL (24h expiry)
+    Chat-->>Buyer: WebSocket delivery
+
+    Buyer->>Chat: POST /conversations/:id/messages
+    Note over Chat: type=QUICK_ACTION, actionType=ACCEPT_OFFER
+    Chat->>Chat: Record negotiationState in conversation metadata
+```
+
+## Chat: Seller Contacts Supplier for Restocking
+
+```mermaid
+sequenceDiagram
+    actor Seller
+    participant Chat as Chat Service
+    actor Supplier
+
+    Seller->>Chat: POST /api/chat/v1/conversations
+    Note over Chat: type=SELLER_SUPPLIER, initiatorRole=SELLER, recipientRole=SUPPLIER
+    Chat->>Chat: Validate roles (only SELLER can initiate)
+    Chat-->>Seller: 201 { conversationId }
+
+    Seller->>Chat: POST /conversations/:id/messages
+    Note over Chat: type=PRODUCT_CARD (product to restock)
+    Chat-->>Supplier: WebSocket delivery
+```

@@ -24,3 +24,4 @@ export { TrainingModule } from './training-service';
 // TwoFactorModule merged into AuthModule
 export { UserModule } from './user-service';
 export { WalletModule } from './wallet-service';
+export { ChatModule } from './chat-service';

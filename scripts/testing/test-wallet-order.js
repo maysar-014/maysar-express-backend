@@ -10,11 +10,11 @@ function signJwt(p, s) {
   return h+'.'+b+'.'+sig;
 }
 
-// Use a buyer who has a wallet
-const BUYER_ID = 'usr_01KM0YNDM5RAY2R2YT96DK5P4B';
+// Use the seeded dev buyer (KYC level 3, funded wallet)
+const BUYER_ID = 'usr_01KRFXQZC36NK3CDEWJJS21RP8';
 const token = signJwt({
   userId: BUYER_ID,
-  email: 'wallet-buyer@maysar.co.tz',
+  email: 'buyer@maysar.co.tz',
   roles: ['buyer'],
   iat: Math.floor(Date.now()/1000),
   exp: Math.floor(Date.now()/1000) + 86400

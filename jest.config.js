@@ -362,6 +362,16 @@ module.exports = {
       }
     },
     {
+      displayName: 'chat-service',
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      testMatch: ['<rootDir>/services/chat-service/**/*.test.ts'],
+      moduleNameMapper: {
+        '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
+      }
+    },
+    {
       displayName: 'shared',
       preset: 'ts-jest',
       testEnvironment: 'node',

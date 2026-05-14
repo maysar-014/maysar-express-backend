@@ -39,6 +39,7 @@ export interface ProductPersistenceDto {
   enablerEnabled?: boolean;
   enablerCommissionRate?: number;
   codAccepted?: boolean;
+  freeDelivery?: boolean;
   condition?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -253,6 +254,7 @@ export class CreateProductUseCase {
         enablerEnabled: dto.enablerEnabled ?? false,
         enablerCommissionRate: dto.enablerCommissionRate,
         codAccepted: dto.codAccepted ?? false,
+        freeDelivery: dto.freeDelivery ?? false,
         condition: dto.condition ?? 'new',
         createdAt: now,
         updatedAt: now,

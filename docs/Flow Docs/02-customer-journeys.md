@@ -120,3 +120,54 @@ sequenceDiagram
 - Any failure in payment, stock reservation, or logistics is visible as a recoverable state, not a dead end.
 - Notifications and analytics should follow the core order outcome, not lead it.
 
+
+---
+
+## Chat: Buyer Initiates Chat from Product Page
+
+```mermaid
+sequenceDiagram
+    actor Buyer
+    participant UI as Storefront
+    participant Chat as Chat Service
+    participant WS as WebSocket
+    participant Notif as Notification Service
+
+    Buyer->>UI: Click "Message Seller" on product page
+    UI->>Chat: POST /api/chat/v1/conversations
+    Note over Chat: type=BUYER_SELLER, relatedProductId=prod_xyz
+    Chat->>Chat: Dedup check (existing conversation?)
+    Chat->>Chat: Rate limit check (20 conv/hr)
+    Chat->>Chat: Block check
+    Chat->>Chat: Create conversation + participants
+    Chat->>Chat: Auto-send PRODUCT_CARD message (snapshot)
+    Chat->>Chat: Auto-send TEXT "Hi, is this item still available?"
+    Chat-->>UI: 201 { conversationId }
+
+    UI->>WS: Connect ws://host/ws?userId=buyer_id
+    WS-->>UI: Deliver unread messages
+
+    Note over Chat,Notif: Seller is offline
+    Chat->>Notif: Push notification to seller
+    Notif-->>Seller: "New message from buyer"
+```
+
+## Chat: Buyer Coordinates Delivery with Courier
+
+```mermaid
+sequenceDiagram
+    participant Order as Order Service
+    participant Bus as EventBus
+    participant Chat as Chat Service
+    actor Buyer
+    actor Courier
+
+    Order->>Bus: OrderDelivered / OrderCancelled
+    Bus->>Chat: ArchiveCourierConversationsJob
+    Chat->>Chat: Set BUYER_COURIER conversation → ARCHIVED
+    Note over Chat: No new messages can be sent after archiving
+
+    Buyer->>Chat: POST /conversations/:id/messages
+    Note over Chat: type=LOCATION_PIN, lat=-6.79, lng=39.20
+    Chat-->>Courier: WebSocket fan-out (location pin)
+```

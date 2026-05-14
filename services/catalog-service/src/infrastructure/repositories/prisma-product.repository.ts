@@ -160,6 +160,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
           enablerEnabled: persistenceDto.enablerEnabled ?? false,
           enablerCommissionRate: persistenceDto.enablerCommissionRate ?? null,
           codAccepted: persistenceDto.codAccepted ?? false,
+          freeDelivery: persistenceDto.freeDelivery ?? false,
           condition: persistenceDto.condition ?? 'new',
           createdAt: persistenceDto.createdAt,
           updatedAt: persistenceDto.updatedAt
@@ -209,7 +210,8 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       where: { id },
       include: {
         category: true,
-        variants: true
+        variants: true,
+        mediaRef: { orderBy: { displayOrder: 'asc' } }
       }
     });
 
@@ -300,7 +302,8 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
         where,
         include: {
           category: true,
-          variants: true
+          variants: true,
+          mediaRef: { orderBy: { displayOrder: 'asc' } }
         },
         skip,
         take: limit,
@@ -473,7 +476,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
     const mediaUrls = this.extractMediaUrls(productData);
     const name = productData.name || productData.title || '';
     const priceSource = productData.price ?? defaultVariant?.price ?? 0;
-    const currencySource = productData.currency ?? defaultVariant?.currency ?? 'USD';
+    const currencySource = productData.currency ?? defaultVariant?.currency ?? 'TZS';
 
     return {
       id: productData.id,
@@ -517,6 +520,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
         ? Number(productData.enablerCommissionRate)
         : undefined,
       codAccepted: productData.codAccepted === true,
+      freeDelivery: productData.freeDelivery === true,
       condition: productData.condition ?? 'new'
     };
   }
@@ -561,6 +565,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
     if (updates.enablerEnabled !== undefined) productData.enablerEnabled = updates.enablerEnabled;
     if (updates.enablerCommissionRate !== undefined) productData.enablerCommissionRate = updates.enablerCommissionRate;
     if (updates.codAccepted !== undefined) productData.codAccepted = updates.codAccepted;
+    if (updates.freeDelivery !== undefined) productData.freeDelivery = updates.freeDelivery;
     if (updates.condition !== undefined) productData.condition = updates.condition;
     if (updates.currency !== undefined || updates.supplierLocation !== undefined) {
       productData.seoMetadata = nextSeoMetadata;
@@ -639,6 +644,14 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
 
   private extractMediaUrls(productData: any): string[] {
     const candidates: unknown[] = [];
+
+    if (Array.isArray(productData?.mediaRef)) {
+      for (const ref of productData.mediaRef) {
+        if (typeof ref?.url === 'string') {
+          candidates.push(ref.url);
+        }
+      }
+    }
 
     if (Array.isArray(productData?.mediaUrls)) {
       candidates.push(...productData.mediaUrls);
@@ -727,17 +740,21 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
     return Number.isFinite(parsed) ? parsed : fallback;
   }
 
-  private resolveCurrency(value: any, fallback: string = 'USD'): string {
+  private resolveCurrency(value: any, fallback: string = 'TZS'): string {
+    const ACCEPTED_CURRENCIES = new Set(['TZS']);
+
+    let resolved: string | undefined;
+
     if (typeof value === 'string' && value.trim().length > 0) {
-      return value;
+      resolved = value.trim();
+    } else if (value && typeof value === 'object' && typeof value.currency === 'string') {
+      resolved = value.currency;
+    } else if (value && typeof value === 'object' && value.attributes && typeof value.attributes.currency === 'string') {
+      resolved = value.attributes.currency;
     }
 
-    if (value && typeof value === 'object' && typeof value.currency === 'string') {
-      return value.currency;
-    }
-
-    if (value && typeof value === 'object' && value.attributes && typeof value.attributes.currency === 'string') {
-      return value.attributes.currency;
+    if (resolved !== undefined && ACCEPTED_CURRENCIES.has(resolved)) {
+      return resolved;
     }
 
     return fallback;

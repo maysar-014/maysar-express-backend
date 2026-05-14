@@ -1,11 +1,13 @@
 import { Request, Response } from 'express';
 import { PlaceOrderUseCase, PlaceOrderRequest } from '../../application/use-cases/place-order.use-case';
 import { CheckCODEligibilityUseCase, CheckCODEligibilityInput } from '../../application/use-cases/check-cod-eligibility.use-case';
+import { CODCommitmentService } from '../../domain/services/cod-commitment.service';
 import { OrderRepository } from '../../domain/repositories/order.repository';
 import { PrismaOrderRepository } from '../../infrastructure/database/prisma-order.repository';
 import { OrderStatus } from '../../domain/entities/order.entity';
 import { IdGeneratorService } from '../../infrastructure/services/id-generator.service';
 import { CancellationPolicy, CancellationRequester } from '../../domain/policies/cancellation.policy';
+import { logger } from '../../infrastructure/monitoring/logger';
 
 export class OrderController {
   private orderRepository: OrderRepository;
@@ -13,7 +15,8 @@ export class OrderController {
 
   constructor(
     private readonly placeOrderUseCase: PlaceOrderUseCase,
-    private readonly checkCODEligibilityUseCase: CheckCODEligibilityUseCase
+    private readonly checkCODEligibilityUseCase: CheckCODEligibilityUseCase,
+    private readonly codCommitmentService?: CODCommitmentService
   ) {
     this.orderRepository = new PrismaOrderRepository();
     this.cancellationPolicy = new CancellationPolicy();
@@ -106,6 +109,31 @@ export class OrderController {
     existingOrder.cancelledAt = new Date();
     await this.orderRepository.update(existingOrder);
 
+    // Release COD commitment hold if order was cancelled before dispatch
+    const dispatchedStatuses = ['ASSIGNED', 'SHIPPED', 'IN_TRANSIT', 'assigned', 'shipped', 'in_transit'];
+    const wasDispatched = dispatchedStatuses.includes(existingOrder.status as string);
+    const holdId = (existingOrder as any).codCommitmentHoldId;
+
+    if (holdId && this.codCommitmentService) {
+      if (!wasDispatched) {
+        // Cancelled before dispatch — release hold back to buyer
+        try {
+          await this.codCommitmentService.releaseCommitment(holdId);
+          logger.info(`[COD] Commitment hold released for cancelled order ${id}, holdId=${holdId}`);
+        } catch (holdErr: any) {
+          logger.warn(`[COD] Failed to release commitment hold for order ${id}: ${holdErr.message}`);
+        }
+      } else {
+        // Cancelled after dispatch — forfeit hold as penalty
+        try {
+          await this.codCommitmentService.forfeitCommitment(holdId);
+          logger.info(`[COD] Commitment hold forfeited (post-dispatch cancellation) for order ${id}, holdId=${holdId}`);
+        } catch (holdErr: any) {
+          logger.warn(`[COD] Failed to forfeit commitment hold for order ${id}: ${holdErr.message}`);
+        }
+      }
+    }
+
     res.status(200).json({
       id,
       status: 'cancelled',
@@ -132,6 +160,25 @@ export class OrderController {
           }, 0),
           currency: request.currency || 'TZS'
         },
+        // COD payment breakdown
+        ...(request.paymentMethod === 'COD' && {
+          commitmentFee: response.commitmentFee > 0 ? {
+            amount: response.commitmentFee,
+            currency: request.currency || 'TZS',
+            paidVia: response.commitmentPaymentMethod ?? 'WALLET',
+            description: (request.deliveryFee ?? 0) === 0
+              ? 'Commitment fee — covers free delivery cost'
+              : 'Delivery fee — secured before packaging',
+            ...(response.commitmentPaymentUrl && { paymentUrl: response.commitmentPaymentUrl }),
+          } : null,
+          cashOnDelivery: {
+            amount: response.cashOnDeliveryAmount,
+            currency: request.currency || 'TZS',
+            description: (request.deliveryFee ?? 0) === 0
+              ? `Pay TZS ${response.cashOnDeliveryAmount.toLocaleString()} to the courier on delivery`
+              : `Pay TZS ${response.cashOnDeliveryAmount.toLocaleString()} to the courier on delivery (full product price)`,
+          },
+        }),
         items: request.items.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -201,12 +248,23 @@ export class OrderController {
         }
       });
 
+      // Capture the COD commitment hold to settle the delivery fee
+      if ((order as any).codCommitmentHoldId) {
+        try {
+          await this.codCommitmentService.captureCommitment((order as any).codCommitmentHoldId);
+          logger.info(`[COD] Commitment hold captured for order ${id}, holdId=${(order as any).codCommitmentHoldId}`);
+        } catch (holdErr: any) {
+          // Log but don't fail the delivery confirmation — hold may have already been captured
+          logger.warn(`[COD] Failed to capture commitment hold for order ${id}: ${holdErr.message}`);
+        }
+      }
+
       res.status(200).json({
         success: true,
         orderId: id,
         status: 'DELIVERED',
         confirmedAt: new Date().toISOString(),
-        message: 'Delivery confirmed. Payment will be processed.'
+        message: 'Delivery confirmed. Commitment fee settled.',
       });
 
     } catch (error: any) {

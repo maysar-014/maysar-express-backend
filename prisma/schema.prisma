@@ -491,6 +491,7 @@ model Product {
   enablerEnabled        Boolean               @default(false)
   enablerCommissionRate Decimal?              @db.Decimal(5, 4)
   codAccepted           Boolean               @default(false)
+  freeDelivery          Boolean               @default(false)
   condition             String                @default("new") @db.VarChar(20)
   createdAt             DateTime              @default(now()) @db.Timestamp(6)
   updatedAt             DateTime              @updatedAt @db.Timestamp(6)
@@ -516,6 +517,8 @@ model BuyBox {
   primaryScore    Decimal                     @db.Decimal(6, 2)
   lastComputedAt  DateTime                    @db.Timestamp(6)
   updatedAt       DateTime                    @updatedAt @db.Timestamp(6)
+  compositeScore  Float?
+  assignmentType  Catalog_AssignmentType?
   alternatives    Catalog_BuyBoxAlternative[]
 
   @@index([productId])
@@ -523,15 +526,103 @@ model BuyBox {
 }
 
 model Catalog_BuyBoxAlternative {
-  id       String  @id @default(cuid()) @db.VarChar(64)
-  buyBoxId String  @db.VarChar(64)
-  sellerId String  @db.VarChar(64)
-  score    Decimal @db.Decimal(6, 2)
-  rank     Int
-  buyBox   BuyBox  @relation(fields: [buyBoxId], references: [id], onDelete: Cascade)
+  id             String  @id @default(cuid()) @db.VarChar(64)
+  buyBoxId       String  @db.VarChar(64)
+  sellerId       String  @db.VarChar(64)
+  score          Decimal @db.Decimal(6, 2)
+  rank           Int
+  compositeScore Float?
+  buyBox         BuyBox  @relation(fields: [buyBoxId], references: [id], onDelete: Cascade)
 
   @@index([buyBoxId])
   @@map("catalog_buy_box_alternatives")
+}
+
+model Catalog_CategoryStrategy {
+  id                    String   @id @default(cuid()) @db.VarChar(64)
+  categoryId            String   @unique @db.VarChar(64)
+  name                  String
+  weights               Json
+  explorationBudget     Float    @default(0.10)
+  createdAt             DateTime @default(now()) @db.Timestamp(6)
+  updatedAt             DateTime @updatedAt @db.Timestamp(6)
+  createdByOperatorId   String   @db.VarChar(64)
+
+  @@map("catalog_category_strategies")
+}
+
+model Catalog_ScoreSnapshot {
+  id             String                 @id @default(cuid()) @db.VarChar(64)
+  productId      String                 @db.VarChar(64)
+  sellerId       String                 @db.VarChar(64)
+  compositeScore Float
+  signalValues   Json
+  signalWeights  Json
+  assignmentType Catalog_AssignmentType
+  strategyName   String
+  geographicZone String?
+  anomalyFlags   Json?
+  computedAt     DateTime               @db.Timestamp(6)
+
+  @@index([productId, computedAt])
+  @@index([sellerId])
+  @@map("catalog_score_snapshots")
+}
+
+model Catalog_AnomalyFlag {
+  id                    String    @id @default(cuid()) @db.VarChar(64)
+  sellerId              String    @db.VarChar(64)
+  signalName            String
+  detectedValue         Float
+  expectedMin           Float
+  expectedMax           Float
+  flaggedAt             DateTime  @db.Timestamp(6)
+  clearedAt             DateTime? @db.Timestamp(6)
+  clearedByOperatorId   String?
+
+  @@index([sellerId, flaggedAt])
+  @@map("catalog_anomaly_flags")
+}
+
+model Catalog_BuyBoxOverride {
+  id         String    @id @default(cuid()) @db.VarChar(64)
+  productId  String    @unique @db.VarChar(64)
+  sellerId   String    @db.VarChar(64)
+  operatorId String    @db.VarChar(64)
+  reason     String
+  startAt    DateTime  @db.Timestamp(6)
+  endAt      DateTime? @db.Timestamp(6)
+  createdAt  DateTime  @default(now()) @db.Timestamp(6)
+
+  @@index([productId, endAt])
+  @@map("catalog_buy_box_overrides")
+}
+
+model Catalog_ZonePerformance {
+  id                  String   @id @default(cuid()) @db.VarChar(64)
+  sellerId            String   @db.VarChar(64)
+  geographicZone      String
+  deliverySuccessRate Float
+  avgDeliveryDays     Float
+  orderCount          Int
+  updatedAt           DateTime @updatedAt @db.Timestamp(6)
+
+  @@unique([sellerId, geographicZone])
+  @@map("catalog_zone_performance")
+}
+
+model Catalog_OperatorAuditLog {
+  id            String    @id @default(cuid()) @db.VarChar(64)
+  operatorId    String    @db.VarChar(64)
+  entityType    String
+  entityId      String    @db.VarChar(64)
+  field         String
+  previousValue Json?
+  newValue      Json?
+  changedAt     DateTime  @default(now()) @db.Timestamp(6)
+
+  @@index([entityType, entityId])
+  @@map("catalog_operator_audit_logs")
 }
 
 model ProductVariant {
@@ -1809,6 +1900,46 @@ model Order_SagaStepLog {
 
   @@index([sagaId])
   @@map("order_saga_step_logs")
+}
+
+model order_CODTrustScore {
+  id        String   @id @default(cuid()) @db.VarChar(64)
+  buyerId   String   @unique @db.VarChar(64)
+  score     Int      @default(0)
+  tier      String   @default("NEW_BUYER") @db.VarChar(32)
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@index([buyerId])
+  @@map("order_cod_trust_scores")
+}
+
+model order_CODScoreEvent {
+  id             String   @id @default(cuid()) @db.VarChar(64)
+  buyerId        String   @db.VarChar(64)
+  signalType     String   @db.VarChar(64)
+  delta          Int
+  scoreBefore    Int
+  scoreAfter     Int
+  sourceService  String   @db.VarChar(64)
+  sourceEntityId String   @db.VarChar(64)
+  createdAt      DateTime @default(now())
+
+  @@index([buyerId, createdAt])
+  @@map("order_cod_score_events")
+}
+
+model order_CODRestriction {
+  id        String   @id @default(cuid()) @db.VarChar(64)
+  buyerId   String   @db.VarChar(64)
+  reason    String
+  startAt   DateTime @default(now())
+  endsAt    DateTime
+  permanent Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([buyerId, endsAt])
+  @@map("order_cod_restrictions")
 }
 
 model Payment_Payment {
@@ -3796,3 +3927,149 @@ enum Sms_Status {
   CANCELLED
 }
 
+enum Catalog_AssignmentType {
+  MERIT
+  EXPLORATION
+}
+
+
+// ─── Chat System ─────────────────────────────────────────────────────────────
+
+enum Chat_ConversationType {
+  BUYER_SELLER
+  SELLER_SUPPLIER
+  BUYER_COURIER
+  SELLER_TEAM
+}
+
+enum Chat_MessageType {
+  TEXT
+  IMAGE
+  VOICE_NOTE
+  PRODUCT_CARD
+  ORDER_REFERENCE
+  LOCATION_PIN
+  QUICK_ACTION
+}
+
+enum Chat_ModerationStatus {
+  ACTIVE
+  FLAGGED
+  BLOCKED
+  ARCHIVED
+}
+
+enum Chat_ParticipantRole {
+  BUYER
+  SELLER
+  SUPPLIER
+  COURIER
+}
+
+model Chat_Conversation {
+  id                       String                         @id @default(cuid()) @db.VarChar(64)
+  type                     Chat_ConversationType
+  moderationStatus         Chat_ModerationStatus          @default(ACTIVE)
+  relatedProductId         String?                        @db.VarChar(64)
+  relatedOrderId           String?                        @db.VarChar(64)
+  relatedShipmentId        String?                        @db.VarChar(64)
+  relatedSupplierRequestId String?                        @db.VarChar(64)
+  metadata                 Json?
+  lastMessageAt            DateTime?                      @db.Timestamp(6)
+  createdAt                DateTime                       @default(now()) @db.Timestamp(6)
+  updatedAt                DateTime                       @updatedAt @db.Timestamp(6)
+
+  participants             Chat_ConversationParticipant[]
+  messages                 Chat_Message[]
+
+  @@index([relatedOrderId])
+  @@index([relatedProductId])
+  @@index([lastMessageAt])
+  @@map("chat_conversations")
+}
+
+model Chat_ConversationParticipant {
+  conversationId String                @db.VarChar(64)
+  userId         String                @db.VarChar(64)
+  role           Chat_ParticipantRole
+  lastReadAt     DateTime?             @db.Timestamp(6)
+  isMuted        Boolean               @default(false)
+  joinedAt       DateTime              @default(now()) @db.Timestamp(6)
+
+  conversation   Chat_Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+  @@map("chat_conversation_participants")
+}
+
+model Chat_Message {
+  id                String                @id @default(cuid()) @db.VarChar(64)
+  conversationId    String                @db.VarChar(64)
+  senderId          String                @db.VarChar(64)
+  type              Chat_MessageType
+  content           String?
+  metadata          Json?
+  moderationStatus  Chat_ModerationStatus @default(ACTIVE)
+  spamScore         Int?
+  isDisputeEvidence Boolean               @default(false)
+  deletedAt         DateTime?             @db.Timestamp(6)
+  createdAt         DateTime              @default(now()) @db.Timestamp(6)
+
+  conversation      Chat_Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  spamScoreLogs     Chat_SpamScoreLog[]
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@map("chat_messages")
+}
+
+model Chat_UserBlock {
+  blockerId  String   @db.VarChar(64)
+  blockedId  String   @db.VarChar(64)
+  createdAt  DateTime @default(now()) @db.Timestamp(6)
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+  @@map("chat_user_blocks")
+}
+
+model Chat_ModerationReport {
+  id             String   @id @default(cuid()) @db.VarChar(64)
+  reporterId     String   @db.VarChar(64)
+  messageId      String   @db.VarChar(64)
+  conversationId String   @db.VarChar(64)
+  reason         String
+  reportedAt     DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([conversationId])
+  @@index([reporterId])
+  @@map("chat_moderation_reports")
+}
+
+model Chat_SpamScoreLog {
+  id         String       @id @default(cuid()) @db.VarChar(64)
+  messageId  String       @db.VarChar(64)
+  score      Int
+  signals    Json
+  computedAt DateTime     @default(now()) @db.Timestamp(6)
+
+  message    Chat_Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("chat_spam_score_logs")
+}
+
+model Chat_CheckoutLink {
+  id             String   @id @default(cuid()) @db.VarChar(64)
+  conversationId String   @db.VarChar(64)
+  messageId      String   @db.VarChar(64)
+  checkoutUrl    String
+  isUsed         Boolean  @default(false)
+  expiresAt      DateTime @db.Timestamp(6)
+  createdAt      DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([conversationId])
+  @@index([expiresAt])
+  @@map("chat_checkout_links")
+}

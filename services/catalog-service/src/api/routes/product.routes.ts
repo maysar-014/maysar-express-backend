@@ -10,6 +10,7 @@ import { requireRole } from '@shared/middleware/auth-context.middleware';
 import { zodId } from '@shared/validation/id';
 import { ProductController } from '../controllers/product.controller';
 import { validateRequest as validateSchemaRequest } from '../middleware/validation.middleware';
+import { requireKycLevel } from '../../../../kyc-service/src/api/middleware/kyc-gate.middleware';
 import {
   ProductRepository,
   DomainEventPublisher,
@@ -79,6 +80,7 @@ export function createProductRoutes(
     enablerEnabled: z.boolean().optional(),
     enablerCommissionRate: z.number().gt(0).lte(1).optional(),
     codAccepted: z.boolean().optional(),
+    freeDelivery: z.boolean().optional(),
     condition: z.enum(['new', 'used', 'refurbished', 'damaged']).optional()
   }).strict().superRefine((body, ctx) => {
     if (body.enablerEnabled && body.enablerCommissionRate === undefined) {
@@ -125,6 +127,7 @@ export function createProductRoutes(
     enablerEnabled: z.boolean().optional(),
     enablerCommissionRate: z.number().gt(0).lte(1).optional(),
     codAccepted: z.boolean().optional(),
+    freeDelivery: z.boolean().optional(),
     condition: z.enum(['new', 'used', 'refurbished', 'damaged']).optional()
   }).strict().refine(
     (body) => Object.keys(body).length > 0,
@@ -237,7 +240,8 @@ export function createProductRoutes(
   }
 
   const sellerMiddleware = [
-    requireRole(['seller', 'admin']),
+    requireRole(['seller', 'supplier', 'admin']),
+    requireKycLevel(1), // Sellers and suppliers must have basic identity verification to list products
     ...commonMiddleware
   ];
 

@@ -82,3 +82,18 @@ The order-service logging middleware watches for rate-limit exhaustion:
 
 Behavior:
 - When `X-RateLimit-Remaining` becomes `0`, it logs a security event and metrics.
+
+---
+
+## Chat Service Rate Limits
+
+The chat-service enforces its own rate limits via Redis counters (independent of the global Express rate limiter).
+
+| Limit | Value | Redis key | Error code |
+|---|---|---|---|
+| New conversations per user | 20 / 60 min | `chat:ratelimit:conv:{userId}` | `CHAT_RATE_LIMIT_EXCEEDED` |
+| Messages sent per user | 200 / 60 min | `chat:ratelimit:msg:{userId}` | `CHAT_MESSAGE_RATE_LIMIT_EXCEEDED` |
+| Same-content messages (mass-messaging) | 5 / 5 min | `chat:ratelimit:massmsg:{userId}:{hash}` | Spam score elevated to 85 |
+| Rapid conversation initiation (risk flag) | 10 / 10 min | Tracked by RiskEngine | Account flagged for review |
+
+Counters use atomic `INCR` + `EXPIRE` (set on first increment only) to prevent race conditions under concurrent requests.

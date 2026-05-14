@@ -5,6 +5,7 @@ import { PayoutController } from '../controllers/payout.controller';
 import { AuthorizationMiddleware } from '../middleware/authorization.middleware';
 import { asyncHandler } from '@shared/middleware/async-handler';
 import { validateJoiRequest } from '@shared/middleware/joi-request-validation';
+import { requireKycLevel } from '../../../../kyc-service/src/api/middleware/kyc-gate.middleware';
 
 const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F]+$/u;
 const safeVisibleString = Joi.string().trim().min(1).pattern(SAFE_VISIBLE_STRING_PATTERN);
@@ -43,6 +44,7 @@ export function createPayoutRoutes(controller: PayoutController): Router {
     router.post(
         '/',
         AuthorizationMiddleware.authorizeRoles(['seller', 'supplier', 'courier', 'enabler', 'system']),
+        requireKycLevel(2), // Payouts require identity verification — applies to all roles including suppliers
         validateJoiRequest({ body: payoutInitiateBodySchema }),
         asyncHandler(controller.initiate.bind(controller))
     );

@@ -1,0 +1,300 @@
+# Implementation Plan: Buy Box Ranking System
+
+## Overview
+
+Implement the Buy Box Ranking System within the catalog-service, replacing the naive price-dominant weighted model with a multi-signal, context-aware ranking engine. The implementation proceeds bottom-up: database schema → domain layer → signal computers → fraud detector → ranking engine core → geographic optimisation → exploration/rotation → persistence & audit → scheduled jobs → operator API → property-based tests → integration tests.
+
+All new files live under `services/catalog-service/src/` in their respective layer directories. The Prisma schema is at `prisma/schema.prisma`. Tests use the existing Vitest + fast-check setup.
+
+---
+
+## Tasks
+
+- [x] 1. Database schema — add Buy Box ranking tables and run migration
+  - Add `Catalog_AssignmentType` enum (`MERIT`, `EXPLORATION`) to `prisma/schema.prisma`
+  - Add `Catalog_CategoryStrategy` model with fields: `id`, `categoryId` (unique), `name`, `weights` (Json), `explorationBudget` (Float, default 0.10), `createdAt`, `updatedAt`, `createdByOperatorId`; mapped to `catalog_category_strategies`
+  - Add `Catalog_ScoreSnapshot` model with fields: `id`, `productId`, `sellerId`, `compositeScore` (Float), `signalValues` (Json), `signalWeights` (Json), `assignmentType` (`Catalog_AssignmentType`), `strategyName` (String), `geographicZone` (String?), `anomalyFlags` (Json?), `computedAt` (DateTime); indexes on `[productId, computedAt]` and `[sellerId]`; mapped to `catalog_score_snapshots`
+  - Add `Catalog_AnomalyFlag` model with fields: `id`, `sellerId`, `signalName`, `detectedValue` (Float), `expectedMin` (Float), `expectedMax` (Float), `flaggedAt` (DateTime), `clearedAt` (DateTime?), `clearedByOperatorId` (String?); indexes on `[sellerId, flaggedAt]`; mapped to `catalog_anomaly_flags`
+  - Add `Catalog_BuyBoxOverride` model with fields: `id`, `productId` (unique), `sellerId`, `operatorId`, `reason` (String), `startAt` (DateTime), `endAt` (DateTime?), `createdAt`; index on `[productId, endAt]`; mapped to `catalog_buy_box_overrides`
+  - Add `Catalog_ZonePerformance` model with fields: `id`, `sellerId`, `geographicZone` (String), `deliverySuccessRate` (Float), `avgDeliveryDays` (Float), `orderCount` (Int), `updatedAt`; `@@unique([sellerId, geographicZone])`; mapped to `catalog_zone_performance`
+  - Add `Catalog_OperatorAuditLog` model with fields: `id`, `operatorId`, `entityType` (String), `entityId` (String), `field` (String), `previousValue` (Json?), `newValue` (Json?), `changedAt` (DateTime); index on `[entityType, entityId]`; mapped to `catalog_operator_audit_logs`
+  - Extend existing `catalog_buy_boxes` table: add `compositeScore` (Float?), `assignmentType` (`Catalog_AssignmentType`?), `lastComputedAt` (DateTime?)
+  - Extend existing `catalog_buy_box_alternatives` table: add `compositeScore` (Float?), `rank` (Int?)
+  - Run `npx prisma migrate dev --name add_buy_box_ranking_system` to generate and apply the migration
+  - Run `npx prisma generate` to regenerate the Prisma client
+  - _Requirements: 1, 2, 5, 6, 10, 11, 13_
+
+- [x] 2. Domain layer — types, interfaces, and repository contracts
+  - Create `services/catalog-service/src/domain/buy-box/types.ts`
+    - Define `SignalValues` interface with all 9 signal fields: `priceCompetitiveness`, `sellerTrustScore`, `fulfillmentReliability`, `deliverySpeed`, `stockReliability`, `disputeRate`, `cancellationRate`, `returnRate`, `customerRetentionImpact` (all `number` 0–100)
+    - Define `SignalWeights` interface with the same 9 keys (all `number`, must sum to 1.0)
+    - Define `CategoryStrategy` interface: `categoryId`, `name`, `weights: SignalWeights`, `explorationBudget: number`, `minTrustScoreThreshold?: number`
+    - Define `CompositeScoreResult` interface: `compositeScore`, `signalValues`, `signalWeights`, `strategyName`, `assignmentType`, `anomalyFlags`, `penalties`, `bonuses`
+    - Define `GeographicZone` enum: `DAR_ES_SALAAM_KARIAKOO`, `DAR_ES_SALAAM_MIKOCHENI`, `DAR_ES_SALAAM_OTHER`, `ARUSHA`, `MWANZA`, `DODOMA`, `OTHER_TANZANIA`
+    - Define `BuyBoxContext` interface: `productId`, `buyerZone?: GeographicZone`, `paymentMethod?: string`
+    - Define `SellerOffer` interface: `sellerId`, `price`, `stockLevel`, `accountStatus`
+    - Export `DEFAULT_STRATEGY_WEIGHTS: SignalWeights` constant with the 9 default weights from Requirement 1.5
+    - Export `CATEGORY_STRATEGY_PRESETS` map for GROCERIES, ELECTRONICS, FASHION, MEDICINES, FURNITURE
+  - Create `services/catalog-service/src/domain/buy-box/repositories/buy-box-ranking.repository.interface.ts`
+    - Define `BuyBoxRankingRepository` interface with methods: `getSellerSignalData(sellerId, productId, zone?)`, `getCategoryStrategy(categoryId)`, `saveScoreSnapshot(snapshot)`, `saveBuyBoxWinner(productId, winnerId, score, alternatives)`, `getActiveOverride(productId)`, `getAnomalyFlags(sellerId, withinDays)`, `getZonePerformance(sellerId, zone)`
+  - _Requirements: 1, 2, 7, 10, 11_
+
+- [x] 3. Signal computers — one class per scoring signal
+  - Create `services/catalog-service/src/domain/buy-box/signals/price-competitiveness.signal.ts`
+    - Implement `computePriceCompetitiveness(offerPrice: number, allOfferPrices: number[]): number`
+    - Single offer → return 100
+    - Within ±5% of median → return 100
+    - More than 5% below median → apply diminishing-returns curve, cap at 85
+    - Between 5% and 20% above median → linear decrease from 100 to 0
+    - More than 20% above median → return 0
+    - _Requirements: 4_
+  - Create `services/catalog-service/src/domain/buy-box/signals/fulfillment-reliability.signal.ts`
+    - Implement `computeFulfillmentReliability(params: { fulfillmentRate: number, courierPerformance?: number, codRefusalRate?: number, paymentMethod?: string }): number`
+    - Blend `fulfillmentRate` (70%) and `courierPerformance` (30%) when zone data is available
+    - Apply `HIGH_COD_RISK` penalty (−10) when `codRefusalRate > 0.15` and payment is COD
+    - Apply `CRITICAL_COD_RISK` penalty (−25) when `codRefusalRate > 0.30` and payment is COD
+    - Clamp result to [0, 100]
+    - _Requirements: 7, 8_
+  - Create `services/catalog-service/src/domain/buy-box/signals/seller-trust.signal.ts`
+    - Implement `computeSellerTrustScore(params: { verifiedIdentity: boolean, accountAgeDays: number, disputeHistory: number, complianceScore: number }): number`
+    - Weighted blend of the four sub-factors; clamp to [0, 100]
+    - _Requirements: 1, 12_
+  - Create `services/catalog-service/src/domain/buy-box/signals/rate-signals.signal.ts`
+    - Implement `computeRateSignal(rate: number): number` — converts a rate (0–1) to an inverted score (0–100); rate of 0 → 100, rate of 1 → 0
+    - Used for `disputeRate`, `cancellationRate`, `returnRate`
+    - _Requirements: 1, 3_
+  - Create `services/catalog-service/src/domain/buy-box/signals/recency-weighted-rate.ts`
+    - Implement `computeRecencyWeightedRate(events: Array<{ occurredAt: Date, isNegative: boolean }>, windowDays: number): number`
+    - Apply exponential decay: events in last 30 days get weight 1.0, events in days 31–90 get weight 0.5
+    - When fewer than 10 events: apply Bayesian prior blending with `platformAverage`
+    - When zero events: return `platformAverage` and flag `NEW_SELLER`
+    - _Requirements: 3_
+  - Create `services/catalog-service/src/domain/buy-box/signals/stock-reliability.signal.ts`
+    - Implement `computeStockReliability(params: { stockOutCancellationRate: number, currentStockLevel: number }): number`
+    - Invert `stockOutCancellationRate` to score; apply bonus for high current stock; clamp to [0, 100]
+    - _Requirements: 1_
+  - Create `services/catalog-service/src/domain/buy-box/signals/margin-contribution.signal.ts`
+    - Implement `computeMarginContribution(params: { commissionTier: number, logisticsCost: number, codFailureCost: number, offerPrice: number }): { score: number, penalty: number, bonus: number }`
+    - Compute estimated net margin; negative margin → `NEGATIVE_MARGIN` penalty −15; top-quartile margin → `HIGH_MARGIN` bonus +5
+    - Cap total adjustment at ±15
+    - _Requirements: 9_
+  - Export all signal computers from `services/catalog-service/src/domain/buy-box/signals/index.ts`
+  - _Requirements: 1, 3, 4, 7, 8, 9_
+
+- [x] 4. Fraud detector — anomaly detection pre-pass
+  - Create `services/catalog-service/src/domain/buy-box/fraud-detector.ts`
+  - Implement `FraudDetector` class with method `detectAnomalies(sellerId, currentSignals, historicalStats): AnomalyFlagResult[]`
+    - Flag any signal where current value deviates more than 2 standard deviations from the seller's 90-day rolling mean
+    - Flag stock level signal when stock increases >500% within 24 hours without a shipment record
+    - Flag price signal when offer price drops >40% below seller's 30-day average without a promotional campaign record
+    - Return list of `AnomalyFlagResult` objects: `{ signalName, detectedValue, expectedMin, expectedMax, substitutedValue }`
+  - Implement `applyAnomalySubstitutions(signals: SignalValues, flags: AnomalyFlagResult[]): SignalValues`
+    - Replace flagged signal values with the seller's 90-day rolling average
+  - Implement `computeManipulationPenalty(activeFlags: number): number`
+    - Return −20 when `activeFlags >= 3`, else 0
+  - _Requirements: 5_
+
+- [x] 5. Ranking engine core — composite score computation and Buy Box selection
+  - Create `services/catalog-service/src/domain/buy-box/ranking-engine.ts`
+  - Implement `RankingEngine` class:
+    - Constructor: `FraudDetector`, `BuyBoxRankingRepository`
+    - `computeCompositeScore(sellerId, productId, context: BuyBoxContext, strategy: CategoryStrategy): Promise<CompositeScoreResult>`
+      - Fetch seller signal data from repository
+      - Run `FraudDetector.detectAnomalies()` pre-pass; substitute flagged signals
+      - Compute each signal score using the signal computers from Task 3
+      - Apply geographic adjustments when `context.buyerZone` is provided
+      - Apply COD risk penalties when `context.paymentMethod === 'COD'`
+      - Apply margin contribution adjustments
+      - Apply `NEW_SELLER` confidence penalty (−10) when applicable
+      - Apply `MANIPULATION_PENALTY` (−20) when ≥3 active anomaly flags
+      - Compute weighted sum: `Σ(signalScore × weight)`
+      - Clamp result to [0, 100]
+      - Return `CompositeScoreResult` with all signal values, weights, penalties, bonuses
+    - `selectBuyBoxWinner(productId, context: BuyBoxContext): Promise<BuyBoxSelectionResult>`
+      - Load all eligible seller offers for the product
+      - Apply disqualification rules (suspended accounts, zero stock, high dispute/cancellation rates, MEDICINES trust threshold)
+      - Compute `CompositeScoreResult` for each eligible seller
+      - Apply exploration slot logic (Task 6)
+      - Return winner with ranked alternatives list
+  - _Requirements: 1, 2, 3, 4, 5, 7, 8, 9, 12_
+
+- [x] 6. Exploration and rotation — controlled seller visibility
+  - Create `services/catalog-service/src/domain/buy-box/exploration-allocator.ts`
+  - Implement `ExplorationAllocator` class:
+    - `shouldAllocateExplorationSlot(productId, weeklyWindowCounter, explorationBudget): boolean`
+      - Deterministic: use `weeklyWindowCounter % Math.round(1 / explorationBudget) === 0`
+      - Return `false` when `explorationBudget === 0`
+    - `selectExplorationCandidate(rankedSellers, recentWinners, topScore): SellerOffer | null`
+      - Filter out sellers who held the Buy Box in the preceding 7 days
+      - Filter out sellers with active `MANIPULATION_PENALTY` or anomaly flags
+      - Filter to sellers within 15 points of `topScore`
+      - Return the highest-scoring eligible seller, or `null` if none qualify
+  - _Requirements: 6_
+
+- [x] 7. Category strategy service — configuration and validation
+  - Create `services/catalog-service/src/domain/buy-box/category-strategy.service.ts`
+  - Implement `CategoryStrategyService` class:
+    - `validateWeights(weights: SignalWeights): ValidationResult`
+      - Assert all 9 signal keys are present
+      - Assert sum of all weights equals 1.0 within ±0.001 tolerance
+      - Return descriptive error identifying invalid weights on failure
+    - `getStrategyForCategory(categoryId): Promise<CategoryStrategy>`
+      - Load from `Catalog_CategoryStrategy` table; fall back to `DEFAULT_STRATEGY` if not configured
+    - `upsertStrategy(categoryId, weights, explorationBudget, operatorId): Promise<CategoryStrategy>`
+      - Validate weights before persisting
+      - Write `Catalog_OperatorAuditLog` entry on change
+      - Trigger Buy Box recomputation for all affected products (enqueue job)
+    - `seedDefaultStrategies(): Promise<void>`
+      - Seed GROCERIES, ELECTRONICS, FASHION, MEDICINES, FURNITURE presets from `CATEGORY_STRATEGY_PRESETS`
+  - _Requirements: 2, 13_
+
+- [x] 8. Geographic optimisation — zone-aware signal adjustment
+  - Create `services/catalog-service/src/domain/buy-box/geographic-optimizer.ts`
+  - Implement `GeographicOptimizer` class:
+    - `getZoneAdjustedSignals(sellerId, zone: GeographicZone, baseSignals: SignalValues): Promise<SignalValues>`
+      - Load `Catalog_ZonePerformance` for `(sellerId, zone)`
+      - When fewer than 5 fulfilled orders in zone: return `baseSignals` unchanged (geographic fallback)
+      - When zone data available: override `deliverySpeed` and `fulfillmentReliability` with zone-specific values
+      - Blend `Courier_Performance_Score` for couriers operating in the zone into `fulfillmentReliability` (30% weight)
+    - `updateZonePerformance(sellerId, zone, deliveryOutcome): Promise<void>`
+      - Upsert `Catalog_ZonePerformance` record after each delivery event
+  - _Requirements: 7_
+
+- [x] 9. Infrastructure layer — Prisma repository implementation
+  - Create `services/catalog-service/src/infrastructure/repositories/prisma-buy-box-ranking.repository.ts`
+  - Implement `PrismaBuyBoxRankingRepository` implementing `BuyBoxRankingRepository`:
+    - `getSellerSignalData(sellerId, productId, zone?)`: query orders, disputes, cancellations, returns within 90-day window; join zone performance when zone provided; return raw data for signal computers
+    - `getCategoryStrategy(categoryId)`: load from `catalog_category_strategies`; return null if not found
+    - `saveScoreSnapshot(snapshot)`: insert into `catalog_score_snapshots`
+    - `saveBuyBoxWinner(productId, winnerId, score, alternatives)`: upsert `catalog_buy_boxes`; replace `catalog_buy_box_alternatives` for the product in a transaction
+    - `getActiveOverride(productId)`: load from `catalog_buy_box_overrides` where `startAt <= now` and (`endAt IS NULL` or `endAt > now`)
+    - `getAnomalyFlags(sellerId, withinDays)`: load uncleared flags from `catalog_anomaly_flags` within the time window
+    - `getZonePerformance(sellerId, zone)`: load from `catalog_zone_performance`
+    - `getPlatformCategoryAverages(categoryId)`: aggregate platform-wide averages for Bayesian prior computation
+  - Export from `services/catalog-service/src/infrastructure/repositories/index.ts`
+  - _Requirements: 1, 3, 5, 7, 10, 11_
+
+- [x] 10. Application layer — Buy Box use cases
+  - Create `services/catalog-service/src/application/use-cases/compute-buy-box.use-case.ts`
+    - Constructor: `RankingEngine`, `CategoryStrategyService`, `GeographicOptimizer`, `BuyBoxRankingRepository`
+    - `execute(productId, context: BuyBoxContext): Promise<BuyBoxComputationResult>`
+      - Check for active operator override; if present, return override winner without recomputation
+      - Load category strategy for the product
+      - Delegate to `RankingEngine.selectBuyBoxWinner()`
+      - Persist `Score_Snapshot` for each seller scored
+      - Persist Buy Box winner and alternatives via repository
+      - Emit `BuyBoxAssigned` domain event when winner changes
+      - On any failure: retain previous winner, log failure, emit `BuyBoxComputationFailed` event
+    - _Requirements: 10, 11, 13_
+  - Create `services/catalog-service/src/application/use-cases/get-buy-box-history.use-case.ts`
+    - Load `Catalog_ScoreSnapshot` records for a product in descending `computedAt` order
+    - _Requirements: 11_
+  - Create `services/catalog-service/src/application/use-cases/manage-category-strategy.use-case.ts`
+    - Wrap `CategoryStrategyService.upsertStrategy()` with operator auth check
+    - _Requirements: 2, 13_
+  - Create `services/catalog-service/src/application/use-cases/apply-buy-box-override.use-case.ts`
+    - Validate operator role; upsert `Catalog_BuyBoxOverride`; write audit log
+    - _Requirements: 13_
+  - Create `services/catalog-service/src/application/use-cases/clear-anomaly-flag.use-case.ts`
+    - Validate operator role; set `clearedAt` and `clearedByOperatorId` on the flag; trigger score recomputation
+    - _Requirements: 5_
+  - Export all new use cases from `services/catalog-service/src/application/use-cases/index.ts`
+  - _Requirements: 5, 10, 11, 13_
+
+- [x] 11. Scheduled jobs — periodic recomputation
+  - Create `services/catalog-service/src/infrastructure/jobs/buy-box-recomputation.job.ts`
+    - Implement `BuyBoxRecomputationJob` class:
+      - `runFullRecomputation()`: load all products with active seller offers; batch-compute Buy Box for each; log progress and errors
+      - `runDeltaRecomputation(sellerId)`: load all products the seller offers; recompute only those products
+      - `runCategoryRecomputation(categoryId)`: load all products in the category; recompute all
+    - Schedule `runFullRecomputation` every 6 hours via the existing job scheduler
+    - Schedule `runDeltaRecomputation` on-demand when a seller's composite score changes by >5 points
+    - Schedule `runCategoryRecomputation` when a `CategoryStrategy` is updated (within 60 minutes)
+  - Create `services/catalog-service/src/infrastructure/jobs/rolling-average.job.ts`
+    - Implement `RollingAverageJob` that recomputes all seller rolling averages once every 24 hours
+  - _Requirements: 3, 10_
+
+- [x] 12. Operator API — admin endpoints for strategy and override management
+  - Create `services/catalog-service/src/api/controllers/buy-box-admin.controller.ts`
+    - Follow the same pattern as existing controllers (constructor injection, `ApiResponse` envelope)
+    - `upsertCategoryStrategy(req, res)`: validate operator role; delegate to `ManageCategoryStrategyUseCase`
+    - `applyOverride(req, res)`: validate operator role; delegate to `ApplyBuyBoxOverrideUseCase`
+    - `clearAnomalyFlag(req, res)`: validate operator role; delegate to `ClearAnomalyFlagUseCase`
+    - `getBuyBoxHistory(req, res)`: delegate to `GetBuyBoxHistoryUseCase`
+    - _Requirements: 11, 13_
+  - Create `services/catalog-service/src/api/routes/buy-box-admin.routes.ts`
+    - Define Zod validation schemas for each endpoint
+    - Register routes (all require `requireRole(['admin'])` or `requireRole(['operator'])`):
+      - `PUT /v1/admin/buy-box/strategies/:categoryId` → `upsertCategoryStrategy`
+      - `POST /v1/admin/buy-box/overrides` → `applyOverride`
+      - `DELETE /v1/admin/buy-box/anomaly-flags/:flagId` → `clearAnomalyFlag`
+      - `GET /v1/admin/buy-box/history/:productId` → `getBuyBoxHistory`
+    - Export `createBuyBoxAdminRoutes(controller)` factory function
+  - Wire routes into `services/catalog-service/src/api/routes/index.ts`
+  - _Requirements: 11, 13_
+
+- [x] 13. Checkpoint — ensure all unit tests pass
+  - Run `npx vitest run` within `services/catalog-service`
+  - Fix any failing tests before proceeding
+
+- [x] 14. Property-based tests using fast-check
+  - Create `services/catalog-service/src/domain/buy-box/__tests__/buy-box-ranking.properties.test.ts`
+  - Write property test for **Property 1 — Score Bounds Invariant**
+    - `// Feature: buy-box-ranking-system, Property 1: Score Bounds Invariant`
+    - Use `fc.record({ priceCompetitiveness: fc.float({ min: 0, max: 100 }), ... })` for all 9 signals and a valid `SignalWeights` object
+    - Assert `computeCompositeScore(signals, weights)` always returns a value in [0, 100]
+    - _Requirements: 14.1_
+  - Write property test for **Property 2 — Weight Sum Invariant**
+    - `// Feature: buy-box-ranking-system, Property 2: Weight Sum Invariant`
+    - Use `fc.array(fc.float({ min: 0, max: 1 }), { minLength: 9, maxLength: 9 })` to generate weight arrays that may or may not sum to 1.0
+    - Assert `validateWeights()` returns valid only when sum is within 1.0 ±0.001
+    - _Requirements: 14.2_
+  - Write property test for **Property 3 — Monotonicity Property**
+    - `// Feature: buy-box-ranking-system, Property 3: Monotonicity`
+    - Generate two `SignalValues` objects A and B where A has strictly higher values on all 9 signals
+    - Assert `computeCompositeScore(A, weights) > computeCompositeScore(B, weights)` for any valid weights
+    - _Requirements: 14.3_
+  - Write property test for **Property 4 — Idempotence Property**
+    - `// Feature: buy-box-ranking-system, Property 4: Idempotence`
+    - Generate random `SignalValues` and `SignalWeights`; compute score twice
+    - Assert both results are identical
+    - _Requirements: 14.5_
+  - Write property test for **Property 5 — Audit Round-Trip Property**
+    - `// Feature: buy-box-ranking-system, Property 5: Audit Round-Trip`
+    - Generate a `CompositeScoreResult`; serialise to `Score_Snapshot` JSON; recompute from stored values
+    - Assert recomputed score equals stored score within ±0.01
+    - _Requirements: 14.6_
+  - Write property test for **Property 6 — Price Ordering Invariant**
+    - `// Feature: buy-box-ranking-system, Property 6: Price Ordering Invariant`
+    - Generate a set of offer prices; compute `Price_Competitiveness_Score` for each
+    - Assert no seller priced >20% above median scores higher than a seller priced within the competitive band
+    - _Requirements: 4.7, 14_
+  - Write property test for **Property 7 — COD Risk Ordering Invariant**
+    - `// Feature: buy-box-ranking-system, Property 7: COD Risk Ordering Invariant`
+    - Generate two otherwise-identical sellers where seller A has COD refusal rate >30% and seller B has rate <15%
+    - Assert seller B's composite score is higher than seller A's when payment method is COD
+    - _Requirements: 8.6, 14_
+  - Write property test for **Property 8 — Rotation Property**
+    - `// Feature: buy-box-ranking-system, Property 8: Rotation Property`
+    - Simulate 30 days of Buy Box assignments for a product with 2+ eligible sellers using the exploration allocator
+    - Assert no single seller holds 100% of assignments
+    - _Requirements: 14.4_
+  - _Requirements: 14_
+
+- [x] 15. Final checkpoint — ensure all tests pass
+  - Run `npx vitest run` within `services/catalog-service`
+  - Fix any failing tests before proceeding
+
+---
+
+## Notes
+
+- Tasks marked with `*` are optional and can be skipped for a faster MVP
+- Each task references specific requirements for traceability
+- Signal computers (Task 3) are pure functions with no I/O — they are the primary targets for property-based testing
+- The `FraudDetector` (Task 4) runs as a pre-pass before scoring; it never blocks a computation — it substitutes values and applies penalties
+- The `RankingEngine` (Task 5) orchestrates signal computers and the fraud detector; it does not directly query the database
+- Exploration slot allocation (Task 6) is deterministic, not random — the same weekly window counter always produces the same allocation decision
+- The `MEDICINES` category has a hard disqualification threshold (`Seller_Trust_Score < 70`) that cannot be overridden by weight configuration
+- Operator overrides (Task 10) bypass all automated recomputation while active; they expire automatically when `endAt` passes
+- The `Catalog_ScoreSnapshot` table is append-only — records are never updated or deleted, only inserted

@@ -165,6 +165,203 @@ async function initializeService() {
     eventBus.subscribe('Delivery.Success.v1', async (e: any) => sagaReplyHandler.handleDeliverySuccess(e));
     eventBus.subscribe('Delivery.Failure.v1', async (e: any) => sagaReplyHandler.handleDeliveryFailed(e));
 
+    // ── Progressive COD Trust Signal Listeners ────────────────────────────────
+    // Wire domain events to TrustSignalIngestionService so the COD Eligibility Score
+    // is updated automatically as buyers complete orders, cancel, or trigger disputes.
+    const { TrustSignalIngestionService } = await import('./application/services/trust-signal-ingestion.service');
+    const { PrismaCODTrustScoreRepository: TrustScoreRepo } = await import('./infrastructure/repositories/prisma-cod-trust-score.repository');
+    const { PrismaCODScoreEventRepository: ScoreEventRepo } = await import('./infrastructure/repositories/prisma-cod-score-event.repository');
+    const { TrustSignalType } = await import('./domain/engines/cod-trust/trust-signal.types');
+
+    const trustSignalIngestion = new TrustSignalIngestionService(
+      new TrustScoreRepo(),
+      new ScoreEventRepo(),
+      eventPublisher
+    );
+
+    // SUCCESSFUL_DELIVERY — COD order confirmed delivered
+    eventBus.subscribe('OrderDelivered', async (envelope: any) => {
+      try {
+        const data = envelope?.data || envelope?.payload || envelope;
+        const { buyerId, orderId, paymentMethod, totalAmount } = data;
+        if (!buyerId || !orderId) return;
+
+        // Only record for COD orders (WALLET/CARD are handled at payment time)
+        if (String(paymentMethod ?? '').toUpperCase() === 'COD') {
+          await trustSignalIngestion.recordSignal({
+            buyerId,
+            signalType: TrustSignalType.SUCCESSFUL_DELIVERY,
+            sourceService: 'order-service',
+            sourceEntityId: orderId,
+          });
+
+          // HIGH_VALUE_COMPLETION — COD order > TZS 100,000 successfully delivered
+          const amount = Number(totalAmount?.amount ?? totalAmount ?? 0);
+          if (amount > 100_000) {
+            await trustSignalIngestion.recordSignal({
+              buyerId,
+              signalType: TrustSignalType.HIGH_VALUE_COMPLETION,
+              sourceService: 'order-service',
+              sourceEntityId: orderId,
+            });
+          }
+        }
+      } catch (err: any) {
+        logger.warn('[TrustSignal] OrderDelivered handler failed', { error: err.message });
+      }
+    });
+
+    // POST_DISPATCH_CANCELLATION — buyer cancels after order dispatched
+    eventBus.subscribe('OrderCancelled', async (envelope: any) => {
+      try {
+        const data = envelope?.data || envelope?.payload || envelope;
+        const { buyerId, orderId, previousStatus } = data;
+        if (!buyerId || !orderId) return;
+
+        const dispatchedStatuses = ['ASSIGNED', 'SHIPPED', 'IN_TRANSIT', 'assigned', 'shipped', 'in_transit'];
+        if (dispatchedStatuses.includes(previousStatus)) {
+          await trustSignalIngestion.recordSignal({
+            buyerId,
+            signalType: TrustSignalType.POST_DISPATCH_CANCELLATION,
+            sourceService: 'order-service',
+            sourceEntityId: orderId,
+          });
+        }
+      } catch (err: any) {
+        logger.warn('[TrustSignal] OrderCancelled handler failed', { error: err.message });
+      }
+    });
+
+    // DISPUTE_LOST — dispute resolved against buyer
+    eventBus.subscribe('DisputeResolved', async (envelope: any) => {
+      try {
+        const data = envelope?.data || envelope?.payload || envelope;
+        const { buyerId, orderId, resolution } = data;
+        if (!buyerId || !orderId) return;
+
+        if (String(resolution ?? '').toUpperCase() === 'BUYER_AT_FAULT') {
+          await trustSignalIngestion.recordSignal({
+            buyerId,
+            signalType: TrustSignalType.DISPUTE_LOST,
+            sourceService: 'order-service',
+            sourceEntityId: orderId,
+          });
+        }
+      } catch (err: any) {
+        logger.warn('[TrustSignal] DisputeResolved handler failed', { error: err.message });
+      }
+    });
+
+    // DELIVERY_REFUSED / COURIER_NEGATIVE_REPORT — from logistics service
+    eventBus.subscribe('CourierReportSubmitted', async (envelope: any) => {
+      try {
+        const data = envelope?.data || envelope?.payload || envelope;
+        const { buyerId, orderId, outcome } = data;
+        if (!buyerId || !orderId) return;
+
+        const outcomeUpper = String(outcome ?? '').toUpperCase();
+        if (outcomeUpper === 'REFUSED_DELIVERY') {
+          await trustSignalIngestion.recordSignal({
+            buyerId,
+            signalType: TrustSignalType.DELIVERY_REFUSED,
+            sourceService: 'logistics-service',
+            sourceEntityId: orderId,
+          });
+
+          // Forfeit the commitment hold as a penalty for refusing delivery
+          const order = await orderRepository.findById(orderId);
+          const holdId = (order as any)?.codCommitmentHoldId;
+          if (holdId) {
+            try {
+              const { CODCommitmentService: CCS } = await import('./domain/services/cod-commitment.service');
+              const { WalletServiceClient: WC } = await import('./infrastructure/integrations/wallet-service.client');
+              const tempService = new CCS(new WC());
+              await tempService.forfeitCommitment(holdId);
+              logger.info(`[COD] Commitment hold forfeited (delivery refused) for order ${orderId}, holdId=${holdId}`);
+            } catch (holdErr: any) {
+              logger.warn(`[COD] Failed to forfeit commitment hold for refused delivery ${orderId}: ${holdErr.message}`);
+            }
+          }
+        } else if (outcomeUpper === 'NEGATIVE') {
+          await trustSignalIngestion.recordSignal({
+            buyerId,
+            signalType: TrustSignalType.COURIER_NEGATIVE_REPORT,
+            sourceService: 'logistics-service',
+            sourceEntityId: orderId,
+          });
+        }
+      } catch (err: any) {
+        logger.warn('[TrustSignal] CourierReportSubmitted handler failed', { error: err.message });
+      }
+    });
+
+    // PHONE_VERIFIED — from auth service
+    eventBus.subscribe('PhoneVerified', async (envelope: any) => {
+      try {
+        const data = envelope?.data || envelope?.payload || envelope;
+        const { userId } = data;
+        if (!userId) return;
+
+        await trustSignalIngestion.recordSignal({
+          buyerId: userId,
+          signalType: TrustSignalType.PHONE_VERIFIED,
+          sourceService: 'auth-service',
+          sourceEntityId: userId,
+        });
+      } catch (err: any) {
+        logger.warn('[TrustSignal] PhoneVerified handler failed', { error: err.message });
+      }
+    });
+
+    logger.info('✅ Progressive COD Trust Signal listeners registered');
+
+    // ── Account Age Milestone Job ─────────────────────────────────────────────
+    // Runs once every 24 hours. Checks all buyers who reached 180 days of account
+    // age since the last check and haven't yet received the ACCOUNT_AGE_MILESTONE signal.
+    const runAccountAgeMilestoneCheck = async () => {
+      try {
+        const { TrustSignalType: TST } = await import('./domain/engines/cod-trust/trust-signal.types');
+        const cutoff = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000); // 180 days ago
+
+        // Find buyers whose account is >= 180 days old and haven't received the milestone signal
+        const eligibleBuyers = await (databaseManager.getPrisma() as any).user_User.findMany({
+          where: {
+            role: 'BUYER',
+            status: 'ACTIVE',
+            createdAt: { lte: cutoff },
+          },
+          select: { id: true },
+        });
+
+        for (const buyer of eligibleBuyers) {
+          // Check if they already received the milestone signal
+          const alreadyReceived = await (databaseManager.getPrisma() as any).order_CODScoreEvent.findFirst({
+            where: { buyerId: buyer.id, signalType: TST.ACCOUNT_AGE_MILESTONE },
+          });
+          if (!alreadyReceived) {
+            await trustSignalIngestion.recordSignal({
+              buyerId: buyer.id,
+              signalType: TST.ACCOUNT_AGE_MILESTONE,
+              sourceService: 'order-service:account-age-job',
+              sourceEntityId: buyer.id,
+            });
+          }
+        }
+
+        if (eligibleBuyers.length > 0) {
+          logger.info(`[AccountAgeMilestone] Processed ${eligibleBuyers.length} eligible buyers`);
+        }
+      } catch (err: any) {
+        logger.warn('[AccountAgeMilestone] Job failed', { error: err.message });
+      }
+    };
+
+    // Run once at startup (catches any missed milestones), then every 24 hours
+    runAccountAgeMilestoneCheck();
+    const accountAgeJobInterval = setInterval(runAccountAgeMilestoneCheck, 24 * 60 * 60 * 1000);
+    // Ensure the interval doesn't prevent graceful shutdown
+    accountAgeJobInterval.unref();
+
     // Subscribe to Payment.Command.v1 to trigger PaymentSaga
     // This bridges OrderFulfillmentSaga → PaymentSaga
     eventBus.subscribe('Payment.Command.v1', async (envelope: any) => {
@@ -278,6 +475,7 @@ async function initializeService() {
     });
 
     const { CODEligibilityEngine } = await import('./domain/engines/cod-eligibility.engine');
+    const { ProgressiveCODEligibilityEngine } = await import('./domain/engines/progressive-cod-eligibility.engine');
     const { CheckCODEligibilityUseCase } = await import('./application/use-cases/check-cod-eligibility.use-case');
     const { CODCommitmentService } = await import('./domain/services/cod-commitment.service');
 
@@ -285,26 +483,37 @@ async function initializeService() {
     const { UserServiceClient } = await import('./infrastructure/integrations/user-service.client');
     const { LogisticsServiceClient } = await import('./infrastructure/integrations/logistics-service.client');
     const { WalletServiceClient } = await import('./infrastructure/integrations/wallet-service.client');
+    const { PrismaCODTrustScoreRepository } = await import('./infrastructure/repositories/prisma-cod-trust-score.repository');
+    const { PrismaCODRestrictionRepository } = await import('./infrastructure/repositories/prisma-cod-restriction.repository');
 
     const authServiceClient = new AuthServiceClient();
     const userServiceClient = new UserServiceClient();
     const logisticsServiceClient = new LogisticsServiceClient();
     const walletServiceClient = new WalletServiceClient();
 
-    // Instantiate COD components
-    const codEligibilityEngine = new CODEligibilityEngine(authServiceClient, userServiceClient, logisticsServiceClient);
+    // Instantiate Progressive COD Trust System (replaces old CODEligibilityEngine)
+    const codTrustScoreRepo = new PrismaCODTrustScoreRepository();
+    const codRestrictionRepo = new PrismaCODRestrictionRepository();
+    const codEligibilityEngine = new ProgressiveCODEligibilityEngine(
+      codTrustScoreRepo,
+      codRestrictionRepo,
+      orderRepository,
+      authServiceClient,
+      logisticsServiceClient
+    );
     const codCommitmentService = new CODCommitmentService(walletServiceClient);
-    const checkCODEligibilityUseCase = new CheckCODEligibilityUseCase(codEligibilityEngine);
+    const checkCODEligibilityUseCase = new CheckCODEligibilityUseCase(codEligibilityEngine as any);
 
     const placeOrderUseCase = new PlaceOrderUseCase(
       orderRepository,
       eventPublisher,
       orderFulfillmentSaga,
-      codEligibilityEngine,
+      codEligibilityEngine as any,
       codCommitmentService,
-      walletServiceClient
+      walletServiceClient,
+      pesapalAdapter
     );
-    const orderController = new OrderController(placeOrderUseCase, checkCODEligibilityUseCase);
+    const orderController = new OrderController(placeOrderUseCase, checkCODEligibilityUseCase, codCommitmentService);
 
     const { PrismaCODDisputeRepository } = await import('./infrastructure/database/prisma-cod-dispute.repository');
     const { ResolveCODDisputeUseCase } = await import('./application/use-cases/resolve-cod-dispute.use-case');

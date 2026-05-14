@@ -24,6 +24,8 @@ The stack is self-contained:
 - MeiliSearch: `http://localhost:7700`
 - Prometheus: `http://localhost:9090`
 - Jaeger: `http://localhost:16686`
+- **MinIO S3 API**: `http://localhost:9000` (chat media storage)
+- **MinIO Console**: `http://localhost:9001` (login: `maysar` / `maysar2026`)
 
 To stop the stack:
 ```bash

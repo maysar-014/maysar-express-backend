@@ -28,6 +28,7 @@ export interface StructuredCreateProductDto {
   enablerEnabled?: boolean;
   enablerCommissionRate?: number;
   codAccepted?: boolean;
+  freeDelivery?: boolean;
   condition?: 'new' | 'used' | 'refurbished' | 'damaged';
 }
 
@@ -92,6 +93,8 @@ export interface CreateProductDto {
   seoDescription?: string;
   enablerEnabled?: boolean;
   enablerCommissionRate?: number;
+  codAccepted?: boolean;
+  freeDelivery?: boolean;
 }
 
 /**
@@ -113,6 +116,8 @@ export interface UpdateProductDto {
   seoDescription?: string;
   enablerEnabled?: boolean;
   enablerCommissionRate?: number;
+  codAccepted?: boolean;
+  freeDelivery?: boolean;
 }
 
 /**
@@ -141,9 +146,8 @@ export interface ProductSummaryDto {
   inventoryStatus?: 'in_stock' | 'low_stock' | 'out_of_stock';
   inventoryAvailable?: number;
   codAccepted?: boolean;
+  freeDelivery?: boolean;
   condition?: 'new' | 'used' | 'refurbished' | 'damaged';
-  averageRating?: number | null;
-  reviewCount?: number;
   createdAt: Date;
 }
 
@@ -248,6 +252,7 @@ export interface ProductDetailsDto {
   updatedAt: Date;
   publishedAt?: Date;
   codAccepted?: boolean;
+  freeDelivery?: boolean;
   condition?: 'new' | 'used' | 'refurbished' | 'damaged';
 }
 

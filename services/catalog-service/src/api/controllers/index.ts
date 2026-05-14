@@ -11,6 +11,8 @@ import { BulkOperationsController } from './bulk-operations.controller';
 
 export { ProductController, PricingController, SearchController, BulkOperationsController };
 
+export * from './buy-box-admin.controller';
+
 /**
  * Controller Health Check
  * Utility function to verify controller instantiation

@@ -39,3 +39,19 @@ This document tracks the migration of service-level environment variables to the
 
 ## Verification
 The `src/config/env-validator.ts` will ensure all required prefixed variables are present during startup.
+
+### Chat Service (MinIO / S3)
+
+These variables configure the chat-service media storage. In development they point to the local MinIO container. In staging/production they point to AWS S3 or equivalent.
+
+| Variable | Dev default | Purpose |
+|---|---|---|
+| `S3_ENDPOINT` | `http://localhost:9000` | MinIO API endpoint (omit for AWS S3) |
+| `S3_REGION` | `us-east-1` | S3 region |
+| `S3_ACCESS_KEY_ID` | `maysar` | MinIO root user / AWS access key |
+| `S3_SECRET_ACCESS_KEY` | `maysar2026` | MinIO root password / AWS secret key |
+| `S3_BUCKET_CHAT_MEDIA` | `chat-media` | Bucket for images and voice notes |
+| `S3_FORCE_PATH_STYLE` | `true` | Must be `true` for MinIO, `false` for AWS S3 |
+| `MINIO_ROOT_USER` | `maysar` | MinIO container root user (Docker Compose only) |
+| `MINIO_ROOT_PASSWORD` | `maysar2026` | MinIO container root password (Docker Compose only) |
+| `NOTIFICATION_SERVICE_URL` | `http://localhost:3000/api/notifications` | Internal notification service URL |

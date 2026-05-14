@@ -48,8 +48,17 @@ export class WalletServiceClient implements IWalletServiceClient {
 
   async placeHold(userId: string, amount: number, currency: string, reason: string): Promise<string> {
     try {
-      const data = await walletPost(userId, `/${userId}/hold`, { userId, amount, currency, reason, expiresInHours: 48 });
-      const holdId = data?.data?.holdId || data?.holdId || data?.id;
+      const idempotencyKey = `hold-${userId}-${Date.now()}`;
+      const data = await walletPost(userId, `/${userId}/hold`, {
+        userId,
+        amount,
+        currency,
+        reason,
+        expiresInSeconds: 48 * 3600, // 48 hours in seconds
+        idempotencyKey,
+        correlationId: require('crypto').randomUUID(),
+      });
+      const holdId = data?.holdId || data?.data?.holdId || data?.id;
       if (!holdId) throw new Error('No holdId returned from wallet service');
       return holdId;
     } catch (error: any) {

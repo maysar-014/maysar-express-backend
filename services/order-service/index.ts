@@ -6,7 +6,7 @@ import { setupOrderRoutes } from './src/api/routes/order.routes';
 import { PrismaOrderRepository } from './src/infrastructure/database/prisma-order.repository';
 import { OrderFulfillmentSaga } from './src/application/sagas/order-fulfillment.saga';
 import { PaymentSaga } from './src/application/sagas/payment.saga';
-import { CODEligibilityEngine } from './src/domain/engines/cod-eligibility.engine';
+import { ProgressiveCODEligibilityEngine } from './src/domain/engines/progressive-cod-eligibility.engine';
 import { CODCommitmentService } from './src/domain/services/cod-commitment.service';
 import { CheckCODEligibilityUseCase } from './src/application/use-cases/check-cod-eligibility.use-case';
 import { CODDisputeController } from './src/api/controllers/cod-dispute.controller';
@@ -18,6 +18,8 @@ import { LogisticsServiceClient } from './src/infrastructure/integrations/logist
 import { WalletServiceClient } from './src/infrastructure/integrations/wallet-service.client';
 import { PesapalAdapter } from './src/infrastructure/providers/pesapal.adapter';
 import { OrderPaymentRepository } from './src/infrastructure/repositories/order-payment.repository';
+import { PrismaCODTrustScoreRepository } from './src/infrastructure/repositories/prisma-cod-trust-score.repository';
+import { PrismaCODRestrictionRepository } from './src/infrastructure/repositories/prisma-cod-restriction.repository';
 import { Payment, PaymentMethod, PaymentStatus } from './src/domain/entities/payment.entity';
 import { eventBus } from '../../shared/events/eventBus';
 import { EventIdempotency } from '../../shared/middleware/idempotency';
@@ -93,9 +95,13 @@ export const OrderModule: Module = {
             const paymentRepository = new OrderPaymentRepository(prisma);
             const paymentSaga = new PaymentSaga(pesapalAdapter, paymentRepository, walletServiceClient);
 
-            const codEligibilityEngine = new CODEligibilityEngine(
+            const codTrustScoreRepo = new PrismaCODTrustScoreRepository();
+            const codRestrictionRepo = new PrismaCODRestrictionRepository();
+            const codEligibilityEngine = new ProgressiveCODEligibilityEngine(
+                codTrustScoreRepo,
+                codRestrictionRepo,
+                orderRepository,
                 authServiceClient,
-                userServiceClient,
                 logisticsServiceClient
             );
             const codCommitmentService = new CODCommitmentService(walletServiceClient);
@@ -104,13 +110,14 @@ export const OrderModule: Module = {
                 orderRepository,
                 eventPublisher,
                 sagaOrchestrator,
-                codEligibilityEngine,
+                codEligibilityEngine as any,
                 codCommitmentService,
-                walletServiceClient
+                walletServiceClient,
+                pesapalAdapter
             );
 
-            const checkCODEligibilityUseCase = new CheckCODEligibilityUseCase(codEligibilityEngine);
-            const orderController = new OrderController(placeOrderUseCase, checkCODEligibilityUseCase);
+            const checkCODEligibilityUseCase = new CheckCODEligibilityUseCase(codEligibilityEngine as any);
+            const orderController = new OrderController(placeOrderUseCase, checkCODEligibilityUseCase, codCommitmentService);
 
             const codDisputeRepository = new PrismaCODDisputeRepository();
             const resolveCODDisputeUseCase = new ResolveCODDisputeUseCase(codDisputeRepository, eventPublisher);
@@ -192,6 +199,80 @@ export const OrderModule: Module = {
             outboxProcessor = new OutboxProcessor(prisma, outbox, eventBus, 'order-service');
             outboxProcessor.start();
             logger.info('Order-service outbox processor started');
+
+            // ── Progressive COD Trust Signal Listeners ────────────────────────
+            const { TrustSignalIngestionService } = await import('./src/application/services/trust-signal-ingestion.service');
+            const { PrismaCODScoreEventRepository: ScoreEventRepoClass } = await import('./src/infrastructure/repositories/prisma-cod-score-event.repository');
+            const { TrustSignalType } = await import('./src/domain/engines/cod-trust/trust-signal.types');
+
+            const trustSignalIngestion = new TrustSignalIngestionService(
+                codTrustScoreRepo,
+                new ScoreEventRepoClass(),
+                eventPublisher
+            );
+
+            eventBus.subscribe('OrderDelivered', async (envelope: any) => {
+                try {
+                    const data = envelope?.data || envelope?.payload || envelope;
+                    const { buyerId, orderId, paymentMethod, totalAmount } = data;
+                    if (!buyerId || !orderId) return;
+                    if (String(paymentMethod ?? '').toUpperCase() === 'COD') {
+                        await trustSignalIngestion.recordSignal({ buyerId, signalType: TrustSignalType.SUCCESSFUL_DELIVERY, sourceService: 'order-service', sourceEntityId: orderId });
+                        const amount = Number(totalAmount?.amount ?? totalAmount ?? 0);
+                        if (amount > 100_000) {
+                            await trustSignalIngestion.recordSignal({ buyerId, signalType: TrustSignalType.HIGH_VALUE_COMPLETION, sourceService: 'order-service', sourceEntityId: orderId });
+                        }
+                    }
+                } catch (err: any) { logger.warn('[TrustSignal] OrderDelivered handler failed', { error: err.message }); }
+            });
+
+            eventBus.subscribe('OrderCancelled', async (envelope: any) => {
+                try {
+                    const data = envelope?.data || envelope?.payload || envelope;
+                    const { buyerId, orderId, previousStatus } = data;
+                    if (!buyerId || !orderId) return;
+                    const dispatched = ['ASSIGNED', 'SHIPPED', 'IN_TRANSIT', 'assigned', 'shipped', 'in_transit'];
+                    if (dispatched.includes(previousStatus)) {
+                        await trustSignalIngestion.recordSignal({ buyerId, signalType: TrustSignalType.POST_DISPATCH_CANCELLATION, sourceService: 'order-service', sourceEntityId: orderId });
+                    }
+                } catch (err: any) { logger.warn('[TrustSignal] OrderCancelled handler failed', { error: err.message }); }
+            });
+
+            eventBus.subscribe('DisputeResolved', async (envelope: any) => {
+                try {
+                    const data = envelope?.data || envelope?.payload || envelope;
+                    const { buyerId, orderId, resolution } = data;
+                    if (!buyerId || !orderId) return;
+                    if (String(resolution ?? '').toUpperCase() === 'BUYER_AT_FAULT') {
+                        await trustSignalIngestion.recordSignal({ buyerId, signalType: TrustSignalType.DISPUTE_LOST, sourceService: 'order-service', sourceEntityId: orderId });
+                    }
+                } catch (err: any) { logger.warn('[TrustSignal] DisputeResolved handler failed', { error: err.message }); }
+            });
+
+            eventBus.subscribe('CourierReportSubmitted', async (envelope: any) => {
+                try {
+                    const data = envelope?.data || envelope?.payload || envelope;
+                    const { buyerId, orderId, outcome } = data;
+                    if (!buyerId || !orderId) return;
+                    const outcomeUpper = String(outcome ?? '').toUpperCase();
+                    if (outcomeUpper === 'REFUSED_DELIVERY') {
+                        await trustSignalIngestion.recordSignal({ buyerId, signalType: TrustSignalType.DELIVERY_REFUSED, sourceService: 'logistics-service', sourceEntityId: orderId });
+                    } else if (outcomeUpper === 'NEGATIVE') {
+                        await trustSignalIngestion.recordSignal({ buyerId, signalType: TrustSignalType.COURIER_NEGATIVE_REPORT, sourceService: 'logistics-service', sourceEntityId: orderId });
+                    }
+                } catch (err: any) { logger.warn('[TrustSignal] CourierReportSubmitted handler failed', { error: err.message }); }
+            });
+
+            eventBus.subscribe('PhoneVerified', async (envelope: any) => {
+                try {
+                    const data = envelope?.data || envelope?.payload || envelope;
+                    const { userId } = data;
+                    if (!userId) return;
+                    await trustSignalIngestion.recordSignal({ buyerId: userId, signalType: TrustSignalType.PHONE_VERIFIED, sourceService: 'auth-service', sourceEntityId: userId });
+                } catch (err: any) { logger.warn('[TrustSignal] PhoneVerified handler failed', { error: err.message }); }
+            });
+
+            logger.info('Order-service Progressive COD Trust Signal listeners registered');
         } catch (error) {
             logger.error('Failed init order-service', error);
             const reason = error instanceof Error ? error.message : 'Unknown initialization error';

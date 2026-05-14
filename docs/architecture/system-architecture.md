@@ -43,6 +43,7 @@ graph TB
             PRODUCTION["production-service\n/api/production"]
             MAPS["maps-service\n/api/maps"]
             KYC["kyc-service\n/api/kyc"]
+            CHAT["chat-service\n/api/chat\n+ WebSocket /ws"]
         end
 
         subgraph Infra["Shared Infrastructure"]
@@ -80,6 +81,9 @@ graph TB
     LOGISTICS --> GMAPS
     CATALOG --> S3
     Modules --> SENTRY & JAEGER & PROM
+    CHAT_SVC["chat-service"] --> MINIO["MinIO (S3-compatible)\nPort 9000\nchat-media bucket"]
+    CHAT_SVC --> REDIS
+    CHAT_SVC --> PG
 
     style GW fill:#FF6B6B,color:#fff
     style BUS fill:#9B59B6,color:#fff
@@ -284,3 +288,79 @@ graph TB
     style PG fill:#336791,color:#fff
     style REDIS fill:#DC382D,color:#fff
 ```
+
+---
+
+## 6. Chat Service Architecture
+
+> Evidence: `services/chat-service/index.ts`, `services/chat-service/src/`
+
+```mermaid
+graph TB
+    subgraph ChatService["chat-service (commerce communication layer)"]
+        subgraph API["REST API  /api/chat/v1"]
+            CC["ConversationController\nPOST /conversations\nGET /conversations\nGET /conversations/search\nPUT /conversations/:id/read\nPOST|DELETE /conversations/:id/mute"]
+            MC["MessageController\nPOST /conversations/:id/messages\nGET /conversations/:id/messages\nDELETE /conversations/:id/messages/:msgId\nPOST /messages/:id/report"]
+            MED["MediaController\nPOST /media/upload"]
+            MOD["ModerationController\nPOST|DELETE /users/:id/block"]
+            ADM["AdminController\nGET|POST|DELETE /admin/blocklist/domains"]
+        end
+
+        subgraph WS["WebSocket Gateway  /ws"]
+            WSG["WsGateway\n(faye-websocket)\nPresence heartbeat 30s\nFan-out via Redis Pub/Sub\nUnread delivery on reconnect"]
+        end
+
+        subgraph UseCases["Application Layer"]
+            UC1["InitiateConversationUseCase\n(dedup, rate limit, auto-messages)"]
+            UC2["SendMessageUseCase\n(Risk Engine, snapshot, fan-out)"]
+            UC3["MarkReadUseCase"]
+            UC4["GetConversationListUseCase"]
+            UC5["SearchConversationsUseCase\n(Meilisearch)"]
+            UC6["ModerationUseCase"]
+            UC7["MediaUploadUseCase"]
+        end
+
+        subgraph Risk["Risk Engine"]
+            RE["RiskEngine\nSpam score 0-100\nURL density · phishing domain\nFrequency · mass-messaging\nPenalty override (Redis)"]
+        end
+
+        subgraph Jobs["Background Jobs"]
+            J1["MarketplaceIntelligenceJob\n(hourly)\nDEMAND_SIGNAL\nSUPPLIER_RISK_SIGNAL"]
+            J2["RetentionJob\n(daily 02:00 UTC)\n365-day purge\nDispute flag cleanup"]
+            J3["ArchiveCourierConversationsJob\n(event-driven)\nOrderDelivered / OrderCancelled"]
+        end
+    end
+
+    subgraph Infra["Infrastructure"]
+        PG2["PostgreSQL\nchat_conversations\nchat_messages\nchat_participants\nchat_user_blocks\nchat_moderation_reports\nchat_spam_score_logs\nchat_checkout_links"]
+        REDIS2["Redis\nchat:presence:{userId} TTL 60s\nchat:ratelimit:conv:{userId}\nchat:ratelimit:msg:{userId}\nchat:conv:{id} Pub/Sub\nchat:blocklist:domains"]
+        MINIO2["MinIO / S3\nchat-media bucket\nImages + thumbnails\nVoice notes"]
+        MEILI["Meilisearch\nchat_conversations index"]
+    end
+
+    API --> UseCases
+    WS --> UseCases
+    UseCases --> Risk
+    UseCases --> Infra
+    Jobs --> Infra
+
+    style Risk fill:#FF6B6B,color:#fff
+    style WS fill:#9B59B6,color:#fff
+    style MINIO2 fill:#E67E22,color:#fff
+    style MEILI fill:#16A085,color:#fff
+```
+
+### Conversation Types
+
+| Type | Participants | Lifecycle |
+|---|---|---|
+| `BUYER_SELLER` | Buyer + Seller | Persists; deduped per (buyer, seller, product) |
+| `SELLER_SUPPLIER` | Seller + Supplier | Persists; B2B procurement |
+| `BUYER_COURIER` | Buyer + Courier | Auto-archived on order DELIVERED/CANCELLED |
+| `SELLER_TEAM` | Internal staff | Future phase |
+
+### Message Types
+
+`TEXT` · `IMAGE` · `VOICE_NOTE` · `PRODUCT_CARD` · `ORDER_REFERENCE` · `LOCATION_PIN` · `QUICK_ACTION`
+
+Product card and order reference metadata is **snapshotted at send time** — subsequent catalog/order changes do not affect historical messages.

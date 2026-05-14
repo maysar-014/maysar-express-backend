@@ -7,6 +7,9 @@
 // Product Repository
 export * from './prisma-product.repository';
 
+// Buy Box Ranking Repository
+export * from './prisma-buy-box-ranking.repository';
+
 /**
  * Repository Infrastructure Overview
  *

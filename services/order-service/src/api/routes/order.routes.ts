@@ -9,7 +9,6 @@ import { cacheInvalidation, cacheResponse } from '../../middleware/caching.middl
 import { cacheConfig } from '../../config/monitoring.config';
 import { createMaintenanceRoutes } from './maintenance.routes';
 import { validateJoiRequest } from '@shared/middleware/joi-request-validation';
-import { requireKycLevel } from '../../../../kyc-service/src/api/middleware/kyc-gate.middleware';
 
 const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$/u;
 const safeVisibleString = Joi.string().min(1).pattern(SAFE_VISIBLE_STRING_PATTERN);
@@ -147,10 +146,16 @@ export const setupOrderRoutes = (orderController: OrderController, codDisputeCon
   }
 
   // Create new order
+  // No KYC gate here — order placement is risk-based, not KYC-gated.
+  // Risk is managed by:
+  //   - COD trust score + tier limits (ProgressiveCODEligibilityEngine)
+  //   - Order value caps per trust tier
+  //   - Wallet balance checks for WALLET payment
+  //   - Pesapal fraud checks for CARD/MOBILE_PAYMENT
+  // KYC is only required for financial operations (withdrawals, large balances).
   router.post(
     '/orders',
     validateJoiRequest({ body: createOrderBodySchema }),
-    requireKycLevel(3),
     asyncHandler((req, res) => orderController.placeOrder(req, res))
   );
 

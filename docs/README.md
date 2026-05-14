@@ -10,6 +10,10 @@ Central navigation for all Maysar platform documentation. These pages describe t
 - [Modeling Quick Start](MODELING_QUICK_START.md) — How to create and update Mermaid diagrams
 - [Diagram Maintenance Guide](DIAGRAM_MAINTENANCE_GUIDE.md) — Diagram update workflow and conventions
 
+## Chat System
+
+- [Chat System Documentation](chat-system/CHAT_SYSTEM.md) — Full reference: architecture, REST API, WebSocket, flows, trust & safety, background jobs, and how to use it
+
 ## Architecture
 
 - [Architecture Constitution](../architecture_constitution.md) — Governance rules for the modular monolith
@@ -105,6 +109,7 @@ Central navigation for all Maysar platform documentation. These pages describe t
 | training-service | [README](../services/training-service/README.md) | [openapi.yaml](../services/training-service/openapi.yaml) |
 | user-service | [README](../services/user-service/README.md) | [openapi.yaml](../services/user-service/openapi.yaml) |
 | wallet-service | [README](../services/wallet-service/README.md) | — |
+| chat-service | [Chat System Docs](chat-system/CHAT_SYSTEM.md) | — |
 
 ## Shared Libraries
 
