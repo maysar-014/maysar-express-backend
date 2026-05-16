@@ -121,6 +121,22 @@ export interface UpdateProductDto {
 }
 
 /**
+ * Campaign promotion info attached to a product in search/listing responses.
+ * Present only when the product is covered by an active campaign.
+ */
+export interface ProductCampaignDto {
+  campaignId: string;
+  campaignName: string;
+  campaignType: string;
+  originalPrice: { amount: number; currency: string };
+  discountedPrice: { amount: number; currency: string };
+  discountPercentage: number;
+  discountValue: number;
+  ruleType: 'PERCENTAGE_DISCOUNT' | 'FIXED_DISCOUNT' | 'FIXED_PRICE' | 'BUY_GET';
+  endsAt: string | null; // ISO 8601 UTC
+}
+
+/**
  * Product Summary DTO
  * Compact representation for product listings
  */
@@ -149,6 +165,8 @@ export interface ProductSummaryDto {
   freeDelivery?: boolean;
   condition?: 'new' | 'used' | 'refurbished' | 'damaged';
   createdAt: Date;
+  /** Present when the product is covered by an active campaign */
+  campaign?: ProductCampaignDto | null;
 }
 
 /**

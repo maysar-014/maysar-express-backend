@@ -10,6 +10,7 @@ import {
   SearchService
 } from '../../domain/interfaces';
 import { ProductReviewRepository } from '../../domain/repositories/product-review.repository.interface';
+import type { CampaignEnrichmentService } from '../../infrastructure/services/campaign-enrichment.service';
 
 export interface SearchProductsRequest {
   query?: string;
@@ -62,6 +63,8 @@ export interface SearchResult {
   averageRating?: number | null;
   reviewCount?: number;
   createdAt: Date;
+  /** Present when the product is covered by an active campaign */
+  campaign?: import('../dto/product.dto').ProductCampaignDto | null;
 }
 
 export interface SearchProductsResponse {
@@ -99,7 +102,8 @@ export class SearchProductsUseCase {
     private readonly productRepository: ProductRepository,
     private readonly categoryRepository: CategoryRepository,
     private readonly searchService: SearchService,
-    private readonly reviewRepository?: ProductReviewRepository
+    private readonly reviewRepository?: ProductReviewRepository,
+    private readonly campaignEnrichment?: CampaignEnrichmentService
   ) {}
 
   async execute(request: SearchProductsRequest): Promise<SearchProductsResponse> {
@@ -150,6 +154,27 @@ export class SearchProductsUseCase {
 
       // Build facets
       const facets = await this.buildFacets(sortedResults, request.filters);
+
+      // Enrich with active campaign data (isOnCampaign, discountedPrice, etc.)
+      if (this.campaignEnrichment && enrichedResults.length > 0) {
+        try {
+          const campaignMap = await this.campaignEnrichment.fetchActiveCampaigns(
+            enrichedResults.map(p => ({
+              id: p.id,
+              categoryId: p.categoryId,
+              price: p.price,
+            }))
+          );
+          if (campaignMap.size > 0) {
+            enrichedResults = enrichedResults.map(product => ({
+              ...product,
+              campaign: campaignMap.get(product.id) ?? null,
+            }));
+          }
+        } catch {
+          // Non-fatal — proceed without campaign data
+        }
+      }
 
       // Build response
       const response: SearchProductsResponse = {

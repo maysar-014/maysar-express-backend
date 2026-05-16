@@ -16,12 +16,13 @@ Central navigation for all Maysar platform documentation. These pages describe t
 
 ## Architecture
 
-- [Architecture Constitution](../architecture_constitution.md) — Governance rules for the modular monolith
-- [Software Modeling Constitution](../software-modeling-constitution.md) — Modeling standards and diagram types
-- [API Documentation Constitution](../api-documentation-constitution.md) — OpenAPI and endpoint documentation standards
-- [Testing Constitution](../testing-constitution.md) — Testing standards and coverage requirements
-- [Integration Constitution](../integration_constitution.md) — Inter-module integration standards
-- [Containerization Constitution](../containerization_constitution.md) — Container and deployment standards
+- [Architecture Constitution](../architecture_constitution.md) - Governance rules for the modular monolith
+- [Software Modeling Constitution](../software-modeling-constitution.md) - Modeling standards and diagram types
+- [API Documentation Constitution](../api-documentation-constitution.md) - OpenAPI and endpoint documentation standards
+- [Testing Constitution](../testing-constitution.md) - Testing standards and coverage requirements
+- [Integration Constitution](../integration_constitution.md) - Inter-module integration standards
+- [Containerization Constitution](../containerization_constitution.md) - Container and deployment standards
+- [Performance Constitution](../performance_constitution.md) - Binding page-load budgets, API latency rules, and performance enforcement
 
 ## System Design Diagrams
 
@@ -116,3 +117,5 @@ Central navigation for all Maysar platform documentation. These pages describe t
 - [shared/README.md](../shared/README.md) — Index of all shared modules
 - [shared-contracts/README.md](../shared-contracts/README.md) — Cross-service event and type contracts
 - [events/README.md](../events/README.md) — Event catalog and schema registry
+
+

@@ -340,17 +340,22 @@ export class GoogleOAuthController {
       }
 
       const returnTo = this.decodeReturnToFromState(typeof state === 'string' ? state : undefined);
-      if (returnTo) {
-        const redirectUrl = new URL(returnTo);
+      const frontendBase = this.getFrontendBaseUrl();
+      // Default callback path — no locale prefix so the frontend's i18n middleware handles routing
+      const redirectTarget = returnTo || (frontendBase ? `${frontendBase}/oauth/callback` : null);
+
+      if (redirectTarget) {
+        const redirectUrl = new URL(redirectTarget);
         redirectUrl.hash = new URLSearchParams({
           accessToken,
-          refreshToken,
+          ...(refreshToken ? { refreshToken } : {}),
         }).toString();
 
         res.redirect(303, redirectUrl.toString());
         return;
       }
 
+      // Last resort fallback — no frontend URL configured (should not happen in practice)
       res.json({
         success: true,
         user: {

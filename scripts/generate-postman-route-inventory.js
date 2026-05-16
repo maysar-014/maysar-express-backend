@@ -8,6 +8,7 @@ const collectionPath = path.join(repoRoot, 'postman', 'Maysar-Platform-E2E.postm
 const unmountedReportPath = path.join(repoRoot, 'reports', 'unmounted-routes.json');
 
 const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head'];
+const ROUTER_RECEIVER_PATTERN = '(?:[A-Za-z0-9_]*router|[A-Za-z0-9_]*Router|this\\.router)';
 
 const manualModuleFileMappings = {
   // Modules that mount an app created in a non-routes file
@@ -47,8 +48,63 @@ function joinPaths(...parts) {
 }
 
 function extractModuleName(indexContent) {
-  const match = indexContent.match(/name:\s*['"]([^'"]+)['"]/);
-  return match ? match[1] : null;
+  const exportedModuleMatch = indexContent.match(
+    /export\s+const\s+\w+Module\s*:\s*Module\s*=\s*\{[\s\S]*?\bname:\s*['"]([^'"]+)['"]/
+  );
+  if (exportedModuleMatch) {
+    return exportedModuleMatch[1];
+  }
+
+  const allMatches = [...indexContent.matchAll(/name:\s*['"]([^'"]+)['"]/g)];
+  return allMatches.length ? allMatches[allMatches.length - 1][1] : null;
+}
+
+function extractRouteTemplateValues(content) {
+  const values = new Map();
+
+  const literalAssignments = [
+    ...content.matchAll(/\bconst\s+([A-Za-z0-9_]+)\s*=\s*['"`]([^'"`]+)['"`]\s*;/g),
+    ...content.matchAll(/\b(?:let|var)\s+([A-Za-z0-9_]+)\s*=\s*['"`]([^'"`]+)['"`]\s*;/g),
+  ];
+
+  literalAssignments.forEach((match) => {
+    values.set(match[1], match[2]);
+  });
+
+  const versionMatch = content.match(/\bapiVersion:\s*['"]([^'"]+)['"]/);
+  if (versionMatch) {
+    values.set('routesConfig.apiVersion', versionMatch[1]);
+  }
+
+  if (!values.has('apiPrefix') && versionMatch && content.includes('routesConfig.apiVersion')) {
+    values.set('apiPrefix', `/${versionMatch[1]}`);
+  }
+
+  return values;
+}
+
+function resolveRoutePath(routePath, templateValues) {
+  if (!routePath || !routePath.includes('${')) {
+    return routePath;
+  }
+
+  let resolved = routePath;
+  for (let i = 0; i < 5 && resolved.includes('${'); i += 1) {
+    const matches = [...resolved.matchAll(/\$\{([A-Za-z0-9_.]+)\}/g)];
+    if (!matches.length) {
+      break;
+    }
+
+    for (const match of matches) {
+      const replacement = templateValues.get(match[1]);
+      if (!replacement) {
+        return routePath;
+      }
+      resolved = resolved.replace(match[0], replacement);
+    }
+  }
+
+  return resolved;
 }
 
 function extractImports(indexContent, indexDir) {
@@ -171,7 +227,7 @@ function extractRouteUseMappings(indexContent, imports, moduleBase) {
     }
   }
 
-  const useRegex = /\b[A-Za-z0-9_$.]+(?:\.|\?\.)use\(([^;]+)\);/g;
+  const useRegex = new RegExp(`\\b${ROUTER_RECEIVER_PATTERN}(?:\\.|\\?\\.)use\\(([^;]+)\\);`, 'g');
   let match;
   while ((match = useRegex.exec(indexContent)) !== null) {
     const args = match[1].trim();
@@ -215,6 +271,32 @@ function extractRouteUseMappings(indexContent, imports, moduleBase) {
         }
         mappings.get(filePath).add(joinPaths(moduleBase));
       }
+    }
+  });
+
+  return mappings;
+}
+
+function extractRouteAliasMappings(indexContent, imports) {
+  const mappings = new Map();
+  const aliasPatterns = [
+    /routeAliases\s*=\s*\[\s*\{\s*path:\s*['"`]([^'"`]+)['"`]\s*,\s*router:\s*([A-Za-z0-9_]+)/g,
+    /routeAliases\s*:\s*\[\s*\{\s*path:\s*['"`]([^'"`]+)['"`]\s*,\s*router:\s*([A-Za-z0-9_]+)/g,
+  ];
+
+  aliasPatterns.forEach((regex) => {
+    let match;
+    while ((match = regex.exec(indexContent)) !== null) {
+      const aliasPath = match[1];
+      const routerSymbol = match[2];
+      const filePath = imports.get(routerSymbol);
+      if (!filePath) {
+        continue;
+      }
+      if (!mappings.has(filePath)) {
+        mappings.set(filePath, new Set());
+      }
+      mappings.get(filePath).add(aliasPath);
     }
   });
 
@@ -269,11 +351,12 @@ function buildTransitiveRouteMappings(initialMappings) {
 
 function extractInlineRoutes(indexContent, moduleBase) {
   const routes = [];
-  const methodRegex = new RegExp(`\\b\\w+\\.(${HTTP_METHODS.join('|')})\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'g');
+  const templateValues = extractRouteTemplateValues(indexContent);
+  const methodRegex = new RegExp(`\\b${ROUTER_RECEIVER_PATTERN}\\.(${HTTP_METHODS.join('|')})\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'g');
   let match;
   while ((match = methodRegex.exec(indexContent)) !== null) {
     const method = match[1].toUpperCase();
-    const routePath = match[2];
+    const routePath = resolveRoutePath(match[2], templateValues);
     routes.push({ method, path: joinPaths(moduleBase, routePath) });
   }
   return routes;
@@ -282,11 +365,12 @@ function extractInlineRoutes(indexContent, moduleBase) {
 function extractRoutesFromFile(filePath, prefixes) {
   const content = readFile(filePath);
   const routes = [];
-  const methodRegex = new RegExp(`\\b\\w+\\.(${HTTP_METHODS.join('|')})\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'g');
+  const templateValues = extractRouteTemplateValues(content);
+  const methodRegex = new RegExp(`\\b${ROUTER_RECEIVER_PATTERN}\\.(${HTTP_METHODS.join('|')})\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'g');
   let match;
   while ((match = methodRegex.exec(content)) !== null) {
     const method = match[1].toUpperCase();
-    const routePath = match[2];
+    const routePath = resolveRoutePath(match[2], templateValues);
     prefixes.forEach(prefix => {
       routes.push({ method, path: joinPaths(prefix, routePath) });
     });
@@ -297,7 +381,7 @@ function extractRoutesFromFile(filePath, prefixes) {
 function extractRawRoutesFromFile(filePath) {
   const content = readFile(filePath);
   const routes = [];
-  const methodRegex = new RegExp(`\\b\\w+\\.(${HTTP_METHODS.join('|')})\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'g');
+  const methodRegex = new RegExp(`\\b${ROUTER_RECEIVER_PATTERN}\\.(${HTTP_METHODS.join('|')})\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'g');
   let match;
   while ((match = methodRegex.exec(content)) !== null) {
     routes.push({ method: match[1].toUpperCase(), path: match[2] });
@@ -329,6 +413,14 @@ function buildRouteInventory() {
     const indexDir = path.dirname(indexPath);
     const imports = extractImports(indexContent, indexDir);
     const mappings = extractRouteUseMappings(indexContent, imports, moduleBase);
+    const aliasMappings = extractRouteAliasMappings(indexContent, imports);
+
+    aliasMappings.forEach((prefixes, filePath) => {
+      if (!mappings.has(filePath)) {
+        mappings.set(filePath, new Set());
+      }
+      prefixes.forEach((prefix) => mappings.get(filePath).add(prefix));
+    });
 
     // Manual overrides for modules that mount an app factory directly
     const manual = manualModuleFileMappings[moduleName] || [];
@@ -446,8 +538,6 @@ function updateCollection() {
   console.log(`Unmounted route files: ${unmounted.files.length}`);
 }
 
-updateCollection();
-
 function buildUnmountedReport() {
   const allRouteFiles = collectRouteFiles(servicesDir);
 
@@ -462,6 +552,14 @@ function buildUnmountedReport() {
     const moduleBase = joinPaths('/api', moduleName.replace(/-service$/, ''));
     const imports = extractImports(indexContent, path.dirname(indexPath));
     const mappings = extractRouteUseMappings(indexContent, imports, moduleBase);
+    const aliasMappings = extractRouteAliasMappings(indexContent, imports);
+
+    aliasMappings.forEach((prefixes, filePath) => {
+      if (!mappings.has(filePath)) {
+        mappings.set(filePath, new Set());
+      }
+      prefixes.forEach((prefix) => mappings.get(filePath).add(prefix));
+    });
 
     (manualModuleFileMappings[moduleName] || []).forEach(filePath => {
       if (!mappings.has(filePath)) {
@@ -493,3 +591,14 @@ function buildUnmountedReport() {
     }))
   };
 }
+
+if (require.main === module) {
+  updateCollection();
+}
+
+module.exports = {
+  buildRouteInventory,
+  buildUnmountedReport,
+  collectModuleIndexes,
+  extractModuleName,
+};

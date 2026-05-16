@@ -143,6 +143,7 @@ npm run staging:down
 | [testing-constitution.md](testing-constitution.md) | Testing standards |
 | [integration_constitution.md](integration_constitution.md) | Integration standards |
 | [containerization_constitution.md](containerization_constitution.md) | Container standards |
+| [performance_constitution.md](performance_constitution.md) | Performance budgets, latency rules, and the binding 3-second page-load law |
 
 ## Infrastructure
 

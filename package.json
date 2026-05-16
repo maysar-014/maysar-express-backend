@@ -9,6 +9,8 @@
     "postman:sync": "node scripts/postman/sync-openapi-collection.js",
     "postman:inventory": "node scripts/generate-postman-route-inventory.js",
     "contract:sync": "node scripts/contract/sync-openapi.js",
+    "contract:sync:routes": "node scripts/contract/sync-openapi-routes.js",
+    "contract:verify:routes": "node scripts/contract/verify-openapi-routes.js",
     "test:contract": "cross-env SCHEMATHESIS_AUTH_MODE=strict node scripts/testing/run-contract-tests.js",
     "test:contract:examples": "cross-env SCHEMATHESIS_PHASES=examples SCHEMATHESIS_ALLOW_EXAMPLES_ONLY=1 SCHEMATHESIS_AUTH_MODE=strict SCHEMATHESIS_WARNINGS=off node scripts/testing/run-contract-tests.js",
     "test:contract:coverage": "cross-env SCHEMATHESIS_PHASES=examples,coverage SCHEMATHESIS_AUTH_MODE=strict node scripts/testing/run-contract-tests.js",

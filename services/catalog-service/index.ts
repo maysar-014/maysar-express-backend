@@ -58,6 +58,7 @@ import { ManageCategoryStrategyUseCase } from './src/application/use-cases/manag
 import { ApplyBuyBoxOverrideUseCase } from './src/application/use-cases/apply-buy-box-override.use-case';
 import { ClearAnomalyFlagUseCase } from './src/application/use-cases/clear-anomaly-flag.use-case';
 import { CatalogSearchIndexer } from './src/infrastructure/services/catalog-search-indexer.service';
+import { CampaignEnrichmentService } from './src/infrastructure/services/campaign-enrichment.service';
 import { CreateProductWithMatchingUseCase } from './src/application/use-cases/create-product-with-matching.use-case';
 import { MatchProductUseCase } from './src/application/use-cases/match-product.use-case';
 import { ConfirmProductMatchUseCase } from './src/application/use-cases/confirm-product-match.use-case';
@@ -298,7 +299,13 @@ export const CatalogModule: Module = {
 
         const getProductUseCase = new GetProductUseCase(productRepository, mediaRepository, searchService, reviewRepository);
         const getProductsBySellerUseCase = new GetProductsBySellerUseCase(productRepository);
-        const searchProductsUseCase = new SearchProductsUseCase(productRepository, categoryRepository, searchService, reviewRepository);
+        const searchProductsUseCase = new SearchProductsUseCase(
+            productRepository,
+            categoryRepository,
+            searchService,
+            reviewRepository,
+            new CampaignEnrichmentService(prisma)
+        );
         const updateProductUseCase = new UpdateProductUseCase(productRepository as any, catalogSearchIndexer);
         const deleteProductUseCase = new DeleteProductUseCase(productRepository as any, catalogSearchIndexer);
         const publishProductUseCase = new PublishProductUseCase(productRepository as any, catalogSearchIndexer);

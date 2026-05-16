@@ -303,7 +303,6 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
         include: {
           category: true,
           variants: true,
-          mediaRef: { orderBy: { displayOrder: 'asc' } }
         },
         skip,
         take: limit,
@@ -313,6 +312,33 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
     ]);
 
     const products = await this.enrichManyWithStock(productsData.map(product => this.normalizeProductRecord(product)));
+
+    // Fetch media refs separately (MediaRef uses entityId/entityType, not a Prisma relation)
+    const productIds = productsData.map(p => p.id);
+    if (productIds.length > 0) {
+      try {
+        const mediaRefs = await this.prisma.mediaRef.findMany({
+          where: { entityId: { in: productIds }, entityType: 'product' },
+          orderBy: { displayOrder: 'asc' }
+        });
+        const mediaByProduct = new Map<string, string[]>();
+        for (const ref of mediaRefs) {
+          const existing = mediaByProduct.get(ref.entityId) ?? [];
+          existing.push(ref.url);
+          mediaByProduct.set(ref.entityId, existing);
+        }
+        for (const product of products) {
+          const urls = mediaByProduct.get(product.id) ?? [];
+          if (urls.length > 0) {
+            product.mediaUrls = urls;
+            product.images = urls;
+            product.thumbnailUrl = urls[0];
+          }
+        }
+      } catch {
+        // Non-fatal — products return without images
+      }
+    }
 
     return {
       products,

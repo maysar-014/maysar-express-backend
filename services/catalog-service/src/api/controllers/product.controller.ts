@@ -383,7 +383,8 @@ export class ProductController {
           condition: product.condition,
           averageRating: product.averageRating ?? null,
           reviewCount: product.reviewCount ?? 0,
-          createdAt: product.createdAt
+          createdAt: product.createdAt,
+          campaign: (product as any).campaign ?? null,
         }));
 
         const response: PaginatedResponse<ProductSummaryDto> = {
@@ -408,6 +409,7 @@ export class ProductController {
 
         res.status(200).json(response);
       } else {
+        console.error('ProductController.searchProducts use case error:', result.message, (result as any).errors);
         this.sendInternalError(res, new Error(result.message));
       }
 

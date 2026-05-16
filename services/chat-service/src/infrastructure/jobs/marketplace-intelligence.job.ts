@@ -13,18 +13,6 @@ import { ServiceLogger } from '../../../../../shared/logger/logger';
 
 const logger = new ServiceLogger('MarketplaceIntelligenceJob', 'chat-service');
 
-// Complaint phrases that indicate a supplier issue
-const COMPLAINT_PHRASES = [
-  'not delivered',
-  'late delivery',
-  'wrong item',
-  'damaged',
-  'never arrived',
-  'supplier problem',
-  'out of stock',
-  'no response',
-];
-
 export class MarketplaceIntelligenceJob {
   private task: cron.ScheduledTask | null = null;
 
@@ -97,11 +85,8 @@ export class MarketplaceIntelligenceJob {
   private async emitSupplierRiskSignals(): Promise<void> {
     const windowStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-    // Build a LIKE condition for each complaint phrase
-    const phraseConditions = COMPLAINT_PHRASES.map(
-      (phrase) => `LOWER(m.content) LIKE '%${phrase.replace(/'/g, "''")}%'`,
-    ).join(' OR ');
-
+    // Use a simple approach: find SELLER_SUPPLIER conversations with recent messages
+    // containing complaint phrases, grouped by supplier participant
     const rows = await this.prisma.$queryRaw<Array<{ supplierId: string; complaintCount: bigint }>>`
       SELECT
         p."userId" AS "supplierId",
@@ -113,7 +98,17 @@ export class MarketplaceIntelligenceJob {
         m."createdAt" >= ${windowStart}
         AND m."deletedAt" IS NULL
         AND m.type = 'TEXT'
-        AND (${this.prisma.$queryRaw`SELECT 1`}, ${phraseConditions})
+        AND m.content IS NOT NULL
+        AND (
+          LOWER(m.content) LIKE '%not delivered%'
+          OR LOWER(m.content) LIKE '%late delivery%'
+          OR LOWER(m.content) LIKE '%wrong item%'
+          OR LOWER(m.content) LIKE '%damaged%'
+          OR LOWER(m.content) LIKE '%never arrived%'
+          OR LOWER(m.content) LIKE '%supplier problem%'
+          OR LOWER(m.content) LIKE '%out of stock%'
+          OR LOWER(m.content) LIKE '%no response%'
+        )
       GROUP BY p."userId"
       HAVING COUNT(m.id) > 3
     `;
