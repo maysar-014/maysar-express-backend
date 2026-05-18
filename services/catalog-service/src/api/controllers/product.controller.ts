@@ -365,6 +365,7 @@ export class ProductController {
         const productDtos: ProductSummaryDto[] = result.results.map(product => ({
           id: product.id,
           name: product.name,
+          description: product.description ?? null,
           price: product.price,
           categoryId: product.categoryId,
           categoryName: product.categoryName,
@@ -375,7 +376,9 @@ export class ProductController {
           type: product.type,
           tags: product.tags || [],
           status: product.status,
-          thumbnailUrl: product.thumbnailUrl || product.mediaUrls?.[0],
+          thumbnailUrl: product.thumbnailUrl || product.mediaUrls?.[0] || null,
+          mediaUrls: Array.isArray(product.mediaUrls) ? product.mediaUrls : [],
+          attributes: product.attributes ?? null,
           inventoryStatus: product.inventoryStatus,
           inventoryAvailable: product.inventoryAvailable,
           codAccepted: product.codAccepted,
@@ -384,6 +387,13 @@ export class ProductController {
           averageRating: product.averageRating ?? null,
           reviewCount: product.reviewCount ?? 0,
           createdAt: product.createdAt,
+          slug: (product as any).slug ?? null,
+          brand: (product as any).brand ?? null,
+          qualityScore: (product as any).qualityScore,
+          variantId: (product as any).variantId ?? null,
+          sku: (product as any).sku ?? null,
+          compareAtPrice: (product as any).compareAtPrice ?? null,
+          weight: (product as any).weight ?? null,
           campaign: (product as any).campaign ?? null,
         }));
 

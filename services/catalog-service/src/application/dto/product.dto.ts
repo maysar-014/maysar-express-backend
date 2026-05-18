@@ -143,6 +143,7 @@ export interface ProductCampaignDto {
 export interface ProductSummaryDto {
   id: string;
   name: string;
+  description?: string | null;
   price: {
     amount: number;
     currency: string;
@@ -156,7 +157,9 @@ export interface ProductSummaryDto {
   type: string;
   tags: string[];
   status: string;
-  thumbnailUrl?: string;
+  thumbnailUrl?: string | null;
+  mediaUrls?: string[];
+  attributes?: Record<string, unknown> | null;
   averageRating?: number;
   reviewCount?: number;
   inventoryStatus?: 'in_stock' | 'low_stock' | 'out_of_stock';
@@ -165,6 +168,14 @@ export interface ProductSummaryDto {
   freeDelivery?: boolean;
   condition?: 'new' | 'used' | 'refurbished' | 'damaged';
   createdAt: Date;
+  slug?: string | null;
+  brand?: string | null;
+  qualityScore?: number;
+  /** First variant details — needed for add-to-cart */
+  variantId?: string | null;
+  sku?: string | null;
+  compareAtPrice?: number | null;
+  weight?: number | null;
   /** Present when the product is covered by an active campaign */
   campaign?: ProductCampaignDto | null;
 }

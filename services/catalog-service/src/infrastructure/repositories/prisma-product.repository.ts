@@ -547,7 +547,8 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
         : undefined,
       codAccepted: productData.codAccepted === true,
       freeDelivery: productData.freeDelivery === true,
-      condition: productData.condition ?? 'new'
+      condition: productData.condition ?? 'new',
+      qualityScore: typeof productData.qualityScore === 'number' ? productData.qualityScore : 0,
     };
   }
 

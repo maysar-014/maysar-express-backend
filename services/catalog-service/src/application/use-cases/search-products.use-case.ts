@@ -54,6 +54,7 @@ export interface SearchResult {
   status: string;
   mediaUrls?: string[];
   thumbnailUrl?: string;
+  attributes?: Record<string, unknown>;
   relevanceScore?: number;
   inventoryStatus?: 'in_stock' | 'low_stock' | 'out_of_stock';
   inventoryAvailable?: number;
@@ -63,6 +64,13 @@ export interface SearchResult {
   averageRating?: number | null;
   reviewCount?: number;
   createdAt: Date;
+  slug?: string | null;
+  brand?: string | null;
+  qualityScore?: number;
+  variantId?: string | null;
+  sku?: string | null;
+  compareAtPrice?: number | null;
+  weight?: number | null;
   /** Present when the product is covered by an active campaign */
   campaign?: import('../dto/product.dto').ProductCampaignDto | null;
 }
@@ -462,13 +470,21 @@ export class SearchProductsUseCase {
         thumbnailUrl: product.thumbnailUrl
           || (Array.isArray(product.mediaUrls) ? product.mediaUrls[0] : undefined)
           || (Array.isArray(product.images) ? product.images[0] : undefined),
+        attributes: product.attributes ?? variants[0]?.attributes ?? {},
         relevanceScore: product.score || product.relevanceScore,
         inventoryStatus,
         inventoryAvailable: totalAvailable,
         codAccepted: product.codAccepted === true,
         freeDelivery: product.freeDelivery === true,
         condition: (product.condition ?? 'new') as 'new' | 'used' | 'refurbished' | 'damaged',
-        createdAt: product.createdAt
+        createdAt: product.createdAt,
+        slug: product.slug ?? null,
+        brand: product.brand ?? null,
+        qualityScore: typeof product.qualityScore === 'number' ? product.qualityScore : undefined,
+        variantId: variants[0]?.id ?? null,
+        sku: variants[0]?.sku ?? null,
+        compareAtPrice: variants[0]?.compareAtPrice != null ? Number(variants[0].compareAtPrice) : null,
+        weight: variants[0]?.weight != null ? Number(variants[0].weight) : null,
       };
     });
 
