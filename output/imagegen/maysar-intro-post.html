@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1080, initial-scale=1.0" />
+  <title>Maysar Market Intro Post</title>
+  <style>
+    :root {
+      --bg: #07111a;
+      --bg-soft: #0d1d2a;
+      --panel: rgba(12, 28, 41, 0.72);
+      --panel-strong: rgba(14, 34, 48, 0.9);
+      --stroke: rgba(255, 255, 255, 0.1);
+      --text: #f6f2ea;
+      --muted: rgba(246, 242, 234, 0.72);
+      --gold: #f2b24f;
+      --gold-soft: #ffdca0;
+      --teal: #6ed6d1;
+      --cyan: #8be2ff;
+      --shadow: 0 40px 120px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 1080px;
+      height: 1350px;
+      overflow: hidden;
+      background: #02070c;
+      font-family: "Aptos", "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+    }
+
+    body {
+      position: relative;
+    }
+
+    .poster {
+      position: relative;
+      width: 1080px;
+      height: 1350px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(242, 178, 79, 0.20), transparent 26%),
+        radial-gradient(circle at 80% 18%, rgba(110, 214, 209, 0.18), transparent 24%),
+        radial-gradient(circle at 72% 74%, rgba(73, 137, 202, 0.18), transparent 30%),
+        linear-gradient(135deg, #041018 0%, #091926 40%, #0a1520 100%);
+    }
+
+    .grain {
+      position: absolute;
+      inset: 0;
+      opacity: 0.08;
+      background-image:
+        radial-gradient(rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px),
+        radial-gradient(rgba(255, 255, 255, 0.32) 0.4px, transparent 0.4px);
+      background-position: 0 0, 22px 18px;
+      background-size: 20px 20px, 26px 26px;
+      mix-blend-mode: soft-light;
+      pointer-events: none;
+    }
+
+    .arc {
+      position: absolute;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      filter: blur(0.2px);
+    }
+
+    .arc.a { width: 680px; height: 680px; top: -180px; right: -120px; }
+    .arc.b { width: 920px; height: 920px; top: 260px; right: -360px; }
+    .arc.c { width: 820px; height: 820px; top: 640px; left: -420px; }
+
+    .topbar {
+      position: absolute;
+      left: 72px;
+      right: 72px;
+      top: 54px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 2;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .brand-mark {
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      background:
+        linear-gradient(145deg, rgba(242, 178, 79, 0.94), rgba(255, 220, 160, 0.86));
+      box-shadow:
+        0 20px 40px rgba(242, 178, 79, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #102230;
+      font-family: "Bahnschrift", "Arial Black", sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
+
+    .brand-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .brand-copy .name {
+      font-family: "Bahnschrift", "Arial Black", sans-serif;
+      font-size: 24px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .brand-copy .tag {
+      font-size: 12px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(246, 242, 234, 0.56);
+    }
+
+    .launch-pill {
+      padding: 14px 20px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold-soft);
+      backdrop-filter: blur(24px);
+    }
+
+    .left {
+      position: absolute;
+      left: 72px;
+      top: 170px;
+      width: 470px;
+      z-index: 2;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--teal);
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      backdrop-filter: blur(18px);
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--teal);
+      box-shadow: 0 0 18px rgba(110, 214, 209, 0.9);
+    }
+
+    h1 {
+      margin: 28px 0 20px;
+      font-family: "Bahnschrift", "Arial Black", sans-serif;
+      font-size: 92px;
+      line-height: 0.94;
+      letter-spacing: -0.05em;
+      text-transform: uppercase;
+    }
+
+    h1 span {
+      display: block;
+    }
+
+    .headline-accent {
+      color: var(--gold-soft);
+      text-shadow: 0 0 28px rgba(242, 178, 79, 0.18);
+    }
+
+    .subcopy {
+      margin: 0 0 28px;
+      font-size: 23px;
+      line-height: 1.45;
+      color: var(--muted);
+      max-width: 440px;
+    }
+
+    .role-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+
+    .role-pills span {
+      padding: 11px 16px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.055);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: rgba(246, 242, 234, 0.88);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      backdrop-filter: blur(18px);
+    }
+
+    .statement {
+      position: relative;
+      padding: 28px 28px 30px;
+      border-radius: 32px;
+      background: linear-gradient(180deg, rgba(13, 29, 42, 0.82), rgba(8, 20, 31, 0.72));
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(24px);
+    }
+
+    .statement::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 32px;
+      padding: 1px;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.02));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .statement h2 {
+      margin: 0 0 14px;
+      font-size: 14px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold-soft);
+    }
+
+    .statement p {
+      margin: 0;
+      font-size: 21px;
+      line-height: 1.52;
+      color: rgba(246, 242, 234, 0.88);
+    }
+
+    .features {
+      position: absolute;
+      left: 72px;
+      right: 72px;
+      bottom: 74px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      z-index: 2;
+    }
+
+    .feature {
+      position: relative;
+      min-height: 208px;
+      padding: 26px 24px;
+      border-radius: 28px;
+      background: linear-gradient(180deg, rgba(10, 23, 34, 0.86), rgba(8, 18, 28, 0.7));
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 28px 60px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(26px);
+      overflow: hidden;
+    }
+
+    .feature::before {
+      content: "";
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      right: -90px;
+      top: -70px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.12), transparent 68%);
+      pointer-events: none;
+    }
+
+    .feature .kicker {
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(246, 242, 234, 0.56);
+      margin-bottom: 12px;
+    }
+
+    .feature h3 {
+      margin: 0 0 12px;
+      font-family: "Bahnschrift", "Arial Black", sans-serif;
+      font-size: 28px;
+      line-height: 1.06;
+      letter-spacing: -0.03em;
+    }
+
+    .feature p {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.56;
+      color: rgba(246, 242, 234, 0.74);
+    }
+
+    .right {
+      position: absolute;
+      top: 132px;
+      right: 72px;
+      width: 468px;
+      height: 904px;
+      z-index: 2;
+    }
+
+    .glow {
+      position: absolute;
+      inset: 82px 0 0 60px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 28%, rgba(242, 178, 79, 0.34), transparent 28%),
+        radial-gradient(circle at 64% 62%, rgba(110, 214, 209, 0.26), transparent 30%),
+        radial-gradient(circle at 75% 24%, rgba(139, 226, 255, 0.18), transparent 24%);
+      filter: blur(34px);
+      opacity: 0.92;
+      pointer-events: none;
+    }
+
+    .phone {
+      position: absolute;
+      right: 12px;
+      top: 24px;
+      width: 388px;
+      height: 796px;
+      border-radius: 48px;
+      padding: 14px;
+      background:
+        linear-gradient(165deg, rgba(31, 44, 58, 0.98), rgba(8, 15, 23, 0.98));
+      box-shadow:
+        0 48px 110px rgba(0, 0, 0, 0.48),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .screen {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 36px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 28% 18%, rgba(242, 178, 79, 0.25), transparent 24%),
+        radial-gradient(circle at 76% 18%, rgba(110, 214, 209, 0.22), transparent 24%),
+        linear-gradient(180deg, #0b1822 0%, #08131b 52%, #081019 100%);
+    }
+
+    .screen::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 14px;
+      width: 138px;
+      height: 28px;
+      transform: translateX(-50%);
+      border-radius: 18px;
+      background: rgba(5, 10, 15, 0.74);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      z-index: 4;
+    }
+
+    .screen-top {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      top: 58px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      z-index: 2;
+    }
+
+    .screen-brand {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .screen-brand strong {
+      font-size: 28px;
+      font-family: "Bahnschrift", "Arial Black", sans-serif;
+      letter-spacing: -0.02em;
+    }
+
+    .screen-brand span {
+      color: rgba(246, 242, 234, 0.64);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .screen-badge {
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--gold-soft);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .hero-card {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      top: 136px;
+      height: 230px;
+      border-radius: 30px;
+      background:
+        linear-gradient(160deg, rgba(242, 178, 79, 0.18), rgba(110, 214, 209, 0.18)),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+      box-shadow: 0 28px 60px rgba(0, 0, 0, 0.24);
+    }
+
+    .hero-card .map-grid {
+      position: absolute;
+      inset: 0;
+      opacity: 0.25;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), transparent 85%);
+    }
+
+    .route {
+      position: absolute;
+      left: 42px;
+      top: 132px;
+      width: 282px;
+      height: 92px;
+    }
+
+    .route svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .route text {
+      font-size: 10px;
+      fill: rgba(246, 242, 234, 0.64);
+      letter-spacing: 0.12em;
+    }
+
+    .hero-copy {
+      position: absolute;
+      left: 28px;
+      top: 26px;
+      right: 28px;
+      z-index: 2;
+    }
+
+    .hero-copy .micro {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(246, 242, 234, 0.64);
+    }
+
+    .hero-copy .big {
+      margin-top: 10px;
+      font-family: "Bahnschrift", "Arial Black", sans-serif;
+      font-size: 38px;
+      line-height: 0.98;
+      letter-spacing: -0.04em;
+      max-width: 250px;
+    }
+
+    .mini-card {
+      position: absolute;
+      border-radius: 24px;
+      background: rgba(7, 16, 24, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 22px 42px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(20px);
+      padding: 16px 18px;
+    }
+
+    .mini-card .label {
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(246, 242, 234, 0.58);
+      margin-bottom: 8px;
+    }
+
+    .mini-card .value {
+      font-size: 28px;
+      line-height: 1;
+      font-family: "Bahnschrift", "Arial Black", sans-serif;
+      letter-spacing: -0.04em;
+    }
+
+    .mini-card .meta {
+      margin-top: 8px;
+      font-size: 12px;
+      color: rgba(246, 242, 234, 0.72);
+    }
+
+    .card-payout {
+      left: 28px;
+      top: 392px;
+      width: 176px;
+      height: 138px;
+    }
+
+    .card-cod {
+      right: 28px;
+      top: 424px;
+      width: 158px;
+      height: 128px;
+    }
+
+    .card-seller {
+      left: 28px;
+      right: 28px;
+      bottom: 138px;
+      height: 124px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .seller-copy strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 24px;
+      font-family: "Bahnschrift", "Arial Black", sans-serif;
+      letter-spacing: -0.03em;
+    }
+
+    .seller-copy span {
+      font-size: 14px;
+      line-height: 1.5;
+      color: rgba(246, 242, 234, 0.72);
+      display: block;
+      max-width: 200px;
+    }
+
+    .seller-tags {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 126px;
+    }
+
+    .seller-tags span {
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(246, 242, 234, 0.86);
+    }
+
+    .bottom-metrics {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 28px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .metric {
+      padding: 14px 14px 12px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .metric strong {
+      display: block;
+      font-family: "Bahnschrift", "Arial Black", sans-serif;
+      font-size: 22px;
+      letter-spacing: -0.03em;
+      margin-bottom: 4px;
+    }
+
+    .metric span {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(246, 242, 234, 0.6);
+      line-height: 1.45;
+    }
+
+    .float-tag {
+      position: absolute;
+      padding: 12px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(22px);
+      box-shadow: 0 20px 34px rgba(0, 0, 0, 0.18);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(246, 242, 234, 0.88);
+    }
+
+    .float-tag.ft1 { top: 54px; left: 0; }
+    .float-tag.ft2 { top: 288px; left: -12px; }
+    .float-tag.ft3 { top: 650px; right: 0; }
+    .float-tag.ft4 { bottom: 150px; left: 36px; }
+  </style>
+</head>
+<body>
+  <div class="poster">
+    <div class="grain"></div>
+    <div class="arc a"></div>
+    <div class="arc b"></div>
+    <div class="arc c"></div>
+
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">M</div>
+        <div class="brand-copy">
+          <div class="name">Maysar</div>
+          <div class="tag">Digital Community Trade Network</div>
+        </div>
+      </div>
+      <div class="launch-pill">Market Introduction</div>
+    </div>
+
+    <section class="left">
+      <div class="eyebrow">Now live for modern trade</div>
+      <h1>
+        <span class="headline-accent">Introducing</span>
+        <span>Maysar</span>
+      </h1>
+      <p class="subcopy">
+        The trust-first commerce platform built to connect buyers, sellers,
+        suppliers, couriers, enablers, and growth teams in one powerful network.
+      </p>
+
+      <div class="role-pills">
+        <span>Buyers</span>
+        <span>Sellers</span>
+        <span>Suppliers</span>
+        <span>Couriers</span>
+        <span>Enablers</span>
+      </div>
+
+      <div class="statement">
+        <h2>Why it matters</h2>
+        <p>
+          Maysar turns fragmented trade into one connected journey with
+          smarter product discovery, safer cash-on-delivery, faster payouts,
+          visible logistics, and attributable growth across every role.
+        </p>
+      </div>
+    </section>
+
+    <section class="right">
+      <div class="glow"></div>
+      <div class="float-tag ft1">Trust-based commerce</div>
+      <div class="float-tag ft2">Safer COD</div>
+      <div class="float-tag ft3">Faster payouts</div>
+      <div class="float-tag ft4">Visible delivery</div>
+
+      <div class="phone">
+        <div class="screen">
+          <div class="screen-top">
+            <div class="screen-brand">
+              <strong>Maysar</strong>
+              <span>Trade moves together</span>
+            </div>
+            <div class="screen-badge">Built for scale</div>
+          </div>
+
+          <div class="hero-card">
+            <div class="map-grid"></div>
+            <div class="hero-copy">
+              <div class="micro">Marketplace in motion</div>
+              <div class="big">From discovery to delivery</div>
+            </div>
+            <div class="route">
+              <svg viewBox="0 0 282 92" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="routeLine" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#f2b24f"/>
+                    <stop offset="100%" stop-color="#6ed6d1"/>
+                  </linearGradient>
+                </defs>
+                <path d="M14 60 C42 32, 78 24, 110 40 S176 88, 206 60 S244 32, 268 48" fill="none" stroke="url(#routeLine)" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="14" cy="60" r="8" fill="#f2b24f"/>
+                <circle cx="110" cy="40" r="7" fill="#8be2ff"/>
+                <circle cx="206" cy="60" r="7" fill="#8be2ff"/>
+                <circle cx="268" cy="48" r="9" fill="#6ed6d1"/>
+                <text x="0" y="86">Order</text>
+                <text x="86" y="16">Seller</text>
+                <text x="182" y="88">Courier</text>
+                <text x="236" y="20">Delivered</text>
+              </svg>
+            </div>
+          </div>
+
+          <div class="mini-card card-payout">
+            <div class="label">Seller payout</div>
+            <div class="value">24h</div>
+            <div class="meta">Faster liquidity. Higher merchant confidence.</div>
+          </div>
+
+          <div class="mini-card card-cod">
+            <div class="label">COD status</div>
+            <div class="value">Verified</div>
+            <div class="meta">Locked, confirmed, settled.</div>
+          </div>
+
+          <div class="mini-card card-seller">
+            <div class="seller-copy">
+              <strong>One network. Every role aligned.</strong>
+              <span>
+                Catalog, payment, logistics, commissions, and support
+                working from the same truth.
+              </span>
+            </div>
+            <div class="seller-tags">
+              <span>Discover</span>
+              <span>Deliver</span>
+              <span>Grow</span>
+            </div>
+          </div>
+
+          <div class="bottom-metrics">
+            <div class="metric">
+              <strong>Smarter Matching</strong>
+              <span>Better product discovery and stronger conversion.</span>
+            </div>
+            <div class="metric">
+              <strong>Trusted Logistics</strong>
+              <span>Live delivery states, route intelligence, and COD checks.</span>
+            </div>
+            <div class="metric">
+              <strong>Enabler Growth</strong>
+              <span>Attributed sales support and structured commission flow.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="feature">
+        <div class="kicker">01</div>
+        <h3>Trust-first payments</h3>
+        <p>
+          Safer cash-on-delivery, wallet-backed payment control, and clear
+          financial state from checkout to settlement.
+        </p>
+      </div>
+      <div class="feature">
+        <div class="kicker">02</div>
+        <h3>Growth for every role</h3>
+        <p>
+          Sellers, enablers, and suppliers operate in one connected ecosystem
+          with better visibility, attribution, and momentum.
+        </p>
+      </div>
+      <div class="feature">
+        <div class="kicker">03</div>
+        <h3>Operations you can see</h3>
+        <p>
+          Traceable delivery, cleaner support workflows, and auditable platform
+          actions that make commerce feel dependable.
+        </p>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

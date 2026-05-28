@@ -24,7 +24,7 @@ This plan fixes the bug where products always show "out_of_stock" status regardl
   - Mark task complete when test is written, run, and failure is documented
   - _Requirements: 2.1, 2.2, 2.5_
 
-- [ ] 2. Write preservation property tests (BEFORE implementing fix)
+- [x] 2. Write preservation property tests (BEFORE implementing fix)
   - **Property 2: Preservation** - Non-Buggy Inputs Unchanged
   - **IMPORTANT**: Follow observation-first methodology
   - Observe behavior on UNFIXED code for inputs where the bug condition does NOT hold

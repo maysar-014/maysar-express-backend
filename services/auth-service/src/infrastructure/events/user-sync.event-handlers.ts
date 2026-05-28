@@ -87,12 +87,33 @@ export class UserSyncEventHandlers {
   private async handleUserRegistered(payload: UserRegisteredPayload): Promise<void> {
     if (!payload?.aggregateId) return;
 
-    await this.updateAuthUser(payload.aggregateId, {
-      ...(payload.email ? { email: String(payload.email).toLowerCase() } : {}),
-      ...(payload.role ? { role: this.mapRole(payload.role) } : {}),
-      ...(payload.publicCode ? { publicCode: payload.publicCode } : {}),
-      status: Auth_UserStatus.PENDING_VERIFICATION
-    });
+    const email = payload.email ? String(payload.email).toLowerCase() : '';
+    const role = payload.role ? this.mapRole(payload.role) : Auth_UserRole.BUYER;
+    const publicCode = payload.publicCode ?? null;
+
+    try {
+      // Use upsert: auth_users row may not exist yet when UserRegistered fires
+      await this.prisma.user.upsert({
+        where: { id: payload.aggregateId },
+        create: {
+          id: payload.aggregateId,
+          email,
+          passwordHash: '', // auth-service owns credentials; placeholder until set
+          role,
+          status: Auth_UserStatus.PENDING_VERIFICATION,
+          ...(publicCode ? { publicCode } : {})
+        },
+        update: {
+          ...(email ? { email } : {}),
+          role,
+          status: Auth_UserStatus.PENDING_VERIFICATION,
+          ...(publicCode ? { publicCode } : {})
+        }
+      });
+    } catch (error: any) {
+      logger.error('Auth user upsert failed on UserRegistered', { userId: payload.aggregateId, error });
+      throw error;
+    }
   }
 
   private async handleUserEmailVerified(payload: UserEmailVerifiedPayload): Promise<void> {

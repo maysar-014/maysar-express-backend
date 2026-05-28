@@ -30,6 +30,7 @@ import { walletConfig } from './config/wallet.config';
 import { PaymentServiceClient } from './infrastructure/clients/payment-service.client';
 import { TopUpWalletUseCase } from './application/use-cases/top-up-wallet.use-case';
 import { PaymentCompletedHandler } from './infrastructure/messaging/payment-completed.handler';
+import { UserRegisteredHandler } from './infrastructure/messaging/user-registered.handler';
 import { EventIdempotency } from '@shared/middleware/idempotency';
 import { PayoutServiceClient } from './infrastructure/clients/payout-service.client';
 import { InitiatePayoutFromWalletUseCase } from './application/use-cases/initiate-payout-from-wallet.use-case';
@@ -228,6 +229,12 @@ export class Container {
         this.eventBus.subscribe('Payment.Success.v1', {
             name: 'payment-completed-handler',
             handler: paymentCompletedHandler.handle.bind(paymentCompletedHandler)
+        });
+
+        const userRegisteredHandler = new UserRegisteredHandler(walletRepository, eventIdempotency);
+        this.eventBus.subscribe('UserRegistered.v1', {
+            name: 'wallet-user-registered-handler',
+            handler: userRegisteredHandler.handle.bind(userRegisteredHandler)
         });
 
         // Jobs

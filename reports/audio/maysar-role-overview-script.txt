@@ -1,0 +1,157 @@
+Maysar platform walkthrough. Founder style overview. Role by role. End to end.
+
+Section one. The big picture.
+
+If you want to understand Maysar in one sentence, Maysar is a digital community trade network designed for the realities of commerce in Tanzania and similar markets. It is not just an online store. It is not just a seller dashboard. It is a full operating system for trust based commerce, where buyers, sellers, suppliers, couriers, enablers, support teams, compliance teams, and operators all move through one connected platform with one shared truth.
+
+What makes this important is that commerce in this market is never only about listing products and collecting payments. Real commerce here is about trust, identity, cash flow, delivery confidence, cash on delivery risk, coordination between small businesses and field agents, and constant visibility into who did what, when, and why. Maysar is built around those realities. The repo shows this very clearly. The platform runs as one modular Node and TypeScript application with twenty one service modules mounted under one API surface. Those modules do not behave like isolated islands. They coordinate through a shared event bus, shared saga orchestration, and an outbox pattern so that when one action succeeds or fails, the rest of the system can respond in a reliable and auditable way.
+
+That architecture matters because every role in the business is depending on the next role. The buyer depends on the seller. The seller depends on supply. The supplier depends on real demand. The courier depends on clean dispatch and route clarity. The enabler depends on attribution and payout certainty. The admin depends on audit trails. And the platform depends on money movement, notifications, analytics, and recovery logic all staying correct even when something goes wrong. Maysar was clearly designed to make those dependencies visible and manageable, not hidden.
+
+So when I explain the product role by role, do not hear this as a list of screens. Hear it as a marketplace operating model. Each role gets tools, but more importantly each role gets confidence. Buyers get confidence that orders are real and trackable. Sellers get confidence that growth and payout are visible. Suppliers get confidence that production maps to actual demand. Couriers get confidence that effort leads to earnings. Enablers get confidence that assisted sales are attributed and paid. Admin and compliance teams get confidence that risky actions are governable. And the platform itself gets confidence through event driven recovery, wallet integrity, and operational observability.
+
+Section two. How the core engine works.
+
+At the center of Maysar there are a few foundational engines that almost every role benefits from. The first is identity and access. Authentication, sessions, password reset, and two factor authentication are treated as first class concerns. A valid login does not automatically mean unlimited access. The platform still checks account status and role before access is granted. That means a buyer lands in a buyer world, a seller lands in a seller world, and privileged actions stay protected.
+
+The second core engine is the catalog and buy box layer. Maysar does not just dump a pile of listings in front of the customer. The catalog service handles discovery, product creation, pricing, campaigns, matching, and buy box computation. The buy box logic gives weighted importance to price, seller rating, stock availability, recency, and fulfillment speed. In practical terms, that means the platform helps the buyer make a decision faster, while also motivating the seller to improve quality, keep stock fresh, and stay competitive.
+
+The third core engine is payments plus wallet plus cash on delivery control. This is one of the strongest signals in the repo that the platform is built for a very specific market problem. Cash on delivery is common, but it also creates fraud and abandonment risk. Maysar uses a wallet backed cash on delivery commitment ledger. Before a delivery is completed, customer funds can be locked through a pre authorization style flow. On delivery completion the funds are captured or released depending on what happened. The docs describe this as reducing COD fraud risk from roughly forty percent to roughly twenty percent in the Tanzania market. That is not a cosmetic feature. That is a trust and revenue engine.
+
+The fourth core engine is fulfillment and logistics. Orders do not stop at payment confirmation. They move into shipment creation, route optimization, courier assignment, status updates, delivery verification, and eventually settlement. The logistics and maps services together are about making delivery execution visible, structured, and measurable. That matters because every one percent improvement in delivery success directly improves settled COD revenue.
+
+The fifth core engine is platform memory. Notifications, analytics, outbox durability, saga compensation, distributed locking, optimistic concurrency, tracing, and audit logs create a system that remembers what happened and can explain it later. That is how you build a business that can scale beyond heroic manual intervention.
+
+Section three. The buyer or customer experience.
+
+For the buyer, Maysar is designed to answer three questions as quickly as possible. Can I trust what I am seeing. Can I pay in a way that works for me. And can I follow my order all the way to completion.
+
+The buyer journey starts in discovery. The buyer searches, filters, opens a product detail page, and sees the current buy box winner and price. This sounds simple, but it is strategically important. Instead of forcing the customer to compare multiple inconsistent offers manually, the platform ranks and resolves the best offer based on marketplace logic. That reduces hesitation, reduces noise, and improves conversion.
+
+Once the buyer is ready to act, checkout is orchestrated carefully. The cart is validated. Inventory is reserved. A draft order is created. Payment is initiated. If it is card or mobile money, fraud assessment and gateway coordination happen. If it is wallet payment, the wallet is debited. If it is cash on delivery, the wallet commitment flow is triggered so that the order can move forward without leaving the seller fully exposed. Only then does logistics get involved to create the shipment and notifications go out. The benefit to the buyer is that the system is not pretending success too early. It is sequencing trust.
+
+Order tracking is another major benefit. The buyer is not left in a black box after payment. The order service, logistics service, and notification service work together so the buyer can follow shipment history, courier updates, and timeline changes. If something fails, the repo is explicit that the user should see a recoverable state, not a dead end. That is a product philosophy as much as an engineering decision. Buyers need progress, clarity, and next steps, especially when something unexpected happens.
+
+Cancellation and refund handling are also part of the buyer benefit story. If cancellation is valid, payment reversal, inventory release, shipment stop, and notification updates are coordinated. That reduces support chaos and increases buyer trust. A mature marketplace does not only celebrate successful orders. It handles failed orders gracefully and visibly.
+
+Then there is chat. The chat system in the docs is not a random messenger bolted on later. It is commerce aware communication. A buyer can message a seller from a product page, send delivery context, or interact around a real product, order, or shipment. That means communication stays anchored to business context. Buyers do not have to jump outside the platform to ask if an item is still available or to share a location pin with a courier. That keeps trust, data, and resolution speed inside the network.
+
+So the buyer benefit is not only convenience. It is confidence. Better discovery. Safer payment options. Clearer tracking. Smarter refund handling. And contextual communication. Maysar is trying to make the buyer feel that the platform actually knows what is happening.
+
+Section four. The seller or business owner experience.
+
+For the seller, Maysar is much more than a storefront. It is onboarding, compliance, catalog management, growth tooling, fulfillment coordination, payout visibility, analytics, customer engagement, and support in one connected operating layer.
+
+The seller journey starts with legitimacy. Business registration, identity verification, and compliance are core gates. The seller creates a business profile, submits documents, moves through KYC and AML checks, and can track whether approval is in progress, granted, or rejected. The benefit here is not only regulatory compliance. It is commercial activation. Once a seller is verified, the platform can safely unlock publishing, storefront exposure, payouts, and collaboration features. If the seller is rejected, the system is supposed to explain what to fix. That is critical for adoption because opaque rejection kills trust.
+
+After onboarding, the next big seller interaction is product creation and publishing. The seller can create drafts, manage product data, publish listings, set pricing rules, run campaigns, and get public storefront links. Importantly, publishing is not supposed to bypass inventory validation. The system checks stock linkage and commercial rules before the product becomes live. The benefit to the seller is fewer broken promises to customers and better overall listing quality.
+
+The catalog service adds another important commercial advantage for sellers: intelligent competition instead of chaotic competition. The buy box rewards strong pricing, healthy stock, recency, and fulfillment quality. That means a serious seller can win more visibility by actually operating better, not only by gaming the front end. The docs even frame the buy box as a conversion uplift lever, with a conservative fifteen percent improvement in add to cart performance. For sellers, that means real revenue upside from platform quality mechanics.
+
+Campaigns and storefront sharing also matter because they turn the platform into a growth engine, not just a transaction engine. Sellers can monitor performance, run promotions, and use trackable shareable links. Analytics then feeds back sales, conversion, and action items. Instead of waiting for monthly reports, the seller gets closer to real time commercial feedback.
+
+On the operations side, the seller can mark orders ready for pickup, trigger logistics handoff, and watch timeline updates. This means fulfillment is not a separate invisible back office problem. It is part of the seller workflow. When an order moves, the seller sees it. When a pickup is blocked, the seller sees why. When a customer needs an update, the platform can coordinate that.
+
+Payout is one of the strongest seller value propositions in the whole repo. The payout docs state that daily payouts lead to much higher seller satisfaction than weekly payouts, and payout speed is called the number one factor in seller retention. So when Maysar shows payable balances, verifies available wallet funds, schedules payouts, and tracks disbursement status, it is solving a core trust issue for merchants. Sellers do not just want sales. They want liquidity.
+
+Sellers also benefit from engagement and support features. They can participate in discussions, community style interactions, and support tickets. That means reputation, content, and issue resolution are treated as part of business performance, not side concerns. And because everything is evented and auditable, the seller has clearer visibility into what the platform did and why.
+
+Finally, the seller can collaborate with enablers. This is a major marketplace differentiator. Sellers are not alone. They can ask for assistance with sales, listing work, outreach, and other tasks, and that collaboration can be tracked from request to commission settlement. So the seller benefit is scale. Maysar is not just asking a merchant to list products. It is surrounding the merchant with a commercial support network.
+
+Section five. The supplier experience.
+
+The supplier side of Maysar is about turning upstream operations into visible and synchronized marketplace capacity. Many commerce platforms stop at the seller layer. Maysar goes further upstream into production planning, quality control, capacity management, and bulk fulfillment.
+
+The supplier can create production plans, check capacity, align output with demand signals from orders, and move work through quality checkpoints before stock is exposed downstream. That is powerful because it connects manufacturing or sourcing activity to real commercial demand. Instead of guessing what to produce, the supplier can see how the platform is pulling demand.
+
+Quality control is also designed as a visible business process. If a checkpoint passes, completed units sync into inventory. If a checkpoint fails, the supplier gets a rework path rather than a silent blockage. That protects both sides. The supplier knows what needs correction, and the marketplace avoids pretending bad stock is good stock.
+
+Bulk fulfillment then connects production to logistics. Once a batch is complete, stock can sync, bulk pickup can be prepared, and the order side can be updated. If only part of the batch is ready, the docs are explicit that the system should expose partial fulfillment rather than hiding it. That kind of clarity matters for supply chain trust.
+
+For suppliers, the benefit is that operations, inventory, and downstream commercial outcomes are finally linked. Production is not a spreadsheet living outside the marketplace. It becomes part of the same execution fabric. That means better planning, better stock truth, fewer surprises, and faster reaction to demand changes.
+
+Section six. The courier experience.
+
+The courier role in Maysar is not treated like a disposable last mile add on. It is a structured operational role with availability management, assignment logic, route intelligence, delivery state control, cash on delivery verification, training gates, and earnings visibility.
+
+The first interaction is availability and assignment. Couriers can go online and receive eligible assignments immediately. But this is not random dispatch. Assignment respects qualification and certification requirements. The training service explicitly enforces that couriers must hold valid certification before taking deliveries. That protects the platform, the sellers, and the buyers from low quality execution.
+
+Once assigned, the courier moves through a monotonic delivery lifecycle. Pickup, in transit, arrival, delivered. Status transitions have order and rules. That means the courier app is not just sending noisy updates. It is participating in a controlled state machine. When the courier updates delivery state, customers are notified, analytics are updated, and the business can trust the status progression.
+
+Cash on delivery verification is one of the most important courier responsibilities. The courier enters the OTP from the customer, the payment rules are checked, and the wallet commitment is released or captured depending on the result. This closes both delivery and payment risk at the same time. In other words, the courier is not only moving a package. The courier is closing a financial event.
+
+Route optimization is another major benefit. The maps and logistics layers can compute route candidates, compare ETAs, and fall back to manual routing if needed. This gives the courier better productivity and gives the platform better delivery performance. The revenue impact docs connect this directly to settled GMV, because more successful deliveries mean more completed commercial outcomes.
+
+Then there is earnings. The courier benefit is not just a job queue. It is a measurable path to income with performance visibility. Completion rate, on time rate, customer rating, and COD collection performance can all feed into reputation and incentive logic. High reputation couriers create better customer experiences, which helps sellers and the platform, and in turn justifies better earnings opportunities.
+
+So for couriers, Maysar creates structure. Clear next steps. Verified delivery. Better routes. Training based eligibility. And a more credible link between performance and payout.
+
+Section seven. The enabler experience.
+
+The enabler role may be the most strategically unique part of Maysar. Enablers are not buyers, not sellers, and not couriers. They are commerce multipliers. They help bridge trust, discovery, conversion, onboarding, and execution for the rest of the network.
+
+The enabler journey starts with registration and training. The platform creates or links identity, enrolls the enabler in onboarding modules, and only unlocks full participation after training completion and certification. The training docs say trained enablers achieve roughly two times productivity and thirty percent higher task completion rates. So the platform is not treating training as bureaucracy. It is treating training as a direct growth lever.
+
+Once approved, the enabler can share product links, facilitate orders, support listing activity, and collaborate with sellers. The system tracks referral codes and attribution so that if the enabler drove the sale or completed the commercial task, the platform can prove it. That is absolutely essential. Without attribution, an enabler network turns into unpaid invisible labor. With attribution, it becomes a scalable channel.
+
+Commission settlement is where this really becomes real for the enabler. After the order completes, the commission service can read attribution details, calculate the right commission, and credit the wallet if the attribution is valid. If attribution is missing or invalid, the commission can be rejected visibly instead of disappearing into confusion. That protects both the enabler and the merchant relationship.
+
+The revenue docs also make it clear that assisted sales are not marginal. They are a major expansion lever. Increasing the share of enabler assisted orders has significant upside for network growth and marketplace revenue. In plain terms, enablers let the platform grow through people, not only through ads.
+
+For sellers, enablers provide flexible commercial capacity. For buyers, they can reduce friction and improve trust. For the platform, they create an offline plus online growth engine. And for the enabler, Maysar creates a path to trained, attributable, payable economic participation. That is a very strong community commerce model.
+
+Section eight. Admin, support, and compliance.
+
+A serious marketplace is not only about happy path transactions. It also needs governance. That is where admin, support, and compliance become essential roles in Maysar.
+
+For admins, the platform provides user management, transaction monitoring, dashboard visibility, system administration, and audit review. Admins can search users, adjust roles, suspend accounts, inspect security events, review metrics, refresh discovery, and verify health. But importantly, privileged access is controlled and high risk actions are meant to be explainable later. That combination of control plus auditability is what prevents operational power from becoming operational chaos.
+
+Support agents get structured ticket lifecycle tools. They can open, assign, respond to, escalate, resolve, and close tickets with SLA awareness. This matters because marketplaces create edge cases every day. A delayed courier, a failed payout, a rejected KYC, a refund dispute, an attribution issue. Support needs cross service context, not isolated inboxes. Maysar is designed so support can work with real platform state instead of guessing.
+
+Compliance officers get KYC workflow and suspicious activity handling. Documents can be reviewed, decisions can be recorded, and the resulting user or business status can be updated in a defensible way. If evidence is insufficient, the platform keeps the case under review rather than forcing a premature answer. That is a strong design choice because manual review is often the correct outcome in regulated trust systems.
+
+Dispute resolution also shows platform maturity. If a dispute requires a refund or wallet correction, the order, payment, and wallet services coordinate that change atomically. If only an order level resolution is needed, that can happen without unnecessary money movement. Again, the theme is deliberate state management.
+
+So the benefit for internal teams is leverage with accountability. They are not just reacting. They are governing. And because every privileged action is supposed to leave an audit trail, the organization can learn, review, and improve.
+
+Section nine. The invisible platform operator story.
+
+Some of the most important Maysar features are not glamorous, but they are the reason the glamorous features can be trusted. Platform operations in this repo focus on wallet integrity, notification reliability, analytics ingestion, saga recovery, concurrency control, and idempotency.
+
+Take the wallet. Every debit, credit, lock, and release is protected through Redlock and optimistic version checks. That means the platform is trying very hard to prevent double spend, conflicting updates, and balance corruption. For a commerce network, that is foundational. If money truth fails, everything else fails after it.
+
+Take notifications. The platform can route messages across SMS, email, push, and other channels while respecting user preferences and retrying when providers fail. That means a successful transaction does not become a communication failure just because one provider has a bad day.
+
+Take analytics. The analytics layer consumes domain events and turns them into dashboards and reports, but the docs are very clear that analytics is not the source of truth for the business transaction itself. That separation is smart. It lets the business gain insight without confusing reporting with reality.
+
+Take outbox and saga recovery. When one step in a multi step process fails, the platform records, retries, compensates, and surfaces dead letters for intervention. That is what gives all the other roles confidence that the platform can survive imperfect conditions without duplicating side effects or silently losing events.
+
+For operators, the benefit is explainability. They can answer questions like: why is this payout delayed, why is this COD hold still active, why was this user blocked, why did this notification retry, why did this commission not settle. That is what operational maturity looks like.
+
+Section ten. How the roles interact with each other.
+
+The easiest way to understand the full product is to imagine one order moving through the system.
+
+A buyer discovers a product and chooses the buy box winner. That visibility is only possible because a seller published a validated listing, maintained price competitiveness, and kept inventory current. The seller may have sourced from a supplier whose production plan and quality checkpoints ensured stock availability. The buyer checks out and either pays directly or triggers a cash on delivery commitment. The order is created. Inventory is reserved. Logistics creates a shipment. A trained courier accepts the assignment and follows the route. If the order was enabler assisted, attribution is already attached in the background. The courier completes delivery and verifies COD if needed. The wallet and payment layers settle the financial truth. The seller sees the commercial result. The enabler sees commission eligibility. Analytics records the outcome. Notifications keep everyone aligned. If anything goes wrong, support, admin, and compliance can step in with an audit trail behind them.
+
+That is the real product. Not one feature. Not one dashboard. A connected set of roles whose work compounds because the platform coordinates state instead of scattering it.
+
+And this is where the business flywheel appears. Better seller quality improves the buy box. Better buy box performance improves buyer conversion. More buyer demand improves seller growth. Better supplier planning improves stock reliability. Better courier performance improves settlement speed and customer trust. Better enabler performance expands reach and conversion. Faster payouts improve seller retention. Better compliance and support reduce platform risk. More reliable operations improve every other layer. This is not a linear product. It is a compounding network.
+
+Section eleven. Why the feature set is commercially meaningful.
+
+A lot of platforms can say they have catalog, checkout, payments, and delivery. What stands out in Maysar is the way those features are tuned to real frictions in the market.
+
+First, trust is built into the transaction model through identity checks, KYC, auditable admin actions, and contextual chat. Second, cash on delivery is not treated as an unavoidable source of chaos. It is actively managed through wallet commitments and delivery verification. Third, the platform does not assume merchants succeed alone. It creates an enabler layer and a training layer to raise network effectiveness. Fourth, payouts and settlement speed are treated as retention mechanics, not accounting afterthoughts. Fifth, the architecture is intentionally event driven and compensating, which is exactly what you want in a system where money, inventory, and delivery states keep crossing each other.
+
+From a founder perspective, this means Maysar is not only digitizing transactions. It is digitizing coordination and trust. That is why the service map matters. Analytics, auth, business registry, catalog, checkout, commission, community, compliance, enabler, inventory, logistics, maps, notification, order, payment, payout, production, support, training, user, wallet, and chat are not random modules. They are pieces of a single commercial machine.
+
+Section twelve. Closing vision.
+
+If I had to explain Maysar to a team, a partner, or an investor, I would say this. We are building the marketplace infrastructure for trust based community commerce. Buyers come for confidence and convenience. Sellers come for growth and liquidity. Suppliers come for demand linked planning. Couriers come for structured work and fair earnings. Enablers come for attributable income and economic participation. Internal teams come for governable operations. And the platform wins because every role becomes more effective when the others are working inside the same system.
+
+The biggest opportunity in Maysar is that it does not think in isolated user journeys. It thinks in connected economic roles. When the product is working well, every participant sees their next action, their status, their risk, and their reward. That is how you reduce friction. That is how you increase trust. That is how you move from a simple ecommerce interface to an actual trade network.
+
+So the value of Maysar is not only in features. It is in coordination. It is in visibility. It is in recoverability. It is in trust under local market conditions. And if this system is executed well, each new buyer, seller, supplier, courier, and enabler does not just add volume. They make the network smarter, denser, and harder to replace.
+
+That is the platform. That is how each role interacts with it. And that is how each role benefits from the features.

@@ -52,7 +52,7 @@ export const createAuthRoutes = (authController: AuthControllerHandlers): Router
     validateRequest({
       body: {
         email: { type: 'string', required: true, format: 'email' },
-        phoneNumber: { type: 'string', required: true, pattern: /^[+]?[\d\s().-]{7,20}$/ },
+        phoneNumber: { type: 'string', required: true, pattern: /^\+255[67]\d{8}$/ },
         firstName: { type: 'string', required: true, minLength: 2, maxLength: 100, pattern: /^(?=.*\S).+$/ },
         lastName: { type: 'string', required: true, minLength: 2, maxLength: 100, pattern: /^(?=.*\S).+$/ },
         role: {
@@ -60,7 +60,7 @@ export const createAuthRoutes = (authController: AuthControllerHandlers): Router
           required: false,
           enum: ['buyer', 'seller', 'courier', 'supplier', 'enabler', 'system', 'admin', 'user']
         },
-        phone: { type: 'string', required: false, pattern: /^[+]?[\d\s().-]{7,20}$/ },
+        phone: { type: 'string', required: false, pattern: /^\+255[67]\d{8}$/ },
         profile: { type: 'object', required: false },
         password: { type: 'string', required: true, minLength: 8 }
       }

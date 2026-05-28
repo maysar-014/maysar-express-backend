@@ -6,12 +6,19 @@ import { createUserRoutes } from './src/api/routes/user.routes';
 import { healthRoutes } from './src/api/routes/health.routes';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
+import { AuthEventHandlers } from './src/infrastructure/messaging/auth-event-handlers';
 
 export const UserModule: Module = {
     name: 'user-service',
     initialize: async () => {
         logger.info('Initializing user-service module');
         initializeEventRegistry();
+
+        // Wire up auth→user event sync (AuthLoginSuccess, AuthLoginFailed,
+        // AuthTwoFactor*, and UserRegistered.v1 from auth-service)
+        const authEventHandlers = new AuthEventHandlers();
+        authEventHandlers.setupSubscriptions();
+        logger.info('Auth→User event sync handlers registered');
     },
     routes: (() => {
         const router = Router();
