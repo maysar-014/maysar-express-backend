@@ -1,5 +1,14 @@
-import Redis from 'ioredis';
 import { createHash } from 'crypto';
+
+export interface RiskStateStore {
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string, mode?: string, durationSeconds?: number): Promise<unknown>;
+  incr(key: string): Promise<number>;
+  expire(key: string, seconds: number): Promise<number>;
+  smembers(key: string): Promise<string[]>;
+  sadd(key: string, member: string): Promise<number>;
+  srem(key: string, member: string): Promise<number>;
+}
 
 export interface SenderContext {
   userId: string;
@@ -31,7 +40,7 @@ const SUSPICIOUS_PHRASES = [
 ];
 
 export class RiskEngine {
-  constructor(private readonly redis: Redis) {}
+  constructor(private readonly store: RiskStateStore) {}
 
   // ─── Spam Scoring ──────────────────────────────────────────────────────────
 
@@ -79,7 +88,7 @@ export class RiskEngine {
 
     // Signal 6: penalty override (user was previously flagged for mass messaging)
     const penaltyKey = `chat:penaltyscore:${context.userId}`;
-    const penalty = await this.redis.get(penaltyKey);
+    const penalty = await this.store.get(penaltyKey);
     if (penalty) signals.penaltyOverride = 85;
 
     const score = Math.min(100, Math.max(0, ...Object.values(signals)));
@@ -92,8 +101,8 @@ export class RiskEngine {
     if (!content) return;
     const contentHash = createHash('md5').update(content).digest('hex');
     const key = `chat:ratelimit:massmsg:${userId}:${contentHash}`;
-    const count = await this.redis.incr(key);
-    if (count === 1) await this.redis.expire(key, 300); // 5-min window
+    const count = await this.store.incr(key);
+    if (count === 1) await this.store.expire(key, 300); // 5-min window
 
     // If same content sent to >5 conversations, apply penalty
     if (count > 5) {
@@ -108,45 +117,45 @@ export class RiskEngine {
     if (!content) return 0;
     const contentHash = createHash('md5').update(content).digest('hex');
     const key = `chat:ratelimit:massmsg:${userId}:${contentHash}`;
-    const val = await this.redis.get(key);
+    const val = await this.store.get(key);
     return val ? parseInt(val, 10) : 0;
   }
 
   async getMessagesLast5Min(userId: string): Promise<number> {
     const key = `chat:freq:${userId}`;
-    const val = await this.redis.get(key);
+    const val = await this.store.get(key);
     return val ? parseInt(val, 10) : 0;
   }
 
   async incrementMessageFrequency(userId: string): Promise<void> {
     const key = `chat:freq:${userId}`;
-    const count = await this.redis.incr(key);
-    if (count === 1) await this.redis.expire(key, 300); // 5-min window
+    const count = await this.store.incr(key);
+    if (count === 1) await this.store.expire(key, 300); // 5-min window
   }
 
   // ─── Penalty ───────────────────────────────────────────────────────────────
 
   async applyPenalty(userId: string): Promise<void> {
     const key = `chat:penaltyscore:${userId}`;
-    await this.redis.set(key, '85', 'EX', 3600); // 60-min penalty
+    await this.store.set(key, '85', 'EX', 3600); // 60-min penalty
   }
 
   // ─── Phishing domain blocklist ─────────────────────────────────────────────
 
   async getBlocklist(): Promise<Set<string>> {
-    const members = await this.redis.smembers('chat:blocklist:domains');
+    const members = await this.store.smembers('chat:blocklist:domains');
     return new Set(members.map((m) => m.toLowerCase()));
   }
 
   async addDomain(domain: string): Promise<void> {
-    await this.redis.sadd('chat:blocklist:domains', domain.toLowerCase());
+    await this.store.sadd('chat:blocklist:domains', domain.toLowerCase());
   }
 
   async removeDomain(domain: string): Promise<void> {
-    await this.redis.srem('chat:blocklist:domains', domain.toLowerCase());
+    await this.store.srem('chat:blocklist:domains', domain.toLowerCase());
   }
 
   async listDomains(): Promise<string[]> {
-    return this.redis.smembers('chat:blocklist:domains');
+    return this.store.smembers('chat:blocklist:domains');
   }
 }

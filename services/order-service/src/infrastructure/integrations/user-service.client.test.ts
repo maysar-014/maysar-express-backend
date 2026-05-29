@@ -1,7 +1,14 @@
 import { UserServiceClient } from './user-service.client';
 
 describe('UserServiceClient integration stub', () => {
+  const originalBypass = process.env.ORDER_BYPASS_USER_VERIFICATION;
+
+  beforeEach(() => {
+    process.env.ORDER_BYPASS_USER_VERIFICATION = 'true';
+  });
+
   afterEach(() => {
+    process.env.ORDER_BYPASS_USER_VERIFICATION = originalBypass;
     jest.restoreAllMocks();
   });
 
@@ -16,7 +23,7 @@ describe('UserServiceClient integration stub', () => {
       successfulOrders: 0
     });
     expect(logSpy).toHaveBeenCalledWith(
-      '[UserServiceClient] Bypassing COD reputation for user user-2 (non-production).'
+      '[UserServiceClient] Bypassing COD reputation for user user-2 (explicit override).'
     );
   });
 });

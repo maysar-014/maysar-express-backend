@@ -123,7 +123,7 @@
   - In logistics-service event bridge: subscribe to `CourierReportSubmitted` → record `DELIVERY_REFUSED` or `COURIER_NEGATIVE_REPORT` based on outcome
   - _Requirements: 4.1–4.8_
 
-- [ ] 11. Checkpoint — run full test suite and integration test
+- [x] 11. Checkpoint — run full test suite and integration test
   - Run `cd services/order-service && npx jest --testPathPattern="cod-trust" --forceExit`
   - Confirm all PBT properties pass (score bounds, tier completeness, round-trip)
   - Confirm all unit/integration tests pass

@@ -143,7 +143,7 @@ All new files live under `services/chat-service/src/`. The Prisma schema additio
   - Call indexer asynchronously (fire-and-forget with retry) after each message is persisted in `SendMessageUseCase`
   - _Requirements: 12.3_
 
-- [ ] 10. API layer — controllers and routes
+- [x] 10. API layer — controllers and routes
   - [x] 10.1 Implement `ConversationController`
     - Create `src/api/controllers/conversation.controller.ts`
     - Methods: `initiate`, `list`, `search`, `getById`, `markRead`, `mute`, `unmute`

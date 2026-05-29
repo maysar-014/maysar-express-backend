@@ -8,6 +8,7 @@ import { asyncHandler } from '@shared/middleware/async-handler';
 import { cacheInvalidation, cacheResponse } from '../../middleware/caching.middleware';
 import { cacheConfig } from '../../config/monitoring.config';
 import { createMaintenanceRoutes } from './maintenance.routes';
+import healthRoutes from './health.routes';
 import { validateJoiRequest } from '@shared/middleware/joi-request-validation';
 
 const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$/u;
@@ -117,6 +118,7 @@ const orderSearchCache = cacheConfig.enabled ? cacheResponse({ ttl: 60, tags: ['
 const orderAnalyticsCache = cacheConfig.enabled ? cacheResponse({ ttl: 30, tags: ['orders', 'orders:analytics'] }) : noCache;
 
 export const setupOrderRoutes = (orderController: OrderController, codDisputeController: CODDisputeController) => {
+  router.use('/health', healthRoutes);
   router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
   router.use(requireAuth);
 

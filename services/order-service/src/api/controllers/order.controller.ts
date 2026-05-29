@@ -8,6 +8,7 @@ import { OrderStatus } from '../../domain/entities/order.entity';
 import { IdGeneratorService } from '../../infrastructure/services/id-generator.service';
 import { CancellationPolicy, CancellationRequester } from '../../domain/policies/cancellation.policy';
 import { logger } from '../../infrastructure/monitoring/logger';
+import { eventBus } from '@shared/events/eventBus';
 
 export class OrderController {
   private orderRepository: OrderRepository;
@@ -258,6 +259,15 @@ export class OrderController {
           logger.warn(`[COD] Failed to capture commitment hold for order ${id}: ${holdErr.message}`);
         }
       }
+
+      await eventBus.publish('OrderDelivered', {
+        orderId: id,
+        buyerId: (order as any).buyerId,
+        sellerId: (order as any).sellerId,
+        paymentMethod: (order as any).paymentMethod,
+        totalAmount: (order as any).totalAmount,
+        isCOD: String((order as any).paymentMethod ?? '').toUpperCase() === 'COD'
+      });
 
       res.status(200).json({
         success: true,

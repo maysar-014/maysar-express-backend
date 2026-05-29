@@ -1,8 +1,8 @@
 # Integration Constitution Audit
 
-- Generated At: 2026-03-09T10:16:43.125Z
-- Services Audited: 21
-- Integration Tests Found: 25
+- Generated At: 2026-05-29T19:05:24.947Z
+- Services Audited: 23
+- Integration Tests Found: 31
 - Location Violations: 0
 - Internal Mock Violations: 0
 - Assertion Violations: 0
@@ -16,17 +16,19 @@
 | analytics-service | 1 |
 | auth-service | 1 |
 | business-registry-service | 1 |
-| catalog-service | 1 |
+| catalog-service | 2 |
+| chat-service | 1 |
 | checkout-service | 1 |
 | commission-service | 1 |
 | community-service | 1 |
-| compliance-service | 1 |
 | enabler-service | 1 |
+| governance-service | 1 |
 | inventory-service | 1 |
-| logistics-service | 2 |
+| kyc-service | 1 |
+| logistics-service | 3 |
 | maps-service | 1 |
 | notification-service | 1 |
-| order-service | 1 |
+| order-service | 3 |
 | payment-service | 3 |
 | payout-service | 1 |
 | production-service | 1 |

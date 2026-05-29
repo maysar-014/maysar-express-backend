@@ -1,0 +1,25 @@
+{
+  "constitutionName": "Maysar Express Ecosystem Expansion Constitution",
+  "constitutionVersion": "2026-05-29",
+  "targetPhase": "Phase 4",
+  "gates": [
+    { "id": "F4.1", "title": "Enabler Attribution", "category": "Functional", "severity": "P1", "runner": "database-query" },
+    { "id": "F4.2", "title": "Enabler Onboarding Flow", "category": "Functional", "severity": "P1", "runner": "http-endpoint", "path": "/api/enabler/onboard" },
+    { "id": "F4.3", "title": "Seller-Supplier Chat", "category": "Functional", "severity": "P1", "runner": "http-endpoint", "path": "/api/chat/conversations" },
+    { "id": "F4.4", "title": "Bulk Order Quoting", "category": "Functional", "severity": "P1", "runner": "http-endpoint", "path": "/api/production/quotes" },
+    { "id": "F4.5", "title": "KYC Verification Flow", "category": "Functional", "severity": "P1", "runner": "http-endpoint", "path": "/api/kyc/verify" },
+    { "id": "F4.6", "title": "Geographic Zone Assignment", "category": "Functional", "severity": "P1", "runner": "database-query" },
+    { "id": "D4.1", "title": "Enabler Commission Accuracy", "category": "Data Integrity", "severity": "P0", "runner": "database-query" },
+    { "id": "D4.2", "title": "KYC Data Integrity", "category": "Data Integrity", "severity": "P0", "runner": "database-query" },
+    { "id": "D4.3", "title": "Geographic Zone Performance Data", "category": "Data Integrity", "severity": "P0", "runner": "database-query" },
+    { "id": "D4.4", "title": "Prior Data Integrity Gates Maintained", "category": "Data Integrity", "severity": "P0", "runner": "node-script-report", "script": "scripts/testing/phase-4-prior-data-integrity-regression.js", "reportPath": "reports/testing/phase-4-prior-data-integrity-report.json" },
+    { "id": "FIN4.1", "title": "Enabler Commission Payout", "category": "Financial", "severity": "P0", "runner": "http-endpoint", "path": "/api/payouts/enabler" },
+    { "id": "FIN4.2", "title": "Prior Financial Gates Maintained", "category": "Financial", "severity": "P0", "runner": "node-script-report", "script": "scripts/testing/phase-4-prior-financial-regression.js", "reportPath": "reports/testing/phase-4-prior-financial-report.json" },
+    { "id": "OPS4.1", "title": "KYC Document Storage", "category": "Operational", "severity": "P1", "runner": "node-script-report", "script": "scripts/testing/phase-4-kyc-document-storage.js", "reportPath": "reports/testing/phase-4-kyc-document-storage-report.json" },
+    { "id": "OPS4.2", "title": "Compliance Audit Log", "category": "Operational", "severity": "P1", "runner": "database-query" },
+    { "id": "OPS4.3", "title": "Prior Operational Gates Maintained", "category": "Operational", "severity": "P1", "runner": "node-script-report", "script": "scripts/testing/phase-4-prior-operational-regression.js", "reportPath": "reports/testing/phase-4-prior-operational-report.json" },
+    { "id": "R4.1", "title": "Prior Regression Gates", "category": "Regression", "severity": "P1", "blocking": false, "runner": "node-script-report", "script": "scripts/testing/phase-4-prior-regression.js", "reportPath": "reports/testing/phase-4-prior-regression-report.json" },
+    { "id": "R4.2", "title": "Enabler Attribution Tests", "category": "Regression", "severity": "P1", "runner": "node-script-report", "script": "scripts/testing/phase-4-enabler-attribution-tests.js", "reportPath": "reports/testing/phase-4-enabler-attribution-tests-report.json" },
+    { "id": "R4.3", "title": "No Open P0/P1 Bugs", "category": "Regression", "severity": "P1", "runner": "node-script-report", "script": "scripts/testing/open-bugs-audit.js", "reportPath": "reports/testing/open-bugs-audit-report.json" }
+  ]
+}

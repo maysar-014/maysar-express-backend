@@ -6,6 +6,7 @@ import { CreateUserUseCase } from '../../application/use-cases/create-user.use-c
 import { UserValidationService } from '../../domain/services/user-validation.service';
 import { UserSecurityPolicy } from '../../domain/policies/user-security.policy';
 import { UserMapper } from '../../application/mappers/user-mapper';
+import { getSharedRedisClient } from '@shared/redis/ioredis-client';
 
 /**
  * API Route Definition Interface
@@ -187,7 +188,22 @@ const securityBreachBodySchema = Joi.object({
 function initializeController(): void {
   if (!userController) {
     const userValidationService = new UserValidationService();
-    const userSecurityPolicy = new UserSecurityPolicy();
+    const userSecurityPolicy = new UserSecurityPolicy({
+      rateLimitStore: {
+        incr: (key: string) => getSharedRedisClient().incr(key),
+        expire: (key: string, seconds: number) => getSharedRedisClient().expire(key, seconds)
+      },
+      trustedDeviceLookup: {
+        findFirst: async ({ where, orderBy }) => {
+          const client = prisma as any;
+          const deviceRepo = client.user_TrustedDevice || client.user_Device || client.user_UserDevice;
+          if (!deviceRepo) {
+            return null;
+          }
+          return deviceRepo.findFirst({ where, orderBy });
+        }
+      }
+    });
     userRepository = new PrismaUserRepository(prisma, new PiiEncryptionService());
     const emailVerificationTokens = new PrismaEmailVerificationTokenRepository(prisma);
     const passwordResetTokens = new PrismaPasswordResetTokenRepository(prisma);

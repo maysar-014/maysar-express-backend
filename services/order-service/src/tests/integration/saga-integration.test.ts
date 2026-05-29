@@ -216,6 +216,8 @@ describe('Saga Integration Tests - Payment, Delivery & Training', () => {
   let workflowEngine: WorkflowEngine;
   let notificationEngine: NotificationEngine;
   let analyticsEngine: AnalyticsEngine;
+  const runLiveProbe = process.env.RUN_LIVE_ORDER_SMOKE === 'true';
+  const describeIfLive = runLiveProbe ? describe : describe.skip;
 
   beforeAll(async () => {
     const apiClient = mockApiClient as ApiClient;
@@ -229,6 +231,14 @@ describe('Saga Integration Tests - Payment, Delivery & Training', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  describeIfLive('Live platform smoke probe', () => {
+    test('reaches the running readiness endpoint', async () => {
+      const response = await fetch('http://127.0.0.1:3000/ready');
+
+      expect(response.ok).toBe(true);
+    });
   });
 
   describe('Payment Saga with Fraud Detection', () => {

@@ -38,6 +38,7 @@ import { AdminController } from './src/api/controllers/admin.controller';
 
 // Routes
 import { createChatRoutes } from './src/api/routes/chat.routes';
+import { healthRoutes } from './src/api/routes/health.routes';
 
 // Jobs
 import { MarketplaceIntelligenceJob } from './src/infrastructure/jobs/marketplace-intelligence.job';
@@ -69,6 +70,17 @@ const catalogClient = {
       addToCartUrl: `/cart/add?productId=${product.id}`,
     };
   },
+};
+
+const riskStateStore = {
+  get: async (key: string) => redisClient?.get(key) ?? null,
+  set: async (key: string, value: string, mode?: string, durationSeconds?: number) =>
+    redisClient ? redisClient.set(key, value, mode as any, durationSeconds as any) : 'OK',
+  incr: async (key: string) => redisClient ? redisClient.incr(key) : 0,
+  expire: async (key: string, seconds: number) => redisClient ? redisClient.expire(key, seconds) : 0,
+  smembers: async (key: string) => redisClient ? redisClient.smembers(key) : [],
+  sadd: async (key: string, member: string) => redisClient ? redisClient.sadd(key, member) : 0,
+  srem: async (key: string, member: string) => redisClient ? redisClient.srem(key, member) : 0
 };
 
 const orderClient = {
@@ -126,7 +138,7 @@ export const ChatModule: Module = {
     const mediaStore = new S3MediaStore();
     const notificationClient = new NotificationClient(conversationRepo, presence);
     const meilisearch = new MeilisearchIndexer();
-    const riskEngine = new RiskEngine(redisClient);
+    const riskEngine = new RiskEngine(riskStateStore);
 
     // Ensure Meilisearch index is configured (fire-and-forget)
     meilisearch.ensureIndex().catch((e) => logger.warn('Meilisearch index setup failed', { e }));
@@ -168,7 +180,7 @@ export const ChatModule: Module = {
     // Router
     const router = Router();
     router.use('/v1', createChatRoutes(conversationCtrl, messageCtrl, mediaCtrl, moderationCtrl, adminCtrl));
-    router.get('/health', (_req, res) => res.json({ status: 'ok', service: 'chat-service' }));
+    router.use('/health', healthRoutes);
 
     ChatModule.routes = router;
     (ChatModule as any)._wsGateway = wsGateway;

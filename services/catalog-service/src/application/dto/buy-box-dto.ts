@@ -1,4 +1,5 @@
 import { SellerListingInput } from '../../domain/value-objects/seller-listing-input.value-object';
+import { AnomalyFlagResult } from '../../domain/buy-box/types';
 
 export interface ComputeBuyBoxRequestDto {
   productId: string;
@@ -17,4 +18,5 @@ export interface BuyBoxResponseDto {
   primaryScore: number | null;
   alternatives: BuyBoxAlternativeDto[];
   lastComputedAt: Date;
+  anomalyFlags?: AnomalyFlagResult[];
 }

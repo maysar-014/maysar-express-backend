@@ -1,0 +1,82 @@
+{
+  "constitutionName": "Maysar Express Launch Phase Constitution",
+  "constitutionVersion": "2026-05-29",
+  "targetPhase": "Phase 1",
+  "gates": [
+    {
+      "id": "OPS1.1",
+      "title": "Health Endpoints",
+      "category": "Operational",
+      "severity": "P0",
+      "runner": "http-endpoint",
+      "path": "/health",
+      "expectedStatus": 200
+    },
+    {
+      "id": "OPS1.2",
+      "title": "Readiness Endpoint",
+      "category": "Operational",
+      "severity": "P0",
+      "runner": "http-endpoint",
+      "path": "/ready",
+      "expectedStatus": 200
+    },
+    {
+      "id": "R1.1",
+      "title": "Constitution Compliance Audit",
+      "category": "Regression",
+      "severity": "P1",
+      "blocking": false,
+      "runner": "node-script-report",
+      "script": "scripts/testing/constitution-compliance-audit.js",
+      "reportPath": "reports/testing/constitution-compliance-report.json"
+    },
+    {
+      "id": "R1.2",
+      "title": "Integration Constitution Audit",
+      "category": "Regression",
+      "severity": "P1",
+      "blocking": false,
+      "runner": "node-script-report",
+      "script": "scripts/testing/integration-constitution-audit.js",
+      "reportPath": "reports/testing/integration-constitution-report.json"
+    },
+    {
+      "id": "OPS1.3",
+      "title": "Governance Report Store",
+      "category": "Operational",
+      "severity": "P2",
+      "runner": "filesystem-roundtrip",
+      "reportPath": "reports/governance"
+    },
+    {
+      "id": "OPS1.4",
+      "title": "Governance Index Roundtrip",
+      "category": "Operational",
+      "severity": "P2",
+      "runner": "filesystem-roundtrip",
+      "reportPath": "reports/governance"
+    },
+    {
+      "id": "D1.1",
+      "title": "User Sync Integrity",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "runner": "database-query"
+    },
+    {
+      "id": "FIN1.1",
+      "title": "Wallet Ledger Continuity",
+      "category": "Financial",
+      "severity": "P0",
+      "runner": "database-query"
+    },
+    {
+      "id": "OPS1.5",
+      "title": "Core Service Readiness",
+      "category": "Operational",
+      "severity": "P1",
+      "runner": "service-readiness"
+    }
+  ]
+}

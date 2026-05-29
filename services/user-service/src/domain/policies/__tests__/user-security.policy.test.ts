@@ -14,24 +14,13 @@ const redisClient = {
   expire: jest.fn(async () => 1)
 };
 
-jest.mock('@shared/redis/ioredis-client', () => ({
-  getSharedRedisClient: jest.fn(() => redisClient)
-}));
-
-jest.mock('../../../infrastructure/database/prisma-client', () => ({
-  prisma: {
-    user_TrustedDevice: {
+describe('UserSecurityPolicy', () => {
+  const policy = new UserSecurityPolicy({
+    rateLimitStore: redisClient as any,
+    trustedDeviceLookup: {
       findFirst: jest.fn()
     }
-  }
-}));
-
-import { prisma } from '../../../infrastructure/database/prisma-client';
-
-const prismaMock = prisma as any;
-
-describe('UserSecurityPolicy', () => {
-  const policy = new UserSecurityPolicy();
+  });
 
   function makeUser(overrides: any = {}) {
     return User.create({
@@ -267,7 +256,7 @@ describe('UserSecurityPolicy', () => {
       redisState.clear();
       redisClient.incr.mockClear();
       redisClient.expire.mockClear();
-      prismaMock.user_TrustedDevice.findFirst.mockReset();
+      (policy as any).dependencies.trustedDeviceLookup.findFirst.mockReset();
     });
 
     test('returns false when IP exceeds attempt threshold', async () => {
@@ -293,7 +282,7 @@ describe('UserSecurityPolicy', () => {
 
     test('returns true when trustedDeviceCount is 1 and device is known', async () => {
       const user = makeUser().updateMetadata({ trustedDeviceCount: 1 });
-      prismaMock.user_TrustedDevice.findFirst.mockResolvedValueOnce({ id: 'device-1' });
+      (policy as any).dependencies.trustedDeviceLookup.findFirst.mockResolvedValueOnce({ id: 'device-1' });
       await expect(policy.isSecureSession(user, { ipAddress: '8.8.8.8', userAgent: 'x' })).resolves.toBe(true);
     });
 

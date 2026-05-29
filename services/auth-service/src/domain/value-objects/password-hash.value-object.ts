@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 
-const DEFAULT_SALT_ROUNDS = parseInt(process.env.PASSWORD_SALT_ROUNDS || '12', 10);
+const DEFAULT_SALT_ROUNDS = 12;
 
 export class PasswordHash {
   constructor(private readonly hash: string) {}

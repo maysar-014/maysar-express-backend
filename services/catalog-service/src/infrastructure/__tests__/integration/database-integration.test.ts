@@ -21,6 +21,8 @@
  * - Schema evolution compatibility
  */
 
+import { PrismaClient } from '@prisma/client';
+
 import { ProductRepository, DomainRecord } from '../../../domain/interfaces';
 
 type ProductVariantRecord = {
@@ -707,6 +709,26 @@ describe('Infrastructure Layer Integration Tests', () => {
       const avgTime = paginationTimes.reduce((sum, time) => sum + time, 0) / paginationTimes.length;
       expect(avgTime).toBeLessThan(1000); // Each page should load in under 1 second
     }, 45000);
+  });
+});
+
+describe('Live database smoke probe', () => {
+  const runLiveProbe = process.env.RUN_LIVE_CATALOG_DB_INTEGRATION === 'true';
+  const describeIfLive = runLiveProbe ? describe : describe.skip;
+
+  describeIfLive('connects to the configured catalog database', () => {
+    const prisma = new PrismaClient();
+
+    afterAll(async () => {
+      await prisma.$disconnect().catch(() => undefined);
+    });
+
+    it('can execute a trivial SQL roundtrip', async () => {
+      const rows = await prisma.$queryRawUnsafe<Array<{ one: number }>>('SELECT 1 AS one');
+
+      expect(rows).toHaveLength(1);
+      expect(Number(rows[0]?.one)).toBe(1);
+    });
   });
 });
 

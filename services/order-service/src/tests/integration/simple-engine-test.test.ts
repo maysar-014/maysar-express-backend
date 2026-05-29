@@ -18,6 +18,8 @@ describe('Engine Initialization Tests', () => {
       data: { basePrice: 50_000, shippingCost: 0 }
     })
   };
+  const runLiveProbe = process.env.RUN_LIVE_ORDER_SMOKE === 'true';
+  const describeIfLive = runLiveProbe ? describe : describe.skip;
 
   let engines: any;
 
@@ -36,6 +38,14 @@ describe('Engine Initialization Tests', () => {
       orchestrator: new LogisticsOrchestrator(),
       settlement: new SettlementService()
     };
+  });
+
+  describeIfLive('Live platform smoke probe', () => {
+    test('reaches the running health endpoint', async () => {
+      const response = await fetch('http://127.0.0.1:3000/health');
+
+      expect(response.ok).toBe(true);
+    });
   });
 
   describe('Engine Instantiation', () => {

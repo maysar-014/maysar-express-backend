@@ -33,6 +33,15 @@ describeIfLive('HERE Routing (Live Integration)', () => {
   });
 
   it('calculates a real route distance and duration', async () => {
+    const pickupCoordinates = pickup.getCoordinates();
+    const deliveryCoordinates = delivery.getCoordinates();
+
+    const probe = await fetch(
+      `https://router.hereapi.com/v8/routes?transportMode=car&origin=${pickupCoordinates.lat},${pickupCoordinates.lng}&destination=${deliveryCoordinates.lat},${deliveryCoordinates.lng}&return=summary&apiKey=${process.env.HERE_API_KEY}`
+    );
+
+    expect(probe.ok).toBe(true);
+
     const result = await DistanceCalculationAlgorithm.calculateDeliveryDistance(pickup, delivery);
 
     expect(result.distance).toBeGreaterThan(0);

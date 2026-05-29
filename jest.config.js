@@ -69,6 +69,7 @@ module.exports = {
       moduleNameMapper: {
         '@maps/(.*)': '<rootDir>/services/maps-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': '<rootDir>/tests/__mocks__/prom-client.js',
         '^uuid$': require.resolve('uuid'),
       }
     },
@@ -150,6 +151,17 @@ module.exports = {
       ],
       moduleNameMapper: {
         '@checkout/(.*)': '<rootDir>/services/checkout-service/src/$1',
+        '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
+      }
+    },
+    {
+      displayName: 'kyc-service',
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      testMatch: ['<rootDir>/services/kyc-service/**/*.test.ts'],
+      moduleNameMapper: {
+        '@kyc/(.*)': '<rootDir>/services/kyc-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
         '^uuid$': require.resolve('uuid'),
       }
@@ -357,6 +369,17 @@ module.exports = {
       setupFilesAfterEnv: ['<rootDir>/tests/setup/wallet-service/setup.ts'],
       moduleNameMapper: {
         '@wallet/(.*)': '<rootDir>/services/wallet-service/src/$1',
+        '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
+      }
+    },
+    {
+      displayName: 'governance-service',
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      testMatch: ['<rootDir>/services/governance-service/**/*.test.ts'],
+      setupFilesAfterEnv: ['<rootDir>/tests/setup/governance-service/setup.ts'],
+      moduleNameMapper: {
         '@shared/(.*)': '<rootDir>/shared/$1',
         '^uuid$': require.resolve('uuid'),
       }

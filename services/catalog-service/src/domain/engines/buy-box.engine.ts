@@ -11,6 +11,7 @@
 import { SellerListingInput } from '../value-objects/seller-listing-input.value-object';
 import { BuyBoxWeights } from '../value-objects/buy-box-weights.value-object';
 import { BuyBoxResult, BuyBoxAlternative } from '../value-objects/buy-box-result.value-object';
+import { AnomalyFlagResult } from '../buy-box/types';
 
 export class BuyBoxEngine {
   /**
@@ -35,6 +36,7 @@ export class BuyBoxEngine {
     if (eligible.length === 0) return null;
 
     const median = this.calculateMedian(eligible.map(l => l.price));
+    const anomalyFlags = this.detectAnomalies(eligible, median);
     const scored = eligible.map(listing => ({
       listing,
       score: this.computeFinalScore(listing, median, weights)
@@ -59,7 +61,8 @@ export class BuyBoxEngine {
       winner.listing.sellerId,
       winner.score,
       alternatives,
-      new Date()
+      new Date(),
+      anomalyFlags
     );
   }
 
@@ -131,6 +134,49 @@ export class BuyBoxEngine {
     if (listing.recencyBoost) score += BuyBoxWeights.RECENCY_BOOST;
 
     return Math.round(score * 100) / 100;
+  }
+
+  /**
+   * Flags suspicious listing patterns that indicate possible manipulation.
+   *
+   * The engine has no historical warehouse behind it, so this stays on the
+   * safe side with high-confidence heuristics that are stable in production.
+   */
+  private static detectAnomalies(
+    listings: SellerListingInput[],
+    medianPrice: number
+  ): AnomalyFlagResult[] {
+    const flags: AnomalyFlagResult[] = [];
+    const seen = new Set<string>();
+    const baselineStock = Math.max(1, Math.min(...listings.map((listing) => listing.stock)));
+
+    for (const listing of listings) {
+      const stockSpikeThreshold = Math.max(1000, baselineStock * 100);
+      if (listing.stock >= stockSpikeThreshold && !seen.has('stockReliability')) {
+        seen.add('stockReliability');
+        flags.push({
+          signalName: 'stockReliability',
+          detectedValue: listing.stock,
+          expectedMin: baselineStock,
+          expectedMax: stockSpikeThreshold,
+          substitutedValue: baselineStock,
+        });
+      }
+
+      const priceDropThreshold = medianPrice * 0.6;
+      if (listing.price < priceDropThreshold && !seen.has('priceCompetitiveness')) {
+        seen.add('priceCompetitiveness');
+        flags.push({
+          signalName: 'priceCompetitiveness',
+          detectedValue: listing.price,
+          expectedMin: priceDropThreshold,
+          expectedMax: medianPrice * 1.4,
+          substitutedValue: medianPrice,
+        });
+      }
+    }
+
+    return flags;
   }
 
   /**

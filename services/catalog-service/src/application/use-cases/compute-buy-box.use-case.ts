@@ -43,7 +43,8 @@ export class ComputeBuyBoxUseCase {
       primarySellerId: result.primarySellerId,
       primaryScore: result.primaryScore,
       alternatives: result.alternatives,
-      lastComputedAt: result.computedAt
+      lastComputedAt: result.computedAt,
+      anomalyFlags: result.anomalyFlags ?? []
     };
   }
 }

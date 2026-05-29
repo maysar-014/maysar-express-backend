@@ -1,0 +1,515 @@
+[
+  {
+    "runId": "290eda1a-399b-4a3a-a505-1deb278f7e26",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 2",
+    "startedAt": "2026-05-29T20:45:50.050Z",
+    "finishedAt": "2026-05-29T20:46:00.677Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 23,
+      "passed": 7,
+      "failed": 1,
+      "manual": 0,
+      "skipped": 15,
+      "p0": 6,
+      "p1": 17,
+      "p2": 0,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "98d7b34c-a387-41bf-b6ee-a212d25c1a5e",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 2",
+    "startedAt": "2026-05-29T20:44:52.859Z",
+    "finishedAt": "2026-05-29T20:45:08.964Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 23,
+      "passed": 6,
+      "failed": 2,
+      "manual": 0,
+      "skipped": 15,
+      "p0": 6,
+      "p1": 17,
+      "p2": 0,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "844959eb-2ab1-4d24-b0c5-a8a84adb1991",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 2",
+    "startedAt": "2026-05-29T20:37:03.155Z",
+    "finishedAt": "2026-05-29T20:37:10.613Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 23,
+      "passed": 3,
+      "failed": 5,
+      "manual": 0,
+      "skipped": 15,
+      "p0": 6,
+      "p1": 17,
+      "p2": 0,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "ec86584a-5ebc-4dd2-a8ed-81dd13fd65b4",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 2",
+    "startedAt": "2026-05-29T20:34:05.555Z",
+    "finishedAt": "2026-05-29T20:34:07.339Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 23,
+      "passed": 2,
+      "failed": 6,
+      "manual": 0,
+      "skipped": 15,
+      "p0": 6,
+      "p1": 17,
+      "p2": 0,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "6b369dc2-9920-4883-9141-f08ee54f71c7",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 2",
+    "startedAt": "2026-05-29T20:30:46.595Z",
+    "finishedAt": "2026-05-29T20:30:48.684Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 23,
+      "passed": 3,
+      "failed": 5,
+      "manual": 0,
+      "skipped": 15,
+      "p0": 6,
+      "p1": 17,
+      "p2": 0,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "7c8004c4-5e2c-4dc8-ad74-0f37eb9fb6f9",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 2",
+    "startedAt": "2026-05-29T20:25:21.600Z",
+    "finishedAt": "2026-05-29T20:26:04.674Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 23,
+      "passed": 3,
+      "failed": 5,
+      "manual": 0,
+      "skipped": 15,
+      "p0": 6,
+      "p1": 17,
+      "p2": 0,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "ea75f808-4f2c-420f-bb32-54a618de14db",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 2",
+    "startedAt": "2026-05-29T20:24:42.595Z",
+    "finishedAt": "2026-05-29T20:24:44.587Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 23,
+      "passed": 2,
+      "failed": 6,
+      "manual": 0,
+      "skipped": 15,
+      "p0": 6,
+      "p1": 17,
+      "p2": 0,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "94202e75-09ff-456d-90e8-46c43a804931",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 2",
+    "startedAt": "2026-05-29T20:21:18.685Z",
+    "finishedAt": "2026-05-29T20:21:50.051Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 23,
+      "passed": 2,
+      "failed": 6,
+      "manual": 0,
+      "skipped": 15,
+      "p0": 6,
+      "p1": 17,
+      "p2": 0,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "a010956b-1e37-43b3-b698-8a065e4c2524",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 2",
+    "startedAt": "2026-05-29T20:19:48.997Z",
+    "finishedAt": "2026-05-29T20:19:49.858Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 23,
+      "passed": 2,
+      "failed": 6,
+      "manual": 0,
+      "skipped": 15,
+      "p0": 6,
+      "p1": 17,
+      "p2": 0,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "1775beb2-77ab-4133-973a-3adabec3c7b1",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 2",
+    "startedAt": "2026-05-29T20:17:19.305Z",
+    "finishedAt": "2026-05-29T20:17:48.387Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 23,
+      "passed": 1,
+      "failed": 7,
+      "manual": 0,
+      "skipped": 15,
+      "p0": 6,
+      "p1": 17,
+      "p2": 0,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "31603174-6ef2-4a19-b025-0a2e7499dde9",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T19:11:15.040Z",
+    "finishedAt": "2026-05-29T19:11:18.972Z",
+    "verdict": "APPROVED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 7,
+      "failed": 2,
+      "manual": 0,
+      "skipped": 0,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "79a75e15-ebec-4bbb-bbcf-be6851a58258",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T19:05:23.364Z",
+    "finishedAt": "2026-05-29T19:05:25.445Z",
+    "verdict": "APPROVED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 7,
+      "failed": 2,
+      "manual": 0,
+      "skipped": 0,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "cfc181c6-ba76-4488-b371-a8edbff35286",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T19:04:26.528Z",
+    "finishedAt": "2026-05-29T19:04:34.295Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 6,
+      "failed": 3,
+      "manual": 0,
+      "skipped": 0,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "74706ab2-3ad8-4e43-9502-e71415955fad",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T18:58:19.731Z",
+    "finishedAt": "2026-05-29T18:58:22.839Z",
+    "verdict": "APPROVED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 7,
+      "failed": 2,
+      "manual": 0,
+      "skipped": 0,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "bc3643db-338c-49b5-9e34-c5a5610d9741",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T18:54:21.181Z",
+    "finishedAt": "2026-05-29T18:54:23.621Z",
+    "verdict": "APPROVED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 7,
+      "failed": 2,
+      "manual": 0,
+      "skipped": 0,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "e3850ea8-8654-4558-bb6c-c88d1cf0a110",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T15:55:58.576Z",
+    "finishedAt": "2026-05-29T15:56:01.539Z",
+    "verdict": "APPROVED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 7,
+      "failed": 2,
+      "manual": 0,
+      "skipped": 0,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "8bd17219-4bc3-4a49-ba8f-0dcbe5ab1138",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T15:01:24.146Z",
+    "finishedAt": "2026-05-29T15:01:26.757Z",
+    "verdict": "APPROVED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 7,
+      "failed": 2,
+      "manual": 0,
+      "skipped": 0,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "8230688f-a1d7-4268-93fb-130008f02b62",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T12:47:31.251Z",
+    "finishedAt": "2026-05-29T12:47:33.521Z",
+    "verdict": "APPROVED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 7,
+      "failed": 2,
+      "manual": 0,
+      "skipped": 0,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "307f25d4-163c-4f46-ac70-df0281d66ea6",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T12:34:10.089Z",
+    "finishedAt": "2026-05-29T12:34:12.299Z",
+    "verdict": "APPROVED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 7,
+      "failed": 2,
+      "manual": 0,
+      "skipped": 0,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "3d9f2f35-5958-4231-a78e-430e0aca8b36",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T10:57:31.515Z",
+    "finishedAt": "2026-05-29T10:58:05.245Z",
+    "verdict": "APPROVED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 7,
+      "failed": 2,
+      "manual": 0,
+      "skipped": 0,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "d985263c-ab14-4532-bc9b-893a0b8e8120",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T10:55:04.452Z",
+    "finishedAt": "2026-05-29T10:56:03.247Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 6,
+      "failed": 3,
+      "manual": 0,
+      "skipped": 0,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "f2754dd5-3d73-4a17-8884-2caee46cb69f",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T10:49:56.453Z",
+    "finishedAt": "2026-05-29T10:52:17.971Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 4,
+      "failed": 5,
+      "manual": 0,
+      "skipped": 0,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "16e77c99-7b7b-4ff6-ba8a-0f0e8646f323",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T10:46:05.257Z",
+    "finishedAt": "2026-05-29T10:46:22.059Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 6,
+      "failed": 3,
+      "manual": 0,
+      "skipped": 0,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "5a1085dc-bd34-4ffc-8c3f-509519af52bb",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T01:20:29.348Z",
+    "finishedAt": "2026-05-29T01:20:30.762Z",
+    "verdict": "APPROVED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 6,
+      "failed": 2,
+      "manual": 0,
+      "skipped": 1,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "8bfc5fa8-fe62-486d-9a3e-35fa9d42635d",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T01:15:49.198Z",
+    "finishedAt": "2026-05-29T01:15:51.236Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 6,
+      "failed": 2,
+      "manual": 0,
+      "skipped": 1,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "a9271804-232a-4330-a364-6c42e6d7b607",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T01:05:48.869Z",
+    "finishedAt": "2026-05-29T01:05:54.431Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 5,
+      "failed": 3,
+      "manual": 0,
+      "skipped": 1,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  },
+  {
+    "runId": "a73e5909-5701-472c-a48d-35f6814b921b",
+    "constitutionVersion": "2026-05-29",
+    "targetPhase": "Phase 1",
+    "startedAt": "2026-05-29T00:58:15.114Z",
+    "finishedAt": "2026-05-29T00:58:42.535Z",
+    "verdict": "DENIED",
+    "summary": {
+      "totalGates": 9,
+      "passed": 4,
+      "failed": 4,
+      "manual": 0,
+      "skipped": 1,
+      "p0": 4,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    }
+  }
+]

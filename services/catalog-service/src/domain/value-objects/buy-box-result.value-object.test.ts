@@ -8,13 +8,15 @@ describe('BuyBoxResult', () => {
       'seller-1',
       0.92,
       [{ sellerId: 'seller-2', score: 0.84, rank: 2 }],
-      now
+      now,
+      [{ signalName: 'stockReliability', detectedValue: 100, expectedMin: 0, expectedMax: 50, substitutedValue: 50 }]
     );
 
     expect(result.productId).toBe('product-1');
     expect(result.primarySellerId).toBe('seller-1');
     expect(result.alternatives[0].rank).toBe(2);
     expect(result.computedAt).toBe(now);
+    expect(result.anomalyFlags).toHaveLength(1);
   });
 
   it('provides no-eligible-sellers factory result', () => {

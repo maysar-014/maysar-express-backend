@@ -83,4 +83,24 @@ describe('BuyBoxEngine', () => {
     expect(result?.alternatives[0].rank).toBe(2);
     expect(result?.alternatives[4].rank).toBe(6);
   });
+
+  it('surfaces anomaly flags for suspicious stock spikes', () => {
+    const result = BuyBoxEngine.compute(
+      'product-4',
+      [
+        listing({ sellerId: 'normal', price: 1000, stock: 10 }),
+        listing({ sellerId: 'spike', price: 999, stock: 1000000 })
+      ],
+      BuyBoxWeights.defaults()
+    );
+
+    expect(result).not.toBeNull();
+    expect(result?.anomalyFlags).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          signalName: 'stockReliability'
+        })
+      ])
+    );
+  });
 });

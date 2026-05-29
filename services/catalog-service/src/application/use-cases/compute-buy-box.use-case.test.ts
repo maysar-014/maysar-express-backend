@@ -37,7 +37,8 @@ describe('ComputeBuyBoxUseCase', () => {
       primarySellerId: 'seller-1',
       primaryScore: 92.5,
       alternatives: [{ sellerId: 'seller-2', score: 90, rank: 2 }],
-      computedAt: new Date('2026-03-09T12:00:00.000Z')
+      computedAt: new Date('2026-03-09T12:00:00.000Z'),
+      anomalyFlags: [{ signalName: 'stockReliability', detectedValue: 100, expectedMin: 0, expectedMax: 50, substitutedValue: 50 }]
     });
     const buyBoxRepository = { save: jest.fn().mockResolvedValue(undefined) };
     const eventPublisher = { publishComputed: jest.fn().mockResolvedValue(undefined) };
@@ -70,7 +71,8 @@ describe('ComputeBuyBoxUseCase', () => {
       primarySellerId: 'seller-1',
       primaryScore: 92.5,
       alternatives: [{ sellerId: 'seller-2', score: 90, rank: 2 }],
-      lastComputedAt: new Date('2026-03-09T12:00:00.000Z')
+      lastComputedAt: new Date('2026-03-09T12:00:00.000Z'),
+      anomalyFlags: [{ signalName: 'stockReliability', detectedValue: 100, expectedMin: 0, expectedMax: 50, substitutedValue: 50 }]
     });
   });
 });

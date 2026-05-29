@@ -19,7 +19,7 @@ All new files live under `services/catalog-service/src/` in their respective lay
   - Run `npx prisma generate` to regenerate the Prisma client
   - _Requirements: 3.3, 7.5_
 
-- [ ] 2. Domain layer — entities and repository interface
+- [x] 2. Domain layer — entities and repository interface
   - [x] 2.1 Create `ProductReview` entity and `ReviewModerationLog` entity
     - Create `services/catalog-service/src/domain/entities/product-review.entity.ts`
     - Define `ProductReview` interface/class with fields: `id`, `productId`, `buyerId`, `rating`, `comment`, `moderationStatus`, `submittedAt`, `updatedAt`
@@ -37,7 +37,7 @@ All new files live under `services/catalog-service/src/` in their respective lay
     - Export all types from `services/catalog-service/src/domain/repositories/repository.interfaces.ts` (re-export or extend)
     - _Requirements: 5.1, 5.2, 6.1, 6.2, 6.4_
 
-- [ ] 3. Infrastructure layer — Prisma repository implementation
+- [x] 3. Infrastructure layer — Prisma repository implementation
   - [x] 3.1 Implement `PrismaProductReviewRepository`
     - Create `services/catalog-service/src/infrastructure/repositories/prisma-product-review.repository.ts`
     - Implement `save(review)`: upsert via `prisma.catalog_ProductReview.create`; map Prisma record to domain entity
@@ -57,7 +57,7 @@ All new files live under `services/catalog-service/src/` in their respective lay
     - Test `updateModerationStatus` writes a moderation log entry in the same transaction
     - _Requirements: 6.3, 7.1, 7.5_
 
-- [ ] 4. Application layer — use cases
+- [x] 4. Application layer — use cases
   - [x] 4.1 Implement `SubmitProductReviewUseCase`
     - Create `services/catalog-service/src/application/use-cases/submit-product-review.use-case.ts`
     - Constructor: `ProductRepository`, `ProductReviewRepository`
@@ -111,7 +111,7 @@ All new files live under `services/catalog-service/src/` in their respective lay
 - [x] 5. Checkpoint — ensure all unit tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 6. API layer — controller and routes
+- [x] 6. API layer — controller and routes
   - [x] 6.1 Implement `ReviewController`
     - Create `services/catalog-service/src/api/controllers/review.controller.ts`
     - Follow the same pattern as `ProductController` (constructor injection, `ApiResponse` envelope, `sendValidationError` / `sendNotFoundError` / `sendBusinessRuleError` helpers)
@@ -135,7 +135,7 @@ All new files live under `services/catalog-service/src/` in their respective lay
     - Instantiate `ReviewController` with its use case dependencies in the factory
     - _Requirements: 1.6, 5.1_
 
-- [ ] 7. Aggregate enrichment — update product fetch and search use cases
+- [x] 7. Aggregate enrichment — update product fetch and search use cases
   - [x] 7.1 Update `GetProductUseCase` to include review aggregate stats
     - Modify `services/catalog-service/src/application/use-cases/get-product.use-case.ts`
     - Add `ProductReviewRepository` as an optional constructor parameter
@@ -188,7 +188,7 @@ All new files live under `services/catalog-service/src/` in their respective lay
     - **Property 4: Empty State Invariant**
     - **Validates: Requirements 6.3, 10.6**
 
-  - [ ] 8.5 Write property test for Property 5 — Pagination Completeness
+  - [x] 8.5 Write property test for Property 5 — Pagination Completeness
     - In `review-properties.test.ts`
     - `// Feature: product-review-system, Property 5: Pagination Completeness`
     - Use `fc.array(fc.record({ id: fc.string(), rating: fc.integer({ min: 1, max: 5 }) }), { minLength: 0, maxLength: 200 })` and `fc.integer({ min: 1, max: 50 })` for limit

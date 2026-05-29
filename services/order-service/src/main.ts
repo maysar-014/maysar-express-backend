@@ -313,7 +313,28 @@ async function initializeService() {
       }
     });
 
-    logger.info('✅ Progressive COD Trust Signal listeners registered');
+    // KYC_VERIFIED — buyer completes KYC verification (Phase 4 gate F4.5)
+    // kyc-service publishes 'kyc.status_changed' with { userId, status: 'verified', kycLevel }
+    // We map this to ACCOUNT_AGE_MILESTONE as the closest positive trust signal available.
+    eventBus.subscribe('kyc.status_changed', async (envelope: any) => {
+      try {
+        const data = envelope?.data || envelope?.payload || envelope;
+        const { userId, status, kycLevel } = data;
+        if (!userId || String(status ?? '').toLowerCase() !== 'verified') return;
+
+        await trustSignalIngestion.recordSignal({
+          buyerId: userId,
+          signalType: TrustSignalType.ACCOUNT_AGE_MILESTONE,
+          sourceService: 'kyc-service',
+          sourceEntityId: `kyc:${userId}:level${kycLevel ?? 1}`,
+        });
+        logger.info(`[TrustSignal] KYC verified for user ${userId} at level ${kycLevel ?? 1} — trust signal recorded`);
+      } catch (err: any) {
+        logger.warn('[TrustSignal] kyc.status_changed handler failed', { error: err.message });
+      }
+    });
+
+    logger.info('✅ Progressive COD Trust Signal listeners registered (including KYC bridge)');
 
     // ── Account Age Milestone Job ─────────────────────────────────────────────
     // Runs once every 24 hours. Checks all buyers who reached 180 days of account

@@ -272,7 +272,28 @@ export const OrderModule: Module = {
                 } catch (err: any) { logger.warn('[TrustSignal] PhoneVerified handler failed', { error: err.message }); }
             });
 
-            logger.info('Order-service Progressive COD Trust Signal listeners registered');
+            // KYC_VERIFIED — buyer completes KYC verification (Phase 4 gate F4.5)
+            // When admin approves KYC, kyc-service publishes 'kyc.status_changed' with status=VERIFIED.
+            // We map this to ACCOUNT_AGE_MILESTONE as the closest positive trust signal available,
+            // since KYC verification is a strong identity signal equivalent to account maturity.
+            eventBus.subscribe('kyc.status_changed', async (envelope: any) => {
+                try {
+                    const data = envelope?.data || envelope?.payload || envelope;
+                    const { userId, status, kycLevel } = data;
+                    if (!userId || String(status ?? '').toLowerCase() !== 'verified') return;
+
+                    // KYC level 1+ = identity verified = strong positive trust signal
+                    await trustSignalIngestion.recordSignal({
+                        buyerId: userId,
+                        signalType: TrustSignalType.ACCOUNT_AGE_MILESTONE,
+                        sourceService: 'kyc-service',
+                        sourceEntityId: `kyc:${userId}:level${kycLevel ?? 1}`,
+                    });
+                    logger.info(`[TrustSignal] KYC verified for user ${userId} at level ${kycLevel ?? 1} — trust signal recorded`);
+                } catch (err: any) { logger.warn('[TrustSignal] kyc.status_changed handler failed', { error: err.message }); }
+            });
+
+            logger.info('Order-service Progressive COD Trust Signal listeners registered (including KYC bridge)');
         } catch (error) {
             logger.error('Failed init order-service', error);
             const reason = error instanceof Error ? error.message : 'Unknown initialization error';

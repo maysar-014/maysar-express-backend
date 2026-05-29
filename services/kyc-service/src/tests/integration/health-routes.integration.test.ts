@@ -1,0 +1,20 @@
+import express from 'express';
+import request from 'supertest';
+
+import { healthRoutes } from '../../api/routes/health.routes';
+
+describe('kyc-service health routes integration', () => {
+  it('returns health status', async () => {
+    const app = express();
+    app.use('/health', healthRoutes);
+
+    const response = await request(app).get('/health');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      success: true,
+      service: 'kyc-service',
+      status: 'ok'
+    });
+  });
+});

@@ -95,6 +95,67 @@ jobs:
           USER_SERVICE_JWT_SECRET: TEST_USER_SERVICE_JWT_SECRET
           AUTH_SERVICE_SESSION_SECRET: TEST_AUTH_SESSION_SECRET
 
+  governance-audit:
+    name: Governance Audit
+    runs-on: ubuntu-latest
+    needs:
+      - quality-gates
+      - openapi-validation
+    timeout-minutes: 50
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Start test stack
+        run: docker compose -f docker/docker-compose.test.yml up -d --build
+
+      - name: Wait for test stack readiness
+        run: |
+          set -euo pipefail
+          for i in {1..60}; do
+            if curl -fsS http://localhost:3000/health >/dev/null && curl -fsS http://localhost:3000/ready >/dev/null; then
+              echo "Governance target stack is ready"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Target stack did not become ready in time"
+          exit 1
+
+      - name: Run governance audit
+        run: npm run governance:audit
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://maysar:maysar@localhost:5433/maysar_test?schema=public
+          REDIS_URL: redis://:maysar@localhost:6380
+          GOVERNANCE_TARGET_BASE_URL: http://localhost:3000
+          GOVERNANCE_SERVICE_READINESS_TARGETS_JSON: '[{"name":"platform-health","url":"http://localhost:3000/health","expectedStatus":200},{"name":"platform-ready","url":"http://localhost:3000/ready","expectedStatus":200}]'
+
+      - name: Upload governance reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: governance-audit-reports
+          path: reports/governance/
+          retention-days: 14
+
+      - name: Stop test stack
+        if: always()
+        run: docker compose -f docker/docker-compose.test.yml down
+
   openapi-validation:
     name: OpenAPI Validation
     runs-on: ubuntu-latest

@@ -9168,6 +9168,12 @@ paths:
       security:
         - BearerAuth: []
   '/api/business-registry/{id}/compliance-records':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Business Registry
@@ -9178,12 +9184,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
     post:
       tags:
         - Business Registry
@@ -9195,6 +9195,12 @@ paths:
         '200':
           description: Success
   '/api/business-registry/{id}/documents':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Business Registry
@@ -9205,12 +9211,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
     post:
       tags:
         - Business Registry
@@ -10799,6 +10799,12 @@ paths:
       security:
         - BearerAuth: []
   '/api/business-registry/businesses/industries/{industry}/sellers':
+    parameters:
+      - name: industry
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Business Registry
@@ -10809,12 +10815,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: industry
-        in: path
-        required: true
-        schema:
-          type: string
   '/api/business-registry/businesses/owner/{ownerId}':
     parameters:
       - name: ownerId
@@ -10999,6 +10999,12 @@ paths:
         '200':
           description: Success
   '/api/business-registry/businesses/sellers/{sellerId}':
+    parameters:
+      - name: sellerId
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Business Registry
@@ -11009,13 +11015,13 @@ paths:
       responses:
         '200':
           description: Success
+  '/api/business-registry/businesses/sellers/{sellerId}/industries':
     parameters:
       - name: sellerId
         in: path
         required: true
         schema:
           type: string
-  '/api/business-registry/businesses/sellers/{sellerId}/industries':
     get:
       tags:
         - Business Registry
@@ -11026,12 +11032,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: sellerId
-        in: path
-        required: true
-        schema:
-          type: string
   /api/business-registry/health:
     parameters: []
     get:
@@ -11270,6 +11270,12 @@ paths:
       parameters: []
       security: []
   '/api/business-registry/industries/{industry}/sellers':
+    parameters:
+      - name: industry
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Business Registry
@@ -11280,12 +11286,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: industry
-        in: path
-        required: true
-        schema:
-          type: string
   '/api/business-registry/owner/{ownerId}':
     parameters:
       - name: ownerId
@@ -11390,6 +11390,12 @@ paths:
         '200':
           description: Success
   '/api/business-registry/public/{id}':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
     delete:
       tags:
         - Business Registry
@@ -11400,12 +11406,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
     get:
       tags:
         - Business Registry
@@ -11427,6 +11427,12 @@ paths:
         '200':
           description: Success
   '/api/business-registry/public/{id}/compliance-records':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Business Registry
@@ -11437,12 +11443,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
     post:
       tags:
         - Business Registry
@@ -11454,6 +11454,12 @@ paths:
         '200':
           description: Success
   '/api/business-registry/public/{id}/documents':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Business Registry
@@ -11464,12 +11470,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
     post:
       tags:
         - Business Registry
@@ -11481,6 +11481,12 @@ paths:
         '200':
           description: Success
   '/api/business-registry/public/{id}/reactivate':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
     post:
       tags:
         - Business Registry
@@ -11491,13 +11497,13 @@ paths:
       responses:
         '200':
           description: Success
+  '/api/business-registry/public/{id}/suspend':
     parameters:
       - name: id
         in: path
         required: true
         schema:
           type: string
-  '/api/business-registry/public/{id}/suspend':
     post:
       tags:
         - Business Registry
@@ -11508,13 +11514,13 @@ paths:
       responses:
         '200':
           description: Success
+  '/api/business-registry/public/{id}/verify':
     parameters:
       - name: id
         in: path
         required: true
         schema:
           type: string
-  '/api/business-registry/public/{id}/verify':
     post:
       tags:
         - Business Registry
@@ -11525,12 +11531,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
   '/api/business-registry/public/industries/{industry}/sellers':
     parameters:
       - name: industry
@@ -11601,6 +11601,12 @@ paths:
               schema: {}
       security: []
   '/api/business-registry/public/owner/{ownerId}':
+    parameters:
+      - name: ownerId
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Business Registry
@@ -11611,12 +11617,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: ownerId
-        in: path
-        required: true
-        schema:
-          type: string
   /api/business-registry/public/search:
     get:
       tags:
@@ -11916,6 +11916,12 @@ paths:
         '200':
           description: Success
   '/api/business-registry/sellers/{sellerId}':
+    parameters:
+      - name: sellerId
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Business Registry
@@ -11926,13 +11932,13 @@ paths:
       responses:
         '200':
           description: Success
+  '/api/business-registry/sellers/{sellerId}/industries':
     parameters:
       - name: sellerId
         in: path
         required: true
         schema:
           type: string
-  '/api/business-registry/sellers/{sellerId}/industries':
     get:
       tags:
         - Business Registry
@@ -11943,12 +11949,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: sellerId
-        in: path
-        required: true
-        schema:
-          type: string
   /api/business-registry/system/maintenance/cleanup/outbox:
     parameters: []
     post:
@@ -12424,6 +12424,12 @@ paths:
       parameters: []
       security: []
   '/api/catalog/campaigns/{id}':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Catalog
@@ -12434,12 +12440,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
     put:
       tags:
         - Catalog
@@ -14682,6 +14682,12 @@ paths:
       security:
         - ServiceKey: []
   '/api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}':
+    parameters:
+      - name: flagId
+        in: path
+        required: true
+        schema:
+          type: string
     delete:
       tags:
         - Catalog
@@ -14692,13 +14698,13 @@ paths:
       responses:
         '200':
           description: Success
+  '/api/catalog/v1/admin/buy-box/history/{productId}':
     parameters:
-      - name: flagId
+      - name: productId
         in: path
         required: true
         schema:
           type: string
-  '/api/catalog/v1/admin/buy-box/history/{productId}':
     get:
       tags:
         - Catalog
@@ -14709,12 +14715,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: productId
-        in: path
-        required: true
-        schema:
-          type: string
   /api/catalog/v1/admin/buy-box/overrides:
     post:
       tags:
@@ -14727,6 +14727,12 @@ paths:
         '200':
           description: Success
   '/api/catalog/v1/admin/buy-box/strategies/{categoryId}':
+    parameters:
+      - name: categoryId
+        in: path
+        required: true
+        schema:
+          type: string
     put:
       tags:
         - Catalog
@@ -14737,12 +14743,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: categoryId
-        in: path
-        required: true
-        schema:
-          type: string
   /api/catalog/v1/categories:
     parameters: []
     get:
@@ -16723,6 +16723,12 @@ paths:
       security:
         - BearerAuth: []
   '/api/catalog/v1/products/{id}/reviews':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Catalog
@@ -16733,12 +16739,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
     post:
       tags:
         - Catalog
@@ -17436,6 +17436,12 @@ paths:
               schema: {}
       security: []
   '/api/catalog/v1/reviews/{reviewId}/moderate':
+    parameters:
+      - name: reviewId
+        in: path
+        required: true
+        schema:
+          type: string
     put:
       tags:
         - Catalog
@@ -17446,12 +17452,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: reviewId
-        in: path
-        required: true
-        schema:
-          type: string
   /api/catalog/v1/search:
     parameters: []
     get:
@@ -17997,6 +17997,12 @@ paths:
         '200':
           description: Success
   '/api/chat/v1/admin/blocklist/domains/{domain}':
+    parameters:
+      - name: domain
+        in: path
+        required: true
+        schema:
+          type: string
     delete:
       tags:
         - Chat
@@ -18007,12 +18013,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: domain
-        in: path
-        required: true
-        schema:
-          type: string
   /api/chat/v1/conversations:
     get:
       tags:
@@ -18035,6 +18035,12 @@ paths:
         '200':
           description: Success
   '/api/chat/v1/conversations/{id}':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Chat
@@ -18045,13 +18051,13 @@ paths:
       responses:
         '200':
           description: Success
+  '/api/chat/v1/conversations/{id}/messages':
     parameters:
       - name: id
         in: path
         required: true
         schema:
           type: string
-  '/api/chat/v1/conversations/{id}/messages':
     get:
       tags:
         - Chat
@@ -18062,12 +18068,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
     post:
       tags:
         - Chat
@@ -18079,16 +18079,6 @@ paths:
         '200':
           description: Success
   '/api/chat/v1/conversations/{id}/messages/{messageId}':
-    delete:
-      tags:
-        - Chat
-      summary: 'DELETE v1 conversations {id} messages {messageId}'
-      description: Auto-generated from mounted Express routes to keep the contract aligned with the reachable API surface.
-      operationId: delete_api_chat_v1_conversations_id_messages_messageId
-      x-generated-route-sync: true
-      responses:
-        '200':
-          description: Success
     parameters:
       - name: id
         in: path
@@ -18100,7 +18090,23 @@ paths:
         required: true
         schema:
           type: string
+    delete:
+      tags:
+        - Chat
+      summary: 'DELETE v1 conversations {id} messages {messageId}'
+      description: Auto-generated from mounted Express routes to keep the contract aligned with the reachable API surface.
+      operationId: delete_api_chat_v1_conversations_id_messages_messageId
+      x-generated-route-sync: true
+      responses:
+        '200':
+          description: Success
   '/api/chat/v1/conversations/{id}/mute':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
     delete:
       tags:
         - Chat
@@ -18111,12 +18117,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
     post:
       tags:
         - Chat
@@ -18128,6 +18128,12 @@ paths:
         '200':
           description: Success
   '/api/chat/v1/conversations/{id}/read':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
     put:
       tags:
         - Chat
@@ -18138,12 +18144,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
   /api/chat/v1/conversations/search:
     get:
       tags:
@@ -18167,6 +18167,12 @@ paths:
         '200':
           description: Success
   '/api/chat/v1/messages/{messageId}/report':
+    parameters:
+      - name: messageId
+        in: path
+        required: true
+        schema:
+          type: string
     post:
       tags:
         - Chat
@@ -18177,13 +18183,13 @@ paths:
       responses:
         '200':
           description: Success
+  '/api/chat/v1/users/{userId}/block':
     parameters:
-      - name: messageId
+      - name: userId
         in: path
         required: true
         schema:
           type: string
-  '/api/chat/v1/users/{userId}/block':
     delete:
       tags:
         - Chat
@@ -18194,12 +18200,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
     post:
       tags:
         - Chat
@@ -18211,6 +18211,12 @@ paths:
         '200':
           description: Success
   '/api/checkout/{cartId}':
+    parameters:
+      - name: cartId
+        in: path
+        required: true
+        schema:
+          type: string
     delete:
       tags:
         - Checkout
@@ -18221,12 +18227,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: cartId
-        in: path
-        required: true
-        schema:
-          type: string
     get:
       tags:
         - Checkout
@@ -19817,6 +19817,12 @@ paths:
         '200':
           description: Success
   '/api/community/articles/{articleId}':
+    parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Community
@@ -19827,13 +19833,13 @@ paths:
       responses:
         '200':
           description: Success
+  '/api/community/articles/{articleId}/publish':
     parameters:
       - name: articleId
         in: path
         required: true
         schema:
           type: string
-  '/api/community/articles/{articleId}/publish':
     post:
       tags:
         - Community
@@ -19844,13 +19850,13 @@ paths:
       responses:
         '200':
           description: Success
+  '/api/community/articles/{articleId}/reviews':
     parameters:
       - name: articleId
         in: path
         required: true
         schema:
           type: string
-  '/api/community/articles/{articleId}/reviews':
     post:
       tags:
         - Community
@@ -19861,12 +19867,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: articleId
-        in: path
-        required: true
-        schema:
-          type: string
   /api/community/challenges:
     parameters: []
     get:
@@ -21618,6 +21618,12 @@ paths:
         '200':
           description: Success
   '/api/community/knowledge/challenges/{challengeId}/solutions':
+    parameters:
+      - name: challengeId
+        in: path
+        required: true
+        schema:
+          type: string
     post:
       tags:
         - Community
@@ -21628,12 +21634,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: challengeId
-        in: path
-        required: true
-        schema:
-          type: string
   /api/community/knowledge/discover:
     get:
       tags:
@@ -25672,6 +25672,190 @@ paths:
       parameters: []
       security:
         - ServiceKey: []
+  /api/governance/constitution:
+    get:
+      tags:
+        - Governance
+      summary: Get the active governance constitution
+      description: Returns the currently active phase constitution used by the governance engine.
+      operationId: get_api_governance_constitution
+      responses:
+        '200':
+          description: Active constitution document
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - constitution
+                properties:
+                  constitution:
+                    $ref: '#/components/schemas/GovernanceConstitutionDocument'
+  /api/governance/dashboard:
+    get:
+      tags:
+        - Governance
+      summary: Get the governance dashboard payload
+      description: Returns the latest dashboard summary for operator review.
+      operationId: get_api_governance_dashboard
+      responses:
+        '200':
+          description: Dashboard payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernanceDashboardResponse'
+  /api/governance/reports/latest:
+    get:
+      tags:
+        - Governance
+      summary: Get the latest governance report
+      description: Returns the latest immutable governance report if one exists.
+      operationId: get_api_governance_reports_latest
+      responses:
+        '200':
+          description: Latest report
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - report
+                properties:
+                  report:
+                    $ref: '#/components/schemas/GovernanceInspectionRun'
+        '404':
+          description: No governance report has been generated yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/governance/runs:
+    get:
+      tags:
+        - Governance
+      summary: List governance runs
+      description: Returns the immutable run index ordered by latest run first.
+      operationId: get_api_governance_runs
+      responses:
+        '200':
+          description: Run index
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - runs
+                properties:
+                  runs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GovernanceRunIndexEntry'
+    post:
+      tags:
+        - Governance
+      summary: Start a governance audit run
+      description: Executes a new governance audit against the configured or supplied target base URL.
+      operationId: post_api_governance_runs
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GovernanceRunRequest'
+      responses:
+        '201':
+          description: Run completed and persisted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - report
+                properties:
+                  report:
+                    $ref: '#/components/schemas/GovernanceInspectionRun'
+  '/api/governance/runs/{runId}':
+    get:
+      tags:
+        - Governance
+      summary: Get a governance run
+      description: Returns a single immutable governance run by id.
+      operationId: get_api_governance_runs_runId
+      responses:
+        '200':
+          description: Run payload
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - run
+                properties:
+                  run:
+                    $ref: '#/components/schemas/GovernanceInspectionRun'
+        '404':
+          description: Governance run not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        schema:
+          type: string
+  '/api/governance/runs/{runId}/evidence/{gateId}':
+    get:
+      tags:
+        - Governance
+      summary: Get evidence for a governance gate
+      description: Returns the evidence artifact bundle associated with a gate result.
+      operationId: get_api_governance_runs_runId_evidence_gateId
+      responses:
+        '200':
+          description: Evidence payload
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - evidence
+                properties:
+                  evidence:
+                    $ref: '#/components/schemas/GovernanceGateEvidence'
+        '404':
+          description: Governance evidence not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: gateId
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/governance/summary:
+    get:
+      tags:
+        - Governance
+      summary: Get the latest governance summary
+      description: Returns a compact summary of the most recent governance run, or a default denied summary when no run exists.
+      operationId: get_api_governance_summary
+      responses:
+        '200':
+          description: Governance summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernanceSummaryResponse'
   /api/inventory/analytics/stock-levels:
     get:
       tags:
@@ -25932,6 +26116,12 @@ paths:
         '200':
           description: Success
   '/api/inventory/inventory-counts/{countId}':
+    parameters:
+      - name: countId
+        in: path
+        required: true
+        schema:
+          type: string
     put:
       tags:
         - Inventory
@@ -25942,12 +26132,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: countId
-        in: path
-        required: true
-        schema:
-          type: string
   /api/inventory/materials:
     parameters: []
     get:
@@ -26360,6 +26544,12 @@ paths:
         '200':
           description: Success
   '/api/inventory/reservations/{orderId}':
+    parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
     delete:
       tags:
         - Inventory
@@ -26370,12 +26560,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: orderId
-        in: path
-        required: true
-        schema:
-          type: string
     get:
       tags:
         - Inventory
@@ -26387,6 +26571,12 @@ paths:
         '200':
           description: Success
   '/api/inventory/stock/{variantId}':
+    parameters:
+      - name: variantId
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Inventory
@@ -26397,23 +26587,7 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: variantId
-        in: path
-        required: true
-        schema:
-          type: string
   '/api/inventory/stock/{variantId}/{warehouseId}':
-    put:
-      tags:
-        - Inventory
-      summary: 'PUT stock {variantId} {warehouseId}'
-      description: Auto-generated from mounted Express routes to keep the contract aligned with the reachable API surface.
-      operationId: put_api_inventory_stock_variantId_warehouseId
-      x-generated-route-sync: true
-      responses:
-        '200':
-          description: Success
     parameters:
       - name: variantId
         in: path
@@ -26425,6 +26599,16 @@ paths:
         required: true
         schema:
           type: string
+    put:
+      tags:
+        - Inventory
+      summary: 'PUT stock {variantId} {warehouseId}'
+      description: Auto-generated from mounted Express routes to keep the contract aligned with the reachable API surface.
+      operationId: put_api_inventory_stock_variantId_warehouseId
+      x-generated-route-sync: true
+      responses:
+        '200':
+          description: Success
   /api/inventory/system/maintenance/cleanup/outbox:
     parameters: []
     post:
@@ -26619,6 +26803,12 @@ paths:
         '200':
           description: Success
   '/api/inventory/warehouses/{id}':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Inventory
@@ -26629,12 +26819,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
   '/api/kyc/admin/{userId}':
     parameters:
       - name: userId
@@ -31302,6 +31486,17 @@ paths:
       parameters: []
       security:
         - ServiceKey: []
+  /api/maps/geocoding/geocode:
+    post:
+      tags:
+        - Maps
+      summary: POST geocoding geocode
+      description: Auto-generated from mounted Express routes to keep the contract aligned with the reachable API surface.
+      operationId: post_api_maps_geocoding_geocode
+      x-generated-route-sync: true
+      responses:
+        '200':
+          description: Success
   /api/maps/health:
     parameters: []
     get:
@@ -31539,6 +31734,17 @@ paths:
               schema: {}
       parameters: []
       security: []
+  /api/maps/routing/calculate:
+    post:
+      tags:
+        - Maps
+      summary: POST routing calculate
+      description: Auto-generated from mounted Express routes to keep the contract aligned with the reachable API surface.
+      operationId: post_api_maps_routing_calculate
+      x-generated-route-sync: true
+      responses:
+        '200':
+          description: Success
   /api/notification/health:
     parameters: []
     get:
@@ -35560,6 +35766,12 @@ paths:
       security:
         - BearerAuth: []
   '/api/order/orders/{id}/confirm-delivery':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
     post:
       tags:
         - Order
@@ -35570,12 +35782,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
   '/api/order/orders/{id}/status':
     parameters:
       - name: id
@@ -38089,6 +38295,12 @@ paths:
       security:
         - BearerAuth: []
   '/api/payout/payouts/{id}':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - Payout
@@ -38099,12 +38311,6 @@ paths:
       responses:
         '200':
           description: Success
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
   '/api/payout/payouts/{id}/cancel':
     parameters:
       - name: id
@@ -46942,6 +47148,675 @@ components:
       type: object
       description: Generic health/readiness response (shape varies by service)
       additionalProperties: true
+    GovernanceSeverity:
+      type: string
+      enum:
+        - P0
+        - P1
+        - P2
+        - P3
+    GovernanceCategory:
+      type: string
+      enum:
+        - Functional
+        - Data Integrity
+        - Financial
+        - Operational
+        - Regression
+    GovernanceGateTarget:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - url
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        expectedStatus:
+          type: integer
+          minimum: 100
+          maximum: 599
+    GovernanceConstitutionGateDefinition:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - title
+        - category
+        - severity
+        - runner
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        category:
+          $ref: '#/components/schemas/GovernanceCategory'
+        severity:
+          $ref: '#/components/schemas/GovernanceSeverity'
+        blocking:
+          type: boolean
+        runner:
+          type: string
+          enum:
+            - http-endpoint
+            - service-readiness
+            - node-script-report
+            - filesystem-roundtrip
+            - database-query
+        path:
+          type: string
+        expectedStatus:
+          type: integer
+          minimum: 100
+          maximum: 599
+        script:
+          type: string
+        reportPath:
+          type: string
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovernanceGateTarget'
+    GovernanceConstitutionDocument:
+      type: object
+      additionalProperties: false
+      required:
+        - constitutionName
+        - constitutionVersion
+        - targetPhase
+        - gates
+      properties:
+        constitutionName:
+          type: string
+        constitutionVersion:
+          type: string
+        targetPhase:
+          type: string
+        gates:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovernanceConstitutionGateDefinition'
+    GovernanceEvidenceArtifact:
+      type: object
+      additionalProperties: false
+      required:
+        - label
+        - type
+        - value
+      properties:
+        label:
+          type: string
+        type:
+          type: string
+          enum:
+            - json
+            - text
+            - url
+            - path
+        value:
+          type: string
+    GovernanceGateResult:
+      type: object
+      additionalProperties: false
+      required:
+        - gateId
+        - title
+        - category
+        - severity
+        - status
+        - summary
+        - evidence
+        - startedAt
+        - finishedAt
+        - durationMs
+      properties:
+        gateId:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+        severity:
+          $ref: '#/components/schemas/GovernanceSeverity'
+        status:
+          type: string
+          enum:
+            - PASS
+            - FAIL
+            - MANUAL
+            - SKIPPED
+        summary:
+          type: string
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovernanceEvidenceArtifact'
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+        durationMs:
+          type: number
+    GovernanceInspectionSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - totalGates
+        - passed
+        - failed
+        - manual
+        - skipped
+        - p0
+        - p1
+        - p2
+        - p3
+      properties:
+        totalGates:
+          type: integer
+        passed:
+          type: integer
+        failed:
+          type: integer
+        manual:
+          type: integer
+        skipped:
+          type: integer
+        p0:
+          type: integer
+        p1:
+          type: integer
+        p2:
+          type: integer
+        p3:
+          type: integer
+    GovernanceInspectionRun:
+      type: object
+      additionalProperties: false
+      required:
+        - runId
+        - constitutionName
+        - constitutionVersion
+        - targetPhase
+        - startedAt
+        - finishedAt
+        - durationMs
+        - targetBaseUrl
+        - verdict
+        - gateResults
+        - phaseCertifications
+        - summary
+      properties:
+        runId:
+          type: string
+        constitutionName:
+          type: string
+        constitutionVersion:
+          type: string
+        targetPhase:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+        durationMs:
+          type: number
+        targetBaseUrl:
+          type: string
+          format: uri
+        verdict:
+          $ref: '#/components/schemas/GovernanceReleaseVerdict'
+        gateResults:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovernanceGateResult'
+        phaseCertifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovernancePhaseCertification'
+        summary:
+          $ref: '#/components/schemas/GovernanceInspectionSummary'
+    GovernancePhaseCertification:
+      type: object
+      additionalProperties: false
+      required:
+        - phase
+        - title
+        - implementationStatus
+        - status
+        - reason
+        - prerequisites
+      properties:
+        phase:
+          type: string
+        title:
+          type: string
+        implementationStatus:
+          type: string
+          enum:
+            - READY_TO_LAUNCH
+            - IN_DEVELOPMENT
+            - DESIGNED
+            - PLANNED
+        status:
+          type: string
+          enum:
+            - CERTIFIED
+            - PENDING
+            - NOT_CERTIFIED
+        certifiedAt:
+          type: string
+          nullable: true
+          format: date-time
+        reason:
+          type: string
+        prerequisites:
+          type: array
+          items:
+            type: string
+    GovernancePhaseReadinessSection:
+      type: object
+      additionalProperties: false
+      required:
+        - title
+        - description
+        - totalPhases
+        - certifiedPhases
+        - pendingPhases
+        - notCertifiedPhases
+        - rows
+        - catalog
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        totalPhases:
+          type: integer
+        certifiedPhases:
+          type: integer
+        pendingPhases:
+          type: integer
+        notCertifiedPhases:
+          type: integer
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovernancePhaseCertification'
+        catalog:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovernancePhaseCatalogEntry'
+    GovernancePhaseCatalogEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - phase
+        - title
+        - implementationStatus
+        - constitutionPath
+        - plannedGateCount
+        - prerequisites
+        - note
+      properties:
+        phase:
+          type: string
+        title:
+          type: string
+        implementationStatus:
+          type: string
+          enum:
+            - READY_TO_LAUNCH
+            - IN_DEVELOPMENT
+            - DESIGNED
+            - PLANNED
+        constitutionPath:
+          type: string
+        plannedGateCount:
+          type: integer
+        prerequisites:
+          type: array
+          items:
+            type: string
+        note:
+          type: string
+    GovernanceRunIndexEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - runId
+        - constitutionVersion
+        - targetPhase
+        - startedAt
+        - finishedAt
+        - verdict
+        - summary
+      properties:
+        runId:
+          type: string
+        constitutionVersion:
+          type: string
+        targetPhase:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+        verdict:
+          type: string
+          enum:
+            - APPROVED
+            - DENIED
+            - APPROVED_WITH_RISK
+        summary:
+          $ref: '#/components/schemas/GovernanceInspectionSummary'
+    GovernanceRunRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        targetBaseUrl:
+          type: string
+          format: uri
+          description: Optional override for the target platform base URL.
+    GovernanceGateEvidence:
+      type: object
+      additionalProperties: false
+      required:
+        - runId
+        - gateId
+        - title
+        - severity
+        - status
+        - summary
+        - evidence
+        - startedAt
+        - finishedAt
+        - durationMs
+      properties:
+        runId:
+          type: string
+        gateId:
+          type: string
+        title:
+          type: string
+        severity:
+          $ref: '#/components/schemas/GovernanceSeverity'
+        status:
+          type: string
+          enum:
+            - PASS
+            - FAIL
+            - MANUAL
+            - SKIPPED
+        summary:
+          type: string
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovernanceEvidenceArtifact'
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+        durationMs:
+          type: number
+    GovernanceSummaryResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - targetPhase
+        - verdict
+        - summary
+        - phaseCertifications
+        - startedAt
+        - finishedAt
+        - runId
+      properties:
+        targetPhase:
+          type: string
+        verdict:
+          $ref: '#/components/schemas/GovernanceReleaseVerdict'
+        summary:
+          $ref: '#/components/schemas/GovernanceInspectionSummary'
+        phaseCertifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovernancePhaseCertification'
+        startedAt:
+          type: string
+          nullable: true
+          format: date-time
+        finishedAt:
+          type: string
+          nullable: true
+          format: date-time
+        runId:
+          type: string
+          nullable: true
+    GovernanceReleaseVerdict:
+      type: string
+      enum:
+        - APPROVED
+        - DENIED
+        - APPROVED_WITH_RISK
+    GovernanceDashboardGateRow:
+      type: object
+      additionalProperties: false
+      required:
+        - gateId
+        - title
+        - category
+        - severity
+        - status
+        - summary
+        - durationMs
+        - evidenceCount
+      properties:
+        gateId:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+        severity:
+          $ref: '#/components/schemas/GovernanceSeverity'
+        status:
+          type: string
+          enum:
+            - PASS
+            - FAIL
+            - MANUAL
+            - SKIPPED
+        summary:
+          type: string
+        durationMs:
+          type: number
+        evidenceCount:
+          type: integer
+        blocking:
+          type: boolean
+    GovernanceDashboardResponse:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required:
+            - hasRun
+            - constitution
+            - latestReport
+            - gateTable
+            - blockerCount
+            - advisoryCount
+            - advisoryGateTable
+            - operatorSummary
+            - phaseCertifications
+            - phaseReadiness
+            - verdict
+          properties:
+            hasRun:
+              type: boolean
+              enum:
+                - false
+            constitution:
+              $ref: '#/components/schemas/GovernanceConstitutionDocument'
+            latestReport:
+              type: object
+              nullable: true
+            gateTable:
+              type: array
+              items:
+                $ref: '#/components/schemas/GovernanceDashboardGateRow'
+            blockerCount:
+              type: integer
+            advisoryCount:
+              type: integer
+            advisoryGateTable:
+              type: array
+              items:
+                $ref: '#/components/schemas/GovernanceDashboardGateRow'
+            operatorSummary:
+              type: object
+              additionalProperties: false
+              required:
+                - totalGates
+                - blockingGates
+                - advisoryGates
+                - passedGates
+                - failedGates
+                - skippedGates
+              properties:
+                totalGates:
+                  type: integer
+                blockingGates:
+                  type: integer
+                advisoryGates:
+                  type: integer
+                passedGates:
+                  type: integer
+                failedGates:
+                  type: integer
+                skippedGates:
+                  type: integer
+            phaseCertifications:
+              type: array
+              items:
+                $ref: '#/components/schemas/GovernancePhaseCertification'
+            phaseReadiness:
+              $ref: '#/components/schemas/GovernancePhaseReadinessSection'
+            verdict:
+              $ref: '#/components/schemas/GovernanceReleaseVerdict'
+        - type: object
+          additionalProperties: false
+          required:
+            - hasRun
+            - constitution
+            - latestReport
+            - gateTable
+            - blockerCount
+            - advisoryCount
+            - advisoryGateTable
+            - operatorSummary
+            - phaseCertifications
+            - phaseReadiness
+          properties:
+            hasRun:
+              type: boolean
+              enum:
+                - true
+            constitution:
+              type: object
+              additionalProperties: false
+              required:
+                - name
+                - version
+                - targetPhase
+              properties:
+                name:
+                  type: string
+                version:
+                  type: string
+                targetPhase:
+                  type: string
+            latestReport:
+              type: object
+              additionalProperties: false
+              required:
+                - runId
+                - verdict
+                - startedAt
+                - finishedAt
+                - summary
+                - phaseCertifications
+              properties:
+                runId:
+                  type: string
+                verdict:
+                  $ref: '#/components/schemas/GovernanceReleaseVerdict'
+                startedAt:
+                  type: string
+                  nullable: true
+                  format: date-time
+                finishedAt:
+                  type: string
+                  nullable: true
+                  format: date-time
+                summary:
+                  $ref: '#/components/schemas/GovernanceInspectionSummary'
+                phaseCertifications:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/GovernancePhaseCertification'
+            gateTable:
+              type: array
+              items:
+                $ref: '#/components/schemas/GovernanceDashboardGateRow'
+            blockerCount:
+              type: integer
+            advisoryCount:
+              type: integer
+            advisoryGateTable:
+              type: array
+              items:
+                $ref: '#/components/schemas/GovernanceDashboardGateRow'
+            operatorSummary:
+              type: object
+              additionalProperties: false
+              required:
+                - totalGates
+                - blockingGates
+                - advisoryGates
+                - passedGates
+                - failedGates
+                - skippedGates
+              properties:
+                totalGates:
+                  type: integer
+                blockingGates:
+                  type: integer
+                advisoryGates:
+                  type: integer
+                passedGates:
+                  type: integer
+                failedGates:
+                  type: integer
+                skippedGates:
+                  type: integer
+            phaseCertifications:
+              type: array
+              items:
+                $ref: '#/components/schemas/GovernancePhaseCertification'
+            phaseReadiness:
+              $ref: '#/components/schemas/GovernancePhaseReadinessSection'
     PublicBusinessAddress:
       type: object
       additionalProperties: false

@@ -4,7 +4,6 @@ import { ICODTrustScoreRepository } from '../repositories/cod-trust-score.reposi
 import { ICODRestrictionRepository } from '../repositories/cod-restriction.repository';
 import { OrderRepository } from '../repositories/order.repository';
 import { deriveTier, getCODLimit } from './cod-trust/trust-score.functions';
-import { logger } from '../../infrastructure/monitoring/logger';
 
 /**
  * ProgressiveCODEligibilityEngine
@@ -39,6 +38,11 @@ export class ProgressiveCODEligibilityEngine {
    * New buyers (score 0) are eligible — tier-based limits are enforced at order level.
    */
   async checkBuyerEligibility(buyerId: string): Promise<EligibilityResult> {
+    const isVerified = await this.authService.isUserVerified(buyerId);
+    if (!isVerified) {
+      return { eligible: false, reason: 'PHONE_VERIFICATION_REQUIRED' };
+    }
+
     // 1. Check for active restrictions
     const restrictions = await this.restrictionRepo.findActiveByBuyerId(buyerId);
 
@@ -57,12 +61,6 @@ export class ProgressiveCODEligibilityEngine {
     const scoreRecord = await this.trustScoreRepo.findByBuyerId(buyerId);
     const score = scoreRecord?.score ?? 0;
     const tier = deriveTier(score);
-
-    logger.debug('[ProgressiveCODEligibilityEngine] Buyer eligibility check', {
-      buyerId,
-      score,
-      tier,
-    });
 
     return { eligible: true };
   }
@@ -101,14 +99,6 @@ export class ProgressiveCODEligibilityEngine {
     const orderAmount = typeof (order.totalAmount as any)?.amount === 'number'
       ? (order.totalAmount as any).amount
       : Number(order.totalAmount);
-
-    logger.debug('[ProgressiveCODEligibilityEngine] Order eligibility check', {
-      buyerId,
-      score,
-      tier,
-      codLimit,
-      orderAmount,
-    });
 
     // 1. Value check
     if (codLimit !== null && orderAmount > codLimit) {
@@ -183,5 +173,13 @@ export class ProgressiveCODEligibilityEngine {
    */
   private isHighRiskItem(_productId: string): boolean {
     return false;
+  }
+
+  calculateCommitmentFee(deliveryFee: number): number {
+    if (!Number.isFinite(deliveryFee) || deliveryFee <= 0) {
+      throw new Error('Delivery fee must be greater than zero');
+    }
+
+    return deliveryFee;
   }
 }

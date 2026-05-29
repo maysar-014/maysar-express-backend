@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
-import { MeilisearchSearchService } from '../src/infrastructure/services/search.service';
-import { SearchProvider, SearchProviderFactory } from '../src/infrastructure/providers/search.provider';
+
+import { MeilisearchSearchService } from '../../infrastructure/services/search.service';
+import { SearchProvider, SearchProviderFactory } from '../../infrastructure/providers/search.provider';
 
 const runMeilisearchIntegration = process.env.RUN_MEILISEARCH_INTEGRATION === 'true';
 const describeIfMeilisearch = runMeilisearchIntegration ? describe : describe.skip;
@@ -47,7 +48,10 @@ describeIfMeilisearch('MeilisearchSearchService integration', () => {
     throw new Error('Meilisearch search never returned results within the timeout window');
   };
 
-  beforeAll(() => {
+  beforeAll(async () => {
+    const healthResponse = await fetch(`http://${host}:${port}/health`);
+    expect(healthResponse.ok).toBe(true);
+
     provider = SearchProviderFactory.createMeilisearch({
       provider: SearchProvider.MEILISEARCH,
       fallbackToMemory: false,

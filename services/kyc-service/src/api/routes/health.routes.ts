@@ -11,3 +11,11 @@ healthRoutes.get('/', (_req, res) => {
   });
 });
 
+healthRoutes.get('/ready', (_req, res) => {
+  res.status(200).json({
+    success: true,
+    service: 'kyc-service',
+    status: 'ready',
+    timestamp: new Date().toISOString()
+  });
+});

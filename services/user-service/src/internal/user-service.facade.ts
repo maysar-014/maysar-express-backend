@@ -15,6 +15,7 @@ import { ChangePasswordUseCase } from '../application/use-cases/change-password.
 import { UserMapper } from '../application/mappers/user-mapper';
 import { emailService, notificationClient } from '../infrastructure/services/service-instances';
 import { PiiEncryptionService } from '../../../../shared/encryption/pii-encryption.service';
+import { getSharedRedisClient } from '@shared/redis/ioredis-client';
 
 const context = (() => {
   const userRepository = new PrismaUserRepository(prisma, new PiiEncryptionService());
@@ -23,7 +24,22 @@ const context = (() => {
   const outboxRepository = new UserOutboxRepository(prisma);
   const eventPublisher = new UserEventPublisher(outboxRepository);
   const userValidationService = new UserValidationService();
-  const userSecurityPolicy = new UserSecurityPolicy();
+  const userSecurityPolicy = new UserSecurityPolicy({
+    rateLimitStore: {
+      incr: (key: string) => getSharedRedisClient().incr(key),
+      expire: (key: string, seconds: number) => getSharedRedisClient().expire(key, seconds)
+    },
+    trustedDeviceLookup: {
+      findFirst: async ({ where, orderBy }) => {
+        const client = prisma as any;
+        const deviceRepo = client.user_TrustedDevice || client.user_Device || client.user_UserDevice;
+        if (!deviceRepo) {
+          return null;
+        }
+        return deviceRepo.findFirst({ where, orderBy });
+      }
+    }
+  });
 
   const createUserUseCase = new CreateUserUseCase(
     userRepository,

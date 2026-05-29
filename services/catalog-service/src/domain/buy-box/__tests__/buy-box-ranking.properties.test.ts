@@ -7,7 +7,7 @@
  * Feature: buy-box-ranking-system
  */
 
-import { describe, it, expect } from 'vitest';
+// Uses Jest (project test runner) — no vitest import needed
 import {
   computePriceCompetitiveness,
 } from '../signals/price-competitiveness.signal';

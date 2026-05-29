@@ -1,7 +1,14 @@
 import { AuthServiceClient } from './auth-service.client';
 
 describe('AuthServiceClient integration stub', () => {
+  const originalBypass = process.env.ORDER_BYPASS_USER_VERIFICATION;
+
+  beforeEach(() => {
+    process.env.ORDER_BYPASS_USER_VERIFICATION = 'true';
+  });
+
   afterEach(() => {
+    process.env.ORDER_BYPASS_USER_VERIFICATION = originalBypass;
     jest.restoreAllMocks();
   });
 
@@ -11,7 +18,7 @@ describe('AuthServiceClient integration stub', () => {
 
     await expect(client.isUserVerified('user-1')).resolves.toBe(true);
     expect(logSpy).toHaveBeenCalledWith(
-      '[AuthServiceClient] Bypassing verification for user user-1 (non-production).'
+      '[AuthServiceClient] Bypassing verification for user user-1 (explicit override).'
     );
   });
 });

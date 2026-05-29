@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T10:16:43.125Z",
+  "generatedAt": "2026-05-29T19:05:24.947Z",
   "summary": {
-    "servicesAudited": 21,
-    "integrationTests": 25,
+    "servicesAudited": 23,
+    "integrationTests": 31,
     "locationViolations": 0,
     "internalMockViolations": 0,
     "assertionViolations": 0,
@@ -25,6 +25,10 @@
     },
     {
       "service": "catalog-service",
+      "integrationTests": 2
+    },
+    {
+      "service": "chat-service",
       "integrationTests": 1
     },
     {
@@ -40,11 +44,11 @@
       "integrationTests": 1
     },
     {
-      "service": "compliance-service",
+      "service": "enabler-service",
       "integrationTests": 1
     },
     {
-      "service": "enabler-service",
+      "service": "governance-service",
       "integrationTests": 1
     },
     {
@@ -52,8 +56,12 @@
       "integrationTests": 1
     },
     {
+      "service": "kyc-service",
+      "integrationTests": 1
+    },
+    {
       "service": "logistics-service",
-      "integrationTests": 2
+      "integrationTests": 3
     },
     {
       "service": "maps-service",
@@ -65,7 +73,7 @@
     },
     {
       "service": "order-service",
-      "integrationTests": 1
+      "integrationTests": 3
     },
     {
       "service": "payment-service",

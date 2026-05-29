@@ -48,6 +48,7 @@ Central navigation for all Maysar platform documentation. These pages describe t
 - [Docker Orchestration](docker-orchestration.md)
 - [Staging Environment](staging-environment.md)
 - [GitHub Actions CI/CD](github-actions-cicd.md)
+- [Governance Engine Roadmap](governance-engine-roadmap.md)
 - [Secrets Management](secrets-management.md)
 - [Disaster Recovery](disaster-recovery.md)
 - [Incident Playbook](incident-playbook.md)
@@ -96,6 +97,7 @@ Central navigation for all Maysar platform documentation. These pages describe t
 | checkout-service | [README](../services/checkout-service/README.md) | — |
 | commission-service | [README](../services/commission-service/README.md) | — |
 | community-service | [README](../services/community-service/README.md) | [openapi.yaml](../services/community-service/openapi.yaml) |
+| governance-service | [README](../services/governance-service/README.md) | — |
 | compliance-service | [README](../services/compliance-service/README.md) | — |
 | enabler-service | [README](../services/enabler-service/README.md) | [openapi.yaml](../services/enabler-service/openapi.yaml) |
 | inventory-service | [README](../services/inventory-service/README.md) | — |

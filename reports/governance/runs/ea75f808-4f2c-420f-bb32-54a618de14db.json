@@ -1,0 +1,484 @@
+{
+  "runId": "ea75f808-4f2c-420f-bb32-54a618de14db",
+  "constitutionName": "Maysar Express Trust & Intelligence Constitution",
+  "constitutionVersion": "2026-05-29",
+  "targetPhase": "Phase 2",
+  "startedAt": "2026-05-29T20:24:42.595Z",
+  "finishedAt": "2026-05-29T20:24:44.587Z",
+  "durationMs": 1992,
+  "targetBaseUrl": "http://localhost:3000",
+  "verdict": "DENIED",
+  "gateResults": [
+    {
+      "gateId": "F2.1",
+      "title": "COD Trust Score Initialisation",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "New buyer trust score initialized at 0",
+      "evidence": [
+        {
+          "label": "buyerId",
+          "type": "text",
+          "value": "usr_phase2_phase26cab0c30_buyer"
+        },
+        {
+          "label": "trustScore",
+          "type": "json",
+          "value": "{\n  \"score\": 0,\n  \"tier\": \"NEW_BUYER\",\n  \"updatedAt\": null\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T20:24:42.599Z",
+      "finishedAt": "2026-05-29T20:24:43.293Z",
+      "durationMs": 693.83
+    },
+    {
+      "gateId": "F2.2",
+      "title": "Trust Signal Ingestion",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "FAIL",
+      "summary": "COD order response did not include the expected identifiers (status=400)",
+      "evidence": [
+        {
+          "label": "buyerId",
+          "type": "text",
+          "value": "usr_phase2_phase2602fe1e4_buyer"
+        },
+        {
+          "label": "sellerId",
+          "type": "text",
+          "value": "usr_phase2_phase2602fe1e4_seller"
+        },
+        {
+          "label": "orderResponse",
+          "type": "json",
+          "value": "{\n  \"error\": \"Missing idempotency key\",\n  \"message\": \"Header 'idempotency-key' is required for POST requests\"\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T20:24:43.294Z",
+      "finishedAt": "2026-05-29T20:24:43.477Z",
+      "durationMs": 182.44
+    },
+    {
+      "gateId": "F2.3",
+      "title": "Phone OTP Enforcement",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "FAIL",
+      "summary": "Expected phone-gated rejection, received HTTP 400",
+      "evidence": [
+        {
+          "label": "buyerId",
+          "type": "text",
+          "value": "usr_phase2_phase2242ee958_candidate"
+        },
+        {
+          "label": "validationResponse",
+          "type": "json",
+          "value": "{\n  \"error\": \"Missing idempotency key\",\n  \"message\": \"Header 'idempotency-key' is required for POST requests\"\n}"
+        },
+        {
+          "label": "status",
+          "type": "text",
+          "value": "400"
+        }
+      ],
+      "startedAt": "2026-05-29T20:24:43.477Z",
+      "finishedAt": "2026-05-29T20:24:43.670Z",
+      "durationMs": 192.47
+    },
+    {
+      "gateId": "F2.4",
+      "title": "Phone OTP Verification",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "FAIL",
+      "summary": "Phone verification gate did not unlock COD validation (verify=404, cod=400)",
+      "evidence": [
+        {
+          "label": "buyerId",
+          "type": "text",
+          "value": "usr_phase2_phase26fd80161_candidate"
+        },
+        {
+          "label": "verificationResponse",
+          "type": "json",
+          "value": "{\n  \"error\": \"Not Found\"\n}"
+        },
+        {
+          "label": "validationResponse",
+          "type": "json",
+          "value": "{\n  \"error\": \"Missing idempotency key\",\n  \"message\": \"Header 'idempotency-key' is required for POST requests\"\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T20:24:43.670Z",
+      "finishedAt": "2026-05-29T20:24:43.852Z",
+      "durationMs": 182.2
+    },
+    {
+      "gateId": "F2.5",
+      "title": "Buy-Box Assignment",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "Buy-box assignment selected the stronger seller",
+      "evidence": [
+        {
+          "label": "productId",
+          "type": "text",
+          "value": "prd_phase2_phase231939ce2"
+        },
+        {
+          "label": "listings",
+          "type": "json",
+          "value": "[\n  {\n    \"sellerId\": \"usr_phase2_phase231939ce2_seller\",\n    \"price\": 990,\n    \"rating\": 4.8,\n    \"stock\": 15,\n    \"matchConfidence\": 0.95,\n    \"isSuspended\": false,\n    \"lastUpdated\": \"2026-05-29T20:24:44.018Z\"\n  },\n  {\n    \"sellerId\": \"usr_alt_c988f61d\",\n    \"price\": 1050,\n    \"rating\": 4.4,\n    \"stock\": 8,\n    \"matchConfidence\": 0.95,\n    \"isSuspended\": false,\n    \"lastUpdated\": \"2026-05-29T20:24:44.018Z\"\n  }\n]"
+        },
+        {
+          "label": "buyBoxResponse",
+          "type": "json",
+          "value": "{\n  \"productId\": \"prd_phase2_phase231939ce2\",\n  \"primarySellerId\": \"usr_phase2_phase231939ce2_seller\",\n  \"primaryScore\": 98.8,\n  \"alternatives\": [\n    {\n      \"sellerId\": \"usr_alt_c988f61d\",\n      \"score\": 92.4,\n      \"rank\": 2\n    }\n  ],\n  \"lastComputedAt\": \"2026-05-29T20:24:44.036Z\"\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T20:24:43.853Z",
+      "finishedAt": "2026-05-29T20:24:44.071Z",
+      "durationMs": 217.51
+    },
+    {
+      "gateId": "F2.6",
+      "title": "Buy-Box Fraud Detection",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "FAIL",
+      "summary": "No anomaly flags were detected for the suspicious listing payload",
+      "evidence": [
+        {
+          "label": "productId",
+          "type": "text",
+          "value": "prd_phase2_phase23585afdb"
+        },
+        {
+          "label": "suspiciousListings",
+          "type": "json",
+          "value": "[\n  {\n    \"sellerId\": \"usr_phase2_phase23585afdb_seller\",\n    \"price\": 1000,\n    \"rating\": 4.9,\n    \"stock\": 10,\n    \"matchConfidence\": 0.95,\n    \"isSuspended\": false,\n    \"lastUpdated\": \"2026-05-29T20:24:44.204Z\"\n  },\n  {\n    \"sellerId\": \"usr_suspicious_781a69f0\",\n    \"price\": 999,\n    \"rating\": 4.9,\n    \"stock\": 1000000,\n    \"matchConfidence\": 0.95,\n    \"isSuspended\": false,\n    \"lastUpdated\": \"2026-05-29T20:24:44.204Z\"\n  }\n]"
+        },
+        {
+          "label": "buyBoxResponse",
+          "type": "json",
+          "value": "{\n  \"productId\": \"prd_phase2_phase23585afdb\",\n  \"primarySellerId\": \"usr_suspicious_781a69f0\",\n  \"primaryScore\": 99.4,\n  \"alternatives\": [\n    {\n      \"sellerId\": \"usr_phase2_phase23585afdb_seller\",\n      \"score\": 99.4,\n      \"rank\": 2\n    }\n  ],\n  \"lastComputedAt\": \"2026-05-29T20:24:44.220Z\"\n}"
+        },
+        {
+          "label": "buyBoxHistory",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"data\": []\n}"
+        },
+        {
+          "label": "anomalyFlags",
+          "type": "json",
+          "value": "[]"
+        }
+      ],
+      "startedAt": "2026-05-29T20:24:44.071Z",
+      "finishedAt": "2026-05-29T20:24:44.263Z",
+      "durationMs": 191.75
+    },
+    {
+      "gateId": "F2.7",
+      "title": "COD Tier Limits",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "FAIL",
+      "summary": "Expected a COD limit rejection, received HTTP 400",
+      "evidence": [
+        {
+          "label": "validationResponse",
+          "type": "json",
+          "value": "{\n  \"error\": \"Missing idempotency key\",\n  \"message\": \"Header 'idempotency-key' is required for POST requests\"\n}"
+        },
+        {
+          "label": "status",
+          "type": "text",
+          "value": "400"
+        }
+      ],
+      "startedAt": "2026-05-29T20:24:44.264Z",
+      "finishedAt": "2026-05-29T20:24:44.440Z",
+      "durationMs": 176.75
+    },
+    {
+      "gateId": "F2.8",
+      "title": "Temporary Restriction",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "FAIL",
+      "summary": "Restriction gate did not block as expected (status=400)",
+      "evidence": [
+        {
+          "label": "buyerId",
+          "type": "text",
+          "value": "usr_phase2_phase2c2171cfc_buyer"
+        },
+        {
+          "label": "restrictionEndsAt",
+          "type": "text",
+          "value": "2026-05-29T20:39:44.567Z"
+        },
+        {
+          "label": "validationResponse",
+          "type": "json",
+          "value": "{\n  \"error\": \"Missing idempotency key\",\n  \"message\": \"Header 'idempotency-key' is required for POST requests\"\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T20:24:44.441Z",
+      "finishedAt": "2026-05-29T20:24:44.587Z",
+      "durationMs": 145.65
+    },
+    {
+      "gateId": "D2.1",
+      "title": "Score Event Sourcing",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T20:24:44.587Z",
+      "finishedAt": "2026-05-29T20:24:44.587Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "D2.2",
+      "title": "Buy-Box Snapshot Integrity",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T20:24:44.587Z",
+      "finishedAt": "2026-05-29T20:24:44.587Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "D2.3",
+      "title": "Rolling Average Accuracy",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T20:24:44.587Z",
+      "finishedAt": "2026-05-29T20:24:44.587Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "D2.4",
+      "title": "Phase 1 Data Integrity Maintained",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T20:24:44.587Z",
+      "finishedAt": "2026-05-29T20:24:44.587Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "FIN2.1",
+      "title": "COD Commitment Fee Unchanged",
+      "category": "Financial",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T20:24:44.587Z",
+      "finishedAt": "2026-05-29T20:24:44.587Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "FIN2.2",
+      "title": "Phase 1 Financial Gates Maintained",
+      "category": "Financial",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T20:24:44.587Z",
+      "finishedAt": "2026-05-29T20:24:44.587Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "OPS2.1",
+      "title": "Buy-Box Job Monitoring",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T20:24:44.587Z",
+      "finishedAt": "2026-05-29T20:24:44.587Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "OPS2.2",
+      "title": "Rolling Average Job Monitoring",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T20:24:44.587Z",
+      "finishedAt": "2026-05-29T20:24:44.587Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "OPS2.3",
+      "title": "Score Update Latency",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T20:24:44.587Z",
+      "finishedAt": "2026-05-29T20:24:44.587Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "OPS2.4",
+      "title": "Phase 1 Operational Gates Maintained",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T20:24:44.587Z",
+      "finishedAt": "2026-05-29T20:24:44.587Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R2.1",
+      "title": "Phase 1 Regression Gates",
+      "category": "Regression",
+      "severity": "P1",
+      "blocking": false,
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T20:24:44.587Z",
+      "finishedAt": "2026-05-29T20:24:44.587Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R2.2",
+      "title": "COD Engine Interface Compatibility",
+      "category": "Regression",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T20:24:44.587Z",
+      "finishedAt": "2026-05-29T20:24:44.587Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R2.3",
+      "title": "Buy-Box Property Tests",
+      "category": "Regression",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T20:24:44.587Z",
+      "finishedAt": "2026-05-29T20:24:44.587Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R2.4",
+      "title": "COD Trust Property Tests",
+      "category": "Regression",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T20:24:44.587Z",
+      "finishedAt": "2026-05-29T20:24:44.587Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R2.5",
+      "title": "No Open P0/P1 Bugs",
+      "category": "Regression",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T20:24:44.587Z",
+      "finishedAt": "2026-05-29T20:24:44.587Z",
+      "durationMs": 0
+    }
+  ],
+  "phaseCertifications": [
+    {
+      "phase": "Phase 1",
+      "title": "Foundation Launch",
+      "implementationStatus": "READY_TO_LAUNCH",
+      "status": "CERTIFIED",
+      "certifiedAt": null,
+      "reason": "Phase 1 is an upstream prerequisite and is treated as certified in the current phase chain.",
+      "prerequisites": []
+    },
+    {
+      "phase": "Phase 2",
+      "title": "Trust & Intelligence Layer",
+      "implementationStatus": "IN_DEVELOPMENT",
+      "status": "NOT_CERTIFIED",
+      "certifiedAt": null,
+      "reason": "The Phase 2 audit has open blockers and cannot be certified yet.",
+      "prerequisites": [
+        "Phase 1 certified"
+      ]
+    },
+    {
+      "phase": "Phase 3",
+      "title": "Commerce Communication",
+      "implementationStatus": "DESIGNED",
+      "status": "PENDING",
+      "certifiedAt": null,
+      "reason": "Pending certification until Phase 2 certified is complete.",
+      "prerequisites": [
+        "Phase 2 certified"
+      ]
+    },
+    {
+      "phase": "Phase 4",
+      "title": "Ecosystem Expansion",
+      "implementationStatus": "PLANNED",
+      "status": "PENDING",
+      "certifiedAt": null,
+      "reason": "Pending certification until Phase 3 certified is complete.",
+      "prerequisites": [
+        "Phase 3 certified"
+      ]
+    },
+    {
+      "phase": "Phase 5",
+      "title": "Platform Maturity",
+      "implementationStatus": "PLANNED",
+      "status": "PENDING",
+      "certifiedAt": null,
+      "reason": "Pending certification until Phase 4 certified is complete.",
+      "prerequisites": [
+        "Phase 4 certified"
+      ]
+    }
+  ],
+  "summary": {
+    "totalGates": 23,
+    "passed": 2,
+    "failed": 6,
+    "manual": 0,
+    "skipped": 15,
+    "p0": 6,
+    "p1": 17,
+    "p2": 0,
+    "p3": 0
+  }
+}

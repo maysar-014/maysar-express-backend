@@ -14,7 +14,11 @@ import * as fc from 'fast-check';
 
 /** Sorts messages by createdAt ascending — mirrors PrismaMessageRepository.findByConversation */
 function sortMessagesAsc(messages: Array<{ id: string; createdAt: Date }>): Array<{ id: string; createdAt: Date }> {
-  return [...messages].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  return [...messages].sort((a, b) => {
+    const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+    const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+    return aTime - bTime;
+  });
 }
 
 /** Computes unread count for a participant — mirrors ConversationRepository.findByParticipant enrichment */
@@ -77,9 +81,13 @@ describe('Property 1: Ordering invariant', () => {
 
           // Verify strictly ascending (or equal for same-millisecond messages)
           for (let i = 1; i < sorted.length; i++) {
-            expect(sorted[i].createdAt.getTime()).toBeGreaterThanOrEqual(
-              sorted[i - 1].createdAt.getTime(),
-            );
+            const prevTime = sorted[i - 1].createdAt instanceof Date
+              ? sorted[i - 1].createdAt.getTime()
+              : new Date(sorted[i - 1].createdAt).getTime();
+            const currTime = sorted[i].createdAt instanceof Date
+              ? sorted[i].createdAt.getTime()
+              : new Date(sorted[i].createdAt).getTime();
+            expect(currTime).toBeGreaterThanOrEqual(prevTime);
           }
 
           // Verify same set of IDs

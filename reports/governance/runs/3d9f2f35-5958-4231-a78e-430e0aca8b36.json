@@ -1,0 +1,283 @@
+{
+  "runId": "3d9f2f35-5958-4231-a78e-430e0aca8b36",
+  "constitutionName": "Maysar Express Launch Phase Constitution",
+  "constitutionVersion": "2026-05-29",
+  "targetPhase": "Phase 1",
+  "startedAt": "2026-05-29T10:57:31.515Z",
+  "finishedAt": "2026-05-29T10:58:05.245Z",
+  "durationMs": 33730,
+  "targetBaseUrl": "http://localhost:3000",
+  "verdict": "APPROVED",
+  "gateResults": [
+    {
+      "gateId": "OPS1.1",
+      "title": "Health Endpoints",
+      "category": "Operational",
+      "severity": "P0",
+      "status": "PASS",
+      "summary": "Received 200 from /health",
+      "evidence": [
+        {
+          "label": "requestUrl",
+          "type": "url",
+          "value": "http://localhost:3000/health"
+        },
+        {
+          "label": "status",
+          "type": "text",
+          "value": "200"
+        },
+        {
+          "label": "body",
+          "type": "text",
+          "value": "{\"status\":\"ok\",\"uptime\":212.9403323,\"timestamp\":\"2026-05-29T10:57:35.798Z\",\"memoryUsage\":{\"rss\":33771520,\"heapTotal\":219901952,\"heapUsed\":204319704,\"external\":7358636,\"arrayBuffers\":187627}}"
+        }
+      ],
+      "startedAt": "2026-05-29T10:57:31.699Z",
+      "finishedAt": "2026-05-29T10:57:36.009Z",
+      "durationMs": 4305.2
+    },
+    {
+      "gateId": "OPS1.2",
+      "title": "Readiness Endpoint",
+      "category": "Operational",
+      "severity": "P0",
+      "status": "PASS",
+      "summary": "Received 200 from /ready",
+      "evidence": [
+        {
+          "label": "requestUrl",
+          "type": "url",
+          "value": "http://localhost:3000/ready"
+        },
+        {
+          "label": "status",
+          "type": "text",
+          "value": "200"
+        },
+        {
+          "label": "body",
+          "type": "text",
+          "value": "{\"status\":\"ready\",\"checks\":{\"database\":\"connected\",\"redis\":\"connected\"}}"
+        }
+      ],
+      "startedAt": "2026-05-29T10:57:36.009Z",
+      "finishedAt": "2026-05-29T10:57:37.153Z",
+      "durationMs": 1143.31
+    },
+    {
+      "gateId": "R1.1",
+      "title": "Constitution Compliance Audit",
+      "category": "Regression",
+      "severity": "P1",
+      "status": "FAIL",
+      "summary": "Constitution Compliance Audit reported constitutional violations",
+      "evidence": [
+        {
+          "label": "scriptPath",
+          "type": "path",
+          "value": "C:\\Users\\abdal\\Desktop\\maysar-express-backend\\scripts\\testing\\constitution-compliance-audit.js"
+        },
+        {
+          "label": "reportPath",
+          "type": "path",
+          "value": "C:\\Users\\abdal\\Desktop\\maysar-express-backend\\reports\\testing\\constitution-compliance-report.json"
+        },
+        {
+          "label": "stderr",
+          "type": "text",
+          "value": "node:fs:2368\r\n    return binding.writeFileUtf8(\r\n                   ^\r\n\r\nError: UNKNOWN: unknown error, open 'C:\\Users\\abdal\\Desktop\\maysar-express-backend\\reports\\testing\\constitution-compliance-report.json'\r\n    at Object.writeFileSync (node:fs:2368:20)\r\n    at main (C:\\Users\\abdal\\Desktop\\maysar-express-backend\\scripts\\testing\\constitution-compliance-audit.js:428:6)\r\n    at Object.<anonymous> (C:\\Users\\abdal\\Desktop\\maysar-express-backend\\scripts\\testing\\constitution-compliance-audit.js:453:1)\r\n    at Module._compile (node:internal/modules/cjs/loader:1529:14)\r\n    at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)\r\n    at Module.load (node:internal/modules/cjs/loader:1275:32)\r\n    at Module._load (node:internal/modules/cjs/loader:1096:12)\r\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)\r\n    at node:internal/main/run_main_module:28:49 {\r\n  errno: -4094,\r\n  code: 'UNKNOWN',\r\n  syscall: 'open',\r\n  path: 'C:\\\\Users\\\\abdal\\\\Desktop\\\\maysar-express-backend\\\\reports\\\\testing\\\\constitution-compliance-report.json'\r\n}\r\n\r\nNode.js v20.19.0\r\n"
+        },
+        {
+          "label": "report",
+          "type": "json",
+          "value": "{\n  \"generatedAt\": \"2026-05-29T10:56:00.274Z\",\n  \"summary\": {\n    \"sourceFiles\": 1812,\n    \"testFiles\": 1408,\n    \"missingTests\": 228,\n    \"domainPurityViolations\": 4,\n    \"domainTestPurityViolations\": 0,\n    \"coverageViolations\": 622,\n    \"filesWithoutCoverageData\": 511\n  },\n  \"missingTests\": [\n    {\n      \"file\": \"services/catalog-service/src/infrastructure/repositories/prisma-buy-box-ranking.repository.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 505\n    },\n    {\n      \"file\": \"services/wallet-service/src/api/routes/maintenance.routes.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 380\n    },\n    {\n      \"file\": \"services/catalog-service/src/domain/buy-box/ranking-engine.ts\",\n      \"layer\": \"domain\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 361\n    },\n    {\n      \"file\": \"services/auth-service/src/api/routes/maintenance.routes.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 355\n    },\n    {\n      \"file\": \"services/catalog-service/src/api/routes/maintenance.routes.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 317\n    },\n    {\n      \"file\": \"services/chat-service/src/infrastructure/repositories/prisma-conversation.repository.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 312\n    },\n    {\n      \"file\": \"shared/storage/document-storage.ts\",\n      \"layer\": \"shared\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 306\n    },\n    {\n      \"file\": \"shared/middleware/auth-context.middleware.ts\",\n      \"layer\": \"shared\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 266\n    },\n    {\n      \"file\": \"services/logistics-service/src/infrastructure/repositories/prisma-delivery.repository.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 263\n    },\n    {\n      \"file\": \"services/catalog-service/src/infrastructure/repositories/prisma-product-review.repository.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 257\n    },\n    {\n      \"file\": \"services/catalog-service/src/infrastructure/services/catalog-search-indexer.service.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 250\n    },\n    {\n      \"file\": \"services/catalog-service/src/infrastructure/services/campaign-enrichment.service.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 239\n    },\n    {\n      \"file\": \"services/auth-service/src/infrastructure/events/user-sync.event-handlers.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 228\n    },\n    {\n      \"file\": \"services/chat-service/src/application/use-cases/send-message.use-case.ts\",\n      \"layer\": \"application\",\n      \"component\": \"use-case\",\n      \"targetCoverage\": 90,\n      \"lines\": 225\n    },\n    {\n      \"file\": \"services/chat-service/src/infrastructure/websocket/ws-gateway.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 216\n    },\n    {\n      \"file\": \"services/inventory-service/src/api/routes/maintenance.routes.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 202\n    },\n    {\n      \"file\": \"services/governance-service/src/api/controllers/governance.controller.ts\",\n      \"layer\": \"api\",\n      \"component\": \"api-controller\",\n      \"targetCoverage\": 85,\n      \"lines\": 199\n    },\n    {\n      \"file\": \"services/catalog-service/src/domain/buy-box/fraud-detector.ts\",\n      \"layer\": \"domain\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 197\n    },\n    {\n      \"file\": \"services/kyc-service/src/infrastructure/repositories/prisma-kyc.repository.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 192\n    },\n    {\n      \"file\": \"services/user-service/src/infrastructure/messaging/auth-event-handlers.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 189\n    },\n    {\n      \"file\": \"services/order-service/src/domain/engines/progressive-cod-eligibility.engine.ts\",\n      \"layer\": \"domain\",\n      \"component\": \"engine\",\n      \"targetCoverage\": 95,\n      \"lines\": 188\n    },\n    {\n      \"file\": \"services/catalog-service/src/api/controllers/review.controller.ts\",\n      \"layer\": \"api\",\n      \"component\": \"api-controller\",\n      \"targetCoverage\": 85,\n      \"lines\": 187\n    },\n    {\n      \"file\": \"services/kyc-service/src/application/event-handlers/kyc-event-subscriber.ts\",\n      \"layer\": \"application\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 186\n    },\n    {\n      \"file\": \"services/logistics-service/src/application/services/tracking-update.service.ts\",\n      \"layer\": \"application\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 185\n    },\n    {\n      \"file\": \"services/order-service/src/api/routes/maintenance.routes.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 181\n    },\n    {\n      \"file\": \"services/payment-service/src/api/routes/maintenance.routes.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 180\n    },\n    {\n      \"file\": \"services/payout-service/src/api/routes/maintenance.routes.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 180\n    },\n    {\n      \"file\": \"services/community-service/src/api/routes/maintenance.routes.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 179\n    },\n    {\n      \"file\": \"services/enabler-service/src/api/routes/maintenance.routes.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 179\n    },\n    {\n      \"file\": \"services/support-service/src/api/routes/maintenance.routes.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 179\n    },\n    {\n      \"file\": \"services/user-service/src/api/routes/maintenance.routes.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 179\n    },\n    {\n      \"file\": \"services/order-service/src/infrastructure/repositories/prisma-order-saga-log.repository.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 178\n    },\n    {\n      \"file\": \"services/business-registry-service/src/api/routes/maintenance.routes.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 177\n    },\n    {\n      \"file\": \"services/logistics-service/src/api/routes/maintenance.routes.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 177\n    },\n    {\n      \"file\": \"services/catalog-service/src/infrastructure/jobs/rolling-average.job.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 175\n    },\n    {\n      \"file\": \"services/checkout-service/src/api/routes/maintenance.routes.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 170\n    },\n    {\n      \"file\": \"services/catalog-service/src/application/use-cases/compute-buy-box-ranking.use-case.ts\",\n      \"layer\": \"application\",\n      \"component\": \"use-case\",\n      \"targetCoverage\": 90,\n      \"lines\": 165\n    },\n    {\n      \"file\": \"services/user-service/src/internal/user-service.facade.ts\",\n      \"layer\": \"shared\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 163\n    },\n    {\n      \"file\": \"services/catalog-service/src/domain/buy-box/repositories/buy-box-ranking.repository.interface.ts\",\n      \"layer\": \"domain\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 159\n    },\n    {\n      \"file\": \"shared/ids/id.ts\",\n      \"layer\": \"shared\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 157\n    },\n    {\n      \"file\": \"services/catalog-service/src/api/controllers/buy-box-admin.controller.ts\",\n      \"layer\": \"api\",\n      \"component\": \"api-controller\",\n      \"targetCoverage\": 85,\n      \"lines\": 156\n    },\n    {\n      \"file\": \"services/notification-service/src/api/routes/maintenance.routes.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 156\n    },\n    {\n      \"file\": \"services/notification-service/src/sms/application/use-cases/handle-delivery-report.use-case.ts\",\n      \"layer\": \"application\",\n      \"component\": \"use-case\",\n      \"targetCoverage\": 90,\n      \"lines\": 156\n    },\n    {\n      \"file\": \"services/chat-service/src/domain/risk/risk-engine.ts\",\n      \"layer\": \"domain\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 153\n    },\n    {\n      \"file\": \"services/checkout-service/src/infrastructure/repositories/prisma-checkout.repository.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 153\n    },\n    {\n      \"file\": \"services/chat-service/src/infrastructure/jobs/marketplace-intelligence.job.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 145\n    },\n    {\n      \"file\": \"services/auth-service/src/infrastructure/repositories/prisma-session.repository.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 141\n    },\n    {\n      \"file\": \"services/chat-service/src/application/use-cases/initiate-conversation.use-case.ts\",\n      \"layer\": \"application\",\n      \"component\": \"use-case\",\n      \"targetCoverage\": 90,\n      \"lines\": 137\n    },\n    {\n      \"file\": \"services/payment-service/src/api/controllers/pesapal-webhook.utils.ts\",\n      \"layer\": \"api\",\n      \"component\": \"api-controller\",\n      \"targetCoverage\": 85,\n      \"lines\": 136\n    },\n    {\n      \"file\": \"services/payment-service/src/api/routes/pesapal-webhook.middleware.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 132\n    },\n    {\n      \"file\": \"services/auth-service/src/infrastructure/repositories/prisma-audit.repository.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 131\n    },\n    {\n      \"file\": \"services/catalog-service/src/infrastructure/jobs/buy-box-recomputation.job.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 125\n    },\n    {\n      \"file\": \"services/chat-service/src/infrastructure/repositories/prisma-message.repository.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 123\n    },\n    {\n      \"file\": \"services/logistics-service/src/infrastructure/repositories/prisma-earnings.repository.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 122\n    },\n    {\n      \"file\": \"services/catalog-service/src/domain/buy-box/category-strategy.service.ts\",\n      \"layer\": \"domain\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 121\n    },\n    {\n      \"file\": \"services/commission-service/src/infrastructure/repositories/prisma-reward.repository.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 120\n    },\n    {\n      \"file\": \"services/catalog-service/src/application/use-cases/submit-product-review.use-case.ts\",\n      \"layer\": \"application\",\n      \"component\": \"use-case\",\n      \"targetCoverage\": 90,\n      \"lines\": 118\n    },\n    {\n      \"file\": \"services/chat-service/src/infrastructure/media/s3-media.store.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 118\n    },\n    {\n      \"file\": \"shared/logger/error-utils.ts\",\n      \"layer\": \"shared\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 118\n    },\n    {\n      \"file\": \"services/auth-service/src/application/use-cases/verify-phone-otp.use-case.ts\",\n      \"layer\": \"application\",\n      \"component\": \"use-case\",\n      \"targetCoverage\": 90,\n      \"lines\": 116\n    },\n    {\n      \"file\": \"services/order-service/src/application/services/trust-signal-ingestion.service.ts\",\n      \"layer\": \"application\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 116\n    },\n    {\n      \"file\": \"services/governance-service/src/infrastructure/governance-report-store.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 113\n    },\n    {\n      \"file\": \"services/checkout-service/src/infrastructure/repositories/prisma-cart.repository.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 112\n    },\n    {\n      \"file\": \"services/logistics-service/src/infrastructure/workers/tracking-stream.worker.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 112\n    },\n    {\n      \"file\": \"services/community-service/src/infrastructure/repositories/prisma-follow.repository.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 109\n    },\n    {\n      \"file\": \"services/chat-service/src/api/controllers/conversation.controller.ts\",\n      \"layer\": \"api\",\n      \"component\": \"api-controller\",\n      \"targetCoverage\": 85,\n      \"lines\": 106\n    },\n    {\n      \"file\": \"services/chat-service/src/infrastructure/jobs/retention.job.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 104\n    },\n    {\n      \"file\": \"services/kyc-service/src/application/use-cases/admin-verify-kyc.use-case.ts\",\n      \"layer\": \"application\",\n      \"component\": \"use-case\",\n      \"targetCoverage\": 90,\n      \"lines\": 103\n    },\n    {\n      \"file\": \"services/chat-service/src/api/routes/chat.routes.ts\",\n      \"layer\": \"api\",\n      \"component\": \"other\",\n      \"targetCoverage\": 80,\n      \"lines\": 101\n    },\n    {\n      \"file\": \"services/maps-service/src/infrastructure/providers/geocoding.adapter.ts\",\n      \"layer\": \"infrastructure\",\n      \"component\": \"infrastructure\",\n      \"targetCoverage\": 80,\n      \"lines\": 101\n    },\n    {\n      \"file\": \"services/community-service/src/infrastructure/repo"
+        }
+      ],
+      "startedAt": "2026-05-29T10:57:37.153Z",
+      "finishedAt": "2026-05-29T10:57:42.475Z",
+      "durationMs": 5322.21,
+      "blocking": false
+    },
+    {
+      "gateId": "R1.2",
+      "title": "Integration Constitution Audit",
+      "category": "Regression",
+      "severity": "P1",
+      "status": "FAIL",
+      "summary": "Integration Constitution Audit reported constitutional violations",
+      "evidence": [
+        {
+          "label": "scriptPath",
+          "type": "path",
+          "value": "C:\\Users\\abdal\\Desktop\\maysar-express-backend\\scripts\\testing\\integration-constitution-audit.js"
+        },
+        {
+          "label": "reportPath",
+          "type": "path",
+          "value": "C:\\Users\\abdal\\Desktop\\maysar-express-backend\\reports\\testing\\integration-constitution-report.json"
+        },
+        {
+          "label": "stderr",
+          "type": "text",
+          "value": "node:fs:2368\r\n    return binding.writeFileUtf8(\r\n                   ^\r\n\r\nError: UNKNOWN: unknown error, open 'C:\\Users\\abdal\\Desktop\\maysar-express-backend\\reports\\testing\\integration-constitution-report.json'\r\n    at Object.writeFileSync (node:fs:2368:20)\r\n    at main (C:\\Users\\abdal\\Desktop\\maysar-express-backend\\scripts\\testing\\integration-constitution-audit.js:448:6)\r\n    at Object.<anonymous> (C:\\Users\\abdal\\Desktop\\maysar-express-backend\\scripts\\testing\\integration-constitution-audit.js:475:1)\r\n    at Module._compile (node:internal/modules/cjs/loader:1529:14)\r\n    at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)\r\n    at Module.load (node:internal/modules/cjs/loader:1275:32)\r\n    at Module._load (node:internal/modules/cjs/loader:1096:12)\r\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)\r\n    at node:internal/main/run_main_module:28:49 {\r\n  errno: -4094,\r\n  code: 'UNKNOWN',\r\n  syscall: 'open',\r\n  path: 'C:\\\\Users\\\\abdal\\\\Desktop\\\\maysar-express-backend\\\\reports\\\\testing\\\\integration-constitution-report.json'\r\n}\r\n\r\nNode.js v20.19.0\r\n"
+        },
+        {
+          "label": "report",
+          "type": "json",
+          "value": "{\n  \"generatedAt\": \"2026-05-29T10:56:01.586Z\",\n  \"summary\": {\n    \"servicesAudited\": 23,\n    \"integrationTests\": 31,\n    \"locationViolations\": 0,\n    \"internalMockViolations\": 0,\n    \"assertionViolations\": 0,\n    \"servicesMissingIntegrationTests\": 0,\n    \"priority1CoverageFailures\": 0,\n    \"ioSignalWarnings\": 5\n  },\n  \"serviceMatrix\": [\n    {\n      \"service\": \"analytics-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"auth-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"business-registry-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"catalog-service\",\n      \"integrationTests\": 2\n    },\n    {\n      \"service\": \"chat-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"checkout-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"commission-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"community-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"enabler-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"governance-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"inventory-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"kyc-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"logistics-service\",\n      \"integrationTests\": 3\n    },\n    {\n      \"service\": \"maps-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"notification-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"order-service\",\n      \"integrationTests\": 3\n    },\n    {\n      \"service\": \"payment-service\",\n      \"integrationTests\": 3\n    },\n    {\n      \"service\": \"payout-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"production-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"support-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"training-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"user-service\",\n      \"integrationTests\": 1\n    },\n    {\n      \"service\": \"wallet-service\",\n      \"integrationTests\": 1\n    }\n  ],\n  \"locationViolations\": [],\n  \"internalMockViolations\": [],\n  \"assertionViolations\": [],\n  \"servicesMissingIntegrationTests\": [],\n  \"priority1Checks\": [\n    {\n      \"id\": \"priority-1-order-payment-inventory-delivery\",\n      \"description\": \"Order -> Payment -> Inventory -> Delivery integration flow coverage exists\",\n      \"required\": true,\n      \"passed\": true\n    },\n    {\n      \"id\": \"priority-1-user-auth-verification\",\n      \"description\": \"User registration/auth verification flow has integration coverage\",\n      \"required\": true,\n      \"passed\": true\n    },\n    {\n      \"id\": \"priority-1-pesapal\",\n      \"description\": \"Pesapal payment gateway integration is covered\",\n      \"required\": true,\n      \"passed\": true\n    },\n    {\n      \"id\": \"priority-1-wallet-operations\",\n      \"description\": \"Wallet credit/debit/freeze integration is covered\",\n      \"required\": true,\n      \"passed\": true\n    },\n    {\n      \"id\": \"priority-1-outbox-pattern\",\n      \"description\": \"Outbox pattern integration is covered\",\n      \"required\": true,\n      \"passed\": true\n    },\n    {\n      \"id\": \"priority-1-order-fulfillment-saga\",\n      \"description\": \"Order fulfillment saga integration/compensation is covered\",\n      \"required\": true,\n      \"passed\": true\n    }\n  ],\n  \"priority1CoverageFailures\": [],\n  \"ioSignalWarnings\": [\n    {\n      \"file\": \"services/catalog-service/src/infrastructure/__tests__/integration/database-integration.test.ts\",\n      \"note\": \"no explicit real-I/O signal detected (DB/Redis/HTTP/testcontainer marker missing)\"\n    },\n    {\n      \"file\": \"services/catalog-service/src/tests/integration/meilisearch-search.integration.test.ts\",\n      \"note\": \"no explicit real-I/O signal detected (DB/Redis/HTTP/testcontainer marker missing)\"\n    },\n    {\n      \"file\": \"services/logistics-service/src/__tests__/integration/here-routing.live.test.ts\",\n      \"note\": \"no explicit real-I/O signal detected (DB/Redis/HTTP/testcontainer marker missing)\"\n    },\n    {\n      \"file\": \"services/order-service/src/tests/integration/saga-integration.test.ts\",\n      \"note\": \"no explicit real-I/O signal detected (DB/Redis/HTTP/testcontainer marker missing)\"\n    },\n    {\n      \"file\": \"services/order-service/src/tests/integration/simple-engine-test.test.ts\",\n      \"note\": \"no explicit real-I/O signal detected (DB/Redis/HTTP/testcontainer marker missing)\"\n    }\n  ]\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T10:57:42.475Z",
+      "finishedAt": "2026-05-29T10:57:45.997Z",
+      "durationMs": 3521.19,
+      "blocking": false
+    },
+    {
+      "gateId": "OPS1.3",
+      "title": "Governance Report Store",
+      "category": "Operational",
+      "severity": "P2",
+      "status": "PASS",
+      "summary": "Report storage is writable and readable",
+      "evidence": [
+        {
+          "label": "directory",
+          "type": "path",
+          "value": "C:\\Users\\abdal\\Desktop\\maysar-express-backend\\reports\\governance"
+        },
+        {
+          "label": "filePath",
+          "type": "path",
+          "value": "C:\\Users\\abdal\\Desktop\\maysar-express-backend\\reports\\governance\\write-test.json"
+        },
+        {
+          "label": "roundtrip",
+          "type": "json",
+          "value": "{\n  \"writtenAt\": \"2026-05-29T10:57:45.998Z\",\n  \"constitutionPath\": \"C:\\\\Users\\\\abdal\\\\Desktop\\\\maysar-express-backend\\\\services\\\\governance-service\\\\constitutions\\\\phase-1.json\"\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T10:57:45.998Z",
+      "finishedAt": "2026-05-29T10:57:46.006Z",
+      "durationMs": 8.03
+    },
+    {
+      "gateId": "OPS1.4",
+      "title": "Governance Index Roundtrip",
+      "category": "Operational",
+      "severity": "P2",
+      "status": "PASS",
+      "summary": "Governance index roundtrip succeeded",
+      "evidence": [
+        {
+          "label": "indexPath",
+          "type": "path",
+          "value": "C:\\Users\\abdal\\Desktop\\maysar-express-backend\\reports\\governance\\index.json"
+        },
+        {
+          "label": "probeEntry",
+          "type": "json",
+          "value": "{\n  \"runId\": \"probe-1780052266008\",\n  \"constitutionVersion\": \"probe\",\n  \"targetPhase\": \"probe\",\n  \"startedAt\": \"2026-05-29T10:57:46.008Z\",\n  \"finishedAt\": \"2026-05-29T10:57:46.008Z\",\n  \"verdict\": \"APPROVED\",\n  \"summary\": {\n    \"totalGates\": 0,\n    \"passed\": 0,\n    \"failed\": 0,\n    \"manual\": 0,\n    \"skipped\": 0,\n    \"p0\": 0,\n    \"p1\": 0,\n    \"p2\": 0,\n    \"p3\": 0\n  }\n}"
+        },
+        {
+          "label": "roundtripIndex",
+          "type": "json",
+          "value": "[\n  {\n    \"runId\": \"probe-1780052266008\",\n    \"constitutionVersion\": \"probe\",\n    \"targetPhase\": \"probe\",\n    \"startedAt\": \"2026-05-29T10:57:46.008Z\",\n    \"finishedAt\": \"2026-05-29T10:57:46.008Z\",\n    \"verdict\": \"APPROVED\",\n    \"summary\": {\n      \"totalGates\": 0,\n      \"passed\": 0,\n      \"failed\": 0,\n      \"manual\": 0,\n      \"skipped\": 0,\n      \"p0\": 0,\n      \"p1\": 0,\n      \"p2\": 0,\n      \"p3\": 0\n    }\n  },\n  {\n    \"runId\": \"d985263c-ab14-4532-bc9b-893a0b8e8120\",\n    \"constitutionVersion\": \"2026-05-29\",\n    \"targetPhase\": \"Phase 1\",\n    \"startedAt\": \"2026-05-29T10:55:04.452Z\",\n    \"finishedAt\": \"2026-05-29T10:56:03.247Z\",\n    \"verdict\": \"DENIED\",\n    \"summary\": {\n      \"totalGates\": 9,\n      \"passed\": 6,\n      \"failed\": 3,\n      \"manual\": 0,\n      \"skipped\": 0,\n      \"p0\": 4,\n      \"p1\": 3,\n      \"p2\": 2,\n      \"p3\": 0\n    }\n  },\n  {\n    \"runId\": \"f2754dd5-3d73-4a17-8884-2caee46cb69f\",\n    \"constitutionVersion\": \"2026-05-29\",\n    \"targetPhase\": \"Phase 1\",\n    \"startedAt\": \"2026-05-29T10:49:56.453Z\",\n    \"finishedAt\": \"2026-05-29T10:52:17.971Z\",\n    \"verdict\": \"DENIED\",\n    \"summary\": {\n      \"totalGates\": 9,\n      \"passed\": 4,\n      \"failed\": 5,\n      \"manual\": 0,\n      \"skipped\": 0,\n      \"p0\": 4,\n      \"p1\": 3,\n      \"p2\": 2,\n      \"p3\": 0\n    }\n  },\n  {\n    \"runId\": \"16e77c99-7b7b-4ff6-ba8a-0f0e8646f323\",\n    \"constitutionVersion\": \"2026-05-29\",\n    \"targetPhase\": \"Phase 1\",\n    \"startedAt\": \"2026-05-29T10:46:05.257Z\",\n    \"finishedAt\": \"2026-05-29T10:46:22.059Z\",\n    \"verdict\": \"DENIED\",\n    \"summary\": {\n      \"totalGates\": 9,\n      \"passed\": 6,\n      \"failed\": 3,\n      \"manual\": 0,\n      \"skipped\": 0,\n      \"p0\": 4,\n      \"p1\": 3,\n      \"p2\": 2,\n      \"p3\": 0\n    }\n  },\n  {\n    \"runId\": \"5a1085dc-bd34-4ffc-8c3f-509519af52bb\",\n    \"constitutionVersion\": \"2026-05-29\",\n    \"targetPhase\": \"Phase 1\",\n    \"startedAt\": \"2026-05-29T01:20:29.348Z\",\n    \"finishedAt\": \"2026-05-29T01:20:30.762Z\",\n    \"verdict\": \"APPROVED\",\n    \"summary\": {\n      \"totalGates\": 9,\n      \"passed\": 6,\n      \"failed\": 2,\n      \"manual\": 0,\n      \"skipped\": 1,\n      \"p0\": 4,\n      \"p1\": 3,\n      \"p2\": 2,\n      \"p3\": 0\n    }\n  }\n]"
+        }
+      ],
+      "startedAt": "2026-05-29T10:57:46.008Z",
+      "finishedAt": "2026-05-29T10:57:46.020Z",
+      "durationMs": 12.24
+    },
+    {
+      "gateId": "D1.1",
+      "title": "User Sync Integrity",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "PASS",
+      "summary": "auth_users and users records are synchronized",
+      "evidence": [
+        {
+          "label": "missingUserRowsCount",
+          "type": "json",
+          "value": "{\n  \"count\": 0\n}"
+        },
+        {
+          "label": "emailMismatchCount",
+          "type": "json",
+          "value": "{\n  \"count\": 0\n}"
+        },
+        {
+          "label": "codeMismatchCount",
+          "type": "json",
+          "value": "{\n  \"count\": 0\n}"
+        },
+        {
+          "label": "sampleMismatches",
+          "type": "json",
+          "value": "[]"
+        }
+      ],
+      "startedAt": "2026-05-29T10:57:46.024Z",
+      "finishedAt": "2026-05-29T10:58:00.346Z",
+      "durationMs": 14322
+    },
+    {
+      "gateId": "FIN1.1",
+      "title": "Wallet Ledger Continuity",
+      "category": "Financial",
+      "severity": "P0",
+      "status": "PASS",
+      "summary": "wallet currency and ledger continuity checks passed",
+      "evidence": [
+        {
+          "label": "nonTzsWallets",
+          "type": "json",
+          "value": "{\n  \"count\": \"0\"\n}"
+        },
+        {
+          "label": "negativeWallets",
+          "type": "json",
+          "value": "{\n  \"count\": \"0\"\n}"
+        },
+        {
+          "label": "ledgerBreaks",
+          "type": "json",
+          "value": "[]"
+        }
+      ],
+      "startedAt": "2026-05-29T10:58:00.387Z",
+      "finishedAt": "2026-05-29T10:58:01.640Z",
+      "durationMs": 1253
+    },
+    {
+      "gateId": "OPS1.5",
+      "title": "Core Service Readiness",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "14 readiness endpoints responded as expected",
+      "evidence": [
+        {
+          "label": "targets",
+          "type": "json",
+          "value": "[\n  {\n    \"name\": \"auth-service\",\n    \"url\": \"http://localhost:3000/api/auth/health/ready\",\n    \"expectedStatus\": 200,\n    \"actualStatus\": 200,\n    \"ok\": true,\n    \"body\": \"{\\\"success\\\":true,\\\"message\\\":\\\"Service is ready to accept traffic\\\",\\\"timestamp\\\":\\\"2026-05-29T10:58:02.091Z\\\"}\"\n  },\n  {\n    \"name\": \"user-service\",\n    \"url\": \"http://localhost:3000/api/user/health/ready\",\n    \"expectedStatus\": 200,\n    \"actualStatus\": 200,\n    \"ok\": true,\n    \"body\": \"{\\\"status\\\":\\\"ready\\\",\\\"service\\\":\\\"user-service\\\",\\\"timestamp\\\":\\\"2026-05-29T10:58:02.357Z\\\",\\\"checks\\\":{\\\"database\\\":{\\\"status\\\":\\\"ready\\\",\\\"responseTime\\\":\\\"50ms\\\"}}}\"\n  },\n  {\n    \"name\": \"order-service\",\n    \"url\": \"http://localhost:3000/api/order/health/ready\",\n    \"expectedStatus\": 200,\n    \"actualStatus\": 200,\n    \"ok\": true,\n    \"body\": \"{\\\"service\\\":\\\"order-service\\\",\\\"status\\\":\\\"ready\\\",\\\"timestamp\\\":\\\"2026-05-29T10:58:02.775Z\\\",\\\"database\\\":{\\\"prisma\\\":true,\\\"details\\\":{\\\"prisma\\\":{\\\"status\\\":\\\"healthy\\\",\\\"latency\\\":205}}}}\"\n  },\n  {\n    \"name\": \"payment-service\",\n    \"url\": \"http://localhost:3000/api/payment/health/ready\",\n    \"expectedStatus\": 200,\n    \"actualStatus\": 200,\n    \"ok\": true,\n    \"body\": \"{\\\"status\\\":\\\"ready\\\",\\\"ready\\\":true,\\\"service\\\":\\\"payment-service\\\",\\\"timestamp\\\":\\\"2026-05-29T10:58:03.921Z\\\",\\\"checks\\\":{\\\"database\\\":{\\\"status\\\":\\\"healthy\\\",\\\"timestamp\\\":\\\"2026-05-29T10:58:03.835Z\\\",\\\"latencyMs\\\":460,\\\"details\\\":{\\\"connection\\\":\\\"successful\\\",\\\"type\\\":\\\"postgresql\\\"}},\\\"cache\\\":{\\\"status\\\":\\\"healthy\\\",\\\"timestamp\\\":\\\"2026-05-29T10:58:03.417Z\\\",\\\"latencyMs\\\":29,\\\"details\\\":{\\\"connection\\\":\\\"successful\\\",\\\"type\\\":\\\"redis\\\"}},\\\"messaging\\\":{\\\"status\\\":\\\"healthy\\\",\\\"timestamp\\\":\\\"2026-05-29T10:58:03.389Z\\\",\\\"details\\\":{\\\"connection\\\":\\\"successful\\\",\\\"type\\\":\\\"in-memory\\\",\\\"note\\\":\\\"Using monolithic in-memory event bus\\\"}}}}\"\n  },\n  {\n    \"name\": \"wallet-service\",\n    \"url\": \"http://localhost:3000/api/wallet/health/ready\",\n    \"expectedStatus\": 200,\n    \"actualStatus\": 200,\n    \"ok\": true,\n    \"body\": \"{\\\"status\\\":\\\"ready\\\",\\\"service\\\":\\\"wallet-service\\\"}\"\n  },\n  {\n    \"name\": \"inventory-service\",\n    \"url\": \"http://localhost:3000/api/inventory/health/ready\",\n    \"expectedStatus\": 200,\n    \"actualStatus\": 200,\n    \"ok\": true,\n    \"body\": \"{\\\"status\\\":\\\"ready\\\",\\\"service\\\":\\\"inventory-service\\\"}\"\n  },\n  {\n    \"name\": \"logistics-service\",\n    \"url\": \"http://localhost:3000/api/logistics/health/ready\",\n    \"expectedStatus\": 200,\n    \"actualStatus\": 200,\n    \"ok\": true,\n    \"body\": \"{\\\"status\\\":\\\"ready\\\",\\\"service\\\":\\\"logistics-service\\\"}\"\n  },\n  {\n    \"name\": \"notification-service\",\n    \"url\": \"http://localhost:3000/api/notification/health/ready\",\n    \"expectedStatus\": 200,\n    \"actualStatus\": 200,\n    \"ok\": true,\n    \"body\": \"{\\\"status\\\":\\\"ready\\\",\\\"timestamp\\\":\\\"2026-05-29T10:58:04.776Z\\\"}\"\n  },\n  {\n    \"name\": \"commission-service\",\n    \"url\": \"http://localhost:3000/api/commission/health/ready\",\n    \"expectedStatus\": 200,\n    \"actualStatus\": 200,\n    \"ok\": true,\n    \"body\": \"{\\\"status\\\":\\\"ready\\\",\\\"service\\\":\\\"commission-service\\\",\\\"timestamp\\\":\\\"2026-05-29T10:58:04.874Z\\\",\\\"checks\\\":{\\\"database\\\":{\\\"status\\\":\\\"healthy\\\",\\\"timestamp\\\":\\\"2026-05-29T10:58:04.874Z\\\",\\\"latencyMs\\\":49,\\\"details\\\":{\\\"connection\\\":\\\"successful\\\",\\\"type\\\":\\\"postgresql\\\"}}}}\"\n  },\n  {\n    \"name\": \"checkout-service\",\n    \"url\": \"http://localhost:3000/api/checkout/health/ready\",\n    \"expectedStatus\": 200,\n    \"actualStatus\": 200,\n    \"ok\": true,\n    \"body\": \"{\\\"status\\\":\\\"ready\\\",\\\"service\\\":\\\"checkout-service\\\"}\"\n  },\n  {\n    \"name\": \"kyc-service\",\n    \"url\": \"http://localhost:3000/api/kyc/health/ready\",\n    \"expectedStatus\": 200,\n    \"actualStatus\": 200,\n    \"ok\": true,\n    \"body\": \"{\\\"success\\\":true,\\\"service\\\":\\\"kyc-service\\\",\\\"status\\\":\\\"ready\\\",\\\"timestamp\\\":\\\"2026-05-29T10:58:04.991Z\\\"}\"\n  },\n  {\n    \"name\": \"business-registry-service\",\n    \"url\": \"http://localhost:3000/api/business-registry/health/ready\",\n    \"expectedStatus\": 200,\n    \"actualStatus\": 200,\n    \"ok\": true,\n    \"body\": \"{\\\"status\\\":\\\"ready\\\",\\\"database\\\":\\\"connected\\\",\\\"timestamp\\\":\\\"2026-05-29T10:58:05.127Z\\\"}\"\n  },\n  {\n    \"name\": \"maps-service\",\n    \"url\": \"http://localhost:3000/api/maps/health/ready\",\n    \"expectedStatus\": 200,\n    \"actualStatus\": 200,\n    \"ok\": true,\n    \"body\": \"{\\\"status\\\":\\\"ready\\\",\\\"service\\\":\\\"maps-service\\\",\\\"timestamp\\\":\\\"2026-05-29T10:58:05.178Z\\\"}\"\n  },\n  {\n    \"name\": \"catalog-service\",\n    \"url\": \"http://localhost:3000/api/catalog/health/ready\",\n    \"expectedStatus\": 200,\n    \"actualStatus\": 200,\n    \"ok\": true,\n    \"body\": \"{\\\"success\\\":true,\\\"data\\\":{\\\"status\\\":\\\"ready\\\",\\\"timestamp\\\":\\\"2026-05-29T10:58:05.229Z\\\",\\\"uptime\\\":242.377637,\\\"checks\\\":{\\\"database\\\":{\\\"status\\\":\\\"healthy\\\",\\\"healthy\\\":true,\\\"responseTime\\\":1,\\\"details\\\":{\\\"name\\\":\\\"database\\\",\\\"checkedAt\\\":\\\"2026-05-29T10:58:05.235Z\\\",\\\"source\\\":\\\"synthetic\\\"}},\\\"cache\\\":{\\\"status\\\":\\\"healthy\\\",\\\"healthy\\\":true,\\\"responseTime\\\":1,\\\"details\\\":{\\\"name\\\":\\\"cache\\\",\\\"checkedAt\\\":\\\"2026-05-29T10:58:05.235Z\\\",\\\"source\\\":\\\"synthetic\\\"}},\\\"messaging\\\":{\\\"status\\\":\\\"healthy\\\",\\\"healthy\\\":true,\\\"responseTime\\\":1,\\\"details\\\":{\\\"name\\\":\\\"messaging\\\",\\\"checkedAt\\\":\\\"2026-05-29T10:58:05.235Z\\\",\\\"source\\\":\\\"synthetic\\\"}}}},\\\"meta\\\":{\\\"timestamp\\\":\\\"2026-05-29T10:58:05.229Z\\\",\\\"request\\\":{\\\"method\\\":\\\"GET\\\",\\\"url\\\":\\\"/api/catalog/health/ready\\\",\\\"path\\\":\\\"/health/ready\\\"}}}\"\n  }\n]"
+        }
+      ],
+      "startedAt": "2026-05-29T10:58:01.670Z",
+      "finishedAt": "2026-05-29T10:58:05.245Z",
+      "durationMs": 3574.74
+    }
+  ],
+  "summary": {
+    "totalGates": 9,
+    "passed": 7,
+    "failed": 2,
+    "manual": 0,
+    "skipped": 0,
+    "p0": 4,
+    "p1": 3,
+    "p2": 2,
+    "p3": 0
+  }
+}

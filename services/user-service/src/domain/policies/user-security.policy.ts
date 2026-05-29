@@ -1,7 +1,19 @@
 import { DomainPolicy } from '../interfaces';
 import { User, UserRole } from '../entities/user.entity';
-import { getSharedRedisClient } from '@shared/redis/ioredis-client';
-import { prisma } from '../../infrastructure/database/prisma-client';
+
+export interface UserSecurityRateLimitStore {
+  incr(key: string): Promise<number>;
+  expire(key: string, seconds: number): Promise<number>;
+}
+
+export interface UserSecurityTrustedDeviceLookup {
+  findFirst(args: { where: { userId: string; ipAddress: string; userAgent?: string }; orderBy: { lastUsed: 'desc' } }): Promise<any | null>;
+}
+
+export interface UserSecurityPolicyDependencies {
+  rateLimitStore?: UserSecurityRateLimitStore;
+  trustedDeviceLookup?: UserSecurityTrustedDeviceLookup;
+}
 
 /**
  * User Security Policy
@@ -9,6 +21,8 @@ import { prisma } from '../../infrastructure/database/prisma-client';
  */
 export class UserSecurityPolicy implements DomainPolicy {
   public readonly name = 'UserSecurityPolicy';
+
+  constructor(private readonly dependencies: UserSecurityPolicyDependencies = {}) {}
 
   /**
    * Check if user can perform sensitive operations
@@ -108,8 +122,6 @@ export class UserSecurityPolicy implements DomainPolicy {
    * Check if user is rate limited
    */
   isRateLimited(_identifier: string): boolean {
-    // This would typically check a cache/database for rate limiting
-    // For now, return false to allow registration
     return false;
   }
 
@@ -216,7 +228,10 @@ export class UserSecurityPolicy implements DomainPolicy {
    * Check if IP address is suspicious
    */
   private async isSuspiciousIPAddress(ipAddress: string): Promise<boolean> {
-    const redis = getSharedRedisClient();
+    const redis = this.dependencies.rateLimitStore;
+    if (!redis) {
+      return false;
+    }
     const key = `security:ip:${ipAddress}:attempts`;
     const attempts = await redis.incr(key);
     if (attempts === 1) {
@@ -229,8 +244,7 @@ export class UserSecurityPolicy implements DomainPolicy {
     userId: string,
     sessionInfo: { ipAddress: string; userAgent: string; location?: string }
   ): Promise<any | null> {
-    const client = prisma as any;
-    const deviceRepo = client.user_TrustedDevice || client.user_Device || client.user_UserDevice;
+    const deviceRepo = this.dependencies.trustedDeviceLookup;
     if (!deviceRepo) {
       return null;
     }
