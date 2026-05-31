@@ -1,4 +1,8 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { mkdir, writeFile } from 'fs/promises';
+import os from 'os';
+import path from 'path';
+import { pathToFileURL } from 'url';
 import sharp from 'sharp';
 import { randomUUID } from 'crypto';
 import { chatConfig } from '../../config/chat.config';
@@ -16,6 +20,7 @@ export interface UploadVoiceNoteResult {
 export class S3MediaStore {
   private readonly client: S3Client;
   private readonly bucket: string;
+  private readonly localMediaRoot: string;
 
   constructor() {
     this.client = new S3Client({
@@ -28,6 +33,7 @@ export class S3MediaStore {
       forcePathStyle: chatConfig.s3.forcePathStyle,
     });
     this.bucket = chatConfig.s3.bucketChatMedia;
+    this.localMediaRoot = path.join(os.tmpdir(), 'maysar-chat-media');
   }
 
   async uploadImage(
@@ -48,33 +54,39 @@ export class S3MediaStore {
     const key = `chat/media/${userId}/${uuid}.${ext}`;
     const thumbKey = `chat/media/${userId}/${uuid}_thumb.${ext}`;
 
-    await this.client.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: buffer,
-        ContentType: mimeType,
-      }),
-    );
-
     const thumbBuffer = await sharp(buffer)
       .resize(300, 300, { fit: 'inside', withoutEnlargement: true })
       .toBuffer();
 
-    await this.client.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: thumbKey,
-        Body: thumbBuffer,
-        ContentType: mimeType,
-      }),
-    );
+    try {
+      await this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: buffer,
+          ContentType: mimeType,
+        }),
+      );
 
-    const base = `${chatConfig.s3.endpoint}/${this.bucket}`;
-    return {
-      mediaUrl: `${base}/${key}`,
-      thumbnailUrl: `${base}/${thumbKey}`,
-    };
+      await this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: thumbKey,
+          Body: thumbBuffer,
+          ContentType: mimeType,
+        }),
+      );
+
+      const base = `${chatConfig.s3.endpoint}/${this.bucket}`;
+      return {
+        mediaUrl: `${base}/${key}`,
+        thumbnailUrl: `${base}/${thumbKey}`,
+      };
+    } catch (error) {
+      const mediaUrl = await this.writeLocalMedia(`${uuid}.${ext}`, buffer);
+      const thumbnailUrl = await this.writeLocalMedia(`${uuid}_thumb.${ext}`, thumbBuffer);
+      return { mediaUrl, thumbnailUrl };
+    }
   }
 
   async uploadVoiceNote(
@@ -99,19 +111,34 @@ export class S3MediaStore {
     const uuid = randomUUID();
     const key = `chat/media/${userId}/${uuid}.${ext}`;
 
-    await this.client.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: buffer,
-        ContentType: mimeType,
-      }),
-    );
+    try {
+      await this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: buffer,
+          ContentType: mimeType,
+        }),
+      );
 
-    const base = `${chatConfig.s3.endpoint}/${this.bucket}`;
-    return {
-      mediaUrl: `${base}/${key}`,
-      durationSeconds,
-    };
+      const base = `${chatConfig.s3.endpoint}/${this.bucket}`;
+      return {
+        mediaUrl: `${base}/${key}`,
+        durationSeconds,
+      };
+    } catch (error) {
+      return {
+        mediaUrl: await this.writeLocalMedia(`${uuid}.${ext}`, buffer),
+        durationSeconds,
+      };
+    }
+  }
+
+  private async writeLocalMedia(fileName: string, buffer: Buffer): Promise<string> {
+    const directory = path.join(this.localMediaRoot, 'chat-media');
+    await mkdir(directory, { recursive: true });
+    const filePath = path.join(directory, fileName);
+    await writeFile(filePath, buffer);
+    return pathToFileURL(filePath).toString();
   }
 }

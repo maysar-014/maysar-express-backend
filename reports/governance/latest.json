@@ -1,13 +1,13 @@
 {
-  "runId": "290eda1a-399b-4a3a-a505-1deb278f7e26",
+  "runId": "576fa197-8b38-448e-9409-20f5acd7536c",
   "constitutionName": "Maysar Express Trust & Intelligence Constitution",
   "constitutionVersion": "2026-05-29",
   "targetPhase": "Phase 2",
-  "startedAt": "2026-05-29T20:45:50.050Z",
-  "finishedAt": "2026-05-29T20:46:00.677Z",
-  "durationMs": 10627,
+  "startedAt": "2026-05-30T23:27:22.163Z",
+  "finishedAt": "2026-05-30T23:28:58.065Z",
+  "durationMs": 95902,
   "targetBaseUrl": "http://localhost:3000",
-  "verdict": "DENIED",
+  "verdict": "APPROVED",
   "gateResults": [
     {
       "gateId": "F2.1",
@@ -20,7 +20,7 @@
         {
           "label": "buyerId",
           "type": "text",
-          "value": "usr_01KSTQRW3ADPB1Y18R93NM4FPR"
+          "value": "usr_01KSXKDE576Q8YAVCCEW8ZK69Z"
         },
         {
           "label": "trustScore",
@@ -28,9 +28,9 @@
           "value": "{\n  \"score\": 0,\n  \"tier\": \"NEW_BUYER\",\n  \"updatedAt\": null\n}"
         }
       ],
-      "startedAt": "2026-05-29T20:45:50.051Z",
-      "finishedAt": "2026-05-29T20:45:58.994Z",
-      "durationMs": 8943.06
+      "startedAt": "2026-05-30T23:27:22.167Z",
+      "finishedAt": "2026-05-30T23:27:42.441Z",
+      "durationMs": 20274.4
     },
     {
       "gateId": "F2.2",
@@ -43,27 +43,27 @@
         {
           "label": "buyerId",
           "type": "text",
-          "value": "usr_01KSTQS4TKNXBTEEYSMPBJZSQT"
+          "value": "usr_01KSXKDZXTPF32X10MZMY1832R"
         },
         {
           "label": "sellerId",
           "type": "text",
-          "value": "usr_01KSTQS4TK7KN78586D8H5HMSG"
+          "value": "usr_01KSXKE6PHMXTSYDY3BHCJVHSY"
         },
         {
           "label": "orderId",
           "type": "text",
-          "value": "MSR-ORD-20260529-234559-1028"
+          "value": "MSR-ORD-20260531-022753-EA7B"
         },
         {
           "label": "orderResponse",
           "type": "json",
-          "value": "{\n  \"id\": \"MSR-ORD-20260529-234559-1028\",\n  \"trackingNumber\": \"MYS-TZ-ORD-20260529-6T0W\",\n  \"deliveryCode\": \"770665\",\n  \"buyerId\": \"usr_01KSTQS4TKNXBTEEYSMPBJZSQT\",\n  \"sellerId\": \"usr_01KSTQS4TK7KN78586D8H5HMSG\",\n  \"status\": \"pending\",\n  \"totalAmount\": {\n    \"amount\": 1000,\n    \"currency\": \"TZS\"\n  },\n  \"commitmentFee\": {\n    \"amount\": 500,\n    \"currency\": \"TZS\",\n    \"paidVia\": \"WALLET\",\n    \"description\": \"Delivery fee — secured before packaging\"\n  },\n  \"cashOnDelivery\": {\n    \"amount\": 1000,\n    \"currency\": \"TZS\",\n    \"description\": \"Pay TZS 1,000 to the courier on delivery (full product price)\"\n  },\n  \"items\": [\n    {\n      \"productId\": \"prd_phase2_phase2a3cfd7f6\",\n      \"quantity\": 1,\n      \"price\": {\n        \"amount\": 1000,\n        \"currency\": \"TZS\"\n      },\n      \"weight\": 1\n    }\n  ],\n  \"deliveryAddress\": {\n    \"street\": \"Phase 2 Street\",\n    \"city\": \"Dar es Salaam\",\n    \"postalCode\": \"11101\",\n    \"country\": \"TZ\"\n  },\n  \"paymentMethod\": \"COD\",\n  \"createdAt\": \"2026-05-29T20:45:59.444Z\"\n}"
+          "value": "{\n  \"id\": \"MSR-ORD-20260531-022753-EA7B\",\n  \"trackingNumber\": \"MYS-TZ-ORD-20260531-1G0E\",\n  \"deliveryCode\": \"989685\",\n  \"buyerId\": \"usr_01KSXKDZXTPF32X10MZMY1832R\",\n  \"sellerId\": \"usr_01KSXKE6PHMXTSYDY3BHCJVHSY\",\n  \"status\": \"pending\",\n  \"totalAmount\": {\n    \"amount\": 1000,\n    \"currency\": \"TZS\"\n  },\n  \"commitmentFee\": {\n    \"amount\": 500,\n    \"currency\": \"TZS\",\n    \"paidVia\": \"WALLET\",\n    \"description\": \"Delivery fee — secured before packaging\"\n  },\n  \"cashOnDelivery\": {\n    \"amount\": 1000,\n    \"currency\": \"TZS\",\n    \"description\": \"Pay TZS 1,000 to the courier on delivery (full product price)\"\n  },\n  \"items\": [\n    {\n      \"productId\": \"prd_phase2_phase2232d1d8c\",\n      \"quantity\": 1,\n      \"price\": {\n        \"amount\": 1000,\n        \"currency\": \"TZS\"\n      },\n      \"weight\": 1\n    }\n  ],\n  \"deliveryAddress\": {\n    \"street\": \"Phase 2 Street\",\n    \"city\": \"Dar es Salaam\",\n    \"postalCode\": \"11101\",\n    \"country\": \"TZ\"\n  },\n  \"paymentMethod\": \"COD\",\n  \"createdAt\": \"2026-05-30T23:27:53.708Z\"\n}"
         },
         {
           "label": "confirmResponse",
           "type": "json",
-          "value": "{\n  \"success\": true,\n  \"orderId\": \"MSR-ORD-20260529-234559-1028\",\n  \"status\": \"DELIVERED\",\n  \"confirmedAt\": \"2026-05-29T20:45:59.520Z\",\n  \"message\": \"Delivery confirmed. Commitment fee settled.\"\n}"
+          "value": "{\n  \"success\": true,\n  \"orderId\": \"MSR-ORD-20260531-022753-EA7B\",\n  \"status\": \"DELIVERED\",\n  \"confirmedAt\": \"2026-05-30T23:27:53.785Z\",\n  \"message\": \"Delivery confirmed. Commitment fee settled.\"\n}"
         },
         {
           "label": "trustScoreBefore",
@@ -73,12 +73,12 @@
         {
           "label": "trustScoreAfter",
           "type": "json",
-          "value": "{\n  \"score\": 8,\n  \"tier\": \"NEW_BUYER\",\n  \"updatedAt\": \"2026-05-29T20:45:59.515Z\"\n}"
+          "value": "{\n  \"score\": 8,\n  \"tier\": \"NEW_BUYER\",\n  \"updatedAt\": \"2026-05-30T23:27:53.775Z\"\n}"
         }
       ],
-      "startedAt": "2026-05-29T20:45:58.995Z",
-      "finishedAt": "2026-05-29T20:45:59.528Z",
-      "durationMs": 532.85
+      "startedAt": "2026-05-30T23:27:42.443Z",
+      "finishedAt": "2026-05-30T23:27:53.790Z",
+      "durationMs": 11347.85
     },
     {
       "gateId": "F2.3",
@@ -91,7 +91,7 @@
         {
           "label": "buyerId",
           "type": "text",
-          "value": "usr_01KSTQS5B8PM5601EKQFF0RC3P"
+          "value": "usr_01KSXKEE5260KBV805D8NACSDY"
         },
         {
           "label": "validationResponse",
@@ -104,9 +104,9 @@
           "value": "200"
         }
       ],
-      "startedAt": "2026-05-29T20:45:59.528Z",
-      "finishedAt": "2026-05-29T20:45:59.709Z",
-      "durationMs": 181.27
+      "startedAt": "2026-05-30T23:27:53.791Z",
+      "finishedAt": "2026-05-30T23:28:04.198Z",
+      "durationMs": 10407.76
     },
     {
       "gateId": "F2.4",
@@ -119,7 +119,7 @@
         {
           "label": "buyerId",
           "type": "text",
-          "value": "usr_01KSTQS5GXJ9QN33TVNZ8XFHE2"
+          "value": "usr_01KSXKERHE2T0P8NM3EWWR6F9Y"
         },
         {
           "label": "verificationResponse",
@@ -132,9 +132,9 @@
           "value": "{\n  \"eligible\": true,\n  \"commitmentFee\": 500\n}"
         }
       ],
-      "startedAt": "2026-05-29T20:45:59.709Z",
-      "finishedAt": "2026-05-29T20:45:59.997Z",
-      "durationMs": 287.31
+      "startedAt": "2026-05-30T23:28:04.199Z",
+      "finishedAt": "2026-05-30T23:28:15.441Z",
+      "durationMs": 11241.92
     },
     {
       "gateId": "F2.5",
@@ -147,45 +147,45 @@
         {
           "label": "productId",
           "type": "text",
-          "value": "prd_phase2_phase2f3aeed7b"
+          "value": "prd_phase2_phase27a497a1a"
         },
         {
           "label": "listings",
           "type": "json",
-          "value": "[\n  {\n    \"sellerId\": \"usr_01KSTQS5SXF07KQACQ0KX5ZM3T\",\n    \"price\": 990,\n    \"rating\": 4.8,\n    \"stock\": 15,\n    \"matchConfidence\": 0.95,\n    \"isSuspended\": false,\n    \"lastUpdated\": \"2026-05-29T20:46:00.108Z\"\n  },\n  {\n    \"sellerId\": \"usr_alt_7a8258af\",\n    \"price\": 1050,\n    \"rating\": 4.4,\n    \"stock\": 8,\n    \"matchConfidence\": 0.95,\n    \"isSuspended\": false,\n    \"lastUpdated\": \"2026-05-29T20:46:00.108Z\"\n  }\n]"
+          "value": "[\n  {\n    \"sellerId\": \"usr_01KSXKF70EQ43D33T9SQ2WQ8EN\",\n    \"price\": 990,\n    \"rating\": 4.8,\n    \"stock\": 15,\n    \"matchConfidence\": 0.95,\n    \"isSuspended\": false,\n    \"lastUpdated\": \"2026-05-30T23:28:25.839Z\"\n  },\n  {\n    \"sellerId\": \"usr_alt_a599da39\",\n    \"price\": 1050,\n    \"rating\": 4.4,\n    \"stock\": 8,\n    \"matchConfidence\": 0.95,\n    \"isSuspended\": false,\n    \"lastUpdated\": \"2026-05-30T23:28:25.839Z\"\n  }\n]"
         },
         {
           "label": "buyBoxResponse",
           "type": "json",
-          "value": "{\n  \"productId\": \"prd_phase2_phase2f3aeed7b\",\n  \"primarySellerId\": \"usr_01KSTQS5SXF07KQACQ0KX5ZM3T\",\n  \"primaryScore\": 98.8,\n  \"alternatives\": [\n    {\n      \"sellerId\": \"usr_alt_7a8258af\",\n      \"score\": 92.4,\n      \"rank\": 2\n    }\n  ],\n  \"lastComputedAt\": \"2026-05-29T20:46:00.128Z\"\n}"
+          "value": "{\n  \"productId\": \"prd_phase2_phase27a497a1a\",\n  \"primarySellerId\": \"usr_01KSXKF70EQ43D33T9SQ2WQ8EN\",\n  \"primaryScore\": 98.8,\n  \"alternatives\": [\n    {\n      \"sellerId\": \"usr_alt_a599da39\",\n      \"score\": 92.4,\n      \"rank\": 2\n    }\n  ],\n  \"lastComputedAt\": \"2026-05-30T23:28:25.869Z\",\n  \"anomalyFlags\": []\n}"
         }
       ],
-      "startedAt": "2026-05-29T20:45:59.997Z",
-      "finishedAt": "2026-05-29T20:46:00.152Z",
-      "durationMs": 155.18
+      "startedAt": "2026-05-30T23:28:15.442Z",
+      "finishedAt": "2026-05-30T23:28:25.956Z",
+      "durationMs": 10514.17
     },
     {
       "gateId": "F2.6",
       "title": "Buy-Box Fraud Detection",
       "category": "Functional",
       "severity": "P1",
-      "status": "FAIL",
-      "summary": "No anomaly flags were detected for the suspicious listing payload",
+      "status": "PASS",
+      "summary": "Fraud detection produced anomaly flags for suspicious listing data",
       "evidence": [
         {
           "label": "productId",
           "type": "text",
-          "value": "prd_phase2_phase2b70c8285"
+          "value": "prd_phase2_phase222cb6b25"
         },
         {
           "label": "suspiciousListings",
           "type": "json",
-          "value": "[\n  {\n    \"sellerId\": \"usr_01KSTQS5YSAZ4GD69E3638ZTQT\",\n    \"price\": 1000,\n    \"rating\": 4.9,\n    \"stock\": 10,\n    \"matchConfidence\": 0.95,\n    \"isSuspended\": false,\n    \"lastUpdated\": \"2026-05-29T20:46:00.251Z\"\n  },\n  {\n    \"sellerId\": \"usr_suspicious_87b957a6\",\n    \"price\": 999,\n    \"rating\": 4.9,\n    \"stock\": 1000000,\n    \"matchConfidence\": 0.95,\n    \"isSuspended\": false,\n    \"lastUpdated\": \"2026-05-29T20:46:00.251Z\"\n  }\n]"
+          "value": "[\n  {\n    \"sellerId\": \"usr_01KSXKFJPQ35YAZ3X49BGW7VP8\",\n    \"price\": 1000,\n    \"rating\": 4.9,\n    \"stock\": 10,\n    \"matchConfidence\": 0.95,\n    \"isSuspended\": false,\n    \"lastUpdated\": \"2026-05-30T23:28:37.789Z\"\n  },\n  {\n    \"sellerId\": \"usr_suspicious_d01aeae2\",\n    \"price\": 999,\n    \"rating\": 4.9,\n    \"stock\": 1000000,\n    \"matchConfidence\": 0.95,\n    \"isSuspended\": false,\n    \"lastUpdated\": \"2026-05-30T23:28:37.790Z\"\n  }\n]"
         },
         {
           "label": "buyBoxResponse",
           "type": "json",
-          "value": "{\n  \"productId\": \"prd_phase2_phase2b70c8285\",\n  \"primarySellerId\": \"usr_suspicious_87b957a6\",\n  \"primaryScore\": 99.4,\n  \"alternatives\": [\n    {\n      \"sellerId\": \"usr_01KSTQS5YSAZ4GD69E3638ZTQT\",\n      \"score\": 99.4,\n      \"rank\": 2\n    }\n  ],\n  \"lastComputedAt\": \"2026-05-29T20:46:00.266Z\"\n}"
+          "value": "{\n  \"productId\": \"prd_phase2_phase222cb6b25\",\n  \"primarySellerId\": \"usr_suspicious_d01aeae2\",\n  \"primaryScore\": 99.4,\n  \"alternatives\": [\n    {\n      \"sellerId\": \"usr_01KSXKFJPQ35YAZ3X49BGW7VP8\",\n      \"score\": 99.4,\n      \"rank\": 2\n    }\n  ],\n  \"lastComputedAt\": \"2026-05-30T23:28:37.802Z\",\n  \"anomalyFlags\": [\n    {\n      \"signalName\": \"stockReliability\",\n      \"detectedValue\": 1000000,\n      \"expectedMin\": 10,\n      \"expectedMax\": 1000,\n      \"substitutedValue\": 10\n    }\n  ]\n}"
         },
         {
           "label": "buyBoxHistory",
@@ -195,12 +195,12 @@
         {
           "label": "anomalyFlags",
           "type": "json",
-          "value": "[]"
+          "value": "[\n  {\n    \"signalName\": \"stockReliability\",\n    \"detectedValue\": 1000000,\n    \"expectedMin\": 10,\n    \"expectedMax\": 1000,\n    \"substitutedValue\": 10\n  }\n]"
         }
       ],
-      "startedAt": "2026-05-29T20:46:00.152Z",
-      "finishedAt": "2026-05-29T20:46:00.324Z",
-      "durationMs": 171.93
+      "startedAt": "2026-05-30T23:28:25.957Z",
+      "finishedAt": "2026-05-30T23:28:37.844Z",
+      "durationMs": 11887.81
     },
     {
       "gateId": "F2.7",
@@ -221,9 +221,9 @@
           "value": "200"
         }
       ],
-      "startedAt": "2026-05-29T20:46:00.325Z",
-      "finishedAt": "2026-05-29T20:46:00.517Z",
-      "durationMs": 192.36
+      "startedAt": "2026-05-30T23:28:37.845Z",
+      "finishedAt": "2026-05-30T23:28:48.061Z",
+      "durationMs": 10216.23
     },
     {
       "gateId": "F2.8",
@@ -236,22 +236,22 @@
         {
           "label": "buyerId",
           "type": "text",
-          "value": "usr_01KSTQS6A68VPDEHTZGHBYK830"
+          "value": "usr_01KSXKFZYH5DB1AN65FB3AYXNJ"
         },
         {
           "label": "restrictionEndsAt",
           "type": "text",
-          "value": "2026-05-29T21:01:00.646Z"
+          "value": "2026-05-30T23:43:58.035Z"
         },
         {
           "label": "validationResponse",
           "type": "json",
-          "value": "{\n  \"eligible\": false,\n  \"reason\": \"COD access is temporarily restricted until 2026-05-29T21:01:00.646Z: Governance temporary restriction fixture\"\n}"
+          "value": "{\n  \"eligible\": false,\n  \"reason\": \"COD access is temporarily restricted until 2026-05-30T23:43:58.035Z: Governance temporary restriction fixture\"\n}"
         }
       ],
-      "startedAt": "2026-05-29T20:46:00.517Z",
-      "finishedAt": "2026-05-29T20:46:00.676Z",
-      "durationMs": 159.04
+      "startedAt": "2026-05-30T23:28:48.061Z",
+      "finishedAt": "2026-05-30T23:28:58.065Z",
+      "durationMs": 10003.71
     },
     {
       "gateId": "D2.1",
@@ -261,8 +261,8 @@
       "status": "SKIPPED",
       "summary": "No inspector configured for this gate yet",
       "evidence": [],
-      "startedAt": "2026-05-29T20:46:00.677Z",
-      "finishedAt": "2026-05-29T20:46:00.677Z",
+      "startedAt": "2026-05-30T23:28:58.065Z",
+      "finishedAt": "2026-05-30T23:28:58.065Z",
       "durationMs": 0
     },
     {
@@ -273,8 +273,8 @@
       "status": "SKIPPED",
       "summary": "No inspector configured for this gate yet",
       "evidence": [],
-      "startedAt": "2026-05-29T20:46:00.677Z",
-      "finishedAt": "2026-05-29T20:46:00.677Z",
+      "startedAt": "2026-05-30T23:28:58.065Z",
+      "finishedAt": "2026-05-30T23:28:58.065Z",
       "durationMs": 0
     },
     {
@@ -285,8 +285,8 @@
       "status": "SKIPPED",
       "summary": "No inspector configured for this gate yet",
       "evidence": [],
-      "startedAt": "2026-05-29T20:46:00.677Z",
-      "finishedAt": "2026-05-29T20:46:00.677Z",
+      "startedAt": "2026-05-30T23:28:58.065Z",
+      "finishedAt": "2026-05-30T23:28:58.065Z",
       "durationMs": 0
     },
     {
@@ -297,8 +297,8 @@
       "status": "SKIPPED",
       "summary": "No inspector configured for this gate yet",
       "evidence": [],
-      "startedAt": "2026-05-29T20:46:00.677Z",
-      "finishedAt": "2026-05-29T20:46:00.677Z",
+      "startedAt": "2026-05-30T23:28:58.065Z",
+      "finishedAt": "2026-05-30T23:28:58.065Z",
       "durationMs": 0
     },
     {
@@ -309,8 +309,8 @@
       "status": "SKIPPED",
       "summary": "No inspector configured for this gate yet",
       "evidence": [],
-      "startedAt": "2026-05-29T20:46:00.677Z",
-      "finishedAt": "2026-05-29T20:46:00.677Z",
+      "startedAt": "2026-05-30T23:28:58.065Z",
+      "finishedAt": "2026-05-30T23:28:58.065Z",
       "durationMs": 0
     },
     {
@@ -321,8 +321,8 @@
       "status": "SKIPPED",
       "summary": "No inspector configured for this gate yet",
       "evidence": [],
-      "startedAt": "2026-05-29T20:46:00.677Z",
-      "finishedAt": "2026-05-29T20:46:00.677Z",
+      "startedAt": "2026-05-30T23:28:58.065Z",
+      "finishedAt": "2026-05-30T23:28:58.065Z",
       "durationMs": 0
     },
     {
@@ -333,8 +333,8 @@
       "status": "SKIPPED",
       "summary": "No inspector configured for this gate yet",
       "evidence": [],
-      "startedAt": "2026-05-29T20:46:00.677Z",
-      "finishedAt": "2026-05-29T20:46:00.677Z",
+      "startedAt": "2026-05-30T23:28:58.065Z",
+      "finishedAt": "2026-05-30T23:28:58.065Z",
       "durationMs": 0
     },
     {
@@ -345,8 +345,8 @@
       "status": "SKIPPED",
       "summary": "No inspector configured for this gate yet",
       "evidence": [],
-      "startedAt": "2026-05-29T20:46:00.677Z",
-      "finishedAt": "2026-05-29T20:46:00.677Z",
+      "startedAt": "2026-05-30T23:28:58.065Z",
+      "finishedAt": "2026-05-30T23:28:58.065Z",
       "durationMs": 0
     },
     {
@@ -357,8 +357,8 @@
       "status": "SKIPPED",
       "summary": "No inspector configured for this gate yet",
       "evidence": [],
-      "startedAt": "2026-05-29T20:46:00.677Z",
-      "finishedAt": "2026-05-29T20:46:00.677Z",
+      "startedAt": "2026-05-30T23:28:58.065Z",
+      "finishedAt": "2026-05-30T23:28:58.065Z",
       "durationMs": 0
     },
     {
@@ -369,8 +369,8 @@
       "status": "SKIPPED",
       "summary": "No inspector configured for this gate yet",
       "evidence": [],
-      "startedAt": "2026-05-29T20:46:00.677Z",
-      "finishedAt": "2026-05-29T20:46:00.677Z",
+      "startedAt": "2026-05-30T23:28:58.065Z",
+      "finishedAt": "2026-05-30T23:28:58.065Z",
       "durationMs": 0
     },
     {
@@ -382,8 +382,8 @@
       "status": "SKIPPED",
       "summary": "No inspector configured for this gate yet",
       "evidence": [],
-      "startedAt": "2026-05-29T20:46:00.677Z",
-      "finishedAt": "2026-05-29T20:46:00.677Z",
+      "startedAt": "2026-05-30T23:28:58.065Z",
+      "finishedAt": "2026-05-30T23:28:58.065Z",
       "durationMs": 0
     },
     {
@@ -394,8 +394,8 @@
       "status": "SKIPPED",
       "summary": "No inspector configured for this gate yet",
       "evidence": [],
-      "startedAt": "2026-05-29T20:46:00.677Z",
-      "finishedAt": "2026-05-29T20:46:00.677Z",
+      "startedAt": "2026-05-30T23:28:58.065Z",
+      "finishedAt": "2026-05-30T23:28:58.065Z",
       "durationMs": 0
     },
     {
@@ -406,8 +406,8 @@
       "status": "SKIPPED",
       "summary": "No inspector configured for this gate yet",
       "evidence": [],
-      "startedAt": "2026-05-29T20:46:00.677Z",
-      "finishedAt": "2026-05-29T20:46:00.677Z",
+      "startedAt": "2026-05-30T23:28:58.065Z",
+      "finishedAt": "2026-05-30T23:28:58.065Z",
       "durationMs": 0
     },
     {
@@ -418,8 +418,8 @@
       "status": "SKIPPED",
       "summary": "No inspector configured for this gate yet",
       "evidence": [],
-      "startedAt": "2026-05-29T20:46:00.677Z",
-      "finishedAt": "2026-05-29T20:46:00.677Z",
+      "startedAt": "2026-05-30T23:28:58.065Z",
+      "finishedAt": "2026-05-30T23:28:58.065Z",
       "durationMs": 0
     },
     {
@@ -430,8 +430,8 @@
       "status": "SKIPPED",
       "summary": "No inspector configured for this gate yet",
       "evidence": [],
-      "startedAt": "2026-05-29T20:46:00.677Z",
-      "finishedAt": "2026-05-29T20:46:00.677Z",
+      "startedAt": "2026-05-30T23:28:58.065Z",
+      "finishedAt": "2026-05-30T23:28:58.065Z",
       "durationMs": 0
     }
   ],
@@ -448,10 +448,10 @@
     {
       "phase": "Phase 2",
       "title": "Trust & Intelligence Layer",
-      "implementationStatus": "IN_DEVELOPMENT",
-      "status": "NOT_CERTIFIED",
-      "certifiedAt": null,
-      "reason": "The Phase 2 audit has open blockers and cannot be certified yet.",
+      "implementationStatus": "READY_TO_LAUNCH",
+      "status": "CERTIFIED",
+      "certifiedAt": "2026-05-30T23:28:58.065Z",
+      "reason": "Phase 2 audit passed and the phase is certified.",
       "prerequisites": [
         "Phase 1 certified"
       ]
@@ -492,8 +492,8 @@
   ],
   "summary": {
     "totalGates": 23,
-    "passed": 7,
-    "failed": 1,
+    "passed": 8,
+    "failed": 0,
     "manual": 0,
     "skipped": 15,
     "p0": 6,

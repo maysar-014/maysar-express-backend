@@ -210,14 +210,24 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       where: { id },
       include: {
         category: true,
-        variants: true,
-        mediaRef: { orderBy: { displayOrder: 'asc' } }
+        variants: true
       }
     });
 
     if (!productData) return null;
 
-    return this.enrichWithStock(this.normalizeProductRecord(productData));
+    const mediaRef = await this.prisma.mediaRef.findMany({
+      where: {
+        entityType: 'PRODUCT',
+        entityId: id
+      },
+      orderBy: { displayOrder: 'asc' }
+    });
+
+    return this.enrichWithStock(this.normalizeProductRecord({
+      ...productData,
+      mediaRef
+    }));
   }
 
   /**

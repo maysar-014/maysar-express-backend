@@ -1,0 +1,407 @@
+{
+  "runId": "992a2fce-3e0d-4640-b4f8-a6732c825073",
+  "constitutionName": "Maysar Express Ecosystem Expansion Constitution",
+  "constitutionVersion": "2026-05-29",
+  "targetPhase": "Phase 4",
+  "startedAt": "2026-05-29T23:18:50.309Z",
+  "finishedAt": "2026-05-29T23:19:13.444Z",
+  "durationMs": 23135,
+  "targetBaseUrl": "http://localhost:3000",
+  "verdict": "APPROVED",
+  "gateResults": [
+    {
+      "gateId": "F4.1",
+      "title": "Enabler Attribution",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T23:18:50.310Z",
+      "finishedAt": "2026-05-29T23:18:50.310Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "F4.2",
+      "title": "Enabler Onboarding Flow",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "Enabler onboarding created the profile, analytics, and approval state",
+      "evidence": [
+        {
+          "label": "registration",
+          "type": "json",
+          "value": "{\n  \"id\": \"enb_pro_01KSV0HPTWYV3VV1A1BDWTGRYG\",\n  \"userId\": \"usr_01KSV0H16D7KTX5D24GEGFZ7KE\",\n  \"businessName\": \"Governance Enabler usr_01KSV0H16D7KTX5D24GEGFZ7KE\",\n  \"status\": \"PENDING\",\n  \"tier\": \"BRONZE\",\n  \"verificationStatus\": \"pending\",\n  \"commissionRate\": 0.15,\n  \"createdAt\": \"2026-05-29T23:19:12.476Z\"\n}"
+        },
+        {
+          "label": "approval",
+          "type": "json",
+          "value": "{\n  \"id\": \"enb_pro_01KSV0HPTWYV3VV1A1BDWTGRYG\",\n  \"userId\": \"usr_01KSV0H16D7KTX5D24GEGFZ7KE\",\n  \"enablerCode\": \"ENB-964DWL\",\n  \"enablerCodeShort\": \"E964DWL\",\n  \"businessName\": \"Governance Enabler usr_01KSV0H16D7KTX5D24GEGFZ7KE\",\n  \"status\": \"APPROVED\",\n  \"tier\": \"BRONZE\",\n  \"verificationStatus\": \"pending\",\n  \"commissionRate\": 0.15,\n  \"createdAt\": \"2026-05-29T23:19:12.476Z\"\n}"
+        },
+        {
+          "label": "analytics",
+          "type": "json",
+          "value": "{\n  \"id\": \"enb_ana_01KSV0HPV959WE0H4XCHR2QF66\",\n  \"enablerId\": \"enb_pro_01KSV0HPTWYV3VV1A1BDWTGRYG\",\n  \"totalSales\": \"0\",\n  \"totalOrders\": 0,\n  \"averageOrderValue\": \"0\",\n  \"conversionRate\": \"0\",\n  \"customerRating\": null,\n  \"responseTime\": null,\n  \"totalCommissions\": \"0\",\n  \"averageCommission\": \"0\",\n  \"pendingCommissions\": \"0\",\n  \"totalCustomers\": 0,\n  \"repeatCustomers\": 0,\n  \"customerRetention\": \"0\",\n  \"disputeRate\": \"0\",\n  \"cancellationRate\": \"0\",\n  \"fraudScore\": \"0\",\n  \"lastSaleAt\": null,\n  \"lastActivityAt\": null,\n  \"metadata\": null,\n  \"createdAt\": \"2026-05-29T23:19:12.491Z\",\n  \"updatedAt\": \"2026-05-29T23:19:12.491Z\"\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T23:18:50.310Z",
+      "finishedAt": "2026-05-29T23:19:12.596Z",
+      "durationMs": 22285.51
+    },
+    {
+      "gateId": "F4.3",
+      "title": "Seller-Supplier Chat",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "Seller-supplier conversation and message exchange completed",
+      "evidence": [
+        {
+          "label": "conversationId",
+          "type": "text",
+          "value": "cha_con_01KSV0HPZHS1J5SDQRQ71C3PP7"
+        },
+        {
+          "label": "conversation",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"cha_con_01KSV0HPZHS1J5SDQRQ71C3PP7\",\n    \"type\": \"SELLER_SUPPLIER\",\n    \"moderationStatus\": \"ACTIVE\",\n    \"relatedProductId\": \"prd_phase4_phase4c148bf56\",\n    \"relatedOrderId\": null,\n    \"relatedShipmentId\": null,\n    \"relatedSupplierRequestId\": null,\n    \"metadata\": {},\n    \"lastMessageAt\": null,\n    \"createdAt\": \"2026-05-29T23:19:12.628Z\"\n  }\n}"
+        },
+        {
+          "label": "message",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"cha_mes_01KSV0HQ1R9KHMFMK3VVCFC35B\",\n    \"conversationId\": \"cha_con_01KSV0HPZHS1J5SDQRQ71C3PP7\",\n    \"senderId\": \"usr_01KSV0H16D89HTGE8845ZQWA8D\",\n    \"type\": \"TEXT\",\n    \"content\": \"Governance restock request.\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T23:19:12.700Z\"\n  }\n}"
+        },
+        {
+          "label": "messages",
+          "type": "json",
+          "value": "[\n  {\n    \"id\": \"cha_mes_01KSV0HQ1R9KHMFMK3VVCFC35B\",\n    \"conversationId\": \"cha_con_01KSV0HPZHS1J5SDQRQ71C3PP7\",\n    \"senderId\": \"usr_01KSV0H16D89HTGE8845ZQWA8D\",\n    \"type\": \"TEXT\",\n    \"content\": \"Governance restock request.\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T23:19:12.700Z\"\n  }\n]"
+        }
+      ],
+      "startedAt": "2026-05-29T23:19:12.597Z",
+      "finishedAt": "2026-05-29T23:19:12.852Z",
+      "durationMs": 256.03
+    },
+    {
+      "gateId": "F4.4",
+      "title": "Bulk Order Quoting",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T23:19:12.853Z",
+      "finishedAt": "2026-05-29T23:19:12.853Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "F4.5",
+      "title": "KYC Verification Flow",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "KYC submission and verification updated the user record and audit trail",
+      "evidence": [
+        {
+          "label": "submission",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"status\": \"pending\"\n}"
+        },
+        {
+          "label": "approval",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"status\": \"verified\",\n  \"level\": 2\n}"
+        },
+        {
+          "label": "user",
+          "type": "json",
+          "value": "{\n  \"kycStatus\": \"VERIFIED\",\n  \"kycLevel\": 2,\n  \"kycData\": {\n    \"fullName\": \"Governance KYC User\",\n    \"documents\": [\n      \"https://example.com/id-front.jpg\",\n      \"https://example.com/id-back.jpg\",\n      \"https://example.com/proof-of-address.pdf\"\n    ],\n    \"nationalId\": \"412C9Y0BTHWKEX\",\n    \"businessName\": \"Governance KYC Business\"\n  },\n  \"kycSubmittedAt\": \"2026-05-29T23:19:12.983Z\",\n  \"kycVerifiedAt\": \"2026-05-29T23:19:13.049Z\"\n}"
+        },
+        {
+          "label": "auditLogs",
+          "type": "json",
+          "value": "[\n  {\n    \"id\": \"kyc_audlog_01KSV0HQB898DEXAPEFQ41C5MT\",\n    \"userId\": \"usr_01KSV0H16D4VCR2C9Y0BTHWKEX\",\n    \"action\": \"submit\",\n    \"previousLevel\": 0,\n    \"newLevel\": 0,\n    \"previousStatus\": \"none\",\n    \"newStatus\": \"pending\",\n    \"performedBy\": null,\n    \"reason\": null,\n    \"metadata\": {\n      \"payload\": {\n        \"fullName\": \"Governance KYC User\",\n        \"documents\": [\n          \"https://example.com/id-front.jpg\",\n          \"https://example.com/id-back.jpg\",\n          \"https://example.com/proof-of-address.pdf\"\n        ],\n        \"nationalId\": \"412C9Y0BTHWKEX\",\n        \"businessName\": \"Governance KYC Business\"\n      }\n    },\n    \"timestamp\": \"2026-05-29T23:19:13.004Z\"\n  },\n  {\n    \"id\": \"kyc_audlog_01KSV0HQD3QT1MD3XBMZZNQ2BH\",\n    \"userId\": \"usr_01KSV0H16D4VCR2C9Y0BTHWKEX\",\n    \"action\": \"approve\",\n    \"previousLevel\": 0,\n    \"newLevel\": 2,\n    \"previousStatus\": \"pending\",\n    \"newStatus\": \"verified\",\n    \"performedBy\": \"usr_admin_0001\",\n    \"reason\": null,\n    \"metadata\": {\n      \"limits\": {\n        \"maxEarnings\": 5000000,\n        \"maxListings\": 100,\n        \"maxTransactions\": 500\n      }\n    },\n    \"timestamp\": \"2026-05-29T23:19:13.062Z\"\n  }\n]"
+        }
+      ],
+      "startedAt": "2026-05-29T23:19:12.853Z",
+      "finishedAt": "2026-05-29T23:19:13.138Z",
+      "durationMs": 284.32
+    },
+    {
+      "gateId": "F4.6",
+      "title": "Geographic Zone Assignment",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T23:19:13.138Z",
+      "finishedAt": "2026-05-29T23:19:13.138Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "D4.1",
+      "title": "Enabler Commission Accuracy",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T23:19:13.138Z",
+      "finishedAt": "2026-05-29T23:19:13.138Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "D4.2",
+      "title": "KYC Data Integrity",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "PASS",
+      "summary": "KYC user record and audit log stayed internally consistent",
+      "evidence": [
+        {
+          "label": "submission",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"status\": \"pending\"\n}"
+        },
+        {
+          "label": "approval",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"status\": \"verified\",\n  \"level\": 2\n}"
+        },
+        {
+          "label": "user",
+          "type": "json",
+          "value": "{\n  \"kycStatus\": \"VERIFIED\",\n  \"kycLevel\": 2,\n  \"kycData\": {\n    \"fullName\": \"Governance KYC Integrity User\",\n    \"documents\": [\n      \"https://example.com/id-front.jpg\"\n    ],\n    \"nationalId\": \"44KRK43Q4TQ9MR\",\n    \"businessName\": \"Governance KYC Integrity Business\"\n  },\n  \"kycSubmittedAt\": \"2026-05-29T23:19:13.162Z\",\n  \"kycVerifiedAt\": \"2026-05-29T23:19:13.207Z\",\n  \"kycNationalId\": \"44KRK43Q4TQ9MR\"\n}"
+        },
+        {
+          "label": "auditLogs",
+          "type": "json",
+          "value": "[\n  {\n    \"id\": \"kyc_audlog_01KSV0HQGN6HTJ2NGC83YASMA0\",\n    \"userId\": \"usr_01KSV0H16DQ3SWKRK43Q4TQ9MR\",\n    \"action\": \"submit\",\n    \"previousLevel\": 0,\n    \"newLevel\": 0,\n    \"previousStatus\": \"none\",\n    \"newStatus\": \"pending\",\n    \"performedBy\": null,\n    \"reason\": null,\n    \"metadata\": {\n      \"payload\": {\n        \"fullName\": \"Governance KYC Integrity User\",\n        \"documents\": [\n          \"https://example.com/id-front.jpg\"\n        ],\n        \"nationalId\": \"44KRK43Q4TQ9MR\",\n        \"businessName\": \"Governance KYC Integrity Business\"\n      }\n    },\n    \"timestamp\": \"2026-05-29T23:19:13.175Z\"\n  },\n  {\n    \"id\": \"kyc_audlog_01KSV0HQJ1VK9248TWEV9QW2MR\",\n    \"userId\": \"usr_01KSV0H16DQ3SWKRK43Q4TQ9MR\",\n    \"action\": \"approve\",\n    \"previousLevel\": 0,\n    \"newLevel\": 2,\n    \"previousStatus\": \"pending\",\n    \"newStatus\": \"verified\",\n    \"performedBy\": \"usr_admin_0001\",\n    \"reason\": null,\n    \"metadata\": {\n      \"limits\": {\n        \"maxEarnings\": 5000000,\n        \"maxListings\": 100,\n        \"maxTransactions\": 500\n      }\n    },\n    \"timestamp\": \"2026-05-29T23:19:13.220Z\"\n  }\n]"
+        }
+      ],
+      "startedAt": "2026-05-29T23:19:13.138Z",
+      "finishedAt": "2026-05-29T23:19:13.277Z",
+      "durationMs": 139.1
+    },
+    {
+      "gateId": "D4.3",
+      "title": "Geographic Zone Performance Data",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T23:19:13.278Z",
+      "finishedAt": "2026-05-29T23:19:13.278Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "D4.4",
+      "title": "Prior Data Integrity Gates Maintained",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T23:19:13.278Z",
+      "finishedAt": "2026-05-29T23:19:13.278Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "FIN4.1",
+      "title": "Enabler Commission Payout",
+      "category": "Financial",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T23:19:13.278Z",
+      "finishedAt": "2026-05-29T23:19:13.278Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "FIN4.2",
+      "title": "Prior Financial Gates Maintained",
+      "category": "Financial",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T23:19:13.278Z",
+      "finishedAt": "2026-05-29T23:19:13.278Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "OPS4.1",
+      "title": "KYC Document Storage",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "KYC documents were stored in the user record",
+      "evidence": [
+        {
+          "label": "submission",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"status\": \"pending\"\n}"
+        },
+        {
+          "label": "storedKycData",
+          "type": "json",
+          "value": "{\n  \"fullName\": \"Governance KYC Docs\",\n  \"documents\": [\n    \"https://example.com/id-front.jpg\",\n    \"https://example.com/id-back.jpg\"\n  ],\n  \"nationalId\": \"427B8ZV67QZC8Z\",\n  \"businessName\": \"Governance KYC Business\"\n}"
+        },
+        {
+          "label": "storedDocuments",
+          "type": "json",
+          "value": "[\n  \"https://example.com/id-front.jpg\",\n  \"https://example.com/id-back.jpg\"\n]"
+        }
+      ],
+      "startedAt": "2026-05-29T23:19:13.278Z",
+      "finishedAt": "2026-05-29T23:19:13.334Z",
+      "durationMs": 56.32
+    },
+    {
+      "gateId": "OPS4.2",
+      "title": "Compliance Audit Log",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "Compliance audit log captured the KYC actions",
+      "evidence": [
+        {
+          "label": "submission",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"status\": \"pending\"\n}"
+        },
+        {
+          "label": "approval",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"status\": \"verified\",\n  \"level\": 2\n}"
+        },
+        {
+          "label": "auditLogs",
+          "type": "json",
+          "value": "[\n  {\n    \"id\": \"kyc_audlog_01KSV0HQPNQ18GVV93KJA4AXGC\",\n    \"userId\": \"usr_01KSV0H16DHK2GXDAXQ45Z6438\",\n    \"action\": \"submit\",\n    \"previousLevel\": 0,\n    \"newLevel\": 0,\n    \"previousStatus\": \"none\",\n    \"newStatus\": \"pending\",\n    \"performedBy\": null,\n    \"reason\": null,\n    \"metadata\": {\n      \"payload\": {\n        \"fullName\": \"Governance KYC Audit User\",\n        \"documents\": [\n          \"https://example.com/id-front.jpg\"\n        ],\n        \"nationalId\": \"43XDAXQ45Z6438\",\n        \"businessName\": \"Governance KYC Audit Business\"\n      }\n    },\n    \"timestamp\": \"2026-05-29T23:19:13.368Z\"\n  },\n  {\n    \"id\": \"kyc_audlog_01KSV0HQQVCDRNAQ83W26KCBSM\",\n    \"userId\": \"usr_01KSV0H16DHK2GXDAXQ45Z6438\",\n    \"action\": \"approve\",\n    \"previousLevel\": 0,\n    \"newLevel\": 2,\n    \"previousStatus\": \"pending\",\n    \"newStatus\": \"verified\",\n    \"performedBy\": \"usr_admin_0001\",\n    \"reason\": null,\n    \"metadata\": {\n      \"limits\": {\n        \"maxEarnings\": 5000000,\n        \"maxListings\": 100,\n        \"maxTransactions\": 500\n      }\n    },\n    \"timestamp\": \"2026-05-29T23:19:13.406Z\"\n  }\n]"
+        }
+      ],
+      "startedAt": "2026-05-29T23:19:13.335Z",
+      "finishedAt": "2026-05-29T23:19:13.443Z",
+      "durationMs": 108.66
+    },
+    {
+      "gateId": "OPS4.3",
+      "title": "Prior Operational Gates Maintained",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T23:19:13.444Z",
+      "finishedAt": "2026-05-29T23:19:13.444Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R4.1",
+      "title": "Prior Regression Gates",
+      "category": "Regression",
+      "severity": "P1",
+      "blocking": false,
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T23:19:13.444Z",
+      "finishedAt": "2026-05-29T23:19:13.444Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R4.2",
+      "title": "Enabler Attribution Tests",
+      "category": "Regression",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T23:19:13.444Z",
+      "finishedAt": "2026-05-29T23:19:13.444Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R4.3",
+      "title": "No Open P0/P1 Bugs",
+      "category": "Regression",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T23:19:13.444Z",
+      "finishedAt": "2026-05-29T23:19:13.444Z",
+      "durationMs": 0
+    }
+  ],
+  "phaseCertifications": [
+    {
+      "phase": "Phase 1",
+      "title": "Foundation Launch",
+      "implementationStatus": "READY_TO_LAUNCH",
+      "status": "CERTIFIED",
+      "certifiedAt": null,
+      "reason": "Phase 1 is an upstream prerequisite and is treated as certified in the current phase chain.",
+      "prerequisites": []
+    },
+    {
+      "phase": "Phase 2",
+      "title": "Trust & Intelligence Layer",
+      "implementationStatus": "IN_DEVELOPMENT",
+      "status": "CERTIFIED",
+      "certifiedAt": null,
+      "reason": "Phase 2 is an upstream prerequisite and is treated as certified in the current phase chain.",
+      "prerequisites": [
+        "Phase 1 certified"
+      ]
+    },
+    {
+      "phase": "Phase 3",
+      "title": "Commerce Communication",
+      "implementationStatus": "DESIGNED",
+      "status": "CERTIFIED",
+      "certifiedAt": null,
+      "reason": "Phase 3 is an upstream prerequisite and is treated as certified in the current phase chain.",
+      "prerequisites": [
+        "Phase 2 certified"
+      ]
+    },
+    {
+      "phase": "Phase 4",
+      "title": "Ecosystem Expansion",
+      "implementationStatus": "PLANNED",
+      "status": "CERTIFIED",
+      "certifiedAt": "2026-05-29T23:19:13.444Z",
+      "reason": "Phase 4 audit passed and the phase is certified.",
+      "prerequisites": [
+        "Phase 3 certified"
+      ]
+    },
+    {
+      "phase": "Phase 5",
+      "title": "Platform Maturity",
+      "implementationStatus": "PLANNED",
+      "status": "PENDING",
+      "certifiedAt": null,
+      "reason": "Pending certification until Phase 4 certified is complete.",
+      "prerequisites": [
+        "Phase 4 certified"
+      ]
+    }
+  ],
+  "summary": {
+    "totalGates": 18,
+    "passed": 6,
+    "failed": 0,
+    "manual": 0,
+    "skipped": 12,
+    "p0": 6,
+    "p1": 12,
+    "p2": 0,
+    "p3": 0
+  }
+}

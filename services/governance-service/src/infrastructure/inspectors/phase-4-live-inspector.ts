@@ -27,8 +27,14 @@ type Phase4Fixture = {
   supplierPhone: string;
   enablerId: string;
   enablerPhone: string;
-  kycUserId: string;
-  kycPhone: string;
+  kycWorkflowUserId: string;
+  kycWorkflowPhone: string;
+  kycDocumentUserId: string;
+  kycDocumentPhone: string;
+  kycAuditUserId: string;
+  kycAuditPhone: string;
+  kycIntegrityUserId: string;
+  kycIntegrityPhone: string;
   categoryId: string;
   productId: string;
   sellerSupplierConversationId: string;
@@ -44,8 +50,9 @@ function textEvidence(label: string, value: unknown): EvidenceArtifact {
 
 function extractData<T = any>(body: any): T {
   if (!body) return body;
-  if (body.data !== undefined) return body.data;
-  return body;
+  const candidate = body.body !== undefined ? body.body : body;
+  if (candidate?.data !== undefined) return candidate.data;
+  return candidate;
 }
 
 function extractId(body: any): string | undefined {
@@ -53,13 +60,16 @@ function extractId(body: any): string | undefined {
   return candidate?.id
     || candidate?.enablerId
     || candidate?.conversationId
+    || candidate?.conversation?.id
+    || candidate?.conversation?.conversationId
+    || candidate?.enabler?.id
     || body?.id
     || body?.enablerId
     || body?.conversationId;
 }
 
 export class Phase4LiveInspector implements GovernanceInspector {
-  private fixturePromise: Promise<Phase4Fixture> | null = null;
+  private static fixturePromise: Promise<Phase4Fixture> | null = null;
 
   constructor(public readonly gateId: string) {}
 
@@ -68,10 +78,10 @@ export class Phase4LiveInspector implements GovernanceInspector {
   }
 
   private async ensureFixture(context: GovernanceExecutionContext): Promise<Phase4Fixture> {
-    if (!this.fixturePromise) {
-      this.fixturePromise = this.bootstrapFixture(context);
+    if (!Phase4LiveInspector.fixturePromise) {
+      Phase4LiveInspector.fixturePromise = this.bootstrapFixture(context);
     }
-    return this.fixturePromise;
+    return Phase4LiveInspector.fixturePromise;
   }
 
   private async bootstrapFixture(context: GovernanceExecutionContext): Promise<Phase4Fixture> {
@@ -82,12 +92,18 @@ export class Phase4LiveInspector implements GovernanceInspector {
     const sellerPhone = `+2556${String(91110000 + Math.floor(Math.random() * 8888888)).slice(0, 8)}`;
     const supplierPhone = `+2556${String(101110000 + Math.floor(Math.random() * 8888888)).slice(0, 8)}`;
     const enablerPhone = `+2557${String(111110000 + Math.floor(Math.random() * 8888888)).slice(0, 8)}`;
-    const kycPhone = `+2557${String(121110000 + Math.floor(Math.random() * 8888888)).slice(0, 8)}`;
+    const kycWorkflowPhone = `+2557${String(121110000 + Math.floor(Math.random() * 8888888)).slice(0, 8)}`;
+    const kycDocumentPhone = `+2557${String(131110000 + Math.floor(Math.random() * 8888888)).slice(0, 8)}`;
+    const kycAuditPhone = `+2557${String(141110000 + Math.floor(Math.random() * 8888888)).slice(0, 8)}`;
+    const kycIntegrityPhone = `+2557${String(151110000 + Math.floor(Math.random() * 8888888)).slice(0, 8)}`;
 
     const sellerEmail = `${unique}.seller@example.com`;
     const supplierEmail = `${unique}.supplier@example.com`;
     const enablerEmail = `${unique}.enabler@example.com`;
-    const kycEmail = `${unique}.kyc@example.com`;
+    const kycWorkflowEmail = `${unique}.kyc-workflow@example.com`;
+    const kycDocumentEmail = `${unique}.kyc-document@example.com`;
+    const kycAuditEmail = `${unique}.kyc-audit@example.com`;
+    const kycIntegrityEmail = `${unique}.kyc-integrity@example.com`;
 
     const seedUser = async (id: string, email: string, phone: string, role: 'buyer' | 'seller' | 'supplier' | 'enabler') => {
       const user = User.create({
@@ -109,20 +125,29 @@ export class Phase4LiveInspector implements GovernanceInspector {
     const sellerId = `usr_${createUlid()}`;
     const supplierId = `usr_${createUlid()}`;
     const enablerId = `usr_${createUlid()}`;
-    const kycUserId = `usr_${createUlid()}`;
+    const kycWorkflowUserId = `usr_${createUlid()}`;
+    const kycDocumentUserId = `usr_${createUlid()}`;
+    const kycAuditUserId = `usr_${createUlid()}`;
+    const kycIntegrityUserId = `usr_${createUlid()}`;
 
     await Promise.all([
       seedUser(sellerId, sellerEmail, sellerPhone, 'seller'),
       seedUser(supplierId, supplierEmail, supplierPhone, 'supplier'),
       seedUser(enablerId, enablerEmail, enablerPhone, 'enabler'),
-      seedUser(kycUserId, kycEmail, kycPhone, 'buyer')
+      seedUser(kycWorkflowUserId, kycWorkflowEmail, kycWorkflowPhone, 'buyer'),
+      seedUser(kycDocumentUserId, kycDocumentEmail, kycDocumentPhone, 'buyer'),
+      seedUser(kycAuditUserId, kycAuditEmail, kycAuditPhone, 'buyer'),
+      seedUser(kycIntegrityUserId, kycIntegrityEmail, kycIntegrityPhone, 'buyer')
     ]);
 
     await Promise.all([
       prisma.user_User.update({ where: { id: sellerId }, data: { isPhoneVerified: true, phoneVerifiedAt: new Date(), kycStatus: 'VERIFIED', kycLevel: 1, kycVerifiedAt: new Date() } }),
       prisma.user_User.update({ where: { id: supplierId }, data: { isPhoneVerified: true, phoneVerifiedAt: new Date() } }),
-      prisma.user_User.update({ where: { id: enablerId }, data: { isPhoneVerified: true, phoneVerifiedAt: new Date() } }),
-      prisma.user_User.update({ where: { id: kycUserId }, data: { isPhoneVerified: true, phoneVerifiedAt: new Date() } })
+      prisma.user_User.update({ where: { id: enablerId }, data: { isEmailVerified: true, emailVerifiedAt: new Date(), isPhoneVerified: true, phoneVerifiedAt: new Date() } }),
+      prisma.user_User.update({ where: { id: kycWorkflowUserId }, data: { isPhoneVerified: true, phoneVerifiedAt: new Date(), kycStatus: 'NONE', kycLevel: 0, kycSubmittedAt: null, kycVerifiedAt: null, kycData: null, kycNationalId: null } }),
+      prisma.user_User.update({ where: { id: kycDocumentUserId }, data: { isPhoneVerified: true, phoneVerifiedAt: new Date(), kycStatus: 'NONE', kycLevel: 0, kycSubmittedAt: null, kycVerifiedAt: null, kycData: null, kycNationalId: null } }),
+      prisma.user_User.update({ where: { id: kycAuditUserId }, data: { isPhoneVerified: true, phoneVerifiedAt: new Date(), kycStatus: 'NONE', kycLevel: 0, kycSubmittedAt: null, kycVerifiedAt: null, kycData: null, kycNationalId: null } }),
+      prisma.user_User.update({ where: { id: kycIntegrityUserId }, data: { isPhoneVerified: true, phoneVerifiedAt: new Date(), kycStatus: 'NONE', kycLevel: 0, kycSubmittedAt: null, kycVerifiedAt: null, kycData: null, kycNationalId: null } })
     ]);
 
     const categoryId = `cat_phase4_${unique.replace(/[^a-zA-Z0-9]/g, '').slice(0, 18)}`;
@@ -205,18 +230,25 @@ export class Phase4LiveInspector implements GovernanceInspector {
       }
     });
 
-    const sellerSupplierConversation = await client.initiateConversation({
-      userId: sellerId,
-      type: 'SELLER_SUPPLIER',
-      recipientId: supplierId,
-      initiatorRole: 'SELLER',
-      recipientRole: 'SUPPLIER',
-      relatedProductId: productId,
-      relatedOrderId: null
-    });
+    const sellerSupplierConversation = await client.waitForProbe(
+      () => client.initiateConversation({
+        userId: sellerId,
+        type: 'SELLER_SUPPLIER',
+        recipientId: supplierId,
+        initiatorRole: 'SELLER',
+        recipientRole: 'SUPPLIER',
+        relatedProductId: productId,
+        relatedOrderId: null
+      }),
+      {
+        timeoutMs: 120_000,
+        intervalMs: 2_000,
+        isReady: (result) => result.response.ok && Boolean(extractId(result))
+      }
+    );
     const sellerSupplierConversationId = extractId(sellerSupplierConversation);
     if (!sellerSupplierConversationId) {
-      throw new Error('Unable to bootstrap Phase 4 conversation');
+      throw new Error(`Unable to bootstrap Phase 4 conversation${sellerSupplierConversation ? `: ${JSON.stringify({ status: sellerSupplierConversation.response?.status, body: sellerSupplierConversation.body })}` : ''}`);
     }
 
     return {
@@ -226,8 +258,14 @@ export class Phase4LiveInspector implements GovernanceInspector {
       supplierPhone,
       enablerId,
       enablerPhone,
-      kycUserId,
-      kycPhone,
+      kycWorkflowUserId,
+      kycWorkflowPhone,
+      kycDocumentUserId,
+      kycDocumentPhone,
+      kycAuditUserId,
+      kycAuditPhone,
+      kycIntegrityUserId,
+      kycIntegrityPhone,
       categoryId,
       productId,
       sellerSupplierConversationId
@@ -251,7 +289,7 @@ export class Phase4LiveInspector implements GovernanceInspector {
     });
     const enablerId = extractId(registration);
     const approval = enablerId
-      ? await client.approveEnabler(enablerId, 'usr_phase4_admin_0001', ['identity-verified', 'business-verified'])
+      ? await client.approveEnabler(enablerId, `usr_${createUlid()}`, ['email_verified', 'phone_verified'])
       : null;
     const prisma = getGovernancePrisma() as any;
     const analytics = await prisma.enabler_Analytics.findUnique({
@@ -336,22 +374,40 @@ export class Phase4LiveInspector implements GovernanceInspector {
     const started = performance.now();
     const fixture = await this.ensureFixture(context);
     const client = this.client(context);
-    const documents = ['id-front.jpg', 'id-back.jpg', 'proof-of-address.pdf'];
-    const submit = await client.submitKyc(fixture.kycUserId, {
-      fullName: 'Governance KYC User',
-      nationalId: '123456789012345',
-      businessName: 'Governance KYC Business',
-      documents
-    });
-    const approve = await client.approveKyc(fixture.kycUserId, 2);
+    const documents = [
+      'https://example.com/id-front.jpg',
+      'https://example.com/id-back.jpg',
+      'https://example.com/proof-of-address.pdf'
+    ];
+    const submit = await client.waitForProbe(
+      () => client.submitKyc(fixture.kycWorkflowUserId, {
+        fullName: 'Governance KYC User',
+        nationalId: `41${fixture.kycWorkflowUserId.slice(-12)}`,
+        businessName: 'Governance KYC Business',
+        documents
+      }),
+      {
+        timeoutMs: 120_000,
+        intervalMs: 2_000,
+        isReady: (result) => result.response.ok
+      }
+    );
+    const approve = await client.waitForProbe(
+      () => client.approveKyc(fixture.kycWorkflowUserId, 2),
+      {
+        timeoutMs: 120_000,
+        intervalMs: 2_000,
+        isReady: (result) => result.response.ok
+      }
+    );
     const prisma = getGovernancePrisma() as any;
     const user = await prisma.user_User.findUnique({
-      where: { id: fixture.kycUserId },
+      where: { id: fixture.kycWorkflowUserId },
       select: { kycStatus: true, kycLevel: true, kycData: true, kycSubmittedAt: true, kycVerifiedAt: true }
     });
     const auditLogs = await prisma.kyc_AuditLog.findMany({
-      where: { userId: fixture.kycUserId },
-      orderBy: { createdAt: 'asc' }
+      where: { userId: fixture.kycWorkflowUserId },
+      orderBy: { timestamp: 'asc' }
     });
     const status = submit.response.status === 200
       && approve.response.status === 200
@@ -385,15 +441,25 @@ export class Phase4LiveInspector implements GovernanceInspector {
     const started = performance.now();
     const fixture = await this.ensureFixture(context);
     const client = this.client(context);
-    const submit = await client.submitKyc(fixture.kycUserId, {
-      fullName: 'Governance KYC Docs',
-      nationalId: '123456789012345',
-      businessName: 'Governance KYC Business',
-      documents: ['id-front.jpg', 'id-back.jpg']
-    });
+    const submit = await client.waitForProbe(
+      () => client.submitKyc(fixture.kycDocumentUserId, {
+        fullName: 'Governance KYC Docs',
+        nationalId: `42${fixture.kycDocumentUserId.slice(-12)}`,
+        businessName: 'Governance KYC Business',
+        documents: [
+          'https://example.com/id-front.jpg',
+          'https://example.com/id-back.jpg'
+        ]
+      }),
+      {
+        timeoutMs: 120_000,
+        intervalMs: 2_000,
+        isReady: (result) => result.response.ok
+      }
+    );
     const prisma = getGovernancePrisma() as any;
     const user = await prisma.user_User.findUnique({
-      where: { id: fixture.kycUserId },
+      where: { id: fixture.kycDocumentUserId },
       select: { kycData: true }
     });
     const storedDocuments = Array.isArray((user?.kycData as any)?.documents) ? (user?.kycData as any).documents : [];
@@ -423,12 +489,37 @@ export class Phase4LiveInspector implements GovernanceInspector {
     const startedAt = new Date().toISOString();
     const started = performance.now();
     const fixture = await this.ensureFixture(context);
+    const client = this.client(context);
     const prisma = getGovernancePrisma() as any;
+    const submit = await client.waitForProbe(
+      () => client.submitKyc(fixture.kycAuditUserId, {
+        fullName: 'Governance KYC Audit User',
+        nationalId: `43${fixture.kycAuditUserId.slice(-12)}`,
+        businessName: 'Governance KYC Audit Business',
+        documents: ['https://example.com/id-front.jpg']
+      }),
+      {
+        timeoutMs: 120_000,
+        intervalMs: 2_000,
+        isReady: (result) => result.response.ok
+      }
+    );
+    const approve = await client.waitForProbe(
+      () => client.approveKyc(fixture.kycAuditUserId, 2),
+      {
+        timeoutMs: 120_000,
+        intervalMs: 2_000,
+        isReady: (result) => result.response.ok
+      }
+    );
     const auditLogs = await prisma.kyc_AuditLog.findMany({
-      where: { userId: fixture.kycUserId },
-      orderBy: { createdAt: 'asc' }
+      where: { userId: fixture.kycAuditUserId },
+      orderBy: { timestamp: 'asc' }
     });
-    const status = auditLogs.length >= 1 && auditLogs.some((log: any) => /kyc/i.test(String(log.action)));
+    const status = submit.response.status === 200
+      && approve.response.status === 200
+      && auditLogs.length >= 2
+      && auditLogs.some((log: any) => /submit|approve/i.test(String(log.action)));
     const finishedAt = new Date().toISOString();
     return {
       gateId: definition.id,
@@ -440,6 +531,8 @@ export class Phase4LiveInspector implements GovernanceInspector {
         ? 'Compliance audit log captured the KYC actions'
         : 'No compliance audit log entries were found for the KYC workflow',
       evidence: [
+        jsonEvidence('submission', submit.body),
+        jsonEvidence('approval', approve.body),
         jsonEvidence('auditLogs', auditLogs)
       ],
       startedAt,
@@ -452,14 +545,36 @@ export class Phase4LiveInspector implements GovernanceInspector {
     const startedAt = new Date().toISOString();
     const started = performance.now();
     const fixture = await this.ensureFixture(context);
+    const client = this.client(context);
     const prisma = getGovernancePrisma() as any;
+    const submit = await client.waitForProbe(
+      () => client.submitKyc(fixture.kycIntegrityUserId, {
+        fullName: 'Governance KYC Integrity User',
+        nationalId: `44${fixture.kycIntegrityUserId.slice(-12)}`,
+        businessName: 'Governance KYC Integrity Business',
+        documents: ['https://example.com/id-front.jpg']
+      }),
+      {
+        timeoutMs: 120_000,
+        intervalMs: 2_000,
+        isReady: (result) => result.response.ok
+      }
+    );
+    const approve = await client.waitForProbe(
+      () => client.approveKyc(fixture.kycIntegrityUserId, 2),
+      {
+        timeoutMs: 120_000,
+        intervalMs: 2_000,
+        isReady: (result) => result.response.ok
+      }
+    );
     const user = await prisma.user_User.findUnique({
-      where: { id: fixture.kycUserId },
+      where: { id: fixture.kycIntegrityUserId },
       select: { kycStatus: true, kycLevel: true, kycData: true, kycSubmittedAt: true, kycVerifiedAt: true, kycNationalId: true }
     });
     const auditLogs = await prisma.kyc_AuditLog.findMany({
-      where: { userId: fixture.kycUserId },
-      orderBy: { createdAt: 'asc' }
+      where: { userId: fixture.kycIntegrityUserId },
+      orderBy: { timestamp: 'asc' }
     });
     const status = String(user?.kycStatus ?? '').toUpperCase() === 'PENDING'
       || String(user?.kycStatus ?? '').toUpperCase() === 'VERIFIED'
@@ -475,6 +590,8 @@ export class Phase4LiveInspector implements GovernanceInspector {
         ? 'KYC user record and audit log stayed internally consistent'
         : 'KYC data integrity check failed',
       evidence: [
+        jsonEvidence('submission', submit.body),
+        jsonEvidence('approval', approve.body),
         jsonEvidence('user', user),
         jsonEvidence('auditLogs', auditLogs)
       ],

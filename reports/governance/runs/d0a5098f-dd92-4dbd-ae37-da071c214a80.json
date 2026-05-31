@@ -1,0 +1,504 @@
+{
+  "runId": "d0a5098f-dd92-4dbd-ae37-da071c214a80",
+  "constitutionName": "Maysar Express Trust & Intelligence Constitution",
+  "constitutionVersion": "2026-05-29",
+  "targetPhase": "Phase 2",
+  "startedAt": "2026-05-29T21:08:07.642Z",
+  "finishedAt": "2026-05-29T21:08:11.559Z",
+  "durationMs": 3917,
+  "targetBaseUrl": "http://localhost:3000",
+  "verdict": "APPROVED",
+  "gateResults": [
+    {
+      "gateId": "F2.1",
+      "title": "COD Trust Score Initialisation",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "New buyer trust score initialized at 0",
+      "evidence": [
+        {
+          "label": "buyerId",
+          "type": "text",
+          "value": "usr_01KSTS1PB1FCGPVPNZ4X06G5EP"
+        },
+        {
+          "label": "trustScore",
+          "type": "json",
+          "value": "{\n  \"score\": 0,\n  \"tier\": \"NEW_BUYER\",\n  \"updatedAt\": null\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T21:08:07.643Z",
+      "finishedAt": "2026-05-29T21:08:09.186Z",
+      "durationMs": 1542.31
+    },
+    {
+      "gateId": "F2.2",
+      "title": "Trust Signal Ingestion",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "COD delivery increased trust score",
+      "evidence": [
+        {
+          "label": "buyerId",
+          "type": "text",
+          "value": "usr_01KSTS1QV3318J0N42C3FHS3DP"
+        },
+        {
+          "label": "sellerId",
+          "type": "text",
+          "value": "usr_01KSTS1QV30FGAZ728BXVD5REE"
+        },
+        {
+          "label": "orderId",
+          "type": "text",
+          "value": "MSR-ORD-20260530-000809-3BF0"
+        },
+        {
+          "label": "orderResponse",
+          "type": "json",
+          "value": "{\n  \"id\": \"MSR-ORD-20260530-000809-3BF0\",\n  \"trackingNumber\": \"MYS-TZ-ORD-20260530-6U8M\",\n  \"deliveryCode\": \"730990\",\n  \"buyerId\": \"usr_01KSTS1QV3318J0N42C3FHS3DP\",\n  \"sellerId\": \"usr_01KSTS1QV30FGAZ728BXVD5REE\",\n  \"status\": \"pending\",\n  \"totalAmount\": {\n    \"amount\": 1000,\n    \"currency\": \"TZS\"\n  },\n  \"commitmentFee\": {\n    \"amount\": 500,\n    \"currency\": \"TZS\",\n    \"paidVia\": \"WALLET\",\n    \"description\": \"Delivery fee — secured before packaging\"\n  },\n  \"cashOnDelivery\": {\n    \"amount\": 1000,\n    \"currency\": \"TZS\",\n    \"description\": \"Pay TZS 1,000 to the courier on delivery (full product price)\"\n  },\n  \"items\": [\n    {\n      \"productId\": \"prd_phase2_phase2b2739869\",\n      \"quantity\": 1,\n      \"price\": {\n        \"amount\": 1000,\n        \"currency\": \"TZS\"\n      },\n      \"weight\": 1\n    }\n  ],\n  \"deliveryAddress\": {\n    \"street\": \"Phase 2 Street\",\n    \"city\": \"Dar es Salaam\",\n    \"postalCode\": \"11101\",\n    \"country\": \"TZ\"\n  },\n  \"paymentMethod\": \"COD\",\n  \"createdAt\": \"2026-05-29T21:08:09.795Z\"\n}"
+        },
+        {
+          "label": "confirmResponse",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"orderId\": \"MSR-ORD-20260530-000809-3BF0\",\n  \"status\": \"DELIVERED\",\n  \"confirmedAt\": \"2026-05-29T21:08:09.993Z\",\n  \"message\": \"Delivery confirmed. Commitment fee settled.\"\n}"
+        },
+        {
+          "label": "trustScoreBefore",
+          "type": "json",
+          "value": "{\n  \"score\": 0,\n  \"tier\": \"NEW_BUYER\",\n  \"updatedAt\": null\n}"
+        },
+        {
+          "label": "trustScoreAfter",
+          "type": "json",
+          "value": "{\n  \"score\": 8,\n  \"tier\": \"NEW_BUYER\",\n  \"updatedAt\": \"2026-05-29T21:08:09.982Z\"\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T21:08:09.186Z",
+      "finishedAt": "2026-05-29T21:08:10.001Z",
+      "durationMs": 814.35
+    },
+    {
+      "gateId": "F2.3",
+      "title": "Phone OTP Enforcement",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "COD validation rejected buyer before phone verification",
+      "evidence": [
+        {
+          "label": "buyerId",
+          "type": "text",
+          "value": "usr_01KSTS1RMJK4D7CRZZXN35PT42"
+        },
+        {
+          "label": "validationResponse",
+          "type": "json",
+          "value": "{\n  \"eligible\": false,\n  \"reason\": \"PHONE_VERIFICATION_REQUIRED\"\n}"
+        },
+        {
+          "label": "status",
+          "type": "text",
+          "value": "200"
+        }
+      ],
+      "startedAt": "2026-05-29T21:08:10.001Z",
+      "finishedAt": "2026-05-29T21:08:10.338Z",
+      "durationMs": 336.83
+    },
+    {
+      "gateId": "F2.4",
+      "title": "Phone OTP Verification",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "Phone verification unlocked COD validation",
+      "evidence": [
+        {
+          "label": "buyerId",
+          "type": "text",
+          "value": "usr_01KSTS1RZ3SRXW7PC4B3WK1QBF"
+        },
+        {
+          "label": "verificationResponse",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"message\": \"Phone number verified successfully\",\n  \"phoneVerified\": true\n}"
+        },
+        {
+          "label": "validationResponse",
+          "type": "json",
+          "value": "{\n  \"eligible\": true,\n  \"commitmentFee\": 500\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T21:08:10.339Z",
+      "finishedAt": "2026-05-29T21:08:10.749Z",
+      "durationMs": 410.21
+    },
+    {
+      "gateId": "F2.5",
+      "title": "Buy-Box Assignment",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "Buy-box assignment selected the stronger seller",
+      "evidence": [
+        {
+          "label": "productId",
+          "type": "text",
+          "value": "prd_phase2_phase25472584d"
+        },
+        {
+          "label": "listings",
+          "type": "json",
+          "value": "[\n  {\n    \"sellerId\": \"usr_01KSTS1SBYZSZ13C9GX09P463Y\",\n    \"price\": 990,\n    \"rating\": 4.8,\n    \"stock\": 15,\n    \"matchConfidence\": 0.95,\n    \"isSuspended\": false,\n    \"lastUpdated\": \"2026-05-29T21:08:10.908Z\"\n  },\n  {\n    \"sellerId\": \"usr_alt_be1677c0\",\n    \"price\": 1050,\n    \"rating\": 4.4,\n    \"stock\": 8,\n    \"matchConfidence\": 0.95,\n    \"isSuspended\": false,\n    \"lastUpdated\": \"2026-05-29T21:08:10.908Z\"\n  }\n]"
+        },
+        {
+          "label": "buyBoxResponse",
+          "type": "json",
+          "value": "{\n  \"productId\": \"prd_phase2_phase25472584d\",\n  \"primarySellerId\": \"usr_01KSTS1SBYZSZ13C9GX09P463Y\",\n  \"primaryScore\": 98.8,\n  \"alternatives\": [\n    {\n      \"sellerId\": \"usr_alt_be1677c0\",\n      \"score\": 92.4,\n      \"rank\": 2\n    }\n  ],\n  \"lastComputedAt\": \"2026-05-29T21:08:10.935Z\",\n  \"anomalyFlags\": []\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T21:08:10.750Z",
+      "finishedAt": "2026-05-29T21:08:10.973Z",
+      "durationMs": 223.29
+    },
+    {
+      "gateId": "F2.6",
+      "title": "Buy-Box Fraud Detection",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "Fraud detection produced anomaly flags for suspicious listing data",
+      "evidence": [
+        {
+          "label": "productId",
+          "type": "text",
+          "value": "prd_phase2_phase296c52a52"
+        },
+        {
+          "label": "suspiciousListings",
+          "type": "json",
+          "value": "[\n  {\n    \"sellerId\": \"usr_01KSTS1SJYZZEMG64A34CQ3VJV\",\n    \"price\": 1000,\n    \"rating\": 4.9,\n    \"stock\": 10,\n    \"matchConfidence\": 0.95,\n    \"isSuspended\": false,\n    \"lastUpdated\": \"2026-05-29T21:08:11.125Z\"\n  },\n  {\n    \"sellerId\": \"usr_suspicious_07dbba39\",\n    \"price\": 999,\n    \"rating\": 4.9,\n    \"stock\": 1000000,\n    \"matchConfidence\": 0.95,\n    \"isSuspended\": false,\n    \"lastUpdated\": \"2026-05-29T21:08:11.125Z\"\n  }\n]"
+        },
+        {
+          "label": "buyBoxResponse",
+          "type": "json",
+          "value": "{\n  \"productId\": \"prd_phase2_phase296c52a52\",\n  \"primarySellerId\": \"usr_suspicious_07dbba39\",\n  \"primaryScore\": 99.4,\n  \"alternatives\": [\n    {\n      \"sellerId\": \"usr_01KSTS1SJYZZEMG64A34CQ3VJV\",\n      \"score\": 99.4,\n      \"rank\": 2\n    }\n  ],\n  \"lastComputedAt\": \"2026-05-29T21:08:11.135Z\",\n  \"anomalyFlags\": [\n    {\n      \"signalName\": \"stockReliability\",\n      \"detectedValue\": 1000000,\n      \"expectedMin\": 10,\n      \"expectedMax\": 1000,\n      \"substitutedValue\": 10\n    }\n  ]\n}"
+        },
+        {
+          "label": "buyBoxHistory",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"data\": []\n}"
+        },
+        {
+          "label": "anomalyFlags",
+          "type": "json",
+          "value": "[\n  {\n    \"signalName\": \"stockReliability\",\n    \"detectedValue\": 1000000,\n    \"expectedMin\": 10,\n    \"expectedMax\": 1000,\n    \"substitutedValue\": 10\n  }\n]"
+        }
+      ],
+      "startedAt": "2026-05-29T21:08:10.974Z",
+      "finishedAt": "2026-05-29T21:08:11.185Z",
+      "durationMs": 211.57
+    },
+    {
+      "gateId": "F2.7",
+      "title": "COD Tier Limits",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "COD limit correctly rejected an over-limit order",
+      "evidence": [
+        {
+          "label": "validationResponse",
+          "type": "json",
+          "value": "{\n  \"eligible\": false,\n  \"reason\": \"COD order value TZS 40,000 exceeds your current limit of TZS 30,000. Complete more orders to increase your COD limit.\"\n}"
+        },
+        {
+          "label": "status",
+          "type": "text",
+          "value": "200"
+        }
+      ],
+      "startedAt": "2026-05-29T21:08:11.186Z",
+      "finishedAt": "2026-05-29T21:08:11.390Z",
+      "durationMs": 204.38
+    },
+    {
+      "gateId": "F2.8",
+      "title": "Temporary Restriction",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "Temporary COD restriction blocked the order",
+      "evidence": [
+        {
+          "label": "buyerId",
+          "type": "text",
+          "value": "usr_01KSTS1SZZ13G1690567MFN12W"
+        },
+        {
+          "label": "restrictionEndsAt",
+          "type": "text",
+          "value": "2026-05-29T21:23:11.528Z"
+        },
+        {
+          "label": "validationResponse",
+          "type": "json",
+          "value": "{\n  \"eligible\": false,\n  \"reason\": \"COD access is temporarily restricted until 2026-05-29T21:23:11.528Z: Governance temporary restriction fixture\"\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T21:08:11.391Z",
+      "finishedAt": "2026-05-29T21:08:11.559Z",
+      "durationMs": 168.01
+    },
+    {
+      "gateId": "D2.1",
+      "title": "Score Event Sourcing",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T21:08:11.559Z",
+      "finishedAt": "2026-05-29T21:08:11.559Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "D2.2",
+      "title": "Buy-Box Snapshot Integrity",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T21:08:11.559Z",
+      "finishedAt": "2026-05-29T21:08:11.559Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "D2.3",
+      "title": "Rolling Average Accuracy",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T21:08:11.559Z",
+      "finishedAt": "2026-05-29T21:08:11.559Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "D2.4",
+      "title": "Phase 1 Data Integrity Maintained",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T21:08:11.559Z",
+      "finishedAt": "2026-05-29T21:08:11.559Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "FIN2.1",
+      "title": "COD Commitment Fee Unchanged",
+      "category": "Financial",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T21:08:11.559Z",
+      "finishedAt": "2026-05-29T21:08:11.559Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "FIN2.2",
+      "title": "Phase 1 Financial Gates Maintained",
+      "category": "Financial",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T21:08:11.559Z",
+      "finishedAt": "2026-05-29T21:08:11.559Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "OPS2.1",
+      "title": "Buy-Box Job Monitoring",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T21:08:11.559Z",
+      "finishedAt": "2026-05-29T21:08:11.559Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "OPS2.2",
+      "title": "Rolling Average Job Monitoring",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T21:08:11.559Z",
+      "finishedAt": "2026-05-29T21:08:11.559Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "OPS2.3",
+      "title": "Score Update Latency",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T21:08:11.559Z",
+      "finishedAt": "2026-05-29T21:08:11.559Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "OPS2.4",
+      "title": "Phase 1 Operational Gates Maintained",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T21:08:11.559Z",
+      "finishedAt": "2026-05-29T21:08:11.559Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R2.1",
+      "title": "Phase 1 Regression Gates",
+      "category": "Regression",
+      "severity": "P1",
+      "blocking": false,
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T21:08:11.559Z",
+      "finishedAt": "2026-05-29T21:08:11.559Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R2.2",
+      "title": "COD Engine Interface Compatibility",
+      "category": "Regression",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T21:08:11.559Z",
+      "finishedAt": "2026-05-29T21:08:11.559Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R2.3",
+      "title": "Buy-Box Property Tests",
+      "category": "Regression",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T21:08:11.559Z",
+      "finishedAt": "2026-05-29T21:08:11.559Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R2.4",
+      "title": "COD Trust Property Tests",
+      "category": "Regression",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T21:08:11.559Z",
+      "finishedAt": "2026-05-29T21:08:11.559Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R2.5",
+      "title": "No Open P0/P1 Bugs",
+      "category": "Regression",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T21:08:11.559Z",
+      "finishedAt": "2026-05-29T21:08:11.559Z",
+      "durationMs": 0
+    }
+  ],
+  "phaseCertifications": [
+    {
+      "phase": "Phase 1",
+      "title": "Foundation Launch",
+      "implementationStatus": "READY_TO_LAUNCH",
+      "status": "CERTIFIED",
+      "certifiedAt": null,
+      "reason": "Phase 1 is an upstream prerequisite and is treated as certified in the current phase chain.",
+      "prerequisites": []
+    },
+    {
+      "phase": "Phase 2",
+      "title": "Trust & Intelligence Layer",
+      "implementationStatus": "IN_DEVELOPMENT",
+      "status": "CERTIFIED",
+      "certifiedAt": "2026-05-29T21:08:11.559Z",
+      "reason": "Phase 2 audit passed and the phase is certified.",
+      "prerequisites": [
+        "Phase 1 certified"
+      ]
+    },
+    {
+      "phase": "Phase 3",
+      "title": "Commerce Communication",
+      "implementationStatus": "DESIGNED",
+      "status": "PENDING",
+      "certifiedAt": null,
+      "reason": "Pending certification until Phase 2 certified is complete.",
+      "prerequisites": [
+        "Phase 2 certified"
+      ]
+    },
+    {
+      "phase": "Phase 4",
+      "title": "Ecosystem Expansion",
+      "implementationStatus": "PLANNED",
+      "status": "PENDING",
+      "certifiedAt": null,
+      "reason": "Pending certification until Phase 3 certified is complete.",
+      "prerequisites": [
+        "Phase 3 certified"
+      ]
+    },
+    {
+      "phase": "Phase 5",
+      "title": "Platform Maturity",
+      "implementationStatus": "PLANNED",
+      "status": "PENDING",
+      "certifiedAt": null,
+      "reason": "Pending certification until Phase 4 certified is complete.",
+      "prerequisites": [
+        "Phase 4 certified"
+      ]
+    }
+  ],
+  "summary": {
+    "totalGates": 23,
+    "passed": 8,
+    "failed": 0,
+    "manual": 0,
+    "skipped": 15,
+    "p0": 6,
+    "p1": 17,
+    "p2": 0,
+    "p3": 0
+  }
+}

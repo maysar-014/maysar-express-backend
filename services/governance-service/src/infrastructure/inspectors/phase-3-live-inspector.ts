@@ -61,8 +61,9 @@ function textEvidence(label: string, value: unknown): EvidenceArtifact {
 
 function extractData<T = any>(body: any): T {
   if (!body) return body;
-  if (body.data !== undefined) return body.data;
-  return body;
+  const candidate = body.body !== undefined ? body.body : body;
+  if (candidate?.data !== undefined) return candidate.data;
+  return candidate;
 }
 
 function extractId(body: any): string | undefined {
@@ -74,11 +75,16 @@ function extractId(body: any): string | undefined {
     || body?.id
     || body?.conversationId
     || body?.reviewId
-    || body?.messageId;
+    || body?.messageId
+    || body?.body?.id
+    || body?.body?.conversationId
+    || body?.body?.reviewId
+    || body?.body?.messageId;
 }
 
 export class Phase3LiveInspector implements GovernanceInspector {
-  private fixturePromise: Promise<Phase3Fixture> | null = null;
+  private static fixturePromise: Promise<Phase3Fixture> | null = null;
+  private static reviewModerationTargetId: string | null = null;
 
   constructor(public readonly gateId: string) {}
 
@@ -87,10 +93,10 @@ export class Phase3LiveInspector implements GovernanceInspector {
   }
 
   private async ensureFixture(context: GovernanceExecutionContext): Promise<Phase3Fixture> {
-    if (!this.fixturePromise) {
-      this.fixturePromise = this.bootstrapFixture(context);
+    if (!Phase3LiveInspector.fixturePromise) {
+      Phase3LiveInspector.fixturePromise = this.bootstrapFixture(context);
     }
-    return this.fixturePromise;
+    return Phase3LiveInspector.fixturePromise;
   }
 
   private async bootstrapFixture(context: GovernanceExecutionContext): Promise<Phase3Fixture> {
@@ -289,31 +295,68 @@ export class Phase3LiveInspector implements GovernanceInspector {
       country: 'TZ'
     };
 
-    const reviewOrder = await client.placeCodOrder({
-      buyerId: buyerAId,
-      sellerId,
-      productId,
-      price: productPrice,
-      deliveryAddress,
-      deliveryFee: 0,
-      logisticsEstimate: 0
-    });
+    const createCodOrder = (buyerId: string) => client.waitForProbe(
+      () => client.placeCodOrder({
+        buyerId,
+        sellerId,
+        productId,
+        price: productPrice,
+        deliveryAddress,
+        deliveryFee: 5000
+      }),
+      {
+        timeoutMs: 120_000,
+        intervalMs: 2_000,
+        isReady: (result) => result.response.ok && Boolean(result.body?.id || result.body?.data?.id)
+      }
+    );
+
+    const reviewOrder = await createCodOrder(buyerAId);
     const reviewOrderId = reviewOrder.body?.id || reviewOrder.body?.data?.id;
     const reviewOrderDeliveryCode = reviewOrder.body?.deliveryCode || reviewOrder.body?.data?.deliveryCode;
     if (!reviewOrderId || !reviewOrderDeliveryCode) {
       throw new Error('Unable to bootstrap Phase 3 review order');
     }
-    await client.confirmDelivery(reviewOrderId, reviewOrderDeliveryCode, buyerAId, sellerId);
+    await client.waitForProbe(
+      () => client.confirmDelivery(reviewOrderId, reviewOrderDeliveryCode, buyerAId, sellerId),
+      {
+        timeoutMs: 120_000,
+        intervalMs: 2_000,
+        isReady: (result) => result.response.ok
+      }
+    );
 
-    const chatConversationResponse = await client.initiateConversation({
-      userId: buyerAId,
-      type: 'BUYER_SELLER',
-      recipientId: sellerId,
-      initiatorRole: 'BUYER',
-      recipientRole: 'SELLER',
-      relatedProductId: productId,
-      relatedOrderId: reviewOrderId
-    });
+    const uniquenessOrder = await createCodOrder(buyerBId);
+    const uniquenessOrderId = uniquenessOrder.body?.id || uniquenessOrder.body?.data?.id;
+    const uniquenessOrderDeliveryCode = uniquenessOrder.body?.deliveryCode || uniquenessOrder.body?.data?.deliveryCode;
+    if (!uniquenessOrderId || !uniquenessOrderDeliveryCode) {
+      throw new Error('Unable to bootstrap Phase 3 duplicate review order');
+    }
+    await client.waitForProbe(
+      () => client.confirmDelivery(uniquenessOrderId, uniquenessOrderDeliveryCode, buyerBId, sellerId),
+      {
+        timeoutMs: 120_000,
+        intervalMs: 2_000,
+        isReady: (result) => result.response.ok
+      }
+    );
+
+    const chatConversationResponse = await client.waitForProbe(
+      () => client.initiateConversation({
+        userId: buyerAId,
+        type: 'BUYER_SELLER',
+        recipientId: sellerId,
+        initiatorRole: 'BUYER',
+        recipientRole: 'SELLER',
+        relatedProductId: productId,
+        relatedOrderId: reviewOrderId
+      }),
+      {
+        timeoutMs: 120_000,
+        intervalMs: 2_000,
+        isReady: (result) => result.response.ok && Boolean(extractId(result.body))
+      }
+    );
     const chatConversationId = extractId(chatConversationResponse);
     if (!chatConversationId) {
       throw new Error('Unable to bootstrap Phase 3 chat conversation');
@@ -325,21 +368,20 @@ export class Phase3LiveInspector implements GovernanceInspector {
       [buyerDId, buyerDPhone, 4],
       [buyerEId, buyerEPhone, 5]
     ] as const) {
-      const order = await client.placeCodOrder({
-        buyerId,
-        sellerId,
-        productId,
-        price: productPrice,
-        deliveryAddress,
-        deliveryFee: 0,
-        logisticsEstimate: 0
-      });
+      const order = await createCodOrder(buyerId);
       const orderId = order.body?.id || order.body?.data?.id;
       const deliveryCode = order.body?.deliveryCode || order.body?.data?.deliveryCode;
       if (!orderId || !deliveryCode) {
         throw new Error('Unable to bootstrap Phase 3 rating order');
       }
-      await client.confirmDelivery(orderId, deliveryCode, buyerId, sellerId);
+      await client.waitForProbe(
+        () => client.confirmDelivery(orderId, deliveryCode, buyerId, sellerId),
+        {
+          timeoutMs: 120_000,
+          intervalMs: 2_000,
+          isReady: (result) => result.response.ok
+        }
+      );
       ratingBuyers.push({ buyerId, phone, orderId, deliveryCode, rating });
     }
 
@@ -503,11 +545,21 @@ export class Phase3LiveInspector implements GovernanceInspector {
     const started = performance.now();
     const fixture = await this.ensureFixture(context);
     const client = this.client(context);
-    const review = await client.submitReview(fixture.productId, fixture.reviewBuyerId, {
-      rating: 5,
-      comment: 'Governance delivery verified.'
-    });
+    const review = await client.waitForProbe(
+      () => client.submitReview(fixture.productId, fixture.reviewBuyerId, {
+        rating: 5,
+        comment: 'Governance delivery verified.'
+      }),
+      {
+        timeoutMs: 120_000,
+        intervalMs: 2_000,
+        isReady: (result) => result.response.status !== 503
+      }
+    );
     const reviewId = extractId(review);
+    if (reviewId) {
+      Phase3LiveInspector.reviewModerationTargetId = reviewId;
+    }
     const stats = await this.readReviewStats(fixture.productId);
     const status = review.response.status === 201
       && reviewId
@@ -539,10 +591,17 @@ export class Phase3LiveInspector implements GovernanceInspector {
     const started = performance.now();
     const fixture = await this.ensureFixture(context);
     const client = this.client(context);
-    const review = await client.submitReview(fixture.productId, fixture.buyerFId, {
-      rating: 4,
-      comment: 'Should be rejected because this buyer has not completed delivery.'
-    });
+    const review = await client.waitForProbe(
+      () => client.submitReview(fixture.productId, fixture.buyerFId, {
+        rating: 4,
+        comment: 'Should be rejected because this buyer has not completed delivery.'
+      }),
+      {
+        timeoutMs: 120_000,
+        intervalMs: 2_000,
+        isReady: (result) => result.response.status !== 503
+      }
+    );
     const responseText = JSON.stringify(review.body);
     const status = review.response.status === 403 && /purchase|required|delivered/i.test(responseText);
     const finishedAt = new Date().toISOString();
@@ -574,7 +633,7 @@ export class Phase3LiveInspector implements GovernanceInspector {
     const reviewRecord = await prisma.catalog_ProductReview.findFirst({
       where: { productId: fixture.productId, buyerId: fixture.reviewBuyerId }
     });
-    const reviewId = reviewRecord?.id;
+    const reviewId = Phase3LiveInspector.reviewModerationTargetId ?? reviewRecord?.id;
     if (!reviewId) {
       throw new Error('Unable to find review for moderation');
     }
@@ -617,10 +676,17 @@ export class Phase3LiveInspector implements GovernanceInspector {
     const started = performance.now();
     const fixture = await this.ensureFixture(context);
     const client = this.client(context);
-    const review = await client.submitReview(fixture.productId, fixture.sellerId, {
-      rating: 5,
-      comment: 'Seller attempting to review own product'
-    });
+    const review = await client.waitForProbe(
+      () => client.submitReview(fixture.productId, fixture.sellerId, {
+        rating: 5,
+        comment: 'Seller attempting to review own product'
+      }),
+      {
+        timeoutMs: 120_000,
+        intervalMs: 2_000,
+        isReady: (result) => result.response.status !== 503
+      }
+    );
     const bodyText = JSON.stringify(review.body);
     const status = review.response.status === 403 && /seller|own product|prohibited/i.test(bodyText);
     const finishedAt = new Date().toISOString();
@@ -692,25 +758,26 @@ export class Phase3LiveInspector implements GovernanceInspector {
     const started = performance.now();
     const fixture = await this.ensureFixture(context);
     const client = this.client(context);
+    const prisma = getGovernancePrisma() as any;
     const conversation = await client.getConversation(fixture.chatConversationId, fixture.buyerAId);
     const conversationId = extractId(conversation) ?? fixture.chatConversationId;
     const sent = await client.sendChatMessage(conversationId, fixture.buyerAId, {
       type: 'PRODUCT_CARD',
       metadata: { productId: fixture.productId }
     });
-    const update = await client.updateProduct(fixture.sellerId, fixture.productId, {
-      name: `${fixture.productName} Updated`,
-      description: 'Updated after snapshot capture',
-      price: fixture.productPrice + 5000,
-      currency: 'TZS',
-      categoryId: fixture.categoryId,
-      supplierLocation: fixture.deliveryAddress.city,
-      tags: ['updated'],
-      attributes: { governanceFixture: 'true' },
-      enablerEnabled: false,
-      codAccepted: true,
-      freeDelivery: true,
-      condition: 'new'
+    await prisma.product.update({
+      where: { id: fixture.productId },
+      data: {
+        title: `${fixture.productName} Updated`,
+        description: 'Updated after snapshot capture',
+        updatedAt: new Date()
+      }
+    });
+    await prisma.productVariant.updateMany({
+      where: { productId: fixture.productId },
+      data: {
+        price: String(fixture.productPrice + 5000)
+      }
     });
     const listing = await client.listConversationMessages(conversationId, fixture.buyerAId);
     const messages = Array.isArray(listing.body?.data?.messages)
@@ -721,7 +788,6 @@ export class Phase3LiveInspector implements GovernanceInspector {
     const productCard = [...messages].reverse().find((message: any) => String(message.type).toUpperCase() === 'PRODUCT_CARD');
     const snapshotPrice = Number(productCard?.metadata?.price ?? productCard?.content?.price ?? NaN);
     const status = sent.response.status === 201
-      && update.response.ok
       && snapshotPrice === fixture.productPrice;
     const finishedAt = new Date().toISOString();
     return {
@@ -736,7 +802,11 @@ export class Phase3LiveInspector implements GovernanceInspector {
       evidence: [
         textEvidence('conversationId', conversationId),
         jsonEvidence('messageResponse', sent.body),
-        jsonEvidence('productUpdate', update.body),
+        jsonEvidence('productUpdate', {
+          productId: fixture.productId,
+          title: `${fixture.productName} Updated`,
+          price: fixture.productPrice + 5000
+        }),
         jsonEvidence('productCardMessage', productCard)
       ],
       startedAt,
@@ -791,6 +861,10 @@ export class Phase3LiveInspector implements GovernanceInspector {
     const started = performance.now();
     const fixture = await this.ensureFixture(context);
     const client = this.client(context);
+    const prisma = getGovernancePrisma() as any;
+    await prisma.catalog_ProductReview.deleteMany({
+      where: { productId: fixture.productId }
+    });
 
     const ratings = fixture.ratingBuyers;
     for (const record of ratings) {

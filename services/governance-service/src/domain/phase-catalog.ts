@@ -23,7 +23,7 @@ export const PHASE_CATALOG: PhaseCatalogEntry[] = [
   {
     phase: 'Phase 2',
     title: 'Trust & Intelligence Layer',
-    implementationStatus: 'IN_DEVELOPMENT',
+    implementationStatus: 'READY_TO_LAUNCH',
     constitutionPath: 'services/governance-service/constitutions/phase-2.json',
     plannedGateCount: 23,
     prerequisites: ['Phase 1 certified'],

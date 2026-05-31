@@ -340,9 +340,11 @@ export class LiveGovernanceClient {
     formData.set('mediaType', 'voice_note');
     formData.set('durationSeconds', String(durationSeconds));
     formData.set('file', blob, 'voice-note.mp3');
+    const headers = createContractHeaders({ userId, roles: ['buyer'] });
+    delete headers['Content-Type'];
     return this.request('chat', '/v1/media/upload', {
       method: 'POST',
-      headers: createContractHeaders({ userId, roles: ['buyer'] }),
+      headers,
       body: formData as any
     });
   }
@@ -363,27 +365,27 @@ export class LiveGovernanceClient {
   }
 
   async registerEnabler(userId: string, body: Record<string, unknown>) {
-    return this.json('enabler', '/v1/register', 'POST', {
+    return this.json('enabler', '/enablers/register', 'POST', {
       userId,
       ...body
     }, createContractHeaders({ userId, roles: ['enabler'] }));
   }
 
   async approveEnabler(enablerId: string, adminUserId: string, completenessEvents: string[] = ['identity-verified', 'business-verified']) {
-    return this.json('enabler', `/v1/${encodeURIComponent(enablerId)}/approve`, 'POST', {
+    return this.json('enabler', `/enablers/${encodeURIComponent(enablerId)}/approve`, 'POST', {
       adminId: adminUserId,
       completenessEvents
     }, createContractHeaders({ userId: adminUserId, roles: ['admin'] }));
   }
 
   async listEnablerProducts(enablerId: string, userId: string) {
-    return this.request('enabler', `/v1/${encodeURIComponent(enablerId)}/listings`, {
+    return this.request('enabler', `/enablers/${encodeURIComponent(enablerId)}/listings`, {
       method: 'GET',
       headers: createContractHeaders({ userId, roles: ['enabler'] })
     });
   }
 
   async createEnablerListing(enablerId: string, userId: string, body: Record<string, unknown>) {
-    return this.json('enabler', `/v1/${encodeURIComponent(enablerId)}/listings`, 'POST', body, createContractHeaders({ userId, roles: ['enabler'] }));
+    return this.json('enabler', `/enablers/${encodeURIComponent(enablerId)}/listings`, 'POST', body, createContractHeaders({ userId, roles: ['enabler'] }));
   }
 }

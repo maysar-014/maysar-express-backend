@@ -1,0 +1,579 @@
+{
+  "runId": "4ba03855-e485-4d2c-85d0-4a4ea94d8371",
+  "constitutionName": "Maysar Express Commerce Communication Constitution",
+  "constitutionVersion": "2026-05-29",
+  "targetPhase": "Phase 3",
+  "startedAt": "2026-05-29T22:47:28.446Z",
+  "finishedAt": "2026-05-29T22:47:42.536Z",
+  "durationMs": 14090,
+  "targetBaseUrl": "http://localhost:3000",
+  "verdict": "DENIED",
+  "gateResults": [
+    {
+      "gateId": "F3.1",
+      "title": "Buyer-Seller Chat",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "Buyer-seller chat created and messages exchanged successfully",
+      "evidence": [
+        {
+          "label": "conversationId",
+          "type": "text",
+          "value": "cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1"
+        },
+        {
+          "label": "conversation",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"type\": \"BUYER_SELLER\",\n    \"moderationStatus\": \"ACTIVE\",\n    \"relatedProductId\": \"prd_phase3_phase33a603154\",\n    \"relatedOrderId\": \"MSR-ORD-20260530-014740-DBF8\",\n    \"relatedShipmentId\": null,\n    \"relatedSupplierRequestId\": null,\n    \"metadata\": {},\n    \"lastMessageAt\": \"2026-05-29T22:47:40.335Z\",\n    \"createdAt\": \"2026-05-29T22:47:40.321Z\"\n  }\n}"
+        },
+        {
+          "label": "firstMessage",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"cha_mes_01KSTYQZGY7627K154AEA5A2SD\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"PRODUCT_CARD\",\n    \"content\": null,\n    \"metadata\": {\n      \"price\": 25000,\n      \"title\": \"Phase 3 Product phase3-3a603154\",\n      \"imageUrl\": null,\n      \"productId\": \"prd_phase3_phase33a603154\",\n      \"stockStatus\": \"published\",\n      \"addToCartUrl\": \"/cart/add?productId=prd_phase3_phase33a603154\",\n      \"productPageUrl\": \"/products/phase-3-product-phase3-3a603154\"\n    },\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:40.832Z\"\n  }\n}"
+        },
+        {
+          "label": "replyMessage",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"cha_mes_01KSTYQZKSR062F0AE8N9KE5AK\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE6FJN5MQYKEM40W9SB\",\n    \"type\": \"TEXT\",\n    \"content\": \"Confirmed, we can proceed.\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:40.923Z\"\n  }\n}"
+        },
+        {
+          "label": "messages",
+          "type": "json",
+          "value": "[\n  {\n    \"id\": \"cha_mes_01KSTYQZ198H8BVV0PDRK8QYPQ\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"PRODUCT_CARD\",\n    \"content\": null,\n    \"metadata\": {\n      \"productId\": \"prd_phase3_phase33a603154\"\n    },\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": null,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:40.331Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYQZ1D5THYK3CKEGX5H6B3\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"Hi, is this item still available?\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": null,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:40.335Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYQZGY7627K154AEA5A2SD\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"PRODUCT_CARD\",\n    \"content\": null,\n    \"metadata\": {\n      \"price\": 25000,\n      \"title\": \"Phase 3 Product phase3-3a603154\",\n      \"imageUrl\": null,\n      \"productId\": \"prd_phase3_phase33a603154\",\n      \"stockStatus\": \"published\",\n      \"addToCartUrl\": \"/cart/add?productId=prd_phase3_phase33a603154\",\n      \"productPageUrl\": \"/products/phase-3-product-phase3-3a603154\"\n    },\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:40.832Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYQZKSR062F0AE8N9KE5AK\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE6FJN5MQYKEM40W9SB\",\n    \"type\": \"TEXT\",\n    \"content\": \"Confirmed, we can proceed.\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:40.923Z\"\n  }\n]"
+        }
+      ],
+      "startedAt": "2026-05-29T22:47:28.448Z",
+      "finishedAt": "2026-05-29T22:47:40.999Z",
+      "durationMs": 12551.23
+    },
+    {
+      "gateId": "F3.2",
+      "title": "Voice Note Delivery",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "Voice note uploaded and delivered through chat",
+      "evidence": [
+        {
+          "label": "conversationId",
+          "type": "text",
+          "value": "cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1"
+        },
+        {
+          "label": "uploadResponse",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"data\": {\n    \"mediaUrl\": \"http://localhost:9000/chat-media/chat/media/usr_01KSTYQKE66GDVAATAK0KNZP9K/e59e2e8d-7df7-468f-99a3-b65baea4d3b3.m4a\",\n    \"durationSeconds\": 7\n  }\n}"
+        },
+        {
+          "label": "messageResponse",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"cha_mes_01KSTYQZW1P3Y8MJMJQWDAEMAE\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"VOICE_NOTE\",\n    \"content\": null,\n    \"metadata\": {\n      \"mediaUrl\": \"http://localhost:9000/chat-media/chat/media/usr_01KSTYQKE66GDVAATAK0KNZP9K/e59e2e8d-7df7-468f-99a3-b65baea4d3b3.m4a\",\n      \"durationSeconds\": 7\n    },\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:41.187Z\"\n  }\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T22:47:41.000Z",
+      "finishedAt": "2026-05-29T22:47:41.199Z",
+      "durationMs": 199.56
+    },
+    {
+      "gateId": "F3.3",
+      "title": "Buyer-Courier Chat Lifecycle",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:41.199Z",
+      "finishedAt": "2026-05-29T22:47:41.199Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "F3.4",
+      "title": "Spam Blocking",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:41.199Z",
+      "finishedAt": "2026-05-29T22:47:41.199Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "F3.5",
+      "title": "Rate Limiting",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:41.199Z",
+      "finishedAt": "2026-05-29T22:47:41.199Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "F3.6",
+      "title": "Phone Masking",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:41.199Z",
+      "finishedAt": "2026-05-29T22:47:41.199Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "F3.7",
+      "title": "Review Submission",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "Delivered buyer review persisted and aggregates updated",
+      "evidence": [
+        {
+          "label": "reviewId",
+          "type": "text",
+          "value": "cat_prorev_01KSTYQZXZ9JBXYKYAQPAZDWKB"
+        },
+        {
+          "label": "reviewResponse",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"cat_prorev_01KSTYQZXZ9JBXYKYAQPAZDWKB\",\n    \"productId\": \"prd_phase3_phase33a603154\",\n    \"rating\": 5,\n    \"comment\": \"Governance delivery verified.\",\n    \"moderationStatus\": \"VISIBLE\",\n    \"submittedAt\": \"2026-05-29T22:47:41.249Z\"\n  },\n  \"meta\": {\n    \"timestamp\": \"2026-05-29T22:47:41.250Z\"\n  }\n}"
+        },
+        {
+          "label": "reviewStats",
+          "type": "json",
+          "value": "{\n  \"reviewCount\": 1,\n  \"averageRating\": 5,\n  \"distribution\": {\n    \"5\": 1\n  }\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T22:47:41.199Z",
+      "finishedAt": "2026-05-29T22:47:41.262Z",
+      "durationMs": 62.55
+    },
+    {
+      "gateId": "F3.8",
+      "title": "Review Purchase Verification",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "Purchase verification correctly rejected an unqualified review",
+      "evidence": [
+        {
+          "label": "reviewResponse",
+          "type": "json",
+          "value": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"REVIEW_PURCHASE_REQUIRED\",\n    \"message\": \"You must have a delivered order for this product to submit a review.\"\n  },\n  \"meta\": {\n    \"timestamp\": \"2026-05-29T22:47:41.286Z\"\n  }\n}"
+        },
+        {
+          "label": "status",
+          "type": "text",
+          "value": "403"
+        }
+      ],
+      "startedAt": "2026-05-29T22:47:41.262Z",
+      "finishedAt": "2026-05-29T22:47:41.289Z",
+      "durationMs": 26.77
+    },
+    {
+      "gateId": "F3.9",
+      "title": "Review Moderation",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "Moderated review disappeared from the public listing immediately",
+      "evidence": [
+        {
+          "label": "reviewId",
+          "type": "text",
+          "value": "cat_prorev_01KSTYQZXZ9JBXYKYAQPAZDWKB"
+        },
+        {
+          "label": "moderationResponse",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"cat_prorev_01KSTYQZXZ9JBXYKYAQPAZDWKB\",\n    \"productId\": \"prd_phase3_phase33a603154\",\n    \"moderationStatus\": \"HIDDEN\",\n    \"updatedAt\": \"2026-05-29T22:47:41.341Z\"\n  },\n  \"meta\": {\n    \"timestamp\": \"2026-05-29T22:47:41.349Z\"\n  }\n}"
+        },
+        {
+          "label": "publicReviews",
+          "type": "json",
+          "value": "[]"
+        },
+        {
+          "label": "reviewStats",
+          "type": "json",
+          "value": "{\n  \"reviewCount\": 0,\n  \"averageRating\": null,\n  \"distribution\": {}\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T22:47:41.289Z",
+      "finishedAt": "2026-05-29T22:47:41.365Z",
+      "durationMs": 76.11
+    },
+    {
+      "gateId": "F3.10",
+      "title": "Seller Self-Review Prevention",
+      "category": "Functional",
+      "severity": "P1",
+      "status": "PASS",
+      "summary": "Seller self-review was blocked",
+      "evidence": [
+        {
+          "label": "reviewResponse",
+          "type": "json",
+          "value": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"REVIEW_SELLER_PROHIBITED\",\n    \"message\": \"Sellers cannot review their own products.\"\n  },\n  \"meta\": {\n    \"timestamp\": \"2026-05-29T22:47:41.400Z\"\n  }\n}"
+        },
+        {
+          "label": "status",
+          "type": "text",
+          "value": "403"
+        }
+      ],
+      "startedAt": "2026-05-29T22:47:41.365Z",
+      "finishedAt": "2026-05-29T22:47:41.403Z",
+      "durationMs": 37.32
+    },
+    {
+      "gateId": "D3.1",
+      "title": "Message Ordering",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "PASS",
+      "summary": "Conversation history returned in ascending createdAt order",
+      "evidence": [
+        {
+          "label": "conversationId",
+          "type": "text",
+          "value": "cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1"
+        },
+        {
+          "label": "createdAtValues",
+          "type": "json",
+          "value": "[\n  \"2026-05-29T22:47:40.331Z\",\n  \"2026-05-29T22:47:40.335Z\",\n  \"2026-05-29T22:47:40.832Z\",\n  \"2026-05-29T22:47:40.923Z\",\n  \"2026-05-29T22:47:41.187Z\",\n  \"2026-05-29T22:47:41.434Z\",\n  \"2026-05-29T22:47:41.470Z\",\n  \"2026-05-29T22:47:41.509Z\",\n  \"2026-05-29T22:47:41.550Z\",\n  \"2026-05-29T22:47:41.591Z\",\n  \"2026-05-29T22:47:41.636Z\",\n  \"2026-05-29T22:47:41.676Z\",\n  \"2026-05-29T22:47:41.712Z\",\n  \"2026-05-29T22:47:41.749Z\",\n  \"2026-05-29T22:47:41.789Z\",\n  \"2026-05-29T22:47:41.832Z\",\n  \"2026-05-29T22:47:41.879Z\",\n  \"2026-05-29T22:47:41.932Z\",\n  \"2026-05-29T22:47:41.978Z\",\n  \"2026-05-29T22:47:42.031Z\",\n  \"2026-05-29T22:47:42.075Z\",\n  \"2026-05-29T22:47:42.114Z\",\n  \"2026-05-29T22:47:42.161Z\",\n  \"2026-05-29T22:47:42.209Z\",\n  \"2026-05-29T22:47:42.256Z\"\n]"
+        },
+        {
+          "label": "messages",
+          "type": "json",
+          "value": "[\n  {\n    \"id\": \"cha_mes_01KSTYQZ198H8BVV0PDRK8QYPQ\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"PRODUCT_CARD\",\n    \"content\": null,\n    \"metadata\": {\n      \"productId\": \"prd_phase3_phase33a603154\"\n    },\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": null,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:40.331Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYQZ1D5THYK3CKEGX5H6B3\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"Hi, is this item still available?\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": null,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:40.335Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYQZGY7627K154AEA5A2SD\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"PRODUCT_CARD\",\n    \"content\": null,\n    \"metadata\": {\n      \"price\": 25000,\n      \"title\": \"Phase 3 Product phase3-3a603154\",\n      \"imageUrl\": null,\n      \"productId\": \"prd_phase3_phase33a603154\",\n      \"stockStatus\": \"published\",\n      \"addToCartUrl\": \"/cart/add?productId=prd_phase3_phase33a603154\",\n      \"productPageUrl\": \"/products/phase-3-product-phase3-3a603154\"\n    },\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:40.832Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYQZKSR062F0AE8N9KE5AK\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE6FJN5MQYKEM40W9SB\",\n    \"type\": \"TEXT\",\n    \"content\": \"Confirmed, we can proceed.\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:40.923Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYQZW1P3Y8MJMJQWDAEMAE\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"VOICE_NOTE\",\n    \"content\": null,\n    \"metadata\": {\n      \"mediaUrl\": \"http://localhost:9000/chat-media/chat/media/usr_01KSTYQKE66GDVAATAK0KNZP9K/e59e2e8d-7df7-468f-99a3-b65baea4d3b3.m4a\",\n      \"durationSeconds\": 7\n    },\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:41.187Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR03RKT081C3TPQ04B9NT\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-1\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:41.434Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR04WZQ0A51K3WVKFWPZR\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-2\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:41.470Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR063JAHTYWW1F69XJE82\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-3\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:41.509Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR07CH2TGH9AT1GT6GFJ3\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-4\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:41.550Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR08NH3T8XE5THT97NPG6\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-5\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:41.591Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR0A2YWDB83EKS81SVRJ2\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-6\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:41.636Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR0BAWY947CDBT4ZM3Q47\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-7\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:41.676Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR0CE0BR3ZN0BM3JTXDRJ\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-8\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:41.712Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR0DKHPS7NJ0X4NCK3GEX\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-9\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:41.749Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR0EVDJF05N2J5QAVCQ39\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-10\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:41.789Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR0G5SEYJXMQBH5QDQ7EZ\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-11\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:41.832Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR0HMR1Z9RCD5ZG88X6FA\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-12\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:41.879Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR0K9HPY54F2W8SXYGS6M\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-13\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:41.932Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR0MRPJKMR1P0ZK2TJFME\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-14\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:41.978Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR0PD3E3WYPJ6ESAWFA71\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-15\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:42.031Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR0QS6HVA1857024029PC\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-16\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:42.075Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR0S0SPDBJ92JNMNMG895\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-17\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:42.114Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR0TFJ5QWZ1CZ7W750QXQ\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-18\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:42.161Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR0VZ01ZWPQEJHP3YC324\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-19\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 0,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:42.209Z\"\n  },\n  {\n    \"id\": \"cha_mes_01KSTYR0XESY8G9Y24JD7E21E9\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"TEXT\",\n    \"content\": \"ordered-message-20\",\n    \"metadata\": {},\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 30,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:42.256Z\"\n  }\n]"
+        }
+      ],
+      "startedAt": "2026-05-29T22:47:41.403Z",
+      "finishedAt": "2026-05-29T22:47:42.295Z",
+      "durationMs": 891.91
+    },
+    {
+      "gateId": "D3.2",
+      "title": "Product Card Snapshot Immutability",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "PASS",
+      "summary": "Product card snapshot remained immutable after product update",
+      "evidence": [
+        {
+          "label": "conversationId",
+          "type": "text",
+          "value": "cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1"
+        },
+        {
+          "label": "messageResponse",
+          "type": "json",
+          "value": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"cha_mes_01KSTYR100DD6DB6RRRE7W5JDT\",\n    \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n    \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n    \"type\": \"PRODUCT_CARD\",\n    \"content\": null,\n    \"metadata\": {\n      \"price\": 25000,\n      \"title\": \"Phase 3 Product phase3-3a603154\",\n      \"imageUrl\": null,\n      \"productId\": \"prd_phase3_phase33a603154\",\n      \"stockStatus\": \"published\",\n      \"addToCartUrl\": \"/cart/add?productId=prd_phase3_phase33a603154\",\n      \"productPageUrl\": \"/products/phase-3-product-phase3-3a603154\"\n    },\n    \"moderationStatus\": \"ACTIVE\",\n    \"spamScore\": 30,\n    \"isDisputeEvidence\": false,\n    \"deletedAt\": null,\n    \"createdAt\": \"2026-05-29T22:47:42.338Z\"\n  }\n}"
+        },
+        {
+          "label": "productUpdate",
+          "type": "json",
+          "value": "{\n  \"productId\": \"prd_phase3_phase33a603154\",\n  \"title\": \"Phase 3 Product phase3-3a603154 Updated\",\n  \"price\": 30000\n}"
+        },
+        {
+          "label": "productCardMessage",
+          "type": "json",
+          "value": "{\n  \"id\": \"cha_mes_01KSTYR100DD6DB6RRRE7W5JDT\",\n  \"conversationId\": \"cha_con_01KSTYQZ0ZWG4W6J605R2HM2X1\",\n  \"senderId\": \"usr_01KSTYQKE66GDVAATAK0KNZP9K\",\n  \"type\": \"PRODUCT_CARD\",\n  \"content\": null,\n  \"metadata\": {\n    \"price\": 25000,\n    \"title\": \"Phase 3 Product phase3-3a603154\",\n    \"imageUrl\": null,\n    \"productId\": \"prd_phase3_phase33a603154\",\n    \"stockStatus\": \"published\",\n    \"addToCartUrl\": \"/cart/add?productId=prd_phase3_phase33a603154\",\n    \"productPageUrl\": \"/products/phase-3-product-phase3-3a603154\"\n  },\n  \"moderationStatus\": \"ACTIVE\",\n  \"spamScore\": 30,\n  \"isDisputeEvidence\": false,\n  \"deletedAt\": null,\n  \"createdAt\": \"2026-05-29T22:47:42.338Z\"\n}"
+        }
+      ],
+      "startedAt": "2026-05-29T22:47:42.295Z",
+      "finishedAt": "2026-05-29T22:47:42.376Z",
+      "durationMs": 81.18
+    },
+    {
+      "gateId": "D3.3",
+      "title": "Review Uniqueness",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "FAIL",
+      "summary": "Expected review uniqueness enforcement, received HTTP 403",
+      "evidence": [
+        {
+          "label": "firstReview",
+          "type": "json",
+          "value": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"REVIEW_PURCHASE_REQUIRED\",\n    \"message\": \"You must have a delivered order for this product to submit a review.\"\n  },\n  \"meta\": {\n    \"timestamp\": \"2026-05-29T22:47:42.409Z\"\n  }\n}"
+        },
+        {
+          "label": "secondReview",
+          "type": "json",
+          "value": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"REVIEW_PURCHASE_REQUIRED\",\n    \"message\": \"You must have a delivered order for this product to submit a review.\"\n  },\n  \"meta\": {\n    \"timestamp\": \"2026-05-29T22:47:42.433Z\"\n  }\n}"
+        },
+        {
+          "label": "databaseReviews",
+          "type": "json",
+          "value": "[]"
+        }
+      ],
+      "startedAt": "2026-05-29T22:47:42.377Z",
+      "finishedAt": "2026-05-29T22:47:42.439Z",
+      "durationMs": 62
+    },
+    {
+      "gateId": "D3.4",
+      "title": "Rating Distribution Integrity",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "PASS",
+      "summary": "Rating distribution and average matched the manual calculation",
+      "evidence": [
+        {
+          "label": "submittedRatings",
+          "type": "json",
+          "value": "[\n  {\n    \"buyerId\": \"usr_01KSTYQKE6ASJQ7ZGSDP62XEPG\",\n    \"phone\": \"+255765600378\",\n    \"orderId\": \"MSR-ORD-20260530-014740-D4CE\",\n    \"deliveryCode\": \"628866\",\n    \"rating\": 1\n  },\n  {\n    \"buyerId\": \"usr_01KSTYQKE600JXHAYEB0PKG1ZP\",\n    \"phone\": \"+255774859732\",\n    \"orderId\": \"MSR-ORD-20260530-014740-7091\",\n    \"deliveryCode\": \"777929\",\n    \"rating\": 4\n  },\n  {\n    \"buyerId\": \"usr_01KSTYQKE6BJDAYRB1S2PRR6Y6\",\n    \"phone\": \"+255777493565\",\n    \"orderId\": \"MSR-ORD-20260530-014740-D52A\",\n    \"deliveryCode\": \"327082\",\n    \"rating\": 5\n  }\n]"
+        },
+        {
+          "label": "reviewStats",
+          "type": "json",
+          "value": "{\n  \"reviewCount\": 3,\n  \"averageRating\": 3.3333333333333335,\n  \"distribution\": {\n    \"1\": 1,\n    \"4\": 1,\n    \"5\": 1\n  }\n}"
+        },
+        {
+          "label": "manualDistribution",
+          "type": "json",
+          "value": "{\n  \"1\": 1,\n  \"4\": 1,\n  \"5\": 1\n}"
+        },
+        {
+          "label": "manualAverage",
+          "type": "text",
+          "value": "3.33"
+        }
+      ],
+      "startedAt": "2026-05-29T22:47:42.439Z",
+      "finishedAt": "2026-05-29T22:47:42.536Z",
+      "durationMs": 97.06
+    },
+    {
+      "gateId": "D3.5",
+      "title": "Dispute Evidence Preservation",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:42.536Z",
+      "finishedAt": "2026-05-29T22:47:42.536Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "D3.6",
+      "title": "Phase 1 and 2 Data Integrity Maintained",
+      "category": "Data Integrity",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:42.536Z",
+      "finishedAt": "2026-05-29T22:47:42.536Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "FIN3.1",
+      "title": "Chat Checkout URL",
+      "category": "Financial",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:42.536Z",
+      "finishedAt": "2026-05-29T22:47:42.536Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "FIN3.2",
+      "title": "Prior Financial Gates Maintained",
+      "category": "Financial",
+      "severity": "P0",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:42.536Z",
+      "finishedAt": "2026-05-29T22:47:42.536Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "OPS3.1",
+      "title": "WebSocket Stability",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:42.536Z",
+      "finishedAt": "2026-05-29T22:47:42.536Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "OPS3.2",
+      "title": "Media Store Availability",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:42.536Z",
+      "finishedAt": "2026-05-29T22:47:42.536Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "OPS3.3",
+      "title": "Meilisearch Sync",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:42.536Z",
+      "finishedAt": "2026-05-29T22:47:42.536Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "OPS3.4",
+      "title": "Spam Score Audit Log",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:42.536Z",
+      "finishedAt": "2026-05-29T22:47:42.536Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "OPS3.5",
+      "title": "Prior Operational Gates Maintained",
+      "category": "Operational",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:42.536Z",
+      "finishedAt": "2026-05-29T22:47:42.536Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R3.1",
+      "title": "Prior Regression Gates",
+      "category": "Regression",
+      "severity": "P1",
+      "blocking": false,
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:42.536Z",
+      "finishedAt": "2026-05-29T22:47:42.536Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R3.2",
+      "title": "Chat Property Tests",
+      "category": "Regression",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:42.536Z",
+      "finishedAt": "2026-05-29T22:47:42.536Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R3.3",
+      "title": "Review Property Tests",
+      "category": "Regression",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:42.536Z",
+      "finishedAt": "2026-05-29T22:47:42.536Z",
+      "durationMs": 0
+    },
+    {
+      "gateId": "R3.4",
+      "title": "No Open P0/P1 Bugs",
+      "category": "Regression",
+      "severity": "P1",
+      "status": "SKIPPED",
+      "summary": "No inspector configured for this gate yet",
+      "evidence": [],
+      "startedAt": "2026-05-29T22:47:42.536Z",
+      "finishedAt": "2026-05-29T22:47:42.536Z",
+      "durationMs": 0
+    }
+  ],
+  "phaseCertifications": [
+    {
+      "phase": "Phase 1",
+      "title": "Foundation Launch",
+      "implementationStatus": "READY_TO_LAUNCH",
+      "status": "CERTIFIED",
+      "certifiedAt": null,
+      "reason": "Phase 1 is an upstream prerequisite and is treated as certified in the current phase chain.",
+      "prerequisites": []
+    },
+    {
+      "phase": "Phase 2",
+      "title": "Trust & Intelligence Layer",
+      "implementationStatus": "IN_DEVELOPMENT",
+      "status": "CERTIFIED",
+      "certifiedAt": null,
+      "reason": "Phase 2 is an upstream prerequisite and is treated as certified in the current phase chain.",
+      "prerequisites": [
+        "Phase 1 certified"
+      ]
+    },
+    {
+      "phase": "Phase 3",
+      "title": "Commerce Communication",
+      "implementationStatus": "DESIGNED",
+      "status": "NOT_CERTIFIED",
+      "certifiedAt": null,
+      "reason": "The Phase 3 audit has open blockers and cannot be certified yet.",
+      "prerequisites": [
+        "Phase 2 certified"
+      ]
+    },
+    {
+      "phase": "Phase 4",
+      "title": "Ecosystem Expansion",
+      "implementationStatus": "PLANNED",
+      "status": "PENDING",
+      "certifiedAt": null,
+      "reason": "Pending certification until Phase 3 certified is complete.",
+      "prerequisites": [
+        "Phase 3 certified"
+      ]
+    },
+    {
+      "phase": "Phase 5",
+      "title": "Platform Maturity",
+      "implementationStatus": "PLANNED",
+      "status": "PENDING",
+      "certifiedAt": null,
+      "reason": "Pending certification until Phase 4 certified is complete.",
+      "prerequisites": [
+        "Phase 4 certified"
+      ]
+    }
+  ],
+  "summary": {
+    "totalGates": 27,
+    "passed": 9,
+    "failed": 1,
+    "manual": 0,
+    "skipped": 17,
+    "p0": 8,
+    "p1": 19,
+    "p2": 0,
+    "p3": 0
+  }
+}

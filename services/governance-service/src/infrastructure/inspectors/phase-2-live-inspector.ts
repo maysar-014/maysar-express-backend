@@ -1,10 +1,5 @@
 import crypto from 'crypto';
 import { performance } from 'perf_hooks';
-import { Email } from '../../../../../services/user-service/src/domain/value-objects/email.value-object';
-import { PhoneNumber } from '../../../../../services/user-service/src/domain/value-objects/phone-number.value-object';
-import { User } from '../../../../../services/user-service/src/domain/entities/user.entity';
-import { PrismaUserRepository } from '../../../../../services/user-service/src/infrastructure/repositories/prisma-user.repository';
-import { PiiEncryptionService } from '../../../../../shared/encryption/pii-encryption.service';
 import { createUlid } from '../../../../../shared/ids/id';
 import {
   ConstitutionGateDefinition,
@@ -70,7 +65,6 @@ export class Phase2LiveInspector implements GovernanceInspector {
   private async bootstrapFixture(context: GovernanceExecutionContext): Promise<LiveFixture> {
     const client = this.client(context);
     const prisma = getGovernancePrisma() as any;
-    const userRepository = new PrismaUserRepository(prisma, new PiiEncryptionService());
     const unique = createUniqueTag('phase2');
     const sellerCity = 'Dar es Salaam';
     const verifiedBuyerPhone = `+2557${String(11110000 + Math.floor(Math.random() * 8888888)).slice(0, 8)}`;
@@ -80,30 +74,24 @@ export class Phase2LiveInspector implements GovernanceInspector {
     const unverifiedBuyerEmail = `${unique}.candidate@example.com`;
     const sellerEmail = `${unique}.seller@example.com`;
 
-    const seedUser = async (id: string, email: string, phone: string, role: 'buyer' | 'seller') => {
-      const user = User.create({
-        id,
-        publicCode: `MYS-${crypto.randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase()}`,
-        email: Email.create(email),
-        phoneNumber: new PhoneNumber(phone),
+    const seedUser = async (email: string, phone: string, role: 'buyer' | 'seller') => {
+      const created = await client.createUser({
+        email,
+        phoneNumber: phone,
         firstName: 'Phase',
         lastName: role === 'buyer' ? 'Buyer' : 'Seller',
-        role,
-        preferredLanguage: 'sw',
-        preferredCurrency: 'TZS',
-        addresses: [],
-        codEnabled: true
+        role
       });
-      await userRepository.create(user as any);
+      const userId = created.body?.data?.id ?? created.body?.id;
+      if (!userId) {
+        throw new Error(`Unable to create Phase 2 ${role} fixture user`);
+      }
+      return userId as string;
     };
 
-    const verifiedBuyerId = `usr_${createUlid()}`;
-    const unverifiedBuyerId = `usr_${createUlid()}`;
-    const sellerId = `usr_${createUlid()}`;
-
-    await seedUser(verifiedBuyerId, verifiedBuyerEmail, verifiedBuyerPhone, 'buyer');
-    await seedUser(unverifiedBuyerId, unverifiedBuyerEmail, unverifiedBuyerPhone, 'buyer');
-    await seedUser(sellerId, sellerEmail, sellerPhone, 'seller');
+    const verifiedBuyerId = await seedUser(verifiedBuyerEmail, verifiedBuyerPhone, 'buyer');
+    const unverifiedBuyerId = await seedUser(unverifiedBuyerEmail, unverifiedBuyerPhone, 'buyer');
+    const sellerId = await seedUser(sellerEmail, sellerPhone, 'seller');
 
     await prisma.user_User.update({
       where: { id: verifiedBuyerId },
