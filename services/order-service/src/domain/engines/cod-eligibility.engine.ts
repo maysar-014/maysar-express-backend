@@ -3,6 +3,12 @@ import { Order } from '../entities/order.entity';
 export interface EligibilityResult {
     eligible: boolean;
     reason?: string;
+    /** Only present when eligible: true and per-order risk assessment ran */
+    requiresCommitmentFee?: boolean;
+    /** Only present when eligible: true and per-order risk assessment ran */
+    requiresManualReview?: boolean;
+    /** Only present when requiresCommitmentFee is true */
+    commitmentFeeAmount?: number;
 }
 
 export interface IAuthServiceClient {

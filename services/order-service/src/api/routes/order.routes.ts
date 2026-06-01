@@ -10,6 +10,7 @@ import { cacheConfig } from '../../config/monitoring.config';
 import { createMaintenanceRoutes } from './maintenance.routes';
 import healthRoutes from './health.routes';
 import { validateJoiRequest } from '@shared/middleware/joi-request-validation';
+import { GLOBAL_MINIMUM_BASKET_VALUE_TZS } from '@shared/business/minimum-basket-value';
 
 const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$/u;
 const safeVisibleString = Joi.string().min(1).pattern(SAFE_VISIBLE_STRING_PATTERN);
@@ -53,7 +54,7 @@ const createOrderBodySchema = Joi.object({
 const codValidationBodySchema = Joi.object({
   buyerId: contractAwareUserIdSchema.required(),
   sellerId: safeVisibleString.required(),
-  totalAmount: Joi.number().greater(0).required(),
+  totalAmount: Joi.number().min(GLOBAL_MINIMUM_BASKET_VALUE_TZS).required(),
   deliveryFee: Joi.number().greater(0).required(),
   currency: currencyCodeSchema.optional(),
   deliveryAddress: Joi.object({

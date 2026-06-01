@@ -1,6 +1,7 @@
 # Order Service
 
 Order module for the Maysar monolith. It owns order creation, lifecycle updates, COD validation, tracking lookup, dispute resolution, and analytics.
+It also enforces the platform-wide MBV floor before orders enter COD validation.
 
 ## Runtime
 
@@ -28,6 +29,14 @@ Order module for the Maysar monolith. It owns order creation, lifecycle updates,
 - `DELETE /api/order/orders/:id`
 - `POST /api/order/orders/cod/validate`
 - `POST /api/order/orders/disputes/:id/resolve`
+
+## MBV Behavior
+
+- Global minimum basket value: `TZS 50,000`
+- Orders below this floor are rejected with a clear shortfall message.
+- The MBV check runs before COD eligibility checks so low-value baskets fail fast.
+- COD validation still applies buyer trust, seller trust, and logistics rules after
+  the MBV floor is satisfied.
 
 ## Setup
 

@@ -1,5 +1,6 @@
 import { CODEligibilityEngine } from '../../domain/engines/cod-eligibility.engine';
 import { Order } from '../../domain/entities/order.entity';
+import { assessMinimumBasketValue } from '@shared/business/minimum-basket-value';
 
 export interface CheckCODEligibilityInput {
     buyerId: string;
@@ -22,6 +23,14 @@ export class CheckCODEligibilityUseCase {
     constructor(private readonly eligibilityEngine: CODEligibilityEngine) { }
 
     async execute(input: CheckCODEligibilityInput): Promise<CODEligibilityResponse> {
+        const minimumBasketValueAssessment = assessMinimumBasketValue(input.totalAmount);
+        if (!minimumBasketValueAssessment.eligible) {
+            return {
+                eligible: false,
+                reason: minimumBasketValueAssessment.message
+            };
+        }
+
         // Check buyer eligibility
         const buyerResult = await this.eligibilityEngine.checkBuyerEligibility(input.buyerId);
         if (!buyerResult.eligible) {

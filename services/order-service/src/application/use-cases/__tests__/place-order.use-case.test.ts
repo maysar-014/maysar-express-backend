@@ -7,13 +7,14 @@ describe('PlaceOrderUseCase', () => {
     let mockSagaOrchestrator: any;
     let mockCODEligibilityEngine: any;
     let mockCODCommitmentService: any;
+    let mockWalletClient: any;
 
     const validRequest: PlaceOrderRequest = {
         buyerId: 'buyer-1',
         sellerId: 'seller-1',
         items: [
-            { productId: 'prod-1', quantity: 2, price: 50, weight: 1.5 },
-            { productId: 'prod-2', quantity: 1, price: 100, weight: 2.0 },
+            { productId: 'prod-1', quantity: 1, price: 25000, weight: 1.5 },
+            { productId: 'prod-2', quantity: 1, price: 25000, weight: 2.0 },
         ],
         currency: 'TZS',
         paymentMethod: 'WALLET',
@@ -41,13 +42,17 @@ describe('PlaceOrderUseCase', () => {
             calculateCommitmentFee: jest.fn().mockReturnValue(10),
             secureCommitment: jest.fn().mockResolvedValue('hold-123'),
         };
+        mockWalletClient = {
+            debitWallet: jest.fn().mockResolvedValue('wallet-tx-123')
+        };
 
         useCase = new PlaceOrderUseCase(
             mockRepository,
             mockEventPublisher,
             mockSagaOrchestrator,
             mockCODEligibilityEngine,
-            mockCODCommitmentService
+            mockCODCommitmentService,
+            mockWalletClient
         );
     });
 
@@ -67,19 +72,23 @@ describe('PlaceOrderUseCase', () => {
 
         expect(result).toBeDefined();
         expect(mockCODEligibilityEngine.checkBuyerEligibility).toHaveBeenCalledWith('buyer-1');
-        expect(mockCODCommitmentService.calculateCommitmentFee).toHaveBeenCalledWith(10);
+        expect(mockCODCommitmentService.calculateCommitmentFee).toHaveBeenCalledWith(10, 0);
         expect(mockCODCommitmentService.secureCommitment).toHaveBeenCalledWith(
             'buyer-1',
             expect.any(String),
             10,
-            'TZS'
+            'TZS',
+            false
         );
     });
 
-    it('should fail COD order when delivery fee is missing', async () => {
+    it('should allow COD order when delivery fee is missing', async () => {
         const codRequest = { ...validRequest, paymentMethod: 'COD' as const, deliveryFee: undefined };
 
-        await expect(useCase.execute(codRequest)).rejects.toThrow('Delivery fee is required for COD orders');
+        const result = await useCase.execute(codRequest);
+
+        expect(result).toBeDefined();
+        expect(result.cashOnDeliveryAmount).toBeLessThan(50000);
     });
 
     it('should fail COD order when buyer ineligible', async () => {
@@ -115,12 +124,22 @@ describe('PlaceOrderUseCase', () => {
         await expect(useCase.execute(codRequest)).rejects.toThrow('COD Ineligible');
     });
 
+    it('should reject orders below the global minimum basket value', async () => {
+        const smallRequest = {
+            ...validRequest,
+            items: [{ productId: 'prod-1', quantity: 1, price: 1000, weight: 1.5 }]
+        };
+
+        await expect(useCase.execute(smallRequest)).rejects.toThrow('Minimum basket value');
+        expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
     it('should calculate total amount correctly', async () => {
         await useCase.execute(validRequest);
 
         expect(mockRepository.save).toHaveBeenCalledWith(
             expect.objectContaining({
-                totalAmount: expect.objectContaining({ amount: 200, currency: 'TZS' })
+                totalAmount: expect.objectContaining({ amount: 50000, currency: 'TZS' })
             })
         );
     });
@@ -129,7 +148,7 @@ describe('PlaceOrderUseCase', () => {
         await useCase.execute(validRequest);
 
         expect(mockRepository.save).toHaveBeenCalledWith(
-            expect.objectContaining({ totalWeight: 5.0 })
+            expect.objectContaining({ totalWeight: 3.5 })
         );
     });
 

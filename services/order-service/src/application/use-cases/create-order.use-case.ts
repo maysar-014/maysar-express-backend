@@ -1,5 +1,6 @@
 import { getModelPrefix, makeId } from '@shared/ids/id';
 import { IdGeneratorService } from '../../infrastructure/services/id-generator.service';
+import { assertMinimumBasketValue } from '@shared/business/minimum-basket-value';
 
 export class CreateOrderUseCase {
     constructor(
@@ -8,11 +9,13 @@ export class CreateOrderUseCase {
     ) {}
 
     async execute(dto: { userId: string; items: any[]; total: number; enablerId?: string; enablerCode?: string }) {
-        if (!dto.items || dto.items.length === 0) {
-            throw new Error('Order must have items');
-        }
+    if (!dto.items || dto.items.length === 0) {
+      throw new Error('Order must have items');
+    }
 
-        const order = {
+    assertMinimumBasketValue(dto.total);
+
+    const order = {
             id: makeId(getModelPrefix('Order_Order')),
             trackingNumber: IdGeneratorService.generateOrderTrackingNumber(),
             ...dto,

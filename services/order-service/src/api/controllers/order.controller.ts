@@ -33,7 +33,13 @@ export class OrderController {
     if (lower.includes('not found')) {
       return { status: 404, message };
     }
-    if (lower.includes('invalid') || lower.includes('required') || lower.includes('ineligible') || lower.includes('greater than zero')) {
+    if (
+      lower.includes('invalid')
+      || lower.includes('required')
+      || lower.includes('ineligible')
+      || lower.includes('greater than zero')
+      || lower.includes('minimum basket value')
+    ) {
       return { status: 422, message };
     }
     return { status: 500, message };

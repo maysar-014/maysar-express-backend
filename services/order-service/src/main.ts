@@ -496,7 +496,6 @@ async function initializeService() {
     });
 
     const { CODEligibilityEngine } = await import('./domain/engines/cod-eligibility.engine');
-    const { ProgressiveCODEligibilityEngine } = await import('./domain/engines/progressive-cod-eligibility.engine');
     const { CheckCODEligibilityUseCase } = await import('./application/use-cases/check-cod-eligibility.use-case');
     const { CODCommitmentService } = await import('./domain/services/cod-commitment.service');
 
@@ -512,16 +511,70 @@ async function initializeService() {
     const logisticsServiceClient = new LogisticsServiceClient();
     const walletServiceClient = new WalletServiceClient();
 
-    // Instantiate Progressive COD Trust System (replaces old CODEligibilityEngine)
+    // Shared trust score repository (used by both engines)
     const codTrustScoreRepo = new PrismaCODTrustScoreRepository();
     const codRestrictionRepo = new PrismaCODRestrictionRepository();
-    const codEligibilityEngine = new ProgressiveCODEligibilityEngine(
+
+    // ── EnhancedCODEligibilityEngine (permanent — progressive engine retired) ─
+    const { EnhancedCODEligibilityEngine } = await import('./domain/engines/enhanced-cod-eligibility.engine');
+    const { PerOrderRiskAssessor } = await import('./domain/engines/cod-trust/per-order-risk.assessor');
+    const { SellerCODRiskService } = await import('./domain/engines/cod-trust/seller-cod-risk.service');
+    const { loadWardCentroidResolver } = await import('./domain/engines/cod-trust/ward-centroid.resolver');
+    const { PrismaCODRiskAssessmentRepository } = await import('./infrastructure/repositories/prisma-cod-risk-assessment.repository');
+    const { PrismaSellerCODRiskRepository, PrismaSellerCODRiskEventRepository } = await import('./infrastructure/repositories/prisma-seller-cod-risk.repository');
+
+    // Singleton ward centroid resolver (loaded once at startup, ~120 KB in memory)
+    const wardCentroidResolver = loadWardCentroidResolver();
+    logger.info(`✅ WardCentroidResolver loaded (${wardCentroidResolver.size} wards with coordinates)`);
+
+    const riskAssessmentRepo = new PrismaCODRiskAssessmentRepository();
+    const sellerCODRiskRepo = new PrismaSellerCODRiskRepository();
+    const sellerCODRiskEventRepo = new PrismaSellerCODRiskEventRepository();
+
+    const perOrderRiskAssessor = new PerOrderRiskAssessor(orderRepository, riskAssessmentRepo);
+    const sellerCODRiskService = new SellerCODRiskService(sellerCODRiskRepo, sellerCODRiskEventRepo);
+
+    const codEligibilityEngine = new EnhancedCODEligibilityEngine(
       codTrustScoreRepo,
       codRestrictionRepo,
       orderRepository,
       authServiceClient,
-      logisticsServiceClient
+      logisticsServiceClient,
+      perOrderRiskAssessor,
+      sellerCODRiskService,
+      wardCentroidResolver,
     );
+
+    // Register OrderDeliveryConfirmedHandler
+    const { OrderDeliveryConfirmedHandler } = await import('./infrastructure/messaging/order-delivery-confirmed.handler');
+    const orderDeliveryConfirmedHandler = new OrderDeliveryConfirmedHandler(
+      trustSignalIngestion,
+      codTrustScoreRepo,
+      orderRepository,
+    );
+    eventBus.subscribe('OrderDeliveryConfirmed.v1', async (envelope: any) => {
+      try {
+        const data = envelope?.data || envelope?.payload || envelope;
+        await orderDeliveryConfirmedHandler.handle(data);
+      } catch (err: any) {
+        logger.warn('[OrderDeliveryConfirmed.v1] Handler failed', { error: err.message });
+      }
+    });
+
+    // Register DisputeRaisedHandler
+    const { DisputeRaisedHandler } = await import('./infrastructure/messaging/dispute-raised.handler');
+    const disputeRaisedHandler = new DisputeRaisedHandler(trustSignalIngestion, codTrustScoreRepo);
+    eventBus.subscribe('DisputeRaised.v1', async (envelope: any) => {
+      try {
+        const data = envelope?.data || envelope?.payload || envelope;
+        await disputeRaisedHandler.handle(data);
+      } catch (err: any) {
+        logger.warn('[DisputeRaised.v1] Handler failed', { error: err.message });
+      }
+    });
+
+    logger.info('✅ EnhancedCODEligibilityEngine active (5-tier dual-axis, ward-centroid geo, per-order risk)');
+
     const codCommitmentService = new CODCommitmentService(walletServiceClient);
     const checkCODEligibilityUseCase = new CheckCODEligibilityUseCase(codEligibilityEngine as any);
 

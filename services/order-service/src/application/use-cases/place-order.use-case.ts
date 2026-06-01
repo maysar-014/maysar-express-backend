@@ -5,6 +5,7 @@ import { IdGeneratorService } from '../../infrastructure/services/id-generator.s
 import { OrderFulfillmentSaga } from '../sagas/order-fulfillment.saga';
 import { CODEligibilityEngine } from '../../domain/engines/cod-eligibility.engine';
 import { CODCommitmentService } from '../../domain/services/cod-commitment.service';
+import { assertMinimumBasketValue } from '@shared/business/minimum-basket-value';
 
 /**
  * Generates a cryptographically random 6-digit delivery confirmation code.
@@ -103,6 +104,8 @@ export class PlaceOrderUseCase {
       const price = typeof item.price === 'number' ? item.price : item.price.amount;
       return sum + (price * item.quantity);
     }, 0);
+
+    assertMinimumBasketValue(totalAmount);
 
     // COD Validation and Commitment
     let codCommitmentFee = 0;

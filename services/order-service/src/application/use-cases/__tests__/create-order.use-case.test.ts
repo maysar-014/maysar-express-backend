@@ -8,10 +8,10 @@ describe('CreateOrderUseCase', () => {
     const validDto = {
         userId: 'user-1',
         items: [
-            { productId: 'prod-1', quantity: 2, price: 50 },
-            { productId: 'prod-2', quantity: 1, price: 100 },
+            { productId: 'prod-1', quantity: 1, price: 25000 },
+            { productId: 'prod-2', quantity: 1, price: 25000 },
         ],
-        total: 200,
+        total: 50000,
     };
 
     beforeEach(() => {
@@ -45,6 +45,14 @@ describe('CreateOrderUseCase', () => {
         await expect(useCase.execute({ ...validDto, items: undefined as any })).rejects.toThrow('Order must have items');
     });
 
+    it('should reject orders below the global minimum basket value', async () => {
+        await expect(useCase.execute({
+            ...validDto,
+            items: [{ productId: 'prod-1', quantity: 1, price: 1000 }],
+            total: 1000,
+        })).rejects.toThrow('Minimum basket value');
+    });
+
     it('should generate unique order IDs', async () => {
         const result1 = await useCase.execute(validDto);
         const result2 = await useCase.execute(validDto);
@@ -55,8 +63,8 @@ describe('CreateOrderUseCase', () => {
     it('should handle single item orders', async () => {
         const singleItemDto = {
             ...validDto,
-            items: [{ productId: 'prod-1', quantity: 1, price: 100 }],
-            total: 100,
+            items: [{ productId: 'prod-1', quantity: 1, price: 50000 }],
+            total: 50000,
         };
 
         const result = await useCase.execute(singleItemDto);
@@ -69,11 +77,11 @@ describe('CreateOrderUseCase', () => {
         const multiItemDto = {
             ...validDto,
             items: [
-                { productId: 'prod-1', quantity: 2, price: 50 },
-                { productId: 'prod-2', quantity: 1, price: 100 },
-                { productId: 'prod-3', quantity: 3, price: 30 },
+                { productId: 'prod-1', quantity: 1, price: 20000 },
+                { productId: 'prod-2', quantity: 1, price: 15000 },
+                { productId: 'prod-3', quantity: 1, price: 15000 },
             ],
-            total: 290,
+            total: 50000,
         };
 
         const result = await useCase.execute(multiItemDto);

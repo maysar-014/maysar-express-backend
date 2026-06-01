@@ -110,13 +110,21 @@ describe('CheckCODEligibilityUseCase', () => {
     });
 
     it('should keep commitment fee tied to the delivery fee even when order totals change', async () => {
-        const amounts = [10000, 50000, 100000, 200000];
+        const amounts = [50000, 100000, 200000];
 
         for (const totalAmount of amounts) {
             jest.clearAllMocks();
             await useCase.execute({ ...validInput, totalAmount });
             expect(mockEligibilityEngine.calculateCommitmentFee).toHaveBeenCalledWith(12000);
         }
+    });
+
+    it('should reject baskets below the global minimum before engine checks', async () => {
+        const result = await useCase.execute({ ...validInput, totalAmount: 49999 });
+
+        expect(result.eligible).toBe(false);
+        expect(result.reason).toContain('Minimum basket value');
+        expect(mockEligibilityEngine.checkBuyerEligibility).not.toHaveBeenCalled();
     });
 
     it('should handle different currencies', async () => {
