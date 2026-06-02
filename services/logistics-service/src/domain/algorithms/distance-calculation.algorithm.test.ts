@@ -15,12 +15,12 @@ describe('DistanceCalculationAlgorithm', () => {
     expect(DistanceCalculationAlgorithm.calculateBearing(origin, north)).toBeCloseTo(0, 0);
   });
 
-  it('calculateDeliveryDistance throws when HERE service is not configured', async () => {
+  it('calculateDeliveryDistance throws when no routing service is configured', async () => {
     const previousConfig = DistanceCalculationAlgorithm.getFallbackConfigSnapshot();
     DistanceCalculationAlgorithm.configureFallback({ enabled: false });
 
     await expect(DistanceCalculationAlgorithm.calculateDeliveryDistance(origin, east)).rejects.toThrow(
-      'HERE Technologies service is required for distance calculations.'
+      'Route optimization service is required for distance calculations.'
     );
 
     DistanceCalculationAlgorithm.configureFallback(previousConfig);

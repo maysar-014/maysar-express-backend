@@ -98,7 +98,7 @@ export class CourierRepository implements ICourierRepository {
         return [];
       }
 
-      // Filter by route distance using configured routing provider (HERE)
+      // Filter by route distance using the configured local routing provider
       const distanceChecks = await Promise.all(
         prefiltered.map(async (entry: PrefilterEntry) => {
           const routeDistance = await DistanceCalculationAlgorithm.calculateDeliveryDistance(

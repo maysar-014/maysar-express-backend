@@ -331,6 +331,8 @@ async checkOrderEligibility(order: Order, sellerAddress: any): Promise<Eligibili
 
 Geographic distance is computed as Haversine distance between **ward centroids** from
 the Tanzania locations database (`tanzania_national.json`, 3,054 wards with coordinates).
+Logistics routing, ETA estimation, and delivery-cost calculation also use the local
+`locations/` data, so these flows do not depend on external routing APIs.
 Ward codes are stored on buyer delivery addresses and seller addresses. If a ward code
 is missing, the check falls back to region-level matching.
 

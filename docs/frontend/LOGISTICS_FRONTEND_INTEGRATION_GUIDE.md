@@ -307,30 +307,53 @@ Response:
 #### 3.2 Request Route Optimization
 
 ```typescript
-POST /api/logistics/routes/optimize
+POST /api/logistics/api/v1/routes/optimize
 
 Request:
 {
-  "courierId": "courier_456",
-  "deliveryIds": ["del_789", "del_790", "del_791"],
-  "startLocation": {
-    "lat": -6.7924,
-    "lng": 39.2083
-  },
-  "algorithm": "genetic" // Options: dijkstra, astar, genetic, ant_colony
+  "deliveries": [
+    {
+      "id": "del_789",
+      "address": "Kariakoo, Dar es Salaam",
+      "coordinates": {
+        "lat": -6.7924,
+        "lng": 39.2083
+      }
+    },
+    {
+      "id": "del_790",
+      "address": "Mikocheni, Dar es Salaam",
+      "coordinates": {
+        "lat": -6.8049,
+        "lng": 39.2847
+      }
+    }
+  ],
+  "constraints": {
+    "priority": "fastest",
+    "avoidHighways": false,
+    "avoidTolls": false
+  }
 }
 
 Response:
 {
   "success": true,
   "data": {
-    "routeId": "route_124",
-    "optimizedSequence": ["del_789", "del_791", "del_790"],
-    "totalDistance": 12.3,
-    "estimatedDuration": 38,
-    "savings": {
-      "distanceKm": 3.2,
-      "timeMinutes": 7
+    "route": {
+      "totalDistance": 12.3,
+      "totalDuration": 38,
+      "waypoints": [
+        { "lat": -6.7924, "lng": 39.2083 },
+        { "lat": -6.8049, "lng": 39.2847 }
+      ]
+    },
+    "validation": { "isValid": true, "warnings": [] },
+    "efficiency": { "score": 87, "fuelSavings": 2.3, "timeSavings": 15 },
+    "metadata": {
+      "optimizedAt": "2026-06-02T00:00:00.000Z",
+      "algorithm": "local_location_haversine",
+      "version": "1.0.0"
     }
   }
 }
@@ -755,7 +778,7 @@ function StatusToggle({ courierId, currentStatus }: Props) {
 **Recommended**:
 - **Framework**: React Native (mobile) or Next.js (PWA)
 - **State Management**: Redux Toolkit or Zustand
-- **Maps**: Google Maps API or Mapbox
+- **Maps**: Local Tanzania locations data only; no external map APIs for now
 - **Offline Support**: Service Workers + IndexedDB
 - **Real-time**: WebSocket or Server-Sent Events
 

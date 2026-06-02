@@ -127,7 +127,7 @@ service-name/
 | **Order Service** | `/api/order` | Order lifecycle management | Order creation, status tracking, fulfillment, cancellation |
 | **Payment Service** | `/api/payment` | Payment processing | Payment processing, refunds, fraud detection, settlement |
 | **Inventory Service** | `/api/inventory` | Stock management | Stock tracking, reservations, reorder points, warehouse management |
-| **Logistics Service** | `/api/logistics` | Delivery operations | Route optimization, courier management, tracking, ETA calculation |
+| **Logistics Service** | `/api/logistics` | Delivery operations | Route optimization, courier management, tracking, ETA calculation using local Tanzania location data |
 | **Checkout Service** | `/api/checkout` | Shopping cart & checkout | Cart management, checkout initiation, order preparation |
 | **Wallet Service** | `/api/wallet` | Digital wallet operations | Balance management, transactions, top-ups, withdrawals |
 | **Commission Service** | `/api/commission` | Commission calculations | Earnings tracking, commission rules, payout processing |
@@ -411,11 +411,10 @@ service-name/
 **Key Operations**:
 - **Delivery Scheduling**: Assign deliveries to couriers
   - Intelligent courier selection (location, availability, performance)
-  - Multi-stop route optimization
+  - Multi-stop route optimization from `locations/` ward and district centroids
 - **Route Optimization**: Calculate optimal delivery routes
-  - Algorithms: Dijkstra, A*, Genetic, Ant Colony
-  - Real-time traffic integration
-  - Weather consideration
+  - Local Haversine distance estimation with locality-aware inflation
+  - Local traffic and weather heuristics only; no external routing APIs
   - ETA calculation
 - **Real-Time Tracking**: GPS-based delivery tracking
   - Live location updates

@@ -2,6 +2,8 @@
 
 Logistics module for the Maysar monolith. It handles delivery planning, route optimization, courier management, tracking, analytics, earnings, and operational checks.
 
+All routing, distance, ETA, and delivery-cost estimates are computed from the local Tanzania locations datasets in `locations/` with no external routing APIs.
+
 ## Runtime
 
 - Canonical monolith mount: `/api/logistics`
@@ -44,6 +46,13 @@ Logistics module for the Maysar monolith. It handles delivery planning, route op
 - `GET /api/logistics/api/v1/security/audit`
 - `GET /api/logistics/api/v1/test/all-engines`
 - `GET /api/logistics/api/v1/test/architectural`
+
+## Location Model
+
+- Ward, district, and region centroids are loaded from `locations/tanzania_national.json` and `locations/tanzania_coordinates_lookup.json`.
+- Route distance uses local Haversine-based estimates with locality-aware inflation for same-ward, same-district, same-region, and cross-region trips.
+- Delivery pricing uses the local `LogisticsEngine.calculateDeliveryCost()` formula in TZS.
+- Weather and traffic estimates are heuristic and local-only; no external provider calls are required.
 
 ## Setup
 

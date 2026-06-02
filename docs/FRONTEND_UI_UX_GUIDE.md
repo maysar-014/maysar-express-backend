@@ -864,7 +864,7 @@ Response: 200 -> Not specified
 Errors: None specified
 Rate Limits: Not specified
 
-Endpoint: POST /api/logistics/routes/optimize
+Endpoint: POST /api/logistics/api/v1/routes/optimize
 Role Access: ADMIN, SELLER, SUPPLIER
 Purpose: Optimize route
 Request: Body object

@@ -118,7 +118,7 @@ export class CreateDeliveryUseCase {
     }
 
     if (routes.length === 0) {
-      console.warn('HERE route alternatives unavailable, requesting primary HERE route');
+      console.warn('Local route alternatives unavailable, requesting primary local route');
       const primaryRoute = await this.routePort.calculateOptimalRoute(pickupGeoPoint, deliveryGeoPoint);
       routes = [primaryRoute];
     }

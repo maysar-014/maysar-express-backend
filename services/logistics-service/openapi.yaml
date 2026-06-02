@@ -6,6 +6,8 @@ info:
     Comprehensive REST API contract for the Maysar Logistics Service.
     This service provides delivery management, route optimization, real-time tracking,
     performance analytics, and earnings calculation for courier operations.
+    All distance, ETA, and delivery-cost estimates are computed locally from the
+    Tanzania locations datasets in `locations/`; no external routing APIs are used.
 
     **🏛️ Architecture Constitution Compliant**
     This service implements the Architecture Constitution with strict layer isolation,
@@ -117,8 +119,9 @@ paths:
         - Deliveries
       summary: Calculate delivery cost
       description: |
-        Calculate shipping cost and delivery time based on package details,
-        pickup/delivery addresses, and service requirements.
+        Create or price a delivery using local Tanzania location data.
+        Distance, ETA, and delivery cost are derived from local coordinates,
+        ward centroids, and heuristic traffic/weather inputs.
       operationId: calculateDeliveryCost
       requestBody:
         required: true
@@ -288,8 +291,8 @@ paths:
         - Routes
       summary: Optimize route
       description: |
-        Calculate optimal delivery route using advanced algorithms
-        considering distance, time, traffic, and delivery constraints.
+        Calculate an optimal delivery route using the local Tanzania locations
+        dataset, Haversine distance estimates, and locality-aware heuristics.
       operationId: optimizeRoute
       requestBody:
         required: true
