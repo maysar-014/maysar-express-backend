@@ -1,46 +1,35 @@
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
-import { MapsRegistry } from '../../../../maps-service/src/infrastructure/registry';
 import { MapsTrafficBridge } from './maps-traffic.bridge';
 
 describe('MapsTrafficBridge', () => {
-  const provider = {
-    getConditions: jest.fn(),
-    getRouteTraffic: jest.fn()
-  };
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    jest.spyOn(MapsRegistry, 'getInstance').mockReturnValue({
-      getTrafficProvider: () => provider
-    } as never);
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
-  it('loads traffic data between two points', async () => {
-    const origin = GeoPoint.create(-6.8, 39.2, 'A');
-    const destination = GeoPoint.create(-6.9, 39.3, 'B');
-    provider.getConditions.mockResolvedValue({ status: 'MODERATE' });
+  it('returns local traffic data between two points', async () => {
+    const origin = GeoPoint.create(-6.8, 39.2, 'Dar es Salaam CBD');
+    const destination = GeoPoint.create(-6.9, 39.3, 'Msasani');
     const bridge = new MapsTrafficBridge();
 
     const result = await bridge.getTrafficData(origin, destination);
 
-    expect(provider.getConditions).toHaveBeenCalledWith(
-      expect.objectContaining({ getLatitude: expect.any(Function) }),
-      5
-    );
-    expect(result).toEqual({ status: 'MODERATE' });
+    expect(result.congestionLevel).toBeGreaterThanOrEqual(0);
+    expect(result.averageSpeed).toBeGreaterThan(0);
+    expect(result.travelTime).toBeGreaterThan(0);
+    expect(result.roadConditions).toMatch(/good|fair|poor|closed/);
   });
 
-  it('wraps route traffic into array and returns defaults for unimplemented methods', async () => {
-    const route = [GeoPoint.create(-6.8, 39.2, 'A'), GeoPoint.create(-6.9, 39.3, 'B')];
-    provider.getRouteTraffic.mockResolvedValue({ routeStatus: 'HEAVY' });
+  it('returns route traffic arrays and local incidents when relevant', async () => {
     const bridge = new MapsTrafficBridge();
+    const route = [
+      GeoPoint.create(-6.8, 39.2, 'A'),
+      GeoPoint.create(-6.81, 39.21, 'B')
+    ];
 
-    await expect(bridge.getRouteTraffic(route)).resolves.toEqual([{ routeStatus: 'HEAVY' }]);
-    await expect(bridge.getTrafficIncidents(route[0], 5)).resolves.toEqual([]);
-    await expect(bridge.calculateRouteWithTraffic(route[0], route[1])).resolves.toBeNull();
+    const routeTraffic = await bridge.getRouteTraffic(route);
+    const incidents = await bridge.getTrafficIncidents(route[0], 5);
+    const calculatedRoute = await bridge.calculateRouteWithTraffic(route[0], route[1]);
+
+    expect(routeTraffic).toHaveLength(1);
+    expect(routeTraffic[0].travelTime).toBeGreaterThan(0);
+    expect(Array.isArray(incidents)).toBe(true);
+    expect(calculatedRoute.optimalRoute).toEqual(route);
+    expect(calculatedRoute.estimatedTime).toBeGreaterThan(0);
   });
 });

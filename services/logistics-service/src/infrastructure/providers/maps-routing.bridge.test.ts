@@ -28,16 +28,17 @@ describe('MapsRoutingBridge', () => {
     expect(provider.validateRoute).toHaveBeenCalledTimes(1);
   });
 
-  it('throws when no provider is injected and HERE_API_KEY is missing', () => {
-    const original = process.env.HERE_API_KEY;
-    delete process.env.HERE_API_KEY;
+  it('builds a local route estimate without an injected provider', async () => {
+    const bridge = new MapsRoutingBridge();
+    const origin = GeoPoint.create(-6.7924, 39.2083, 'Kariakoo, Dar es Salaam');
+    const destination = GeoPoint.create(-6.8049, 39.2847, 'Mikocheni, Dar es Salaam');
 
-    expect(() => new MapsRoutingBridge()).toThrow('HERE_API_KEY is required');
+    const route = await bridge.calculateOptimalRoute(origin, destination);
 
-    if (original === undefined) {
-      delete process.env.HERE_API_KEY;
-    } else {
-      process.env.HERE_API_KEY = original;
-    }
+    expect(route.totalDistance).toBeGreaterThan(0);
+    expect(route.totalDuration).toBeGreaterThan(0);
+    expect(route.segments).toHaveLength(1);
+    expect(route.waypoints).toHaveLength(2);
+    expect(route.confidence).toBeGreaterThan(0.5);
   });
 });

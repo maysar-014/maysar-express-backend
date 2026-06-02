@@ -338,15 +338,15 @@ Endpoint: POST /api/checkout/{id}/confirm
 Role Access: BUYER
 Purpose: Confirm checkout
 Request: Path params: id*
-Response: 200 -> Not specified
-Errors: None specified
+Response: 200 -> checkout session DTO plus MBV fields; 422 -> minimum basket value not met
+Errors: 422 when basket total is below global MBV
 Rate Limits: Not specified
 
 Endpoint: GET /api/checkout/{id}
 Role Access: BUYER
 Purpose: Get checkout session
 Request: Path params: id*
-Response: 200 -> Not specified
+Response: 200 -> checkout session DTO with `deliveryEligible`, `minimumBasketValue`, `minimumBasketShortfall`, `minimumBasketMessage`
 Errors: None specified
 Rate Limits: Not specified
 
@@ -354,7 +354,7 @@ Endpoint: POST /api/checkout/initiate
 Role Access: BUYER
 Purpose: Initiate checkout
 Request: Body object
-Response: 201 -> Not specified
+Response: 201 -> checkout session DTO with pricing and MBV guidance
 Errors: None specified
 Rate Limits: Not specified
 
@@ -1942,10 +1942,10 @@ Cart and checkout:
 Layout: Cart list, totals sidebar, promo code, delivery options.
 UI elements: Quantity steppers, remove item, save for later.
 User actions: Update quantities, proceed to checkout, select payment method.
-Interactions: Recalculate totals and COD eligibility via pricing endpoint.
+Interactions: Recalculate totals, MBV shortfall, and COD eligibility via pricing endpoint.
 Loading state: Totals shimmer and disabled confirm button.
 Empty state: Cart empty with recommended products.
-Error state: Item availability errors inline.
+Error state: Item availability errors inline; MBV failure should show "Add TZS X more to unlock delivery" and a pickup fallback.
 
 Orders list:
 Layout: Table or card list with status tabs.

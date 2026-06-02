@@ -1964,7 +1964,11 @@ Preconditions: community user exists.
 |---|---|---|---|---|
 | 1 | Initiate checkout | `POST {{platform_base_url}}/api/checkout/initiate` | 200, 201 | 400, 422, 500 |
 | 2 | Get checkout session | `GET {{platform_base_url}}/api/checkout/:id` | 200 | 404, 500 |
-| 3 | Confirm checkout | `POST {{platform_base_url}}/api/checkout/:id/confirm` | 200 | 400, 404, 500 |
+| 3 | Confirm checkout | `POST {{platform_base_url}}/api/checkout/:id/confirm` | 200 | 400, 404, 422, 500 |
+
+Notes:
+- Checkout responses now include MBV guidance fields (`deliveryEligible`, `minimumBasketValue`, `minimumBasketShortfall`, `minimumBasketMessage`).
+- Confirm checkout returns `422` when the basket is below the global MBV floor (`TZS 50,000`).
 
 ### User (Account + Security Operations)
 

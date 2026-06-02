@@ -28,11 +28,11 @@ describe('InfrastructureMonitor', () => {
     jest.clearAllMocks();
   });
 
-  it('builds health metrics and classifies system status including google maps outage', () => {
+  it('builds health metrics and classifies system status including routing provider outage', () => {
     const registry: MockedRegistry = {
       getAllMetrics: jest.fn().mockReturnValue([
         {
-          name: 'google-maps-api',
+          name: 'routing-provider',
           state: 'OPEN' as never,
           failedRequests: 5,
           totalRequests: 20,
@@ -57,9 +57,9 @@ describe('InfrastructureMonitor', () => {
     const metrics = monitor.getHealthMetrics();
 
     expect(metrics.overallStatus).toBe('unhealthy');
-    expect(metrics.externalAPIs.googleMaps.status).toBe('outage');
-    expect(metrics.externalAPIs.googleMaps.errorRate).toBe(25);
-    expect(metrics.externalAPIs.googleMaps.lastError).toContain('Circuit breaker opened at');
+    expect(metrics.localProviders.routing.status).toBe('outage');
+    expect(metrics.localProviders.routing.errorRate).toBe(25);
+    expect(metrics.localProviders.routing.lastError).toContain('Circuit breaker opened at');
   });
 
   it('keeps metrics history bounded by maxHistorySize', () => {
@@ -114,14 +114,14 @@ describe('InfrastructureMonitor', () => {
     createAlert({
       severity: 'error',
       category: 'external_api',
-      message: 'Google Maps API is experiencing outages',
-      details: { api: 'googleMaps' }
+      message: 'Routing provider is experiencing outages',
+      details: { api: 'routing-provider' }
     });
     createAlert({
       severity: 'error',
       category: 'external_api',
-      message: 'Google Maps API is experiencing outages',
-      details: { api: 'googleMaps' }
+      message: 'Routing provider is experiencing outages',
+      details: { api: 'routing-provider' }
     });
 
     const alerts = (monitor as unknown as { alerts: Array<{ id: string; resolved: boolean }> }).alerts;
@@ -150,7 +150,7 @@ describe('InfrastructureMonitor', () => {
         unhealthy: 1,
         metrics: [
           {
-            name: 'google-maps-api',
+            name: 'routing-provider',
             state: 'OPEN' as never,
             failedRequests: 10,
             totalRequests: 20,
@@ -173,8 +173,8 @@ describe('InfrastructureMonitor', () => {
           }
         ]
       },
-      externalAPIs: {
-        googleMaps: {
+      localProviders: {
+        routing: {
           status: 'outage',
           errorRate: 50,
           lastError: 'outage'
@@ -328,7 +328,7 @@ describe('InfrastructureMonitor', () => {
       timestamp: new Date('2026-03-08T10:00:00.000Z'),
       overallStatus: 'healthy',
       circuitBreakers: { total: 0, healthy: 0, degraded: 0, unhealthy: 0, metrics: [] },
-      externalAPIs: { googleMaps: { status: 'operational', errorRate: 0 } },
+      localProviders: { routing: { status: 'operational', errorRate: 0 } },
       systemResources: { memoryUsage: 10, activeConnections: 0 }
     });
 
@@ -345,7 +345,7 @@ describe('InfrastructureMonitor', () => {
       timestamp: new Date('2026-03-08T10:00:00.000Z'),
       overallStatus: 'healthy',
       circuitBreakers: { total: 0, healthy: 0, degraded: 0, unhealthy: 0, metrics: [] },
-      externalAPIs: { googleMaps: { status: 'operational', errorRate: 0 } },
+      localProviders: { routing: { status: 'operational', errorRate: 0 } },
       systemResources: { memoryUsage: 10, activeConnections: 0 }
     });
     jest.spyOn(module.infrastructureMonitor, 'getMetricsHistory').mockReturnValue([]);

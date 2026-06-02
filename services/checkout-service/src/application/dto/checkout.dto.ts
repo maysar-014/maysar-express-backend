@@ -87,6 +87,10 @@ export interface CheckoutSessionDTO {
   enablerCode?: string;
   status: string;
   pricing: PricingDTO;
+  deliveryEligible?: boolean;
+  minimumBasketValue?: number;
+  minimumBasketShortfall?: number;
+  minimumBasketMessage?: string;
   expiresAt: Date;
   createdAt: Date;
 }

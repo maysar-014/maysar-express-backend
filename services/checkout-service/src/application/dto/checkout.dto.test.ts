@@ -62,6 +62,9 @@ describe('Checkout DTOs', () => {
           discountAmount: 0,
           total: 115
         },
+        deliveryEligible: true,
+        minimumBasketValue: 50000,
+        minimumBasketShortfall: 0,
         expiresAt: new Date('2026-03-28T01:00:00.000Z'),
         createdAt: new Date('2026-03-28T00:00:00.000Z')
       };
@@ -109,6 +112,9 @@ describe('Checkout DTOs', () => {
             discountAmount: 0,
             total: 115
           },
+          deliveryEligible: true,
+          minimumBasketValue: 50000,
+          minimumBasketShortfall: 0,
           expiresAt: new Date('2026-03-28T01:00:00.000Z'),
           createdAt: new Date('2026-03-28T00:00:00.000Z')
         },

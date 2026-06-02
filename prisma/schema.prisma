@@ -1903,15 +1903,84 @@ model Order_SagaStepLog {
 }
 
 model order_CODTrustScore {
-  id        String   @id @default(cuid()) @db.VarChar(64)
-  buyerId   String   @unique @db.VarChar(64)
-  score     Int      @default(0)
-  tier      String   @default("NEW_BUYER") @db.VarChar(32)
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
+  id               String   @id @default(cuid()) @db.VarChar(64)
+  buyerId          String   @unique @db.VarChar(64)
+  score            Int      @default(0)
+  tier             String   @default("NEW_BUYER") @db.VarChar(32)
+  lifetimeCODValue BigInt   @default(0)
+  activeExposure   BigInt   @default(0)
+  updatedAt        DateTime @updatedAt
+  createdAt        DateTime @default(now())
 
   @@index([buyerId])
+  @@index([buyerId, activeExposure])
   @@map("order_cod_trust_scores")
+}
+
+model order_CODIdentityLink {
+  id            String    @id @default(cuid()) @db.VarChar(64)
+  accountAId    String    @db.VarChar(64)
+  accountBId    String    @db.VarChar(64)
+  attributeType String    @db.VarChar(32)
+  attributeHash String    @db.VarChar(64)
+  disputedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([accountAId])
+  @@index([accountBId])
+  @@index([attributeHash])
+  @@map("order_cod_identity_links")
+}
+
+model order_CODRiskAssessment {
+  id                    String   @id @default(cuid()) @db.VarChar(64)
+  buyerId               String   @db.VarChar(64)
+  orderId               String   @unique @db.VarChar(64)
+  riskLevel             String   @db.VarChar(8)
+  activeFactors         Json
+  requiresCommitmentFee Boolean  @default(false)
+  requiresManualReview  Boolean  @default(false)
+  createdAt             DateTime @default(now())
+
+  @@index([buyerId, createdAt])
+  @@map("order_cod_risk_assessments")
+}
+
+model order_SellerCODRisk {
+  id             String    @id @default(cuid()) @db.VarChar(64)
+  sellerId       String    @unique @db.VarChar(64)
+  disputeRate    Decimal   @default(0) @db.Decimal(5, 4)
+  codSuspended   Boolean   @default(false)
+  suspendedAt    DateTime?
+  reinstatedAt   DateTime?
+  lastComputedAt DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("order_seller_cod_risk")
+}
+
+model order_SellerCODRiskEvent {
+  id                 String   @id @default(cuid()) @db.VarChar(64)
+  sellerId           String   @db.VarChar(64)
+  eventType          String   @db.VarChar(32)
+  signalType         String?  @db.VarChar(64)
+  disputeRateAtEvent Decimal  @db.Decimal(5, 4)
+  createdAt          DateTime @default(now())
+
+  @@index([sellerId, createdAt])
+  @@map("order_seller_cod_risk_events")
+}
+
+model order_CODDisputeWindow {
+  id        String   @id @default(cuid()) @db.VarChar(64)
+  orderId   String   @unique @db.VarChar(64)
+  expiresAt DateTime
+  suspended Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("order_cod_dispute_windows")
 }
 
 model order_CODScoreEvent {

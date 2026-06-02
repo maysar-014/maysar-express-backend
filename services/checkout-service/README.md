@@ -1,6 +1,8 @@
 # Checkout Service
 
 Checkout module for cart management and checkout session orchestration.
+It now also exposes the global MBV signal used across the platform so the UI can
+tell buyers when delivery is blocked and how much more they need to add.
 
 ## Runtime
 
@@ -24,6 +26,18 @@ Checkout module for cart management and checkout session orchestration.
 - `POST /api/checkout/initiate`
 - `GET /api/checkout/:id`
 - `POST /api/checkout/:id/confirm`
+
+## MBV Behavior
+
+- Global minimum basket value: `TZS 50,000`
+- Checkout session responses include:
+  - `deliveryEligible`
+  - `minimumBasketValue`
+  - `minimumBasketShortfall`
+  - `minimumBasketMessage`
+- Confirm checkout returns `422` when the basket is below the minimum.
+- Below-MBV baskets can still exist in cart state; the UI should guide buyers to
+  add more items or choose pickup.
 
 ## Setup
 

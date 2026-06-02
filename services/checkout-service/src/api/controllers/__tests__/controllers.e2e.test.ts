@@ -191,22 +191,22 @@ describe('CheckoutController E2E', () => {
   let mockResponse: Partial<Response>;
 
   beforeEach(() => {
-    const sessionFixture = {
-      id: 'session-1',
-      cartId,
-      userId,
+      const sessionFixture = {
+        id: 'session-1',
+        cartId,
+        userId,
       enablerId: undefined,
       enablerCode: undefined,
       status: 'initiated',
       shippingAddressId: 'addr-1',
-      billingAddressId: 'addr-2',
-      shippingMethodId: 'ship-1',
-      shippingCost: 10,
-      totalAmount: 110,
-      expiresAt: new Date('2026-03-23T12:00:00.000Z'),
-      createdAt: new Date('2026-03-23T11:00:00.000Z'),
-      updatedAt: new Date('2026-03-23T11:30:00.000Z')
-    };
+        billingAddressId: 'addr-2',
+        shippingMethodId: 'ship-1',
+        shippingCost: 10,
+        totalAmount: 50000,
+        expiresAt: new Date('2026-03-23T12:00:00.000Z'),
+        createdAt: new Date('2026-03-23T11:00:00.000Z'),
+        updatedAt: new Date('2026-03-23T11:30:00.000Z')
+      };
 
     mockCheckoutRepository = {
       saveCheckoutSession: jest.fn().mockResolvedValue(undefined),
@@ -274,6 +274,42 @@ describe('CheckoutController E2E', () => {
       'OrderCreated',
       expect.any(Object)
     );
+  });
+
+  it('should reject checkout confirmation below the minimum basket value', async () => {
+    mockCheckoutRepository.getSession.mockResolvedValueOnce({
+      id: 'session-low',
+      cartId,
+      userId,
+      enablerId: undefined,
+      enablerCode: undefined,
+      status: 'initiated',
+      shippingAddressId: 'addr-1',
+      billingAddressId: 'addr-2',
+      shippingMethodId: 'ship-1',
+      shippingCost: 10,
+      totalAmount: 49999,
+      expiresAt: new Date('2026-03-23T12:00:00.000Z'),
+      createdAt: new Date('2026-03-23T11:00:00.000Z'),
+      updatedAt: new Date('2026-03-23T11:30:00.000Z')
+    });
+    mockRequest.body = {
+      sessionId: 'session-1',
+      paymentMethodId: 'pm-1'
+    };
+
+    await controller.confirmCheckout(mockRequest as Request, mockResponse as Response);
+
+    expect(mockResponse.status).toHaveBeenCalledWith(422);
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        error: expect.objectContaining({
+          code: 'MINIMUM_BASKET_VALUE_NOT_MET'
+        })
+      })
+    );
+    expect(mockEventBus.publish).not.toHaveBeenCalled();
   });
 
   it('should handle idempotency', async () => {

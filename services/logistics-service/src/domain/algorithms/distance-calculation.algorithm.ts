@@ -26,7 +26,7 @@ export class DistanceCalculationAlgorithm {
   };
 
   /**
-   * Set the route optimization service (HERE Technologies) for accurate road-based calculations
+   * Set the route optimization service used for road-based calculations.
    */
   static setRouteOptimizationService(service: RouteOptimizationPort): void {
     this.routeOptimizationService = service;
@@ -67,8 +67,9 @@ export class DistanceCalculationAlgorithm {
   }
 
   /**
-   * Calculate distance, bearing, and estimated duration for delivery routing using HERE Technologies ONLY
-   * Requires HERE service to be configured - no local geodesic fallback
+   * Calculate distance, bearing, and estimated duration for delivery routing.
+   * Uses the configured route optimization service when available and a local
+   * geodesic fallback otherwise.
    */
   static async calculateDeliveryDistance(
     origin: GeoPoint,
@@ -81,7 +82,7 @@ export class DistanceCalculationAlgorithm {
 
     if (!this.routeOptimizationService) {
       if (!fallbackEnabled) {
-        throw new Error('HERE Technologies service is required for distance calculations. Configure HERE_API_KEY and call setRouteOptimizationService().');
+        throw new Error('Route optimization service is required for distance calculations. Configure a routing provider or enable fallback.');
       }
       return this.buildFallbackResult(origin, destination, averageSpeedKmh, bearing, inflationFactor);
     }
@@ -108,12 +109,12 @@ export class DistanceCalculationAlgorithm {
   }
 
   /**
-   * Check if a point is within a specified radius of another point using HERE API
+   * Check if a point is within a specified radius of another point using the configured routing path.
    */
   static async isWithinRadius(center: GeoPoint, point: GeoPoint, radiusKm: number): Promise<boolean> {
     const { enabled: fallbackEnabled } = this.getFallbackConfig();
     if (!this.routeOptimizationService && !fallbackEnabled) {
-      throw new Error('HERE Technologies service is required for distance calculations. Configure HERE_API_KEY and call setRouteOptimizationService().');
+      throw new Error('Route optimization service is required for distance calculations. Configure a routing provider or enable fallback.');
     }
 
     const distanceResult = await this.calculateDeliveryDistance(center, point);
@@ -146,7 +147,7 @@ export class DistanceCalculationAlgorithm {
   }
 
   /**
-   * Calculate total distance for a route with multiple waypoints using HERE API
+   * Calculate total distance for a route with multiple waypoints using the configured routing path.
    */
   static async calculateRouteDistance(waypoints: GeoPoint[]): Promise<number> {
     if (waypoints.length < 2) {

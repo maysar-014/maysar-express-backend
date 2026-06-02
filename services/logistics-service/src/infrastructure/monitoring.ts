@@ -3,7 +3,7 @@
  * Production Infrastructure Monitoring
  *
  * Constitution Section 8: Infrastructure Isolation Rule
- * Provides centralized monitoring for circuit breakers, external APIs, and system health
+ * Provides centralized monitoring for circuit breakers, local providers, and system health
  */
 
 import { getHeapStatistics } from 'v8';
@@ -19,8 +19,8 @@ export interface SystemHealthMetrics {
     unhealthy: number;
     metrics: CircuitBreakerMetrics[];
   };
-  externalAPIs: {
-    googleMaps: {
+  localProviders: {
+    routing: {
       status: 'operational' | 'degraded' | 'outage';
       latency?: number;
       errorRate?: number;
@@ -74,15 +74,15 @@ export class InfrastructureMonitor {
       overallStatus = 'degraded';
     }
 
-    // Get Google Maps API health (simplified - would integrate with actual adapter)
-    const googleMapsBreaker = circuitBreakerMetrics.find(cb => cb.name === 'google-maps-api');
-    let googleMapsStatus: 'operational' | 'degraded' | 'outage' = 'operational';
+    // Get routing provider health (simplified - would integrate with actual adapter)
+    const routingBreaker = circuitBreakerMetrics.find(cb => cb.name === 'routing-provider');
+    let routingStatus: 'operational' | 'degraded' | 'outage' = 'operational';
 
-    if (googleMapsBreaker) {
-      if (googleMapsBreaker.state === 'OPEN') {
-        googleMapsStatus = 'outage';
-      } else if (googleMapsBreaker.state === 'HALF_OPEN') {
-        googleMapsStatus = 'degraded';
+    if (routingBreaker) {
+      if (routingBreaker.state === 'OPEN') {
+        routingStatus = 'outage';
+      } else if (routingBreaker.state === 'HALF_OPEN') {
+        routingStatus = 'degraded';
       }
     }
 
@@ -96,12 +96,12 @@ export class InfrastructureMonitor {
         unhealthy: healthSummary.open,
         metrics: circuitBreakerMetrics
       },
-      externalAPIs: {
-        googleMaps: {
-          status: googleMapsStatus,
-          errorRate: googleMapsBreaker ? (googleMapsBreaker.failedRequests / Math.max(1, googleMapsBreaker.totalRequests)) * 100 : 0,
-          lastSuccess: googleMapsBreaker?.lastSuccessTime,
-          lastError: googleMapsBreaker?.lastFailureTime ? `Circuit breaker opened at ${googleMapsBreaker.lastFailureTime.toISOString()}` : undefined
+      localProviders: {
+        routing: {
+          status: routingStatus,
+          errorRate: routingBreaker ? (routingBreaker.failedRequests / Math.max(1, routingBreaker.totalRequests)) * 100 : 0,
+          lastSuccess: routingBreaker?.lastSuccessTime,
+          lastError: routingBreaker?.lastFailureTime ? `Circuit breaker opened at ${routingBreaker.lastFailureTime.toISOString()}` : undefined
         }
       },
       systemResources: {
@@ -234,16 +234,16 @@ export class InfrastructureMonitor {
       }
     });
 
-    // Check external API health
-    if (metrics.externalAPIs.googleMaps.status === 'outage') {
+    // Check local routing provider health
+    if (metrics.localProviders.routing.status === 'outage') {
       this.createAlert({
         severity: 'error',
         category: 'external_api',
-        message: 'Google Maps API is experiencing outages',
+        message: 'Routing provider is experiencing outages',
         details: {
-          api: 'googleMaps',
-          errorRate: metrics.externalAPIs.googleMaps.errorRate,
-          lastError: metrics.externalAPIs.googleMaps.lastError
+          api: 'routing-provider',
+          errorRate: metrics.localProviders.routing.errorRate,
+          lastError: metrics.localProviders.routing.lastError
         }
       });
     }

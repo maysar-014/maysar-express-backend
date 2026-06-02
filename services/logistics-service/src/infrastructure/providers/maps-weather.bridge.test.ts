@@ -1,43 +1,32 @@
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
-import { MapsRegistry } from '../../../../maps-service/src/infrastructure/registry';
 import { MapsWeatherBridge } from './maps-weather.bridge';
 
 describe('MapsWeatherBridge', () => {
-  const provider = {
-    getCurrentWeather: jest.fn(),
-    getForecast: jest.fn()
-  };
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    jest.spyOn(MapsRegistry, 'getInstance').mockReturnValue({
-      getWeatherProvider: () => provider
-    } as never);
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
-  it('loads current weather for location', async () => {
-    provider.getCurrentWeather.mockResolvedValue({ condition: 'CLEAR' });
+  it('returns local weather data for a location', async () => {
     const bridge = new MapsWeatherBridge();
-    const location = GeoPoint.create(-6.8, 39.2, 'Dar');
+    const location = GeoPoint.create(-6.8, 39.2, 'Dar es Salaam');
 
     const result = await bridge.getWeatherData(location);
 
-    expect(provider.getCurrentWeather).toHaveBeenCalledWith(
-      expect.objectContaining({ getLatitude: expect.any(Function) })
-    );
-    expect(result).toEqual({ condition: 'CLEAR' });
+    expect(result).toEqual(expect.objectContaining({
+      temperature: expect.any(Number),
+      humidity: expect.any(Number),
+      precipitation: expect.any(Number),
+      windSpeed: expect.any(Number),
+      visibility: expect.any(Number),
+      condition: expect.any(String),
+      severity: expect.any(String)
+    }));
   });
 
-  it('returns forecast as single-item array and keeps suitability simplified', async () => {
-    provider.getForecast.mockResolvedValue({ condition: 'RAIN' });
+  it('returns a forecast array and applies delivery suitability rules', async () => {
     const bridge = new MapsWeatherBridge();
-    const location = GeoPoint.create(-6.8, 39.2, 'Dar');
+    const location = GeoPoint.create(-6.8, 39.2, 'Dar es Salaam');
 
-    await expect(bridge.getWeatherForecast(location, 6)).resolves.toEqual([{ condition: 'RAIN' }]);
-    expect(bridge.isWeatherSuitableForDelivery({} as never, 'bike')).toBe(true);
+    const forecast = await bridge.getWeatherForecast(location, 6);
+
+    expect(forecast).toHaveLength(6);
+    expect(forecast[0]).toEqual(expect.objectContaining({ severity: expect.any(String) }));
+    expect(bridge.isWeatherSuitableForDelivery(forecast[0], 'motorcycle')).toBe(true);
   });
 });

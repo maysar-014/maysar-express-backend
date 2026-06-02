@@ -154,7 +154,7 @@ export class InitiateCheckoutUseCase {
             productId: 'dev-product',
             variantId: undefined,
             quantity: 1,
-            priceAtTime: 1000
+            priceAtTime: 50000
           }]
         };
       }

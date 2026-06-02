@@ -4,6 +4,7 @@
  */
 
 import { Cart } from '../../domain/value-objects/cart.value-object';
+import { assessMinimumBasketValue } from '@shared/business/minimum-basket-value';
 
 export class CheckoutMapper {
   static toPersistence(checkout: any): any {
@@ -32,6 +33,8 @@ export class CheckoutMapper {
   }
 
   static checkoutSessionToDTO(session: any): any {
+    const basketAssessment = assessMinimumBasketValue(Number(session.totalAmount ?? 0));
+
     return {
       id: session.id,
       cartId: session.cartId,
@@ -44,6 +47,10 @@ export class CheckoutMapper {
       shippingMethodId: session.shippingMethodId,
       shippingCost: session.shippingCost,
       totalAmount: session.totalAmount,
+      deliveryEligible: basketAssessment.eligible,
+      minimumBasketValue: basketAssessment.minimumBasketValue,
+      minimumBasketShortfall: basketAssessment.shortfall,
+      minimumBasketMessage: basketAssessment.message,
       expiresAt: session.expiresAt,
       createdAt: session.createdAt,
       updatedAt: session.updatedAt

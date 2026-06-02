@@ -14,6 +14,7 @@ import { logger } from '../../shared/logger/logger';
 import { idempotencyManager } from '../../shared/idempotency';
 import { CheckoutMapper } from '../../application/mappers/checkout.mapper';
 import { config } from '../../shared/config';
+import { assessMinimumBasketValue } from '@shared/business/minimum-basket-value';
 
 export class CheckoutController {
   private initiateCheckoutUseCase: InitiateCheckoutUseCase;
@@ -204,6 +205,23 @@ export class CheckoutController {
         res.status(404).json({
           success: false,
           error: { code: 'CHECKOUT_SESSION_NOT_FOUND', message: 'Session not found' },
+          timestamp: new Date()
+        });
+        return;
+      }
+
+      const basketAssessment = assessMinimumBasketValue(Number(session.totalAmount ?? 0));
+      if (!basketAssessment.eligible) {
+        res.status(422).json({
+          success: false,
+          error: {
+            code: 'MINIMUM_BASKET_VALUE_NOT_MET',
+            message: basketAssessment.message,
+            details: {
+              minimumBasketValue: basketAssessment.minimumBasketValue,
+              shortfall: basketAssessment.shortfall
+            }
+          },
           timestamp: new Date()
         });
         return;

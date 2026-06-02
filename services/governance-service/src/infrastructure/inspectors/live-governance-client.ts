@@ -290,6 +290,12 @@ export class LiveGovernanceClient {
     });
   }
 
+  async cancelOrder(orderId: string, userId: string, reason: string = 'Governance audit cleanup') {
+    return this.json('order', `/orders/${encodeURIComponent(orderId)}/cancel`, 'POST', {
+      reason
+    }, createContractHeaders({ userId, roles: ['buyer'] }));
+  }
+
   async initiateConversation(input: {
     userId: string;
     type: 'BUYER_SELLER' | 'SELLER_SUPPLIER' | 'BUYER_COURIER' | 'SELLER_TEAM';

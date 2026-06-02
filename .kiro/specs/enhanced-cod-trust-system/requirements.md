@@ -4,7 +4,7 @@
 
 The Enhanced COD Trust System extends the existing Progressive COD Trust System with ten targeted improvements identified through expert review of the live platform. The existing system provides a solid foundation — a score-based trust model with three tiers, event-sourced history, and a compatible eligibility interface — but has gaps that expose Maysar Express to fraud, gaming, and poor buyer experience in the Tanzania market.
 
-The enhancements address: replacing the unlimited TRUSTED_BUYER tier with a capped 5-tier progression; requiring both behavioral score and demonstrated financial history for tier advancement; replacing city-based geographic restrictions with radius-based ones suited to Dar es Salaam's scale; tracking active exposure as a running sum rather than an order count; detecting linked accounts to prevent trust resets after fraud; requiring OTP confirmation before crediting delivery trust signals; adding per-order dynamic risk scoring; expanding courier signals into structured sub-types; surfacing COD eligibility on product listings without exposing internal scores; and adding seller-side COD risk signals.
+The enhancements address: replacing the unlimited TRUSTED_BUYER tier with a capped 5-tier progression; requiring both behavioral score and demonstrated financial history for tier advancement; replacing city-based geographic restrictions with ward-centroid Haversine radius checks suited to Dar es Salaam's scale; tracking active exposure as a running sum rather than an order count; detecting linked accounts to prevent trust resets after fraud; subscribing to the platform's universal `OrderDeliveryConfirmed` event before crediting delivery trust signals; adding per-order dynamic risk scoring; expanding courier signals into structured sub-types; surfacing COD eligibility on product listings without exposing internal scores; and adding seller-side COD risk signals.
 
 All enhancements must preserve the existing `checkBuyerEligibility`, `checkSellerEligibility`, `checkOrderEligibility` interface so that `PlaceOrderUseCase` requires no structural changes. The event-sourced score history, existing signal types and weights, wallet commitment hold mechanism, and temporary restriction system must all be preserved.
 
@@ -17,21 +17,20 @@ All enhancements must preserve the existing `checkBuyerEligibility`, `checkSelle
 - **Trust_Engine**: The domain component responsible for computing and updating the COD_Eligibility_Score and evaluating COD eligibility.
 - **Trust_Signal**: A measurable buyer or seller behaviour or attribute that positively or negatively influences the COD_Eligibility_Score.
 - **Trust_Tier**: One of five named bands derived from the combination of COD_Eligibility_Score and Lifetime_COD_Value.
-- **NEW_BUYER**: Trust_Tier for buyers who have not yet met the TRUSTED_BEGINNER thresholds.
+- **NEW_BUYER**: Trust_Tier for buyers who have not yet met the TRUSTED_BEGINNER thresholds (score 0–20, any Lifetime_COD_Value).
 - **TRUSTED_BEGINNER**: Trust_Tier for buyers with COD_Eligibility_Score ≥ 21 AND Lifetime_COD_Value ≥ TZS 100,000.
 - **TRUSTED_BUYER**: Trust_Tier for buyers with COD_Eligibility_Score ≥ 41 AND Lifetime_COD_Value ≥ TZS 500,000.
 - **GOLD_BUYER**: Trust_Tier for buyers with COD_Eligibility_Score ≥ 65 AND Lifetime_COD_Value ≥ TZS 2,000,000.
 - **PLATINUM_BUYER**: Trust_Tier for buyers with COD_Eligibility_Score ≥ 85 AND Lifetime_COD_Value ≥ TZS 10,000,000.
-- **Exposure_Limit**: The maximum total value (in TZS) of all Active_COD_Orders a buyer in a given Trust_Tier may hold simultaneously.
+- **Exposure_Limit**: The maximum total value (in TZS) of all Active_COD_Orders a buyer in a given Trust_Tier may hold simultaneously. For TRUSTED_BEGINNER through PLATINUM_BUYER, the Exposure_Limit equals the Lifetime_COD_Value threshold for that tier (self-calibrating).
 - **Active_Exposure**: The sum of the total amounts of all Active_COD_Orders for a given buyer.
 - **Active_COD_Order**: A COD order that has been placed and not yet delivered, cancelled, or refunded.
-- **Lifetime_COD_Value**: The cumulative total value (in TZS) of all COD orders a buyer has successfully completed (OTP-confirmed or dispute-window-cleared).
+- **Lifetime_COD_Value**: The cumulative total value (in TZS) of all COD orders a buyer has successfully completed (confirmed via OrderDeliveryConfirmed event or dispute-window-cleared).
 - **Dual_Axis_Threshold**: The pair of (minimum COD_Eligibility_Score, minimum Lifetime_COD_Value) that must both be satisfied for a buyer to advance to a given Trust_Tier.
 - **Score_Repository**: The persistence component that stores and retrieves COD_Eligibility_Score records and Score_Events.
 - **Score_Event**: An immutable record of a Trust_Signal event that contributed to a score change.
 - **Courier_Report**: A structured record submitted by a courier after a delivery attempt, capturing outcome and buyer behaviour.
-- **Delivery_OTP**: A one-time password sent to the buyer at delivery time, confirmation of which constitutes verified delivery.
-- **Dispute_Window**: The 7-day period after a courier marks a delivery complete during which a buyer may raise a dispute; expiry without dispute constitutes confirmed delivery.
+- **Dispute_Window**: The 7-day period after an `OrderDeliveryConfirmed` event during which a buyer may raise a dispute; expiry without dispute constitutes confirmed delivery for trust signal purposes.
 - **Identity_Graph**: The data structure linking buyer accounts that share one or more identity attributes (phone number, national ID, device fingerprint, or delivery address).
 - **Linked_Account**: A buyer account connected to one or more other accounts via the Identity_Graph.
 - **Per_Order_Risk_Score**: A dynamic risk assessment computed at order placement time based on contextual signals for that specific order.
@@ -41,6 +40,9 @@ All enhancements must preserve the existing `checkBuyerEligibility`, `checkSelle
 - **Temporary_Restriction**: A time-bounded suspension of COD access applied to a buyer regardless of their Trust_Tier.
 - **Dispute**: A formal complaint raised by a buyer or seller against an order.
 - **COD_Dispute_Rate**: The ratio of COD orders resulting in a dispute to total COD orders, computed over a rolling 30-day window for a seller.
+- **Ward_Centroid**: The geographic center point (lat/lng) of a Tanzania administrative ward, sourced from the platform's Tanzania locations database (`tanzania_national.json`).
+- **Ward_Code**: The numeric code identifying a ward in the Tanzania locations hierarchy (e.g., 11101 for Kivukoni, Dar es Salaam).
+- **Haversine_Distance**: The great-circle distance between two points on the Earth's surface, computed using the Haversine formula. Accurate to within ~0.3% at Tanzania's latitudes, sufficient for radius gate checks.
 
 ---
 
@@ -83,17 +85,19 @@ All enhancements must preserve the existing `checkBuyerEligibility`, `checkSelle
 
 ### Requirement 3: Radius-Based Geographic Restrictions
 
-**User Story:** As a platform operator, I want COD geographic restrictions to be based on delivery radius rather than city boundaries, so that restrictions are meaningful in large cities like Dar es Salaam where city-level matching is too permissive.
+**User Story:** As a platform operator, I want COD geographic restrictions to be based on ward-centroid Haversine distance rather than city boundaries, so that restrictions are meaningful in large cities like Dar es Salaam where city-level matching is too permissive.
 
 #### Acceptance Criteria
 
-1. WHEN a buyer classified as NEW_BUYER places their first-ever COD order, THE Trust_Engine SHALL restrict the delivery address to within 5 km of the seller's address.
-2. WHEN a buyer classified as NEW_BUYER places a subsequent COD order (not their first), THE Trust_Engine SHALL restrict the delivery address to within 15 km of the seller's address.
-3. WHILE a buyer is classified as TRUSTED_BEGINNER, THE Trust_Engine SHALL restrict COD deliveries to within the same city as the seller, with no radius cap within that city.
-4. WHILE a buyer is classified as TRUSTED_BUYER, GOLD_BUYER, or PLATINUM_BUYER, THE Trust_Engine SHALL impose no geographic restriction on COD deliveries.
+1. WHILE a buyer is classified as NEW_BUYER, THE Trust_Engine SHALL restrict COD deliveries to within 24 km Haversine_Distance of the seller's ward centroid, with no distinction between first and subsequent orders.
+2. WHILE a buyer is classified as TRUSTED_BEGINNER, THE Trust_Engine SHALL restrict COD deliveries to within 50 km Haversine_Distance of the seller's ward centroid.
+3. WHILE a buyer is classified as TRUSTED_BUYER, THE Trust_Engine SHALL restrict COD deliveries to addresses within the same region as the seller's address, with no radius cap within that region.
+4. WHILE a buyer is classified as GOLD_BUYER or PLATINUM_BUYER, THE Trust_Engine SHALL impose no geographic restriction on COD deliveries (nationwide).
 5. WHEN a COD order's delivery address falls outside the buyer's permitted geographic zone, THE Trust_Engine SHALL return an ineligible result with reason `AREA_RESTRICTION`.
-6. THE Trust_Engine SHALL compute delivery distance using the geodesic distance between the seller's coordinates and the buyer's delivery coordinates.
-7. FOR ALL Trust_Tier pairs where tier_A ranks higher than tier_B, THE Trust_Engine SHALL permit a geographic zone for tier_A that is equal to or larger than the geographic zone permitted for tier_B (radius monotonicity property).
+6. THE Trust_Engine SHALL compute Haversine_Distance between the Ward_Centroid of the seller's ward and the Ward_Centroid of the buyer's delivery ward, using the Ward_Code stored on each address to look up coordinates from the Tanzania locations database.
+7. WHEN a Ward_Code is missing from an address or cannot be resolved in the Tanzania locations database, THE Trust_Engine SHALL fall back to region-level matching and treat the addresses as within the same zone only if both share the same region code.
+8. THE Trust_Engine SHALL apply the Haversine formula to compute great-circle distance between two lat/lng points, using the ward centroid coordinates sourced from `tanzania_national.json`.
+9. FOR ALL Trust_Tier pairs where tier_A ranks higher than tier_B, THE Trust_Engine SHALL permit a geographic zone for tier_A that is equal to or larger than the geographic zone permitted for tier_B (radius monotonicity property).
 
 ---
 
@@ -129,20 +133,19 @@ All enhancements must preserve the existing `checkBuyerEligibility`, `checkSelle
 
 ---
 
-### Requirement 6: OTP-Confirmed Delivery Completion
+### Requirement 6: Delivery Confirmation via Platform Event
 
-**User Story:** As a platform operator, I want successful deliveries to be confirmed by the buyer via OTP before they count as positive trust signals, so that colluding sellers and buyers cannot farm trust signals through fake deliveries.
+**User Story:** As a platform operator, I want successful deliveries to be confirmed by the platform's universal order delivery mechanism before they count as positive trust signals, so that colluding sellers and buyers cannot farm trust signals through fake deliveries.
 
 #### Acceptance Criteria
 
-1. WHEN a courier marks a COD order as delivered, THE Trust_Engine SHALL NOT record a SUCCESSFUL_DELIVERY trust signal until delivery is confirmed.
-2. WHEN a courier marks a COD order as delivered, THE Trust_Engine SHALL initiate a Delivery_OTP flow by sending a one-time password to the buyer's verified phone number.
-3. WHEN the buyer submits the correct Delivery_OTP within 24 hours of the courier marking delivery, THE Trust_Engine SHALL record a SUCCESSFUL_DELIVERY trust signal and add the order's value to the buyer's Lifetime_COD_Value.
-4. WHEN the Dispute_Window of 7 days expires after a courier marks delivery without the buyer raising a dispute, THE Trust_Engine SHALL record a SUCCESSFUL_DELIVERY trust signal and add the order's value to the buyer's Lifetime_COD_Value.
-5. WHEN a buyer raises a dispute within the Dispute_Window, THE Trust_Engine SHALL NOT record a SUCCESSFUL_DELIVERY trust signal and SHALL suspend the Lifetime_COD_Value increment pending dispute resolution.
-6. WHEN a buyer fails to submit the Delivery_OTP within 24 hours but does not raise a dispute, THE Trust_Engine SHALL wait for the full Dispute_Window to expire before recording the SUCCESSFUL_DELIVERY signal.
-7. THE Trust_Engine SHALL record the confirmation method (OTP or dispute-window-expiry) as metadata on the SUCCESSFUL_DELIVERY Score_Event.
-8. FOR ALL COD orders, THE Trust_Engine SHALL ensure a SUCCESSFUL_DELIVERY signal is recorded only after either OTP confirmation or Dispute_Window expiry without dispute (OTP confirmation invariant).
+1. THE Trust_Engine SHALL subscribe to the platform's `OrderDeliveryConfirmed` event, which is emitted after the universal order delivery OTP is accepted by the courier for any order regardless of payment method.
+2. WHEN the platform emits an `OrderDeliveryConfirmed` event for a COD order, THE Trust_Engine SHALL record a `SUCCESSFUL_DELIVERY` trust signal and add the order's value to the buyer's Lifetime_COD_Value.
+3. THE Trust_Engine SHALL NOT manage its own OTP flow; delivery confirmation is handled entirely by the platform's universal delivery mechanism.
+4. WHEN a buyer raises a dispute within the Dispute_Window of 7 days after an `OrderDeliveryConfirmed` event, THE Trust_Engine SHALL reverse the `SUCCESSFUL_DELIVERY` signal and suspend the Lifetime_COD_Value increment pending dispute resolution.
+5. WHEN the Dispute_Window of 7 days expires after an `OrderDeliveryConfirmed` event without the buyer raising a dispute, THE Trust_Engine SHALL treat the delivery as fully confirmed and retain the `SUCCESSFUL_DELIVERY` signal and Lifetime_COD_Value increment.
+6. THE Trust_Engine SHALL record the confirmation method on the `SUCCESSFUL_DELIVERY` Score_Event as `ORDER_DELIVERY_CONFIRMED`.
+7. FOR ALL COD orders, THE Trust_Engine SHALL ensure a `SUCCESSFUL_DELIVERY` signal is recorded only after the platform emits an `OrderDeliveryConfirmed` event, and SHALL reverse the signal if a dispute is raised within the Dispute_Window (delivery confirmation invariant).
 
 ---
 
@@ -248,6 +251,20 @@ All enhancements must preserve the existing `checkBuyerEligibility`, `checkSelle
 
 ---
 
+## Tier Summary
+
+| Tier | Score threshold | Lifetime COD value threshold | Exposure limit | Radius | Concurrent active COD orders |
+|---|---|---|---|---|---|
+| NEW_BUYER | 0–20 | — (any) | TZS 30,000 | 24 km from seller ward centroid | 1 |
+| TRUSTED_BEGINNER | ≥ 21 | ≥ TZS 100,000 | TZS 150,000 | 50 km from seller ward centroid | 2 |
+| TRUSTED_BUYER | ≥ 41 | ≥ TZS 500,000 | TZS 500,000 | Same region as seller | 3 |
+| GOLD_BUYER | ≥ 65 | ≥ TZS 2,000,000 | TZS 2,000,000 | Nationwide | 5 |
+| PLATINUM_BUYER | ≥ 85 | ≥ TZS 10,000,000 | TZS 10,000,000 | Nationwide | Unlimited |
+
+**Key design principle:** Radius and concurrent order limits are behavior-driven (score), while Exposure_Limit is history-driven (Lifetime_COD_Value). For TRUSTED_BEGINNER through PLATINUM_BUYER, the Exposure_Limit equals the Lifetime_COD_Value threshold — self-calibrating.
+
+---
+
 ## Correctness Properties Summary
 
 The following properties MUST be verified through property-based testing:
@@ -259,6 +276,6 @@ The following properties MUST be verified through property-based testing:
 | P3 | Exposure limit: Active_Exposure ≤ Exposure_Limit after any order sequence | Invariant | Req 1.9, 4.6 |
 | P4 | Dual-axis invariant: tier only advances when both score AND Lifetime_COD_Value thresholds are met | Invariant | Req 2.8 |
 | P5 | Identity graph monotonicity: linking accounts never increases any account's effective COD_Eligibility_Score | Metamorphic | Req 5.8 |
-| P6 | OTP confirmation: SUCCESSFUL_DELIVERY signal fires only after OTP confirmation or Dispute_Window expiry | State machine | Req 6.8 |
-| P7 | Radius monotonicity: geographic radius permitted never decreases as Trust_Tier increases | Metamorphic | Req 3.7 |
+| P6 | Delivery confirmation: SUCCESSFUL_DELIVERY signal fires only after OrderDeliveryConfirmed event, and is reversed if a dispute is raised within the Dispute_Window | State machine | Req 6.7 |
+| P7 | Radius monotonicity: geographic zone permitted (measured as Haversine_Distance from seller ward centroid) never decreases as Trust_Tier increases | Metamorphic | Req 3.9 |
 | P8 | Score determinism: replaying Score_Event log reproduces current score exactly | Round-trip | Req 12.3 |

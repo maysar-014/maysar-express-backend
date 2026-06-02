@@ -1,10 +1,11 @@
 # Maysar Express — How the System Actually Works
-# Last updated: May 2026
+# Last updated: June 2026
 
 ---
 
 ## Table of Contents
 
+- [0. Deep Reference Index](#0-deep-reference-index)
 - [1. What Maysar Express Is](#1-what-maysar-express-is)
 - [2. Registration: Three Things Happen Simultaneously](#2-registration-three-things-happen-simultaneously)
 - [3. COD Trust Scoring: How a Buyer Earns the Right to Pay Later](#3-cod-trust-scoring-how-a-buyer-earns-the-right-to-pay-later)
@@ -28,6 +29,70 @@
 - [21. Table Ownership Map](#21-table-ownership-map)
 - [22. Service-by-Service Dependency List](#22-service-by-service-dependency-list)
 - [23. Key File Index](#23-key-file-index)
+
+## 0. Deep Reference Index
+
+If a section in this atlas feels dense, start here. Each row points to the best
+supporting docs for that topic and gives you a short anchor quote to orient fast.
+
+### Core platform and trust
+
+- **1. What Maysar Express Is** — [docs/README.md](README.md), [docs/architecture/system-architecture.md](architecture/system-architecture.md), [docs/modeling/system-context/system-overview.mmd](modeling/system-context/system-overview.mmd)  
+  _Anchor:_ "Evidence-based - built from reading actual source files, not documentation."
+- **2. Registration: Three Things Happen Simultaneously** — [docs/developer-training/06-events-outbox-and-sagas.md](developer-training/06-events-outbox-and-sagas.md), [docs/event-bus/EVENT_BUS_UNIFICATION_SUMMARY.md](event-bus/EVENT_BUS_UNIFICATION_SUMMARY.md), [docs/architecture/system-architecture.md](architecture/system-architecture.md)  
+  _Anchor:_ "The EventBus lets one module react to something another module did."
+- **3. COD Trust Scoring: How a Buyer Earns the Right to Pay Later** — [docs/business/LAUNCHING-PHASES.md](business/LAUNCHING-PHASES.md), [docs/operations.md](operations.md), [docs/payments/revenue-flow-diagrams.md](payments/revenue-flow-diagrams.md)  
+  _Anchor:_ "Trust & Intelligence Layer | COD trust scoring, buy-box ranking, phone OTP."
+- **4. COD Eligibility Enforcement at Order Time** — [docs/operations.md](operations.md), [docs/payments/revenue-flow-diagrams.md](payments/revenue-flow-diagrams.md), [docs/marketplace/marketplace-flow-diagrams.md](marketplace/marketplace-flow-diagrams.md)  
+  _Anchor:_ "Validate COD eligibility"
+- **5. Placing an Order: The Saga Pattern** — [docs/saga/SAGA_ORCHESTRATION_SYSTEM.md](saga/SAGA_ORCHESTRATION_SYSTEM.md), [docs/developer-training/06-events-outbox-and-sagas.md](developer-training/06-events-outbox-and-sagas.md), [docs/architecture/system-architecture.md](architecture/system-architecture.md)  
+  _Anchor:_ "event-driven module communication within a monolith"
+
+### Marketplace ranking and scoring
+
+- **6. Buy-Box Ranking: How the Featured Seller Is Chosen** — [docs/marketplace/marketplace-flow-diagrams.md](marketplace/marketplace-flow-diagrams.md), [docs/business/LAUNCHING-PHASES.md](business/LAUNCHING-PHASES.md), [docs/SYSTEM_OPERATIONS_DOCUMENTATION.md](SYSTEM_OPERATIONS_DOCUMENTATION.md)  
+  _Anchor:_ "Buy-Box Engine Selects Winner"
+- **7. Price Competitiveness Signal: No Race to the Bottom** — [docs/marketplace/marketplace-flow-diagrams.md](marketplace/marketplace-flow-diagrams.md), [docs/business/LAUNCHING-PHASES.md](business/LAUNCHING-PHASES.md)  
+  _Anchor:_ "+/-5% of median"
+- **8. The Full Composite Score Computation** — [docs/business/LAUNCHING-PHASES.md](business/LAUNCHING-PHASES.md), [docs/marketplace/marketplace-flow-diagrams.md](marketplace/marketplace-flow-diagrams.md), [docs/SYSTEM_OPERATIONS_DOCUMENTATION.md](SYSTEM_OPERATIONS_DOCUMENTATION.md)  
+  _Anchor:_ "Multi-signal composite scoring replacing the naive price-weighted model"
+- **9. Fraud Detection: Three Passes** — [docs/fraud-scoring.md](fraud-scoring.md), [docs/business/LAUNCHING-PHASES.md](business/LAUNCHING-PHASES.md)  
+  _Anchor:_ "Risk Score Thresholds"
+- **10. Geographic Adjustment: Zone-Aware Scoring** — [docs/business/LAUNCHING-PHASES.md](business/LAUNCHING-PHASES.md), [docs/marketplace/marketplace-flow-diagrams.md](marketplace/marketplace-flow-diagrams.md)  
+  _Anchor:_ "Geographic optimisation for Tanzania delivery zones"
+- **11. Category Strategy: Operators Can Tune the Weights** — [docs/business/LAUNCHING-PHASES.md](business/LAUNCHING-PHASES.md), [docs/marketplace/marketplace-flow-diagrams.md](marketplace/marketplace-flow-diagrams.md)  
+  _Anchor:_ "Category-level weight strategies"
+- **12. Scheduled Jobs: When Scores Are Recomputed** — [docs/business/LAUNCHING-PHASES.md](business/LAUNCHING-PHASES.md), [docs/architecture/system-architecture.md](architecture/system-architecture.md)  
+  _Anchor:_ "Scheduled recomputation every 6 hours"
+
+### Runtime, communication, and verification
+
+- **13. The Event Bus: How Services Talk** — [docs/event-bus/EVENT_BUS_UNIFICATION_SUMMARY.md](event-bus/EVENT_BUS_UNIFICATION_SUMMARY.md), [docs/event-bus/EVENT_BUS_ARCHITECTURE_DIAGRAM.md](event-bus/EVENT_BUS_ARCHITECTURE_DIAGRAM.md), [docs/architecture/system-architecture.md](architecture/system-architecture.md)  
+  _Anchor:_ "single powerful EventBus"
+- **14. Correctness: Property-Based Tests** — [docs/testing/INTEGRATION_TEST_CATALOG.md](testing/INTEGRATION_TEST_CATALOG.md), [docs/testing/E2E_TEST_CATALOG.md](testing/E2E_TEST_CATALOG.md), [docs/testing/MANUAL-VS-AUTOMATED.md](testing/MANUAL-VS-AUTOMATED.md)  
+  _Anchor:_ "Comprehensive list of all end-to-end test scenarios"
+- **15. What Phase 4 Depends On (and Why It Is Ready)** — [docs/business/LAUNCHING-PHASES.md](business/LAUNCHING-PHASES.md), [docs/user-identification-and-enabler-attribution.md](user-identification-and-enabler-attribution.md), [docs/Flow%20Docs/06-enabler-journeys.md](Flow%20Docs/06-enabler-journeys.md)  
+  _Anchor:_ "Enabler network, supplier B2B, production pipeline"
+- **16. System Relationship Map** — [docs/architecture/system-architecture.md](architecture/system-architecture.md), [docs/architecture/service-dependency-map.md](architecture/service-dependency-map.md), [docs/modeling/system-context/system-overview.mmd](modeling/system-context/system-overview.mmd)  
+  _Anchor:_ "Evidence-based - built from reading actual source files"
+- **17. Service Ownership Matrix** — [docs/README.md](README.md), [docs/architecture/service-dependency-map.md](architecture/service-dependency-map.md), [docs/SYSTEM_OPERATIONS_DOCUMENTATION.md](SYSTEM_OPERATIONS_DOCUMENTATION.md)  
+  _Anchor:_ "Service Modules"
+- **18. Runtime and Operational Flow** — [docs/SYSTEM_OPERATIONS_DOCUMENTATION.md](SYSTEM_OPERATIONS_DOCUMENTATION.md), [docs/operations.md](operations.md), [docs/developer-training/10-release-and-operations.md](developer-training/10-release-and-operations.md)  
+  _Anchor:_ "step-by-step intent and response behavior"
+- **19. Failure Modes and Recovery Law** — [docs/disaster-recovery.md](disaster-recovery.md), [docs/incident-playbook.md](incident-playbook.md), [docs/operations.md](operations.md)  
+  _Anchor:_ "Disaster Recovery Guide"
+
+### Ownership maps and file index
+
+- **20. Event and Topic Ownership Map** — [../events/README.md](../events/README.md), [../events/CATALOG.md](../events/CATALOG.md), [docs/architecture/service-dependency-map.md](architecture/service-dependency-map.md), [docs/event-bus/EVENT_BUS_UNIFICATION_SUMMARY.md](event-bus/EVENT_BUS_UNIFICATION_SUMMARY.md)  
+  _Anchor:_ "canonical source of truth for all events"
+- **21. Table Ownership Map** — [docs/architecture/database-relationship-diagrams.md](architecture/database-relationship-diagrams.md), [docs/architecture/system-architecture.md](architecture/system-architecture.md), [docs/modeling/infrastructure/database-architecture.mmd](modeling/infrastructure/database-architecture.mmd)  
+  _Anchor:_ "Shared DB, per-service schemas"
+- **22. Service-by-Service Dependency List** — [docs/architecture/service-dependency-map.md](architecture/service-dependency-map.md), [docs/README.md](README.md), [docs/dependency-analysis.md](dependency-analysis.md)  
+  _Anchor:_ "built from reading actual source files"
+- **23. Key File Index** — [docs/architecture/system-architecture.md](architecture/system-architecture.md), [docs/architecture/service-dependency-map.md](architecture/service-dependency-map.md)  
+  _Anchor:_ "Key File Index"
+  _Note:_ This section intentionally stays source-backed; use the docs above to understand why each file matters.
 
 ## 1. What Maysar Express Is
 
@@ -123,136 +188,159 @@ Result after one registration:
 ## 3. COD Trust Scoring: How a Buyer Earns the Right to Pay Later
 
 COD (Cash on Delivery) is the dominant payment method in Tanzania. The risk is buyers
-refusing delivery. The system manages this with a score from 0-100 per buyer.
+refusing delivery. The system manages this with a **dual-axis trust model**: a behavioral
+score (0–100) AND a lifetime completed COD value (TZS). Both must meet thresholds for
+a buyer to advance to the next tier.
 
 SOURCE: services/order-service/src/domain/engines/cod-trust/trust-signal.types.ts
 
 ```typescript
 export enum TrustSignalType {
-  SUCCESSFUL_DELIVERY        = 'SUCCESSFUL_DELIVERY',
-  PHONE_VERIFIED             = 'PHONE_VERIFIED',
-  HIGH_VALUE_COMPLETION      = 'HIGH_VALUE_COMPLETION',
-  ACCOUNT_AGE_MILESTONE      = 'ACCOUNT_AGE_MILESTONE',
-  POST_DISPATCH_CANCELLATION = 'POST_DISPATCH_CANCELLATION',
-  DELIVERY_REFUSED           = 'DELIVERY_REFUSED',
-  DISPUTE_LOST               = 'DISPUTE_LOST',
-  COURIER_NEGATIVE_REPORT    = 'COURIER_NEGATIVE_REPORT',
-}
+  // Positive signals
+  SUCCESSFUL_DELIVERY        = 'SUCCESSFUL_DELIVERY',        // +8
+  PHONE_VERIFIED             = 'PHONE_VERIFIED',             // +5
+  HIGH_VALUE_COMPLETION      = 'HIGH_VALUE_COMPLETION',      // +10
+  ACCOUNT_AGE_MILESTONE      = 'ACCOUNT_AGE_MILESTONE',      // +7
 
-export const SIGNAL_WEIGHTS: Record<TrustSignalType, number> = {
-  [TrustSignalType.SUCCESSFUL_DELIVERY]:        +8,
-  [TrustSignalType.PHONE_VERIFIED]:             +5,
-  [TrustSignalType.HIGH_VALUE_COMPLETION]:      +10,
-  [TrustSignalType.ACCOUNT_AGE_MILESTONE]:      +7,
-  [TrustSignalType.POST_DISPATCH_CANCELLATION]: -10,
-  [TrustSignalType.DELIVERY_REFUSED]:           -15,
-  [TrustSignalType.DISPUTE_LOST]:               -12,
-  [TrustSignalType.COURIER_NEGATIVE_REPORT]:    -8,
-};
+  // Negative signals — buyer
+  POST_DISPATCH_CANCELLATION = 'POST_DISPATCH_CANCELLATION', // -10
+  DELIVERY_REFUSED           = 'DELIVERY_REFUSED',           // -15
+  DISPUTE_LOST               = 'DISPUTE_LOST',               // -12
+
+  // Structured courier intelligence signals (replaces generic COURIER_NEGATIVE_REPORT)
+  COURIER_UNREACHABLE_CUSTOMER = 'COURIER_UNREACHABLE_CUSTOMER', // -5
+  COURIER_SUSPICIOUS_ADDRESS   = 'COURIER_SUSPICIOUS_ADDRESS',   // -10
+  COURIER_REPEATED_REFUSAL     = 'COURIER_REPEATED_REFUSAL',     // -20
+  COURIER_FAKE_PHONE           = 'COURIER_FAKE_PHONE',           // -12
+
+  // Seller-side signals (tracked in seller risk tables, not buyer score)
+  SELLER_WRONG_ITEM_SHIPPED  = 'SELLER_WRONG_ITEM_SHIPPED',
+  SELLER_EMPTY_PACKAGE       = 'SELLER_EMPTY_PACKAGE',
+}
 ```
 
 SOURCE: services/order-service/src/domain/engines/cod-trust/trust-score.functions.ts
 
 ```typescript
-export function applySignal(currentScore: number, signal: TrustSignalType): number {
-  const delta = SIGNAL_WEIGHTS[signal];
-  return Math.max(0, Math.min(100, currentScore + delta));  // always clamped [0,100]
+/**
+ * Dual-axis tier derivation.
+ * Both score AND lifetimeCODValue must meet the threshold for a tier to be granted.
+ */
+export function deriveTier(score: number, lifetimeCODValue: number): TrustTier {
+  if (score >= 85 && lifetimeCODValue >= 10_000_000) return 'PLATINUM_BUYER';
+  if (score >= 65 && lifetimeCODValue >= 2_000_000)  return 'GOLD_BUYER';
+  if (score >= 41 && lifetimeCODValue >= 500_000)    return 'TRUSTED_BUYER';
+  if (score >= 21 && lifetimeCODValue >= 100_000)    return 'TRUSTED_BEGINNER';
+  return 'NEW_BUYER';
 }
 
-export function deriveTier(score: number): TrustTier {
-  if (score <= 20) return 'NEW_BUYER';
-  if (score <= 40) return 'TRUSTED_BEGINNER';
-  return 'TRUSTED_BUYER';
+export function getExposureLimit(tier: TrustTier): number {
+  switch (tier) {
+    case 'NEW_BUYER':        return 30_000;
+    case 'TRUSTED_BEGINNER': return 150_000;
+    case 'TRUSTED_BUYER':    return 500_000;
+    case 'GOLD_BUYER':       return 2_000_000;
+    case 'PLATINUM_BUYER':   return 10_000_000;
+  }
 }
 
-export function getCODLimit(tier: TrustTier): number | null {
-  if (tier === 'NEW_BUYER')        return 30_000;   // TZS 30k
-  if (tier === 'TRUSTED_BEGINNER') return 150_000;  // TZS 150k
-  return null;                                       // TRUSTED_BUYER — unlimited
+export function getConcurrentOrderLimit(tier: TrustTier): number {
+  // NEW_BUYER: 1, TRUSTED_BEGINNER: 2, TRUSTED_BUYER: 3, GOLD_BUYER: 5, PLATINUM: ∞
 }
 
-export function replayScore(events: Array<{ delta: number }>): number {
-  return events.reduce((score, event) => {
-    return Math.max(0, Math.min(100, score + event.delta));
-  }, 0);
+export function getRadiusKm(tier: TrustTier): number | null {
+  // NEW_BUYER: 24km, TRUSTED_BEGINNER: 50km, TRUSTED_BUYER: null (same region),
+  // GOLD/PLATINUM: null (nationwide)
+}
+
+export function haversineDistanceKm(lat1, lng1, lat2, lng2): number {
+  // Great-circle distance using Earth radius 6371 km
+  // Used for ward-centroid geographic checks
 }
 ```
 
-These are pure functions — no I/O, no side effects. The score is event-sourced:
-every change is appended to order_CODScoreEvent and the current score is a
-materialized view in order_CODTrustScore. You can replay the full history at any time.
+**Five-tier progression:**
 
-Progression example:
-  New buyer registers:          score = 0  → NEW_BUYER    → TZS 30k limit
-  Completes 4 COD deliveries:   score = 32 → TRUSTED_BEGINNER → TZS 150k limit
-  Verifies phone:               score = 37 → TRUSTED_BEGINNER
-  Completes 1 high-value order: score = 47 → TRUSTED_BUYER → unlimited
+| Tier | Score | Lifetime COD value | Exposure limit | Radius | Concurrent orders |
+|---|---|---|---|---|---|
+| NEW_BUYER | 0–20 | any | TZS 30,000 | 24 km (ward centroid) | 1 |
+| TRUSTED_BEGINNER | ≥ 21 | ≥ TZS 100,000 | TZS 150,000 | 50 km (ward centroid) | 2 |
+| TRUSTED_BUYER | ≥ 41 | ≥ TZS 500,000 | TZS 500,000 | Same region | 3 |
+| GOLD_BUYER | ≥ 65 | ≥ TZS 2,000,000 | TZS 2,000,000 | Nationwide | 5 |
+| PLATINUM_BUYER | ≥ 85 | ≥ TZS 10,000,000 | TZS 10,000,000 | Nationwide | Unlimited |
 
+**Key design principle:** Radius and concurrent order limits are behavior-driven (score).
+Exposure limit is history-driven (lifetime COD value). No tier is unlimited.
+
+The score is event-sourced: every change is appended to `order_cod_score_events` and
+the current score is a materialized view in `order_cod_trust_scores`. The record also
+tracks `lifetimeCODValue` (cumulative confirmed COD value) and `activeExposure`
+(sum of outstanding COD order values). You can replay the full history at any time.
+
+**Delivery confirmation:** `SUCCESSFUL_DELIVERY` fires only after the platform emits
+`OrderDeliveryConfirmed.v1` (the universal delivery OTP accepted by the courier).
+A 7-day dispute window guards against colluding seller/buyer pairs farming trust signals.
 
 ---
 
 ## 4. COD Eligibility Enforcement at Order Time
 
-SOURCE: services/order-service/src/domain/engines/progressive-cod-eligibility.engine.ts
+SOURCE: services/order-service/src/domain/engines/enhanced-cod-eligibility.engine.ts
 
 ```typescript
 async checkOrderEligibility(order: Order, sellerAddress: any): Promise<EligibilityResult> {
+  // Step 1: Load score record (throws on failure — not fail-open)
   const scoreRecord = await this.trustScoreRepo.findByBuyerId(buyerId);
   const score = scoreRecord?.score ?? 0;
-  const tier = deriveTier(score);
-  const codLimit = getCODLimit(tier);
-  const orderAmount = typeof order.totalAmount?.amount === 'number'
-    ? order.totalAmount.amount
-    : Number(order.totalAmount);
+  const lifetimeCODValue = Number(scoreRecord?.lifetimeCODValue ?? 0);
+  const activeExposure = Number(scoreRecord?.activeExposure ?? 0);
+  const tier = deriveTier(score, lifetimeCODValue);
 
-  // 1. Value check — fail fast
-  if (codLimit !== null && orderAmount > codLimit) {
-    return {
-      eligible: false,
-      reason: `COD order value TZS ${orderAmount} exceeds your current limit of TZS ${codLimit}.
-               Complete more orders to increase your COD limit.`,
-    };
+  // Step 2: Active exposure check (sum of outstanding COD values, not order count)
+  if (activeExposure + orderAmount > getExposureLimit(tier)) {
+    return { eligible: false, reason: 'LIMIT_EXCEEDED' };
   }
 
-  // 2. Geographic check — NEW_BUYER only: same city as seller
-  if (tier === 'NEW_BUYER') {
-    const deliveryCity = order.deliveryAddress?.city?.toLowerCase()?.trim();
-    const sellerCity = sellerAddress?.city?.toLowerCase()?.trim();
-    if (deliveryCity && sellerCity && deliveryCity !== sellerCity) {
-      return {
-        eligible: false,
-        reason: `New buyers can only use COD within the same city as the seller (${sellerAddress.city}).`,
-      };
-    }
+  // Step 3: Concurrent order count check
+  if (activeCODCount >= getConcurrentOrderLimit(tier)) {
+    return { eligible: false, reason: 'CONCURRENT_LIMIT_EXCEEDED' };
   }
 
-  // 3. Concurrency check — NEW_BUYER only: max 1 active COD order at a time
-  if (tier === 'NEW_BUYER') {
-    const activeCODOrders = await this.countActiveCODOrders(buyerId);
-    if (activeCODOrders >= 1) {
-      return {
-        eligible: false,
-        reason: 'New buyers can only have 1 active COD order at a time.',
-      };
-    }
-  }
+  // Step 4: Geographic check (Haversine ward-centroid distance)
+  // NEW_BUYER: 24km, TRUSTED_BEGINNER: 50km, TRUSTED_BUYER: same region, GOLD+: nationwide
+  const geoResult = await this.checkGeographic(order, sellerAddress, tier);
+  if (!geoResult.eligible) return geoResult;  // reason: AREA_RESTRICTION
 
-  // 4. Logistics area support
-  const isSupportedArea = await this.logisticsService.isCODSupportedInArea(order.deliveryAddress);
+  // Step 5: Logistics area support
   if (!isSupportedArea) return { eligible: false, reason: 'UNSUPPORTED_AREA' };
 
-  // 5. High-risk item check (codAccepted flag on product)
-  const hasHighRiskItem = order.items.some(item => this.isHighRiskItem(item.productId));
-  if (hasHighRiskItem) return { eligible: false, reason: 'HIGH_RISK_ITEM' };
-
-  return { eligible: true };
+  // Step 6: High-risk item check, then per-order dynamic risk assessment
+  // Per-order risk: NEW_DEVICE, NEW_ADDRESS, HIGH_RELATIVE_VALUE, HIGH_VELOCITY, HIGH_RISK_CATEGORY
+  // 0 factors → LOW (no friction)
+  // 1–2 factors → MEDIUM (requiresCommitmentFee: true)
+  // 3+ factors → HIGH (requiresCommitmentFee: true, requiresManualReview: true)
+  const risk = await this.perOrderRiskAssessor.assess(order);
+  return {
+    eligible: true,
+    requiresCommitmentFee: risk.requiresCommitmentFee,
+    requiresManualReview: risk.requiresManualReview,
+    commitmentFeeAmount: risk.requiresCommitmentFee ? deliveryFee : undefined,
+  };
 }
 ```
 
-Checks run in fail-fast order. A brand-new buyer (score 0) can immediately place a
-COD order up to TZS 30,000 in the same city as the seller. After 4 successful
-deliveries (+8 each = +32), they cross into TRUSTED_BEGINNER and the limit jumps
-to TZS 150,000.
+Geographic distance is computed as Haversine distance between **ward centroids** from
+the Tanzania locations database (`tanzania_national.json`, 3,054 wards with coordinates).
+Ward codes are stored on buyer delivery addresses and seller addresses. If a ward code
+is missing, the check falls back to region-level matching.
+
+**Seller-side COD risk:** Sellers with a rolling 30-day COD dispute rate > 15%
+(minimum 5 orders) are automatically suspended from offering COD. Auto-reinstated
+when rate drops below 10%.
+
+**Identity graph:** Accounts sharing phone, national ID, device fingerprint, or
+delivery address are linked. Negative signals propagate to all linked accounts,
+preventing trust resets via new account creation.
 
 ---
 
