@@ -404,6 +404,16 @@ module.exports = {
       }
     },
     {
+      displayName: 'e2e',
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      testMatch: ['<rootDir>/tests/e2e/**/*.e2e.test.ts'],
+      setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+      moduleNameMapper: {
+        '^uuid$': require.resolve('uuid'),
+      }
+    },
+    {
       displayName: 'contract-scripts',
       testEnvironment: 'node',
       testMatch: ['<rootDir>/scripts/contract/**/*.test.js']

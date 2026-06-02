@@ -83,7 +83,7 @@ INSERT INTO order_items (order_id, product_id, product_variant_id, quantity, uni
 -- Insert sample transactions
 INSERT INTO transactions (id, order_id, sender_id, receiver_id, amount, currency, transaction_type, status, payment_method) VALUES
   ('550e8400-e29b-41d4-a716-446655440400', '550e8400-e29b-41d4-a716-446655440300', '550e8400-e29b-41d4-a716-446655440030', '550e8400-e29b-41d4-a716-446655440020', 1009.99, 'USD', 'order_payment', 'COMPLETED', 'credit_card'),
-  ('550e8400-e29b-41d4-a716-446655440401', '550e8400-e29b-41d4-a716-446655440301', '550e8400-e29b-41d4-a716-446655440031', '550e8400-e29b-41d4-a716-446655440021', 39.99, 'USD', 'order_payment', 'COMPLETED', 'pesapal');
+  ('550e8400-e29b-41d4-a716-446655440401', '550e8400-e29b-41d4-a716-446655440301', '550e8400-e29b-41d4-a716-446655440031', '550e8400-e29b-41d4-a716-446655440021', 39.99, 'USD', 'order_payment', 'COMPLETED', 'paymentGateway');
 
 -- Insert sample shipments
 INSERT INTO shipments (id, order_id, courier_id, tracking_number, carrier, status, pickup_address, delivery_address) VALUES

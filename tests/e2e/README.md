@@ -1,27 +1,26 @@
 # End-to-End (E2E) Tests
 
-Cypress is the default E2E runner.
+This folder contains live API smoke tests that exercise the running platform
+against the flow docs in `docs/Flow Docs/`.
 
-Install (once):
+The suite is intentionally opt-in so it only runs when the backend is up and
+seeded with the shared test users from `docs/test-users.md`.
 
-```bash
-npm i -D cypress
-```
-
-Run full stack for tests:
+Run the live suite:
 
 ```bash
-docker compose -f docker/docker-compose.test.yml up -d --build
+npm run test:e2e:live
 ```
 
-Run Cypress (headless):
+Useful environment overrides:
 
-```bash
-npm run test:e2e:cypress
-```
+- `E2E_BASE_URL` - explicit platform base URL, defaults to `http://localhost:3000`
+- `BASE_URL` / `PLATFORM_BASE_URL` - fallback base URL values used by the helper
+- `RUN_LIVE_E2E=true` - enables the live API smoke suite when invoking Jest directly
 
-Stop stack:
+The current suite covers:
 
-```bash
-docker compose -f docker/docker-compose.test.yml down
-```
+- auth and access
+- seller storefront discovery
+- buyer wallet balance
+- buyer order search

@@ -32,10 +32,10 @@ const REQUIRED_KEYS = [
   'SMS_SERVICE_API_KEY',
   'AFRICASTALKING_USERNAME',
   'AFRICASTALKING_API_KEY',
-  'PESAPAL_CONSUMER_KEY',
-  'PESAPAL_CONSUMER_SECRET',
-  'PESAPAL_IPN_ID',
-  'PESAPAL_URL'
+  'PAYMENT_GATEWAY_CONSUMER_KEY',
+  'PAYMENT_GATEWAY_CONSUMER_SECRET',
+  'PAYMENT_GATEWAY_IPN_ID',
+  'PAYMENT_GATEWAY_URL'
 ];
 
 const SECRET_KEYS = [
@@ -47,8 +47,8 @@ const SECRET_KEYS = [
   'CATALOG_SERVICE_DB_PASSWORD',
   'SMS_SERVICE_API_KEY',
   'AFRICASTALKING_API_KEY',
-  'PESAPAL_CONSUMER_SECRET',
-  'PESAPAL_IPN_ID'
+  'PAYMENT_GATEWAY_CONSUMER_SECRET',
+  'PAYMENT_GATEWAY_IPN_ID'
 ];
 
 const PLACEHOLDER_MARKERS = [
@@ -103,8 +103,8 @@ if (parsed.SMS_PROVIDER !== 'africastalking') {
   issues.push(`SMS_PROVIDER must be "africastalking", got "${parsed.SMS_PROVIDER}"`);
 }
 
-if (parsed.PESAPAL_URL && !/pesapal/i.test(parsed.PESAPAL_URL)) {
-  issues.push('PESAPAL_URL must point to a Pesapal endpoint');
+if (parsed.PAYMENT_GATEWAY_URL && !/paymentGateway/i.test(parsed.PAYMENT_GATEWAY_URL)) {
+  issues.push('PAYMENT_GATEWAY_URL must point to a PaymentGateway endpoint');
 }
 
 const resolveBaseUrl = () => {

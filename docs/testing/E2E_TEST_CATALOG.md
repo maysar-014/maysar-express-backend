@@ -287,11 +287,11 @@
 ## Critical Paths
 
 ### 1. Payment Processing
-**Scenario**: End-to-end payment with Pesapal
+**Scenario**: End-to-end payment with PaymentGateway
 
 **Steps**:
 1. Initiate payment
-2. Redirect to Pesapal
+2. Redirect to PaymentGateway
 3. Complete payment
 4. Receive IPN callback
 5. Verify payment
@@ -533,7 +533,7 @@
 - Prometheus metrics
 
 ### External Services
-- Pesapal sandbox
+- PaymentGateway sandbox
 - Africa's Talking test account
 - SMTP test server
 - Firebase test project

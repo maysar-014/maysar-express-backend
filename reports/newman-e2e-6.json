@@ -45347,7 +45347,7 @@
           },
           {
             "id": "7e9c1ec5-b64b-4d5a-b737-af60e3ed502a",
-            "name": "POST /api/payment/payments/webhooks/pesapal",
+            "name": "POST /api/payment/payments/webhooks/paymentGateway",
             "request": {
               "description": {
                 "content": "",
@@ -45359,7 +45359,7 @@
                   "payment",
                   "payments",
                   "webhooks",
-                  "pesapal"
+                  "paymentGateway"
                 ],
                 "host": [
                   "{{platform_base_url}}"
@@ -45461,7 +45461,7 @@
           },
           {
             "id": "18e0b639-c487-4158-9ebe-fd01ea940e11",
-            "name": "POST /api/payment/webhooks/pesapal",
+            "name": "POST /api/payment/webhooks/paymentGateway",
             "request": {
               "description": {
                 "content": "",
@@ -45472,7 +45472,7 @@
                   "api",
                   "payment",
                   "webhooks",
-                  "pesapal"
+                  "paymentGateway"
                 ],
                 "host": [
                   "{{platform_base_url}}"

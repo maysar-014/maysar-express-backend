@@ -10,9 +10,9 @@ describe('Payment Processing Engine', () => {
 
     describe('Provider Selection', () => {
         it('should select correct provider for method', () => {
-            expect(engine.selectPaymentProvider(PaymentMethodType.MPESA)).toBe(PaymentProvider.PESAPAL);
+            expect(engine.selectPaymentProvider(PaymentMethodType.MPESA)).toBe(PaymentProvider.PAYMENT_GATEWAY);
             expect(engine.selectPaymentProvider(PaymentMethodType.WALLET)).toBe(PaymentProvider.INTERNAL_WALLET);
-            expect(engine.selectPaymentProvider(PaymentMethodType.CARD)).toBe(PaymentProvider.PESAPAL);
+            expect(engine.selectPaymentProvider(PaymentMethodType.CARD)).toBe(PaymentProvider.PAYMENT_GATEWAY);
         });
     });
 
@@ -79,7 +79,7 @@ describe('Payment Processing Engine', () => {
             };
 
             const strategy = engine.determineProcessingStrategy(request);
-            expect(strategy.provider).toBe(PaymentProvider.PESAPAL);
+            expect(strategy.provider).toBe(PaymentProvider.PAYMENT_GATEWAY);
             expect(strategy.method).toBe(PaymentMethodType.MPESA);
             expect(strategy.estimatedProcessingTime).toBe(30);
             expect(strategy.requiresRedirect).toBe(true);

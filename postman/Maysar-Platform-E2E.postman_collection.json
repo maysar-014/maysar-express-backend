@@ -75875,8 +75875,8 @@
                                                                     ]
                                                    },
                                                    {
-                                                       "name":  "[AUTO] POST Payments Webhooks Pesapal",
-                                                       "description":  "POST /api/payment/payments/webhooks/pesapal with seeded body",
+                                                       "name":  "[AUTO] POST Payments Webhooks PaymentGateway",
+                                                       "description":  "POST /api/payment/payments/webhooks/paymentGateway with seeded body",
                                                        "request":  {
                                                                        "method":  "POST",
                                                                        "header":  [
@@ -75905,7 +75905,7 @@
                                                                                           "value":  "application/json"
                                                                                       }
                                                                                   ],
-                                                                       "url":  "{{platform_base_url}}/api/payment/payments/webhooks/pesapal",
+                                                                       "url":  "{{platform_base_url}}/api/payment/payments/webhooks/paymentGateway",
                                                                        "body":  {
                                                                                     "mode":  "raw",
                                                                                     "raw":  "{\"OrderTrackingId\":\"{{payment_id}}\",\"OrderMerchantReference\":\"{{order_id}}\",\"OrderNotificationType\":\"IPNCHANGE\",\"status\":\"COMPLETED\"}",
@@ -76360,8 +76360,8 @@
                                                                     ]
                                                    },
                                                    {
-                                                       "name":  "[AUTO] POST Webhooks Pesapal",
-                                                       "description":  "POST /api/payment/webhooks/pesapal with seeded body",
+                                                       "name":  "[AUTO] POST Webhooks PaymentGateway",
+                                                       "description":  "POST /api/payment/webhooks/paymentGateway with seeded body",
                                                        "request":  {
                                                                        "method":  "POST",
                                                                        "header":  [
@@ -76390,7 +76390,7 @@
                                                                                           "value":  "application/json"
                                                                                       }
                                                                                   ],
-                                                                       "url":  "{{platform_base_url}}/api/payment/webhooks/pesapal",
+                                                                       "url":  "{{platform_base_url}}/api/payment/webhooks/paymentGateway",
                                                                        "body":  {
                                                                                     "mode":  "raw",
                                                                                     "raw":  "{\"OrderTrackingId\":\"{{payment_id}}\",\"OrderMerchantReference\":\"{{order_id}}\",\"OrderNotificationType\":\"IPNCHANGE\",\"status\":\"COMPLETED\"}",

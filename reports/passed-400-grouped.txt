@@ -139,7 +139,7 @@ GET /api/order/orders :: 1 :: GET /api/order/orders
 POST /api/order/orders/disputes/test-id/resolve :: 1 :: POST /api/order/orders/disputes/:id/resolve
 GET /api/order/orders/tracking/test-trackingNumber :: 1 :: GET /api/order/orders/tracking/:trackingNumber
 POST /api/payment/payments/test-id/refund :: 1 :: POST /api/payment/payments/:id/refund
-POST /api/payment/payments/webhooks/pesapal :: 1 :: POST /api/payment/payments/webhooks/pesapal
+POST /api/payment/payments/webhooks/paymentGateway :: 1 :: POST /api/payment/payments/webhooks/paymentGateway
 POST /api/production/plans :: 1 :: POST /api/production/plans
 PUT /api/production/plans/test-id/status :: 1 :: PUT /api/production/plans/:id/status
 POST /api/production/quality/checkpoints :: 1 :: POST /api/production/quality/checkpoints

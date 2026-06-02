@@ -41,7 +41,7 @@ cp terraform.tfvars.example terraform.tfvars
 - `custom_domain_name`
 - `route53_zone_id`
 - `app_image` or plan to push to the generated ECR repository
-- Pesapal production credentials
+- PaymentGateway production credentials
 - any optional overrides you want for sizing or secrets
 
 3. Configure remote state:

@@ -48,7 +48,7 @@ Provides small, pure utility functions used across multiple service modules. No 
 import { withRetry, RetryPresets } from '@shared/utils/retry.util';
 
 const result = await withRetry(
-  () => pesapalGateway.charge(amount),
+  () => paymentGatewayGateway.charge(amount),
   {
     ...RetryPresets.API,
     onRetry: (attempt, error, delay) => {

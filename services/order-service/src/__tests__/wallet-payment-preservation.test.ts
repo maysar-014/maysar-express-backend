@@ -44,9 +44,9 @@ const itemsArb = fc.array(
 
 // ─── Minimal stubs ─────────────────────────────────────────────────────────────
 
-function makeMockPesapalAdapter() {
+function makeMockPaymentGatewayAdapter() {
   return {
-    processPayment: jest.fn().mockResolvedValue({ success: true, transactionId: 'PESAPAL_TX_001' })
+    processPayment: jest.fn().mockResolvedValue({ success: true, transactionId: 'PAYMENT_GATEWAY_TX_001' })
   } as any;
 }
 
@@ -220,29 +220,29 @@ describe('Preservation A — COD orders: walletClient.debitWallet is NEVER calle
 // ─── Preservation B — CARD and MOBILE_PAYMENT orders ─────────────────────────
 //
 // For all random inputs with paymentMethod in ['CARD', 'MOBILE_PAYMENT'],
-// assert that processPesapalPayment is called and walletClient.debitWallet is NEVER called.
+// assert that processPaymentGatewayPayment is called and walletClient.debitWallet is NEVER called.
 //
 // Validates: Requirements 3.2
 
-describe('Preservation B — CARD and MOBILE_PAYMENT orders: routes to Pesapal, never debits wallet', () => {
+describe('Preservation B — CARD and MOBILE_PAYMENT orders: routes to PaymentGateway, never debits wallet', () => {
   /**
    * **Validates: Requirements 3.2**
    *
    * Property: For any buyerId/amount/currency with paymentMethod in ['CARD', 'MOBILE_PAYMENT'],
-   * processPesapalPayment MUST be called and walletClient.debitWallet MUST NOT be called.
+   * processPaymentGatewayPayment MUST be called and walletClient.debitWallet MUST NOT be called.
    */
   it('PBT: debitWallet is never called for CARD or MOBILE_PAYMENT orders', async () => {
     const paymentMethodArb = fc.constantFrom<'CARD' | 'MOBILE_PAYMENT'>('CARD', 'MOBILE_PAYMENT');
 
     await fc.assert(
       fc.asyncProperty(buyerIdArb, amountArb, currencyArb, paymentMethodArb, async (buyerId, amount, currency, paymentMethod) => {
-        const pesapalAdapter = makeMockPesapalAdapter();
+        const paymentGatewayAdapter = makeMockPaymentGatewayAdapter();
         const paymentRepository = makeMockPaymentRepository();
         const walletClient = makeSuccessWalletClient();
 
         const domainMethod = paymentMethod === 'CARD' ? PaymentMethod.CARD : PaymentMethod.MOBILE_MONEY;
 
-        const saga = new PaymentSaga(pesapalAdapter, paymentRepository, walletClient as any);
+        const saga = new PaymentSaga(paymentGatewayAdapter, paymentRepository, walletClient as any);
 
         const payment = new Payment({
           id: 'pay-' + buyerId + '-' + amount,
@@ -257,8 +257,8 @@ describe('Preservation B — CARD and MOBILE_PAYMENT orders: routes to Pesapal, 
         await saga.start({ payment });
         await drainAsync();
 
-        // ASSERTION: processPesapalPayment (via pesapalAdapter.processPayment) must be called
-        expect(pesapalAdapter.processPayment).toHaveBeenCalled();
+        // ASSERTION: processPaymentGatewayPayment (via paymentGatewayAdapter.processPayment) must be called
+        expect(paymentGatewayAdapter.processPayment).toHaveBeenCalled();
 
         // ASSERTION: debitWallet must NEVER be called
         expect(walletClient.debitWallet).not.toHaveBeenCalled();
@@ -267,12 +267,12 @@ describe('Preservation B — CARD and MOBILE_PAYMENT orders: routes to Pesapal, 
     );
   });
 
-  it('Unit: CARD payment routes to Pesapal and never calls debitWallet', async () => {
-    const pesapalAdapter = makeMockPesapalAdapter();
+  it('Unit: CARD payment routes to PaymentGateway and never calls debitWallet', async () => {
+    const paymentGatewayAdapter = makeMockPaymentGatewayAdapter();
     const paymentRepository = makeMockPaymentRepository();
     const walletClient = makeSuccessWalletClient();
 
-    const saga = new PaymentSaga(pesapalAdapter, paymentRepository, walletClient as any);
+    const saga = new PaymentSaga(paymentGatewayAdapter, paymentRepository, walletClient as any);
 
     const payment = new Payment({
       id: 'pay-card-001',
@@ -287,16 +287,16 @@ describe('Preservation B — CARD and MOBILE_PAYMENT orders: routes to Pesapal, 
     await saga.start({ payment });
     await drainAsync();
 
-    expect(pesapalAdapter.processPayment).toHaveBeenCalledTimes(1);
+    expect(paymentGatewayAdapter.processPayment).toHaveBeenCalledTimes(1);
     expect(walletClient.debitWallet).not.toHaveBeenCalled();
   });
 
-  it('Unit: MOBILE_PAYMENT routes to Pesapal and never calls debitWallet', async () => {
-    const pesapalAdapter = makeMockPesapalAdapter();
+  it('Unit: MOBILE_PAYMENT routes to PaymentGateway and never calls debitWallet', async () => {
+    const paymentGatewayAdapter = makeMockPaymentGatewayAdapter();
     const paymentRepository = makeMockPaymentRepository();
     const walletClient = makeSuccessWalletClient();
 
-    const saga = new PaymentSaga(pesapalAdapter, paymentRepository, walletClient as any);
+    const saga = new PaymentSaga(paymentGatewayAdapter, paymentRepository, walletClient as any);
 
     const payment = new Payment({
       id: 'pay-mobile-001',
@@ -311,7 +311,7 @@ describe('Preservation B — CARD and MOBILE_PAYMENT orders: routes to Pesapal, 
     await saga.start({ payment });
     await drainAsync();
 
-    expect(pesapalAdapter.processPayment).toHaveBeenCalledTimes(1);
+    expect(paymentGatewayAdapter.processPayment).toHaveBeenCalledTimes(1);
     expect(walletClient.debitWallet).not.toHaveBeenCalled();
   });
 });
@@ -598,17 +598,17 @@ describe('Preservation E — Saga step progression: StockReservation → Payment
   });
 
   it('Unit: PaymentSaga defines FraudCheck and ProcessPayment steps in correct order', () => {
-    class TestablePesapalSaga extends PaymentSaga {
+    class TestablePaymentGatewaySaga extends PaymentSaga {
       public getStepNames(): string[] {
         return this.defineSteps().map(step => step.name);
       }
     }
 
-    const pesapalAdapter = makeMockPesapalAdapter();
+    const paymentGatewayAdapter = makeMockPaymentGatewayAdapter();
     const paymentRepository = makeMockPaymentRepository();
     const walletClient = makeSuccessWalletClient();
 
-    const saga = new TestablePesapalSaga(pesapalAdapter, paymentRepository, walletClient as any);
+    const saga = new TestablePaymentGatewaySaga(paymentGatewayAdapter, paymentRepository, walletClient as any);
     const stepNames = saga.getStepNames();
 
     // ASSERTION: PaymentSaga steps are FraudCheck → ProcessPayment
@@ -617,12 +617,12 @@ describe('Preservation E — Saga step progression: StockReservation → Payment
     expect(stepNames[1]).toBe('ProcessPayment');
   });
 
-  it('Unit: COD payment in PaymentSaga completes ProcessPayment step without calling Pesapal or debitWallet', async () => {
-    const pesapalAdapter = makeMockPesapalAdapter();
+  it('Unit: COD payment in PaymentSaga completes ProcessPayment step without calling PaymentGateway or debitWallet', async () => {
+    const paymentGatewayAdapter = makeMockPaymentGatewayAdapter();
     const paymentRepository = makeMockPaymentRepository();
     const walletClient = makeSuccessWalletClient();
 
-    const saga = new PaymentSaga(pesapalAdapter, paymentRepository, walletClient as any);
+    const saga = new PaymentSaga(paymentGatewayAdapter, paymentRepository, walletClient as any);
 
     const payment = new Payment({
       id: 'pay-cod-001',
@@ -637,8 +637,8 @@ describe('Preservation E — Saga step progression: StockReservation → Payment
     await saga.start({ payment });
     await drainAsync();
 
-    // ASSERTION: neither Pesapal nor wallet debit should be called for COD
-    expect(pesapalAdapter.processPayment).not.toHaveBeenCalled();
+    // ASSERTION: neither PaymentGateway nor wallet debit should be called for COD
+    expect(paymentGatewayAdapter.processPayment).not.toHaveBeenCalled();
     expect(walletClient.debitWallet).not.toHaveBeenCalled();
 
     // ASSERTION: payment should be persisted as COMPLETED for COD

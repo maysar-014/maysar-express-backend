@@ -3,13 +3,13 @@ import { PaymentMethod, PaymentMethodType, PaymentProvider } from '../payment-me
 describe('PaymentMethod Value Object', () => {
     describe('Constructor & Validation', () => {
         it('should create valid payment method', () => {
-            const pm = new PaymentMethod(PaymentMethodType.MPESA, PaymentProvider.PESAPAL);
+            const pm = new PaymentMethod(PaymentMethodType.MPESA, PaymentProvider.PAYMENT_GATEWAY);
             expect(pm.type).toBe(PaymentMethodType.MPESA);
-            expect(pm.provider).toBe(PaymentProvider.PESAPAL);
+            expect(pm.provider).toBe(PaymentProvider.PAYMENT_GATEWAY);
         });
 
         it('should throw error for invalid type', () => {
-            expect(() => new PaymentMethod('INVALID' as PaymentMethodType, PaymentProvider.PESAPAL)).toThrow('Invalid payment method type: INVALID');
+            expect(() => new PaymentMethod('INVALID' as PaymentMethodType, PaymentProvider.PAYMENT_GATEWAY)).toThrow('Invalid payment method type: INVALID');
         });
 
         it('should throw error for invalid provider', () => {
@@ -17,18 +17,18 @@ describe('PaymentMethod Value Object', () => {
         });
 
         it('should enforce provider compatibility (Wallet)', () => {
-            expect(() => new PaymentMethod(PaymentMethodType.WALLET, PaymentProvider.PESAPAL)).toThrow('Wallet payment method must use INTERNAL_WALLET provider');
+            expect(() => new PaymentMethod(PaymentMethodType.WALLET, PaymentProvider.PAYMENT_GATEWAY)).toThrow('Wallet payment method must use INTERNAL_WALLET provider');
         });
 
         it('should enforce provider compatibility (Mobile Money)', () => {
-            expect(() => new PaymentMethod(PaymentMethodType.MPESA, PaymentProvider.INTERNAL_WALLET)).toThrow('Payment method MPESA must use PESAPAL provider');
+            expect(() => new PaymentMethod(PaymentMethodType.MPESA, PaymentProvider.INTERNAL_WALLET)).toThrow('Payment method MPESA must use PAYMENT_GATEWAY provider');
         });
     });
 
     describe('Capabilities', () => {
-        const mpesa = new PaymentMethod(PaymentMethodType.MPESA, PaymentProvider.PESAPAL);
+        const mpesa = new PaymentMethod(PaymentMethodType.MPESA, PaymentProvider.PAYMENT_GATEWAY);
         const wallet = new PaymentMethod(PaymentMethodType.WALLET, PaymentProvider.INTERNAL_WALLET);
-        const card = new PaymentMethod(PaymentMethodType.CARD, PaymentProvider.PESAPAL);
+        const card = new PaymentMethod(PaymentMethodType.CARD, PaymentProvider.PAYMENT_GATEWAY);
 
         it('should check if requires phone number', () => {
             expect(mpesa.requiresPhoneNumber()).toBe(true);
@@ -36,7 +36,7 @@ describe('PaymentMethod Value Object', () => {
         });
 
         it('should check if requires bank account', () => {
-            const bank = new PaymentMethod(PaymentMethodType.BANK_TRANSFER, PaymentProvider.PESAPAL);
+            const bank = new PaymentMethod(PaymentMethodType.BANK_TRANSFER, PaymentProvider.PAYMENT_GATEWAY);
             expect(bank.requiresBankAccount()).toBe(true);
             expect(mpesa.requiresBankAccount()).toBe(false);
         });
@@ -56,7 +56,7 @@ describe('PaymentMethod Value Object', () => {
     });
 
     describe('Amount Limits', () => {
-        const mpesa = new PaymentMethod(PaymentMethodType.MPESA, PaymentProvider.PESAPAL);
+        const mpesa = new PaymentMethod(PaymentMethodType.MPESA, PaymentProvider.PAYMENT_GATEWAY);
 
         it('should get min/max amounts', () => {
             expect(mpesa.getMinimumAmount('TZS')).toBe(500);
@@ -81,8 +81,8 @@ describe('PaymentMethod Value Object', () => {
     });
 
     describe('Equality & Conversion', () => {
-        const pm1 = new PaymentMethod(PaymentMethodType.MPESA, PaymentProvider.PESAPAL);
-        const pm2 = new PaymentMethod(PaymentMethodType.MPESA, PaymentProvider.PESAPAL);
+        const pm1 = new PaymentMethod(PaymentMethodType.MPESA, PaymentProvider.PAYMENT_GATEWAY);
+        const pm2 = new PaymentMethod(PaymentMethodType.MPESA, PaymentProvider.PAYMENT_GATEWAY);
 
         it('should check equality', () => {
             expect(pm1.equals(pm2)).toBe(true);
@@ -91,13 +91,13 @@ describe('PaymentMethod Value Object', () => {
         it('should convert to object', () => {
             const obj = pm1.toObject();
             expect(obj.type).toBe(PaymentMethodType.MPESA);
-            expect(obj.provider).toBe(PaymentProvider.PESAPAL);
+            expect(obj.provider).toBe(PaymentProvider.PAYMENT_GATEWAY);
         });
 
         it('should create from string', () => {
             const pm = PaymentMethod.fromString('MPESA');
             expect(pm.type).toBe(PaymentMethodType.MPESA);
-            expect(pm.provider).toBe(PaymentProvider.PESAPAL);
+            expect(pm.provider).toBe(PaymentProvider.PAYMENT_GATEWAY);
         });
     });
 });

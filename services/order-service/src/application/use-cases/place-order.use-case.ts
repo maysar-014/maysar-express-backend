@@ -43,8 +43,8 @@ export interface PlaceOrderRequest {
    * How the buyer pays the commitment/delivery fee upfront (before packaging).
    * Only applies to COD orders.
    * - 'WALLET': deducted from Maysar wallet balance (hold placed)
-   * - 'MOBILE_PAYMENT': paid via mobile money (M-Pesa, Airtel, Tigo) through Pesapal
-   * - 'CARD': paid via card through Pesapal
+   * - 'MOBILE_PAYMENT': paid via mobile money through the payment gateway bridge
+   * - 'CARD': paid via card through the payment gateway bridge
    * Defaults to 'WALLET' if not specified.
    */
   commitmentPaymentMethod?: 'WALLET' | 'MOBILE_PAYMENT' | 'CARD';
@@ -77,13 +77,15 @@ export interface PlaceOrderResponse {
    */
   cashOnDeliveryAmount: number;
   /**
-   * Pesapal payment URL — only present when commitmentPaymentMethod is MOBILE_PAYMENT or CARD.
+   * PaymentGateway payment URL — only present when commitmentPaymentMethod is MOBILE_PAYMENT or CARD.
    * Buyer must complete this payment to confirm the order.
    */
   commitmentPaymentUrl?: string;
 }
 
 export class PlaceOrderUseCase {
+  private readonly paymentGatewayAdapter?: { processPayment(req: { orderId: string; amount: number; currency: string; buyerId: string; buyerEmail: string; buyerPhone: string; description: string }): Promise<{ success: boolean; paymentUrl?: string; transactionId?: string; error?: string; status: string }> };
+
   constructor(
     private readonly orderRepository: OrderRepository,
     private readonly eventPublisher: EventPublisher,
@@ -91,8 +93,10 @@ export class PlaceOrderUseCase {
     private readonly codEligibilityEngine: CODEligibilityEngine,
     private readonly codCommitmentService: CODCommitmentService,
     private readonly walletClient?: { debitWallet(userId: string, amount: number, currency: string, description: string): Promise<string> },
-    private readonly pesapalAdapter?: { processPayment(req: { orderId: string; amount: number; currency: string; buyerId: string; buyerEmail: string; buyerPhone: string; description: string }): Promise<{ success: boolean; paymentUrl?: string; transactionId?: string; error?: string; status: string }> }
-  ) { }
+    paymentGatewayAdapter?: { processPayment(req: { orderId: string; amount: number; currency: string; buyerId: string; buyerEmail: string; buyerPhone: string; description: string }): Promise<{ success: boolean; paymentUrl?: string; transactionId?: string; error?: string; status: string }> }
+  ) {
+    this.paymentGatewayAdapter = paymentGatewayAdapter;
+  }
 
   async execute(request: PlaceOrderRequest): Promise<PlaceOrderResponse> {
     // ... (rest of logic)
@@ -165,13 +169,13 @@ export class PlaceOrderUseCase {
             isFreeDelivery
           );
         } else {
-          // Mobile money or card — process via Pesapal
+          // Mobile money or card — process via PaymentGateway
           // The order is saved in PENDING_COMMITMENT state until payment is confirmed
-          // The Pesapal callback will advance the order to CONFIRMED
-          if (!this.pesapalAdapter) {
-            throw new Error(`COD commitment via ${commitmentMethod} requires Pesapal adapter — not configured`);
+          // The PaymentGateway callback will advance the order to CONFIRMED
+          if (!this.paymentGatewayAdapter) {
+            throw new Error(`COD commitment via ${commitmentMethod} requires PaymentGateway adapter — not configured`);
           }
-          const pesapalResult = await this.pesapalAdapter.processPayment({
+          const paymentGatewayResult = await this.paymentGatewayAdapter.processPayment({
             orderId: `${orderId}-commitment`,
             amount: codCommitmentFee,
             currency,
@@ -183,12 +187,12 @@ export class PlaceOrderUseCase {
               : `COD Delivery Fee for Order ${orderId}`,
           });
 
-          if (!pesapalResult.success && pesapalResult.status === 'failed') {
-            throw new Error(`COD commitment payment failed: ${pesapalResult.error}`);
+          if (!paymentGatewayResult.success && paymentGatewayResult.status === 'failed') {
+            throw new Error(`COD commitment payment failed: ${paymentGatewayResult.error}`);
           }
 
           // Store the payment URL for the response — buyer must complete payment
-          codCommitmentPaymentUrl = pesapalResult.paymentUrl;
+          codCommitmentPaymentUrl = paymentGatewayResult.paymentUrl;
           codCommitmentPaymentMethod = commitmentMethod;
         }
       }

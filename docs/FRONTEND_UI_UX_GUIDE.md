@@ -1136,9 +1136,9 @@ Response: 200 -> Not specified
 Errors: None specified
 Rate Limits: Not specified
 
-Endpoint: POST /api/payment/webhooks/pesapal
+Endpoint: POST /api/payment/webhooks/payment-gateway
 Role Access: ADMIN, BUYER, SELLER
-Purpose: Pesapal webhook
+Purpose: Disabled payment-gateway webhook placeholder
 Request: Body object
 Response: 200 -> Not specified
 Errors: None specified

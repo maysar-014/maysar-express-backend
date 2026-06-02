@@ -9,7 +9,7 @@ export enum PayoutStatus {
 export enum PayoutMethod {
   BANK_TRANSFER = 'bank_transfer',
   MOBILE_MONEY = 'mobile_money',
-  PESAPAL = 'pesapal',
+  PAYMENT_GATEWAY = 'paymentGateway',
   CRYPTO = 'crypto',
   CHECK = 'check'
 }

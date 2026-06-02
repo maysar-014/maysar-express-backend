@@ -128,7 +128,7 @@ variable "log_level" {
   type = string
 }
 
-variable "pesapal_url" {
+variable "paymentGateway_url" {
   type = string
 }
 

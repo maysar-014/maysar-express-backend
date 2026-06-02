@@ -4,7 +4,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { PesapalAdapter } from '../providers/pesapal.adapter';
+import { SelcomPesaAdapter } from '../providers/selcom-pesa.adapter';
 import type { Redis } from 'ioredis';
 
 export interface HealthStatus {
@@ -31,7 +31,7 @@ export interface AggregateHealthStatus {
 export class HealthCheckService {
     constructor(
         private readonly prisma: PrismaClient,
-        private readonly pesapalAdapter?: PesapalAdapter,
+        private readonly paymentGateway?: SelcomPesaAdapter,
         private readonly redisClient?: Redis
     ) { }
 
@@ -69,88 +69,16 @@ export class HealthCheckService {
         }
     }
 
-    /**
-     * Check Pesapal payment gateway reachability
-     */
     async checkPaymentGateway(): Promise<HealthStatus> {
-        const startTime = Date.now();
-
-        if (!this.pesapalAdapter) {
-            return {
-                status: 'unhealthy',
-                timestamp: new Date(),
-                details: {
-                    connection: 'not_configured',
-                    note: 'Pesapal adapter not available'
-                }
-            };
-        }
-
-        try {
-            const pesapalUrl = process.env.PESAPAL_URL || 'https://cybqa.pesapal.com/pesapalv3';
-            const consumerKey = process.env.PESAPAL_CONSUMER_KEY;
-            const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET || process.env.PESAPAL_SECRET_KEY;
-
-            if (!consumerKey || !consumerSecret) {
-                return {
-                    status: 'unhealthy',
-                    timestamp: new Date(),
-                    details: {
-                        connection: 'not_configured',
-                        error: 'Pesapal consumer credentials are not configured'
-                    }
-                };
+        return {
+            status: 'healthy',
+            timestamp: new Date(),
+            details: {
+                connection: 'not_configured',
+                provider: this.paymentGateway?.getProviderName() || 'selcom-pesa',
+                note: 'External payment gateway is currently disabled; Selcom Pesa will be enabled later'
             }
-
-            const response = await fetch(`${pesapalUrl}/api/Auth/RequestToken`, {
-                method: 'POST',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    consumer_key: consumerKey,
-                    consumer_secret: consumerSecret
-                }),
-                signal: AbortSignal.timeout(5000) // 5 second timeout
-            });
-
-            const latencyMs = Date.now() - startTime;
-
-            if (!response.ok) {
-                return {
-                    status: 'unhealthy',
-                    timestamp: new Date(),
-                    latencyMs,
-                    details: {
-                        connection: 'failed',
-                        error: `HTTP ${response.status}: ${response.statusText}`
-                    }
-                };
-            }
-
-            return {
-                status: 'healthy',
-                timestamp: new Date(),
-                latencyMs,
-                details: {
-                    connection: 'successful',
-                    provider: 'pesapal',
-                    environment: /cybqa|sandbox/i.test(pesapalUrl) ? 'sandbox' : 'production'
-                }
-            };
-        } catch (error) {
-            const latencyMs = Date.now() - startTime;
-            return {
-                status: 'unhealthy',
-                timestamp: new Date(),
-                latencyMs,
-                details: {
-                    connection: 'failed',
-                    error: error instanceof Error ? error.message : 'Unknown error'
-                }
-            };
-        }
+        };
     }
 
     /**

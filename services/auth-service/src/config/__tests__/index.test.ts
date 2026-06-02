@@ -39,7 +39,7 @@ describe('config index', () => {
     expect(config.cors.origin).toEqual(expect.arrayContaining(['http://localhost:3000']));
   });
 
-  it('reports validation errors for weak jwt and missing conditional credentials', async () => {
+  it('reports validation errors for weak jwt and missing email credentials', async () => {
     process.env.NODE_ENV = 'test';
     process.env.DATABASE_URL = 'postgresql://db/test';
     process.env.JWT_SECRET = 'too-short';
@@ -47,7 +47,6 @@ describe('config index', () => {
     process.env.ENABLE_EMAIL_VERIFICATION = 'true';
     process.env.ENABLE_PHONE_VERIFICATION = 'true';
     delete process.env.SMTP_USER;
-    delete process.env.AFRICASTALKING_API_KEY;
 
     const { validateConfiguration } = await loadConfigModule();
     const validation = validateConfiguration();
@@ -56,8 +55,7 @@ describe('config index', () => {
     expect(validation.errors).toEqual(
       expect.arrayContaining([
         'JWT_SECRET must be at least 32 characters long',
-        'SMTP_USER is required when email verification is enabled',
-        'AfricasTalking credentials are required when phone verification is enabled'
+        'SMTP_USER is required when email verification is enabled'
       ])
     );
   });

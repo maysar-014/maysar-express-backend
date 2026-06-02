@@ -8,7 +8,7 @@ describe('Payment Entity', () => {
         amount: 10000,
         currency: 'TZS',
         method: PaymentMethod.MPESA,
-        provider: PaymentProvider.PESAPAL,
+        provider: PaymentProvider.PAYMENT_GATEWAY,
         status: PaymentStatus.PENDING,
         metadata: {
             phoneNumber: '+255712345678',
@@ -30,7 +30,7 @@ describe('Payment Entity', () => {
             expect(payment.amount).toBe(10000);
             expect(payment.currency).toBe('TZS');
             expect(payment.method).toBe(PaymentMethod.MPESA);
-            expect(payment.provider).toBe(PaymentProvider.PESAPAL);
+            expect(payment.provider).toBe(PaymentProvider.PAYMENT_GATEWAY);
             expect(payment.status).toBe(PaymentStatus.PENDING);
         });
 

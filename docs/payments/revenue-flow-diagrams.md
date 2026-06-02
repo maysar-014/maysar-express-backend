@@ -20,7 +20,7 @@ graph LR
     end
 
     subgraph Providers["PaymentProvider enum"]
-        PESAPAL["PESAPAL\n(Card, Mobile Money, Bank)"]
+        PAYMENT_GATEWAY["PAYMENT_GATEWAY\n(Card, Mobile Money, Bank)"]
         INTERNAL["INTERNAL_WALLET\n(Wallet payments)"]
     end
 
@@ -28,10 +28,10 @@ graph LR
         COD_NOTE["Not a PaymentMethod enum value\nHandled as special case in PaymentSaga:\nFraud check skipped\nStatus set to COMPLETED immediately\nWallet commitment held during delivery"]
     end
 
-    MPESA & AIRTEL & TIGO & HALO & CARD & BANK --> PESAPAL
+    MPESA & AIRTEL & TIGO & HALO & CARD & BANK --> PAYMENT_GATEWAY
     WALLET --> INTERNAL
 
-    style PESAPAL fill:#4CAF50,color:#fff
+    style PAYMENT_GATEWAY fill:#4CAF50,color:#fff
     style INTERNAL fill:#2196F3,color:#fff
     style COD_NOTE fill:#FF9800,color:#fff
 ```
@@ -51,11 +51,11 @@ flowchart TD
     FRAUD_RESULT -->|"Rejected"| FRAUD_FAIL["status = FAILED\nThrow error\nSaga compensates"]
     FRAUD_RESULT -->|"Approved"| METHOD{Payment\nMethod}
 
-    METHOD -->|"CARD or\nMOBILE_MONEY"| PESAPAL["PesapalAdapter\n.processPayment()\n(orderId, amount, currency\nbuyerId, phone, email)"]
+    METHOD -->|"CARD or\nMOBILE_MONEY"| PAYMENT_GATEWAY["PaymentGatewayAdapter\n.processPayment()\n(orderId, amount, currency\nbuyerId, phone, email)"]
     METHOD -->|"WALLET"| WALLET_DEBIT["WalletServiceClient\n.debitWallet(buyerId, amount\ncurrency, description)"]
     METHOD -->|"Other"| UNSUPPORTED["Throw: Unsupported\npayment method"]
 
-    PESAPAL --> PAY_RESULT{Result}
+    PAYMENT_GATEWAY --> PAY_RESULT{Result}
     WALLET_DEBIT --> PAY_RESULT
 
     PAY_RESULT -->|"success"| COMPLETE["status = COMPLETED\ntransactionId saved"]
@@ -76,11 +76,11 @@ flowchart TD
 ```mermaid
 stateDiagram-v2
     [*] --> PENDING : Payment created
-    PENDING --> PROCESSING : processPesapalPayment() called
+    PENDING --> PROCESSING : processPaymentGatewayPayment() called
     PENDING --> COMPLETED : COD order (immediate)
     PENDING --> COMPLETED : Wallet payment success
-    PROCESSING --> COMPLETED : Pesapal success
-    PROCESSING --> FAILED : Pesapal failure
+    PROCESSING --> COMPLETED : PaymentGateway success
+    PROCESSING --> FAILED : PaymentGateway failure
     PENDING --> FAILED : Fraud check rejected
     COMPLETED --> REFUNDED : Full refund
     COMPLETED --> PARTIALLY_REFUNDED : Partial refund

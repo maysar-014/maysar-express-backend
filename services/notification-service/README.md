@@ -30,7 +30,7 @@ src/
 
 | Channel | Provider |
 |---------|---------|
-| SMS | sms-service (Africa's Talking) |
+| SMS | sms-service (mock by default; Meseji placeholder available) |
 | Email | SMTP via nodemailer (Maileroo) |
 | Push | Firebase Admin SDK |
 | In-app | Database-backed notification store |
@@ -102,3 +102,4 @@ npm run test:notification-service:coverage
 | [docs/scaling-strategy.md](docs/scaling-strategy.md) | Scaling approach |
 | [docs/revenue-impact.md](docs/revenue-impact.md) | Business value |
 | [docs/modeling/](docs/modeling/) | Sequence diagrams, state machines, use cases |
+> SMS delivery is currently local-only by default. The `meseji` provider exists as a non-networked placeholder and is not wired to a live API yet.

@@ -240,9 +240,9 @@ resource "aws_secretsmanager_secret_version" "app_runtime" {
     JWT_SECRET                  = local.jwt_secret
     USER_SERVICE_JWT_SECRET     = local.user_service_jwt_secret
     AUTH_SERVICE_SESSION_SECRET = local.auth_service_session_secret
-    PESAPAL_CONSUMER_KEY        = var.pesapal_consumer_key
-    PESAPAL_CONSUMER_SECRET     = var.pesapal_consumer_secret
-    PESAPAL_IPN_ID              = var.pesapal_ipn_id
+    PAYMENT_GATEWAY_CONSUMER_KEY        = var.paymentGateway_consumer_key
+    PAYMENT_GATEWAY_CONSUMER_SECRET     = var.paymentGateway_consumer_secret
+    PAYMENT_GATEWAY_IPN_ID              = var.paymentGateway_ipn_id
     PII_ENCRYPTION_KEY          = local.pii_encryption_key
     PII_HMAC_SECRET             = local.pii_hmac_secret
     MEILI_MASTER_KEY            = local.meili_master_key
@@ -290,7 +290,7 @@ module "app" {
   cors_origin                 = var.cors_origin
   service_version             = var.service_version
   log_level                   = var.log_level
-  pesapal_url                 = var.pesapal_url
+  paymentGateway_url                 = var.paymentGateway_url
   meilisearch_index_name      = var.meilisearch_index_name
   meilisearch_request_timeout = var.meilisearch_request_timeout
   tags                        = local.tags

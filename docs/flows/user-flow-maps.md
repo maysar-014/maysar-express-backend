@@ -17,7 +17,7 @@ flowchart TD
     CART --> CHECKOUT["Initiate Checkout\n(Address · Shipping · Payment)"]
     CHECKOUT --> PAYMENT_METHOD{Payment\nMethod?}
 
-    PAYMENT_METHOD -->|"Mobile Money\n/ Card"| GATEWAY["Pesapal Gateway\nFraud Check → Charge"]
+    PAYMENT_METHOD -->|"Mobile Money\n/ Card"| GATEWAY["PaymentGateway Gateway\nFraud Check → Charge"]
     PAYMENT_METHOD -->|"Wallet"| WALLET_PAY["Debit Wallet Balance"]
     PAYMENT_METHOD -->|"COD"| COD_LOCK["Lock COD Commitment\nin Wallet"]
 

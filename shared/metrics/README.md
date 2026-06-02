@@ -31,7 +31,7 @@ collector.recordHttpRequest('POST', '/api/payments', 201, 45);
 collector.recordDatabaseQuery('create', 'Payment_Payment', 12, true);
 
 // Update circuit breaker state
-collector.updateCircuitBreakerState('pesapal-gateway', 'open');
+collector.updateCircuitBreakerState('paymentGateway-gateway', 'open');
 
 // Expose metrics endpoint
 app.get('/metrics', async (req, res) => {

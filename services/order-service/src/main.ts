@@ -121,17 +121,17 @@ async function initializeService() {
     const { SettlementSaga } = await import('./application/sagas/settlement.saga');
     const { TrainingSaga } = await import('./application/sagas/training.saga');
     const { sagaLogRepository } = await import('./infrastructure/repositories/saga.repository');
-    const { PesapalAdapter } = await import('./infrastructure/providers/pesapal.adapter');
+    const { SelcomPesaAdapter } = await import('./infrastructure/providers/selcom-pesa.adapter');
     const { SettlementService } = await import('./domain/engines/settlement.engine');
     const { WalletServiceClient: WalletClientClass } = await import('./infrastructure/integrations/wallet-service.client');
 
-    const pesapalAdapter = new PesapalAdapter();
+    const selcomPesaAdapter = new SelcomPesaAdapter();
     const settlementRepository = new OrderSettlementRepository(databaseManager.getPrisma());
     const settlementService = new SettlementService(settlementRepository);
 
     const paymentRepository = new OrderPaymentRepository(databaseManager.getPrisma());
     const walletClientForSaga = new WalletClientClass();
-    const paymentSaga = new PaymentSaga(pesapalAdapter, paymentRepository, walletClientForSaga);
+    const paymentSaga = new PaymentSaga(selcomPesaAdapter, paymentRepository, walletClientForSaga);
     const settlementSaga = new SettlementSaga(settlementService);
     const trainingSaga = new TrainingSaga(
       sagaLogRepository,
@@ -585,7 +585,7 @@ async function initializeService() {
       codEligibilityEngine as any,
       codCommitmentService,
       walletServiceClient,
-      pesapalAdapter
+      selcomPesaAdapter
     );
     const orderController = new OrderController(placeOrderUseCase, checkCODEligibilityUseCase, codCommitmentService);
 

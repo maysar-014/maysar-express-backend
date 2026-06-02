@@ -24,8 +24,8 @@ const envSchema = z.object({
   RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('100'),
 
   // External Services
-  PESAPAL_API_URL: z.string().url().optional(),
-  PESAPAL_API_KEY: z.string().optional(),
+  PAYMENT_GATEWAY_API_URL: z.string().url().optional(),
+  PAYMENT_GATEWAY_API_KEY: z.string().optional(),
 
   // Redis (for future caching)
   REDIS_URL: z.string().optional(),

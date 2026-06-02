@@ -7,20 +7,20 @@ import { Request, Response } from 'express';
 import { ProcessPaymentUseCase } from '../../application/use-cases/process-payment.use-case';
 import { CheckPaymentStatusUseCase } from '../../application/use-cases/check-payment-status.use-case';
 import { RefundPaymentUseCase } from '../../application/use-cases/refund-payment.use-case';
-import { HandlePesapalWebhookUseCase } from '../../application/use-cases/handle-pesapal-webhook.use-case';
-import { PesapalAdapter } from '../../infrastructure/providers/pesapal.adapter';
+import { HandlePaymentWebhookUseCase } from '../../application/use-cases/handle-payment-webhook.use-case';
+import { SelcomPesaAdapter } from '../../infrastructure/providers/selcom-pesa.adapter';
 import { WebhookPayload } from '../../domain/repositories/payment-provider.gateway';
 import { logger } from '../../infrastructure/services/logger.service';
 import { t } from '@shared/i18n/i18n';
-import { extractPesapalWebhookRequest } from './pesapal-webhook.utils';
+import { extractPaymentWebhookRequest } from './payment-webhook.utils';
 
 export class PaymentController {
     constructor(
         private readonly processPaymentUseCase: ProcessPaymentUseCase,
         private readonly checkPaymentStatusUseCase: CheckPaymentStatusUseCase,
         private readonly refundPaymentUseCase: RefundPaymentUseCase,
-        private readonly handlePesapalWebhookUseCase?: HandlePesapalWebhookUseCase,
-        private readonly pesapalAdapter?: PesapalAdapter
+        private readonly handlePaymentWebhookUseCase?: HandlePaymentWebhookUseCase,
+        private readonly paymentGateway?: SelcomPesaAdapter
     ) { }
 
     private mapPaymentFailureStatus(message: string | undefined, paymentId: string): number {
@@ -290,12 +290,12 @@ export class PaymentController {
     }
 
     /**
-     * POST /webhooks/pesapal
-     * Handle Pesapal webhook notification
+     * POST /webhooks/payment-gateway
+     * Handle payment gateway webhook notification
      */
-    async handlePesapalWebhook(req: Request, res: Response): Promise<void> {
+    async handlePaymentWebhook(req: Request, res: Response): Promise<void> {
         try {
-            if (!this.handlePesapalWebhookUseCase || !this.pesapalAdapter) {
+            if (!this.handlePaymentWebhookUseCase || !this.paymentGateway) {
                 res.status(501).json({ error: t('payment:errors.webhookNotConfigured', { lng: (req as any).language }) });
                 return;
             }
@@ -307,7 +307,7 @@ export class PaymentController {
                 paymentStatus,
                 merchantReference,
                 notificationType,
-            } = extractPesapalWebhookRequest(req);
+            } = extractPaymentWebhookRequest(req);
 
             if (!providerReference) {
                 logger.warn('Missing webhook parameters', { body: parsedBody, query: req.query });
@@ -332,9 +332,9 @@ export class PaymentController {
                 }
             };
 
-            await this.pesapalAdapter.handleWebhook(webhookPayload);
+            await this.paymentGateway.handleWebhook(webhookPayload);
 
-            const result = await this.handlePesapalWebhookUseCase.execute(
+            const result = await this.handlePaymentWebhookUseCase.execute(
                 providerReference,
                 providerTransactionId ?? providerReference,
                 paymentStatus,

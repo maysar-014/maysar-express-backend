@@ -17,12 +17,12 @@ This document defines how secrets are classified, stored, and injected across al
 | `JWT_SECRET`                  | JWT signing key                  | `[SECRETS MANAGER]`           | Application runtime            |
 | `USER_SERVICE_JWT_SECRET`     | User service JWT key             | `[SECRETS MANAGER]`           | Application runtime            |
 | `AUTH_SERVICE_SESSION_SECRET` | Session encryption key           | `[SECRETS MANAGER]`           | Application runtime            |
-| `PESAPAL_CONSUMER_KEY`        | Pesapal API key                  | `[SECRETS MANAGER]`           | Payment service                |
-| `PESAPAL_CONSUMER_SECRET`     | Pesapal API secret               | `[SECRETS MANAGER]`           | Payment service                |
+| `PAYMENT_GATEWAY_CONSUMER_KEY`        | PaymentGateway API key                  | `[SECRETS MANAGER]`           | Payment service                |
+| `PAYMENT_GATEWAY_CONSUMER_SECRET`     | PaymentGateway API secret               | `[SECRETS MANAGER]`           | Payment service                |
 | `PII_ENCRYPTION_KEY`          | PII encryption key (32-byte hex) | `[SECRETS MANAGER]`           | Application runtime            |
 | `PII_HMAC_SECRET`             | PII HMAC secret                  | `[SECRETS MANAGER]`           | Application runtime            |
-| `PESAPAL_SECRET_KEY`           | Pesapal API secret                | `[SECRETS MANAGER]`           | Payment service                |
-| `PESAPAL_WEBHOOK_SECRET`       | Pesapal webhook signature         | `[SECRETS MANAGER]`           | Payment service                |
+| `PAYMENT_GATEWAY_SECRET_KEY`           | PaymentGateway API secret                | `[SECRETS MANAGER]`           | Payment service                |
+| `PAYMENT_GATEWAY_WEBHOOK_SECRET`       | PaymentGateway webhook signature         | `[SECRETS MANAGER]`           | Payment service                |
 | `AWS_ACCESS_KEY_ID`           | AWS S3 backup credentials        | `[SECRETS MANAGER]`           | Backup containers              |
 | `AWS_SECRET_ACCESS_KEY`       | AWS S3 secret                    | `[SECRETS MANAGER]`           | Backup containers              |
 | `AWS_DEFAULT_REGION`          | AWS region                       | `[ENV VAR]`                   | Backup containers              |
@@ -158,9 +158,9 @@ See `.github/workflows/ci.yml`:
 4. Rolling restart application pods.
 5. **Note:** Existing tokens will be invalidated; users must re-authenticate.
 
-### Pesapal Keys
+### PaymentGateway Keys
 
-1. Rotate keys in Pesapal dashboard.
+1. Rotate keys in PaymentGateway dashboard.
 2. Update OCI Vault secrets.
 3. Deploy to Orchestrator and restart payment service pods.
 

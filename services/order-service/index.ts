@@ -16,7 +16,7 @@ import { AuthServiceClient } from './src/infrastructure/integrations/auth-servic
 import { UserServiceClient } from './src/infrastructure/integrations/user-service.client';
 import { LogisticsServiceClient } from './src/infrastructure/integrations/logistics-service.client';
 import { WalletServiceClient } from './src/infrastructure/integrations/wallet-service.client';
-import { PesapalAdapter } from './src/infrastructure/providers/pesapal.adapter';
+import { SelcomPesaAdapter } from './src/infrastructure/providers/paymentGateway.adapter';
 import { OrderPaymentRepository } from './src/infrastructure/repositories/order-payment.repository';
 import { PrismaCODTrustScoreRepository } from './src/infrastructure/repositories/prisma-cod-trust-score.repository';
 import { PrismaCODRestrictionRepository } from './src/infrastructure/repositories/prisma-cod-restriction.repository';
@@ -91,9 +91,9 @@ export const OrderModule: Module = {
             const walletServiceClient = new WalletServiceClient();
 
             // Wire up PaymentSaga with wallet client so WALLET payments are processed correctly
-            const pesapalAdapter = new PesapalAdapter();
+            const selcomPesaAdapter = new SelcomPesaAdapter();
             const paymentRepository = new OrderPaymentRepository(prisma);
-            const paymentSaga = new PaymentSaga(pesapalAdapter, paymentRepository, walletServiceClient);
+            const paymentSaga = new PaymentSaga(selcomPesaAdapter, paymentRepository, walletServiceClient);
 
             const codTrustScoreRepo = new PrismaCODTrustScoreRepository();
             const codRestrictionRepo = new PrismaCODRestrictionRepository();
@@ -113,7 +113,7 @@ export const OrderModule: Module = {
                 codEligibilityEngine as any,
                 codCommitmentService,
                 walletServiceClient,
-                pesapalAdapter
+                selcomPesaAdapter
             );
 
             const checkCODEligibilityUseCase = new CheckCODEligibilityUseCase(codEligibilityEngine as any);

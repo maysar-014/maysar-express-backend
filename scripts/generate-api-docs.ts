@@ -1089,7 +1089,7 @@ class APIDocumentationGenerator {
                           type: 'object',
                           properties: {
                             id: { type: 'string' },
-                            type: { type: 'string', enum: ['card', 'pesapal', 'bank'] },
+                            type: { type: 'string', enum: ['card', 'paymentGateway', 'bank'] },
                             last4: { type: 'string', example: '4242' },
                             brand: { type: 'string', example: 'visa' },
                             expiryMonth: { type: 'integer', example: 12 },
@@ -1118,7 +1118,7 @@ class APIDocumentationGenerator {
                   type: 'object',
                   required: ['type', 'token'],
                   properties: {
-                    type: { type: 'string', enum: ['card', 'pesapal'] },
+                    type: { type: 'string', enum: ['card', 'paymentGateway'] },
                     token: { type: 'string', description: 'Payment processor token' },
                     setAsDefault: { type: 'boolean', default: false },
                   },

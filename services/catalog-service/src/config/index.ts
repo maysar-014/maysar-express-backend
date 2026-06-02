@@ -141,9 +141,9 @@ const ExternalServicesConfigSchema = z.object({
   UPLOAD_DESTINATION: z.string().default('./uploads'),
 
   // Payment (if needed)
-  PAYMENT_PROVIDER: z.enum(['pesapal']).optional(),
-  PESAPAL_SECRET_KEY: z.string().optional(),
-  PESAPAL_WEBHOOK_SECRET: z.string().optional(),
+  PAYMENT_PROVIDER: z.enum(['paymentGateway']).optional(),
+  PAYMENT_GATEWAY_SECRET_KEY: z.string().optional(),
+  PAYMENT_GATEWAY_WEBHOOK_SECRET: z.string().optional(),
 
   // Notification
   NOTIFICATION_PROVIDER: z.enum(['smtp', 'sendgrid', 'ses']).optional(),
@@ -288,8 +288,8 @@ export interface AppConfig {
       destination: string;
     };
     payment?: {
-      provider: 'pesapal';
-      pesapal?: {
+      provider: 'paymentGateway';
+      paymentGateway?: {
         secretKey: string;
         webhookSecret: string;
       };
@@ -519,9 +519,9 @@ export class ConfigurationManager {
         },
         payment: externalServicesConfig.PAYMENT_PROVIDER ? {
           provider: externalServicesConfig.PAYMENT_PROVIDER,
-          pesapal: externalServicesConfig.PESAPAL_SECRET_KEY ? {
-            secretKey: externalServicesConfig.PESAPAL_SECRET_KEY,
-            webhookSecret: externalServicesConfig.PESAPAL_WEBHOOK_SECRET || ''
+          paymentGateway: externalServicesConfig.PAYMENT_GATEWAY_SECRET_KEY ? {
+            secretKey: externalServicesConfig.PAYMENT_GATEWAY_SECRET_KEY,
+            webhookSecret: externalServicesConfig.PAYMENT_GATEWAY_WEBHOOK_SECRET || ''
           } : undefined
         } : undefined,
         notification: externalServicesConfig.NOTIFICATION_PROVIDER ? {

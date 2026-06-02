@@ -26,8 +26,8 @@
 | services/governance-service/src/domain/phase-certification.ts | domain | other | 80% | 150 |
 | services/chat-service/src/infrastructure/jobs/marketplace-intelligence.job.ts | infrastructure | infrastructure | 80% | 145 |
 | services/chat-service/src/application/use-cases/initiate-conversation.use-case.ts | application | use-case | 90% | 137 |
-| services/payment-service/src/api/controllers/pesapal-webhook.utils.ts | api | api-controller | 85% | 136 |
-| services/payment-service/src/api/routes/pesapal-webhook.middleware.ts | api | other | 80% | 132 |
+| services/payment-service/src/api/controllers/paymentGateway-webhook.utils.ts | api | api-controller | 85% | 136 |
+| services/payment-service/src/api/routes/paymentGateway-webhook.middleware.ts | api | other | 80% | 132 |
 | services/auth-service/src/infrastructure/repositories/prisma-audit.repository.ts | infrastructure | infrastructure | 80% | 131 |
 | services/catalog-service/src/infrastructure/jobs/buy-box-recomputation.job.ts | infrastructure | infrastructure | 80% | 125 |
 | services/logistics-service/src/infrastructure/repositories/prisma-earnings.repository.ts | infrastructure | infrastructure | 80% | 122 |

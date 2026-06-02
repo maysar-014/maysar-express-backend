@@ -11,7 +11,7 @@ describe('WebhookEventRepository', () => {
     const repository = new WebhookEventRepository(prisma);
 
     await repository.recordReceived({
-      provider: 'pesapal',
+      provider: 'paymentGateway',
       eventType: 'payment.status.update',
       eventId: 'evt_1',
       payload: {

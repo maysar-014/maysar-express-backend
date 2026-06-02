@@ -26,7 +26,7 @@ export class SecurityMiddleware {
           fontSrc: ["'self'", "https://fonts.gstatic.com"],
           scriptSrc: ["'self'"],
           imgSrc: ["'self'", "data:", "https:"],
-          connectSrc: ["'self'", "https://api.pesapal.com"],
+          connectSrc: ["'self'", "https://api.paymentGateway.com"],
           frameSrc: ["'none'"],
           objectSrc: ["'none'"],
           upgradeInsecureRequests: [],

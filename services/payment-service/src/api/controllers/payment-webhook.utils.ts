@@ -4,7 +4,7 @@ interface JsonMap {
   [key: string]: unknown;
 }
 
-export interface ParsedPesapalWebhookRequest {
+export interface ParsedPaymentWebhookRequest {
   parsedBody: JsonMap;
   providerReference?: string;
   providerTransactionId?: string;
@@ -60,7 +60,7 @@ const parseBody = (body: unknown): JsonMap => {
   return asRecord(body);
 };
 
-export const extractPesapalWebhookRequest = (req: Request): ParsedPesapalWebhookRequest => {
+export const extractPaymentWebhookRequest = (req: Request): ParsedPaymentWebhookRequest => {
   const parsedBody = parseBody(req.body);
   const data = asRecord(parsedBody.data);
   const query = req.query as Record<string, unknown>;

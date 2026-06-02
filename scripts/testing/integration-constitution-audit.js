@@ -218,10 +218,10 @@ function evaluatePriorityCoverage(integrationRelFiles) {
       passed: hasService('user-service') && hasService('auth-service')
     },
     {
-      id: 'priority-1-pesapal',
-      description: 'Pesapal payment gateway integration is covered',
+      id: 'priority-1-paymentGateway',
+      description: 'PaymentGateway payment gateway integration is covered',
       required: true,
-      passed: hasPathWithKeywords(files, ['payment-service']) && files.some(file => file.includes('pesapal'))
+      passed: hasPathWithKeywords(files, ['payment-service']) && files.some(file => file.includes('paymentGateway'))
     },
     {
       id: 'priority-1-wallet-operations',

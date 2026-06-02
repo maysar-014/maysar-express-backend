@@ -18,8 +18,8 @@ npm run staging:preflight
 The preflight fails if:
 - Required keys are missing.
 - `NODE_ENV` is not `staging`.
-- SMS provider is not Africa's Talking.
-- Pesapal URL is not a Pesapal endpoint.
+- SMS provider is not the local Meseji placeholder.
+- Payment gateway is not enabled yet.
 - Critical URLs still point to localhost.
 - Google OAuth is missing its client credentials or resolves the callback to localhost instead of the staging API base.
 - Secrets still look like placeholders.

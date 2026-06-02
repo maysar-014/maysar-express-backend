@@ -553,14 +553,14 @@ const upsertOrderRecords = async () => {
 const upsertPaymentAndPayoutRecords = async () => {
   await prisma.payment_Payment.upsert({
     where: { id: PAYMENT_ID },
-    update: { orderId: ORDER_ID, userId: CONTRACT_USER_ID, amount: 1000, currency: 'TZS', method: 'MPESA', provider: 'PESAPAL', status: 'COMPLETED', description: 'Seeded payment for contract tests', metadata: { source: 'contract-test-seed', providerReference: PAYMENT_ID, providerTransactionId: 'txn_contract_seed_payment' }, completedAt: new Date(), refundedAmount: 0 },
-    create: { id: PAYMENT_ID, orderId: ORDER_ID, userId: CONTRACT_USER_ID, amount: 1000, currency: 'TZS', method: 'MPESA', provider: 'PESAPAL', status: 'COMPLETED', description: 'Seeded payment for contract tests', metadata: { source: 'contract-test-seed', providerReference: PAYMENT_ID, providerTransactionId: 'txn_contract_seed_payment' }, completedAt: new Date(), refundedAmount: 0 }
+    update: { orderId: ORDER_ID, userId: CONTRACT_USER_ID, amount: 1000, currency: 'TZS', method: 'MPESA', provider: 'PAYMENT_GATEWAY', status: 'COMPLETED', description: 'Seeded payment for contract tests', metadata: { source: 'contract-test-seed', providerReference: PAYMENT_ID, providerTransactionId: 'txn_contract_seed_payment' }, completedAt: new Date(), refundedAmount: 0 },
+    create: { id: PAYMENT_ID, orderId: ORDER_ID, userId: CONTRACT_USER_ID, amount: 1000, currency: 'TZS', method: 'MPESA', provider: 'PAYMENT_GATEWAY', status: 'COMPLETED', description: 'Seeded payment for contract tests', metadata: { source: 'contract-test-seed', providerReference: PAYMENT_ID, providerTransactionId: 'txn_contract_seed_payment' }, completedAt: new Date(), refundedAmount: 0 }
   });
 
   await prisma.payment_Payment.upsert({
     where: { id: 'pay_ord_lookup_01ARZ3NDEKTSV4RRFFQ69G5FAV' },
-    update: { orderId: PAYMENT_ID, userId: CONTRACT_USER_ID, amount: 1000, currency: 'TZS', method: 'MPESA', provider: 'PESAPAL', status: 'COMPLETED', description: 'Seeded payment lookup-by-order fixture', metadata: { source: 'contract-test-seed', providerReference: 'pay_ord_lookup_01ARZ3NDEKTSV4RRFFQ69G5FAV', providerTransactionId: 'txn_contract_seed_lookup' }, completedAt: new Date(), refundedAmount: 0 },
-    create: { id: 'pay_ord_lookup_01ARZ3NDEKTSV4RRFFQ69G5FAV', orderId: PAYMENT_ID, userId: CONTRACT_USER_ID, amount: 1000, currency: 'TZS', method: 'MPESA', provider: 'PESAPAL', status: 'COMPLETED', description: 'Seeded payment lookup-by-order fixture', metadata: { source: 'contract-test-seed', providerReference: 'pay_ord_lookup_01ARZ3NDEKTSV4RRFFQ69G5FAV', providerTransactionId: 'txn_contract_seed_lookup' }, completedAt: new Date(), refundedAmount: 0 }
+    update: { orderId: PAYMENT_ID, userId: CONTRACT_USER_ID, amount: 1000, currency: 'TZS', method: 'MPESA', provider: 'PAYMENT_GATEWAY', status: 'COMPLETED', description: 'Seeded payment lookup-by-order fixture', metadata: { source: 'contract-test-seed', providerReference: 'pay_ord_lookup_01ARZ3NDEKTSV4RRFFQ69G5FAV', providerTransactionId: 'txn_contract_seed_lookup' }, completedAt: new Date(), refundedAmount: 0 },
+    create: { id: 'pay_ord_lookup_01ARZ3NDEKTSV4RRFFQ69G5FAV', orderId: PAYMENT_ID, userId: CONTRACT_USER_ID, amount: 1000, currency: 'TZS', method: 'MPESA', provider: 'PAYMENT_GATEWAY', status: 'COMPLETED', description: 'Seeded payment lookup-by-order fixture', metadata: { source: 'contract-test-seed', providerReference: 'pay_ord_lookup_01ARZ3NDEKTSV4RRFFQ69G5FAV', providerTransactionId: 'txn_contract_seed_lookup' }, completedAt: new Date(), refundedAmount: 0 }
   });
 
   await prisma.payout.upsert({

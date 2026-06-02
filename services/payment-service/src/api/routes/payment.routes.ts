@@ -4,21 +4,16 @@
  */
 
 import { Router } from 'express';
-import express from 'express';
 import rateLimit from 'express-rate-limit';
 import { RedisRateLimitStore } from '../../../../../shared/middleware/redis-rate-limit.store';
 import { PaymentController } from '../controllers/payment.controller';
-import { IdempotencyMiddleware } from '@shared/middleware/idempotency';
-import { createHash } from 'crypto';
 import { getSharedRedisClient, resolveRedisUrl } from '@shared/redis/ioredis-client';
 import { asyncHandler } from '@shared/middleware/async-handler';
 import { validateRequest } from '../middleware/validation.middleware';
 import { z } from 'zod';
 import { zodId } from '@shared/validation/id';
 import { orderIdSchema } from '../validators/payment.validator';
-import { requireWebhookIdempotencyKey, validatePesapalWebhookRequest } from './pesapal-webhook.middleware';
 
-const idempotencyMiddleware = new IdempotencyMiddleware(process.env.REDIS_URL!);
 const redisClient = getSharedRedisClient(resolveRedisUrl(process.env.REDIS_URL));
 
 const disableRateLimit = process.env.PAYMENT_RATE_LIMIT_DISABLED === 'true'
@@ -31,45 +26,6 @@ const paymentLimiter = rateLimit({
     passOnStoreError: true,
     skip: () => disableRateLimit
 });
-
-const webhookIdempotencyMiddleware = new IdempotencyMiddleware(
-    process.env.REDIS_URL!,
-    {
-        keyPrefix: 'webhook:idempotency:',
-        headerName: 'x-webhook-idempotency-key',
-        generateKey: (req) => {
-            const bodyPayload = (() => {
-                if (Buffer.isBuffer(req.body)) {
-                    try {
-                        return JSON.parse(req.body.toString('utf8') || '{}');
-                    } catch {
-                        return {};
-                    }
-                }
-                return req.body || {};
-            })();
-
-            const txRef =
-                bodyPayload.OrderTrackingId ||
-                bodyPayload.orderTrackingId ||
-                bodyPayload.merchant_reference ||
-                bodyPayload.merchantReference ||
-                bodyPayload.tx_ref ||
-                bodyPayload?.data?.tx_ref ||
-                bodyPayload?.data?.order_tracking_id ||
-                bodyPayload?.data?.merchant_reference ||
-                req.query.OrderTrackingId;
-            const eventStatus = bodyPayload.status || bodyPayload?.data?.status || req.query.Status || 'UNKNOWN';
-
-            if (txRef) {
-                return createHash('sha256')
-                    .update(`${txRef}:${eventStatus}`)
-                    .digest('hex');
-            }
-            return '';
-        }
-    }
-);
 
 const paymentMethodSchema = z.enum([
     'MOBILE_MONEY',
@@ -143,7 +99,6 @@ export function createPaymentRoutes(paymentController: PaymentController): Route
     const router = Router();
 
     router.use(paymentLimiter);
-    router.use(idempotencyMiddleware.middleware());
 
     // Create payment
     router.post(
@@ -178,16 +133,6 @@ export function createPaymentRoutes(paymentController: PaymentController): Route
         '/:id/refund',
         validateRequest(refundPaymentRequestSchema),
         asyncHandler((req, res) => paymentController.refundPayment(req, res))
-    );
-
-    // Webhook endpoint (POST with idempotency based on query params)
-    router.post(
-        '/webhooks/pesapal',
-        express.raw({ type: '*/*' }),
-        requireWebhookIdempotencyKey,
-        validatePesapalWebhookRequest,
-        webhookIdempotencyMiddleware.middleware(),
-        asyncHandler((req, res) => paymentController.handlePesapalWebhook(req, res))
     );
 
     return router;

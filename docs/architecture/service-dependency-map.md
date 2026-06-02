@@ -93,7 +93,7 @@ graph TB
     end
 
     subgraph PaymentServiceClients["payment-service HTTP Clients"]
-        PESAPAL_ADAPTER["PesapalAdapter\n(card, mobile money)"]
+        PAYMENT_GATEWAY_ADAPTER["PaymentGatewayAdapter\n(card, mobile money)"]
         WALLET_CLIENT2["WalletServiceClient\n(wallet debit)"]
     end
 
@@ -102,10 +102,10 @@ graph TB
     end
 
     ORDER_SVC["order-service"] --> AUTH_CLIENT & USER_CLIENT & LOG_CLIENT & WAL_CLIENT
-    PAY_SVC["payment-service"] --> PESAPAL_ADAPTER & WALLET_CLIENT2
+    PAY_SVC["payment-service"] --> PAYMENT_GATEWAY_ADAPTER & WALLET_CLIENT2
     INV_SVC["inventory-service"] --> REDIS_ENGINE
 
-    style PESAPAL_ADAPTER fill:#4CAF50,color:#fff
+    style PAYMENT_GATEWAY_ADAPTER fill:#4CAF50,color:#fff
     style REDIS_ENGINE fill:#DC382D,color:#fff
 ```
 

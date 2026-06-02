@@ -75,7 +75,7 @@ Issues discovered during gate evaluation are classified as follows:
 | **F1.2 — Product Listing** | Create product with variants → search → fetch by ID | Product appears in search with correct currency (TZS), correct images, correct stock status |
 | **F1.3 — COD Order Lifecycle** | Place COD order → dispatch → deliver → confirm | Order status transitions correctly; COD commitment fee held and released; courier earnings recorded |
 | **F1.4 — Wallet Payment** | Top up wallet → place WALLET order → verify balance | Wallet balance debited by exact order amount; transaction record exists; no phantom success |
-| **F1.5 — Card Payment** | Place CARD order via Pesapal → receive webhook → verify | Order marked paid only after webhook confirmation; no pre-emptive success |
+| **F1.5 — Card Payment** | Place CARD order via PaymentGateway → receive webhook → verify | Order marked paid only after webhook confirmation; no pre-emptive success |
 | **F1.6 — Inventory Accuracy** | Create stock → place order → verify reservation → cancel → verify release | Stock quantities match expected values at every step |
 | **F1.7 — Notification Delivery** | Trigger order events → verify notification receipt | Push/email/SMS delivered within 30 seconds for order placed, dispatched, delivered |
 | **F1.8 — Saga Compensation** | Simulate payment failure after stock reservation | Stock reservation released; order not persisted as paid; buyer not charged |

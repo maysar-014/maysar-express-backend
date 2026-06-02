@@ -1,5 +1,5 @@
 /**
- * SMS provider adapter - Africa's Talking
+ * SMS provider adapter - routed through the configured SMS provider.
  */
 
 import { container } from '../../sms/infrastructure/container';

@@ -30,7 +30,7 @@ export enum ErrorType {
   TIMEOUT_ERROR = 'TIMEOUT_ERROR',
 
   // External Service Errors
-  PESAPAL_ERROR = 'PESAPAL_ERROR',
+  PAYMENT_GATEWAY_ERROR = 'PAYMENT_GATEWAY_ERROR',
   REDIS_ERROR = 'REDIS_ERROR',
 }
 
@@ -212,9 +212,9 @@ export class TimeoutError extends AppError {
 /**
  * External Service Errors
  */
-export class PesapalError extends AppError {
+export class PaymentGatewayError extends AppError {
   constructor(message: string, context: Partial<ErrorContext> = {}) {
-    super(message, ErrorType.PESAPAL_ERROR, ErrorSeverity.MEDIUM, context, true, true);
+    super(message, ErrorType.PAYMENT_GATEWAY_ERROR, ErrorSeverity.MEDIUM, context, true, true);
   }
 }
 
@@ -243,7 +243,7 @@ export const ErrorFactory = {
   internal: (message: string, context?: Partial<ErrorContext>) => new InternalError(message, context),
   serviceUnavailable: (message?: string, context?: Partial<ErrorContext>) => new ServiceUnavailableError(message, context),
   timeout: (message: string, operation: string, context?: Partial<ErrorContext>) => new TimeoutError(message, operation, context),
-  pesapal: (message: string, context?: Partial<ErrorContext>) => new PesapalError(message, context),
+  paymentGateway: (message: string, context?: Partial<ErrorContext>) => new PaymentGatewayError(message, context),
   redis: (message: string, context?: Partial<ErrorContext>) => new RedisError(message, context),
 };
 

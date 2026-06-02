@@ -2,7 +2,7 @@ sequenceDiagram
     participant UC as "PlaceOrderUseCase"
     participant SAGA as "PaymentSaga"
     participant ENTITY as "Payment Entity"
-    participant PESA as "PesapalAdapter"
+    participant PESA as "PaymentGatewayAdapter"
     participant WALLET as "Wallet Service"
 
     UC->>SAGA: startPayment(payment)

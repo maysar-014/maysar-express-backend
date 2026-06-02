@@ -68,7 +68,7 @@ This phase covers all systems that are currently implemented and working. The pl
 #### Payments
 - Wallet payment (debit from buyer wallet balance)
 - Cash on Delivery (COD) with commitment fee logic
-- Card / mobile payment via Pesapal integration
+- Card / mobile payment via PaymentGateway integration
 - Payment fraud assessment
 - Webhook event handling for payment gateway callbacks
 - Refund processing

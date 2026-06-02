@@ -14,7 +14,7 @@ describe('CheckPaymentStatusUseCase', () => {
         amount: 100,
         currency: 'USD',
         status: PaymentStatus.PROCESSING,
-        provider: PaymentProvider.PESAPAL,
+        provider: PaymentProvider.PAYMENT_GATEWAY,
         metadata: { providerReference: 'prov-ref-123' },
         completedAt: undefined,
         failureReason: undefined,

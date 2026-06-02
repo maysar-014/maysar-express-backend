@@ -117,9 +117,9 @@ const FileUploadConfigSchema = z.object({
  * Payment Configuration Schema
  */
 const PaymentConfigSchema = z.object({
-  provider: z.enum(['pesapal']).optional(),
+  provider: z.enum(['paymentGateway']).optional(),
   enabled: z.coerce.boolean().default(false),
-  pesapal: z.object({
+  paymentGateway: z.object({
     publishableKey: z.string().optional(),
     secretKey: z.string().optional(),
     webhookSecret: z.string().optional(),
@@ -273,9 +273,9 @@ export interface ExternalServicesConfig {
 
   // Payment settings
   payment?: {
-    provider: 'pesapal';
+    provider: 'paymentGateway';
     enabled: boolean;
-    pesapal?: {
+    paymentGateway?: {
       publishableKey?: string;
       secretKey?: string;
       webhookSecret?: string;
@@ -424,14 +424,14 @@ export class ExternalServicesConfigBuilder {
       payment: env.PAYMENT_PROVIDER ? {
         provider: env.PAYMENT_PROVIDER as any,
         enabled: env.PAYMENT_ENABLED !== 'false',
-        pesapal: (env.PESAPAL_SECRET_KEY || env.PESAPAL_CLIENT_ID) ? {
-          publishableKey: env.PESAPAL_PUBLISHABLE_KEY,
-          secretKey: env.PESAPAL_SECRET_KEY,
-          webhookSecret: env.PESAPAL_WEBHOOK_SECRET,
-          apiVersion: env.PESAPAL_API_VERSION || '2023-10-16',
-          clientId: env.PESAPAL_CLIENT_ID,
-          clientSecret: env.PESAPAL_CLIENT_SECRET,
-          mode: (env.PESAPAL_MODE as any) || 'sandbox'
+        paymentGateway: (env.PAYMENT_GATEWAY_SECRET_KEY || env.PAYMENT_GATEWAY_CLIENT_ID) ? {
+          publishableKey: env.PAYMENT_GATEWAY_PUBLISHABLE_KEY,
+          secretKey: env.PAYMENT_GATEWAY_SECRET_KEY,
+          webhookSecret: env.PAYMENT_GATEWAY_WEBHOOK_SECRET,
+          apiVersion: env.PAYMENT_GATEWAY_API_VERSION || '2023-10-16',
+          clientId: env.PAYMENT_GATEWAY_CLIENT_ID,
+          clientSecret: env.PAYMENT_GATEWAY_CLIENT_SECRET,
+          mode: (env.PAYMENT_GATEWAY_MODE as any) || 'sandbox'
         } : undefined
       } : undefined,
       notification: env.NOTIFICATION_PROVIDER ? {
@@ -772,18 +772,18 @@ export function validateExternalServicesConfig(config?: ExternalServicesConfig):
     // Validate payment configuration
     if (extConfig.payment?.enabled) {
       if (
-        extConfig.payment.provider === 'pesapal' &&
-        !extConfig.payment.pesapal?.secretKey &&
-        !extConfig.payment.pesapal?.clientId
+        extConfig.payment.provider === 'paymentGateway' &&
+        !extConfig.payment.paymentGateway?.secretKey &&
+        !extConfig.payment.paymentGateway?.clientId
       ) {
-        errors.push('Pesapal secret key or client ID is required when using Pesapal payments');
+        errors.push('PaymentGateway secret key or client ID is required when using PaymentGateway payments');
       }
       if (
-        extConfig.payment.provider === 'pesapal' &&
-        extConfig.payment.pesapal?.clientId &&
-        !extConfig.payment.pesapal?.clientSecret
+        extConfig.payment.provider === 'paymentGateway' &&
+        extConfig.payment.paymentGateway?.clientId &&
+        !extConfig.payment.paymentGateway?.clientSecret
       ) {
-        errors.push('Pesapal client secret is required when Pesapal client ID is configured');
+        errors.push('PaymentGateway client secret is required when PaymentGateway client ID is configured');
       }
     }
 

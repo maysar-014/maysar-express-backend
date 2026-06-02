@@ -16,7 +16,7 @@ interface WebhookRecordRef {
   id: string;
 }
 
-export class HandlePesapalWebhookUseCase {
+export class HandlePaymentWebhookUseCase {
   constructor(
     private readonly paymentRepository: IPaymentRepository,
     private readonly paymentProvider: IPaymentProvider,
@@ -35,7 +35,7 @@ export class HandlePesapalWebhookUseCase {
         ? providerTransactionReference.trim()
         : providerReference;
 
-    logger.info('Processing Pesapal webhook', { 
+    logger.info('Processing payment gateway webhook', { 
       providerReference, 
       providerTransactionReference: normalizedProviderTransactionReference,
       paymentStatus,

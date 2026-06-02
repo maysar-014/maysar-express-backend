@@ -705,7 +705,7 @@ const REQUEST_EXAMPLE_OVERRIDES = {
       contractTest: true
     }
   },
-  'POST /api/payment/payments/webhooks/pesapal': {
+  'POST /api/payment/payments/webhooks/paymentGateway': {
     OrderTrackingId: PAYMENT_ID,
     OrderMerchantReference: PAYMENT_ID,
     OrderNotificationType: 'CHANGE',
@@ -726,7 +726,7 @@ const REQUEST_EXAMPLE_OVERRIDES = {
     userStatus: 'ACTIVE',
     lastPayoutDate: '2026-03-01T09:00:00.000Z'
   },
-  'POST /api/payment/webhooks/pesapal': {
+  'POST /api/payment/webhooks/paymentGateway': {
     OrderTrackingId: PAYMENT_ID,
     OrderMerchantReference: PAYMENT_ID,
     OrderNotificationType: 'CHANGE',
@@ -2497,7 +2497,7 @@ const REQUEST_SCHEMA_OVERRIDES = {
       },
     },
   },
-  'POST /api/payment/payments/webhooks/pesapal': {
+  'POST /api/payment/payments/webhooks/paymentGateway': {
     type: 'object',
     additionalProperties: true,
     required: ['OrderTrackingId'],
@@ -2508,7 +2508,7 @@ const REQUEST_SCHEMA_OVERRIDES = {
       status: { type: 'string' },
     },
   },
-  'POST /api/payment/webhooks/pesapal': {
+  'POST /api/payment/webhooks/paymentGateway': {
     type: 'object',
     additionalProperties: true,
     required: ['OrderTrackingId'],
@@ -2805,7 +2805,7 @@ const PARAMETER_SCHEMA_OVERRIDES = {
       schema: exactSystemIdSchema(PRIMARY_USER_ID),
     },
   },
-  'POST /api/payment/payments/webhooks/pesapal': {
+  'POST /api/payment/payments/webhooks/paymentGateway': {
     'x-webhook-idempotency-key': {
       in: 'header',
       required: true,
@@ -2816,7 +2816,7 @@ const PARAMETER_SCHEMA_OVERRIDES = {
       },
     },
   },
-  'POST /api/payment/webhooks/pesapal': {
+  'POST /api/payment/webhooks/paymentGateway': {
     'x-webhook-idempotency-key': {
       in: 'header',
       required: true,

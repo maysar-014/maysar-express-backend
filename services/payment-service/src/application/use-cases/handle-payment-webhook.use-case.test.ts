@@ -16,9 +16,9 @@ import {
   PaymentProvider,
   PaymentStatus
 } from '../../domain/entities/payment.entity';
-import { HandlePesapalWebhookUseCase } from './handle-pesapal-webhook.use-case';
+import { HandlePaymentWebhookUseCase } from './handle-payment-webhook.use-case';
 
-describe('HandlePesapalWebhookUseCase', () => {
+describe('HandlePaymentWebhookUseCase', () => {
   const payload = {
     eventType: 'payment.status.update',
     providerReference: 'track-1',
@@ -36,7 +36,7 @@ describe('HandlePesapalWebhookUseCase', () => {
       amount: 100,
       currency: 'TZS',
       method: PaymentMethod.MPESA,
-      provider: PaymentProvider.PESAPAL,
+      provider: PaymentProvider.PAYMENT_GATEWAY,
       status,
       metadata: {},
       createdAt: new Date('2026-03-09T10:00:00.000Z'),
@@ -48,7 +48,7 @@ describe('HandlePesapalWebhookUseCase', () => {
   });
 
   it('ignores webhook when payment cannot be found by provider reference or ID', async () => {
-    const useCase = new HandlePesapalWebhookUseCase(
+    const useCase = new HandlePaymentWebhookUseCase(
       {
         findByProviderReference: jest.fn().mockResolvedValue(null),
         findById: jest.fn().mockResolvedValue(null)
@@ -74,7 +74,7 @@ describe('HandlePesapalWebhookUseCase', () => {
     };
     const provider = { checkPaymentStatus: jest.fn().mockResolvedValue({ status: 'COMPLETED' }) };
     const eventBus = { publish: jest.fn().mockResolvedValue(undefined) };
-    const useCase = new HandlePesapalWebhookUseCase(repo as never, provider as never, eventBus as never);
+    const useCase = new HandlePaymentWebhookUseCase(repo as never, provider as never, eventBus as never);
 
     const result = await useCase.execute('pay-1', 'merchant-1', 'COMPLETED', payload);
 
@@ -85,7 +85,7 @@ describe('HandlePesapalWebhookUseCase', () => {
 
   it('returns early when payment already has terminal status', async () => {
     const payment = makePayment(PaymentStatus.COMPLETED);
-    const useCase = new HandlePesapalWebhookUseCase(
+    const useCase = new HandlePaymentWebhookUseCase(
       { findByProviderReference: jest.fn().mockResolvedValue(payment), update: jest.fn() } as never,
       { checkPaymentStatus: jest.fn() } as never,
       { publish: jest.fn() } as never
@@ -108,7 +108,7 @@ describe('HandlePesapalWebhookUseCase', () => {
     };
     const provider = { checkPaymentStatus: jest.fn() };
     const eventBus = { publish: jest.fn() };
-    const useCase = new HandlePesapalWebhookUseCase(
+    const useCase = new HandlePaymentWebhookUseCase(
       repo as never,
       provider as never,
       eventBus as never
@@ -130,7 +130,7 @@ describe('HandlePesapalWebhookUseCase', () => {
     const repo = { findByProviderReference: jest.fn().mockResolvedValue(payment), update: jest.fn().mockResolvedValue(undefined) };
     const provider = { checkPaymentStatus: jest.fn().mockResolvedValue({ status: 'COMPLETED' }) };
     const eventBus = { publish: jest.fn().mockResolvedValue(undefined) };
-    const useCase = new HandlePesapalWebhookUseCase(repo as never, provider as never, eventBus as never);
+    const useCase = new HandlePaymentWebhookUseCase(repo as never, provider as never, eventBus as never);
 
     const result = await useCase.execute('track-1', 'merchant-1', 'COMPLETED', payload);
 
@@ -151,7 +151,7 @@ describe('HandlePesapalWebhookUseCase', () => {
     const repo = { findByProviderReference: jest.fn().mockResolvedValue(payment), update: jest.fn().mockResolvedValue(undefined) };
     const provider = { checkPaymentStatus: jest.fn().mockResolvedValue({ status: 'COMPLETED' }) };
     const eventBus = { publish: jest.fn().mockResolvedValue(undefined) };
-    const useCase = new HandlePesapalWebhookUseCase(repo as never, provider as never, eventBus as never);
+    const useCase = new HandlePaymentWebhookUseCase(repo as never, provider as never, eventBus as never);
 
     const result = await useCase.execute('track-1', 'provider-tx-1', 'COMPLETED', payload);
 
@@ -173,7 +173,7 @@ describe('HandlePesapalWebhookUseCase', () => {
       markProcessed: jest.fn().mockResolvedValue(undefined),
       markFailed: jest.fn().mockResolvedValue(undefined)
     };
-    const useCase = new HandlePesapalWebhookUseCase(
+    const useCase = new HandlePaymentWebhookUseCase(
       repo as never,
       provider as never,
       eventBus as never,
@@ -207,7 +207,7 @@ describe('HandlePesapalWebhookUseCase', () => {
       markProcessed: jest.fn(),
       markFailed: jest.fn()
     };
-    const useCase = new HandlePesapalWebhookUseCase(
+    const useCase = new HandlePaymentWebhookUseCase(
       repo as never,
       provider as never,
       eventBus as never,
@@ -228,7 +228,7 @@ describe('HandlePesapalWebhookUseCase', () => {
       checkPaymentStatus: jest.fn().mockResolvedValue({ status: 'FAILED', failureReason: 'Insufficient funds' })
     };
     const eventBus = { publish: jest.fn().mockResolvedValue(undefined) };
-    const useCase = new HandlePesapalWebhookUseCase(repo as never, provider as never, eventBus as never);
+    const useCase = new HandlePaymentWebhookUseCase(repo as never, provider as never, eventBus as never);
 
     const result = await useCase.execute('track-1', 'merchant-1', 'FAILED', payload);
 

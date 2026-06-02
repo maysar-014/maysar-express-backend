@@ -154,7 +154,7 @@ export const setupOrderRoutes = (orderController: OrderController, codDisputeCon
   //   - COD trust score + tier limits (ProgressiveCODEligibilityEngine)
   //   - Order value caps per trust tier
   //   - Wallet balance checks for WALLET payment
-  //   - Pesapal fraud checks for CARD/MOBILE_PAYMENT
+  //   - PaymentGateway fraud checks for CARD/MOBILE_PAYMENT
   // KYC is only required for financial operations (withdrawals, large balances).
   router.post(
     '/orders',

@@ -10,8 +10,8 @@ import { IEventPublisher } from './messaging/event-publisher';
 
 // Implementations
 import { PrismaSmsRepository } from './repositories/prisma-sms.repository';
-import { AfricasTalkingSmsProvider } from './providers/africastalking-sms.provider';
 import { MockSmsProvider } from './providers/mock-sms.provider';
+import { MesejiSmsProvider } from './providers/meseji-sms.provider';
 import { EventPublisher } from './messaging/event-publisher';
 
 // Policies
@@ -41,7 +41,7 @@ container.bind<ISmsRepository>(TYPES.SmsRepository).toDynamicValue((context) => 
 container.bind<IEventPublisher>(TYPES.EventPublisher).to(EventPublisher).inSingletonScope();
 
 // Provider selection based on config
-const smsProviderName = (process.env.SMS_PROVIDER || process.env.SMS_SERVICE_PROVIDER || 'africastalking').toLowerCase();
+const smsProviderName = (process.env.SMS_PROVIDER || process.env.SMS_SERVICE_PROVIDER || 'mock').toLowerCase();
 const parseOptionalInt = (value?: string): number | undefined => {
     if (!value) {
         return undefined;
@@ -49,65 +49,31 @@ const parseOptionalInt = (value?: string): number | undefined => {
     const parsed = parseInt(value, 10);
     return Number.isFinite(parsed) ? parsed : undefined;
 };
-const isProduction = process.env.NODE_ENV === 'production';
-const allowLiveInDev = (process.env.SMS_ALLOW_LIVE_IN_DEV || '').toLowerCase() === 'true';
-const africasTalkingEnvRaw = (process.env.AFRICASTALKING_ENV || (isProduction ? 'live' : 'sandbox')).toLowerCase();
-const isLiveRequested = africasTalkingEnvRaw === 'live';
-const africasTalkingEnv = isLiveRequested && (isProduction || allowLiveInDev) ? 'live' : 'sandbox';
+const mesejiBaseUrl = process.env.MESEJI_BASE_URL || '';
 const perUserLimitPerHour = parseOptionalInt(process.env.SMS_RATE_LIMIT_PER_USER_PER_HOUR);
 const perPhoneNumberLimitPerDay = parseOptionalInt(process.env.SMS_RATE_LIMIT_PER_PHONE_NUMBER_PER_DAY);
-const resolvedBaseUrl = (process.env.AFRICASTALKING_BASE_URL ||
-    (africasTalkingEnv === 'sandbox'
-        ? 'https://api.sandbox.africastalking.com/version1'
-        : 'https://api.africastalking.com/version1')).replace(/\/+$/, '');
-const resolvedUsername = process.env.AFRICASTALKING_USERNAME || process.env.SMS_SERVICE_USERNAME || 'sandbox';
-const apiKeyStatus = (process.env.AFRICASTALKING_API_KEY || process.env.SMS_SERVICE_API_KEY) ? 'set' : 'missing';
-const hasBaseUrlOverride = Boolean(process.env.AFRICASTALKING_BASE_URL);
+const apiKeyStatus = (process.env.MESEJI_API_KEY || process.env.SMS_SERVICE_API_KEY) ? 'set' : 'missing';
+const hasBaseUrlOverride = Boolean(process.env.MESEJI_BASE_URL);
 // One-time startup log to verify env resolution (no secrets).
 const smsGlobal = globalThis as typeof globalThis & { __smsEnvLogged?: boolean };
 if (!smsGlobal.__smsEnvLogged) {
     smsGlobal.__smsEnvLogged = true;
     process.stdout.write(
-        `[sms] provider=${smsProviderName} env=${africasTalkingEnv} baseUrl=${resolvedBaseUrl} ` +
-        `baseUrlOverride=${hasBaseUrlOverride ? 'yes' : 'no'} username=${resolvedUsername} ` +
-        `apiKey=${apiKeyStatus} allowLiveInDev=${allowLiveInDev ? 'true' : 'false'} ` +
+        `[sms] provider=${smsProviderName} baseUrl=${mesejiBaseUrl || 'n/a'} ` +
+        `baseUrlOverride=${hasBaseUrlOverride ? 'yes' : 'no'} apiKey=${apiKeyStatus} ` +
         `node_env=${process.env.NODE_ENV || 'development'}\n`
     );
 }
-if (smsProviderName !== 'africastalking') {
-    if (smsProviderName === 'mock') {
-        container.bind<ISmsProvider>(TYPES.SmsProvider).toConstantValue(new MockSmsProvider());
-    } else {
-        throw new Error(`Unsupported SMS provider "${smsProviderName}". Configure SMS_PROVIDER=africastalking.`);
-    }
-}
-
-const apiKey = process.env.AFRICASTALKING_API_KEY || process.env.SMS_SERVICE_API_KEY;
-
-if (smsProviderName === 'africastalking') {
-    if (!apiKey) {
-        if (isProduction) {
-            throw new Error('Missing AFRICASTALKING_API_KEY (or SMS_SERVICE_API_KEY). SMS provider cannot be initialized.');
-        }
-
-        process.stdout.write(
-            '[sms] AFRICASTALKING_API_KEY missing; falling back to MockSmsProvider for non-production environment.\n'
-        );
-        container.bind<ISmsProvider>(TYPES.SmsProvider).toConstantValue(new MockSmsProvider());
-    } else {
-        container.bind<ISmsProvider>(TYPES.SmsProvider).toConstantValue(new AfricasTalkingSmsProvider({
-            username: resolvedUsername,
-            apiKey,
-            senderId: process.env.AFRICASTALKING_SENDER_ID,
-            environment: africasTalkingEnv,
-            baseUrl: resolvedBaseUrl,
-            bulkSMSMode: parseOptionalInt(process.env.AFRICASTALKING_BULK_SMS_MODE),
-            enqueue: parseOptionalInt(process.env.AFRICASTALKING_ENQUEUE),
-            keyword: process.env.AFRICASTALKING_KEYWORD,
-            linkId: process.env.AFRICASTALKING_LINK_ID,
-            retryDurationInHours: parseOptionalInt(process.env.AFRICASTALKING_RETRY_DURATION_HOURS)
-        }));
-    }
+if (smsProviderName === 'mock') {
+    container.bind<ISmsProvider>(TYPES.SmsProvider).toConstantValue(new MockSmsProvider());
+} else if (smsProviderName === 'meseji') {
+    container.bind<ISmsProvider>(TYPES.SmsProvider).toConstantValue(new MesejiSmsProvider({
+        apiKey: process.env.MESEJI_API_KEY || process.env.SMS_SERVICE_API_KEY,
+        senderId: process.env.MESEJI_SENDER_ID,
+        baseUrl: process.env.MESEJI_BASE_URL
+    }));
+} else {
+    throw new Error(`Unsupported SMS provider "${smsProviderName}". Configure SMS_PROVIDER=mock or SMS_PROVIDER=meseji.`);
 }
 
 // Policies

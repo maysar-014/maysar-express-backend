@@ -82,9 +82,9 @@ function validateCredentials(originalNodeEnv) {
     ['BASE_URL', {}, 'must use local/test callback endpoint'],
     ['JAEGER_ENDPOINT', {}, 'must use local/test tracing endpoint'],
     [
-      'PESAPAL_URL',
-      { allowedPatterns: [/api\.pesapal\.com/i, /sandbox/i] },
-      'must point to Pesapal API or sandbox endpoint',
+      'PAYMENT_GATEWAY_URL',
+      { allowedPatterns: [/api\.paymentGateway\.com/i, /sandbox/i] },
+      'must point to PaymentGateway API or sandbox endpoint',
     ],
   ];
 
@@ -113,8 +113,8 @@ function validateCredentials(originalNodeEnv) {
     ['JWT_SECRET', hasSafeMarker, 'must be a test-only secret'],
     ['USER_SERVICE_JWT_SECRET', hasSafeMarker, 'must be a test-only secret'],
     ['AUTH_SERVICE_SESSION_SECRET', hasSafeMarker, 'must be a test-only secret'],
-    ['PESAPAL_CONSUMER_KEY', hasSafeMarker, 'must be test/sandbox key'],
-    ['PESAPAL_API_KEY', hasSafeMarker, 'must be test/sandbox api key'],
+    ['PAYMENT_GATEWAY_CONSUMER_KEY', hasSafeMarker, 'must be test/sandbox key'],
+    ['PAYMENT_GATEWAY_API_KEY', hasSafeMarker, 'must be test/sandbox api key'],
     ['AFRICASTALKING_USERNAME', hasSafeMarker, 'must be Africa\'s Talking test username'],
     ['AFRICASTALKING_API_KEY', hasSafeMarker, 'must be Africa\'s Talking test api key'],
     ['AFRICASTALKING_SENDER_ID', hasSafeMarker, 'must be Africa\'s Talking test sender id'],
@@ -125,16 +125,16 @@ function validateCredentials(originalNodeEnv) {
     ['FIREBASE_CLIENT_EMAIL', hasSafeMarker, 'must be a test-only client email'],
     ['NOTIFICATION_SERVICE_FIREBASE_KEY', hasSafeMarker, 'must be test-only key'],
     [
-      'PESAPAL_SECRET_KEY',
-      (value) => /^PESAPAL_TEST/i.test(value) || hasSafeMarker(value),
-      'must be Pesapal test key',
+      'PAYMENT_GATEWAY_SECRET_KEY',
+      (value) => /^PAYMENT_GATEWAY_TEST/i.test(value) || hasSafeMarker(value),
+      'must be PaymentGateway test key',
     ],
     [
-      'PESAPAL_WEBHOOK_SECRET',
-      (value) => hasSafeMarker(value) || /^PESAPAL_TEST/i.test(value),
-      'must be Pesapal test webhook secret',
+      'PAYMENT_GATEWAY_WEBHOOK_SECRET',
+      (value) => hasSafeMarker(value) || /^PAYMENT_GATEWAY_TEST/i.test(value),
+      'must be PaymentGateway test webhook secret',
     ],
-    ['PESAPAL_SECRET_HASH', hasSafeMarker, 'must be Pesapal test secret hash'],
+    ['PAYMENT_GATEWAY_SECRET_HASH', hasSafeMarker, 'must be PaymentGateway test secret hash'],
     ['SENTRY_DSN', hasSafeMarker, 'must be empty or test/local DSN'],
     [
       'AWS_ACCESS_KEY_ID',

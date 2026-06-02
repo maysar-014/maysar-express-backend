@@ -20,10 +20,10 @@ const REQUIRED_KEYS = [
   'JWT_SECRET',
   'USER_SERVICE_JWT_SECRET',
   'AUTH_SERVICE_SESSION_SECRET',
-  'PESAPAL_CONSUMER_KEY',
-  'PESAPAL_CONSUMER_SECRET',
-  'PESAPAL_IPN_ID',
-  'PESAPAL_URL',
+  'PAYMENT_GATEWAY_CONSUMER_KEY',
+  'PAYMENT_GATEWAY_CONSUMER_SECRET',
+  'PAYMENT_GATEWAY_IPN_ID',
+  'PAYMENT_GATEWAY_URL',
   'PII_ENCRYPTION_KEY',
   'PII_HMAC_SECRET',
   'MEILI_MASTER_KEY'
@@ -35,8 +35,8 @@ const SECRET_KEYS = [
   'JWT_SECRET',
   'USER_SERVICE_JWT_SECRET',
   'AUTH_SERVICE_SESSION_SECRET',
-  'PESAPAL_CONSUMER_SECRET',
-  'PESAPAL_IPN_ID',
+  'PAYMENT_GATEWAY_CONSUMER_SECRET',
+  'PAYMENT_GATEWAY_IPN_ID',
   'PII_ENCRYPTION_KEY',
   'PII_HMAC_SECRET',
   'MEILI_MASTER_KEY'
@@ -78,8 +78,8 @@ if (parsed.NODE_ENV !== 'production') {
   issues.push(`NODE_ENV must be "production", got "${parsed.NODE_ENV}"`);
 }
 
-if (parsed.PESAPAL_URL && !/pesapal/i.test(parsed.PESAPAL_URL)) {
-  issues.push('PESAPAL_URL must point to a Pesapal endpoint');
+if (parsed.PAYMENT_GATEWAY_URL && !/paymentGateway/i.test(parsed.PAYMENT_GATEWAY_URL)) {
+  issues.push('PAYMENT_GATEWAY_URL must point to a PaymentGateway endpoint');
 }
 
 const disallowedLocalHosts = ['BASE_URL', 'DATABASE_URL', 'REDIS_URL'];

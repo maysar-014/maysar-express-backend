@@ -226,26 +226,26 @@ variable "log_level" {
   default     = "info"
 }
 
-variable "pesapal_url" {
-  description = "Pesapal API base URL."
+variable "paymentGateway_url" {
+  description = "PaymentGateway API base URL."
   type        = string
-  default     = "https://api.pesapal.com/v3"
+  default     = "https://api.paymentGateway.com/v3"
 }
 
-variable "pesapal_consumer_key" {
-  description = "Pesapal consumer key for production."
-  type        = string
-  sensitive   = true
-}
-
-variable "pesapal_consumer_secret" {
-  description = "Pesapal consumer secret for production."
+variable "paymentGateway_consumer_key" {
+  description = "PaymentGateway consumer key for production."
   type        = string
   sensitive   = true
 }
 
-variable "pesapal_ipn_id" {
-  description = "Pesapal IPN identifier for production."
+variable "paymentGateway_consumer_secret" {
+  description = "PaymentGateway consumer secret for production."
+  type        = string
+  sensitive   = true
+}
+
+variable "paymentGateway_ipn_id" {
+  description = "PaymentGateway IPN identifier for production."
   type        = string
   sensitive   = true
 }

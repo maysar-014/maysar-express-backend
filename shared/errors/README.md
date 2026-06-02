@@ -28,7 +28,7 @@ import { AppError } from '@shared/errors/app-error';
 import { OptimisticLockError } from '@shared/errors/optimistic-lock.error';
 
 // Throw a domain error
-throw new AppError('Payment gateway unavailable', { gateway: 'pesapal' }, 503);
+throw new AppError('Payment gateway unavailable', { gateway: 'paymentGateway' }, 503);
 
 // Catch optimistic lock conflict and retry
 try {

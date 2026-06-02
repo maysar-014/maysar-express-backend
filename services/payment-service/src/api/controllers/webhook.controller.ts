@@ -1,21 +1,28 @@
 import { Request, Response } from 'express';
-import { PesapalAdapter } from '../../infrastructure/providers/pesapal.adapter';
-import { HandlePesapalWebhookUseCase } from '../../application/use-cases/handle-pesapal-webhook.use-case';
+import { SelcomPesaAdapter } from '../../infrastructure/providers/selcom-pesa.adapter';
 import { WebhookPayload } from '../../domain/repositories/payment-provider.gateway';
 import { logger } from '../../infrastructure/services/logger.service';
-import { extractPesapalWebhookRequest } from './pesapal-webhook.utils';
+import { extractPaymentWebhookRequest } from './payment-webhook.utils';
 
 export class WebhookController {
   constructor(
-    private readonly pesapalAdapter: PesapalAdapter,
-    private readonly handlePesapalWebhookUseCase: HandlePesapalWebhookUseCase
+    private readonly paymentGateway: SelcomPesaAdapter,
+    private readonly handlePaymentWebhookUseCase?: { execute(providerReference: string, providerTransactionId: string, paymentStatus: string, payload: WebhookPayload): Promise<unknown> }
   ) {}
 
   private isContractTestRequest(req: Request): boolean {
     return String(req.headers?.['x-contract-test'] || '').trim() === '1' && process.env.NODE_ENV !== 'production';
   }
 
-  async handlePesapalWebhook(req: Request, res: Response): Promise<void> {
+  async handlePaymentWebhook(req: Request, res: Response): Promise<void> {
+    if (!this.handlePaymentWebhookUseCase) {
+      res.status(410).json({
+        error: 'Payment webhook integration is currently disabled',
+        provider: this.paymentGateway.getProviderName()
+      });
+      return;
+    }
+
     try {
       const {
         parsedBody,
@@ -24,7 +31,7 @@ export class WebhookController {
         paymentStatus,
         merchantReference,
         notificationType,
-      } = extractPesapalWebhookRequest(req);
+      } = extractPaymentWebhookRequest(req);
 
       if (!providerReference) {
         logger.warn('Missing webhook parameters', { body: parsedBody, query: req.query });
@@ -49,16 +56,16 @@ export class WebhookController {
         }
       };
 
-      await this.pesapalAdapter.handleWebhook(webhookPayload);
+      await this.paymentGateway.handleWebhook(webhookPayload);
 
-      const result = await this.handlePesapalWebhookUseCase.execute(
+      const result = await this.handlePaymentWebhookUseCase.execute(
         providerReference,
         providerTransactionId ?? providerReference,
         paymentStatus,
         webhookPayload
       );
 
-      logger.info('Webhook processed successfully', result);
+      logger.info('Webhook processed successfully', result as Record<string, unknown>);
       res.status(200).json({ status: 'OK' });
     } catch (error) {
       logger.error('Webhook processing failed', { error });

@@ -191,8 +191,8 @@ export class CommissionPolicies {
     }
 
     // Amount restrictions for certain payment methods
-    if (paymentMethod === 'pesapal' && commission.amount.toNumber() > 5000) {
-      return { allowed: false, reason: 'Pesapal payments limited to $5000' };
+    if (paymentMethod === 'paymentGateway' && commission.amount.toNumber() > 5000) {
+      return { allowed: false, reason: 'PaymentGateway payments limited to $5000' };
     }
 
     return { allowed: true };

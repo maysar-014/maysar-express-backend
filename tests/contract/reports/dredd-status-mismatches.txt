@@ -197,9 +197,9 @@ POST (201) /api/notification/templates/id-123/render :: 201->404
 POST (201) /api/order/orders :: 201->500
 POST (201) /api/order/orders/disputes/id-123/resolve :: 201->400
 POST (201) /api/payment/payments :: 201->422
-POST (201) /api/payment/payments/webhooks/pesapal :: 201->400
+POST (201) /api/payment/payments/webhooks/paymentGateway :: 201->400
 POST (201) /api/payment/payouts :: 201->500
-POST (201) /api/payment/webhooks/pesapal :: 201->401
+POST (201) /api/payment/webhooks/paymentGateway :: 201->401
 POST (201) /api/payout/payouts :: 201->500
 POST (201) /api/payout/payouts/id-123/cancel :: 201->404
 POST (201) /api/production/plans :: 201->400
@@ -321,9 +321,9 @@ POST (400) /api/notification/templates :: 200->404
 POST (400) /api/notification/templates/id-123/render :: 200->400
 POST (400) /api/order/orders :: 200->400
 POST (400) /api/payment/payments :: 200->400
-POST (400) /api/payment/payments/webhooks/pesapal :: 200->400
+POST (400) /api/payment/payments/webhooks/paymentGateway :: 200->400
 POST (400) /api/payment/payouts :: 200->401
-POST (400) /api/payment/webhooks/pesapal :: 200->500
+POST (400) /api/payment/webhooks/paymentGateway :: 200->500
 POST (400) /api/payout/payouts :: 200->404
 POST (400) /api/payout/payouts/id-123/cancel :: 200->400
 POST (400) /api/production/plans :: 200->400

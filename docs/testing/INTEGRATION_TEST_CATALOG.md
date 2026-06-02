@@ -19,13 +19,13 @@
 
 ## External Service Integrations
 
-### 1. Payment Gateway - Pesapal
+### 1. Payment Gateway - PaymentGateway
 **Service**: Payment Service  
 **Integration Type**: REST API  
 **Environment Variables**:
-- `PESAPAL_SECRET_KEY`
-- `PESAPAL_WEBHOOK_SECRET`
-- `PESAPAL_URL`
+- `PAYMENT_GATEWAY_SECRET_KEY`
+- `PAYMENT_GATEWAY_WEBHOOK_SECRET`
+- `PAYMENT_GATEWAY_URL`
 - `BASE_URL`
 
 **Test Scenarios**:
@@ -911,7 +911,7 @@
 ### Priority 1 (Critical Path)
 1. Order creation → Payment → Inventory → Delivery flow
 2. User registration → Auth → Email verification
-3. Payment gateway integration (Pesapal)
+3. Payment gateway integration (PaymentGateway)
 4. Wallet operations (credit/debit/freeze)
 5. Outbox pattern event publishing
 6. Saga orchestration (Order Fulfillment)
@@ -992,7 +992,7 @@ services:
 ```
 
 ### Mock Services
-- Payment gateway (Pesapal mock)
+- Payment gateway (PaymentGateway mock)
 - SMS gateway (Africa's Talking mock)
 - Email service (SMTP mock)
 - Firebase (FCM mock)
@@ -1001,7 +1001,7 @@ services:
 ### Credential Safety Gate
 - Jest global setup auto-loads `.env.test` from repository root when present.
 - Test startup fails fast if production-like credentials/endpoints are detected for:
-  - Pesapal
+  - PaymentGateway
   - Africa's Talking
   - SMTP
   - Firebase
@@ -1115,7 +1115,7 @@ This catalog is enforced together with:
 6. Priority 1 catalog flows must be covered:
    - Order -> Payment -> Inventory -> Delivery
    - User/Auth verification flow
-   - Pesapal integration
+   - PaymentGateway integration
    - Wallet operations
    - Outbox pattern
    - Order fulfillment saga

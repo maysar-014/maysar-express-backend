@@ -37666,7 +37666,7 @@ paths:
               schema: {}
       security:
         - BearerAuth: []
-  /api/payment/payments/webhooks/pesapal:
+  /api/payment/payments/webhooks/paymentGateway:
     parameters:
       - name: x-webhook-idempotency-key
         in: header
@@ -37679,7 +37679,7 @@ paths:
     post:
       tags:
         - Payments
-      summary: Pesapal webhook
+      summary: PaymentGateway webhook
       requestBody:
         required: true
         content:
@@ -37967,7 +37967,7 @@ paths:
       parameters: []
       security:
         - ServiceKey: []
-  /api/payment/webhooks/pesapal:
+  /api/payment/webhooks/paymentGateway:
     parameters:
       - name: x-webhook-idempotency-key
         in: header
@@ -37980,7 +37980,7 @@ paths:
     post:
       tags:
         - Payments
-      summary: POST /api/payment/webhooks/pesapal
+      summary: POST /api/payment/webhooks/paymentGateway
       requestBody:
         required: true
         content:

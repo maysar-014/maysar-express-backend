@@ -39,9 +39,9 @@ const currencyArb = fc.constantFrom('TZS', 'USD', 'KES', 'EUR');
 
 // ─── Minimal stubs ─────────────────────────────────────────────────────────────
 
-function makeMockPesapalAdapter() {
+function makeMockPaymentGatewayAdapter() {
   return {
-    processPayment: jest.fn().mockResolvedValue({ success: true, transactionId: 'PESAPAL_TX_001' })
+    processPayment: jest.fn().mockResolvedValue({ success: true, transactionId: 'PAYMENT_GATEWAY_TX_001' })
   } as any;
 }
 
@@ -139,16 +139,16 @@ describe('Sub-test A — Casing mismatch: WALLET (uppercase) must route to proce
    * be called exactly once.
    *
    * On unfixed code the bridge maps 'WALLET' → PaymentMethod.CARD, so the saga
-   * dispatches to processPesapalPayment instead — debitWallet is never called.
+   * dispatches to processPaymentGatewayPayment instead — debitWallet is never called.
    */
   it('PBT: debitWallet is called for any buyerId/amount/currency when method is WALLET', async () => {
     await fc.assert(
       fc.asyncProperty(buyerIdArb, amountArb, currencyArb, async (buyerId, amount, currency) => {
         const walletClient = makeWalletClient();
-        const pesapalAdapter = makeMockPesapalAdapter();
+        const paymentGatewayAdapter = makeMockPaymentGatewayAdapter();
         const paymentRepository = makeMockPaymentRepository();
 
-        const saga = new PaymentSaga(pesapalAdapter, paymentRepository, walletClient as any);
+        const saga = new PaymentSaga(paymentGatewayAdapter, paymentRepository, walletClient as any);
 
         const payment = new Payment({
           id: `pay-${buyerId}-${amount}`,
@@ -165,7 +165,7 @@ describe('Sub-test A — Casing mismatch: WALLET (uppercase) must route to proce
         await drainAsync();
 
         // ASSERTION: debitWallet must have been called
-        // On unfixed code: method is mapped to CARD → processPesapalPayment called → this FAILS
+        // On unfixed code: method is mapped to CARD → processPaymentGatewayPayment called → this FAILS
         expect(walletClient.debitWallet).toHaveBeenCalledTimes(1);
         expect(walletClient.debitWallet).toHaveBeenCalledWith(
           buyerId,
@@ -178,12 +178,12 @@ describe('Sub-test A — Casing mismatch: WALLET (uppercase) must route to proce
     );
   });
 
-  it('Unit: PaymentSaga with WALLET method calls debitWallet (not processPesapalPayment)', async () => {
+  it('Unit: PaymentSaga with WALLET method calls debitWallet (not processPaymentGatewayPayment)', async () => {
     const walletClient = makeWalletClient();
-    const pesapalAdapter = makeMockPesapalAdapter();
+    const paymentGatewayAdapter = makeMockPaymentGatewayAdapter();
     const paymentRepository = makeMockPaymentRepository();
 
-    const saga = new PaymentSaga(pesapalAdapter, paymentRepository, walletClient as any);
+    const saga = new PaymentSaga(paymentGatewayAdapter, paymentRepository, walletClient as any);
 
     const payment = new Payment({
       id: 'pay-casing-001',
@@ -198,9 +198,9 @@ describe('Sub-test A — Casing mismatch: WALLET (uppercase) must route to proce
     await saga.start({ payment });
     await drainAsync();
 
-    // debitWallet must be called; processPesapalPayment must NOT be called
+    // debitWallet must be called; processPaymentGatewayPayment must NOT be called
     expect(walletClient.debitWallet).toHaveBeenCalledTimes(1);
-    expect(pesapalAdapter.processPayment).not.toHaveBeenCalled();
+    expect(paymentGatewayAdapter.processPayment).not.toHaveBeenCalled();
   });
 });
 
@@ -314,11 +314,11 @@ describe('Sub-test C — Stub success: PaymentSaga must throw when walletClient 
   it('PBT: PaymentSaga fails (not stub-success) for any buyerId/amount/currency when walletClient is absent', async () => {
     await fc.assert(
       fc.asyncProperty(buyerIdArb, amountArb, currencyArb, async (buyerId, amount, currency) => {
-        const pesapalAdapter = makeMockPesapalAdapter();
+        const paymentGatewayAdapter = makeMockPaymentGatewayAdapter();
         const paymentRepository = makeMockPaymentRepository();
 
         // Intentionally NO walletClient
-        const saga = new PaymentSaga(pesapalAdapter, paymentRepository);
+        const saga = new PaymentSaga(paymentGatewayAdapter, paymentRepository);
 
         const payment = new Payment({
           id: `pay-stub-${buyerId}`,
@@ -353,11 +353,11 @@ describe('Sub-test C — Stub success: PaymentSaga must throw when walletClient 
   });
 
   it('Unit: PaymentSaga throws or fails when walletClient is absent for WALLET payment', async () => {
-    const pesapalAdapter = makeMockPesapalAdapter();
+    const paymentGatewayAdapter = makeMockPaymentGatewayAdapter();
     const paymentRepository = makeMockPaymentRepository();
 
     // No walletClient
-    const saga = new PaymentSaga(pesapalAdapter, paymentRepository);
+    const saga = new PaymentSaga(paymentGatewayAdapter, paymentRepository);
 
     const payment = new Payment({
       id: 'pay-stub-unit-001',
@@ -386,10 +386,10 @@ describe('Sub-test C — Stub success: PaymentSaga must throw when walletClient 
   });
 
   it('Unit: PaymentSaga does NOT return stub transactionId when walletClient is absent', async () => {
-    const pesapalAdapter = makeMockPesapalAdapter();
+    const paymentGatewayAdapter = makeMockPaymentGatewayAdapter();
     const paymentRepository = makeMockPaymentRepository();
 
-    const saga = new PaymentSaga(pesapalAdapter, paymentRepository);
+    const saga = new PaymentSaga(paymentGatewayAdapter, paymentRepository);
 
     const payment = new Payment({
       id: 'pay-stub-unit-002',

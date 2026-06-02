@@ -1,7 +1,7 @@
 /**
  * Payment Provider Port
  * Interface defining payment provider operations
- * Implementations: Pesapal, Internal Wallet
+ * Implementations: PaymentGateway, Internal Wallet
  */
 
 export interface PaymentProviderRequest {

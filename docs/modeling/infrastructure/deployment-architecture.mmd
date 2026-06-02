@@ -55,7 +55,7 @@ graph TB
     end
 
     subgraph "External Integrations"
-        PESAPAL_EXT[Pesapal API]
+        PAYMENT_GATEWAY_EXT[PaymentGateway API]
         SENDGRID_EXT[SendGrid API]
         AFRICASTALKING_EXT[Africa's Talking API]
     end
@@ -89,7 +89,7 @@ graph TB
     REDIS_CLUSTER -.->|Alternative| ELASTICACHE
 
     %% Services to external
-    PAYMENT_PODS --> PESAPAL_EXT
+    PAYMENT_PODS --> PAYMENT_GATEWAY_EXT
     NOTIFICATION_PODS --> SENDGRID_EXT
     NOTIFICATION_PODS --> AFRICASTALKING_EXT
 

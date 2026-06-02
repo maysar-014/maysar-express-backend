@@ -60,7 +60,7 @@
 ### Multi-Gateway Failover (Deferred to Phase 13)
 - **Primary**: M-Pesa (70% of transactions)
 - **Secondary**: Airtel Money (20%)
-- **Tertiary**: Pesapal (10%, card payments)
+- **Tertiary**: PaymentGateway (10%, card payments)
 - **Failover Logic**: Automatic retry on gateway timeout
 - **Revenue Protection**: 99.9% uptime = TZS 29M/month saved
 

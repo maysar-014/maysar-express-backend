@@ -57,7 +57,7 @@ describe('ProcessPaymentUseCase', () => {
 
         mockProcessingEngine = {
             validatePaymentRequest: jest.fn().mockReturnValue({ isValid: true, errors: [] }),
-            selectPaymentProvider: jest.fn().mockReturnValue(PaymentProvider.PESAPAL),
+            selectPaymentProvider: jest.fn().mockReturnValue(PaymentProvider.PAYMENT_GATEWAY),
             calculateFees: jest.fn().mockReturnValue({ platformFee: 2, providerFee: 1, totalFee: 3 }),
         };
 

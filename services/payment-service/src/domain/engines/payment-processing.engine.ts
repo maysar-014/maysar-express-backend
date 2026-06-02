@@ -42,7 +42,7 @@ export class PaymentProcessingEngine {
             case PaymentMethodType.HALOPESA:
             case PaymentMethodType.BANK_TRANSFER:
             case PaymentMethodType.CARD:
-                return PaymentProvider.PESAPAL;
+                return PaymentProvider.PAYMENT_GATEWAY;
 
             default:
                 throw new Error(`Unsupported payment method: ${method}`);

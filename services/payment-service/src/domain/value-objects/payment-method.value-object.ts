@@ -15,7 +15,7 @@ export enum PaymentMethodType {
 }
 
 export enum PaymentProvider {
-    PESAPAL = 'PESAPAL',
+    PAYMENT_GATEWAY = 'PAYMENT_GATEWAY',
     INTERNAL_WALLET = 'INTERNAL_WALLET',
 }
 
@@ -285,8 +285,8 @@ export class PaymentMethod {
             throw new Error('Wallet payment method must use INTERNAL_WALLET provider');
         }
 
-        // Mobile money and other methods use Pesapal
-        const pesapalMethods = [
+        // Mobile money and other methods use PaymentGateway
+        const paymentGatewayMethods = [
             PaymentMethodType.MPESA,
             PaymentMethodType.AIRTEL_MONEY,
             PaymentMethodType.TIGO_PESA,
@@ -295,8 +295,8 @@ export class PaymentMethod {
             PaymentMethodType.CARD,
         ];
 
-        if (pesapalMethods.includes(type) && provider !== PaymentProvider.PESAPAL) {
-            throw new Error(`Payment method ${type} must use PESAPAL provider`);
+        if (paymentGatewayMethods.includes(type) && provider !== PaymentProvider.PAYMENT_GATEWAY) {
+            throw new Error(`Payment method ${type} must use PAYMENT_GATEWAY provider`);
         }
     }
 
@@ -305,7 +305,7 @@ export class PaymentMethod {
      */
     static fromString(
         typeString: string,
-        providerString: string = 'PESAPAL'
+        providerString: string = 'PAYMENT_GATEWAY'
     ): PaymentMethod {
         const type = typeString.toUpperCase() as PaymentMethodType;
         const provider = providerString.toUpperCase() as PaymentProvider;

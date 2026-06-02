@@ -24,10 +24,10 @@ export const config = {
             dbPassword: env.CATALOG_SERVICE_DB_PASSWORD,
         },
         sms: {
-            provider: env.SMS_PROVIDER || env.SMS_SERVICE_PROVIDER,
-            apiKey: env.AFRICASTALKING_API_KEY || env.SMS_SERVICE_API_KEY,
-            username: env.AFRICASTALKING_USERNAME,
-            senderId: env.AFRICASTALKING_SENDER_ID,
+            provider: env.SMS_PROVIDER || env.SMS_SERVICE_PROVIDER || 'mock',
+            apiKey: env.MESEJI_API_KEY || env.SMS_SERVICE_API_KEY,
+            senderId: env.MESEJI_SENDER_ID,
+            baseUrl: env.MESEJI_BASE_URL,
         }
     }
 };

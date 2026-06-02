@@ -14,7 +14,7 @@ const buildPayment = (providerReference?: string): Payment =>
     amount: 120000,
     currency: 'TZS',
     method: PaymentMethod.MPESA,
-    provider: PaymentProvider.PESAPAL,
+    provider: PaymentProvider.PAYMENT_GATEWAY,
     status: PaymentStatus.COMPLETED,
     metadata: {
       providerReference
@@ -25,7 +25,7 @@ const buildPayment = (providerReference?: string): Payment =>
 
 describe('PaymentMapper', () => {
   it('maps a payment entity into a payment response dto', () => {
-    const dto = PaymentMapper.toDto(buildPayment('PESAPAL-REF-1'));
+    const dto = PaymentMapper.toDto(buildPayment('PAYMENT_GATEWAY-REF-1'));
 
     expect(dto).toEqual({
       id: 'pay-1',
@@ -35,7 +35,7 @@ describe('PaymentMapper', () => {
       currency: 'TZS',
       status: PaymentStatus.COMPLETED,
       method: PaymentMethod.MPESA,
-      providerReference: 'PESAPAL-REF-1',
+      providerReference: 'PAYMENT_GATEWAY-REF-1',
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
       updatedAt: new Date('2026-01-01T01:00:00.000Z')
     });

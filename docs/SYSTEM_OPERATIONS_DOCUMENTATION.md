@@ -323,7 +323,7 @@ service-name/
 
 **Key Operations**:
 - **Payment Processing**: Process payments via payment gateways
-  - Card payments (Pesapal)
+  - Card payments via the payment-gateway bridge
   - Mobile money (M-Pesa, Airtel Money)
   - Bank transfers
   - Wallet payments

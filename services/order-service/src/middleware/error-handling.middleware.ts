@@ -242,7 +242,7 @@ function getHttpStatusCode(error: AppError): number {
     case ErrorType.DATABASE_ERROR:
     case ErrorType.EXTERNAL_SERVICE_ERROR:
     case ErrorType.NETWORK_ERROR:
-    case ErrorType.PESAPAL_ERROR:
+    case ErrorType.PAYMENT_GATEWAY_ERROR:
     case ErrorType.REDIS_ERROR:
       return 503;
 

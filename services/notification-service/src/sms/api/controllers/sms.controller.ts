@@ -171,8 +171,8 @@ export class SmsController {
         }
     }
 
-    @httpPost('/webhook/africastalking')
-    async webhookAfricastalking(req: Request, res: Response, next: NextFunction) {
+    @httpPost('/webhook/meseji')
+    async webhookMeseji(req: Request, res: Response, next: NextFunction) {
         try {
             const schema = Joi.object({
                 id: safeVisibleString.required(),
@@ -211,5 +211,9 @@ export class SmsController {
         } catch (error) {
             next(error);
         }
+    }
+
+    async webhookAfricastalking(req: Request, res: Response, next: NextFunction) {
+        return this.webhookMeseji(req, res, next);
     }
 }

@@ -6,11 +6,11 @@
 [![Redis](https://img.shields.io/badge/Redis-7+-red)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://docker.com/)
 
-> Payment processing lifecycle, fraud assessment, and COD pre-authorization via wallet-service. Gateway: Pesapal.
+> Payment processing lifecycle, fraud assessment, and COD pre-authorization via wallet-service. Gateway: PaymentGateway.
 
 ## Purpose
 
-The Payment Service owns the full payment lifecycle from initiation to settlement. It integrates with Pesapal as the primary payment gateway, performs fraud risk scoring before capture, and implements a COD pre-authorization mechanism unique to the Tanzania market — locking customer wallet funds before delivery to reduce COD fraud risk. Optimistic locking on the `Payment_Payment` aggregate prevents double-charge under concurrent requests.
+The Payment Service owns the full payment lifecycle from initiation to settlement. It integrates with PaymentGateway as the primary payment gateway, performs fraud risk scoring before capture, and implements a COD pre-authorization mechanism unique to the Tanzania market — locking customer wallet funds before delivery to reduce COD fraud risk. Optimistic locking on the `Payment_Payment` aggregate prevents double-charge under concurrent requests.
 
 ## Architecture
 
@@ -20,7 +20,7 @@ Follows Clean Architecture with strict layer separation:
 src/
 ├── domain/           # Payment aggregate (with version), fraud scoring, COD pre-auth policies
 ├── application/      # Use cases: InitiatePayment, CapturePayment, RefundPayment, AssessFraud
-├── infrastructure/   # Pesapal gateway adapter, Prisma repositories, circuit breaker (Redis)
+├── infrastructure/   # PaymentGateway gateway adapter, Prisma repositories, circuit breaker (Redis)
 └── api/              # Express routes and controllers
 ```
 
@@ -58,7 +58,7 @@ INITIATED → AUTHORIZED → CAPTURED → SETTLED
 |---------|--------|
 | wallet-service | COD wallet lock/unlock operations |
 | order-service | Payment status updates trigger order state transitions |
-| Pesapal | External payment gateway |
+| PaymentGateway | External payment gateway |
 
 ## API Endpoints
 

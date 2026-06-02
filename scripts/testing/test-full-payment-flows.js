@@ -5,14 +5,14 @@
  * Tests all payment-related operations end-to-end against the running server:
  *
  *  1. COD — place order, verify hold placed, release hold, capture hold
- *  2. CARD (Pesapal mock) — place order, verify saga routes to Pesapal mock
- *  3. MOBILE_PAYMENT (Pesapal mock) — same as CARD
+ *  2. CARD (PaymentGateway mock) — place order, verify saga routes to PaymentGateway mock
+ *  3. MOBILE_PAYMENT (PaymentGateway mock) — same as CARD
  *  4. Wallet hold operations — place / release / capture in isolation
  *  5. Wallet statement — verify transactions appear after debit/credit
  *  6. Concurrent WALLET orders — two simultaneous orders, only one should win if balance is tight
  *
- * Pesapal is mocked at the adapter level via PESAPAL_MOCK=true env flag.
- * The mock returns a realistic Pesapal v3 SubmitOrderRequest response shape.
+ * PaymentGateway is mocked at the adapter level via PAYMENT_GATEWAY_MOCK=true env flag.
+ * The mock returns a realistic PaymentGateway v3 SubmitOrderRequest response shape.
  */
 
 require('dotenv').config();
@@ -243,24 +243,24 @@ async function testCODOrder() {
   }
 }
 
-async function testCardOrderPesapalMock() {
-  section('3. CARD Order — Pesapal mock (CARD payment method)');
+async function testCardOrderPaymentGatewayMock() {
+  section('3. CARD Order — PaymentGateway mock (CARD payment method)');
 
   const { status, data } = await placeOrder('CARD', 5000);
 
-  // With Pesapal mock enabled, the order should either:
+  // With PaymentGateway mock enabled, the order should either:
   // a) Return 201 if the mock adapter returns success
-  // b) Return an error if PESAPAL_SECRET_KEY is not set (expected in dev)
+  // b) Return an error if PAYMENT_GATEWAY_SECRET_KEY is not set (expected in dev)
   if (status === 201) {
-    pass(`CARD order placed via Pesapal mock: orderId=${data.id}`);
+    pass(`CARD order placed via PaymentGateway mock: orderId=${data.id}`);
     pass(`paymentMethod=CARD confirmed`);
   } else if (status === 500 || status === 422) {
-    // Pesapal not configured — this is expected in dev without real keys
+    // PaymentGateway not configured — this is expected in dev without real keys
     const msg = data?.message || JSON.stringify(data);
-    if (msg.toLowerCase().includes('pesapal') || msg.toLowerCase().includes('payment')) {
-      info(`CARD order rejected (Pesapal not configured in dev): ${msg}`);
-      info('This is expected — Pesapal mock adapter returns failure when PESAPAL_SECRET_KEY is absent');
-      pass('CARD order correctly routes to Pesapal adapter (not wallet debit)');
+    if (msg.toLowerCase().includes('paymentGateway') || msg.toLowerCase().includes('payment')) {
+      info(`CARD order rejected (PaymentGateway not configured in dev): ${msg}`);
+      info('This is expected — PaymentGateway mock adapter returns failure when PAYMENT_GATEWAY_SECRET_KEY is absent');
+      pass('CARD order correctly routes to PaymentGateway adapter (not wallet debit)');
     } else {
       fail(`CARD order failed with unexpected error: ${status} — ${msg}`);
     }
@@ -274,18 +274,18 @@ async function testCardOrderPesapalMock() {
   pass('CARD order does not call debitWallet (verified by code path — PlaceOrderUseCase only debits for WALLET)');
 }
 
-async function testMobilePaymentPesapalMock() {
-  section('4. MOBILE_PAYMENT Order — Pesapal mock');
+async function testMobilePaymentPaymentGatewayMock() {
+  section('4. MOBILE_PAYMENT Order — PaymentGateway mock');
 
   const { status, data } = await placeOrder('MOBILE_PAYMENT', 4000);
 
   if (status === 201) {
-    pass(`MOBILE_PAYMENT order placed via Pesapal mock: orderId=${data.id}`);
+    pass(`MOBILE_PAYMENT order placed via PaymentGateway mock: orderId=${data.id}`);
   } else if (status === 500 || status === 422) {
     const msg = data?.message || JSON.stringify(data);
-    if (msg.toLowerCase().includes('pesapal') || msg.toLowerCase().includes('payment')) {
-      info(`MOBILE_PAYMENT order rejected (Pesapal not configured): ${msg}`);
-      pass('MOBILE_PAYMENT correctly routes to Pesapal adapter (not wallet debit)');
+    if (msg.toLowerCase().includes('paymentGateway') || msg.toLowerCase().includes('payment')) {
+      info(`MOBILE_PAYMENT order rejected (PaymentGateway not configured): ${msg}`);
+      pass('MOBILE_PAYMENT correctly routes to PaymentGateway adapter (not wallet debit)');
     } else {
       fail(`MOBILE_PAYMENT order failed with unexpected error: ${status} — ${msg}`);
     }
@@ -507,8 +507,8 @@ async function testWalletBalanceEndpoint() {
     await testWalletBalanceEndpoint();
     await testWalletHoldOperations();
     await testCODOrder();
-    await testCardOrderPesapalMock();
-    await testMobilePaymentPesapalMock();
+    await testCardOrderPaymentGatewayMock();
+    await testMobilePaymentPaymentGatewayMock();
     await testWalletStatement();
     await testInsufficientFundsRejection();
     await testConcurrentWalletOrders();

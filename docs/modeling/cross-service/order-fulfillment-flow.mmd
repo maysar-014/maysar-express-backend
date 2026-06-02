@@ -42,7 +42,7 @@ sequenceDiagram
     PAYMENT->>PAYMENT: Initiate payment processing
     PAYMENT->>PAYMENT: Fraud check
     alt Payment Successful
-        PAYMENT->>PAYMENT: Process payment (Pesapal/M-Pesa)
+        PAYMENT->>PAYMENT: Process payment (PaymentGateway/M-Pesa)
         PAYMENT->>KAFKA: Publish PaymentCompleted event
     else Payment Failed
         PAYMENT->>KAFKA: Publish PaymentFailed event

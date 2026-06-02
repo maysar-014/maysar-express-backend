@@ -546,7 +546,7 @@ const ensurePayment = async () => {
         amount: 1000,
         currency: 'TZS',
         method: 'MPESA',
-        provider: 'PESAPAL',
+        provider: 'PAYMENT_GATEWAY',
         status: 'COMPLETED',
         metadata: {},
         refundedAmount: 0,

@@ -25,7 +25,7 @@ export enum PaymentMethod {
 }
 
 export enum PaymentProvider {
-    PESAPAL = 'PESAPAL',
+    PAYMENT_GATEWAY = 'PAYMENT_GATEWAY',
     INTERNAL_WALLET = 'INTERNAL_WALLET',
 }
 

@@ -7,7 +7,7 @@ import { FraudRepository } from './infrastructure/repositories/fraud.repository'
 import { attachRedisErrorHandlers, getSharedRedisClient, resolveRedisUrl } from '@shared/redis/ioredis-client';
 import { createPrismaClient } from '@shared/database/prisma-client';
 
-import { PesapalAdapter } from './infrastructure/providers/pesapal.adapter';
+import { SelcomPesaAdapter } from './infrastructure/providers/selcom-pesa.adapter';
 import { ProcessPaymentUseCase } from './application/use-cases/process-payment.use-case';
 import { RefundPaymentUseCase } from './application/use-cases/refund-payment.use-case';
 import { CheckPaymentStatusUseCase } from './application/use-cases/check-payment-status.use-case';
@@ -18,7 +18,6 @@ import { FraudPreventionPolicy } from './domain/policies/fraud-prevention.policy
 import { RefundPolicy } from './domain/policies/refund.policy';
 import { PaymentController } from './api/controllers/payment.controller';
 import { WebhookController } from './api/controllers/webhook.controller';
-import { HandlePesapalWebhookUseCase } from './application/use-cases/handle-pesapal-webhook.use-case';
 import { EventBus } from '@shared-events/eventBus';
 import { IEventBus } from './infrastructure/messaging/event-bus.interface';
 import { OutboxRepository } from './infrastructure/messaging/outbox.repository';
@@ -66,7 +65,7 @@ export class Container {
     public paymentEventHandlers: PaymentEventHandlers;
 
     // Providers
-    public pesapalAdapter: PesapalAdapter;
+    public paymentGateway: SelcomPesaAdapter;
 
     // Engines
     public paymentProcessingEngine: PaymentProcessingEngine;
@@ -81,8 +80,6 @@ export class Container {
     public processPaymentUseCase: ProcessPaymentUseCase;
     public refundPaymentUseCase: RefundPaymentUseCase;
     public checkPaymentStatusUseCase: CheckPaymentStatusUseCase;
-    public handlePesapalWebhookUseCase: HandlePesapalWebhookUseCase;
-
     // Controllers
     public paymentController: PaymentController;
     public webhookController: WebhookController;
@@ -115,7 +112,7 @@ export class Container {
         this.walletServiceClient = new WalletServiceClient();
 
         // Providers
-        this.pesapalAdapter = new PesapalAdapter();
+        this.paymentGateway = new SelcomPesaAdapter();
 
         // Engines
         this.paymentProcessingEngine = new PaymentProcessingEngine();
@@ -128,10 +125,9 @@ export class Container {
 
         // Provider Factory
         const paymentProviderFactory = (provider: PaymentProvider): IPaymentProvider => {
-            // For now, return Pesapal adapter for everything or throw error
-            if (provider === PaymentProvider.PESAPAL) return this.pesapalAdapter;
-            // In a real scenario, you'd switch based on provider type
-            return this.pesapalAdapter;
+            // For now, return PaymentGateway adapter for everything or throw error
+            if (provider === PaymentProvider.PAYMENT_GATEWAY) return this.paymentGateway;
+            return this.paymentGateway;
         };
 
         // Use Cases
@@ -155,25 +151,18 @@ export class Container {
             this.refundPolicy
         );
 
-        this.handlePesapalWebhookUseCase = new HandlePesapalWebhookUseCase(
-            this.paymentRepository,
-            this.pesapalAdapter,
-            this.eventBus,
-            this.webhookEventRepository
-        );
-
         // Controllers
         this.paymentController = new PaymentController(
             this.processPaymentUseCase,
             this.checkPaymentStatusUseCase,
             this.refundPaymentUseCase,
-            this.handlePesapalWebhookUseCase,
-            this.pesapalAdapter
+            undefined,
+            this.paymentGateway
         );
 
         this.webhookController = new WebhookController(
-            this.pesapalAdapter,
-            this.handlePesapalWebhookUseCase
+            this.paymentGateway,
+            undefined
         );
 
         // Sagas

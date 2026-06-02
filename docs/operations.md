@@ -1490,7 +1490,7 @@ Full satisfaction condition: every step in sequence passes on happy path and the
 | Step | User Intent / Action | Endpoint | Happy Status | Unhappy Status / Failure Path |
 |---|---|---|---|---|
 | 1 | Notification SMS Retry Missing Message | `POST {{platform_base_url}}/api/notification/sms/retry/` | none | 404 |
-| 2 | Notification SMS Webhook Invalid Body | `POST {{platform_base_url}}/api/notification/sms/webhook/africastalking` | 200 | 400, 500 |
+| 2 | Notification SMS Webhook Invalid Body | `POST {{platform_base_url}}/api/notification/sms/webhook/meseji` | 200 | 400, 500 |
 | 3 | Protected Route Unauthorized | `POST {{platform_base_url}}/api/enabler/enablers/{{enabler_id}}/listings` | none | 401, 403, 500 |
 
 ## Regression Sentinel Operations
@@ -1598,7 +1598,7 @@ Role focus: `system`, `enabler`, `seller`, `buyer`.
 | 3 | Retry failed batch | `POST /api/notification/sms/retry/failed` | 200 | 500 |
 | 4 | Retry one message | `POST /api/notification/sms/retry/:messageId` | 200 | 400, 500 |
 | 5 | Read SMS statistics | `GET /api/notification/sms/statistics` | 200 | 500 |
-| 6 | Receive provider webhook | `POST /api/notification/sms/webhook/africastalking` | 200 | 500 |
+| 6 | Receive provider webhook | `POST /api/notification/sms/webhook/meseji` | 200 | 500 |
 
 ### Advanced Compliance Operations
 
@@ -1818,7 +1818,7 @@ Preconditions: order exists and payment provider configuration is valid. Some fa
 | 3 | Fetch payment by order id | `GET {{platform_base_url}}/api/payment/payments/order/:orderId` | 200 | 404, 500 |
 | 4 | Check payment status | `GET {{platform_base_url}}/api/payment/payments/:id/status` | 200 | 404, 500 |
 | 5 | Refund payment | `POST {{platform_base_url}}/api/payment/payments/:id/refund` | 200 | 400, 404, 500 |
-| 6 | Handle provider webhook | `POST {{platform_base_url}}/api/payment/payments/webhooks/pesapal` | 200 | 400, 409, 500 |
+| 6 | Handle provider webhook | `POST {{platform_base_url}}/api/payment/payments/webhooks/payment-gateway` | 200 | 410, 503 |
 
 ### Payouts (Direct Module)
 

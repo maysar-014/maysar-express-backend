@@ -1,7 +1,7 @@
 import { DistributedSagaOrchestrator, SagaStep } from '@shared/saga/saga.orchestrator';
 import { sagaLogRepository } from '../../infrastructure/repositories/saga.repository';
 import { Payment, PaymentStatus, PaymentMethod } from '../../domain/entities/payment.entity';
-import { PesapalAdapter } from '../../infrastructure/providers/pesapal.adapter';
+import { SelcomPesaAdapter } from '../../infrastructure/providers/selcom-pesa.adapter';
 import { OrderPaymentRepository } from '../../infrastructure/repositories/order-payment.repository';
 import { WalletServiceClient } from '../../infrastructure/integrations/wallet-service.client';
 
@@ -13,7 +13,7 @@ export class PaymentSaga extends DistributedSagaOrchestrator<PaymentSagaPayload>
   protected sagaType = 'PaymentSaga';
 
   constructor(
-    private pesapalAdapter: PesapalAdapter,
+    private paymentGateway: SelcomPesaAdapter,
     private paymentRepository?: OrderPaymentRepository,
     private walletClient?: WalletServiceClient
   ) {
@@ -65,7 +65,7 @@ export class PaymentSaga extends DistributedSagaOrchestrator<PaymentSagaPayload>
           switch (payment.method) {
             case PaymentMethod.CARD:
             case PaymentMethod.MOBILE_MONEY:
-              processingResult = await this.processPesapalPayment(payment);
+              processingResult = await this.processPaymentGatewayPayment(payment);
               break;
             case PaymentMethod.WALLET:
               processingResult = await this.processWalletPayment(payment);
@@ -105,7 +105,7 @@ export class PaymentSaga extends DistributedSagaOrchestrator<PaymentSagaPayload>
     return { approved: true };
   }
 
-  private async processPesapalPayment(payment: Payment): Promise<{ success: boolean; transactionId?: string; error?: string }> {
+  private async processPaymentGatewayPayment(payment: Payment): Promise<{ success: boolean; transactionId?: string; error?: string }> {
     const paymentRequest = {
       orderId: payment.orderId,
       amount: payment.amount,
@@ -115,7 +115,7 @@ export class PaymentSaga extends DistributedSagaOrchestrator<PaymentSagaPayload>
       buyerPhone: '+255700000000',
       description: `Payment for order ${payment.orderId}`
     };
-    return await this.pesapalAdapter.processPayment(paymentRequest);
+    return await this.paymentGateway.processPayment(paymentRequest);
   }
 
   private async processWalletPayment(payment: Payment): Promise<{ success: boolean; transactionId?: string; error?: string }> {

@@ -102,14 +102,14 @@
       "lines": 137
     },
     {
-      "file": "services/payment-service/src/api/controllers/pesapal-webhook.utils.ts",
+      "file": "services/payment-service/src/api/controllers/paymentGateway-webhook.utils.ts",
       "layer": "api",
       "component": "api-controller",
       "targetCoverage": 85,
       "lines": 136
     },
     {
-      "file": "services/payment-service/src/api/routes/pesapal-webhook.middleware.ts",
+      "file": "services/payment-service/src/api/routes/paymentGateway-webhook.middleware.ts",
       "layer": "api",
       "component": "other",
       "targetCoverage": 80,
@@ -2553,7 +2553,7 @@
       "actualCoverage": 0
     },
     {
-      "file": "services/order-service/src/infrastructure/providers/pesapal.adapter.ts",
+      "file": "services/order-service/src/infrastructure/providers/paymentGateway.adapter.ts",
       "component": "infrastructure",
       "targetCoverage": 80,
       "actualCoverage": 0
@@ -3675,7 +3675,7 @@
       "actualCoverage": 43.75
     },
     {
-      "file": "services/payment-service/src/infrastructure/providers/pesapal.adapter.ts",
+      "file": "services/payment-service/src/infrastructure/providers/paymentGateway.adapter.ts",
       "component": "infrastructure",
       "targetCoverage": 80,
       "actualCoverage": 43.75
@@ -6790,7 +6790,7 @@
       "component": "other"
     },
     {
-      "file": "services/payment-service/src/api/controllers/pesapal-webhook.utils.ts",
+      "file": "services/payment-service/src/api/controllers/paymentGateway-webhook.utils.ts",
       "layer": "api",
       "component": "api-controller"
     },
@@ -6800,7 +6800,7 @@
       "component": "other"
     },
     {
-      "file": "services/payment-service/src/api/routes/pesapal-webhook.middleware.ts",
+      "file": "services/payment-service/src/api/routes/paymentGateway-webhook.middleware.ts",
       "layer": "api",
       "component": "other"
     },

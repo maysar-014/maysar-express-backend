@@ -10,7 +10,7 @@ export const createSmsRouter = (): Router => {
     const smsController = container.get<SmsController>(TYPES.SmsController);
 
     // Webhooks
-    router.post('/webhook/africastalking', smsController.webhookAfricastalking.bind(smsController));
+    router.post('/webhook/meseji', smsController.webhookMeseji.bind(smsController));
 
     // Bind controller methods to router (protected)
     router.use(requireAuth);

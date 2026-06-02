@@ -184,10 +184,10 @@ Public auth entry points are exercised directly in Cypress. `POST /api/v1/auth/r
 - API hooks:
   - `POST /api/payments`
   - `GET /api/payments/:id/status`
-  - `POST /api/payments/webhooks/pesapal` (backend callback path)
+  - `POST /api/payments/webhooks/paymentGateway` (backend callback path)
 - UI must support:
   - method selection (mobile money/card/bank/wallet/COD),
-  - redirect/resume flow for Pesapal,
+  - redirect/resume flow for PaymentGateway,
   - pending -> success/failure transition polling.
 - Assertions:
   - correct state badge and receipt details after callback.

@@ -24,7 +24,7 @@ import { createLogger } from '@shared/logger/logger';
 const logger = createLogger('PaymentController', 'payment-service');
 
 logger.info('Payment initiated', { correlationId: 'req-123', orderId: 'ord_01J...' });
-logger.error('Gateway timeout', new Error('ETIMEDOUT'), { gateway: 'pesapal' });
+logger.error('Gateway timeout', new Error('ETIMEDOUT'), { gateway: 'paymentGateway' });
 logger.audit('PAYMENT_CAPTURED', userId, 'Payment', { amount: 5000 });
 logger.performance('buy-box-computation', 45); // 45ms
 logger.security('SUSPICIOUS_LOGIN', 'high', { ip: '1.2.3.4' });

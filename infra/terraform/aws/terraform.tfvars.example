@@ -13,9 +13,9 @@ app_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/maysar-prod:latest"
 frontend_url = "https://app.example.com"
 cors_origin  = "https://app.example.com,https://admin.example.com"
 
-pesapal_consumer_key    = "replace-me"
-pesapal_consumer_secret = "replace-me"
-pesapal_ipn_id          = "replace-me"
+paymentGateway_consumer_key    = "replace-me"
+paymentGateway_consumer_secret = "replace-me"
+paymentGateway_ipn_id          = "replace-me"
 
 alarm_email_endpoints = ["ops@example.com"]
 

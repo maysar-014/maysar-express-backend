@@ -23,13 +23,13 @@ const envSchema = z.object({
     CATALOG_SERVICE_DB_USER: z.string().min(1),
     CATALOG_SERVICE_DB_PASSWORD: z.string().min(1),
 
-    // SMS Service (Africa's Talking)
-    SMS_SERVICE_API_KEY: z.string().min(1),
-    SMS_SERVICE_PROVIDER: z.string().min(1).default('africastalking'),
-    SMS_PROVIDER: z.string().min(1).default('africastalking'),
-    AFRICASTALKING_USERNAME: z.string().min(1).optional(),
-    AFRICASTALKING_API_KEY: z.string().min(1).optional(),
-    AFRICASTALKING_SENDER_ID: z.string().optional(),
+    // SMS Service
+    SMS_SERVICE_API_KEY: z.string().min(1).optional(),
+    SMS_SERVICE_PROVIDER: z.string().min(1).default('mock'),
+    SMS_PROVIDER: z.string().min(1).default('mock'),
+    MESEJI_API_KEY: z.string().min(1).optional(),
+    MESEJI_SENDER_ID: z.string().optional(),
+    MESEJI_BASE_URL: z.string().url().optional(),
 
     // Add more as needed...
 });

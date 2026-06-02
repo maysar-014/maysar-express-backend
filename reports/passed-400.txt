@@ -112,7 +112,7 @@ Passed 400 responses: 129
 111. POST http://localhost/api/order/orders/disputes/test-id/resolve :: POST /api/order/orders/disputes/:id/resolve
 112. GET http://localhost/api/order/orders/tracking/test-trackingNumber :: GET /api/order/orders/tracking/:trackingNumber
 113. POST http://localhost/api/payment/payments/test-id/refund :: POST /api/payment/payments/:id/refund
-114. POST http://localhost/api/payment/payments/webhooks/pesapal :: POST /api/payment/payments/webhooks/pesapal
+114. POST http://localhost/api/payment/payments/webhooks/paymentGateway :: POST /api/payment/payments/webhooks/paymentGateway
 115. GET http://localhost/api/production/dashboard :: GET /api/production/dashboard
 116. POST http://localhost/api/production/plans :: POST /api/production/plans
 117. PUT http://localhost/api/production/plans/test-id/status :: PUT /api/production/plans/:id/status

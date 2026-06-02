@@ -1,5 +1,5 @@
 import express from 'express';
-import { extractPesapalWebhookRequest } from '../controllers/pesapal-webhook.utils';
+import { extractPaymentWebhookRequest } from '../controllers/payment-webhook.utils';
 
 const hasOwn = (value: object, key: string): boolean => Object.prototype.hasOwnProperty.call(value, key);
 
@@ -28,12 +28,12 @@ export const requireWebhookIdempotencyKey = (
   next();
 };
 
-export const validatePesapalWebhookRequest = (
+export const validatePaymentWebhookRequest = (
   req: express.Request,
   res: express.Response,
   next: express.NextFunction
 ) => {
-  const { parsedBody, providerReference } = extractPesapalWebhookRequest(req);
+  const { parsedBody, providerReference } = extractPaymentWebhookRequest(req);
   const rawStatus = parsedBody.status ?? req.query.status ?? req.query.Status;
   const query = req.query as Record<string, unknown>;
   const trackingIdCandidates = [

@@ -1,5 +1,5 @@
 import { Payment, PaymentMethod, PaymentStatus } from '../../domain/entities/payment.entity';
-import { PesapalAdapter } from '../../infrastructure/providers/pesapal.adapter';
+import { SelcomPesaAdapter } from '../../infrastructure/providers/selcom-pesa.adapter';
 import { PaymentSaga } from './payment.saga';
 
 jest.mock('../../infrastructure/repositories/saga.repository', () => ({
@@ -28,11 +28,11 @@ const makePayment = (method: PaymentMethod, amount = 1000) =>
   });
 
 describe('PaymentSaga', () => {
-  const pesapalAdapter = {
+  const paymentGatewayAdapter = {
     processPayment: jest.fn()
-  } as unknown as PesapalAdapter;
+  } as unknown as SelcomPesaAdapter;
 
-  const saga = new TestablePaymentSaga(pesapalAdapter);
+  const saga = new TestablePaymentSaga(paymentGatewayAdapter);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -70,24 +70,24 @@ describe('PaymentSaga', () => {
     expect(payment.status).toBe(PaymentStatus.COMPLETED);
   });
 
-  it('processes card/mobile money via Pesapal and sets transaction id', async () => {
+  it('processes card/mobile money via PaymentGateway and sets transaction id', async () => {
     const step = saga.steps.find(s => s.name === 'ProcessPayment');
     const payment = makePayment(PaymentMethod.CARD, 5000);
     jest
-      .spyOn(saga as any, 'processPesapalPayment')
-      .mockResolvedValue({ success: true, transactionId: 'tx-pesapal-1' });
+      .spyOn(saga as any, 'processPaymentGatewayPayment')
+      .mockResolvedValue({ success: true, transactionId: 'tx-paymentGateway-1' });
 
     await step?.execute({ payment }, 'saga-process-card');
 
     expect(payment.status).toBe(PaymentStatus.COMPLETED);
-    expect(payment.transactionId).toBe('tx-pesapal-1');
+    expect(payment.transactionId).toBe('tx-paymentGateway-1');
   });
 
   it('fails process step when payment provider returns error', async () => {
     const step = saga.steps.find(s => s.name === 'ProcessPayment');
     const payment = makePayment(PaymentMethod.MOBILE_MONEY, 3000);
     jest
-      .spyOn(saga as any, 'processPesapalPayment')
+      .spyOn(saga as any, 'processPaymentGatewayPayment')
       .mockResolvedValue({ success: false, error: 'gateway timeout' });
 
     await expect(step?.execute({ payment }, 'saga-process-fail')).rejects.toThrow(

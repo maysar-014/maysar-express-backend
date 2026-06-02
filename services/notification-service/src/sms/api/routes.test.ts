@@ -10,7 +10,7 @@ const containerGetMock = jest.fn().mockReturnValue({
   retryFailed: retryFailedMock,
   retryMessage: retryMessageMock,
   getStatistics: getStatisticsMock,
-  webhookAfricastalking: webhookMock
+  webhookMeseji: webhookMock
 });
 
 jest.mock('../infrastructure/container', () => ({
@@ -60,7 +60,7 @@ describe('routes modules', () => {
         'POST /retry/failed',
         'POST /retry/:messageId',
         'GET /statistics',
-        'POST /webhook/africastalking'
+        'POST /webhook/meseji'
       ])
     );
   });

@@ -163,7 +163,7 @@ function loadHealthCheckConfig(): HealthCheckConfig {
     checks: {
       database: true,
       redis: appConfig.features.caching,
-      externalServices: !!appConfig.env.PESAPAL_API_URL,
+      externalServices: !!appConfig.env.PAYMENT_GATEWAY_API_URL,
     },
   };
 }

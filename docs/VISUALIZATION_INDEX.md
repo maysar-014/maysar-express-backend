@@ -14,7 +14,7 @@
 | `src/core/module-registry.ts` | Modules loaded in parallel via Promise.allSettled |
 | `services/*/index.ts` | Which routes each service mounts, what infra it starts |
 | `services/order-service/src/application/sagas/order-fulfillment.saga.ts` | Actual saga steps: StockReservation → Payment → Delivery |
-| `services/order-service/src/application/sagas/payment.saga.ts` | Actual payment methods, COD handling, Pesapal adapter |
+| `services/order-service/src/application/sagas/payment.saga.ts` | Actual payment methods, COD handling, PaymentGateway adapter |
 | `services/payment-service/src/domain/entities/payment.entity.ts` | PaymentMethod enum, PaymentStatus enum, PaymentProvider enum |
 | `services/wallet-service/src/domain/entities/wallet.entity.ts` | Wallet operations, COD commitment fields, Hold entity |
 | `services/logistics-service/src/domain/entities/delivery.entity.ts` | Actual delivery status transitions with validation |

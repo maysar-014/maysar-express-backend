@@ -65,7 +65,7 @@
 |---|---|---|
 | Order -> Payment -> Inventory -> Delivery integration flow coverage exists | Yes | Yes |
 | User registration/auth verification flow has integration coverage | Yes | Yes |
-| Pesapal payment gateway integration is covered | Yes | Yes |
+| PaymentGateway payment gateway integration is covered | Yes | Yes |
 | Wallet credit/debit/freeze integration is covered | Yes | Yes |
 | Outbox pattern integration is covered | Yes | Yes |
 | Order fulfillment saga integration/compensation is covered | Yes | Yes |

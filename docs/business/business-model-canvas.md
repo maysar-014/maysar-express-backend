@@ -14,7 +14,7 @@ graph TB
         subgraph KP["KEY PARTNERS"]
             KP1["📦 Suppliers / Manufacturers\n(Bulk production & inventory)"]
             KP2["🚚 Courier Partners\n(Last-mile delivery network)"]
-            KP3["💳 Pesapal / M-Pesa\n(Payment gateway)"]
+            KP3["💳 PaymentGateway / M-Pesa\n(Payment gateway)"]
             KP4["📡 Africa's Talking\n(SMS notifications)"]
             KP5["🗺️ Google Maps\n(Route optimization)"]
             KP6["☁️ AWS / Supabase\n(Cloud infrastructure)"]

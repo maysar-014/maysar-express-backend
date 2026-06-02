@@ -122,8 +122,8 @@
       "passed": true
     },
     {
-      "id": "priority-1-pesapal",
-      "description": "Pesapal payment gateway integration is covered",
+      "id": "priority-1-paymentGateway",
+      "description": "PaymentGateway payment gateway integration is covered",
       "required": true,
       "passed": true
     },

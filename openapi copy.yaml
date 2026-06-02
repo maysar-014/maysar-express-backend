@@ -8449,11 +8449,11 @@ paths:
       schema:
         type: string
       example: pay_01ARZ3NDEKTSV4RRFFQ69G5FAV
-  /api/payment/payments/webhooks/pesapal:
+  /api/payment/payments/webhooks/paymentGateway:
     post:
       tags:
       - Payments
-      summary: Pesapal webhook
+      summary: PaymentGateway webhook
       requestBody:
         required: true
         content:
@@ -36241,11 +36241,11 @@ paths:
               schema: {}
       parameters: []
     parameters: []
-  /api/payment/webhooks/pesapal:
+  /api/payment/webhooks/paymentGateway:
     post:
       tags:
       - Payments
-      summary: POST /api/payment/webhooks/pesapal
+      summary: POST /api/payment/webhooks/paymentGateway
       requestBody:
         required: false
         content:

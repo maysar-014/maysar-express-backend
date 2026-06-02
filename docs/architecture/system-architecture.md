@@ -60,7 +60,7 @@ graph TB
     end
 
     subgraph External["External Services"]
-        PESAPAL["Pesapal\nCard · M-Pesa · Airtel\nTigo Pesa · HaloPesa"]
+        PAYMENT_GATEWAY["PaymentGateway\nCard · M-Pesa · Airtel\nTigo Pesa · HaloPesa"]
         FIREBASE["Firebase Admin\nPhone OTP verification"]
         SENDGRID["SendGrid\nEmail"]
         AT["Africa's Talking\nSMS"]
@@ -75,7 +75,7 @@ graph TB
     GW --> Modules
     Modules --> Infra
     Modules --> Data
-    PAYMENT --> PESAPAL
+    PAYMENT --> PAYMENT_GATEWAY
     AUTH --> FIREBASE
     NOTIFICATION --> SENDGRID & AT
     LOGISTICS --> GMAPS
@@ -126,7 +126,7 @@ graph TB
         subgraph INFRA["infrastructure/"]
             REPO["repositories/\n(Prisma adapters)"]
             MSG["messaging/\n(OutboxRepository\nEventPublisher)"]
-            PROV["providers/\n(PesapalAdapter\nFirebaseAdminService)"]
+            PROV["providers/\n(PaymentGatewayAdapter\nFirebaseAdminService)"]
             CLIENTS["integrations/\n(WalletServiceClient\nAuthServiceClient\nLogisticsServiceClient)"]
             CACHE["redis/\n(RedisStockEngine\nRedlock)"]
         end
@@ -206,7 +206,7 @@ sequenceDiagram
     participant Saga as OrderFulfillmentSaga
     participant Inventory as Inventory Service
     participant PaySaga as PaymentSaga
-    participant Pesapal as Pesapal / Wallet
+    participant PaymentGateway as PaymentGateway / Wallet
     participant Logistics as Logistics Service
     participant Bus as EventBus
 
@@ -229,9 +229,9 @@ sequenceDiagram
         PaySaga->>PaySaga: skip fraud check
         PaySaga->>PaySaga: status = COMPLETED
     else Card / Mobile Money
-        PaySaga->>Pesapal: processPesapalPayment()
+        PaySaga->>PaymentGateway: processPaymentGatewayPayment()
     else Wallet
-        PaySaga->>Pesapal: walletClient.debitWallet()
+        PaySaga->>PaymentGateway: walletClient.debitWallet()
     end
 
     PaySaga->>Bus: PaymentSuccess (or PaymentFailed)

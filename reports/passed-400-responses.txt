@@ -238,7 +238,7 @@ GET /api/order/orders/tracking/test-trackingNumber :: GET /api/order/orders/trac
 POST /api/payment/payments/test-id/refund :: POST /api/payment/payments/:id/refund
 {"success":false,"error":"Payment not found"}
 
-POST /api/payment/payments/webhooks/pesapal :: POST /api/payment/payments/webhooks/pesapal
+POST /api/payment/payments/webhooks/paymentGateway :: POST /api/payment/payments/webhooks/paymentGateway
 {"error":"Missing idempotency key","message":"Header 'x-webhook-idempotency-key' is required for POST requests"}
 
 POST /api/production/plans :: POST /api/production/plans
