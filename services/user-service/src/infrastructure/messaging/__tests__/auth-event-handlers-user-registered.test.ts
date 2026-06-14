@@ -19,6 +19,10 @@ jest.mock('../../database/prisma-client', () => ({
     user_User: {
       upsert: jest.fn(),
       update: jest.fn()
+    },
+    user_UserIndex: {
+      findFirst: jest.fn(),
+      createMany: jest.fn()
     }
   }
 }));
@@ -32,10 +36,19 @@ jest.mock('../../services/logger.service', () => ({
   }
 }));
 
+// Deterministic mock: encrypt prefixes 'enc:', hash prefixes 'h:'
+jest.mock('../../../../../../shared/encryption/pii-encryption.service', () => ({
+  PiiEncryptionService: jest.fn().mockImplementation(() => ({
+    encrypt: (v: string) => v ? `enc:${v}` : v,
+    hash: (v: string) => v ? `h:${v}` : v
+  }))
+}));
+
 import { eventBus } from '@shared/events/eventBus';
 import { prisma } from '../../database/prisma-client';
 import { User_UserRole, User_UserStatus } from '@prisma/client';
 import { AuthEventHandlers } from '../auth-event-handlers';
+import { PiiEncryptionService } from '../../../../../../shared/encryption/pii-encryption.service';
 
 // ---------------------------------------------------------------------------
 // Typed mock helpers
@@ -43,11 +56,11 @@ import { AuthEventHandlers } from '../auth-event-handlers';
 
 const mockedEventBus = eventBus as unknown as { subscribe: jest.Mock };
 const mockedPrisma = prisma as unknown as {
-  user_User: {
-    upsert: jest.Mock;
-    update: jest.Mock;
-  };
+  user_User: { upsert: jest.Mock; update: jest.Mock };
+  user_UserIndex: { findFirst: jest.Mock; createMany: jest.Mock };
 };
+
+const makePiiService = () => new PiiEncryptionService();
 
 /**
  * Retrieve the handler function registered for a given event type.
@@ -100,7 +113,9 @@ describe('Property 1: Bug Condition — UserRegistered.v1 Creates User_User Reco
     jest.clearAllMocks();
     mockedPrisma.user_User.upsert.mockResolvedValue({});
     mockedPrisma.user_User.update.mockResolvedValue({});
-    handlers = new AuthEventHandlers();
+    mockedPrisma.user_UserIndex.findFirst.mockResolvedValue(null);
+    mockedPrisma.user_UserIndex.createMany.mockResolvedValue({ count: 1 });
+    handlers = new AuthEventHandlers(makePiiService());
     handlers.setupSubscriptions();
   });
 
@@ -132,14 +147,15 @@ describe('Property 1: Bug Condition — UserRegistered.v1 Creates User_User Reco
         where: { id: FULL_PAYLOAD.userId },
         create: expect.objectContaining({
           id: FULL_PAYLOAD.userId,
-          email: FULL_PAYLOAD.email,
+          // email and phoneNumber must be PII-encrypted (not plaintext)
+          email: `enc:${FULL_PAYLOAD.email}`,
           publicCode: FULL_PAYLOAD.publicCode,
           passwordHash: '',
           role: User_UserRole.BUYER,
           status: User_UserStatus.PENDING_VERIFICATION,
           firstName: FULL_PAYLOAD.profile.firstName,
           lastName: FULL_PAYLOAD.profile.lastName,
-          phoneNumber: FULL_PAYLOAD.profile.phoneNumber
+          phoneNumber: `enc:${FULL_PAYLOAD.profile.phoneNumber}`
         })
       })
     );
@@ -291,7 +307,9 @@ describe('Property 2: Preservation — Existing Auth↔User Sync Flows Unchanged
     jest.clearAllMocks();
     mockedPrisma.user_User.upsert.mockResolvedValue({});
     mockedPrisma.user_User.update.mockResolvedValue({});
-    handlers = new AuthEventHandlers();
+    mockedPrisma.user_UserIndex.findFirst.mockResolvedValue(null);
+    mockedPrisma.user_UserIndex.createMany.mockResolvedValue({ count: 1 });
+    handlers = new AuthEventHandlers(makePiiService());
     handlers.setupSubscriptions();
   });
 

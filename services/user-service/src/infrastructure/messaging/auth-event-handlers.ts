@@ -2,6 +2,7 @@ import { eventBus, EventEnvelope } from '@shared/events/eventBus';
 import { User_UserRole, User_UserStatus } from '@prisma/client';
 import { prisma } from '../database/prisma-client';
 import { logger } from '../services/logger.service';
+import { PiiEncryptionService } from '../../../../../shared/encryption/pii-encryption.service';
 
 interface AuthLoginSuccessPayload {
   userId?: string;
@@ -94,9 +95,18 @@ const mapRole = (role: string | undefined): User_UserRole => {
 };
 
 export class AuthEventHandlers {
+  /**
+   * @param piiService - Used to encrypt PII fields (email, phone) before storing
+   *   in `user_User` and to create hashed lookup entries in `user_UserIndex`.
+   *   Every write to `user_User.email` MUST go through `piiService.encrypt()`;
+   *   every `user_UserIndex` entry MUST use `piiService.hash()` as the value.
+   */
+  constructor(private readonly piiService: PiiEncryptionService) {}
+
   public setupSubscriptions(): void {
     logger.info('Setting up Auth -> User sync subscriptions');
 
+    // ── AuthLoginSuccess ──────────────────────────────────────────────────────
     eventBus.subscribe('AuthLoginSuccess', async (envelope: EventEnvelope) => {
       const payload = asLoginSuccess(envelope.data);
       if (!payload.userId) return;
@@ -111,6 +121,7 @@ export class AuthEventHandlers {
       });
     });
 
+    // ── AuthLoginFailed ───────────────────────────────────────────────────────
     eventBus.subscribe('AuthLoginFailed', async (envelope: EventEnvelope) => {
       const payload = asLoginFailed(envelope.data);
       if (!payload.userId) return;
@@ -133,18 +144,18 @@ export class AuthEventHandlers {
       });
     });
 
+    // ── AuthTwoFactorEnabled ──────────────────────────────────────────────────
     eventBus.subscribe('AuthTwoFactorEnabled', async (envelope: EventEnvelope) => {
       const payload = asTwoFactor(envelope.data);
       if (!payload.userId) return;
 
       await prisma.user_User.update({
         where: { id: payload.userId },
-        data: {
-          twoFactorEnabled: true
-        }
+        data: { twoFactorEnabled: true }
       });
     });
 
+    // ── AuthTwoFactorDisabled ─────────────────────────────────────────────────
     eventBus.subscribe('AuthTwoFactorDisabled', async (envelope: EventEnvelope) => {
       const payload = asTwoFactor(envelope.data);
       if (!payload.userId) return;
@@ -158,31 +169,69 @@ export class AuthEventHandlers {
       });
     });
 
+    // ── UserRegistered.v1 ─────────────────────────────────────────────────────
+    // FIX: email and phoneNumber MUST be PII-encrypted before storage.
+    // The `user_User.email` column stores AES-256-GCM ciphertext.
+    // The `user_UserIndex` table stores HMAC-SHA256 hashes for lookups.
+    // Previously this handler wrote plaintext email directly, which violated
+    // the PII contract and produced ghost rows invisible to findByEmail().
     eventBus.subscribe('UserRegistered.v1', async (envelope: EventEnvelope) => {
       const payload = asUserRegistered(envelope.data);
       if (!payload.userId) return;
 
       const { firstName = null, lastName = null, phoneNumber = null } = payload.profile ?? {};
 
+      const rawEmail = payload.email ?? '';
+      const encryptedEmail = rawEmail ? this.piiService.encrypt(rawEmail) : '';
+      const emailHash = rawEmail ? this.piiService.hash(rawEmail) : '';
+
+      const encryptedPhone = phoneNumber ? this.piiService.encrypt(phoneNumber) : null;
+      const phoneHash = phoneNumber ? this.piiService.hash(phoneNumber) : null;
+
       await prisma.user_User.upsert({
         where: { id: payload.userId },
         create: {
           id: payload.userId,
-          email: payload.email ?? '',
+          email: encryptedEmail,        // ← PII-encrypted ✓
           publicCode: payload.publicCode ?? null,
           passwordHash: '',
           role: mapRole(payload.role),
           status: User_UserStatus.PENDING_VERIFICATION,
           firstName: firstName ?? null,
           lastName: lastName ?? null,
-          phoneNumber: phoneNumber ?? null
+          phoneNumber: encryptedPhone   // ← PII-encrypted (or null) ✓
         },
         update: {
+          // Only update non-destructive fields on existing records.
+          // Never overwrite an existing encrypted email — the create path
+          // already set it correctly via PrismaUserRepository.create().
           publicCode: payload.publicCode ?? null,
           role: mapRole(payload.role),
           status: User_UserStatus.PENDING_VERIFICATION
         }
       });
+
+      // Create index entries so findByEmail() can resolve this user.
+      // Only insert if the email index doesn't already exist (idempotent).
+      if (emailHash) {
+        const existingEmailIndex = await prisma.user_UserIndex.findFirst({
+          where: { userId: payload.userId, indexType: 'email' }
+        });
+
+        if (!existingEmailIndex) {
+          const indexData: Array<{ userId: string; indexType: string; value: string }> = [
+            { userId: payload.userId, indexType: 'email', value: emailHash }
+          ];
+          if (phoneHash) {
+            indexData.push({ userId: payload.userId, indexType: 'phone', value: phoneHash });
+          }
+          await prisma.user_UserIndex.createMany({ data: indexData });
+          logger.debug('user_UserIndex entries created via UserRegistered.v1 handler', {
+            userId: payload.userId,
+            hasPhone: !!phoneHash
+          });
+        }
+      }
     });
   }
 }

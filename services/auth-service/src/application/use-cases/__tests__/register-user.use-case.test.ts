@@ -66,6 +66,7 @@ describe('RegisterUserUseCase', () => {
       password: 'SecurePassword123!',
       role: 'system',
       allowPrivilegedRole: true,
+      userId: 'usr_TEST_SYSTEM_0000000000001',
       profile: { name: 'System User' }
     });
 
@@ -73,6 +74,7 @@ describe('RegisterUserUseCase', () => {
     expect(mockUserRepository.save).toHaveBeenCalledTimes(1);
 
     const savedUser = mockUserRepository.save.mock.calls[0][0];
+    expect(savedUser.id).toBe('usr_TEST_SYSTEM_0000000000001');
     expect(savedUser.role).toBe('system');
     expect(savedUser.passwordHash).toBeDefined();
     expect(savedUser.profile).toEqual(
@@ -95,6 +97,27 @@ describe('RegisterUserUseCase', () => {
       })
     );
   });
+
+  it.each(['seller', 'courier', 'supplier', 'enabler'])(
+    'registers privileged %s role directly when contract privileges are allowed',
+    async (role) => {
+      mockUserRepository.findByEmail.mockResolvedValue(null);
+
+      await useCase.execute({
+        email: `${role}@example.com`,
+        password: 'SecurePassword123!',
+        role,
+        allowPrivilegedRole: true,
+        userId: `usr_TEST_${role.toUpperCase()}_000000000001`,
+        profile: { name: `${role} User` }
+      });
+
+      const savedUser = mockUserRepository.save.mock.calls[0][0];
+      expect(savedUser.role).toBe(role);
+      expect(savedUser.id).toBe(`usr_TEST_${role.toUpperCase()}_000000000001`);
+      expect(savedUser.profile.roles).toEqual([role]);
+    }
+  );
 
   it('registers with only buyer role when no additional role is requested', async () => {
     mockUserRepository.findByEmail.mockResolvedValue(null);

@@ -333,7 +333,19 @@ export class ProductController {
 
         res.status(200).json(response);
       } else {
-        this.sendInternalError(res, new Error(result.message));
+        // Use case returned an error result (internal failure) — degrade gracefully with empty list
+        // rather than surfacing a 500 to the client.
+        console.warn(`[getProductsBySeller] Use case returned error for seller ${sellerId}: ${result.message}`);
+        const baseUrl = process.env.BASE_URL || 'https://maysar.co.tz';
+        res.status(200).json({
+          success: true,
+          data: [],
+          meta: {
+            timestamp: new Date(),
+            pagination: { page, limit, total: 0, totalPages: 0, hasNext: false, hasPrev: false }
+          },
+          seller: { id: sellerId, shareUrl: `${baseUrl}/seller/${sellerId}` }
+        });
       }
 
     } catch (error) {

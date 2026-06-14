@@ -106,7 +106,12 @@ export const ChatModule: Module = {
   name: 'chat-service',
 
   initialize: async () => {
-    prismaClient = createPrismaClient();
+    // Reuse the global Prisma singleton to avoid exhausting the connection pool.
+    const globalForPrisma = globalThis as unknown as { prisma: ReturnType<typeof createPrismaClient> | undefined };
+    prismaClient = globalForPrisma.prisma ?? createPrismaClient();
+    if (!globalForPrisma.prisma) {
+      globalForPrisma.prisma = prismaClient;
+    }
 
     // Redis — single client for presence + rate limiting
     redisClient = new Redis(chatConfig.redis.url, {
@@ -228,7 +233,7 @@ export const ChatModule: Module = {
       redisClient = null;
     }
     if (prismaClient) {
-      await prismaClient.$disconnect();
+      // Don't disconnect the shared global singleton — other services still use it.
       prismaClient = null;
     }
   },

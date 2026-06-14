@@ -1,13 +1,14 @@
+import { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '@shared/database/prisma-client';
 import { IAuthServiceClient } from '../../domain/engines/cod-eligibility.engine';
 
-let prismaClient: ReturnType<typeof createPrismaClient> | null = null;
-
-function getPrismaClient(): ReturnType<typeof createPrismaClient> {
-    if (!prismaClient) {
-        prismaClient = createPrismaClient();
+function getPrismaClient(): PrismaClient {
+    // Reuse the global Prisma singleton to avoid creating a separate connection pool
+    const global = globalThis as unknown as { prisma?: PrismaClient };
+    if (!global.prisma) {
+        global.prisma = createPrismaClient();
     }
-    return prismaClient;
+    return global.prisma;
 }
 
 export class AuthServiceClient implements IAuthServiceClient {

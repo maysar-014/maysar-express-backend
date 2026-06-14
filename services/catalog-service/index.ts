@@ -233,7 +233,9 @@ export const CatalogModule: Module = {
     initialize: async () => {
         logger.info('Initializing catalog-service module (fully merged)');
 
-        const prisma = createPrismaClient();
+        // Reuse the global Prisma singleton to avoid exhausting the connection pool.
+        const { prisma: globalPrisma } = await import('../../src/config/prisma');
+        const prisma = globalPrisma as PrismaClient;
 
         // Wire dependency graph
         const productRepository = new PrismaProductRepository(prisma);

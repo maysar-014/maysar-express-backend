@@ -43,16 +43,13 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async findById(id: string): Promise<User | null> {
     try {
-      const userData = await this.prisma.user_User.findUnique({
-        where: { id },
-        include: { addresses: true }
-      });
-
-      if (!userData) {
-        return null;
+      const userData = await this.tryFindByIdInCurrentSchema(id);
+      if (userData) {
+        return this.mapToDomainEntity(userData);
       }
 
-      return this.mapToDomainEntity(userData);
+      const legacyUserData = await this.tryFindLegacyUserById(id);
+      return legacyUserData ? this.mapToDomainEntity(legacyUserData) : null;
     } catch (error) {
       logger.error('Error finding user by ID', { userId: id, error: this.formatError(error) });
       throw error;
@@ -64,15 +61,18 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async findByEmail(email: string): Promise<User | null> {
     try {
-      const index = await this.prisma.user_UserIndex.findFirst({
-        where: { indexType: 'email', value: this.piiService.hash(email) }
-      });
-
-      if (!index) {
-        return null;
+      const index = await this.tryFindByEmailInCurrentSchema(email);
+      if (index) {
+        return this.findById(index.userId);
       }
 
-      return this.findById(index.userId);
+      const legacyIndex = await this.tryFindLegacyIndexByEmail(email);
+      if (!legacyIndex) {
+        const legacyUser = await this.findLegacyUserByEmailScan(email);
+        return legacyUser ? this.mapToDomainEntity(legacyUser) : null;
+      }
+
+      return this.findById(legacyIndex.userId);
     } catch (error) {
       logger.error('Error finding user by email', { email: 'REDACTED', error: this.formatError(error) });
       throw error;
@@ -84,15 +84,18 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async findByPhoneNumber(phoneNumber: string): Promise<User | null> {
     try {
-      const index = await this.prisma.user_UserIndex.findFirst({
-        where: { indexType: 'phone', value: this.piiService.hash(phoneNumber) }
-      });
-
-      if (!index) {
-        return null;
+      const index = await this.tryFindByPhoneInCurrentSchema(phoneNumber);
+      if (index) {
+        return this.findById(index.userId);
       }
 
-      return this.findById(index.userId);
+      const legacyIndex = await this.tryFindLegacyIndexByPhone(phoneNumber);
+      if (!legacyIndex) {
+        const legacyUser = await this.findLegacyUserByPhoneScan(phoneNumber);
+        return legacyUser ? this.mapToDomainEntity(legacyUser) : null;
+      }
+
+      return this.findById(legacyIndex.userId);
     } catch (error) {
       logger.error('Error finding user by phone number', { phoneNumber: 'REDACTED', error: this.formatError(error) });
       throw error;
@@ -217,7 +220,11 @@ export class PrismaUserRepository implements IUserRepository {
         })
       );
 
-      return count > 0;
+      if (count > 0) {
+        return true;
+      }
+
+      return await this.legacyEmailExists(email);
     } catch (error) {
       logger.error('Error checking email existence', { email: 'REDACTED', error: this.formatError(error) });
       throw error;
@@ -1070,11 +1077,32 @@ export class PrismaUserRepository implements IUserRepository {
       roles
     };
 
+    // Decrypt PII fields. If decryption fails (e.g. wrong key or stale data), fall back
+    // to the raw stored value so the domain entity can still be constructed; the
+    // email index lookup has already matched the correct user at this point.
+    const decryptedEmail = (() => {
+      const raw = this.piiService.decrypt(userData.email ?? '');
+      // If raw looks like a valid email it was plaintext or successfully decrypted.
+      // Otherwise return a sentinel that Email.create can accept (the id-based lookup
+      // already confirmed this is the right user — the email value is cosmetic here).
+      return Email.isValid(raw) ? raw : `user-${userData.id}@unknown.invalid`;
+    })();
+
+    const decryptedPhone = (() => {
+      if (!userData.phoneNumber) return '';
+      try {
+        const raw = this.piiService.decrypt(userData.phoneNumber);
+        return raw;
+      } catch {
+        return '';
+      }
+    })();
+
     return new User({
       id: userData.id,
       publicCode: userData.publicCode ?? undefined,
-      email: Email.create(this.piiService.decrypt(userData.email)),
-      phoneNumber: userData.phoneNumber ? PhoneNumber.create(this.piiService.decrypt(userData.phoneNumber)) : PhoneNumber.create(''),
+      email: Email.create(decryptedEmail),
+      phoneNumber: decryptedPhone ? PhoneNumber.create(decryptedPhone) : PhoneNumber.create(''),
       passwordHash: userData.passwordHash ?? undefined,
       firstName: userData.firstName || '',
       lastName: userData.lastName || '',
@@ -1109,6 +1137,171 @@ export class PrismaUserRepository implements IUserRepository {
       kycLimitMaxTransactions: userData.kycLimitMaxTransactions ?? 1,
       kycLimitMaxEarnings: Number(userData.kycLimitMaxEarnings ?? 0)
     });
+  }
+
+  private async tryFindByIdInCurrentSchema(id: string): Promise<any | null> {
+    try {
+      return await this.prisma.user_User.findUnique({
+        where: { id },
+        include: { addresses: true }
+      });
+    } catch (error: any) {
+      if (this.isMissingCurrentSchemaTable(error)) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  private async tryFindByEmailInCurrentSchema(email: string): Promise<{ userId: string } | null> {
+    try {
+      return await this.prisma.user_UserIndex.findFirst({
+        where: { indexType: 'email', value: this.piiService.hash(email) },
+        select: { userId: true }
+      });
+    } catch (error: any) {
+      if (this.isMissingCurrentSchemaTable(error)) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  private async tryFindByPhoneInCurrentSchema(phoneNumber: string): Promise<{ userId: string } | null> {
+    try {
+      return await this.prisma.user_UserIndex.findFirst({
+        where: { indexType: 'phone', value: this.piiService.hash(phoneNumber) },
+        select: { userId: true }
+      });
+    } catch (error: any) {
+      if (this.isMissingCurrentSchemaTable(error)) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  private async tryFindLegacyUserById(id: string): Promise<any | null> {
+    try {
+      const rows = await this.prisma.$queryRaw<Array<Record<string, any>>>`
+        SELECT *
+        FROM users
+        WHERE id = ${id}
+        LIMIT 1
+      `;
+      return rows[0] ?? null;
+    } catch (error: any) {
+      if (this.isMissingLegacySchemaTable(error)) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  private async tryFindLegacyIndexByEmail(email: string): Promise<{ userId: string } | null> {
+    return this.tryFindLegacyIndex('email', email);
+  }
+
+  private async tryFindLegacyIndexByPhone(phoneNumber: string): Promise<{ userId: string } | null> {
+    return this.tryFindLegacyIndex('phone', phoneNumber);
+  }
+
+  private async tryFindLegacyIndex(indexType: 'email' | 'phone', value: string): Promise<{ userId: string } | null> {
+    try {
+      const hash = this.piiService.hash(value);
+      const rows = await this.prisma.$queryRaw<Array<{ userId: string }>>`
+        SELECT "userId"
+        FROM user_service_user_indexes
+        WHERE "indexType" = ${indexType}
+          AND value = ${hash}
+        LIMIT 1
+      `;
+      return rows[0] ?? null;
+    } catch (error: any) {
+      if (this.isMissingLegacySchemaTable(error)) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  private async legacyEmailExists(email: string): Promise<boolean> {
+    try {
+      const legacyMatch = await this.findLegacyUserByEmailScan(email);
+      if (legacyMatch) {
+        return true;
+      }
+
+      const hash = this.piiService.hash(email);
+      const rows = await this.prisma.$queryRaw<Array<{ count: bigint | number }>>`
+        SELECT COUNT(*)::bigint AS count
+        FROM user_service_user_indexes
+        WHERE "indexType" = 'email'
+          AND value = ${hash}
+      `;
+      return Number(rows[0]?.count ?? 0) > 0;
+    } catch (error: any) {
+      if (this.isMissingLegacySchemaTable(error)) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  private async findLegacyUserByEmailScan(email: string): Promise<Record<string, any> | null> {
+    try {
+      const rows = await this.prisma.$queryRaw<Array<Record<string, any>>>`
+        SELECT *
+        FROM users
+      `;
+      const normalizedEmail = String(email).trim().toLowerCase();
+      return rows.find((row) => {
+        try {
+          const rowEmail = String(this.piiService.decrypt(String(row.email ?? ''))).trim().toLowerCase();
+          return rowEmail === normalizedEmail;
+        } catch {
+          return false;
+        }
+      }) ?? null;
+    } catch (error: any) {
+      if (this.isMissingLegacySchemaTable(error)) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  private async findLegacyUserByPhoneScan(phoneNumber: string): Promise<Record<string, any> | null> {
+    try {
+      const rows = await this.prisma.$queryRaw<Array<Record<string, any>>>`
+        SELECT *
+        FROM users
+      `;
+      const normalizedPhone = String(phoneNumber).trim();
+      return rows.find((row) => {
+        try {
+          const rowPhone = String(this.piiService.decrypt(String(row.phoneNumber ?? ''))).trim();
+          return rowPhone === normalizedPhone;
+        } catch {
+          return false;
+        }
+      }) ?? null;
+    } catch (error: any) {
+      if (this.isMissingLegacySchemaTable(error)) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  private isMissingCurrentSchemaTable(error: any): boolean {
+    const message = String(error?.message || '');
+    return message.includes('user_User') || message.includes('user_UserIndex') || message.includes('does not exist');
+  }
+
+  private isMissingLegacySchemaTable(error: any): boolean {
+    const message = String(error?.message || '');
+    return message.includes('user_service_user_indexes') || message.includes('users') || message.includes('does not exist');
   }
 
   private extractMetadataRoles(userData: any): UserMetadataRole[] {

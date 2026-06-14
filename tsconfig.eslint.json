@@ -4,11 +4,13 @@
     "noEmit": true
   },
   "include": [
+    "scripts/**/*.ts",
     "services/**/*.ts",
     "shared/**/*.ts",
     "shared-contracts/**/*.ts",
     "events/**/*.ts",
     "src/**/*.ts",
+    "tests/**/*.ts",
     "*.ts"
   ],
   "exclude": [

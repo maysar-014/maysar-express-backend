@@ -221,7 +221,7 @@ class UserServiceApplication {
 
     try {
       const { AuthEventHandlers } = await import('./infrastructure/messaging/auth-event-handlers');
-      const authEventHandlers = new AuthEventHandlers();
+      const authEventHandlers = new AuthEventHandlers(new PiiEncryptionService());
       authEventHandlers.setupSubscriptions();
       logger.info('✅ Auth Sync Event Handlers initialized');
     } catch (error) {

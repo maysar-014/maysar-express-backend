@@ -63,6 +63,8 @@ export class AdminRepository {
 
   /**
    * Update user status
+   * Updates both auth_users (auth-service local copy) and user_User (user-service source of truth)
+   * so that login — which reads user_User — sees the correct status immediately.
    */
   async updateUserStatus(userId: string, status: string, reason?: string): Promise<any> {
     try {
@@ -75,6 +77,24 @@ export class AdminRepository {
         where: { id: userId },
         data: { status: statusEnum }
       });
+
+      // Also update the user-service users table (user_User / @@map("users")).
+      // Login reads user_User.status via UserServiceRepository.findByEmail, so both tables
+      // must agree. When activating, also clear lockout fields so login succeeds immediately.
+      // Ignore P2025 (record not found) in case the row doesn't exist there.
+      try {
+        await prisma.user_User.update({
+          where: { id: userId },
+          data: {
+            status: status as any,
+            ...(status === 'active' ? { failedLoginAttempts: 0, lockoutUntil: null } : {})
+          }
+        });
+      } catch (syncError: any) {
+        if (syncError?.code !== 'P2025') {
+          logger.warn('AdminRepository: user_User status sync failed', { userId, status, error: syncError?.message });
+        }
+      }
 
       return {
         userId: updated.id,

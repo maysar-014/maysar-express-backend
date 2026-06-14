@@ -349,9 +349,17 @@ export class AuthenticateUserUseCase {
       .filter(Boolean);
 
     if (normalizedRoles.length > 0) {
+      if (String(user.role || '').trim().toLowerCase() === 'system' && !normalizedRoles.includes('admin')) {
+        return Array.from(new Set(['admin', 'system', ...normalizedRoles]));
+      }
       return Array.from(new Set(normalizedRoles));
     }
 
-    return [String(user.role || '').trim().toLowerCase()].filter(Boolean);
+    const fallbackRole = String(user.role || '').trim().toLowerCase();
+    if (fallbackRole === 'system') {
+      return ['admin', 'system'];
+    }
+
+    return [fallbackRole].filter(Boolean);
   }
 }

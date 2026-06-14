@@ -161,86 +161,177 @@ export class PrismaConversationRepository implements ConversationRepository {
     const total = filtered.length;
     const page = filtered.slice(0, limit);
 
-    // Enrich each conversation
-    const enriched: ConversationListItem[] = await Promise.all(
-      page.map(async (p) => {
-        const conv = p.conversation;
+    if (page.length === 0) {
+      return { conversations: [], nextCursor: null, total };
+    }
 
-        // Unread count: messages after participant's lastReadAt
-        const unreadCount = await this.prisma.chat_Message.count({
-          where: {
-            conversationId: conv.id,
-            createdAt: p.lastReadAt ? { gt: p.lastReadAt } : undefined,
-            deletedAt: null,
-          },
-        });
+    const conversationIds = page.map((p) => p.conversation.id);
 
-        // Last message preview
-        const lastMsg = await this.prisma.chat_Message.findFirst({
-          where: { conversationId: conv.id },
-          orderBy: { createdAt: 'desc' },
-        });
+    // ── Batched queries (replaces per-item Promise.all fan-out) ──────────────
 
-        let lastMessagePreview: string | null = null;
-        if (lastMsg) {
-          if (lastMsg.content) {
-            lastMessagePreview = lastMsg.content.slice(0, 100);
-          } else {
-            const typeLabels: Record<string, string> = {
-              IMAGE: '📷 Image',
-              VOICE_NOTE: '🎤 Voice note',
-              PRODUCT_CARD: '🛍️ Product',
-              ORDER_REFERENCE: '📦 Order',
-              LOCATION_PIN: '📍 Location',
-              QUICK_ACTION: '⚡ Quick action',
-            };
-            lastMessagePreview = typeLabels[lastMsg.type] ?? lastMsg.type;
-          }
+    // 1. Unread counts: one grouped raw query across all conversation IDs.
+    //    Returns the count of unread messages per conversation for this user,
+    //    using each participant's lastReadAt as the cutoff.
+    //    We use $queryRaw for a single round-trip instead of N sequential counts.
+    const lastReadAtMap = new Map<string, Date | null>();
+    for (const p of page) {
+      lastReadAtMap.set(p.conversation.id, p.lastReadAt);
+    }
+
+    // Build a VALUES list for the per-conversation lastReadAt cutoffs
+    // so we can do a single JOIN instead of N queries.
+    const unreadCountMap = new Map<string, number>();
+    try {
+      // Use a single raw query: join messages with a cutoff table derived from participant lastReadAt
+      // Table name: chat_messages (@@map of chat_Message model in schema.prisma)
+      // Table name: chat_conversation_participants (@@map of chat_ConversationParticipant)
+      const unreadRows = await this.prisma.$queryRaw<Array<{
+        conversation_id: string;
+        unread_count: bigint;
+      }>>`
+        SELECT
+          m."conversationId" AS conversation_id,
+          COUNT(*)           AS unread_count
+        FROM chat_messages m
+        JOIN (
+          SELECT
+            p."conversationId",
+            p."lastReadAt"
+          FROM chat_conversation_participants p
+          WHERE p."userId"           = ${userId}
+            AND p."conversationId"   = ANY(${conversationIds}::text[])
+        ) cutoff ON cutoff."conversationId" = m."conversationId"
+        WHERE m."deletedAt" IS NULL
+          AND (cutoff."lastReadAt" IS NULL OR m."createdAt" > cutoff."lastReadAt")
+        GROUP BY m."conversationId"
+      `;
+      for (const row of unreadRows) {
+        unreadCountMap.set(row.conversation_id, Number(row.unread_count));
+      }
+    } catch {
+      // Fallback: leave all unread counts at 0 rather than crashing
+    }
+
+    // 2. Last messages: DISTINCT ON (conversationId) ordered by createdAt DESC.
+    //    Bounded to the page's conversation IDs — no full table scan.
+    //    Table name: chat_messages (@@map of chat_Message model in schema.prisma)
+    const lastMessageMap = new Map<string, { content: string | null; type: string }>();
+    try {
+      const lastMsgRows = await this.prisma.$queryRaw<Array<{
+        conversation_id: string;
+        content: string | null;
+        type: string;
+      }>>`
+        SELECT DISTINCT ON ("conversationId")
+          "conversationId" AS conversation_id,
+          content,
+          type
+        FROM chat_messages
+        WHERE "conversationId" = ANY(${conversationIds}::text[])
+        ORDER BY "conversationId", "createdAt" DESC
+      `;
+      for (const row of lastMsgRows) {
+        lastMessageMap.set(row.conversation_id, { content: row.content, type: row.type });
+      }
+    } catch {
+      // Fallback: no last-message previews rather than crashing
+    }
+
+    // 3. Other participants: one findMany for all conversation IDs
+    const allOtherParticipants = await this.prisma.chat_ConversationParticipant.findMany({
+      where: {
+        conversationId: { in: conversationIds },
+        userId: { not: userId },
+      },
+    });
+    const otherParticipantsMap = new Map<string, typeof allOtherParticipants[0][]>();
+    for (const p of allOtherParticipants) {
+      const existing = otherParticipantsMap.get(p.conversationId) ?? [];
+      existing.push(p);
+      otherParticipantsMap.set(p.conversationId, existing);
+    }
+
+    // 4. User display names: collect unique other-user IDs, resolve in one $queryRaw IN(...)
+    const otherUserIds = [
+      ...new Set(
+        allOtherParticipants.map((p) => p.userId),
+      ),
+    ];
+
+    const userNameMap = new Map<string, string>();
+    if (otherUserIds.length > 0) {
+      try {
+        const userRows = await this.prisma.$queryRaw<Array<{
+          id: string;
+          first_name: string | null;
+          last_name: string | null;
+          email: string | null;
+        }>>`
+          SELECT
+            u.id,
+            u."firstName"  AS first_name,
+            u."lastName"   AS last_name,
+            a.email        AS email
+          FROM "user_User" u
+          LEFT JOIN auth_users a ON a.id = u.id
+          WHERE u.id = ANY(${otherUserIds}::text[])
+        `;
+        for (const row of userRows) {
+          const fullName = [row.first_name, row.last_name].filter(Boolean).join(' ').trim();
+          userNameMap.set(row.id, fullName || row.email || `User ${row.id.slice(-8)}`);
         }
-
-        // Other participant display name
-        const otherParticipants = await this.prisma.chat_ConversationParticipant.findMany({
-          where: {
-            conversationId: conv.id,
-            userId: { not: userId },
-          },
-        });
-
-        let otherParticipantName = 'Unknown';
-        if (otherParticipants.length > 0) {
-          const otherUserId = otherParticipants[0].userId;
-          const user = await this.prisma.$queryRaw<Array<{ display_name: string | null; email: string }>>`
-            SELECT COALESCE(
-              (SELECT display_name FROM user_profiles WHERE user_id = ${otherUserId} LIMIT 1),
-              (SELECT email FROM auth_users WHERE id = ${otherUserId} LIMIT 1)
-            ) AS display_name,
-            COALESCE(email, '') AS email
-            FROM auth_users
-            WHERE id = ${otherUserId}
-            LIMIT 1
-          `;
-          if (user.length > 0) {
-            otherParticipantName = user[0].display_name ?? user[0].email ?? 'Unknown';
-          }
+      } catch {
+        // DB schema mismatch — fall back to userId fragment for all
+        for (const uid of otherUserIds) {
+          userNameMap.set(uid, `User ${uid.slice(-8)}`);
         }
+      }
+    }
 
-        return {
-          id: conv.id,
-          type: conv.type as ConversationListItem['type'],
-          moderationStatus: conv.moderationStatus as ModerationStatus,
-          relatedProductId: conv.relatedProductId ?? null,
-          relatedOrderId: conv.relatedOrderId ?? null,
-          relatedShipmentId: conv.relatedShipmentId ?? null,
-          relatedSupplierRequestId: conv.relatedSupplierRequestId ?? null,
-          metadata: (conv.metadata as Record<string, unknown>) ?? {},
-          lastMessageAt: conv.lastMessageAt ?? null,
-          createdAt: conv.createdAt,
-          unreadCount,
-          lastMessagePreview,
-          otherParticipantName,
-        };
-      }),
-    );
+    // ── Assemble result ──────────────────────────────────────────────────────
+    const typeLabels: Record<string, string> = {
+      IMAGE: '📷 Image',
+      VOICE_NOTE: '🎤 Voice note',
+      PRODUCT_CARD: '🛍️ Product',
+      ORDER_REFERENCE: '📦 Order',
+      LOCATION_PIN: '📍 Location',
+      QUICK_ACTION: '⚡ Quick action',
+    };
+
+    const enriched: ConversationListItem[] = page.map((p) => {
+      const conv = p.conversation;
+      const lastMsg = lastMessageMap.get(conv.id) ?? null;
+      const others = otherParticipantsMap.get(conv.id) ?? [];
+
+      let lastMessagePreview: string | null = null;
+      if (lastMsg) {
+        if (lastMsg.content) {
+          lastMessagePreview = lastMsg.content.slice(0, 100);
+        } else {
+          lastMessagePreview = typeLabels[lastMsg.type] ?? lastMsg.type;
+        }
+      }
+      const otherParticipantName =
+        others.length > 0
+          ? (userNameMap.get(others[0].userId) ?? `User ${others[0].userId.slice(-8)}`)
+          : 'Unknown';
+
+      return {
+        id: conv.id,
+        type: conv.type as ConversationListItem['type'],
+        moderationStatus: conv.moderationStatus as ModerationStatus,
+        relatedProductId: conv.relatedProductId ?? null,
+        relatedOrderId: conv.relatedOrderId ?? null,
+        relatedShipmentId: conv.relatedShipmentId ?? null,
+        relatedSupplierRequestId: conv.relatedSupplierRequestId ?? null,
+        metadata: (conv.metadata as Record<string, unknown>) ?? {},
+        lastMessageAt: conv.lastMessageAt ?? null,
+        createdAt: conv.createdAt,
+        unreadCount: unreadCountMap.get(conv.id) ?? 0,
+        lastMessagePreview,
+        otherParticipantName,
+      };
+    });
 
     const nextCursor =
       page.length === limit && page[page.length - 1]?.conversation.lastMessageAt

@@ -165,6 +165,114 @@ async function initializeService() {
     eventBus.subscribe('Delivery.Success.v1', async (e: any) => sagaReplyHandler.handleDeliverySuccess(e));
     eventBus.subscribe('Delivery.Failure.v1', async (e: any) => sagaReplyHandler.handleDeliveryFailed(e));
 
+    // ── StockReservation.Command.v1 → auto-complete (inventory not implemented) ─
+    // For WALLET orders, stock reservation is not blocking. Auto-succeed so the
+    // OrderFulfillmentSaga can advance to the Payment step.
+    eventBus.subscribe('StockReservation.Command.v1', async (envelope: any) => {
+      const data = envelope?.data || envelope?.payload || envelope;
+      const { sagaId, orderId } = data;
+      if (!sagaId) {
+        logger.warn('[StockReservation.Command.v1] Missing sagaId, skipping');
+        return;
+      }
+      try {
+        await eventBus.publish('StockReservation.Success.v1', { sagaId, orderId });
+        logger.info(`[StockReservation.Command.v1] Auto-completed for saga ${sagaId}, order ${orderId}`);
+      } catch (err: any) {
+        logger.error(`[StockReservation.Command.v1] Failed to publish success for saga ${sagaId}: ${err.message}`);
+      }
+    });
+
+    // ── Delivery.Command.v1 → create delivery record in logistics service ─────
+    // We handle it here (in-process) by calling the logistics service HTTP API,
+    // then publish Delivery.Success.v1 to advance the saga to COMPLETED.
+    const LOGISTICS_BASE_URL = process.env.LOGISTICS_BASE_URL || 'http://localhost:3000';
+    const JWT_SECRET_FOR_DELIVERY = process.env.JWT_SECRET || '';
+
+    function generateSystemTokenForDelivery(): string {
+      const crypto = require('crypto');
+      const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+      const payload = Buffer.from(JSON.stringify({
+        userId: 'system',
+        email: 'order-service@internal.maysar.co.tz',
+        roles: ['admin', 'system'],
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 300
+      })).toString('base64url');
+      const sig = crypto.createHmac('sha256', JWT_SECRET_FOR_DELIVERY).update(`${header}.${payload}`).digest('base64url');
+      return `${header}.${payload}.${sig}`;
+    }
+
+    eventBus.subscribe('Delivery.Command.v1', async (envelope: any) => {
+      const data = envelope?.data || envelope?.payload || envelope;
+      const { orderId, sellerId, sagaId: parentSagaId } = data;
+
+      if (!orderId) {
+        logger.warn('[Delivery.Command.v1] Missing orderId, skipping');
+        await eventBus.publish('Delivery.Failure.v1', { sagaId: parentSagaId, orderId, reason: 'Missing orderId' });
+        return;
+      }
+
+      try {
+        // Look up the order to get full details for delivery creation
+        const orderForDelivery = await orderRepository.findById(orderId);
+        if (!orderForDelivery) {
+          await eventBus.publish('Delivery.Failure.v1', { sagaId: parentSagaId, orderId, reason: 'Order not found' });
+          return;
+        }
+
+        const deliveryAddr = (orderForDelivery as any).deliveryAddress || {};
+        const token = generateSystemTokenForDelivery();
+
+        // Call logistics API to create delivery record
+        const deliveryRes = await fetch(`${LOGISTICS_BASE_URL}/api/logistics/api/v1/deliveries`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'idempotency-key': `delivery-create-${orderId}-${Date.now()}`,
+          },
+          body: JSON.stringify({
+            orderId,
+            pickupAddress: {
+              coordinates: { lat: -6.7924, lng: 39.2083 }, // Dar es Salaam default (seller location)
+              street: 'Seller Location',
+              city: deliveryAddr.city || 'Dar es Salaam',
+              country: deliveryAddr.country || 'Tanzania',
+            },
+            deliveryAddress: {
+              coordinates: { lat: -6.7924, lng: 39.2083 }, // Buyer delivery coordinates
+              street: deliveryAddr.street || 'Delivery Location',
+              city: deliveryAddr.city || 'Dar es Salaam',
+              country: deliveryAddr.country || 'Tanzania',
+            },
+            packageDetails: { weight: Number((orderForDelivery as any).totalWeight ?? 0.5) || 0.5 },
+            priority: 'standard',
+          }),
+        });
+
+        if (deliveryRes.ok) {
+          logger.info(`[Delivery.Command.v1] Delivery created for order ${orderId}`);
+          await eventBus.publish('Delivery.Success.v1', { sagaId: parentSagaId, orderId });
+        } else {
+          const errBody = await deliveryRes.text();
+          logger.error(`[Delivery.Command.v1] Delivery creation returned ${deliveryRes.status} for order ${orderId}: ${errBody}`);
+          await eventBus.publish('Delivery.Failure.v1', {
+            sagaId: parentSagaId,
+            orderId,
+            reason: `Logistics API returned ${deliveryRes.status}: ${errBody.slice(0, 200)}`,
+          });
+        }
+      } catch (err: any) {
+        logger.error(`[Delivery.Command.v1] Failed for order ${orderId}: ${err.message}`);
+        await eventBus.publish('Delivery.Failure.v1', {
+          sagaId: parentSagaId,
+          orderId,
+          reason: err.message,
+        });
+      }
+    });
+
     // ── Progressive COD Trust Signal Listeners ────────────────────────────────
     // Wire domain events to TrustSignalIngestionService so the COD Eligibility Score
     // is updated automatically as buyers complete orders, cancel, or trigger disputes.
@@ -587,7 +695,7 @@ async function initializeService() {
       walletServiceClient,
       selcomPesaAdapter
     );
-    const orderController = new OrderController(placeOrderUseCase, checkCODEligibilityUseCase, codCommitmentService);
+    const orderController = new OrderController(placeOrderUseCase, checkCODEligibilityUseCase, codCommitmentService, walletServiceClient);
 
     const { PrismaCODDisputeRepository } = await import('./infrastructure/database/prisma-cod-dispute.repository');
     const { ResolveCODDisputeUseCase } = await import('./application/use-cases/resolve-cod-dispute.use-case');

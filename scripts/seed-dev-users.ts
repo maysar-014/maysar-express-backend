@@ -20,16 +20,34 @@
 
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import * as dotenv from 'dotenv';
+import * as path from 'path';
 import { makeId, getModelPrefix } from '../shared/ids/id';
+import { PiiEncryptionService } from '../shared/encryption/pii-encryption.service';
 
-dotenv.config();
+const seedEnvFile = ['1', 'true', 'yes'].includes(String(process.env.RUN_LIVE_E2E || '').trim().toLowerCase())
+  ? '.env'
+  : String(process.env.NODE_ENV || '').trim().toLowerCase() === 'test'
+    ? '.env.test'
+    : '.env';
+
+dotenv.config({ path: path.resolve(process.cwd(), seedEnvFile), override: true });
 
 const prisma = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });
+const piiService = new PiiEncryptionService();
 
 const SALT_ROUNDS = 12;
 const DEFAULT_PASSWORD = 'Maysar@2024!';
 const CURRENCY = 'TZS';
+const CANONICAL_SEED_IDS = {
+  buyer: 'usr_01KRFXQZC36NK3CDEWJJS21RP8',
+  seller: 'usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z',
+  courier: 'usr_01KRFZ1E7W4JDR9N9PMGYDD77S',
+  enabler: 'usr_01KRFZ1E8HMAE7MMH175PJ9337',
+  supplier: 'usr_01KRFZ1E73P67T886TR2QDY0VT',
+  admin: 'usr_ADMIN000000000000000000001'
+} as const;
 
 // ─── Seed definitions ─────────────────────────────────────────────────────────
 
@@ -173,7 +191,7 @@ async function main() {
       select: { id: true },
     });
 
-    const userId: string = existingAuthUser?.id ?? makeId(getModelPrefix('User'));
+    const userId: string = existingAuthUser?.id ?? CANONICAL_SEED_IDS[user.role as keyof typeof CANONICAL_SEED_IDS] ?? makeId(getModelPrefix('User'));
     console.log(`  ID:    ${userId}`);
 
     // ── 2. Upsert auth_users (User model — used by auth service) ─────────
@@ -195,22 +213,30 @@ async function main() {
         status: 'ACTIVE',
         isEmailVerified: user.isEmailVerified,
         isPhoneVerified: user.isPhoneVerified,
+        // Reset any lockouts from failed test runs
+        failedLoginAttempts: 0,
+        lockoutUntil: null,
       },
     });
     log('✓ auth_users upserted');
 
     // ── 3. Upsert users (User_User model — used by user service) ─────────
+    // NOTE: The email column in users is PII-encrypted, so we MUST upsert
+    // by id (not by email) to avoid creating duplicate rows.
+    const encryptedEmail = piiService.encrypt(user.email);
+    const encryptedPhone = user.phoneNumber ? piiService.encrypt(user.phoneNumber) : null;
+
     await (prisma as any).user_User.upsert({
-      where: { email: user.email },
+      where: { id: userId },
       create: {
         id: userId,
-        email: user.email,
+        email: encryptedEmail,          // PII-encrypted ✓
         passwordHash,
         role: USER_ROLE_MAP[user.role] ?? 'BUYER',
         status: 'ACTIVE',
         firstName: user.firstName,
         lastName: user.lastName,
-        phoneNumber: user.phoneNumber,
+        phoneNumber: encryptedPhone,    // PII-encrypted (or null) ✓
         isEmailVerified: user.isEmailVerified,
         isPhoneVerified: user.isPhoneVerified,
         emailVerifiedAt: user.isEmailVerified ? new Date() : null,
@@ -225,9 +251,11 @@ async function main() {
       },
       update: {
         passwordHash,
+        email: encryptedEmail,          // keep email encrypted and up-to-date
         status: 'ACTIVE',
         firstName: user.firstName,
         lastName: user.lastName,
+        phoneNumber: encryptedPhone,
         isEmailVerified: user.isEmailVerified,
         isPhoneVerified: user.isPhoneVerified,
         kycStatus: user.kycStatus,
@@ -237,9 +265,38 @@ async function main() {
         kycLimitMaxListings: user.kycLevel >= 2 ? 100 : 5,
         kycLimitMaxTransactions: user.kycLevel >= 3 ? 1000 : user.kycLevel >= 2 ? 50 : 1,
         kycLimitMaxEarnings: user.kycLevel >= 3 ? 10_000_000 : user.kycLevel >= 2 ? 1_000_000 : 0,
+        // Reset any lockouts from failed test runs
+        failedLoginAttempts: 0,
+        lockoutUntil: null,
       },
     });
     log('✓ users upserted');
+
+    // ── 3b. Ensure user_service_user_indexes entry exists ─────────────────
+    // The PrismaUserRepository.findByEmail looks up this index first.
+    // Without it, login will always return "Invalid email or password".
+    const hmacSecret = process.env.PII_HMAC_SECRET || 'default-hmac-secret-for-dev';
+    const emailHash = crypto.createHmac('sha256', hmacSecret).update(user.email).digest('hex');
+    const phoneHash = user.phoneNumber
+      ? crypto.createHmac('sha256', hmacSecret).update(user.phoneNumber).digest('hex')
+      : null;
+
+    // Use raw SQL for upsert — avoids any Prisma unique-constraint naming issues
+    await prisma.$executeRaw`
+      INSERT INTO user_service_user_indexes ("userId", "indexType", value, "createdAt")
+      VALUES (${userId}, 'email', ${emailHash}, NOW())
+      ON CONFLICT ("userId", "indexType") DO UPDATE SET value = EXCLUDED.value
+    `;
+
+    if (user.phoneNumber && phoneHash) {
+      await prisma.$executeRaw`
+        INSERT INTO user_service_user_indexes ("userId", "indexType", value, "createdAt")
+        VALUES (${userId}, 'phone', ${phoneHash}, NOW())
+        ON CONFLICT ("userId", "indexType") DO UPDATE SET value = EXCLUDED.value
+      `;
+    }
+
+    log('✓ user_service_user_indexes upserted (email + phone)');
 
     // ── 4. Create wallet if needed ────────────────────────────────────────
     const rolesWithWallets = ['buyer', 'seller', 'enabler'];

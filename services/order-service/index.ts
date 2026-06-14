@@ -16,7 +16,7 @@ import { AuthServiceClient } from './src/infrastructure/integrations/auth-servic
 import { UserServiceClient } from './src/infrastructure/integrations/user-service.client';
 import { LogisticsServiceClient } from './src/infrastructure/integrations/logistics-service.client';
 import { WalletServiceClient } from './src/infrastructure/integrations/wallet-service.client';
-import { SelcomPesaAdapter } from './src/infrastructure/providers/paymentGateway.adapter';
+import { SelcomPesaAdapter } from './src/infrastructure/providers/selcom-pesa.adapter';
 import { OrderPaymentRepository } from './src/infrastructure/repositories/order-payment.repository';
 import { PrismaCODTrustScoreRepository } from './src/infrastructure/repositories/prisma-cod-trust-score.repository';
 import { PrismaCODRestrictionRepository } from './src/infrastructure/repositories/prisma-cod-restriction.repository';
@@ -117,7 +117,7 @@ export const OrderModule: Module = {
             );
 
             const checkCODEligibilityUseCase = new CheckCODEligibilityUseCase(codEligibilityEngine as any);
-            const orderController = new OrderController(placeOrderUseCase, checkCODEligibilityUseCase, codCommitmentService);
+            const orderController = new OrderController(placeOrderUseCase, checkCODEligibilityUseCase, codCommitmentService, walletServiceClient);
 
             const codDisputeRepository = new PrismaCODDisputeRepository();
             const resolveCODDisputeUseCase = new ResolveCODDisputeUseCase(codDisputeRepository, eventPublisher);

@@ -1,9 +1,9 @@
 # Maysar Development Test Users
 
-Seeded by `scripts/seed-dev-users.ts`. Re-run the script at any time — it is idempotent (upserts on email).
+Registered by `scripts/seed-e2e-users.ts` through the live auth API. Re-run the script at any time — it is idempotent for the canonical seeded emails/IDs.
 
 ```bash
-npx ts-node -r tsconfig-paths/register scripts/seed-dev-users.ts
+npx ts-node scripts/seed-e2e-users.ts
 ```
 
 ---
@@ -14,7 +14,7 @@ All accounts share the same password: **`Maysar@2024!`**
 
 | Role | Email | User ID | KYC Level | Wallet Balance | Notes |
 |------|-------|---------|-----------|----------------|-------|
-| **system** (admin) | admin@maysar.co.tz | `usr_01ADMIN0000000000000000001` | 3 | — | Full platform access. Use for admin operations, bypasses rate limits. |
+| **system** (admin) | admin@maysar.co.tz | `usr_ADMIN000000000000000000001` | 3 | — | Full platform access. Use for admin operations, bypasses rate limits. |
 | **buyer** | buyer@maysar.co.tz | `usr_01KRFXQZC36NK3CDEWJJS21RP8` | 3 | 100,000 TZS | Verified buyer. COD trust score: 0 (NEW_BUYER tier). Funded wallet for order testing. |
 | **seller** | seller@maysar.co.tz | `usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z` | 2 | 50,000 TZS | Verified seller. Use as `sellerId` when placing test orders. |
 | **supplier** | supplier@maysar.co.tz | `usr_01KRFZ1E73P67T886TR2QDY0VT` | 2 | — | Verified supplier. |
@@ -61,7 +61,7 @@ The seeded buyer starts at score **0** (NEW_BUYER). Trust score increases automa
 node -e "
 require('dotenv').config();
 const crypto = require('crypto');
-// ... (see scripts/seed-dev-users.ts for full example)
+// ... (see scripts/seed-e2e-users.ts for full example)
 "
 ```
 

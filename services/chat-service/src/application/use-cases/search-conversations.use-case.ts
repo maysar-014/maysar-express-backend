@@ -19,6 +19,9 @@ export class SearchConversationsUseCase {
     this.client = new MeiliSearch({
       host: `${chatConfig.meilisearch.host}:${chatConfig.meilisearch.port}`,
       apiKey: chatConfig.meilisearch.apiKey,
+      // Fail fast when Meilisearch is unreachable so the catch block runs
+      // within the test timeout rather than hanging for 30s.
+      timeout: 3000,
     });
   }
 

@@ -12,6 +12,7 @@ export interface RegisterUserRequest {
     role?: string;
     profile?: any;
     allowPrivilegedRole?: boolean;
+    userId?: string;
 }
 
 export class RegisterUserUseCase {
@@ -31,8 +32,8 @@ export class RegisterUserUseCase {
             typeof request.role === 'string' ? request.role.trim().toLowerCase() : '';
         const allowPrivilegedRole = request.allowPrivilegedRole === true;
         const primaryRole =
-            allowPrivilegedRole && requestedRole === 'system'
-                ? 'system'
+            allowPrivilegedRole && requestedRole
+                ? requestedRole
                 : 'buyer';
         const additionalRoles =
             requestedRole && requestedRole !== primaryRole ? [requestedRole] : [];
@@ -47,7 +48,9 @@ export class RegisterUserUseCase {
         };
 
         const user = User.create({
-            id: makeId('usr'),
+            id: allowPrivilegedRole && typeof request.userId === 'string' && request.userId.trim()
+                ? request.userId.trim()
+                : makeId('usr'),
             publicCode: generatePublicUserCode(),
             email: request.email,
             role: primaryRole,

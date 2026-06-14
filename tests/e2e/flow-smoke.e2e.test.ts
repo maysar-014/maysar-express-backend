@@ -3,7 +3,8 @@ import {
   asRecord,
   extractAccessToken,
   liveTestSuite,
-  requestJson
+  requestJson,
+  unlockTestUsers
 } from './helpers/live-api';
 
 const seededUsers = {
@@ -39,6 +40,7 @@ liveTestSuite('Flow Docs live API smoke tests', () => {
   beforeAll(async () => {
     const healthResponse = await requestJson('/health');
     expect(healthResponse.status).toBe(200);
+    await unlockTestUsers();
   });
 
   it('covers the auth-and-access flow against the running platform', async () => {
@@ -65,7 +67,7 @@ liveTestSuite('Flow Docs live API smoke tests', () => {
     expect(verifyResponse.status).toBe(200);
     expect(verifyResponse.body).toEqual(
       expect.objectContaining({
-        success: true
+        valid: true
       })
     );
 
@@ -85,7 +87,7 @@ liveTestSuite('Flow Docs live API smoke tests', () => {
     const accessToken = await loginSeededBuyer();
 
     const storefrontResponse = await requestJson(
-      `/api/catalog/api/v1/sellers/${seededUsers.seller.id}/storefront`
+      `/api/catalog/sellers/${seededUsers.seller.id}/storefront`
     );
 
     expect(storefrontResponse.status).toBe(200);
@@ -114,7 +116,8 @@ liveTestSuite('Flow Docs live API smoke tests', () => {
     const walletBalance = asRecord(walletBalanceResponse.body);
     expect(walletBalance).toEqual(
       expect.objectContaining({
-        success: true
+        balance: expect.any(Number),
+        currency: 'TZS'
       })
     );
 
@@ -128,11 +131,10 @@ liveTestSuite('Flow Docs live API smoke tests', () => {
     );
 
     expect(orderSearchResponse.status).toBe(200);
-    expect(orderSearchResponse.body).toEqual(
-      expect.objectContaining({
-        orders: expect.any(Array),
-        total: expect.any(Number)
-      })
-    );
+    const orderBody = orderSearchResponse.body as Record<string, unknown>;
+    expect(Array.isArray(orderBody['orders'])).toBe(true);
+    // total may be at top-level or nested under pagination
+    const total = orderBody['total'] ?? (orderBody['pagination'] as Record<string, unknown> | undefined)?.['total'];
+    expect(typeof total).toBe('number');
   });
 });

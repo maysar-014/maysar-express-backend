@@ -20,6 +20,7 @@ export const createDisputeSchema = z.object({
     reason: z.string().trim().min(3).max(500),
     description: z.string().trim().min(10).max(5000),
     subject: z.string().trim().min(5).max(120).optional(),
+    category: z.string().trim().min(1).max(100).optional(),
     priority: z.nativeEnum(TicketPriority).optional(),
     attachments: z.array(attachmentSchema).max(10).optional()
 }).strict();

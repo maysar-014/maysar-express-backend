@@ -52,6 +52,7 @@ export const createAuthRoutes = (authController: AuthControllerHandlers): Router
     validateRequest({
       body: {
         email: { type: 'string', required: true, format: 'email' },
+        id: { type: 'string', required: false, minLength: 1, maxLength: 100 },
         phoneNumber: { type: 'string', required: true, pattern: /^\+255[67]\d{8}$/ },
         firstName: { type: 'string', required: true, minLength: 2, maxLength: 100, pattern: /^(?=.*\S).+$/ },
         lastName: { type: 'string', required: true, minLength: 2, maxLength: 100, pattern: /^(?=.*\S).+$/ },

@@ -11,7 +11,8 @@ export const createTicketSchema = z.object({
 
 export const addMessageSchema = z.object({
     content: z.string().min(1).max(2000),
-    isInternal: z.boolean().optional()
+    isInternal: z.boolean().optional(),
+    senderType: z.string().optional()
 });
 
 export const assignTicketSchema = z.object({

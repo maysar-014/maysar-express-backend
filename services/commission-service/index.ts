@@ -4,7 +4,7 @@ import commissionRoutes from './src/api/routes/commission.routes';
 import { healthRoutes } from './src/api/routes/health.routes';
 
 export const CommissionModule: Module = {
-    name: 'commission-service',
+    name: 'commissions-service',
     initialize: async () => {
         console.log('Initializing commission-service module');
     },

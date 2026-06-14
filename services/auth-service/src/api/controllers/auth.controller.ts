@@ -12,6 +12,7 @@ export class AuthController {
   async register(req: Request, res: Response): Promise<void> {
     try {
       const { email, password, role, profile, phoneNumber, phone, firstName, lastName } = req.body;
+      const registrationUserId = typeof req.body?.id === 'string' ? req.body.id : undefined;
       const normalizedProfile: Record<string, any> = profile && typeof profile === 'object' ? { ...profile } : {};
       const resolvedPhone = phoneNumber || phone;
       if (resolvedPhone) normalizedProfile.phoneNumber = resolvedPhone;
@@ -34,6 +35,7 @@ export class AuthController {
         password,
         role: role || 'buyer',
         profile: normalizedProfile,
+        ...(registrationUserId ? { userId: registrationUserId } : {}),
         ...(allowPrivilegedRole ? { allowPrivilegedRole: true } : {})
       };
 

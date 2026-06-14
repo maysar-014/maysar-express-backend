@@ -1,5 +1,3 @@
-
-import { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
 import { ProductionPlanRepository } from './src/infrastructure/repositories/ProductionPlanRepository';
 import { ProductionOrderRepository } from './src/infrastructure/repositories/ProductionOrderRepository';
@@ -7,7 +5,6 @@ import { BulkOrderRepository } from './src/infrastructure/repositories/BulkOrder
 import { CapacityRepository } from './src/infrastructure/repositories/CapacityRepository';
 import { QualityCheckpointRepository } from './src/infrastructure/repositories/QualityCheckpointRepository';
 import { ProductionMetricsRepository } from './src/infrastructure/repositories/ProductionMetricsRepository';
-import { createPrismaClient } from '@shared/database/prisma-client';
 
 import { EventBusAdapter } from './src/infrastructure/messaging/EventBusAdapter';
 import { InventoryServiceAdapter } from './src/infrastructure/services/InventoryServiceAdapter';
@@ -56,8 +53,9 @@ export const ProductionModule: Module = {
     initialize: async () => {
         console.log('Initializing Production Service...');
 
-        // Lazy load prisma to ensure it uses the one in context or creates new
-        const prisma = createPrismaClient(); // In a real merged app, pass this in or usage singleton
+        // Reuse the global Prisma singleton to avoid exhausting the connection pool.
+        const { prisma: sharedPrisma } = await import('../../src/config/prisma');
+        const prisma = sharedPrisma as any;
 
         // 1. Adapters
         const localEventBus = EventBusAdapter.getInstance();
@@ -126,7 +124,6 @@ export const ProductionModule: Module = {
     },
     shutdown: async () => {
         console.log('Shutting down Production Service...');
-        const prisma = createPrismaClient();
-        await prisma.$disconnect();
+        // No-op: shared Prisma singleton is managed by the monolith lifecycle
     }
 };

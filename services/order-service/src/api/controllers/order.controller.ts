@@ -17,7 +17,8 @@ export class OrderController {
   constructor(
     private readonly placeOrderUseCase: PlaceOrderUseCase,
     private readonly checkCODEligibilityUseCase: CheckCODEligibilityUseCase,
-    private readonly codCommitmentService?: CODCommitmentService
+    private readonly codCommitmentService?: CODCommitmentService,
+    private readonly walletClient?: { creditWallet(userId: string, amount: number, currency: string, description: string, referenceId?: string): Promise<string> }
   ) {
     this.orderRepository = new PrismaOrderRepository();
     this.cancellationPolicy = new CancellationPolicy();
@@ -111,14 +112,89 @@ export class OrderController {
       return;
     }
 
+    // Capture the pre-cancellation status before any mutation. All downstream logic
+    // (wasDispatched, refund eligibility) must derive from this pre-mutation value.
+    const preCancel_status = existingOrder.status as string;
+
+    // Idempotency guard: if the order is already cancelled, check whether a wallet
+    // refund is still owed. The stable idempotency key (credit-cancel-<orderId>) means
+    // re-issuing the credit is safe — the wallet service will de-duplicate it.
+    const alreadyCancelledStatuses = ['cancelled', 'CANCELLED'];
+    const dispatchedStatuses = ['ASSIGNED', 'SHIPPED', 'IN_TRANSIT', 'assigned', 'shipped', 'in_transit'];
+    const wasDispatched = dispatchedStatuses.includes(preCancel_status);
+
+    if (alreadyCancelledStatuses.includes(preCancel_status)) {
+      // Order was already cancelled. Attempt idempotent refund in case the previous
+      // attempt cancelled the order but the credit failed — the wallet service will
+      // de-duplicate on the stable key so a successful prior credit is a no-op.
+      const paymentMethodForRetry = String((existingOrder as any).paymentMethod ?? '').toUpperCase();
+      if (paymentMethodForRetry === 'WALLET' && !wasDispatched && this.walletClient) {
+        const buyerIdForRetry = (existingOrder as any).buyerId;
+        const totalAmountForRetry = Number((existingOrder as any).totalAmount?.amount ?? (existingOrder as any).totalAmount ?? 0);
+        const currencyForRetry = String((existingOrder as any).totalAmount?.currency ?? (existingOrder as any).currency ?? 'TZS');
+        if (buyerIdForRetry && totalAmountForRetry > 0) {
+          try {
+            await this.walletClient.creditWallet(buyerIdForRetry, totalAmountForRetry, currencyForRetry, `Refund for cancelled order ${id}`, id);
+            logger.info(`[Wallet] Idempotent refund re-confirmed for already-cancelled order ${id}`);
+          } catch (retryRefundErr: any) {
+            logger.error(`[Wallet] Retry refund failed for already-cancelled order ${id}: ${retryRefundErr.message}`);
+            res.status(500).json({
+              error: 'REFUND_FAILED',
+              message: `Order is cancelled but wallet refund could not be confirmed: ${retryRefundErr.message}. Retry to re-attempt.`,
+              orderId: id,
+              refundAmount: totalAmountForRetry,
+              currency: currencyForRetry,
+            });
+            return;
+          }
+        }
+      }
+      res.status(200).json({
+        id,
+        status: 'cancelled',
+        cancelledAt: (existingOrder as any).cancelledAt?.toISOString() ?? new Date().toISOString(),
+        reason: (existingOrder as any).cancelReason ?? reason,
+        alreadyCancelled: true,
+      });
+      return;
+    }
+
+    // ── Pre-dispatch WALLET refund: issue credit BEFORE persisting 'cancelled' ──
+    // This preserves atomicity: if the credit fails the order remains in its current
+    // cancellable status and the caller can safely retry — the stable idempotency key
+    // (credit-cancel-<orderId>) prevents double-crediting on retry.
+    const paymentMethod = String((existingOrder as any).paymentMethod ?? '').toUpperCase();
+    if (paymentMethod === 'WALLET' && !wasDispatched && this.walletClient) {
+      const buyerId = (existingOrder as any).buyerId;
+      const totalAmount = Number((existingOrder as any).totalAmount?.amount ?? (existingOrder as any).totalAmount ?? 0);
+      const currency = String((existingOrder as any).totalAmount?.currency ?? (existingOrder as any).currency ?? 'TZS');
+      if (buyerId && totalAmount > 0) {
+        try {
+          await this.walletClient.creditWallet(buyerId, totalAmount, currency, `Refund for cancelled order ${id}`, id);
+          logger.info(`[Wallet] Refund of ${totalAmount} ${currency} issued for order ${id}, buyer=${buyerId}`);
+        } catch (refundErr: any) {
+          // Credit failed — do NOT persist 'cancelled'. Order stays in current status
+          // so the caller can retry and reach the same idempotent credit path.
+          logger.error(`[Wallet] Refund failed for order ${id}: ${refundErr.message}. Order NOT cancelled.`);
+          res.status(500).json({
+            error: 'REFUND_FAILED',
+            message: `Wallet refund failed; order has NOT been cancelled. Retry to re-attempt: ${refundErr.message}`,
+            orderId: id,
+            refundAmount: totalAmount,
+            currency,
+          });
+          return;
+        }
+      }
+    }
+
+    // Wallet credit succeeded (or not required) — now persist the terminal cancelled state.
     existingOrder.status = 'cancelled' as OrderStatus;
     existingOrder.cancelReason = reason;
     existingOrder.cancelledAt = new Date();
     await this.orderRepository.update(existingOrder);
 
-    // Release COD commitment hold if order was cancelled before dispatch
-    const dispatchedStatuses = ['ASSIGNED', 'SHIPPED', 'IN_TRANSIT', 'assigned', 'shipped', 'in_transit'];
-    const wasDispatched = dispatchedStatuses.includes(existingOrder.status as string);
+    // Release/forfeit COD commitment hold
     const holdId = (existingOrder as any).codCommitmentHoldId;
 
     if (holdId && this.codCommitmentService) {
@@ -167,8 +243,9 @@ export class OrderController {
           }, 0),
           currency: request.currency || 'TZS'
         },
-        // COD payment breakdown
-        ...(request.paymentMethod === 'COD' && {
+        // commitmentFee preserves the original object shape for backward-compatible consumers.
+        // commitmentFeeAmount is a numeric convenience field added for newer consumers/tests.
+        ...(request.paymentMethod === 'COD' ? {
           commitmentFee: response.commitmentFee > 0 ? {
             amount: response.commitmentFee,
             currency: request.currency || 'TZS',
@@ -178,6 +255,8 @@ export class OrderController {
               : 'Delivery fee — secured before packaging',
             ...(response.commitmentPaymentUrl && { paymentUrl: response.commitmentPaymentUrl }),
           } : null,
+          // Numeric convenience field for consumers that need a simple amount check
+          commitmentFeeAmount: response.commitmentFee,
           cashOnDelivery: {
             amount: response.cashOnDeliveryAmount,
             currency: request.currency || 'TZS',
@@ -185,6 +264,10 @@ export class OrderController {
               ? `Pay TZS ${response.cashOnDeliveryAmount.toLocaleString()} to the courier on delivery`
               : `Pay TZS ${response.cashOnDeliveryAmount.toLocaleString()} to the courier on delivery (full product price)`,
           },
+        } : {
+          // Non-COD orders: commitmentFee is null (no commitment required)
+          commitmentFee: null,
+          commitmentFeeAmount: 0,
         }),
         items: request.items.map(item => ({
           productId: item.productId,

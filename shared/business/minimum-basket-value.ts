@@ -1,4 +1,4 @@
-export const GLOBAL_MINIMUM_BASKET_VALUE_TZS = 50_000;
+export const GLOBAL_MINIMUM_BASKET_VALUE_TZS = Number(process.env.MIN_BASKET_VALUE_TZS) || 50_000;
 
 export interface MinimumBasketValueAssessment {
   eligible: boolean;

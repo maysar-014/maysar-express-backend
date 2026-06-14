@@ -25,23 +25,38 @@ function generateUserToken(userId: string): string {
 
 async function walletPost(userId: string, path: string, body: Record<string, unknown>): Promise<any> {
   const token = generateUserToken(userId);
-  const res = await fetch(`${WALLET_BASE_URL}/api/wallet/wallets${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      'idempotency-key': `wallet-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    },
-    body: JSON.stringify(body)
-  });
+  const maxAttempts = 5;
 
-  const data = await res.json().catch(() => ({}));
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const res = await fetch(`${WALLET_BASE_URL}/api/wallet/wallets${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'idempotency-key': `wallet-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      },
+      body: JSON.stringify(body)
+    });
 
-  if (!res.ok) {
-    throw new Error(`WalletServiceClient error ${res.status}: ${data?.error?.message || data?.message || JSON.stringify(data)}`);
+    const data = await res.json().catch(() => ({}));
+
+    // Retry on 409 wallet lock contention (transient — lock TTL is ~5s)
+    if (res.status === 409 && attempt < maxAttempts - 1) {
+      const bodyStr = JSON.stringify(data);
+      if (bodyStr.includes('acquire lock')) {
+        await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+        continue;
+      }
+    }
+
+    if (!res.ok) {
+      throw new Error(`WalletServiceClient error ${res.status}: ${data?.error?.message || data?.message || JSON.stringify(data)}`);
+    }
+
+    return data;
   }
 
-  return data;
+  throw new Error('WalletServiceClient: exhausted retries on wallet lock contention');
 }
 
 export class WalletServiceClient implements IWalletServiceClient {
@@ -69,7 +84,14 @@ export class WalletServiceClient implements IWalletServiceClient {
 
   async releaseHold(holdId: string): Promise<void> {
     try {
-      // Release hold — userId not needed for release, use a system token
+      // NOTE: This method is live — reached via CODCommitmentService.releaseCommitment from
+      // OrderController.cancelOrderInternal (~L129) and main.ts (~L382, refused-delivery forfeit).
+      // TODO (Harden COD hold client phase): method is currently broken:
+      //   1. Wrong URL: posts to /api/wallet/wallets/holds/:holdId/release but wallet routes
+      //      require /:userId/hold/:holdId/release — holdId alone is not enough to route correctly.
+      //   2. Uses excluded 'system' identity — authorizeWalletAccess will reject it.
+      //   3. Body missing required `userId` and UUID `correlationId` fields.
+      //   Fix: thread `userId` through IWalletServiceClient.releaseHold signature + all call sites.
       const token = generateUserToken('system');
       await fetch(`${WALLET_BASE_URL}/api/wallet/wallets/holds/${holdId}/release`, {
         method: 'POST',
@@ -83,6 +105,11 @@ export class WalletServiceClient implements IWalletServiceClient {
 
   async captureHold(holdId: string): Promise<void> {
     try {
+      // NOTE: This method is live — reached via CODCommitmentService.captureCommitment from
+      // OrderController.confirmDelivery (~L289).
+      // TODO (Harden COD hold client phase): method is currently broken for the same reasons
+      // as releaseHold above — wrong URL shape, excluded 'system' identity, missing required
+      // body fields. Fix: thread `userId` through IWalletServiceClient.captureHold + call sites.
       const token = generateUserToken('system');
       const res = await fetch(`${WALLET_BASE_URL}/api/wallet/wallets/holds/${holdId}/capture`, {
         method: 'POST',
@@ -126,6 +153,54 @@ export class WalletServiceClient implements IWalletServiceClient {
       return transactionId;
     } catch (error: any) {
       console.error(`[WalletServiceClient] debitWallet failed for user ${userId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Credit the wallet owner's account (saga compensation / refund on order cancellation).
+   * Authenticates as the wallet owner (userId) to satisfy authorizeWalletAccess — the same
+   * pattern used by debitWallet via walletPost. CreditWalletUseCase applies no per-user
+   * velocity limits, so owner-token authentication is both correct and safe here.
+   */
+  async creditWallet(userId: string, amount: number, currency: string, description: string, referenceId?: string): Promise<string> {
+    try {
+      // Mint the wallet owner's token — authorizeWalletAccess requires owner == :userId in path.
+      const token = generateUserToken(userId);
+      // Use a stable key derived from the order ID so retries are idempotent and cannot double-credit.
+      const idempotencyKey = referenceId
+        ? `credit-cancel-${referenceId}`
+        : `credit-cancel-${userId}-${Date.now()}`;
+      const correlationId = require('crypto').randomUUID();
+
+      const res = await fetch(`${WALLET_BASE_URL}/api/wallet/wallets/${userId}/credit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'idempotency-key': idempotencyKey,
+          'x-correlation-id': correlationId,
+        },
+        body: JSON.stringify({
+          userId,
+          amount,
+          currency,
+          description,
+          referenceType: 'order_cancellation',
+          referenceId: referenceId || userId,
+          idempotencyKey,
+          correlationId,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(`creditWallet HTTP ${res.status}: ${data?.message || JSON.stringify(data)}`);
+      }
+
+      return data?.transactionId || data?.data?.transactionId || idempotencyKey;
+    } catch (error: any) {
+      console.error(`[WalletServiceClient] creditWallet failed for user ${userId}:`, error.message);
       throw error;
     }
   }

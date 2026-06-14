@@ -180,7 +180,12 @@ export class WalletController {
                 ...req.body,
                 auditInfo: this.getAuditInfo(req)
             });
-            res.status(200).json(result);
+            if (!result.success) {
+                // Use case returned a business-rule failure (insufficient funds, limit exceeded, etc.)
+                res.status(422).json(result);
+            } else {
+                res.status(200).json(result);
+            }
         } catch (error: unknown) {
             const message = this.getErrorMessage(error);
             res.status(this.mapWalletErrorStatus(message)).json({ success: false, error: message });

@@ -153,7 +153,11 @@ export class Container {
             },
             del: async (key: string) => redisClient.del(key)
         };
-        const redisLock = new RedisLock(redisAdapter);
+        const redisLock = new RedisLock(redisAdapter, {
+            retries: 8,
+            retryDelayMs: 200,
+            maxRetryDelayMs: 2000
+        });
 
         const creditUseCase = new CreditWalletUseCase(
             walletRepository,

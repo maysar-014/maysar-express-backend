@@ -30,6 +30,16 @@ export class DatabaseManager {
 
     try {
       logger.info('Connecting to database...');
+
+      // Reuse the global Prisma singleton to avoid exhausting the connection pool
+      // in the monolith where 21+ services each create their own PrismaClient.
+      const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
+      if (globalForPrisma.prisma) {
+        this.prismaClient = globalForPrisma.prisma;
+        logger.info('Reusing global Prisma singleton for order-service');
+        return;
+      }
+
       this.prismaClient = createPrismaClient({
         datasourceUrl: config.prisma.url,
         log: config.prisma.logQueries ? ['query', 'info', 'warn', 'error'] : undefined,
@@ -42,6 +52,7 @@ export class DatabaseManager {
         ),
       ]);
 
+      globalForPrisma.prisma = this.prismaClient;
       logger.info('Prisma database connected successfully');
     } catch (error) {
       this.prismaClient = null;

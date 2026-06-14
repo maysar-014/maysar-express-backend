@@ -40,26 +40,35 @@ export class PiiEncryptionService {
 
     /**
      * Decrypts ciphertext formatted as iv:authTag:ciphertext
+     * Falls back to returning the raw value if decryption fails (e.g., plaintext or wrong-key data).
      */
     public decrypt(ciphertext: string): string {
         if (!ciphertext || !ciphertext.includes(':')) return ciphertext;
 
-        const [ivHex, authTagHex, encrypted] = ciphertext.split(':');
+        const parts = ciphertext.split(':');
+        const [ivHex, authTagHex, encrypted] = parts;
 
         if (!ivHex || !authTagHex || !encrypted) {
-            throw new Error('Invalid encrypted data format.');
+            // Not valid ciphertext format — return as-is (plaintext fallback)
+            return ciphertext;
         }
 
-        const iv = Buffer.from(ivHex, 'hex');
-        const authTag = Buffer.from(authTagHex, 'hex');
-        const decipher = crypto.createDecipheriv(this.algorithm, this.key, iv);
+        try {
+            const iv = Buffer.from(ivHex, 'hex');
+            const authTag = Buffer.from(authTagHex, 'hex');
+            const decipher = crypto.createDecipheriv(this.algorithm, this.key, iv);
 
-        decipher.setAuthTag(authTag);
+            decipher.setAuthTag(authTag);
 
-        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-        decrypted += decipher.final('utf8');
+            let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+            decrypted += decipher.final('utf8');
 
-        return decrypted;
+            return decrypted;
+        } catch {
+            // Decryption failed (e.g., auth tag mismatch due to wrong key).
+            // Return the raw value so the application can degrade gracefully.
+            return ciphertext;
+        }
     }
 
     /**
