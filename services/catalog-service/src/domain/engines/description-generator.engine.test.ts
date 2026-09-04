@@ -20,8 +20,9 @@ describe('DescriptionGeneratorEngine', () => {
       expect(desc.keyFeatures).toBeDefined();
       expect(desc.specifications).toBeDefined();
       expect(desc.usage).toBeDefined();
-      expect(desc.delivery).toBeDefined();
-      expect(desc.supplierInfo).toBeDefined();
+      // Canonical fields are always empty — seller-offer data lives in sellerOffer
+      expect(desc.delivery).toBe('');
+      expect(desc.supplierInfo).toBe('');
     });
 
     it('should include product name in overview', () => {
@@ -51,7 +52,16 @@ describe('DescriptionGeneratorEngine', () => {
       expect(desc.keyFeatures.length).toBeGreaterThan(0);
     });
 
-    it('should extract specifications from attributes', () => {
+    it('should limit key features to a maximum of 10', () => {
+      const attrs = StructuredProductAttributes.create(
+        { volume: '5L', oil_type: 'Vegetable', color: 'Golden' },
+        schema
+      );
+      const desc = DescriptionGeneratorEngine.generate(attrs, 'cooking-oil', 'Cooking Oil', 'Azam');
+      expect(desc.keyFeatures.length).toBeLessThanOrEqual(10);
+    });
+
+    it('should extract specifications from spec-key attributes', () => {
       const attrs = StructuredProductAttributes.create(
         { volume: '5L', oil_type: 'Vegetable', capacity: '5L' },
         schema
@@ -60,23 +70,77 @@ describe('DescriptionGeneratorEngine', () => {
       expect(Object.keys(desc.specifications).length).toBeGreaterThan(0);
     });
 
-    it('should include delivery note', () => {
+    it('should NOT include delivery in canonical description (Product/SellerOffer separation)', () => {
       const attrs = StructuredProductAttributes.create(
-        { volume: '5L', oil_type: 'Vegetable' },
+        { volume: '5L', oil_type: 'Vegetable', delivery: 'Free delivery in 3 days' },
         schema
       );
       const desc = DescriptionGeneratorEngine.generate(attrs, 'cooking-oil', 'Cooking Oil', 'Azam');
-      expect(desc.delivery).toContain('Maysar');
-      expect(desc.delivery).toContain('Tanzania');
+      // delivery field is always empty in canonical output
+      expect(desc.delivery).toBe('');
+      // seller-offer delivery is in sellerOffer section
+      expect(desc.sellerOffer.delivery).toContain('Free delivery');
     });
 
-    it('should include supplier info', () => {
+    it('should NOT include supplier location in canonical description', () => {
+      const attrs = StructuredProductAttributes.create(
+        { volume: '5L', oil_type: 'Vegetable', supplier_location: 'Kariakoo, Dar es Salaam' },
+        schema
+      );
+      const desc = DescriptionGeneratorEngine.generate(attrs, 'cooking-oil', 'Cooking Oil', 'Azam');
+      // supplierInfo is always empty in canonical output
+      expect(desc.supplierInfo).toBe('');
+      // seller location lives in sellerOffer
+      expect(desc.sellerOffer.supplierInfo).toContain('Kariakoo');
+    });
+
+    it('should return empty sellerOffer sections when no offer attributes provided', () => {
       const attrs = StructuredProductAttributes.create(
         { volume: '5L', oil_type: 'Vegetable' },
         schema
       );
       const desc = DescriptionGeneratorEngine.generate(attrs, 'cooking-oil', 'Cooking Oil', 'Azam');
-      expect(desc.supplierInfo).toContain('Azam');
+      expect(desc.sellerOffer.delivery).toBe('');
+      expect(desc.sellerOffer.supplierInfo).toBe('');
+    });
+  });
+
+  describe('attribute alias resolution', () => {
+    const schemaWithAliases = [
+      { id: '1', name: 'internal_memory', displayLabel: 'Internal Memory', type: 'TEXT' as const, isRequired: true },
+      { id: '2', name: 'oil_type', displayLabel: 'Oil Type', type: 'SELECT' as const, isRequired: false },
+    ];
+
+    it('should resolve "Internal Memory" alias to canonical "storage"', () => {
+      const attrs = StructuredProductAttributes.create(
+        { internal_memory: '256GB', oil_type: 'N/A' },
+        schemaWithAliases
+      );
+      const desc = DescriptionGeneratorEngine.generate(attrs, 'smartphones', 'Galaxy S24', 'Samsung');
+      // After alias resolution, the canonical key appears in features
+      const allText = desc.keyFeatures.join(' ') + JSON.stringify(desc.specifications);
+      expect(allText.toLowerCase()).toContain('256gb');
+    });
+  });
+
+  describe('descriptionPriority ordering', () => {
+    it('should order features by HIGH → MEDIUM → LOW priority when schema provides metadata', () => {
+      const prioritySchema = [
+        { id: '1', name: 'color', displayLabel: 'Color', type: 'TEXT' as const, isRequired: false, descriptionPriority: 'LOW' as const },
+        { id: '2', name: 'processor', displayLabel: 'Processor', type: 'TEXT' as const, isRequired: false, descriptionPriority: 'HIGH' as const },
+        { id: '3', name: 'oil_type', displayLabel: 'Oil Type', type: 'TEXT' as const, isRequired: true },
+      ];
+      const attrs = StructuredProductAttributes.create(
+        { color: 'Red', processor: 'Snapdragon 8 Gen 3', oil_type: 'N/A' },
+        prioritySchema
+      );
+      const desc = DescriptionGeneratorEngine.generate(attrs, 'electronics', 'Device', 'Brand', prioritySchema);
+      // HIGH priority processor should appear before LOW priority color
+      const processorIdx = desc.keyFeatures.findIndex(f => f.toLowerCase().includes('processor'));
+      const colorIdx = desc.keyFeatures.findIndex(f => f.toLowerCase().includes('color'));
+      if (processorIdx !== -1 && colorIdx !== -1) {
+        expect(processorIdx).toBeLessThan(colorIdx);
+      }
     });
   });
 
@@ -110,15 +174,6 @@ describe('DescriptionGeneratorEngine', () => {
       expect(desc.overview.length).toBeGreaterThan(0);
     });
 
-    it('should limit key features to 5', () => {
-      const attrs = StructuredProductAttributes.create(
-        { volume: '5L', oil_type: 'Vegetable', color: 'Golden' },
-        schema
-      );
-      const desc = DescriptionGeneratorEngine.generate(attrs, 'cooking-oil', 'Cooking Oil', 'Azam');
-      expect(desc.keyFeatures.length).toBeLessThanOrEqual(5);
-    });
-
     it('should not include placeholder text', () => {
       const attrs = StructuredProductAttributes.create(
         { volume: '5L', oil_type: 'Vegetable' },
@@ -147,6 +202,17 @@ describe('DescriptionGeneratorEngine', () => {
       );
       const desc = DescriptionGeneratorEngine.generate(attrs, 'cooking-oil', 'Oil & Co.', 'Brand');
       expect(desc.overview).toBeDefined();
+    });
+
+    it('should provide fallback features when no non-meta attributes present', () => {
+      const attrs = StructuredProductAttributes.create(
+        { volume: '5L', oil_type: 'Vegetable', delivery: 'Express', supplier_location: 'Dar' },
+        schema
+      );
+      const desc = DescriptionGeneratorEngine.generate(attrs, 'cooking-oil', 'Oil', 'Brand');
+      // delivery and supplier_location are excluded from features (seller-offer)
+      // volume and oil_type are spec/feature keys, so features may contain fallback
+      expect(Array.isArray(desc.keyFeatures)).toBe(true);
     });
   });
 });

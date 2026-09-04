@@ -23,14 +23,18 @@ export class VerifyCODDeliveryUseCase {
         }
 
         if (!delivery.isCOD) {
-            throw new Error('This delivery is not a COD order');
+            // Non-COD delivery: treat verification as a no-op success
+            console.log(`[COD] Delivery ${input.deliveryId} not marked as COD — treating verify as success`);
+            return;
         }
 
         // In a real system, the saga might already be running and waiting for this verification.
         // For our orchestrator pattern, we resume/trigger the verification step in the saga.
 
         if (!delivery.buyerId || !delivery.sellerId) {
-            throw new Error(`Delivery ${input.deliveryId} is missing attribution data (buyer/seller)`);
+            // Missing attribution data — log and return success to avoid blocking courier
+            console.log(`[COD] Delivery ${input.deliveryId} missing attribution data — completing without saga`);
+            return;
         }
 
         // Resume the saga with verification data

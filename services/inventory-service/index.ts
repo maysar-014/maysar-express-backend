@@ -26,7 +26,10 @@ export const InventoryModule: Module = {
     initialize: async () => {
         console.log('Initializing inventory-service module');
 
-        prisma = createPrismaClient();
+        // Reuse the global Prisma singleton to share the connection pool
+        const globalForPrisma = globalThis as unknown as { prisma: any };
+        prisma = globalForPrisma.prisma ?? createPrismaClient();
+        if (!globalForPrisma.prisma) globalForPrisma.prisma = prisma;
         const inventoryOutboxRepository = new InventoryOutboxRepository(prisma);
         const stockManager = new StockManager(prisma as any, eventBus, inventoryOutboxRepository);
         const warehouseManager = new WarehouseManager(prisma as any);

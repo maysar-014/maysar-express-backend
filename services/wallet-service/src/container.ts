@@ -217,7 +217,7 @@ export class Container {
 
         const getStatementUseCase = new GetWalletStatementUseCase(transactionRepository);
         const expireHoldUseCase = new ExpireHoldUseCase(walletRepository, holdRepository, eventPublisher);
-        const topUpUseCase = new TopUpWalletUseCase(paymentServiceClient);
+        const topUpUseCase = new TopUpWalletUseCase(paymentServiceClient, creditUseCase);
 
         const payoutServiceClient = new PayoutServiceClient();
         const initiatePayoutFromWalletUseCase = new InitiatePayoutFromWalletUseCase(

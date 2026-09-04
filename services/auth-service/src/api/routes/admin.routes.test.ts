@@ -21,7 +21,8 @@ const mockAdminController = {
   getSecurityEvents: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'getSecurityEvents' })),
   getSystemStats: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'getSystemStats' })),
   refreshServiceDiscovery: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'refreshServiceDiscovery' })),
-  getServiceHealth: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'getServiceHealth' }))
+  getServiceHealth: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'getServiceHealth' })),
+  verifyPhone: jest.fn(async (_req: express.Request, res: express.Response) => res.status(200).json({ action: 'verifyPhone' }))
 };
 
 jest.mock('../middleware/validation.middleware', () => ({

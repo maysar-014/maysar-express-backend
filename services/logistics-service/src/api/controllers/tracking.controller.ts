@@ -48,14 +48,58 @@ export class TrackingController {
       // Get delivery info for status
       const delivery = await this.deliveryRepository.findById(deliveryId);
 
+      // When no logistics delivery record exists for this tracking number (e.g. it's an order
+      // tracking number rather than a logistics delivery ID), synthesise a delivery stub from
+      // the order service by looking up the order by tracking number.
+      let deliveryObj: { id: string; status: string; estimatedDeliveryTime: Date | null; courierId: string | null } | null = null;
+      if (delivery) {
+        deliveryObj = {
+          id: delivery.id,
+          status: delivery.status,
+          estimatedDeliveryTime: delivery.estimatedDeliveryTime || null,
+          courierId: (delivery as any).courierId || null,
+        };
+      } else {
+        // Try to derive delivery status from the order service via the global Prisma client
+        try {
+          const globalForPrisma = globalThis as unknown as { prisma: { order_Order?: { findFirst(a: any): Promise<any> } } | undefined };
+          const prisma = globalForPrisma.prisma;
+          if (prisma?.order_Order?.findFirst) {
+            const orderRecord = await prisma.order_Order.findFirst({
+              where: { trackingNumber },
+              select: { id: true, status: true }
+            });
+            if (orderRecord) {
+              // Map order status to a logistics-compatible delivery status
+              const statusMap: Record<string, string> = {
+                PENDING: 'assigned', CONFIRMED: 'assigned',
+                ASSIGNED: 'assigned', PROCESSING: 'assigned',
+                IN_TRANSIT: 'in_transit', SHIPPED: 'in_transit',
+                DELIVERED: 'delivered', CANCELLED: 'cancelled'
+              };
+              deliveryObj = {
+                id: orderRecord.id,
+                status: statusMap[String(orderRecord.status).toUpperCase()] ?? 'assigned',
+                estimatedDeliveryTime: null,
+                courierId: null,
+              };
+            }
+          }
+        } catch (_err) {
+          // Silently ignore — deliveryObj stays null
+        }
+      }
+
       res.json({
         success: true,
         data: {
           trackingNumber,
-          status: delivery?.status || 'unknown',
+          status: deliveryObj?.status || 'unknown',
+          // `delivery` object for consumers that read tracking.delivery.status
+          delivery: deliveryObj,
           currentLocation: paginatedData.length > 0 ?
             paginatedData[paginatedData.length - 1].location.getAddress() : 'Unknown',
-          estimatedDelivery: delivery?.estimatedDeliveryTime || null,
+          estimatedDelivery: deliveryObj?.estimatedDeliveryTime || null,
           history: paginatedData.map(track => ({
             status: track.status,
             location: track.location.getAddress(),

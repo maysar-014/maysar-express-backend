@@ -7,6 +7,7 @@ import { healthRoutes } from './src/api/routes/health.routes';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 import { AuthEventHandlers } from './src/infrastructure/messaging/auth-event-handlers';
+import { PiiEncryptionService } from '../../shared/encryption/pii-encryption.service';
 
 export const UserModule: Module = {
     name: 'user-service',
@@ -16,7 +17,7 @@ export const UserModule: Module = {
 
         // Wire up auth→user event sync (AuthLoginSuccess, AuthLoginFailed,
         // AuthTwoFactor*, and UserRegistered.v1 from auth-service)
-        const authEventHandlers = new AuthEventHandlers();
+        const authEventHandlers = new AuthEventHandlers(new PiiEncryptionService());
         authEventHandlers.setupSubscriptions();
         logger.info('Auth→User event sync handlers registered');
     },

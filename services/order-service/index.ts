@@ -2,8 +2,17 @@ import { Router } from 'express';
 import { Module } from '../../src/core/module.interface';
 import { PlaceOrderUseCase } from './src/application/use-cases/place-order.use-case';
 import { OrderController } from './src/api/controllers/order.controller';
+import { VerificationController } from './src/api/controllers/verification.controller';
 import { setupOrderRoutes } from './src/api/routes/order.routes';
 import { PrismaOrderRepository } from './src/infrastructure/database/prisma-order.repository';
+import { PrismaVerificationAuditLogRepository } from './src/infrastructure/database/prisma-verification-audit-log.repository';
+import { VerificationTimeoutJob } from './src/infrastructure/jobs/verification-timeout.job';
+import { SellerVerifyStockUseCase } from './src/application/use-cases/seller-verify-stock.use-case';
+import { SellerDeclineStockUseCase } from './src/application/use-cases/seller-decline-stock.use-case';
+import { BuyerConfirmCheckoutUseCase } from './src/application/use-cases/buyer-confirm-checkout.use-case';
+import { MarkOrdersOverdueUseCase } from './src/application/use-cases/mark-orders-overdue.use-case';
+import { AdminOrderActionsUseCase } from './src/application/use-cases/admin-order-actions.use-case';
+import { AdminQueryUseCase } from './src/application/use-cases/admin-query.use-case';
 import { OrderFulfillmentSaga } from './src/application/sagas/order-fulfillment.saga';
 import { PaymentSaga } from './src/application/sagas/payment.saga';
 import { ProgressiveCODEligibilityEngine } from './src/domain/engines/progressive-cod-eligibility.engine';
@@ -33,6 +42,7 @@ import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 let outboxProcessor: OutboxProcessor | null = null;
+let verificationTimeoutJob: VerificationTimeoutJob | null = null;
 
 function createDegradedOrderRouter(reason: string): Router {
     const degradedRouter = Router();
@@ -119,13 +129,48 @@ export const OrderModule: Module = {
             const checkCODEligibilityUseCase = new CheckCODEligibilityUseCase(codEligibilityEngine as any);
             const orderController = new OrderController(placeOrderUseCase, checkCODEligibilityUseCase, codCommitmentService, walletServiceClient);
 
+            // ── Seller Stock Verification wiring ───────────────────────────────
+            const auditLogRepository = new PrismaVerificationAuditLogRepository();
+            // Reuse the existing eventPublisher declared above (same in-process eventBus wrapper)
+            const sellerVerifyUseCase = new SellerVerifyStockUseCase(orderRepository, auditLogRepository, eventPublisher);
+            const sellerDeclineUseCase = new SellerDeclineStockUseCase(orderRepository, auditLogRepository, eventPublisher);
+            const buyerConfirmCheckoutUseCase = new BuyerConfirmCheckoutUseCase(
+                orderRepository, auditLogRepository, eventPublisher,
+                codEligibilityEngine as any, codCommitmentService, walletServiceClient,
+            );
+            const markOrdersOverdueUseCase = new MarkOrdersOverdueUseCase(auditLogRepository, eventPublisher);
+            const adminActionsUseCase = new AdminOrderActionsUseCase(orderRepository, auditLogRepository, eventPublisher);
+            const adminQueryUseCase = new AdminQueryUseCase(auditLogRepository);
+            const verificationController = new VerificationController(
+                sellerVerifyUseCase, sellerDeclineUseCase, buyerConfirmCheckoutUseCase,
+                adminActionsUseCase, adminQueryUseCase,
+            );
+
+            // Start the in-process overdue-detection timer
+            verificationTimeoutJob = new VerificationTimeoutJob(markOrdersOverdueUseCase);
+            verificationTimeoutJob.start();
+            logger.info('Order-service VerificationTimeoutJob started');
+
+            // Expose placeOrderUseCase globally so the checkout service can place real orders
+            // synchronously on checkout confirm (avoiding the async event gap).
+            (globalThis as any).__placeOrderUseCase = placeOrderUseCase;
+
             const codDisputeRepository = new PrismaCODDisputeRepository();
             const resolveCODDisputeUseCase = new ResolveCODDisputeUseCase(codDisputeRepository, eventPublisher);
             const codDisputeController = new CODDisputeController(resolveCODDisputeUseCase);
 
-            const orderRouter = setupOrderRoutes(orderController, codDisputeController);
+            const orderRouter = setupOrderRoutes(orderController, codDisputeController, verificationController);
             orderRouter.use('/health', healthRoutes);
             orderRouter.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
+
+            // Multi-seller master order buyer API
+            try {
+              const { masterOrderRoutes } = require('./src/api/routes/master-order.routes');
+              orderRouter.use('/', masterOrderRoutes);
+            } catch (e) {
+              logger.warn('Failed to mount master order routes (non-fatal):', e);
+            }
+
             OrderModule.routes = orderRouter;
             logger.info('Order-service routes mounted successfully');
 
@@ -162,9 +207,36 @@ export const OrderModule: Module = {
 
                     const paymentMethodRaw = String((order as any).paymentMethod ?? '').toUpperCase();
 
-                    // WALLET was already debited synchronously in PlaceOrderUseCase — just ack success
+                    // WALLET payment: debit now if not already done (deferred payment orders
+                    // skip the upfront debit in PlaceOrderUseCase and rely on the saga).
                     if (paymentMethodRaw === 'WALLET') {
-                        logger.info('[OrderModule] Payment.Command.v1: WALLET already debited synchronously, acknowledging success', { orderId });
+                        // Check if wallet was already debited (non-deferred orders)
+                        let alreadyDebited = false;
+                        try {
+                            const g = globalThis as unknown as { prisma?: any };
+                            const debitTx = await g.prisma?.wallet_Transaction?.findFirst?.({
+                                where: { userId: buyerId, type: 'DEBIT', referenceId: orderId },
+                                select: { id: true }
+                            });
+                            alreadyDebited = !!debitTx;
+                        } catch (_e) {
+                            alreadyDebited = true; // safe default
+                        }
+
+                        if (!alreadyDebited && walletServiceClient) {
+                            const totalAmount = Number((order as any).totalAmount?.amount ?? (order as any).totalAmount ?? 0);
+                            const currency = String((order as any).totalAmount?.currency ?? 'TZS');
+                            try {
+                                await walletServiceClient.debitWallet(buyerId, totalAmount, currency, `Payment for order ${orderId}`);
+                                logger.info('[OrderModule] Payment.Command.v1: deferred WALLET debit completed', { orderId, totalAmount });
+                            } catch (debitErr: any) {
+                                logger.error('[OrderModule] Payment.Command.v1: deferred WALLET debit failed', { orderId, error: debitErr.message });
+                                await eventBus.publish('Payment.Failure.v1', { sagaId: parentSagaId, orderId, reason: `Wallet debit failed: ${debitErr.message}` });
+                                return;
+                            }
+                        } else {
+                            logger.info('[OrderModule] Payment.Command.v1: WALLET already debited synchronously, acknowledging success', { orderId });
+                        }
                         await eventBus.publish('Payment.Success.v1', { sagaId: parentSagaId, orderId });
                         return;
                     }
@@ -303,6 +375,9 @@ export const OrderModule: Module = {
     routes: Router(),
     shutdown: async () => {
         logger.info('Shutting down order-service module');
+        if (verificationTimeoutJob) {
+            verificationTimeoutJob.stop();
+        }
         if (outboxProcessor) {
             outboxProcessor.stop();
         }

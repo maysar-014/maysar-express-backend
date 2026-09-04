@@ -61,16 +61,9 @@ router.put('/:id/approve', validateApproveCommission, async (req, res) => {
 });
 
 /**
- * GET /api/commissions/:id
- * Get commission by ID
- */
-router.get('/:id', validateCommissionId, async (req, res) => {
-  await commissionController.getCommission(req, res);
-});
-
-/**
  * GET /api/commissions/sellers/:sellerId
  * Get commissions for a seller
+ * MUST come before /:id to avoid "sellers" being matched as a commission ID
  */
 router.get('/sellers/:sellerId', validateSellerId, validateCommissionQuery, async (req, res) => {
   await commissionController.getSellerCommissions(req, res);
@@ -79,9 +72,19 @@ router.get('/sellers/:sellerId', validateSellerId, validateCommissionQuery, asyn
 /**
  * GET /api/commissions/sellers/:sellerId/summary
  * Get commission summary for a seller
+ * MUST come before /:id to avoid "sellers" being matched as a commission ID
  */
 router.get('/sellers/:sellerId/summary', validateSellerId, async (req, res) => {
   await commissionController.getCommissionSummary(req, res);
+});
+
+/**
+ * GET /api/commissions/:id
+ * Get commission by ID
+ * MUST come after /sellers/* routes
+ */
+router.get('/:id', validateCommissionId, async (req, res) => {
+  await commissionController.getCommission(req, res);
 });
 
 export default router;

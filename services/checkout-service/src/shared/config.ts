@@ -39,9 +39,12 @@ export const config: Config = {
     url: process.env.DATABASE_URL || 'postgresql://localhost/checkout'
   },
   pricing: {
-    taxRate: parseFloat(process.env.TAX_RATE || '0.1'),
-    shippingCost: parseFloat(process.env.SHIPPING_COST || '10'),
-    minOrderForFreeShipping: parseFloat(process.env.MIN_ORDER_FREE_SHIPPING || '100')
+    // Tanzania market: sellers list tax-inclusive prices.
+    // VAT is not added on top at checkout — buyers pay exactly the listed price.
+    // To enable VAT-exclusive pricing (e.g. for B2B), set TAX_RATE=0.18 in env.
+    taxRate: parseFloat(process.env.TAX_RATE || '0'),
+    shippingCost: parseFloat(process.env.SHIPPING_COST || '0'),
+    minOrderForFreeShipping: parseFloat(process.env.MIN_ORDER_FREE_SHIPPING || '0')
   },
   checkout: {
     sessionExpirationMs: parseInt(process.env.SESSION_EXPIRATION_MS || '3600000', 10),

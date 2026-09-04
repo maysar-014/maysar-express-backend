@@ -27,9 +27,9 @@ export function createCheckoutRoutes(cartController: any, checkoutController: an
   router.use('/cart', createCartRoutes(cartController));
 
   router.post('/initiate', (req, res) => checkoutController.initiateCheckout(req, res));
+  router.post('/delivery-options', (req, res) => checkoutController.getDeliveryOptions(req, res));
   router.get('/:id', (req, res) => checkoutController.getCheckoutSession(req, res));
   router.post('/:id/confirm', (req, res) => checkoutController.confirmCheckout(req, res));
 
   return router;
 }
-

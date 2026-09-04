@@ -81,10 +81,15 @@ export class PreviewGeneratedDescriptionUseCase {
       keyAttribute,
     });
 
-    // Compose full description
-    const fullDescription = `${generatedDesc.overview} ${generatedDesc.keyFeatures.join(' ')} Specifications: ${Object.entries(generatedDesc.specifications)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(', ')} ${generatedDesc.usage} ${generatedDesc.delivery}`;
+    // Compose canonical description — seller-offer data (delivery, location) excluded
+    const specificationText = Object.entries(generatedDesc.specifications).map(([key, value]) => `${key}: ${value}`).join(', ');
+    const featureText = generatedDesc.keyFeatures.length > 0 ? 'Features: ' + generatedDesc.keyFeatures.join('. ') + '.' : '';
+    const fullDescription = [
+      generatedDesc.overview,
+      featureText,
+      specificationText ? `Specifications: ${specificationText}.` : '',
+      generatedDesc.usage,
+    ].filter(Boolean).join(' ');
 
     // Compute quality score
     const qualityScore = ProductQualityPolicy.computeScore({
@@ -106,8 +111,10 @@ export class PreviewGeneratedDescriptionUseCase {
         keyFeatures: generatedDesc.keyFeatures,
         specifications: generatedDesc.specifications,
         usage: generatedDesc.usage,
-        delivery: generatedDesc.delivery,
-        supplierInfo: generatedDesc.supplierInfo,
+        // Backward-compat: delivery & supplierInfo are now always empty in canonical output.
+        // Seller-offer data lives in generatedDesc.sellerOffer and is displayed separately.
+        delivery: generatedDesc.sellerOffer.delivery,
+        supplierInfo: generatedDesc.sellerOffer.supplierInfo,
       },
       qualityScore: qualityScore.getValue(),
       scoreBreakdown: qualityScore.getScoreBreakdown(),

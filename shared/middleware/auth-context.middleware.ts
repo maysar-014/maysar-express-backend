@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { isSystemId } from '../ids/id';
+import { isTokenBlacklisted } from '../auth/token-blacklist';
 
 export interface AuthUserContext {
   userId: string;

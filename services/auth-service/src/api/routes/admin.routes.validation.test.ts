@@ -20,7 +20,8 @@ jest.mock('../controllers/admin.controller', () => ({
     getSecurityEvents: jest.fn(),
     getSystemStats: jest.fn(),
     refreshServiceDiscovery: jest.fn(),
-    getServiceHealth: jest.fn()
+    getServiceHealth: jest.fn(),
+    verifyPhone: jest.fn()
   }
 }));
 

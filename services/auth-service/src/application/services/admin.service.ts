@@ -420,6 +420,28 @@ export class AdminService {
       throw error;
     }
   }
+
+  /**
+   * Admin bypass: mark a user's phone as verified without Firebase OTP.
+   * Used by E2E setup and admin tooling.
+   */
+  async verifyPhone(userId: string): Promise<{ userId: string; isPhoneVerified: boolean; updatedAt: Date }> {
+    try {
+      const result = await adminRepository.verifyPhone(userId);
+
+      await auditService.logAuditEvent({
+        userId: 'admin',
+        action: 'VERIFY_PHONE',
+        resource: 'user',
+        details: { targetUserId: userId }
+      });
+
+      return result;
+    } catch (error) {
+      logger.error('AdminService.verifyPhone error', { error, userId });
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance

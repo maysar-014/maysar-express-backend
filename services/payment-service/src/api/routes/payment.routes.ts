@@ -107,18 +107,18 @@ export function createPaymentRoutes(paymentController: PaymentController): Route
         asyncHandler((req, res) => paymentController.createPayment(req, res))
     );
 
+    // Get payment by order ID — MUST come before /:id to prevent "order" being matched as a payment ID
+    router.get(
+        '/order/:orderId',
+        validateRequest({ params: paymentOrderParamsSchema }),
+        asyncHandler((req, res) => paymentController.getPaymentByOrderId(req, res))
+    );
+
     // Get payment by ID
     router.get(
         '/:id',
         validateRequest({ params: paymentIdParamsSchema }),
         asyncHandler((req, res) => paymentController.getPayment(req, res))
-    );
-
-    // Get payment by order ID
-    router.get(
-        '/order/:orderId',
-        validateRequest({ params: paymentOrderParamsSchema }),
-        asyncHandler((req, res) => paymentController.getPaymentByOrderId(req, res))
     );
 
     // Check payment status

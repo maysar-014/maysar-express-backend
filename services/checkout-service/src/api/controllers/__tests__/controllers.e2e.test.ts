@@ -187,6 +187,11 @@ describe('CheckoutController E2E', () => {
   let mockEventBus: {
     publish: jest.Mock;
   };
+  let mockCheckoutOrderRepository: {
+    findByCheckoutSessionId: jest.Mock;
+    createFromSession: jest.Mock;
+  };
+  let mockQuoteValidationService: any;
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
 
@@ -216,10 +221,29 @@ describe('CheckoutController E2E', () => {
     mockEventBus = {
       publish: jest.fn().mockResolvedValue(undefined)
     };
+    mockCheckoutOrderRepository = {
+      findByCheckoutSessionId: jest.fn().mockResolvedValue(null),
+      createFromSession: jest.fn().mockResolvedValue({ id: 'ord_checkout_test_001' })
+    };
+    // Quote validation is now mandatory (checkout security enforcement):
+    // a stub returning a valid active quote keeps the happy-path tests focused
+    // on controller wiring; rejection paths are covered in the use-case tests.
+    mockQuoteValidationService = {
+      validate: jest.fn().mockResolvedValue({
+        valid: true,
+        deliveryFee: 10,
+        pricingVersion: 2,
+      }),
+      markConsumed: jest.fn().mockResolvedValue(undefined),
+    } as any;
 
     controller = new CheckoutController(
       mockCheckoutRepository,
-      mockEventBus
+      mockEventBus,
+      undefined,
+      undefined,
+      mockCheckoutOrderRepository,
+      mockQuoteValidationService
     );
 
     mockRequest = {
@@ -239,7 +263,8 @@ describe('CheckoutController E2E', () => {
       shippingAddressId: 'addr-1',
       billingAddressId: 'addr-2',
       shippingMethodId: 'ship-1',
-      shippingCost: 10
+      shippingCost: 10,
+      quoteId: 'qt_e2e_test_001'
     };
 
     await controller.initiateCheckout(mockRequest as Request, mockResponse as Response);
@@ -274,6 +299,39 @@ describe('CheckoutController E2E', () => {
       'OrderCreated',
       expect.any(Object)
     );
+  });
+
+  it('should include orderId in confirm checkout response', async () => {
+    mockRequest.body = {
+      sessionId: 'session-1',
+      paymentMethodId: 'pm-1'
+    };
+
+    await controller.confirmCheckout(mockRequest as Request, mockResponse as Response);
+
+    const jsonCall = (mockResponse.json as jest.Mock).mock.calls[0][0];
+    expect(jsonCall.success).toBe(true);
+    expect(jsonCall.data.orderId).toBe('ord_checkout_test_001');
+  });
+
+  it('should return same orderId on repeated confirm (idempotency)', async () => {
+    mockCheckoutOrderRepository.findByCheckoutSessionId.mockResolvedValueOnce({ id: 'ord_checkout_test_001' });
+    mockRequest.body = {
+      sessionId: 'session-1',
+      paymentMethodId: 'pm-1'
+    };
+    mockRequest.headers = {
+      'x-correlation-id': 'corr-123',
+      'idempotency-key': 'idem-confirm-001'
+    };
+
+    await controller.confirmCheckout(mockRequest as Request, mockResponse as Response);
+    await controller.confirmCheckout(mockRequest as Request, mockResponse as Response);
+
+    const calls = (mockResponse.json as jest.Mock).mock.calls;
+    // Both calls should return success with orderId
+    expect(calls[0][0].data.orderId).toBe('ord_checkout_test_001');
+    expect(calls[1][0].data.orderId).toBe('ord_checkout_test_001');
   });
 
   it('should reject checkout confirmation below the minimum basket value', async () => {

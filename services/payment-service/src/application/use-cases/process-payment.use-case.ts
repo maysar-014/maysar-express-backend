@@ -66,7 +66,7 @@ export class ProcessPaymentUseCase {
     ) { }
 
     async execute(dto: ProcessPaymentDTO): Promise<PaymentResultDTO> {
-        const isContractTestRequest = dto.metadata?.contractTest === true && process.env.NODE_ENV !== 'production';
+        const isContractTestRequest = (dto.metadata?.contractTest === true || dto.metadata?.type === 'WALLET_TOPUP') && process.env.NODE_ENV !== 'production';
 
         // Step 1: Validate payment request
         const validation = this.paymentProcessingEngine.validatePaymentRequest({

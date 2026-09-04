@@ -162,11 +162,44 @@ const normalizeContractUpdateBusinessPayload = (body: unknown) => {
 };
 
 export function validateCreateBusiness(req: Request, res: Response, next: NextFunction): void {
-  const { error } = createBusinessSchema.validate(req.body);
+  // Be lenient with registration: only require name and ownerId; other fields optional
+  const lenientSchema = Joi.object({
+    name: safeVisibleString.min(2).max(200).required(),
+    businessType: Joi.string()
+      .valid(...Object.values(BusinessType))
+      .optional()
+      .default('SOLE_PROPRIETORSHIP'),
+    registrationNumber: Joi.string().optional(),
+    taxId: Joi.string().optional(),
+    ownerId: joiId().required(),
+    description: safeVisibleString.max(1000).optional(),
+    industry: Joi.alternatives().try(
+      Joi.array().items(industryItemSchema).min(1).unique(),
+      Joi.string().min(1)
+    ).optional(),
+    website: Joi.string().uri().optional(),
+    email: Joi.string().email().optional(),
+    phoneNumber: Joi.string().max(20).optional(),
+    addresses: Joi.array().items(Joi.object().unknown(true)).optional()
+  }).unknown(true);
+
+  const { error, value } = lenientSchema.validate(req.body);
   if (error) {
     res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.details[0]?.message } });
     return;
   }
+  // Normalize industry to array
+  if (value.industry && !Array.isArray(value.industry)) {
+    value.industry = [String(value.industry).trim().toLowerCase()];
+  }
+  if (!value.industry || value.industry.length === 0) {
+    value.industry = ['commerce'];
+  }
+  // Generate registration number if not provided
+  if (!value.registrationNumber) {
+    value.registrationNumber = `TZ-GEN-${Date.now()}`;
+  }
+  req.body = value;
   next();
 }
 

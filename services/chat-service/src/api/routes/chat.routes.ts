@@ -29,16 +29,22 @@ function validate(schema: z.ZodTypeAny, source: 'body' | 'query' = 'body') {
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
 const initiateSchema = z.object({
-  type: z.enum(['BUYER_SELLER', 'SELLER_SUPPLIER', 'BUYER_COURIER', 'SELLER_TEAM']),
+  type: z.enum(['BUYER_SELLER', 'SELLER_SUPPLIER', 'BUYER_COURIER', 'SELLER_TEAM']).optional(),
   recipientId: z.string().min(1),
-  initiatorRole: z.enum(['BUYER', 'SELLER', 'SUPPLIER', 'COURIER']),
-  recipientRole: z.enum(['BUYER', 'SELLER', 'SUPPLIER', 'COURIER']),
+  initiatorRole: z.enum(['BUYER', 'SELLER', 'SUPPLIER', 'COURIER']).optional(),
+  recipientRole: z.enum(['BUYER', 'SELLER', 'SUPPLIER', 'COURIER']).optional(),
   relatedProductId: z.string().optional().nullable(),
   relatedOrderId: z.string().optional().nullable(),
   relatedShipmentId: z.string().optional().nullable(),
   relatedSupplierRequestId: z.string().optional().nullable(),
   metadata: z.record(z.unknown()).optional(),
-});
+}).transform((data) => ({
+  ...data,
+  // Default type based on roles if not provided
+  type: data.type ?? 'BUYER_SELLER',
+  initiatorRole: data.initiatorRole ?? 'BUYER',
+  recipientRole: data.recipientRole ?? 'SELLER',
+}));
 
 const sendMessageSchema = z.object({
   type: z.enum(['TEXT', 'IMAGE', 'VOICE_NOTE', 'PRODUCT_CARD', 'ORDER_REFERENCE', 'LOCATION_PIN', 'QUICK_ACTION']),

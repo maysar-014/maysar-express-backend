@@ -53,7 +53,8 @@ export class CheckoutMapper {
       minimumBasketMessage: basketAssessment.message,
       expiresAt: session.expiresAt,
       createdAt: session.createdAt,
-      updatedAt: session.updatedAt
+      updatedAt: session.updatedAt,
+      ...(session.orderId !== undefined ? { orderId: session.orderId } : {})
     };
   }
 }

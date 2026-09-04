@@ -16,6 +16,7 @@ import { csrfTokenMiddleware, getOrCreateCsrfToken } from '../shared/middleware/
 import { pingSharedRedis } from '../shared/redis/ioredis-client';
 import { attachAuthContext } from '../shared/middleware/auth-context.middleware';
 import { methodNotAllowedMiddleware } from '../shared/middleware/method-not-allowed.middleware';
+import { globalErrorHandler, notFoundHandler } from '../shared/middleware/global-error-handler.middleware';
 
 export const createApp = () => {
     const app = express();
@@ -172,28 +173,11 @@ export const createApp = () => {
     // 405 Handler (registered routes with unsupported methods)
     app.use(methodNotAllowedMiddleware);
 
-    // Global Error Handler
-    app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-        appLogger.error('Global Error Handler', err);
-        if (res.headersSent) {
-            _next(err);
-            return;
-        }
-        const status = (err as { status?: number; statusCode?: number }).status ?? (err as { status?: number; statusCode?: number }).statusCode ?? 500;
-        const response: { error: string; message: string; stack?: string } = {
-            error: 'Internal Server Error',
-            message: err.message || 'An unexpected error occurred'
-        };
-        if (process.env.NODE_ENV !== 'production') {
-            response.stack = err.stack;
-        }
-        res.status(status).json(response);
-    });
+    // Global Error Handler — canonical JSON error shape for all services
+    app.use(globalErrorHandler);
 
-    // 404 Handler
-    app.use((_req, res) => {
-        res.status(404).json({ error: 'Not Found' });
-    });
+    // 404 Handler — after all routes and error handler
+    app.use(notFoundHandler);
 
     return app;
 };

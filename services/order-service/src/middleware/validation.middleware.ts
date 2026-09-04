@@ -70,8 +70,7 @@ export class ValidationMiddleware {
         .withMessage('Street address must be between 5 and 255 characters'),
 
       body('shippingAddress.city')
-        .notEmpty()
-        .withMessage('City is required')
+        .optional()
         .isLength({ min: 2, max: 100 })
         .withMessage('City must be between 2 and 100 characters'),
 

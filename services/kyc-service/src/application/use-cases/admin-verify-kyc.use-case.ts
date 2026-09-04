@@ -20,6 +20,10 @@ export class AdminVerifyKycUseCase {
     }
 
     if (current.kycStatus !== KycStatus.PENDING) {
+      // Idempotent approve: if KYC is already verified, return current state without side-effects
+      if (input.action === 'approve' && current.kycStatus === KycStatus.VERIFIED) {
+        return { success: true, status: KycStatus.VERIFIED, level: current.kycLevel };
+      }
       throw new Error('User KYC must be pending');
     }
 

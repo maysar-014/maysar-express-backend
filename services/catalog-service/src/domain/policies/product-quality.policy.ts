@@ -4,6 +4,7 @@
  */
 
 import { QualityScore, QualityScoreSignals } from '../value-objects/product-quality-score.value-object';
+import { ImageQualityPolicy } from './image-quality.policy';
 
 export interface QualityScoringInput {
   brand: string;
@@ -14,6 +15,10 @@ export interface QualityScoringInput {
   imageCount: number;
   descriptionLength: number;
   isLeafCategory: boolean;
+  /** Optional — if provided, image quality is evaluated via ImageQualityPolicy */
+  mediaUrls?: string[];
+  primaryImageUrl?: string;
+  categorySlug?: string;
 }
 
 export class ProductQualityPolicy {
@@ -26,13 +31,22 @@ export class ProductQualityPolicy {
   };
 
   static computeScore(input: QualityScoringInput): QualityScore {
+    // Use ImageQualityPolicy when detailed media info is provided
+    const imagesScore = (input.mediaUrls !== undefined && input.categorySlug !== undefined)
+      ? ImageQualityPolicy.evaluate({
+          mediaUrls: input.mediaUrls,
+          primaryImageUrl: input.primaryImageUrl,
+          categorySlug: input.categorySlug,
+        }).score
+      : this.scoreImagesUploaded(input.imageCount);
+
     const signals: QualityScoreSignals = {
       titleCompleteness: this.scoreTitleCompleteness(input.brand, input.productName, input.keyAttribute),
       attributesCompleteness: this.scoreAttributesCompleteness(
         input.requiredAttributesFilled,
         input.totalRequiredAttributes
       ),
-      imagesUploaded: this.scoreImagesUploaded(input.imageCount),
+      imagesUploaded: imagesScore,
       descriptionLength: this.scoreDescriptionLength(input.descriptionLength),
       categoryAccuracy: this.scoreCategoryAccuracy(input.isLeafCategory),
     };

@@ -4,6 +4,7 @@ export type MessageType =
   | 'VOICE_NOTE'
   | 'PRODUCT_CARD'
   | 'ORDER_REFERENCE'
+  | 'ORDER_CARD'
   | 'LOCATION_PIN'
   | 'QUICK_ACTION';
 
@@ -12,7 +13,9 @@ export type QuickActionType =
   | 'REQUEST_QUOTE'
   | 'TRACK_ORDER'
   | 'ACCEPT_OFFER'
-  | 'DECLINE_OFFER';
+  | 'DECLINE_OFFER'
+  | 'CONFIRM_ORDER'
+  | 'DECLINE_ORDER';
 
 export type MessageModerationStatus = 'ACTIVE' | 'FLAGGED' | 'BLOCKED';
 

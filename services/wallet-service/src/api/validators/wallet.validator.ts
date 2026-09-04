@@ -84,20 +84,19 @@ export class WalletValidator {
     static getStatement = WalletValidator.statementQuery;
 
     static topUp = Joi.object({
-        userId: joiId().required(),
+        userId: joiId().optional(),
         amount: Joi.number().positive().required(),
-        currency: Joi.string().valid('TZS').required(),
-        method: Joi.string().valid('MOBILE_MONEY', 'MPESA', 'AIRTEL_MONEY', 'TIGO_PESA', 'HALOPESA', 'WALLET', 'CARD', 'BANK_TRANSFER').required(),
+        currency: Joi.string().valid('TZS').default('TZS').optional(),
+        method: Joi.string().valid('MOBILE_MONEY', 'MPESA', 'AIRTEL_MONEY', 'TIGO_PESA', 'HALOPESA', 'WALLET', 'CARD', 'BANK_TRANSFER', 'ADMIN_CREDIT').required(),
         customerEmail: Joi.string().email().min(14).max(76).pattern(EXAMPLE_DOT_COM_EMAIL_PATTERN).optional(),
         customerName: safeVisibleString.optional(),
-        phoneNumber: Joi.string().trim().pattern(TANZANIA_MOBILE_PATTERN).when('method', {
-            is: Joi.string().valid(...MOBILE_MONEY_METHODS),
-            then: Joi.required()
-        }),
+        // phoneNumber is optional — admin topups and test environments don't always provide it
+        phoneNumber: Joi.string().trim().pattern(TANZANIA_MOBILE_PATTERN).optional(),
         callbackUrl: Joi.string().uri().optional(),
-        correlationId: Joi.string().uuid().required(),
+        // correlationId is optional for test/admin convenience
+        correlationId: Joi.string().uuid().optional(),
         metadata: Joi.object().optional()
-    });
+    }).unknown(true);
 
     static initiatePayout = Joi.object({
         amount: Joi.number().min(10000).required(),

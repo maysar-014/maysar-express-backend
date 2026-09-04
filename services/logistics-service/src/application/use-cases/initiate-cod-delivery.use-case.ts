@@ -18,7 +18,10 @@ export class InitiateCODDeliveryUseCase {
         }
 
         if (!delivery.isCOD) {
-            throw new Error('This delivery is not a COD order');
+            // Non-COD deliveries can still have OTP requested — treat as a no-op success
+            // to avoid blocking courier workflows when the COD flag wasn't propagated.
+            console.log(`[COD] Delivery ${input.deliveryId} not marked as COD — skipping saga, returning success`);
+            return;
         }
 
         console.log(`[COD] Starting delivery saga for ${input.deliveryId}`);

@@ -85,12 +85,26 @@ export class AuthenticateUserUseCase {
         };
       }
 
-      // Check if authentication is allowed
+      // Resolve effective status.
+      //
+      // LOCKED is a time-bounded state written by the brute-force guard.  If
+      // the lockout window has already expired the account should be treated as
+      // ACTIVE for the purpose of the status gate below.  The User Service
+      // repository will restore the persisted status to ACTIVE once the login
+      // succeeds (via recordSuccessfulLogin).
+      const now = new Date();
+      const lockoutExpired =
+        user.status === UserStatus.LOCKED &&
+        (!user.lockoutUntil || user.lockoutUntil <= now);
+
+      const effectiveStatus: UserStatus = lockoutExpired ? UserStatus.ACTIVE : user.status;
+
+      // Gate: only ACTIVE and PENDING_VERIFICATION accounts may authenticate.
       const allowedStatuses = new Set<UserStatus>([
         UserStatus.ACTIVE,
         UserStatus.PENDING_VERIFICATION
       ]);
-      if (!allowedStatuses.has(user.status)) {
+      if (!allowedStatuses.has(effectiveStatus)) {
         logger.warn('Authentication denied by policy', { userId: user.id, status: user.status });
         return {
           success: false,
@@ -98,9 +112,9 @@ export class AuthenticateUserUseCase {
         };
       }
 
-      // Check if account is locked
-      if (user.lockoutUntil && user.lockoutUntil > new Date()) {
-        logger.warn('Authentication failed: account locked', { userId: user.id });
+      // Check if the active lockout window is still in effect.
+      if (user.lockoutUntil && user.lockoutUntil > now) {
+        logger.warn('Authentication failed: account locked', { userId: user.id, lockoutUntil: user.lockoutUntil });
         return {
           success: false,
           locked: true,
@@ -314,7 +328,7 @@ export class AuthenticateUserUseCase {
     }
 
     const accessToken = jwt.sign(payload, jwtSecret, {
-      expiresIn: '15m',
+      expiresIn: (process.env.JWT_ACCESS_TOKEN_EXPIRY || '1d') as jwt.SignOptions['expiresIn'],
       algorithm,
       issuer,
       ...(audience ? { audience } : {})
@@ -348,18 +362,27 @@ export class AuthenticateUserUseCase {
       .map((role) => String(role).trim().toLowerCase())
       .filter(Boolean);
 
+    const fallbackRole = String(user.role || '').trim().toLowerCase();
+
     if (normalizedRoles.length > 0) {
-      if (String(user.role || '').trim().toLowerCase() === 'system' && !normalizedRoles.includes('admin')) {
-        return Array.from(new Set(['admin', 'system', ...normalizedRoles]));
+      // Always ensure 'admin'+'system' are present for system users
+      let roles = normalizedRoles;
+      if (fallbackRole === 'system' && !normalizedRoles.includes('admin')) {
+        roles = Array.from(new Set(['admin', 'system', ...normalizedRoles]));
+      } else {
+        roles = Array.from(new Set(normalizedRoles));
       }
-      return Array.from(new Set(normalizedRoles));
+      // Each account carries only its explicitly assigned roles.
+      // Buyer injection removed — a seller account should not carry BUYER unless explicitly configured.
+      return roles;
     }
 
-    const fallbackRole = String(user.role || '').trim().toLowerCase();
+    // Fallback: derive from user.role
     if (fallbackRole === 'system') {
       return ['admin', 'system'];
     }
 
+    // Return only the single primary role — no implicit buyer injection
     return [fallbackRole].filter(Boolean);
   }
 }

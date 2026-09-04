@@ -38,7 +38,7 @@ export const securityConfig = {
     issuer: process.env.JWT_ISSUER || 'maysar-auth-service',
     audience: process.env.JWT_AUDIENCE || 'maysar-platform',
     clockTolerance: 30, // seconds
-    maxAge: process.env.JWT_ACCESS_TOKEN_EXPIRY || '15m'
+    maxAge: process.env.JWT_ACCESS_TOKEN_EXPIRY || '1d'
   },
 
   // Password Policy

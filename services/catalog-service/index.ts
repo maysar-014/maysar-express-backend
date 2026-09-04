@@ -24,6 +24,7 @@ import { createHealthRoutes as createCatalogHealthRoutes } from './src/api/route
 import { createMaintenanceRoutes as createCatalogMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { createReviewRoutes } from './src/api/routes/review.routes';
 import { createBuyBoxAdminRoutes } from './src/api/routes/buy-box-admin.routes';
+import { createSellerLocationRoutes } from './src/api/routes/seller-location.routes';
 import { ProductControllerFactory } from './src/api/controllers/product.controller';
 import { SearchController } from './src/api/controllers/search.controller';
 import { ProductMatchingController } from './src/api/controllers/product-matching.controller';
@@ -50,7 +51,8 @@ import {
 import {
     UpdateProductUseCase,
     DeleteProductUseCase,
-    PublishProductUseCase
+    PublishProductUseCase,
+    UnpublishProductUseCase
 } from './src/application/use-cases/manage-product-indexing.use-case';
 import { ComputeBuyBoxRankingUseCase } from './src/application/use-cases/compute-buy-box-ranking.use-case';
 import { GetBuyBoxHistoryUseCase } from './src/application/use-cases/get-buy-box-history.use-case';
@@ -311,6 +313,7 @@ export const CatalogModule: Module = {
         const updateProductUseCase = new UpdateProductUseCase(productRepository as any, catalogSearchIndexer);
         const deleteProductUseCase = new DeleteProductUseCase(productRepository as any, catalogSearchIndexer);
         const publishProductUseCase = new PublishProductUseCase(productRepository as any, catalogSearchIndexer);
+        const unpublishProductUseCase = new UnpublishProductUseCase(productRepository as any, catalogSearchIndexer);
         const loadCategoryAttributesUseCase = new LoadCategoryAttributesUseCase(
             categoryAttributeRepository,
             categoryRepository
@@ -357,7 +360,8 @@ export const CatalogModule: Module = {
             {},
             updateProductUseCase,
             deleteProductUseCase,
-            publishProductUseCase
+            publishProductUseCase,
+            unpublishProductUseCase
         );
 
         const searchController = new SearchController();
@@ -551,6 +555,47 @@ export const CatalogModule: Module = {
             router.use(createCatalogPricingRoutes(pricingController as any));
             router.use(createReviewRoutes(reviewController));
             router.use(createBuyBoxAdminRoutes(buyBoxAdminController));
+
+            // ── Seller locations & product inventory ──────────────────────────
+            // Full path: /api/catalog/seller-locations
+            // Use the already-resolved globalPrisma — do NOT rely on globalThis.prisma
+            // which is only set in non-production environments.
+            try {
+                router.use('/seller-locations', createSellerLocationRoutes(prisma));
+                logger.info('✅ Seller location routes mounted at /seller-locations');
+            } catch (e) {
+                logger.warn('⚠️ Failed to mount seller-location routes:', e);
+            }
+
+            // ── Product media upload endpoint ─────────────────────────────────
+            // POST /api/catalog/v1/media/upload
+            // Accepts multipart/form-data with a single "file" field.
+            // Runs Sharp pipeline (resize → WebP → strip EXIF → thumbnail) and stores in MinIO.
+            // Returns { success, data: { mediaUrl, thumbnailUrl } }
+            const multer = require('multer');
+            const { requireRole } = await import('@shared/middleware/auth-context.middleware');
+            const { uploadProductMedia } = await import('./src/api/controllers/media.controller');
+            const upload = multer({
+                storage: multer.memoryStorage(),
+                limits: {
+                    fileSize: 20 * 1024 * 1024, // 20 MB — client is expected to pre-compress to ~300 KB
+                    files: 1,
+                },
+                fileFilter: (_req: any, file: any, cb: any) => {
+                    const allowed = ['image/webp', 'image/jpeg', 'image/png', 'image/jpg'];
+                    if (allowed.includes(file.mimetype)) {
+                        cb(null, true);
+                    } else {
+                        cb(Object.assign(new Error(`Unsupported image format: ${file.mimetype}`), { statusCode: 422, code: 'UNSUPPORTED_IMAGE_FORMAT' }));
+                    }
+                },
+            });
+            router.post(
+                '/v1/media/upload',
+                requireRole(['seller', 'supplier', 'admin']),
+                upload.single('file'),
+                uploadProductMedia,
+            );
         } catch (e) {
             logger.warn('Failed to mount catalog API routes, falling back to degraded handler:', e);
             router.all('/v1/*', (_req, res) => {

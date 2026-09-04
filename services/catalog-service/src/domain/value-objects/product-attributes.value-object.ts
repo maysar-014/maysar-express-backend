@@ -5,6 +5,14 @@
 
 import { DomainError } from '../errors/domain.error';
 
+/**
+ * Priority level for a category attribute in generated content.
+ * HIGH  — leads the generated description; used first in features/specs.
+ * MEDIUM — included where space allows.
+ * LOW   — omitted from brief representations.
+ */
+export type AttributePriority = 'HIGH' | 'MEDIUM' | 'LOW';
+
 export interface CategoryAttributeSchema {
   id: string;
   name: string;
@@ -13,6 +21,24 @@ export interface CategoryAttributeSchema {
   options?: string[];
   isRequired: boolean;
   placeholder?: string;
+
+  // ── Semantic Metadata ────────────────────────────────────────────────────────
+  /** Whether this attribute should feed the search index as a filter facet. */
+  searchable?: boolean;
+  /** Whether this attribute can be used in product comparison tables. */
+  comparable?: boolean;
+  /** Whether buyers can filter search results by this attribute. */
+  filterable?: boolean;
+  /** Priority in the generated product description — controls ordering in key-features list. */
+  descriptionPriority?: AttributePriority;
+  /** Priority in generated SEO title / meta description. */
+  seoPriority?: AttributePriority;
+  /** Priority in highlight/summary card displays (e.g. search result cards). */
+  highlightPriority?: AttributePriority;
+  /** Logical grouping for the seller form and product page UI (e.g. "Performance", "Physical"). */
+  displayGroup?: string;
+  /** Whether this attribute contributes to the canonical product identity for deduplication. */
+  identityRelevant?: boolean;
 }
 
 export class StructuredProductAttributes {
@@ -77,11 +103,15 @@ export class StructuredProductAttributes {
         }
         break;
       case 'SELECT':
-        if (schema.options && !schema.options.includes(value)) {
-          throw new DomainError(
-            `${schema.displayLabel} must be one of: ${schema.options.join(', ')}`,
-            'INVALID_ATTRIBUTE_VALUE'
-          );
+        if (schema.options) {
+          const selectedOptions = value.split(',').map((item) => item.trim()).filter(Boolean);
+          const invalidOption = selectedOptions.find((item) => !schema.options!.includes(item));
+          if (invalidOption || selectedOptions.length === 0) {
+            throw new DomainError(
+              `${schema.displayLabel} must contain valid options: ${schema.options.join(', ')}`,
+              'INVALID_ATTRIBUTE_VALUE'
+            );
+          }
         }
         break;
       case 'TEXT':
@@ -104,7 +134,16 @@ export class StructuredProductAttributes {
   }
 
   getKeyAttribute(): string {
-    // Return first SELECT type attribute or first required attribute
+    // Prefer attributes marked as identity-relevant or highest description priority
+    const priorityOrder = ['HIGH', 'MEDIUM', 'LOW'];
+    for (const priority of priorityOrder) {
+      const attr = Array.from(this.schema.values()).find(
+        s => s.descriptionPriority === priority && this.attributes.has(s.name),
+      );
+      if (attr) return this.attributes.get(attr.name) || '';
+    }
+
+    // Fall back to first SELECT type attribute or first required attribute
     const selectAttr = Array.from(this.schema.values()).find(s => s.type === 'SELECT');
     if (selectAttr && this.attributes.has(selectAttr.name)) {
       return this.attributes.get(selectAttr.name) || '';

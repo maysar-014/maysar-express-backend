@@ -18,13 +18,22 @@ export class Address implements ValueObject<AddressType> {
 
   /**
    * Validate address data
+   * City is optional for Tanzania addresses — ward/district/region are sufficient.
+   * At least one geographic precision field must be present: city OR ward OR district OR region.
    */
   private isValidAddress(address: AddressType): boolean {
     if (!address.street || address.street.trim().length === 0) {
       return false;
     }
 
-    if (!address.city || address.city.trim().length === 0) {
+    // Accept Tanzania canonical shape (ward/district/region) OR legacy city
+    const hasCity = !!(address.city && address.city.trim().length > 0);
+    const hasTanzaniaFields = !!(
+      (address.ward && address.ward.trim().length > 0) ||
+      (address.district && address.district.trim().length > 0) ||
+      (address.region && address.region.trim().length > 0)
+    );
+    if (!hasCity && !hasTanzaniaFields) {
       return false;
     }
 

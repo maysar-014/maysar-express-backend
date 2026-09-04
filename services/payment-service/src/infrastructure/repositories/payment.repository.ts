@@ -141,6 +141,9 @@ export class PaymentRepository implements IPaymentRepository {
         if (result.count === 0) {
             throw new OptimisticLockError(`Payment ${props.id} version ${props.version} was modified concurrently`);
         }
+
+        // Keep in-memory version in sync with DB so subsequent updates don't conflict
+        payment.incrementVersion();
     }
 
     async getTotalAmountByUserId(

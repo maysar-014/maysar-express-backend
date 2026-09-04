@@ -5,6 +5,10 @@ import { SeoTitleGeneratorEngine } from '../../domain/engines/seo-title-generato
 import { SeoSlug } from '../../domain/value-objects/seo-slug.value-object';
 import { ProductQualityPolicy } from '../../domain/policies/product-quality.policy';
 import { DescriptionValidationPolicy } from '../../domain/policies/description-validation.policy';
+import { ConsistencyValidationPolicy } from '../../domain/policies/consistency-validation.policy';
+import { ProductContentVersion } from '../../domain/value-objects/product-content-version.value-object';
+import { AttributeAliasResolver } from '../../domain/engines/attribute-alias-resolver';
+import { NormalizationAlgorithm } from '../../domain/algorithms/normalization.algorithm';
 import { DomainError } from '../../domain/errors/domain.error';
 import { getModelPrefix, makeId } from '@shared/ids/id';
 
@@ -125,26 +129,71 @@ export class CreateProductUseCase {
   async execute(dto: StructuredCreateProductDto): Promise<CreateProductResponse> {
     try {
       const supplierLocationId = dto.supplierLocationId?.trim();
-      if (!supplierLocationId) {
+      const typedSupplierLocation = dto.supplierLocation?.trim();
+      if (!supplierLocationId && !typedSupplierLocation) {
         return {
           productId: '',
           status: 'validation_error',
-          message: 'Supplier location ID is required',
-          violations: ['Supplier location ID is required'],
+          message: 'Supplier location is required',
+          violations: ['Supplier location is required'],
         };
       }
 
-      const savedLocation = await this.sellerLocationRepository.findByIdForSeller(supplierLocationId, dto.sellerId);
-      if (!savedLocation) {
-        return {
-          productId: '',
-          status: 'validation_error',
-          message: 'Saved supplier location not found for seller',
-          violations: ['Saved supplier location not found for seller'],
-        };
+      // ── Resolve supplier location ──────────────────────────────────────────
+      // New seller locations use sloc_ prefix (Catalog_SellerLocation table).
+      // Legacy locations use BusinessAddress IDs from the business registry.
+      let savedLocation: SavedSellerLocationRecord | null = null;
+      if (supplierLocationId) {
+        if (supplierLocationId.startsWith('sloc_')) {
+          // Look up from new Catalog_SellerLocation table
+          try {
+            const prisma = (globalThis as any).prisma;
+            const row = await prisma?.catalog_SellerLocation?.findFirst?.({
+              where: { id: supplierLocationId, sellerId: dto.sellerId, isActive: true },
+              select: { id: true, sellerId: true, name: true, street: true, ward: true, district: true, region: true, country: true, isPrimary: true },
+            });
+            if (!row) {
+              return {
+                productId: '',
+                status: 'validation_error',
+                message: 'Seller location not found',
+                violations: ['Seller location not found'],
+              };
+            }
+            savedLocation = {
+              id: row.id,
+              sellerId: row.sellerId,
+              businessId: row.sellerId,
+              city: row.district ?? row.region ?? '',
+              region: row.region ?? '',
+              country: row.country ?? 'Tanzania',
+              displayName: [row.street, row.ward, row.district, row.region].filter(Boolean).join(', '),
+              isPrimary: row.isPrimary,
+            };
+          } catch (locErr: any) {
+            console.warn('[CreateProductUseCase] Seller location lookup failed:', locErr?.message);
+            return {
+              productId: '',
+              status: 'validation_error',
+              message: 'Seller location lookup failed',
+              violations: ['Seller location lookup failed'],
+            };
+          }
+        } else {
+          // Legacy: look up from BusinessAddress via old repository
+          savedLocation = await this.sellerLocationRepository.findByIdForSeller(supplierLocationId, dto.sellerId);
+          if (!savedLocation) {
+            return {
+              productId: '',
+              status: 'validation_error',
+              message: 'Saved supplier location not found for seller',
+              violations: ['Saved supplier location not found for seller'],
+            };
+          }
+        }
       }
 
-      const supplierLocation = savedLocation.displayName;
+      const supplierLocation = savedLocation?.displayName ?? typedSupplierLocation!;
 
       const category = await this.categoryRepository.findById(dto.categoryId);
       if (!category) {
@@ -152,23 +201,54 @@ export class CreateProductUseCase {
       }
 
       const schemaData = await this.categoryAttributeRepository.findByCategory(dto.categoryId);
-      const schema: CategoryAttributeSchema[] = schemaData.map((s) => ({
-        id: s.id,
-        name: s.name,
-        displayLabel: s.displayLabel,
-        type: s.type as CategoryAttributeSchema['type'],
-        options: Array.isArray(s.options) ? s.options.filter((option): option is string => typeof option === 'string') : undefined,
-        isRequired: Boolean(s.isRequired),
-        placeholder: s.placeholder,
-      }));
+      const schemaByName = new Map<string, CategoryAttributeSchema>();
+      for (const s of schemaData) {
+        const name = s.name.trim();
+        if (!name || schemaByName.has(name)) continue;
+        schemaByName.set(name, {
+          id: s.id,
+          name,
+          displayLabel: s.displayLabel,
+          type: s.type as CategoryAttributeSchema['type'],
+          options: Array.isArray(s.options) ? s.options.filter((option): option is string => typeof option === 'string') : undefined,
+          isRequired: Boolean(s.isRequired),
+          placeholder: s.placeholder,
+        });
+      }
+      const schema = Array.from(schemaByName.values());
 
       const attributes = StructuredProductAttributes.create(dto.structuredAttributes, schema);
+
+      // ── Normalise + alias-resolve raw seller attributes before generation ──
+      const resolvedAttributes = AttributeAliasResolver.resolveAll(dto.structuredAttributes);
+      const normalisedAttributes: Record<string, string> = {};
+      for (const [key, value] of Object.entries(resolvedAttributes)) {
+        normalisedAttributes[key] = NormalizationAlgorithm.normalizeByAttributeKey(key, value);
+      }
+
+      // ── Consistency validation — check for contradictions before publishing ──
+      const consistencyResult = ConsistencyValidationPolicy.validate(
+        dto.productName,
+        normalisedAttributes,
+        category.name,
+      );
+      if (consistencyResult.hasBlockingConflicts) {
+        return {
+          productId: '',
+          status: 'validation_error',
+          message: 'Product data contains conflicting information',
+          violations: consistencyResult.conflicts
+            .filter(c => c.severity === 'CRITICAL')
+            .map(c => c.message),
+        };
+      }
 
       const generatedDesc = DescriptionGeneratorEngine.generate(
         attributes,
         category.slug,
         dto.productName,
-        dto.brand
+        dto.brand,
+        schema,
       );
 
       const keyAttribute = attributes.getKeyAttribute();
@@ -186,8 +266,17 @@ export class CreateProductUseCase {
         keyAttribute,
       });
 
-      const composedDescription = `${generatedDesc.overview} ${generatedDesc.keyFeatures.join(' ')} Specifications: ${Object.entries(generatedDesc.specifications).map(([k, v]) => `${k}: ${v}`).join(', ')} ${generatedDesc.usage} ${generatedDesc.delivery}`;
-      
+      const specificationText = Object.entries(generatedDesc.specifications).map(([key, value]) => `${key}: ${value}`).join(', ');
+      const featureText = generatedDesc.keyFeatures.length > 0 ? 'Features: ' + generatedDesc.keyFeatures.join('. ') + '.' : '';
+      // Canonical description: product facts only — seller-offer data (delivery, location)
+      // is intentionally excluded to maintain Product / SellerOffer separation.
+      const composedDescription = [
+        generatedDesc.overview,
+        featureText,
+        specificationText ? `Specifications: ${specificationText}.` : '',
+        generatedDesc.usage,
+      ].filter(Boolean).join(' ');
+
       const validationResult = DescriptionValidationPolicy.validate(
         composedDescription,
         dto.productName,
@@ -224,12 +313,25 @@ export class CreateProductUseCase {
       const productId = makeId(getModelPrefix('Catalog_Product'));
       const now = this.dateTimeService.now();
 
+      // ── Content version tracking ───────────────────────────────────────────
+      const contentVersion = ProductContentVersion.createInitial({
+        brand: dto.brand,
+        productName: dto.productName,
+        categorySlug: category.slug,
+        attributes: normalisedAttributes,
+        schemaVersion: `schema-${schema.length}`,
+      });
+
       const persistenceDto: ProductPersistenceDto = {
         id: productId,
         sellerId: dto.sellerId,
         title: dto.productName,
         description: composedDescription,
-        supplierLocationId: savedLocation.id,
+        // Only write supplierLocationId if it references a BusinessAddress (legacy).
+        // New Catalog_SellerLocation IDs (sloc_ prefix) must NOT be written here —
+        // they don't exist in businessregistry_business_addresses and would violate the FK.
+        // Inventory for sloc_ locations is managed via Catalog_ProductLocation instead.
+        supplierLocationId: savedLocation?.id?.startsWith('sloc_') ? undefined : savedLocation?.id,
         supplierLocation,
         categoryId: dto.categoryId,
         brand: dto.brand,
@@ -243,10 +345,19 @@ export class CreateProductUseCase {
         tags: [],
         seoMetadata: {
           currency: dto.currency || 'TZS',
-          supplierLocationId: savedLocation.id,
+          // Store sloc_ IDs in seoMetadata for reference only (not a DB FK)
+          supplierLocationId: savedLocation?.id,
           supplierLocation,
           minimumOrderQuantity: dto.minimumOrderQuantity,
-          mediaUrls: dto.mediaUrls || []
+          mediaUrls: dto.mediaUrls || [],
+          // Content version metadata — enables deterministic regeneration
+          contentVersion: contentVersion.toJSON(),
+          // Non-blocking consistency warnings surfaced to operations teams
+          consistencyWarnings: consistencyResult.conflicts
+            .filter(c => c.severity === 'WARNING')
+            .map(c => c.message),
+          // Seller-offer data stored separately — never bleeds into canonical description
+          sellerOffer: generatedDesc.sellerOffer,
         },
         mediaUrls: dto.mediaUrls || [],
         basePrice: dto.price,
@@ -268,6 +379,42 @@ export class CreateProductUseCase {
         }));
 
       await this.productRepository.saveWithAttributesTransaction(persistenceDto, productId, attributesToSave);
+
+      // ── Auto-attach product to Catalog_SellerLocation inventory ─────────────
+      // If supplierLocationId is a sloc_ prefixed ID (Catalog_SellerLocation),
+      // automatically create the Catalog_ProductLocation record so the seller
+      // does not need a separate API call.
+      const isNewSellerLocation = savedLocation?.id?.startsWith('sloc_') ||
+        (supplierLocationId?.startsWith('sloc_'));
+      if (isNewSellerLocation && supplierLocationId && (dto.inventoryCount ?? 0) >= 0) {
+        try {
+          const prisma = (globalThis as any).prisma;
+          if (prisma?.catalog_ProductLocation) {
+            await prisma.catalog_ProductLocation.upsert({
+              where: { productId_locationId: { productId, locationId: supplierLocationId } },
+              create: {
+                id: makeId('ploc'),
+                productId,
+                locationId: supplierLocationId,
+                sellerId: dto.sellerId,
+                quantityAvailable: dto.inventoryCount ?? 0,
+                quantityReserved: 0,
+                isAvailable: (dto.inventoryCount ?? 0) > 0,
+                createdAt: now,
+                updatedAt: now,
+              },
+              update: {
+                quantityAvailable: dto.inventoryCount ?? 0,
+                isAvailable: (dto.inventoryCount ?? 0) > 0,
+                updatedAt: now,
+              },
+            });
+          }
+        } catch (inventoryErr: any) {
+          // Non-fatal — seller can attach inventory manually
+          console.warn('[CreateProductUseCase] Auto-attach inventory failed (non-fatal):', inventoryErr?.message);
+        }
+      }
 
       // The default variant ID is deterministic — matches what saveWithAttributesTransaction creates
       const defaultVariantId = `${productId}-default-variant`;
@@ -304,7 +451,7 @@ export class CreateProductUseCase {
           sellerId: dto.sellerId,
           slug: slug.getValue(),
           categorySlug: category.slug,
-          supplierLocationId: savedLocation.id,
+          supplierLocationId: savedLocation?.id,
           supplierLocation,
           brand: dto.brand,
           seoTitle,
@@ -333,7 +480,7 @@ export class CreateProductUseCase {
         };
       }
 
-      if (message.includes('Unique constraint failed') && message.includes('slug')) {
+      if (message.includes('Unique constraint failed') && (message.includes('slug') || message.includes('catalog_products_sellerId_slug_key'))) {
         return {
           productId: '',
           status: 'business_rule_violation',

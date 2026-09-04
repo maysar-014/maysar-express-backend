@@ -618,4 +618,69 @@ export class UserController {
       res.status(500).json({ success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: 'Failed' } });
     }
   }
+
+  async deleteAddress(req: Request, res: Response): Promise<void> {
+    const requestingUserId = this.getRequestingUserId(req);
+    if (!requestingUserId) {
+      res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } });
+      return;
+    }
+
+    const { id: userId, addressId } = req.params;
+    if (!addressId) {
+      res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'addressId is required' } });
+      return;
+    }
+
+    // Users can only delete their own addresses; admins (SYSTEM role) may delete for any user
+    const requestingUserResult = await this.getUserUseCase.execute({ userId: requestingUserId, requestingUserId }).catch(() => null);
+    const isAdmin = requestingUserResult?.user?.role === 'system';
+
+    if (requestingUserId !== userId && !isAdmin) {
+      res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: "Cannot delete another user's address" } });
+      return;
+    }
+
+    try {
+      // Fetch the target user to verify the address exists and enforce business rules
+      const userResult = await this.getUserUseCase.execute({ userId, requestingUserId });
+      if (!userResult.success || !userResult.user) {
+        res.status(404).json({ success: false, error: { code: 'RESOURCE_NOT_FOUND', message: 'User not found' } });
+        return;
+      }
+
+      const user = userResult.user;
+      const addresses: any[] = (user as any).addresses ?? [];
+
+      const addressExists = addresses.some((a: any) => a.id === addressId);
+      if (!addressExists) {
+        res.status(404).json({ success: false, error: { code: 'RESOURCE_NOT_FOUND', message: 'Address not found' } });
+        return;
+      }
+
+      if (addresses.length <= 1) {
+        res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Cannot delete your only saved address' } });
+        return;
+      }
+
+      // Delegate to the repository's dedicated delete method
+      const result = await this.updateUserUseCase.execute({
+        userId,
+        updates: { addresses: addresses.filter((a: any) => a.id !== addressId) },
+        updatedBy: requestingUserId,
+      });
+
+      if (!result.success) {
+        res.status(500).json({ success: false, error: { code: 'DELETE_FAILED', message: result.message } });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: UserMapper.toResponseDto(result.user),
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: err?.message ?? 'Failed to delete address' } });
+    }
+  }
 }

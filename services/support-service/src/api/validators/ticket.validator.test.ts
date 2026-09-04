@@ -21,7 +21,7 @@ describe('ticket.validator', () => {
   });
 
   it('parses message/assign/resolve/close payloads', () => {
-    expect(addMessageSchema.parse({ content: 'Investigating now' }).content).toBe('Investigating now');
+    expect(addMessageSchema.parse({ content: 'Investigating now', authorId: 'usr_1' }).authorId).toBe('usr_1');
     expect(assignTicketSchema.parse({ agentId: '550e8400-e29b-41d4-a716-446655440000' }).agentId).toBe(
       '550e8400-e29b-41d4-a716-446655440000'
     );

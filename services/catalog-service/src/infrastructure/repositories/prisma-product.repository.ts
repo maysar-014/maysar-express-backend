@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 /**
  * Prisma Product Repository Implementation
  * Infrastructure layer implementation of ProductRepository interface
@@ -15,6 +15,7 @@ import { ProductType, ProductVisibility, ProductCondition, ProductStatus as Doma
 import { ProductIdentifiers } from '../../domain/value-objects/product-identifiers.value-object';
 import { ProductFingerprint } from '../../domain/value-objects/product-fingerprint.value-object';
 import { getModelPrefix, makeId } from '@shared/ids/id';
+import { ProductMediaStore } from '../media/product-media.store';
 
 // Prisma Enums (defined locally since Prisma client may not be generated)
 enum ProductStatus {
@@ -218,7 +219,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
 
     const mediaRef = await this.prisma.mediaRef.findMany({
       where: {
-        entityType: 'PRODUCT',
+        entityType: 'product',
         entityId: id
       },
       orderBy: { displayOrder: 'asc' }
@@ -576,6 +577,13 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       return null;
     }
 
+    const previousMediaRefs = Array.isArray(updates.mediaUrls)
+      ? await this.prisma.mediaRef.findMany({
+          where: { entityType: 'product', entityId: id },
+          select: { url: true },
+        })
+      : [];
+
     const nextSeoMetadata = {
       ...((existing.seoMetadata as Record<string, unknown> | null) || {})
     };
@@ -588,6 +596,18 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       nextSeoMetadata.supplierLocation = updates.supplierLocation.trim();
     }
 
+    if (Array.isArray(updates.mediaUrls)) {
+      nextSeoMetadata.mediaUrls = updates.mediaUrls;
+    }
+
+    const requestedStock = updates.stock !== undefined ? Math.max(0, Number(updates.stock) || 0) : undefined;
+    const wasAutoUnpublished = (nextSeoMetadata.inventoryAutoUnpublished === true);
+    if (requestedStock === 0 && existing.status === 'published') {
+      nextSeoMetadata.inventoryAutoUnpublished = true;
+    } else if (requestedStock !== undefined && requestedStock > 0 && wasAutoUnpublished) {
+      delete nextSeoMetadata.inventoryAutoUnpublished;
+    }
+
     const productData: Record<string, unknown> = {
       updatedAt: new Date()
     };
@@ -595,6 +615,7 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
     if (updates.name !== undefined) productData.title = updates.name;
     if (updates.description !== undefined) productData.description = updates.description;
     if (updates.categoryId !== undefined) productData.categoryId = updates.categoryId;
+    if (updates.brand !== undefined) productData.brand = updates.brand;
     if (updates.supplierLocation !== undefined) productData.supplierLocation = updates.supplierLocation;
     if (updates.tags !== undefined) productData.tags = updates.tags;
     if (updates.seoTitle !== undefined) productData.seoTitle = updates.seoTitle;
@@ -604,21 +625,94 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
     if (updates.codAccepted !== undefined) productData.codAccepted = updates.codAccepted;
     if (updates.freeDelivery !== undefined) productData.freeDelivery = updates.freeDelivery;
     if (updates.condition !== undefined) productData.condition = updates.condition;
-    if (updates.currency !== undefined || updates.supplierLocation !== undefined) {
+    if (requestedStock === 0 && existing.status === 'published') {
+      productData.status = 'draft';
+    } else if (requestedStock !== undefined && requestedStock > 0 && wasAutoUnpublished) {
+      productData.status = 'published';
+    }
+    if (updates.currency !== undefined || updates.supplierLocation !== undefined || updates.mediaUrls !== undefined || requestedStock !== undefined) {
       productData.seoMetadata = nextSeoMetadata;
     }
 
-    return this.prisma.$transaction(async (tx: any) => {
+    const updated = await this.prisma.$transaction(async (tx: any) => {
       await tx.product.update({
         where: { id },
         data: productData
       });
+
+      if (Array.isArray(updates.mediaUrls)) {
+        await tx.mediaRef.deleteMany({
+          where: { entityType: 'product', entityId: id }
+        });
+
+        if (updates.mediaUrls.length > 0) {
+          await tx.mediaRef.createMany({
+            data: updates.mediaUrls.map((url: string, index: number) => ({
+              entityType: 'product',
+              entityId: id,
+              mediaType: 'image',
+              url,
+              displayOrder: index,
+              isPrimary: index === 0,
+              uploadedBy: existing.sellerId,
+            }))
+          });
+        }
+      }
 
       const firstVariant = await tx.productVariant.findFirst({
         where: { productId: id },
         orderBy: { createdAt: 'asc' }
       });
 
+      if (firstVariant && updates.stock !== undefined) {
+        let stockItem = await tx.inventory_StockItem.findFirst({
+          where: { productVariantId: firstVariant.id },
+          orderBy: { createdAt: 'asc' },
+        });
+
+        if (!stockItem) {
+          let warehouse = await tx.inventory_Warehouse.findFirst({
+            where: { status: 'active' },
+            orderBy: { createdAt: 'asc' },
+          });
+
+          if (!warehouse) {
+            warehouse = await tx.inventory_Warehouse.create({
+              data: {
+                id: makeId(getModelPrefix('Inventory_Warehouse')),
+                code: 'MAYSAR-DEFAULT',
+                name: 'Maysar Default Warehouse',
+                address: { country: 'Tanzania', city: 'Dar es Salaam' },
+                type: 'central',
+                status: 'active',
+              },
+            });
+          }
+
+          stockItem = await tx.inventory_StockItem.create({
+            data: {
+              id: makeId(getModelPrefix('Inventory_StockItem')),
+              productVariantId: firstVariant.id,
+              warehouseId: warehouse.id,
+              sku: firstVariant.sku,
+              quantityAvailable: Math.max(0, Number(updates.stock) || 0),
+              quantityReserved: 0,
+              quantityDamaged: 0,
+              quantityOnOrder: 0,
+              reorderPoint: 0,
+              status: 'active',
+            },
+          });
+        } else {
+          await tx.inventory_StockItem.update({
+            where: { id: stockItem.id },
+            data: {
+              quantityAvailable: Math.max(0, Number(updates.stock) || 0) + stockItem.quantityReserved,
+            },
+          });
+        }
+      }
       if (firstVariant && (updates.price !== undefined || updates.currency !== undefined || updates.attributes !== undefined)) {
         const nextAttributes = {
           ...((firstVariant.attributes as Record<string, unknown> | null) || {})
@@ -649,6 +743,31 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
         }
       });
     });
+
+    if (Array.isArray(updates.mediaUrls)) {
+      const nextMediaUrls = new Set(updates.mediaUrls.filter((url: unknown): url is string => typeof url === 'string'));
+      const removedMediaUrls = previousMediaRefs
+        .map((ref: { url: string }) => ref.url)
+        .filter((url: string) => !nextMediaUrls.has(url));
+
+      if (removedMediaUrls.length > 0) {
+        const orphanedUrls: string[] = [];
+        for (const url of removedMediaUrls) {
+          const remainingReferences = await this.prisma.mediaRef.count({ where: { url } });
+          if (remainingReferences === 0) orphanedUrls.push(url);
+        }
+
+        if (orphanedUrls.length > 0) {
+          try {
+            await new ProductMediaStore().deleteProductImages(orphanedUrls);
+          } catch (error) {
+            console.error('[PrismaProductRepository] orphaned product media cleanup failed:', (error as Error).message);
+          }
+        }
+      }
+    }
+
+    return updated;
   }
 
   private normalizeVariantRecord(variantData: any): any {

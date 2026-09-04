@@ -7,6 +7,10 @@ const port = process.env.PORT || 3001;
 import { AuthController } from './src/api/controllers/auth.controller';
 import { RegisterUserUseCase } from './src/application/use-cases/register-user.use-case';
 import { AuthenticateUserUseCase } from './src/application/use-cases/authenticate-user.use-case';
+import { ForgotPasswordUseCase } from './src/application/use-cases/forgot-password.use-case';
+import { ResetPasswordUseCase } from './src/application/use-cases/reset-password.use-case';
+import { PrismaPasswordResetRepository } from './src/infrastructure/repositories/prisma-password-reset.repository';
+import { AuthEmailService } from './src/infrastructure/services/email.service';
 import { InitiatePhoneVerificationUseCase } from './src/application/use-cases/initiate-phone-verification.use-case';
 import { VerifyPhoneOtpUseCase } from './src/application/use-cases/verify-phone-otp.use-case';
 import { PhoneVerificationController } from './src/api/controllers/phone-verification.controller';
@@ -19,6 +23,7 @@ import { createPhoneRoutes } from './src/api/routes/phone.routes';
 import { healthRoutes as authHealthRoutes } from './src/api/routes/health.routes';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { UserServiceRepository } from './src/infrastructure/repositories/user-service.repository';
+import { PrismaUserRepository as AuthPrismaUserRepository } from './src/infrastructure/repositories/prisma-user.repository';
 import { getUserServiceClient } from './src/infrastructure/services/service-discovery';
 import { UserSyncEventHandlers } from './src/infrastructure/events/user-sync.event-handlers';
 import { AuthEventPublisher } from './src/infrastructure/messaging/auth-event-publisher';
@@ -67,7 +72,16 @@ export const AuthModule: Module = {
             const registerUseCase = new RegisterUserUseCase(userRepository);
             const authUseCase = new AuthenticateUserUseCase(userRepository, authEventPublisher);
 
-            const controller = new AuthController(registerUseCase, authUseCase);
+            const passwordResetRepository = new PrismaPasswordResetRepository(authPrisma);
+            const authEmailService = new AuthEmailService();
+            // Use the auth-service's own PrismaUserRepository (queries auth_users with plain emails)
+            // instead of UserServiceRepository (queries user_User with encrypted emails) for
+            // the password reset flow. The auth_users table is the correct source of truth here.
+            const authOwnUserRepository = new AuthPrismaUserRepository(authPrisma);
+            const forgotPasswordUseCase = new ForgotPasswordUseCase(authOwnUserRepository, passwordResetRepository, authEmailService);
+            const resetPasswordUseCase = new ResetPasswordUseCase(authOwnUserRepository, passwordResetRepository, userServiceClient!);
+
+            const controller = new AuthController(registerUseCase, authUseCase, forgotPasswordUseCase, resetPasswordUseCase);
 
             const userSyncHandlers = new UserSyncEventHandlers(authPrisma);
             userSyncHandlers.registerHandlers();
@@ -124,6 +138,22 @@ export const AuthModule: Module = {
             const verifyPhoneOtpUseCase = new VerifyPhoneOtpUseCase(userRepository, firebaseAdminService, logger);
             const phoneVerificationController = new PhoneVerificationController(initiatePhoneVerificationUseCase, verifyPhoneOtpUseCase);
             mainRouter.use('/phone', createPhoneRoutes(phoneVerificationController));
+
+            // ---------------------------------------------------------------
+            // /api/v1/admin alias — frontend Playwright/Cypress tests call
+            // /api/v1/admin/... but the monolith mounts auth at /api/auth.
+            // Register routeAliases so both /api/auth/admin and /api/v1/admin work.
+            // ---------------------------------------------------------------
+            const apiV1AdminRouter = Router();
+            apiV1AdminRouter.use('/', adminRoutes);
+
+            const apiV1AuthRouter = Router();
+            apiV1AuthRouter.use('/', AuthModule.routes as Router);
+
+            AuthModule.routeAliases = [
+                { path: '/api/v1/admin', router: apiV1AdminRouter },
+                { path: '/api/v1/auth', router: apiV1AuthRouter }
+            ];
 
             console.log('Consolidated 2FA and Session routes mounted successfully');
 

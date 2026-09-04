@@ -31,7 +31,19 @@ export class CancellationPolicy {
     }
 
     const normalizedStatus = String(order.status || '').trim().toLowerCase();
-    if (!['pending', 'confirmed'].includes(normalizedStatus)) {
+
+    // Pre-payment verification statuses are treated like 'pending' — buyer hasn't
+    // committed funds yet so cancellation is always permitted.
+    const cancellableStatuses = [
+      'pending',
+      'pending_seller_verification',
+      'seller_verified',
+      'seller_declined',
+      'verification_overdue',
+      'confirmed',
+    ];
+
+    if (!cancellableStatuses.includes(normalizedStatus)) {
       return { allowed: false, reason: 'Order cannot be cancelled in current status' };
     }
 
@@ -40,7 +52,15 @@ export class CancellationPolicy {
         return { allowed: false, reason: 'Only the buyer who created the order can cancel it' };
       }
 
-      if (normalizedStatus === 'pending') {
+      // For all pre-payment statuses, buyer can cancel immediately without seller consent.
+      const buyerCancellableWithoutConsent = [
+        'pending',
+        'pending_seller_verification',
+        'seller_verified',
+        'seller_declined',
+        'verification_overdue',
+      ];
+      if (buyerCancellableWithoutConsent.includes(normalizedStatus)) {
         return { allowed: true };
       }
 

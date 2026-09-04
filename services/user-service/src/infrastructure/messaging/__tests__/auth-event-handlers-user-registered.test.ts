@@ -18,7 +18,8 @@ jest.mock('../../database/prisma-client', () => ({
   prisma: {
     user_User: {
       upsert: jest.fn(),
-      update: jest.fn()
+      update: jest.fn(),
+      findUnique: jest.fn()
     },
     user_UserIndex: {
       findFirst: jest.fn(),
@@ -56,7 +57,7 @@ import { PiiEncryptionService } from '../../../../../../shared/encryption/pii-en
 
 const mockedEventBus = eventBus as unknown as { subscribe: jest.Mock };
 const mockedPrisma = prisma as unknown as {
-  user_User: { upsert: jest.Mock; update: jest.Mock };
+  user_User: { upsert: jest.Mock; update: jest.Mock; findUnique: jest.Mock };
   user_UserIndex: { findFirst: jest.Mock; createMany: jest.Mock };
 };
 
@@ -113,6 +114,7 @@ describe('Property 1: Bug Condition — UserRegistered.v1 Creates User_User Reco
     jest.clearAllMocks();
     mockedPrisma.user_User.upsert.mockResolvedValue({});
     mockedPrisma.user_User.update.mockResolvedValue({});
+    mockedPrisma.user_User.findUnique.mockResolvedValue(null);
     mockedPrisma.user_UserIndex.findFirst.mockResolvedValue(null);
     mockedPrisma.user_UserIndex.createMany.mockResolvedValue({ count: 1 });
     handlers = new AuthEventHandlers(makePiiService());
@@ -307,6 +309,7 @@ describe('Property 2: Preservation — Existing Auth↔User Sync Flows Unchanged
     jest.clearAllMocks();
     mockedPrisma.user_User.upsert.mockResolvedValue({});
     mockedPrisma.user_User.update.mockResolvedValue({});
+    mockedPrisma.user_User.findUnique.mockResolvedValue(null);
     mockedPrisma.user_UserIndex.findFirst.mockResolvedValue(null);
     mockedPrisma.user_UserIndex.createMany.mockResolvedValue({ count: 1 });
     handlers = new AuthEventHandlers(makePiiService());

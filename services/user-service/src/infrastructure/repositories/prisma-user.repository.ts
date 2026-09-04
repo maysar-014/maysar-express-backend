@@ -8,19 +8,19 @@ import { Address } from '../../domain/value-objects/address.value-object';
 import { logger } from '../services/logger.service';
 import { PiiEncryptionService } from '../../../../../shared/encryption/pii-encryption.service';
 
-type PrismaUserKycStatus = 'PENDING' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED';
+type PrismaUserKycStatus = 'NONE' | 'PENDING' | 'VERIFIED' | 'REJECTED';
 
 function toPrismaUserKycStatus(value?: string | null): PrismaUserKycStatus {
   const normalized = String(value ?? '').trim().toUpperCase();
 
-  if (normalized === 'NONE') return 'PENDING';
+  if (normalized === 'NONE') return 'NONE';
   if (normalized === 'PENDING') return 'PENDING';
-  if (normalized === 'UNDER_REVIEW') return 'UNDER_REVIEW';
-  if (normalized === 'VERIFIED') return 'APPROVED';
-  if (normalized === 'APPROVED') return 'APPROVED';
+  if (normalized === 'UNDER_REVIEW') return 'PENDING'; // map legacy value to nearest valid
+  if (normalized === 'VERIFIED') return 'VERIFIED';
+  if (normalized === 'APPROVED') return 'VERIFIED';    // map legacy value to nearest valid
   if (normalized === 'REJECTED') return 'REJECTED';
 
-  return 'PENDING';
+  return 'NONE';
 }
 
 /**
@@ -135,6 +135,75 @@ export class PrismaUserRepository implements IUserRepository {
   async update(user: User): Promise<User> {
     try {
       const userData = this.mapToPrismaUpdateData(user);
+
+      if (user.addresses && user.addresses.length > 0) {
+        for (const addr of user.addresses) {
+          const addrObj = addr as any;
+          const addressValue = addrObj.value || addrObj;
+          const street = addressValue.street || '';
+          const city = addressValue.city || null;
+          const ward = addressValue.ward || null;
+          const district = addressValue.district || null;
+          const region = addressValue.region || null;
+          const country = addressValue.country || 'Tanzania';
+          // Prisma enum key must be UPPERCASE (HOME, WORK, BILLING, SHIPPING)
+          // even though the DB stores lowercase via @map. Normalise here.
+          const rawType = String(addressValue.type || 'home');
+          const type = rawType.toUpperCase() as any;
+          const isDefault = addressValue.isPrimary ?? addressValue.isDefault ?? false;
+          const postalCode = addressValue.postalCode || null;
+          const state = addressValue.state || null;
+          const addressId = addressValue.id || addrObj.id;
+
+          if (addressId) {
+            await this.prisma.user_UserAddress.upsert({
+              where: { id: addressId },
+              create: {
+                id: addressId,
+                userId: user.id,
+                type: type as any,
+                street,
+                city,
+                ward,
+                district,
+                region,
+                state,
+                postalCode,
+                country,
+                isDefault
+              } as any,
+              update: {
+                type: type as any,
+                street,
+                city,
+                ward,
+                district,
+                region,
+                state,
+                postalCode,
+                country,
+                isDefault
+              } as any
+            });
+          } else {
+            await this.prisma.user_UserAddress.create({
+              data: {
+                userId: user.id,
+                type: type as any,
+                street,
+                city,
+                ward,
+                district,
+                region,
+                state,
+                postalCode,
+                country,
+                isDefault
+              } as any
+            });
+          }
+        }
+      }
 
       const updatedUser = await this.prisma.user_User.update({
         where: { id: user.id },
@@ -434,7 +503,8 @@ export class PrismaUserRepository implements IUserRepository {
    */
   async updatePassword(userId: string, passwordHash: string): Promise<void> {
     try {
-      await this.prisma.user_User.update({
+      // Update user_User (current schema)
+      const updatedCount = await this.prisma.user_User.updateMany({
         where: { id: userId },
         data: {
           passwordHash,
@@ -442,7 +512,25 @@ export class PrismaUserRepository implements IUserRepository {
         }
       });
 
-      logger.info('User password updated', { userId });
+      // Also update the legacy 'users' table if the user exists there.
+      // Some users (seeded/migrated) live in the legacy table and authentication
+      // reads from whichever table findById resolves the user from.
+      // Writing to both tables ensures password changes are reflected regardless
+      // of which table the login flow resolves to.
+      try {
+        await this.prisma.$executeRaw`
+          UPDATE users
+          SET "passwordHash" = ${passwordHash}, "passwordChangedAt" = ${new Date()}
+          WHERE id = ${userId}
+        `;
+      } catch (legacyErr: any) {
+        // Legacy table may not exist in all environments — log but don't fail
+        if (!this.isMissingLegacySchemaTable(legacyErr)) {
+          logger.warn('Could not update legacy users table password', { userId, error: this.formatError(legacyErr) });
+        }
+      }
+
+      logger.info('User password updated', { userId, tablesUpdated: updatedCount.count > 0 ? 'user_User + users' : 'users (legacy only)' });
     } catch (error) {
       logger.error('Error updating user password', { userId, error: this.formatError(error) });
       throw error;
@@ -507,20 +595,35 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   /**
-   * Record successful login
+   * Record successful login.
+   *
+   * Resets all brute-force counters and restores the account to ACTIVE if it
+   * was previously moved to LOCKED by the failed-login threshold.  Accounts
+   * that were administratively SUSPENDED or DEACTIVATED are intentionally left
+   * in their current state — only a LOCKED status (which is transient and
+   * time-bound) is cleared here.
    */
   async recordSuccessfulLogin(userId: string): Promise<void> {
     try {
+      const user = await this.prisma.user_User.findUnique({
+        where: { id: userId },
+        select: { status: true }
+      });
+
+      const statusUpdate =
+        user?.status === User_UserStatus.LOCKED ? { status: User_UserStatus.ACTIVE } : {};
+
       await this.prisma.user_User.update({
         where: { id: userId },
         data: {
           lastLoginAt: new Date(),
           failedLoginAttempts: 0,
-          lockoutUntil: null
+          lockoutUntil: null,
+          ...statusUpdate
         }
       });
 
-      logger.debug('Successful login recorded', { userId });
+      logger.debug('Successful login recorded', { userId, statusRestored: user?.status === User_UserStatus.LOCKED });
     } catch (error) {
       logger.error('Error recording successful login', { userId, error: this.formatError(error) });
       throw error;
@@ -528,7 +631,12 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   /**
-   * Record failed login attempt
+   * Record failed login attempt.
+   *
+   * After reaching the threshold (5 attempts) the account is moved to LOCKED
+   * and a time-based lockout window is set.  The status is only ever changed
+   * to LOCKED from an ACTIVE or PENDING_VERIFICATION state — accounts that are
+   * already SUSPENDED or DEACTIVATED are left untouched.
    */
   async recordFailedLogin(userId: string): Promise<void> {
     try {
@@ -540,12 +648,24 @@ export class PrismaUserRepository implements IUserRepository {
       const newAttempts = user.failedLoginAttempts + 1;
       const shouldLock = newAttempts >= 5;
 
+      // Only transition to LOCKED from a login-eligible status.
+      // SUSPENDED / DEACTIVATED accounts must not be silently overwritten.
+      const lockableStatuses: User_UserStatus[] = [
+        User_UserStatus.ACTIVE,
+        User_UserStatus.PENDING_VERIFICATION,
+        User_UserStatus.LOCKED
+      ];
+      const statusUpdate =
+        shouldLock && lockableStatuses.includes(user.status)
+          ? { status: User_UserStatus.LOCKED }
+          : {};
+
       await this.prisma.user_User.update({
         where: { id: userId },
         data: {
           failedLoginAttempts: newAttempts,
-          lockoutUntil: shouldLock ? new Date(Date.now() + 30 * 60 * 1000) : null,
-          status: shouldLock ? User_UserStatus.LOCKED : user.status
+          lockoutUntil: shouldLock ? new Date(Date.now() + 30 * 60 * 1000) : user.lockoutUntil,
+          ...statusUpdate
         }
       });
 
@@ -605,14 +725,17 @@ export class PrismaUserRepository implements IUserRepository {
       const createdAddress = await this.prisma.user_UserAddress.create({
         data: {
           userId,
-          type: address.type as any,
+          type: String(address.type).toUpperCase() as any,
           street: address.street,
-          city: address.city,
+          ward: (address as any).ward || null,
+          district: (address as any).district || null,
+          region: (address as any).region || null,
+          city: address.city || null,
           state: address.state || null,
           postalCode: address.postalCode || null,
           country: address.country,
           isDefault: address.isDefault
-        }
+        } as any
       });
 
       if (address.isDefault) {
@@ -634,9 +757,12 @@ export class PrismaUserRepository implements IUserRepository {
     try {
       const updateData: any = {};
 
-      if (updates.type !== undefined) updateData.type = updates.type;
+      if (updates.type !== undefined) updateData.type = String(updates.type).toUpperCase() as any;
       if (updates.street !== undefined) updateData.street = updates.street;
-      if (updates.city !== undefined) updateData.city = updates.city;
+      if ((updates as any).ward !== undefined) updateData.ward = (updates as any).ward || null;
+      if ((updates as any).district !== undefined) updateData.district = (updates as any).district || null;
+      if ((updates as any).region !== undefined) updateData.region = (updates as any).region || null;
+      if (updates.city !== undefined) updateData.city = updates.city || null;
       if (updates.state !== undefined) updateData.state = updates.state;
       if (updates.postalCode !== undefined) updateData.postalCode = updates.postalCode;
       if (updates.country !== undefined) updateData.country = updates.country;
@@ -1065,9 +1191,69 @@ export class PrismaUserRepository implements IUserRepository {
    * Map Prisma user data to domain User entity
    */
   private mapToDomainEntity(userData: any): User {
-    // Note: Addresses are returned separately through getUserAddresses()
-    // For domain entity mapping, we don't include addresses here
-    const addresses: Address[] = [];
+    const addresses: Address[] = Array.isArray(userData.addresses)
+      ? userData.addresses.reduce((acc: Address[], addrData: any) => {
+          try {
+            const mapped = this.mapAddressToDomain(addrData);
+            const typeCandidate = (mapped.type as string) === 'work' ? 'business' : mapped.type;
+            const validTypes = ['billing', 'shipping', 'business', 'home'];
+            const resolvedType = validTypes.includes(typeCandidate as string)
+              ? (typeCandidate as 'billing' | 'shipping' | 'business' | 'home')
+              : 'home';
+
+            // postalCode is nullable in the DB schema (optional for Tanzanian addresses).
+            // If null/empty, use a sentinel value rather than an empty string — the validator
+            // rejects empty strings but we need to preserve the address record.
+            const resolvedPostalCode = mapped.postalCode && mapped.postalCode.trim()
+              ? mapped.postalCode.trim()
+              : null;
+
+            // Only construct Address value object when required fields are present.
+            // For Tanzania: city is optional when ward/district/region are present.
+            // Authentication must not fail because an optional profile address is incomplete.
+            const hasCityOrTanzaniaFields = !!(mapped.city || mapped.ward || mapped.district || mapped.region);
+            if (!mapped.street || !hasCityOrTanzaniaFields || !mapped.country || !resolvedPostalCode) {
+              logger.warn('Skipping address with missing required fields during user mapping — address will not be included in domain entity', {
+                addressId: mapped.id,
+                userId: userData.id,
+                missingFields: [
+                  !mapped.street ? 'street' : null,
+                  !hasCityOrTanzaniaFields ? 'city/ward/district/region' : null,
+                  !mapped.country ? 'country' : null,
+                  !resolvedPostalCode ? 'postalCode' : null,
+                ].filter(Boolean)
+              });
+              return acc;
+            }
+
+            acc.push(Address.create({
+              id: mapped.id,
+              userId: mapped.userId,
+              type: resolvedType,
+              isPrimary: mapped.isDefault,
+              street: mapped.street,
+              ward: (mapped as any).ward || undefined,
+              district: (mapped as any).district || undefined,
+              region: (mapped as any).region || undefined,
+              city: mapped.city || undefined,
+              state: mapped.state,
+              postalCode: resolvedPostalCode,
+              country: mapped.country,
+              createdAt: mapped.createdAt || new Date(),
+              updatedAt: mapped.updatedAt || new Date()
+            } as any));
+          } catch (addrError: any) {
+            // An individual address failing validation must never prevent the user entity
+            // from being reconstructed. Log the problem for investigation but continue.
+            logger.warn('Skipping invalid address record during user mapping', {
+              addressId: addrData?.id,
+              userId: userData.id,
+              error: addrError?.message || addrError,
+            });
+          }
+          return acc;
+        }, [])
+      : [];
     const roles = this.extractMetadataRoles(userData);
     const metadata = {
       accountAge: 0,
@@ -1256,9 +1442,15 @@ export class PrismaUserRepository implements IUserRepository {
       `;
       const normalizedEmail = String(email).trim().toLowerCase();
       return rows.find((row) => {
+        const raw = String(row.email ?? '');
+        // Case 1: plain-text email stored directly (seeded/legacy users)
+        if (raw.trim().toLowerCase() === normalizedEmail) {
+          return true;
+        }
+        // Case 2: encrypted email — attempt decryption
         try {
-          const rowEmail = String(this.piiService.decrypt(String(row.email ?? ''))).trim().toLowerCase();
-          return rowEmail === normalizedEmail;
+          const decrypted = String(this.piiService.decrypt(raw)).trim().toLowerCase();
+          return decrypted === normalizedEmail;
         } catch {
           return false;
         }
@@ -1413,7 +1605,10 @@ export class PrismaUserRepository implements IUserRepository {
       userId: addressData.userId,
       type: addressData.type as 'home' | 'work' | 'billing' | 'shipping',
       street: addressData.street,
-      city: addressData.city,
+      ward: addressData.ward || undefined,
+      district: addressData.district || undefined,
+      region: addressData.region || undefined,
+      city: addressData.city || undefined,
       state: addressData.state || undefined,
       postalCode: addressData.postalCode || undefined,
       country: addressData.country,

@@ -1,9 +1,16 @@
 export class Address {
   // Named address fields (required)
   public readonly street: string;
-  public readonly city: string;
   public readonly postalCode: string;
   public readonly country: string;
+
+  // Tanzania geographic hierarchy (optional; preferred over city)
+  public readonly ward?: string;      // most precise — e.g. "Kivukoni"
+  public readonly district?: string;  // e.g. "Ilala Cbd"
+  public readonly region?: string;    // e.g. "Dar es Salaam"
+
+  // Legacy / international field (optional for Tanzania; required for international)
+  public readonly city?: string;
 
   // Geocode coordinates (optional)
   public readonly latitude?: number;
@@ -11,21 +18,25 @@ export class Address {
 
   constructor(
     street: string,
-    city: string,
+    city: string | undefined,
     postalCode: string,
     country: string,
     latitude?: number,
-    longitude?: number
+    longitude?: number,
+    opts?: { ward?: string; district?: string; region?: string }
   ) {
-    // Validate named address (required)
-    if (!street || !city || !postalCode || !country) {
-      throw new Error('Street, city, postal code, and country are required for named address');
+    // Validate required fields
+    if (!street || !postalCode || !country) {
+      throw new Error('Street, postal code, and country are required for an address');
     }
 
     this.street = street;
-    this.city = city;
+    this.city = city || undefined;
     this.postalCode = postalCode;
     this.country = country;
+    this.ward = opts?.ward;
+    this.district = opts?.district;
+    this.region = opts?.region;
 
     // Validate geocode coordinates (optional but must be valid if provided)
     if ((latitude !== undefined && longitude === undefined) ||
@@ -54,7 +65,16 @@ export class Address {
   }
 
   public toString(): string {
-    const baseAddress = `${this.street}, ${this.city}, ${this.postalCode}, ${this.country}`;
+    const parts = [
+      this.street,
+      this.ward,
+      this.district,
+      this.city,
+      this.region,
+      this.postalCode,
+      this.country,
+    ].filter(Boolean);
+    const baseAddress = parts.join(', ');
     if (this.hasGeocode()) {
       return `${baseAddress} (${this.latitude}°, ${this.longitude}°)`;
     }
@@ -72,6 +92,9 @@ export class Address {
     return (
       this.street === other.street &&
       this.city === other.city &&
+      this.ward === other.ward &&
+      this.district === other.district &&
+      this.region === other.region &&
       this.postalCode === other.postalCode &&
       this.country === other.country &&
       this.latitude === other.latitude &&
@@ -87,12 +110,13 @@ export class Address {
       fallbackAddress.postalCode,
       fallbackAddress.country,
       latitude,
-      longitude
+      longitude,
+      { ward: fallbackAddress.ward, district: fallbackAddress.district, region: fallbackAddress.region }
     );
   }
 
   // Create address from named location only
-  public static fromNamedAddress(street: string, city: string, postalCode: string, country: string): Address {
-    return new Address(street, city, postalCode, country);
+  public static fromNamedAddress(street: string, city: string | undefined, postalCode: string, country: string, opts?: { ward?: string; district?: string; region?: string }): Address {
+    return new Address(street, city, postalCode, country, undefined, undefined, opts);
   }
 }

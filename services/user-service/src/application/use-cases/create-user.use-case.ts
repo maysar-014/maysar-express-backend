@@ -62,7 +62,9 @@ export class CreateUserUseCase {
         persistedUser.email.getValue(),
         persistedUser.role,
         'email',
-        persistedUser.publicCode
+        persistedUser.publicCode,
+        undefined,
+        persistedUser.phoneNumber?.value ?? undefined
       );
 
       await this.eventPublisher.publish(event);

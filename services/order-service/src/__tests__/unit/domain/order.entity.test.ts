@@ -166,10 +166,9 @@ describe('Order Entity', () => {
       });
 
       it('should throw error for missing fields', () => {
-        expect(() => new Address('', 'Dar es Salaam', '11101', 'TZ')).toThrow('Street, city, postal code, and country are required for named address');
-        expect(() => new Address('123 Main St', '', '11101', 'TZ')).toThrow('Street, city, postal code, and country are required for named address');
-        expect(() => new Address('123 Main St', 'Dar es Salaam', '', 'TZ')).toThrow('Street, city, postal code, and country are required for named address');
-        expect(() => new Address('123 Main St', 'Dar es Salaam', '11101', '')).toThrow('Street, city, postal code, and country are required for named address');
+        expect(() => new Address('', 'Dar es Salaam', '11101', 'TZ')).toThrow('Street, postal code, and country are required for an address');
+        expect(() => new Address('123 Main St', 'Dar es Salaam', '', 'TZ')).toThrow('Street, postal code, and country are required for an address');
+        expect(() => new Address('123 Main St', 'Dar es Salaam', '11101', '')).toThrow('Street, postal code, and country are required for an address');
       });
 
       it('should compare address equality', () => {

@@ -13,7 +13,9 @@ export enum PaymentMethod {
   COD = 'COD',
   WALLET = 'WALLET',
   CARD = 'CARD',
-  MOBILE_MONEY = 'MOBILE_MONEY'
+  MOBILE_MONEY = 'MOBILE_MONEY',
+  SELLER_VERIFICATION = 'SELLER_VERIFICATION',
+  DIRECT_PAYMENT = 'DIRECT_PAYMENT'
 }
 
 export class Payment {

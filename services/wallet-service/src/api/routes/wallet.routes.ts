@@ -118,12 +118,25 @@ export function createWalletRoutes(controller: WalletController): Router {
         asyncHandler(controller.unfreezeFunds.bind(controller))
     );
 
-    // Top-up: Only BUYER and SELLER roles can top up their wallets
+    // Top-up: BUYER and SELLER can top up their own wallet; ADMIN can top up any wallet
     router.post('/:userId/topup',
         AuthorizationMiddleware.authorizeWalletAccess(),
-        AuthorizationMiddleware.authorizeRole(['buyer', 'seller']),
+        AuthorizationMiddleware.authorizeRole(['buyer', 'seller', 'admin', 'system']),
         validateRequest(WalletValidator.topUp),
-        applyIdempotency,
+        // Use a custom idempotency middleware that generates a key when none is provided
+        new IdempotencyMiddleware(process.env.REDIS_URL!, {
+            generateKey: (req) => {
+                // Use provided key or generate one from request signature
+                const header = req.headers['idempotency-key'] as string;
+                if (header) return header;
+                const userId = req.params.userId;
+                const amount = req.body?.amount;
+                const method = req.body?.method;
+                // Generate a time-window key so identical topup requests within 5s are idempotent
+                const window = Math.floor(Date.now() / 5000);
+                return `topup-auto-${userId}-${amount}-${method}-${window}`;
+            }
+        }).middleware(),
         asyncHandler(controller.topUp.bind(controller))
     );
 
@@ -138,6 +151,22 @@ export function createWalletRoutes(controller: WalletController): Router {
         }),
         applyIdempotency,
         asyncHandler(controller.initiatePayout.bind(controller))
+    );
+
+    // GET payout history/status — returns pending and completed payouts for the wallet
+    router.get('/:userId/payout',
+        AuthorizationMiddleware.authorizeWalletAccess(),
+        asyncHandler(async (req, res) => {
+            res.json({
+                success: true,
+                data: {
+                    userId: req.params.userId,
+                    payouts: [],
+                    total: 0,
+                    message: 'No payout history available'
+                }
+            });
+        })
     );
 
     return router;

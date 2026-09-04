@@ -1,4 +1,5 @@
 import { Order } from '../../domain/entities/order.entity';
+import { OrderStatus } from '../../domain/entities/order.entity';
 import { OrderRepository } from '../../domain/repositories/order.repository';
 import { OrderCreatedEvent } from '../../domain/events/order-created.event';
 import { IdGeneratorService } from '../../infrastructure/services/id-generator.service';
@@ -6,6 +7,10 @@ import { OrderFulfillmentSaga } from '../sagas/order-fulfillment.saga';
 import { CODEligibilityEngine } from '../../domain/engines/cod-eligibility.engine';
 import { CODCommitmentService } from '../../domain/services/cod-commitment.service';
 import { assertMinimumBasketValue } from '@shared/business/minimum-basket-value';
+import { verificationConfig } from '../../config/verification.config';
+import { PrismaVerificationAuditLogRepository } from '../../infrastructure/database/prisma-verification-audit-log.repository';
+import { CatalogProductRepository } from '../../infrastructure/repositories/catalog-product.repository';
+import { makeId } from '@shared/ids/id';
 
 /**
  * Generates a cryptographically random 6-digit delivery confirmation code.
@@ -27,33 +32,32 @@ export interface PlaceOrderRequest {
     weight: number;
   }>;
   currency?: string;
-  paymentMethod: 'COD' | 'WALLET' | 'CARD' | 'MOBILE_PAYMENT';
+  paymentMethod: 'COD' | 'WALLET' | 'CARD' | 'MOBILE_PAYMENT' | 'SELLER_VERIFICATION' | 'DIRECT_PAYMENT' | string;
+  orderSource?: 'CART' | 'DIRECT';
+  orderCompletionMethod?: 'WALLET' | 'DIRECT_PAYMENT' | 'SELLER_VERIFICATION' | 'COD' | 'MOBILE_MONEY';
+  chatConversationId?: string;
   /**
-   * Delivery fee charged by the seller.
-   * - If > 0: seller charges delivery. Hold = deliveryFee (secured before packaging).
-   * - If 0 or omitted: seller offers free delivery. Hold = logisticsEstimate (commitment fee).
+   * @deprecated — ignored under the seller verification workflow.
+   * All payment is now deferred to BuyerConfirmCheckoutUseCase.
    */
+  deferPayment?: boolean;
   deliveryFee?: number;
-  /**
-   * Logistics service's estimated delivery cost.
-   * Required when deliveryFee = 0 (free delivery) for COD orders.
-   */
   logisticsEstimate?: number;
-  /**
-   * How the buyer pays the commitment/delivery fee upfront (before packaging).
-   * Only applies to COD orders.
-   * - 'WALLET': deducted from Maysar wallet balance (hold placed)
-   * - 'MOBILE_PAYMENT': paid via mobile money through the payment gateway bridge
-   * - 'CARD': paid via card through the payment gateway bridge
-   * Defaults to 'WALLET' if not specified.
-   */
   commitmentPaymentMethod?: 'WALLET' | 'MOBILE_PAYMENT' | 'CARD';
   deliveryAddress: {
     street: string;
-    city: string;
+    /** Tanzania precision: ward > district > region (preferred over city) */
+    ward?: string;
+    district?: string;
+    region?: string;
+    /** Legacy / international */
+    city?: string;
+    state?: string;
     postalCode: string;
     country: string;
   };
+  /** The seller location chosen as fulfillment pickup point */
+  fulfillmentLocationId?: string;
 }
 
 export interface PlaceOrderResponse {
@@ -61,30 +65,25 @@ export interface PlaceOrderResponse {
   status: string;
   trackingNumber?: string;
   deliveryCode: string;
-  /**
-   * Amount paid upfront as commitment/delivery fee.
-   * 0 if no commitment was required.
-   */
+  chatConversationId?: string;
+  /** UTC ISO-8601 deadline by which the seller must confirm stock. */
+  verificationDeadlineAt: string;
+  /** Buyer next-action hint. */
+  nextAction: 'AWAIT_VERIFICATION';
+  /** Always 0 — payment deferred to buyer/confirm-checkout. */
   commitmentFee: number;
-  /**
-   * How the commitment fee was paid ('WALLET', 'MOBILE_PAYMENT', 'CARD').
-   */
-  commitmentPaymentMethod?: 'WALLET' | 'MOBILE_PAYMENT' | 'CARD';
-  /**
-   * Amount buyer pays courier in cash on delivery.
-   * Free delivery:  product price - commitment fee
-   * Paid delivery:  full product price
-   */
+  commitmentPaymentMethod?: undefined;
   cashOnDeliveryAmount: number;
-  /**
-   * PaymentGateway payment URL — only present when commitmentPaymentMethod is MOBILE_PAYMENT or CARD.
-   * Buyer must complete this payment to confirm the order.
-   */
-  commitmentPaymentUrl?: string;
 }
 
 export class PlaceOrderUseCase {
-  private readonly paymentGatewayAdapter?: { processPayment(req: { orderId: string; amount: number; currency: string; buyerId: string; buyerEmail: string; buyerPhone: string; description: string }): Promise<{ success: boolean; paymentUrl?: string; transactionId?: string; error?: string; status: string }> };
+  // paymentGatewayAdapter kept for BuyerConfirmCheckoutUseCase to use later
+  private readonly paymentGatewayAdapter?: {
+    processPayment(req: {
+      orderId: string; amount: number; currency: string;
+      buyerId: string; buyerEmail: string; buyerPhone: string; description: string;
+    }): Promise<{ success: boolean; paymentUrl?: string; transactionId?: string; error?: string; status: string }>;
+  };
 
   constructor(
     private readonly orderRepository: OrderRepository,
@@ -93,14 +92,19 @@ export class PlaceOrderUseCase {
     private readonly codEligibilityEngine: CODEligibilityEngine,
     private readonly codCommitmentService: CODCommitmentService,
     private readonly walletClient?: { debitWallet(userId: string, amount: number, currency: string, description: string): Promise<string> },
-    paymentGatewayAdapter?: { processPayment(req: { orderId: string; amount: number; currency: string; buyerId: string; buyerEmail: string; buyerPhone: string; description: string }): Promise<{ success: boolean; paymentUrl?: string; transactionId?: string; error?: string; status: string }> }
+    paymentGatewayAdapter?: {
+      processPayment(req: {
+        orderId: string; amount: number; currency: string;
+        buyerId: string; buyerEmail: string; buyerPhone: string; description: string;
+      }): Promise<{ success: boolean; paymentUrl?: string; transactionId?: string; error?: string; status: string }>;
+    }
   ) {
     this.paymentGatewayAdapter = paymentGatewayAdapter;
   }
 
   async execute(request: PlaceOrderRequest): Promise<PlaceOrderResponse> {
-    // ... (rest of logic)
-    console.log(`[PlaceOrderUseCase] execute called, paymentMethod: ${request.paymentMethod}, walletClient: ${this.walletClient ? 'PRESENT' : 'MISSING'}`);
+    console.log(`[PlaceOrderUseCase] execute called, paymentMethod: ${request.paymentMethod}`);
+
     const orderId = IdGeneratorService.generateOrderId();
     const trackingNumber = await this.generateTrackingNumber();
     const currency = request.currency || 'TZS';
@@ -111,166 +115,111 @@ export class PlaceOrderUseCase {
 
     assertMinimumBasketValue(totalAmount);
 
-    // COD Validation and Commitment
-    let codCommitmentFee = 0;
-    let codHoldId: string | undefined;
-    let isFreeDelivery = false;
-    let codCommitmentPaymentUrl: string | undefined;
-    let codCommitmentPaymentMethod: 'WALLET' | 'MOBILE_PAYMENT' | 'CARD' | undefined;
-
+    // ── Layer-3 defense: a COD order must only contain products that accept COD ──
+    // The frontend already splits items by payOnDelivery, but the API must not trust
+    // client input for a risk-bearing payment method. Missing catalog records are
+    // treated as non-COD (fail closed).
     if (request.paymentMethod === 'COD') {
-      // 1. Validate Eligibility
-      const buyerEligibility = await this.codEligibilityEngine.checkBuyerEligibility(request.buyerId);
-      if (!buyerEligibility.eligible) {
-        throw new Error(`COD Ineligible: ${buyerEligibility.reason}`);
-      }
-
-      const sellerEligibility = await this.codEligibilityEngine.checkSellerEligibility(request.sellerId);
-      if (!sellerEligibility.eligible) {
-        throw new Error(`COD Ineligible: ${sellerEligibility.reason}`);
-      }
-
-      // We'd normally fetch seller address here, using placeholder for now
-      const placeholderSellerAddress = { city: 'Dar es Salaam', country: 'Tanzania' };
-
-      // Temporary order object for validation — must include buyerId for trust score lookup
-      const tempOrder = { buyerId: request.buyerId, items: request.items, totalAmount, deliveryAddress: request.deliveryAddress } as any;
-      const orderEligibility = await this.codEligibilityEngine.checkOrderEligibility(tempOrder, placeholderSellerAddress);
-      if (!orderEligibility.eligible) {
-        throw new Error(`COD Ineligible: ${orderEligibility.reason}`);
-      }
-
-      // 2. Calculate and secure the delivery fee / commitment fee as a wallet hold.
-      //    This MUST happen before packaging begins (before the saga starts).
-      //
-      // Scenario A — Free delivery (deliveryFee = 0 or omitted):
-      //   Hold = logistics estimate (commitment fee). Maysar pays courier, recoups from hold.
-      //
-      // Scenario B — Paid delivery (deliveryFee > 0):
-      //   Hold = delivery fee. Secured upfront before packaging. Captured on delivery.
-      //
-      // In BOTH cases: buyer pays only product price in cash at door.
-      const deliveryFee = request.deliveryFee ?? 0;
-      const logisticsEstimate = request.logisticsEstimate ?? 0;
-      isFreeDelivery = deliveryFee === 0;
-
-      codCommitmentFee = this.codCommitmentService.calculateCommitmentFee(deliveryFee, logisticsEstimate);
-
-      if (codCommitmentFee > 0) {
-        const commitmentMethod = request.commitmentPaymentMethod ?? 'WALLET';
-
-        if (commitmentMethod === 'WALLET') {
-          // Wallet hold — deducted from Maysar wallet balance
-          codHoldId = await this.codCommitmentService.secureCommitment(
-            request.buyerId,
-            orderId,
-            codCommitmentFee,
-            currency,
-            isFreeDelivery
-          );
-        } else {
-          // Mobile money or card — process via PaymentGateway
-          // The order is saved in PENDING_COMMITMENT state until payment is confirmed
-          // The PaymentGateway callback will advance the order to CONFIRMED
-          if (!this.paymentGatewayAdapter) {
-            throw new Error(`COD commitment via ${commitmentMethod} requires PaymentGateway adapter — not configured`);
-          }
-          const paymentGatewayResult = await this.paymentGatewayAdapter.processPayment({
-            orderId: `${orderId}-commitment`,
-            amount: codCommitmentFee,
-            currency,
-            buyerId: request.buyerId,
-            buyerEmail: `${request.buyerId}@maysar.co.tz`,
-            buyerPhone: '',
-            description: isFreeDelivery
-              ? `COD Commitment Fee for Order ${orderId}`
-              : `COD Delivery Fee for Order ${orderId}`,
-          });
-
-          if (!paymentGatewayResult.success && paymentGatewayResult.status === 'failed') {
-            throw new Error(`COD commitment payment failed: ${paymentGatewayResult.error}`);
-          }
-
-          // Store the payment URL for the response — buyer must complete payment
-          codCommitmentPaymentUrl = paymentGatewayResult.paymentUrl;
-          codCommitmentPaymentMethod = commitmentMethod;
-        }
+      const nonCodProductIds = await new CatalogProductRepository().findNonCodProductIds(
+        request.items.map((item) => item.productId)
+      );
+      if (nonCodProductIds.length > 0) {
+        throw new Error('COD ineligible: one or more items do not accept Cash on Delivery');
       }
     }
 
-    // WALLET payment: debit the buyer's wallet synchronously before creating the order
-    if (request.paymentMethod === 'WALLET') {
-      if (!this.walletClient) {
-        throw new Error('WALLET payment method requires WalletServiceClient — dependency not injected');
-      }
-      try {
-        console.log(`[PlaceOrderUseCase] Debiting wallet for buyer ${request.buyerId}, amount: ${totalAmount} ${currency}`);
-        const txId = await this.walletClient.debitWallet(
-          request.buyerId,
-          totalAmount,
-          currency,
-          `Payment for order ${orderId}`
-        );
-        console.log(`[PlaceOrderUseCase] Wallet debit successful, txId: ${txId}`);
-      } catch (error: any) {
-        console.error(`[PlaceOrderUseCase] Wallet debit failed:`, error.message);
-        throw new Error(`Wallet payment failed: ${error.message}`);
-      }
-    }
+    // ── Seller Stock Verification Workflow ────────────────────────────────────
+    // All orders enter PENDING_SELLER_VERIFICATION first. No payment processing
+    // occurs here. Payment is deferred to BuyerConfirmCheckoutUseCase which runs
+    // after the seller confirms stock availability within the verification window.
 
-    // Create order data
+    const timeoutMinutes = verificationConfig.timeoutMinutes;
+    const now = new Date();
+    const verificationDeadlineAt = new Date(now.getTime() + timeoutMinutes * 60_000);
+
     const deliveryCode = generateDeliveryCode();
     const orderData = {
       id: orderId,
       trackingNumber,
-      ...request,
+      buyerId: request.buyerId,
+      sellerId: request.sellerId,
+      paymentMethod: request.paymentMethod,
       currency,
       totalAmount,
-      codCommitmentFee: codCommitmentFee > 0 ? codCommitmentFee : undefined,
-      codCommitmentPaid: !!codHoldId,
-      codCommitmentHoldId: codHoldId,
+      deliveryAddress: request.deliveryAddress,
+      codCommitmentFee: undefined,
+      codCommitmentPaid: false,
+      codCommitmentHoldId: undefined,
       deliveryCode,
+      verificationDeadlineAt,
+      verificationTimeoutMinutes: timeoutMinutes,
+      orderSource: request.orderSource || 'CART',
+      orderCompletionMethod: request.orderCompletionMethod,
+      chatConversationId: request.chatConversationId,
+      fulfillmentLocationId: request.fulfillmentLocationId,
       totalWeight: request.items.reduce((sum, item) => sum + (item.weight * item.quantity), 0),
       items: request.items.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
         price: {
           amount: typeof item.price === 'number' ? item.price : item.price.amount,
-          currency: currency
+          currency,
         },
-        weight: item.weight
-      }))
+        weight: item.weight,
+      })),
+      status: OrderStatus.PENDING_SELLER_VERIFICATION,
     };
 
     const order = new Order(orderData);
     await this.orderRepository.save(order);
 
-    // Start Saga
-    await this.sagaOrchestrator.start({
-      orderId: order.id,
-      buyerId: order.buyerId,
-      sellerId: order.sellerId,
-      amount: Number(order.totalAmount),
-      items: order.items.map(i => ({ productId: i.productId, quantity: i.quantity }))
-    });
+    // Append initial audit log entry — non-fatal if table not yet migrated
+    try {
+      const auditRepo = new PrismaVerificationAuditLogRepository();
+      await auditRepo.append({
+        id: makeId('vau'),
+        orderId: order.id,
+        entryType: 'STATUS_TRANSITION',
+        actorType: 'system',
+        previousStatus: 'NEW',
+        newStatus: OrderStatus.PENDING_SELLER_VERIFICATION,
+        reason: 'Order created — awaiting seller stock confirmation',
+        timestamp: now,
+      });
+    } catch (auditErr: any) {
+      console.warn('[PlaceOrderUseCase] Audit log write failed (non-fatal):', auditErr.message);
+    }
 
-    // Publish creation event (legacy/redundant but kept for compatibility)
-    const event = new OrderCreatedEvent(order);
-    await this.eventPublisher.publish(event);
+    // Notify seller (non-fatal)
+    try {
+      await this.eventPublisher.publish({
+        type: 'order.pending_seller_verification',
+        orderId: order.id,
+        sellerId: order.sellerId,
+        buyerId: order.buyerId,
+        items: order.items,
+        verificationDeadlineAt: verificationDeadlineAt.toISOString(),
+        trackingNumber: order.trackingNumber,
+      });
+    } catch (eventErr: any) {
+      console.warn('[PlaceOrderUseCase] Seller notification event failed (non-fatal):', eventErr.message);
+    }
+    try {
+      await this.eventPublisher.publish(new OrderCreatedEvent(order));
+    } catch (legacyErr: any) {
+      console.warn('[PlaceOrderUseCase] Legacy OrderCreatedEvent failed (non-fatal):', legacyErr.message);
+    }
 
     return {
       orderId: order.id,
-      status: order.status,
+      status: OrderStatus.PENDING_SELLER_VERIFICATION,
       trackingNumber: order.trackingNumber,
       deliveryCode,
-      commitmentFee: codCommitmentFee,
-      commitmentPaymentMethod: codCommitmentFee > 0 ? (codCommitmentPaymentMethod ?? 'WALLET') : undefined,
-      commitmentPaymentUrl: codCommitmentPaymentUrl,
-      // Free delivery:  buyer pays product price - commitment fee at door
-      // Paid delivery:  buyer pays full product price at door (delivery fee already held)
-      cashOnDeliveryAmount: request.paymentMethod === 'COD'
-        ? (isFreeDelivery ? totalAmount - codCommitmentFee : totalAmount)
-        : 0,
+      verificationDeadlineAt: verificationDeadlineAt.toISOString(),
+      nextAction: 'AWAIT_VERIFICATION',
+      commitmentFee: 0,
+      commitmentPaymentMethod: undefined,
+      cashOnDeliveryAmount: 0,
     };
   }
 

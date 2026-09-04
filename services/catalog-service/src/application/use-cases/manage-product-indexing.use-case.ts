@@ -31,6 +31,25 @@ export class PublishProductUseCase {
   }
 }
 
+export class UnpublishProductUseCase {
+  constructor(
+    private readonly productRepository: ProductRepositoryLike,
+    private readonly catalogSearchIndexer: CatalogSearchIndexerLike
+  ) {}
+
+  async execute(productId: string): Promise<{ status: 'success' | 'not_found'; productId: string }> {
+    const existing = await this.productRepository.findById(productId);
+    if (!existing) {
+      return { status: 'not_found', productId };
+    }
+
+    await this.productRepository.updateStatus(productId, 'draft');
+    await this.catalogSearchIndexer.removeProductById(productId);
+
+    return { status: 'success', productId };
+  }
+}
+
 export class DeleteProductUseCase {
   constructor(
     private readonly productRepository: ProductRepositoryLike,

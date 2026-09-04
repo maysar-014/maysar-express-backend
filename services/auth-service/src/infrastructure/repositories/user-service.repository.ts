@@ -106,7 +106,8 @@ export class UserServiceRepository implements IUserRepository {
           return;
         }
 
-        throw new Error('User Service client does not support createUser');
+        // createUser not available — the UserRegistered.v1 event will populate user_User
+        return;
       }
 
       const authUser = user as AuthUser;

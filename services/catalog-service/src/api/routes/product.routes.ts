@@ -10,7 +10,8 @@ import { requireRole } from '@shared/middleware/auth-context.middleware';
 import { zodId } from '@shared/validation/id';
 import { ProductController } from '../controllers/product.controller';
 import { validateRequest as validateSchemaRequest } from '../middleware/validation.middleware';
-import { requireKycLevel } from '../../../../kyc-service/src/api/middleware/kyc-gate.middleware';
+import { requireKycLevel, requireKycListingCapacity } from '../../../../kyc-service/src/api/middleware/kyc-gate.middleware';
+import { prisma } from '../../../../kyc-service/src/infrastructure/database/prisma-client';
 import {
   ProductRepository,
   DomainEventPublisher,
@@ -50,6 +51,34 @@ export function createProductRoutes(
   const router = Router();
   const routesConfig = { ...DEFAULT_PRODUCT_ROUTES_CONFIG, ...config };
   const apiPrefix = `/${routesConfig.apiVersion}`;
+  // Product media upload is mounted here with the active catalog router so the
+  // public contract /api/catalog/v1/media/upload is always available.
+  router.post(
+    `${apiPrefix}/media/upload`,
+    requireRole(['seller', 'supplier', 'admin']),
+    (req, res, next) => {
+      const multer = require('multer');
+      const upload = multer({
+        storage: multer.memoryStorage(),
+        limits: { fileSize: 20 * 1024 * 1024, files: 1 },
+        fileFilter: (_req: any, file: any, cb: any) => {
+          const allowed = ['image/webp', 'image/jpeg', 'image/png', 'image/jpg'];
+          allowed.includes(file.mimetype)
+            ? cb(null, true)
+            : cb(Object.assign(new Error(`Unsupported image format: ${file.mimetype}`), { statusCode: 422, code: 'UNSUPPORTED_IMAGE_FORMAT' }));
+        },
+      }).single('file');
+      upload(req, res, (error: any) => {
+        if (error) {
+          res.status(error.statusCode ?? 400).json({ success: false, error: { code: error.code ?? 'UPLOAD_ERROR', message: error.message } });
+          return;
+        }
+        void import('../controllers/media.controller')
+          .then(({ uploadProductMedia }) => uploadProductMedia(req, res))
+          .catch(next);
+      });
+    },
+  );
 
   const nonEmptyString = z.string().min(1);
   const anyObjectSchema = z.object({}).passthrough();
@@ -69,7 +98,7 @@ export function createProductRoutes(
     brand: nonEmptyString,
     productName: nonEmptyString,
     minimumOrderQuantity: z.number().positive(),
-    supplierLocationId: nonEmptyString,
+    supplierLocationId: nonEmptyString.optional(),
     supplierLocation: nonEmptyString.optional(),
     structuredAttributes: z.record(nonEmptyString),
     mediaUrls: z.array(nonEmptyString).min(1),
@@ -83,6 +112,9 @@ export function createProductRoutes(
     freeDelivery: z.boolean().optional(),
     condition: z.enum(['new', 'used', 'refurbished', 'damaged']).optional()
   }).strict().superRefine((body, ctx) => {
+    if (!body.supplierLocationId && !body.supplierLocation) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['supplierLocation'], message: 'Supplier location is required' });
+    }
     if (body.enablerEnabled && body.enablerCommissionRate === undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -117,9 +149,12 @@ export function createProductRoutes(
     name: nonEmptyString.optional(),
     description: z.string().optional(),
     price: z.number().positive().optional(),
+    stock: z.number().int().min(0).optional(),
     currency: nonEmptyString.optional(),
     categoryId: nonEmptyString.optional(),
+    brand: nonEmptyString.optional(),
     supplierLocation: nonEmptyString.optional(),
+    mediaUrls: z.array(nonEmptyString).optional(),
     tags: z.array(z.string()).optional(),
     attributes: z.record(z.any()).optional(),
     seoTitle: z.string().optional(),
@@ -241,7 +276,7 @@ export function createProductRoutes(
 
   const sellerMiddleware = [
     requireRole(['seller', 'supplier', 'admin']),
-    requireKycLevel(1), // Sellers and suppliers must have basic identity verification to list products
+    requireKycLevel(0), // Level 0 allows up to 5 listings — sellers can start listing without KYC approval
     ...commonMiddleware
   ];
 
@@ -260,6 +295,9 @@ export function createProductRoutes(
    */
   router.post(`${apiPrefix}/products`,
     ...sellerMiddleware,
+    requireKycListingCapacity(
+      async (userId) => prisma.product.count({ where: { sellerId: userId } })
+    ),
     validateSchemaRequest(createProductSchema),
     async (req, res) => {
       await productController.createProduct(req, res);
@@ -469,13 +507,16 @@ export function createProductRoutes(
   router.post(`${apiPrefix}/products/:id/unpublish`,
     ...sellerMiddleware,
     async (req, res) => {
-      res.status(501).json({
-        success: false,
-        error: {
-          code: 'NOT_IMPLEMENTED',
-          message: 'Product unpublish is not implemented yet'
+      try {
+        const productId = req.params.id;
+        if (!productId) {
+          res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Product ID is required' } });
+          return;
         }
-      });
+        await productController.unpublishProduct(req, res);
+      } catch (error: any) {
+        res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error?.message || 'Unknown error' } });
+      }
     }
   );
 
@@ -502,13 +543,7 @@ export function createProductRoutes(
     ...sellerMiddleware,
     cache,
     async (req, res) => {
-      res.status(501).json({
-        success: false,
-        error: {
-          code: 'NOT_IMPLEMENTED',
-          message: 'Product metrics are not implemented yet'
-        }
-      });
+      await productController.getProductMetrics(req, res);
     }
   );
 
@@ -571,13 +606,7 @@ export function createProductRoutes(
     ...sellerMiddleware,
     validateSchemaRequest(updateProductCategorySchema),
     async (req, res) => {
-      res.status(501).json({
-        success: false,
-        error: {
-          code: 'NOT_IMPLEMENTED',
-          message: 'Product category updates are not implemented yet'
-        }
-      });
+      await productController.updateProductCategory(req, res);
     }
   );
 
@@ -586,18 +615,31 @@ export function createProductRoutes(
   // =====================================================================================
 
   /**
-   * Upload Product Media
+   * Upload Product Media (per-product convenience alias)
    * POST /v1/products/:id/media
+   * Same pipeline as /v1/media/upload but attaches the result to the product's MediaRef record.
    */
   router.post(`${apiPrefix}/products/:id/media`,
     ...sellerMiddleware,
     async (req, res) => {
-      res.status(501).json({
-        success: false,
-        error: {
-          code: 'NOT_IMPLEMENTED',
-          message: 'Product media upload is not implemented yet'
+      // Dynamic import to avoid circular dependency at module load time
+      const multer = require('multer');
+      const upload = multer({
+        storage: multer.memoryStorage(),
+        limits: { fileSize: 20 * 1024 * 1024, files: 1 },
+        fileFilter: (_req: any, file: any, cb: any) => {
+          const allowed = ['image/webp', 'image/jpeg', 'image/png', 'image/jpg'];
+          allowed.includes(file.mimetype) ? cb(null, true) : cb(Object.assign(new Error(`Unsupported format: ${file.mimetype}`), { statusCode: 422 }));
+        },
+      }).single('file');
+
+      upload(req, res, async (err: any) => {
+        if (err) {
+          res.status(err.statusCode ?? 400).json({ success: false, error: { code: 'UPLOAD_ERROR', message: err.message } });
+          return;
         }
+        const { uploadProductMedia } = await import('../controllers/media.controller');
+        await uploadProductMedia(req, res);
       });
     }
   );
@@ -610,13 +652,7 @@ export function createProductRoutes(
     ...commonMiddleware,
     cache,
     async (req, res) => {
-      res.status(501).json({
-        success: false,
-        error: {
-          code: 'NOT_IMPLEMENTED',
-          message: 'Product media listing is not implemented yet'
-        }
-      });
+      await productController.getProductMedia(req, res);
     }
   );
 

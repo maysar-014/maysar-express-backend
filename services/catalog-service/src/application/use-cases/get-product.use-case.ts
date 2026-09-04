@@ -16,6 +16,7 @@ type ProductRecord = {
   supplierLocationId?: string;
   supplierLocation?: string;
   name?: string;
+  brand?: string;
   description?: string;
   price?: {
     amount?: number;
@@ -23,6 +24,7 @@ type ProductRecord = {
   } | number;
   currency?: string;
   categoryId?: string;
+  categoryName?: string;
   type?: string;
   tags?: string[];
   images?: string[];
@@ -78,6 +80,7 @@ export interface ProductDetails {
   supplierLocationId?: string;
   supplierLocation?: string;
   name: string;
+  brand?: string;
   description: string;
   price: {
     amount: number;
@@ -98,6 +101,7 @@ export interface ProductDetails {
   }>;
   mediaUrls?: string[];
   thumbnailUrl?: string;
+  inventoryAvailable?: number;
   inventory?: {
     available: number;
     reserved: number;
@@ -117,6 +121,7 @@ export interface ProductDetails {
   }>;
   createdAt: Date;
   updatedAt: Date;
+  qualityScore?: number;
 }
 
 export interface GetProductResponse {
@@ -205,12 +210,14 @@ export class GetProductUseCase {
       supplierLocationId: normalizedProduct.supplierLocationId,
       supplierLocation: normalizedProduct.supplierLocation,
       name: normalizedProduct.name,
+      brand: normalizedProduct.brand,
       description: normalizedProduct.description,
       price: {
         amount: normalizedProduct.price.amount,
         currency: normalizedProduct.price.currency
       },
       categoryId: normalizedProduct.categoryId,
+      categoryName: normalizedProduct.categoryName,
       type: normalizedProduct.type,
       tags: normalizedProduct.tags || [],
       attributes: normalizedProduct.attributes || {},
@@ -222,7 +229,8 @@ export class GetProductUseCase {
         status: stockStatus
       },
       createdAt: normalizedProduct.createdAt,
-      updatedAt: normalizedProduct.updatedAt
+      updatedAt: normalizedProduct.updatedAt,
+      qualityScore: Number(rawProduct.qualityScore ?? 0)
     };
 
     // Enrich with review aggregate stats
@@ -267,6 +275,9 @@ export class GetProductUseCase {
 
   private normalizeProductRecord(product: unknown): ProductDetails {
     const candidate = product as ProductRecord;
+    const variants = Array.isArray((candidate as any).variants) ? (candidate as any).variants : [];
+    const availableStock = variants.reduce((sum: number, variant: any) => sum + Math.max(0, Number(variant.inventoryQuantity ?? variant.stock ?? 0)), 0);
+    const inventoryStatus = availableStock === 0 ? 'out_of_stock' : availableStock <= 10 ? 'low_stock' : 'in_stock';
 
     if (candidate && typeof candidate.getId === 'function' && typeof candidate.getDefaultVariant === 'function') {
       const defaultVariant = candidate.getDefaultVariant();
@@ -282,10 +293,14 @@ export class GetProductUseCase {
           currency: defaultVariant.getPrice().getCurrency()
         },
         categoryId: String(candidate.getCategoryId?.()?.toString?.() || ''),
+        categoryName: undefined,
         type: String(candidate.getType?.() || 'physical'),
         tags: candidate.getTags?.() || [],
+        brand: undefined,
         attributes: defaultVariant.getAttributes?.() || {},
         status: String(candidate.getStatus?.()?.toString?.() || 'draft'),
+        inventoryAvailable: availableStock,
+        inventory: { available: availableStock, reserved: 0, total: availableStock, status: inventoryStatus },
         mediaUrls: [],
         thumbnailUrl: undefined,
         createdAt: candidate.getCreatedAt?.() ?? new Date(),
@@ -305,10 +320,14 @@ export class GetProductUseCase {
         currency: String((candidate.price && typeof candidate.price === 'object' ? candidate.price.currency : candidate.currency) ?? 'USD')
       },
       categoryId: String(candidate.categoryId || ''),
+      categoryName: candidate.categoryName ?? (candidate as any).category?.name,
       type: String(candidate.type || 'physical'),
       tags: candidate.tags || [],
+      brand: candidate.brand,
       attributes: candidate.attributes || {},
       status: String(candidate.status || 'draft'),
+      inventoryAvailable: availableStock,
+      inventory: { available: availableStock, reserved: 0, total: availableStock, status: inventoryStatus },
       media: Array.isArray(candidate.media) ? candidate.media.map((item, index) => ({
         id: String(item.id ?? `${candidate.id || 'product'}-media-${index}`),
         url: String(item.url ?? ''),
@@ -515,6 +534,9 @@ export class GetProductsBySellerUseCase {
 
   private normalizeProductRecord(product: ProductRecord): ProductDetails {
     const candidate = product as ProductRecord;
+    const variants = Array.isArray((candidate as any).variants) ? (candidate as any).variants : [];
+    const availableStock = variants.reduce((sum: number, variant: any) => sum + Math.max(0, Number(variant.inventoryQuantity ?? variant.stock ?? 0)), 0);
+    const inventoryStatus = availableStock === 0 ? 'out_of_stock' : availableStock <= 10 ? 'low_stock' : 'in_stock';
 
     if (candidate && typeof candidate.getId === 'function' && typeof candidate.getDefaultVariant === 'function') {
       const defaultVariant = candidate.getDefaultVariant();
@@ -530,10 +552,14 @@ export class GetProductsBySellerUseCase {
           currency: defaultVariant.getPrice().getCurrency()
         },
         categoryId: String(candidate.getCategoryId?.()?.toString?.() || ''),
+        categoryName: undefined,
         type: String(candidate.getType?.() || 'physical'),
         tags: candidate.getTags?.() || [],
+        brand: undefined,
         attributes: defaultVariant.getAttributes?.() || {},
         status: String(candidate.getStatus?.()?.toString?.() || 'draft'),
+        inventoryAvailable: availableStock,
+        inventory: { available: availableStock, reserved: 0, total: availableStock, status: inventoryStatus },
         mediaUrls: [],
         thumbnailUrl: undefined,
         createdAt: candidate.getCreatedAt?.() ?? new Date(),
@@ -553,10 +579,14 @@ export class GetProductsBySellerUseCase {
         currency: String((candidate.price && typeof candidate.price === 'object' ? candidate.price.currency : candidate.currency) ?? 'USD')
       },
       categoryId: String(candidate.categoryId || ''),
+      categoryName: candidate.categoryName ?? (candidate as any).category?.name,
       type: String(candidate.type || 'physical'),
       tags: candidate.tags || [],
+      brand: candidate.brand,
       attributes: candidate.attributes || {},
       status: String(candidate.status || 'draft'),
+      inventoryAvailable: availableStock,
+      inventory: { available: availableStock, reserved: 0, total: availableStock, status: inventoryStatus },
       media: Array.isArray(candidate.media) ? candidate.media.map((item, index) => ({
         id: String(item.id ?? `${candidate.id || 'product'}-media-${index}`),
         url: String(item.url ?? ''),

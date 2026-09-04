@@ -1,6 +1,7 @@
 import { CODEligibilityEngine } from '../../domain/engines/cod-eligibility.engine';
 import { Order } from '../../domain/entities/order.entity';
 import { assessMinimumBasketValue } from '@shared/business/minimum-basket-value';
+import { CatalogProductRepository } from '../../infrastructure/repositories/catalog-product.repository';
 
 export interface CheckCODEligibilityInput {
     buyerId: string;
@@ -29,6 +30,15 @@ export class CheckCODEligibilityUseCase {
                 eligible: false,
                 reason: minimumBasketValueAssessment.message
             };
+        }
+
+        // Enforce the product-level COD flag. Only products whose catalog record has
+        // codAccepted=true may be paid on delivery. This is the authoritative backend
+        // guard — the frontend gates this via payOnDelivery, but the API must not
+        // trust client input for a risk-bearing payment method.
+        const productBlockReason = await this.resolveProductCodBlock(input.items);
+        if (productBlockReason) {
+            return { eligible: false, reason: productBlockReason };
         }
 
         // Check buyer eligibility
@@ -69,5 +79,26 @@ export class CheckCODEligibilityUseCase {
             eligible: true,
             commitmentFee
         };
+    }
+
+    /**
+     * Verifies every item's product accepts COD. Returns a blocking reason, or null
+     * when all products accept COD. Fails closed: if the catalog cannot be queried,
+     * COD is refused rather than allowing an order the product doesn't support.
+     */
+    private async resolveProductCodBlock(
+        items: { productId: string; quantity: number; price: number }[]
+    ): Promise<string | null> {
+        const productIds = items.map((item) => item.productId).filter(Boolean);
+        if (productIds.length === 0) return null;
+
+        try {
+            const nonCod = await new CatalogProductRepository().findNonCodProductIds(productIds);
+            return nonCod.length > 0
+                ? 'One or more items do not support Cash on Delivery'
+                : null;
+        } catch (error) {
+            return 'Unable to verify Cash on Delivery eligibility for these items';
+        }
     }
 }

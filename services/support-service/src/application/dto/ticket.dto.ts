@@ -60,6 +60,7 @@ export interface CloseTicketDto {
     ticketId: string;
     closedBy: string;
     reason?: string;
+    resolution?: string;
 }
 
 export interface TicketAttachmentDto {

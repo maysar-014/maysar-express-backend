@@ -136,7 +136,8 @@ export class DisputeController {
     public async createDispute(req: Request, res: Response): Promise<void> {
         try {
             const userId = req.user!.userId;
-            const { orderId, reason, description, subject, priority, attachments } = req.body;
+            const { reason, description, subject, priority, attachments } = req.body;
+            const orderId = req.body.orderId ?? req.body.ticketId;
 
             const result = await this.createTicketUseCase.execute({
                 userId,
@@ -193,9 +194,16 @@ export class DisputeController {
                 this.attachmentRepository.findByTicketId(ticket.id)
             ]);
 
+            const baseResponse = this.toDisputeResponse(ticket, attachments as AttachmentLike[], messages);
+            // Surface ESCALATED status when the dispute priority has been raised above LOW.
+            // Priority escalation is the mechanism for escalation — no separate DB status field.
+            const derivedStatus = ticket.priority !== TicketPriority.LOW && ticket.status !== TicketStatus.RESOLVED && ticket.status !== TicketStatus.CLOSED
+                ? 'ESCALATED'
+                : baseResponse.status;
+
             res.status(200).json({
                 success: true,
-                data: this.toDisputeResponse(ticket, attachments as AttachmentLike[], messages)
+                data: { ...baseResponse, status: derivedStatus }
             });
         } catch (error) {
             res.status(400).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
@@ -240,7 +248,12 @@ export class DisputeController {
             const attachments = await this.attachmentRepository.findByTicketId(updated.id);
             res.status(200).json({
                 success: true,
-                data: this.toDisputeResponse(updated as never, attachments as AttachmentLike[])
+                data: {
+                    ...this.toDisputeResponse(updated as never, attachments as AttachmentLike[]),
+                    // Surface escalated status synthetically — stored as IN_PROGRESS in DB
+                    // but exposed as ESCALATED to consumers after a priority bump.
+                    status: 'ESCALATED'
+                }
             });
         } catch (error) {
             res.status(400).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });

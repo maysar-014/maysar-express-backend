@@ -230,7 +230,12 @@ export interface Address {
   type: 'billing' | 'shipping' | 'business' | 'home';
   isPrimary: boolean;
   street: string;
-  city: string;
+  // Tanzania canonical hierarchy (preferred over city)
+  ward?: string;      // most precise unit — e.g. "Kivukoni"
+  district?: string;  // e.g. "Ilala Cbd"
+  region?: string;    // e.g. "Dar es Salaam"
+  // Legacy / international (optional — either city or ward/district/region must be provided)
+  city?: string;
   state?: string;
   postalCode: string;
   country: string;

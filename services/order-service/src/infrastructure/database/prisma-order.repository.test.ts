@@ -78,6 +78,7 @@ describe('PrismaOrderRepository', () => {
       PrismaOrderRepository: new () => {
         save(order: Order): Promise<void>;
         findById(id: string): Promise<Order | null>;
+        findBySellerId(sellerId: string): Promise<Order[]>;
         update(order: Order): Promise<void>;
         delete(id: string): Promise<void>;
         findByStatus(status: OrderStatus): Promise<Order[]>;
@@ -158,18 +159,37 @@ describe('PrismaOrderRepository', () => {
     expect(mockOrderDelegate.delete).toHaveBeenCalledWith({ where: { id: 'order-1' } });
   });
 
-  it('finds orders by status and checks existence', async () => {
+  it('persists processing orders as assigned because the database enum has no processing state', async () => {
+    const PrismaOrderRepository = getRepositoryClass();
+    mockOrderDelegate.update.mockResolvedValue({});
+    const repo = new PrismaOrderRepository();
+    const order = makeOrder();
+    order.status = OrderStatus.PROCESSING;
+
+    await repo.update(order);
+
+    expect(mockOrderDelegate.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'ASSIGNED' })
+      })
+    );
+  });
+
+  it('finds orders by status, seller, and checks existence', async () => {
     const PrismaOrderRepository = getRepositoryClass();
     mockOrderDelegate.findMany.mockResolvedValue([makePrismaOrder()]);
     mockOrderDelegate.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
     const repo = new PrismaOrderRepository();
 
     const byStatus = await repo.findByStatus(OrderStatus.PENDING);
+    const bySeller = await repo.findBySellerId('seller-1');
     const exists = await repo.exists('order-1');
     const notExists = await repo.exists('missing');
 
     expect(byStatus).toHaveLength(1);
     expect(byStatus[0]).toBeInstanceOf(Order);
+    expect(bySeller).toHaveLength(1);
+    expect(mockOrderDelegate.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { sellerId: 'seller-1' } }));
     expect(exists).toBe(true);
     expect(notExists).toBe(false);
   });

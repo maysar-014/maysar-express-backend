@@ -175,6 +175,17 @@ export class SendMessageUseCase {
         return { ...metadata, ...snapshot, orderId };
       }
 
+      case 'ORDER_CARD': {
+        // System-generated order card — carries full order details + action button.
+        // orderId is required; other fields (items, total, actionType) come from metadata.
+        const orderId = metadata.orderId as string | undefined;
+        if (!orderId) throw chatValidationError('ORDER_CARD requires metadata.orderId');
+        // Fetch snapshot for authorization — sender must be buyer or seller for this order
+        const snapshot = await this.orderClient.getOrderSnapshot(orderId, input.senderId);
+        if (!snapshot) throw chatOrderAccessDenied();
+        return { ...metadata, ...snapshot, orderId };
+      }
+
       case 'LOCATION_PIN': {
         const lat = metadata.latitude as number | undefined;
         const lng = metadata.longitude as number | undefined;
@@ -195,6 +206,8 @@ export class SendMessageUseCase {
           'TRACK_ORDER',
           'ACCEPT_OFFER',
           'DECLINE_OFFER',
+          'CONFIRM_ORDER',
+          'DECLINE_ORDER',
         ];
         const actionType = metadata.actionType as string | undefined;
         if (!actionType || !validActions.includes(actionType as QuickActionType)) {

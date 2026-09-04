@@ -7,6 +7,7 @@ type UserRegisteredPayload = {
   email?: string;
   role?: string;
   publicCode?: string;
+  phoneNumber?: string;
 };
 
 type UserEmailVerifiedPayload = {
@@ -90,6 +91,7 @@ export class UserSyncEventHandlers {
     const email = payload.email ? String(payload.email).toLowerCase() : '';
     const role = payload.role ? this.mapRole(payload.role) : Auth_UserRole.BUYER;
     const publicCode = payload.publicCode ?? null;
+    const phoneNumber = payload.phoneNumber ?? null;
 
     try {
       // Use upsert: auth_users row may not exist yet when UserRegistered fires
@@ -101,13 +103,16 @@ export class UserSyncEventHandlers {
           passwordHash: '', // auth-service owns credentials; placeholder until set
           role,
           status: Auth_UserStatus.PENDING_VERIFICATION,
-          ...(publicCode ? { publicCode } : {})
+          ...(publicCode ? { publicCode } : {}),
+          ...(phoneNumber ? { phoneNumber } : {})
         },
         update: {
           ...(email ? { email } : {}),
           role,
           status: Auth_UserStatus.PENDING_VERIFICATION,
-          ...(publicCode ? { publicCode } : {})
+          ...(publicCode ? { publicCode } : {}),
+          // Only update phoneNumber if it's provided in the event — don't overwrite an existing one with null
+          ...(phoneNumber ? { phoneNumber } : {})
         }
       });
     } catch (error: any) {

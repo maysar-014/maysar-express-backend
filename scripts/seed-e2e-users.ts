@@ -2,6 +2,7 @@ import * as dotenv from 'dotenv';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import path from 'path';
+import fs from 'fs';
 import { createClient } from 'redis';
 
 // Load .env FIRST so DATABASE_URL is set before PrismaClient is instantiated.
@@ -9,8 +10,11 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env'), override: true });
 
 type JsonBody = Record<string, unknown> | string | number | boolean | null;
 
+/**
+ * SeedUser no longer has a hardcoded `id` — the system assigns one.
+ * The real assigned ID is captured after registration and written to seed-output.json.
+ */
 type SeedUser = {
-  id: string;
   role: 'system' | 'buyer' | 'seller' | 'courier' | 'supplier' | 'enabler';
   email: string;
   password: string;
@@ -20,15 +24,45 @@ type SeedUser = {
   walletTarget: number;
 };
 
+/**
+ * Output shape written to seed-output.json for Playwright to consume.
+ */
+type SeedOutput = {
+  generatedAt: string;
+  users: {
+    role: string;
+    email: string;
+    id: string;
+    phoneNumber: string;
+  }[];
+  product: {
+    id: string;
+    title: string;
+    price: number;
+    sellerId: string;
+    categoryId: string;
+    variantId?: string;
+  } | null;
+  delivery: {
+    id: string;
+  } | null;
+};
+
 const DEFAULT_PASSWORD = 'Maysar@2024!';
 const BASE_URL = resolveBaseUrl();
 // Prisma client is initialized lazily inside main() after dotenv has loaded DATABASE_URL.
 let prisma: PrismaClient;
 const SEED_PRODUCT_NAME = 'Maysar Seeded Demo Product';
 
+// Seed output file — Playwright reads this to get real assigned IDs
+const SEED_OUTPUT_PATH = path.resolve(process.cwd(), 'seed-output.json');
+
+/**
+ * SEED_USERS: no hardcoded IDs — the system decides.
+ * Emails are stable so re-runs can look up existing accounts (409 → DB lookup).
+ */
 const SEED_USERS: SeedUser[] = [
   {
-    id: 'usr_ADMIN000000000000000000001',
     role: 'system',
     email: 'admin@maysar.co.tz',
     password: DEFAULT_PASSWORD,
@@ -38,7 +72,6 @@ const SEED_USERS: SeedUser[] = [
     walletTarget: 0
   },
   {
-    id: 'usr_01KRFXQZC36NK3CDEWJJS21RP8',
     role: 'buyer',
     email: 'buyer@maysar.co.tz',
     password: DEFAULT_PASSWORD,
@@ -48,7 +81,6 @@ const SEED_USERS: SeedUser[] = [
     walletTarget: 2_000_000
   },
   {
-    id: 'usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z',
     role: 'seller',
     email: 'seller@maysar.co.tz',
     password: DEFAULT_PASSWORD,
@@ -58,7 +90,6 @@ const SEED_USERS: SeedUser[] = [
     walletTarget: 50_000
   },
   {
-    id: 'usr_01KRFZ1E73P67T886TR2QDY0VT',
     role: 'supplier',
     email: 'supplier@maysar.co.tz',
     password: DEFAULT_PASSWORD,
@@ -68,7 +99,6 @@ const SEED_USERS: SeedUser[] = [
     walletTarget: 0
   },
   {
-    id: 'usr_01KRFZ1E7W4JDR9N9PMGYDD77S',
     role: 'courier',
     email: 'courier@maysar.co.tz',
     password: DEFAULT_PASSWORD,
@@ -78,7 +108,6 @@ const SEED_USERS: SeedUser[] = [
     walletTarget: 0
   },
   {
-    id: 'usr_01KRFZ1E8HMAE7MMH175PJ9337',
     role: 'enabler',
     email: 'enabler@maysar.co.tz',
     password: DEFAULT_PASSWORD,
@@ -152,7 +181,7 @@ async function registerUser(user: SeedUser): Promise<string | null> {
       'x-contract-test': '1'
     },
     body: JSON.stringify({
-      id: user.id,
+      // No hardcoded `id` — let the system assign one
       email: user.email,
       password: user.password,
       role: user.role,
@@ -170,7 +199,7 @@ async function registerUser(user: SeedUser): Promise<string | null> {
     throw new Error(`Registration failed for ${user.email}: HTTP ${response.status} ${response.text}`);
   }
 
-  // Return the userId assigned by the user-service (may differ from user.id)
+  // Return the userId assigned by the user-service
   const body = asRecord(response.body);
   const userId = body['userId'];
   return typeof userId === 'string' && userId.trim() ? userId.trim() : null;
@@ -207,7 +236,15 @@ async function loginUser(user: SeedUser): Promise<string> {
 
   if (lastResponse?.status === 401) {
     const adminToken = await loginAdmin();
-    await activateUser(adminToken, user.id);
+    // Look up the real user ID from DB by email before activating
+    const userRow = await prisma.user_User.findFirst({
+      where: { email: user.email },
+      select: { id: true }
+    }).catch(() => null);
+    const activateId = userRow?.id;
+    if (activateId) {
+      await activateUser(adminToken, activateId);
+    }
     await sleep(250);
     const retry = await requestJson('/api/auth/login', {
       method: 'POST',
@@ -292,9 +329,49 @@ async function ensureWalletBalance(adminToken: string, userId: string, targetBal
     return;
   }
 
-  const balanceResponse = await requestJson(`/api/wallet/wallets/${userId}/balance`, {
+  let balanceResponse = await requestJson(`/api/wallet/wallets/${userId}/balance`, {
     headers: authHeader(adminToken)
   });
+
+  // Wallet doesn't exist yet — the UserRegistered.v1 handler may still be processing.
+  // Retry a few times to give it a chance before falling back to direct Prisma creation.
+  if (balanceResponse.status === 404) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      await sleep(500 * attempt);
+      balanceResponse = await requestJson(`/api/wallet/wallets/${userId}/balance`, {
+        headers: authHeader(adminToken)
+      });
+      if (balanceResponse.status !== 404) break;
+    }
+  }
+
+  // Wallet doesn't exist yet — create it directly via Prisma, then retry
+  if (balanceResponse.status === 404) {
+    console.log(`  ↳ wallet not found for ${userId} — creating directly via Prisma`);
+    try {
+      const { createUlid } = await import('../shared/ids/id');
+      const walletId = `wal_${createUlid()}`;
+      await (prisma as any).wallet_Wallet.create({
+        data: {
+          id: walletId,
+          userId,
+          balance: new Prisma.Decimal(0),
+          currency: 'TZS',
+          status: 'ACTIVE',
+          frozenAmount: new Prisma.Decimal(0),
+          version: 0,
+        }
+      });
+      console.log(`  ↳ wallet created (id: ${walletId})`);
+      // Re-fetch balance
+      balanceResponse = await requestJson(`/api/wallet/wallets/${userId}/balance`, {
+        headers: authHeader(adminToken)
+      });
+    } catch (createErr: any) {
+      console.warn(`  ↳ wallet creation failed: ${createErr?.message?.split('\n')[0]}`);
+      return;
+    }
+  }
 
   if (!balanceResponse.ok) {
     throw new Error(`Failed to read wallet balance for ${userId}: HTTP ${balanceResponse.status} ${balanceResponse.text}`);
@@ -311,7 +388,7 @@ async function ensureWalletBalance(adminToken: string, userId: string, targetBal
     return;
   }
 
-  const idempotencyKey = createIdempotencyKey(`seed-wallet-${userId}`);
+  const idempotencyKey = createIdempotencyKey(`sw-${userId.slice(-12)}`);
   const correlationId = randomUUID();
 
   const creditResponse = await requestJson(`/api/wallet/wallets/${userId}/credit`, {
@@ -344,20 +421,64 @@ async function ensureWalletBalance(adminToken: string, userId: string, targetBal
 }
 
 async function seedSellerProduct(sellerId: string): Promise<Record<string, unknown>> {
-  const category = await prisma.category.findFirst({
+  let category = await prisma.category.findFirst({
     select: { id: true, name: true, slug: true },
     orderBy: { createdAt: 'asc' }
   });
-  const location = await prisma.businessAddress.findFirst({
+
+  // Create a default category if none exists (fresh DB after reset)
+  if (!category) {
+    category = await prisma.category.create({
+      data: {
+        name: 'General',
+        slug: 'general',
+        description: 'General products category',
+        displayOrder: 0,
+        isActive: true,
+      },
+      select: { id: true, name: true, slug: true }
+    });
+    console.log(`  ↳ created default catalog category (id: ${category.id})`);
+  }
+
+  let location = await prisma.businessAddress.findFirst({
     select: { id: true, city: true, street: true, country: true },
     orderBy: { id: 'asc' }
   });
 
-  if (!category) {
-    throw new Error('No catalog category found for product seeding');
-  }
+  // Create a default business address if none exists
   if (!location) {
-    throw new Error('No business address found for product seeding');
+    const business = await (prisma as any).businessregistry_businesses?.findFirst?.() 
+      ?? await prisma.business.findFirst().catch(() => null);
+    
+    let businessId: string;
+    if (!business) {
+      const newBusiness = await prisma.business.create({
+        data: {
+          name: 'Seed Business',
+          businessType: 'SOLE_PROPRIETORSHIP' as any,
+          registrationNumber: `SEED-${Date.now()}`,
+          ownerId: sellerId,
+        }
+      });
+      businessId = newBusiness.id;
+    } else {
+      businessId = business.id;
+    }
+
+    location = await prisma.businessAddress.create({
+      data: {
+        businessId,
+        type: 'MAIN' as any,
+        street: 'Uhuru Street 1',
+        city: 'Dar es Salaam',
+        region: 'Dar es Salaam',
+        country: 'Tanzania',
+        isPrimary: true,
+      },
+      select: { id: true, city: true, street: true, country: true }
+    });
+    console.log(`  ↳ created default business address (id: ${location.id})`);
   }
 
   const existing = await prisma.product.findFirst({
@@ -453,10 +574,10 @@ async function seedSellerProduct(sellerId: string): Promise<Record<string, unkno
   };
 }
 
-async function resetCourierLogisticsStatus(): Promise<void> {
+async function resetCourierLogisticsStatus(courierId: string): Promise<void> {
   try {
     await (prisma as any).logistics_Courier.updateMany({
-      where: { id: SEED_USERS.find(u => u.role === 'courier')?.id },
+      where: { id: courierId },
       data: { status: 'online' },
     });
   } catch (err: any) {
@@ -527,10 +648,10 @@ async function seedDelivery(courierId: string): Promise<string | null> {
   }
 }
 
-async function seedCourierProfile(user: SeedUser): Promise<void> {
+async function seedCourierProfile(courierId: string, user: SeedUser): Promise<void> {
   try {
     await (prisma as any).logistics_Courier.upsert({
-      where: { id: user.id },
+      where: { id: courierId },
       update: {
         status: 'online',
         onTimeDeliveryRate: 0.95,
@@ -538,7 +659,7 @@ async function seedCourierProfile(user: SeedUser): Promise<void> {
         completedDeliveries: 10,
       },
       create: {
-        id: user.id,
+        id: courierId,
         name: `${user.firstName} ${user.lastName}`,
         phone: user.phoneNumber,
         email: user.email,
@@ -614,7 +735,7 @@ async function seedEnablerProfile(userId: string, _token: string): Promise<void>
         method: 'POST',
         headers: { ...authHeader(adminTk), 'content-type': 'application/json' },
         body: JSON.stringify({
-          adminId: SEED_USERS[0].id,
+          adminId: (await prisma.user_User.findFirst({ where: { email: 'admin@maysar.co.tz' }, select: { id: true } }).catch(() => null))?.id ?? 'admin',
           completenessEvents: ['identity_verified'],
         }),
       });
@@ -676,115 +797,199 @@ async function main(): Promise<void> {
   await bootstrapAdminActivation(realAdminId);
   console.log(`  ↳ admin bootstrapped via direct DB activation (id: ${realAdminId})`);
 
+  // Look up all non-admin users by email to get their real IDs for bulk unlock
+  const nonAdminEmailIds: string[] = [];
+  for (const u of SEED_USERS.slice(1)) {
+    const row = await prisma.user_User.findFirst({ where: { email: u.email }, select: { id: true } }).catch(() => null);
+    if (row) nonAdminEmailIds.push(row.id);
+  }
+
   // Reset any previously-locked or pending non-admin users in user_User directly.
-  // Retry once on transient DB errors.
-  const nonAdminIds = SEED_USERS.slice(1).map(u => u.id);
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      await prisma.user_User.updateMany({
-        where: { id: { in: nonAdminIds } },
-        data: {
-          status: 'ACTIVE' as any,
-          failedLoginAttempts: 0,
-          lockoutUntil: null
-        }
-      });
-      await prisma.user.updateMany({
-        where: { id: { in: nonAdminIds } },
-        data: {
-          status: 'ACTIVE' as any,
-          failedLoginAttempts: 0,
-          lockoutUntil: null
-        }
-      });
+      if (nonAdminEmailIds.length > 0) {
+        await prisma.user_User.updateMany({
+          where: { id: { in: nonAdminEmailIds } },
+          data: { status: 'ACTIVE' as any, failedLoginAttempts: 0, lockoutUntil: null }
+        });
+        await prisma.user.updateMany({
+          where: { id: { in: nonAdminEmailIds } },
+          data: { status: 'ACTIVE' as any, failedLoginAttempts: 0, lockoutUntil: null }
+        });
+      }
       break;
     } catch (dbErr: any) {
-      if (attempt < 2) {
-        await sleep(2000);
-      } else {
-        throw dbErr;
-      }
+      if (attempt < 2) { await sleep(2000); } else { throw dbErr; }
     }
   }
   console.log(`  ↳ non-admin users pre-unlocked in user_User and auth_users`);
 
-  // Clear recent wallet transactions for all seeded users so the velocity check
-  // starts fresh. This prevents HIGH_AMOUNT_VELOCITY / SUSPICIOUS_REPETITION errors
-  // during E2E test runs that place many wallet orders.
-  // Delete ALL transactions for seeded users (not just last hour) since the velocity
-  // window resets fully when the transaction history is cleared.
-  const allUserIds = SEED_USERS.map(u => u.id);
+  // Clear wallet transactions for all seeded-by-email users (velocity reset)
+  const allEmailIds = [realAdminId, ...nonAdminEmailIds].filter(Boolean);
   const deletedTx = await prisma.wallet_Transaction.deleteMany({
-    where: { userId: { in: allUserIds } }
+    where: { userId: { in: allEmailIds } }
   });
   if (deletedTx.count > 0) {
     console.log(`  ↳ cleared ${deletedTx.count} wallet transactions (velocity reset)`);
   }
 
-  // Cancel any open COD or PENDING orders from previous E2E runs so COD eligibility
-  // checks start clean (no stale "active COD order" state for the buyer).
-  try {
-    const openOrders = await prisma.order_Order.updateMany({
-      where: {
-        buyerId: SEED_USERS[1].id, // buyer
-        status: { in: ['PENDING', 'CONFIRMED', 'ASSIGNED'] as any[] }
-      },
-      data: { status: 'CANCELLED' as any }
-    });
-    if (openOrders.count > 0) {
-      console.log(`  ↳ cancelled ${openOrders.count} stale open order(s) (COD eligibility reset)`);
+  // Cancel stale open orders for the buyer (look up by email)
+  // Use raw SQL to bypass Prisma enum type restrictions and cover both
+  // uppercase (PENDING/CONFIRMED) and any other non-terminal statuses.
+  const buyerRow = await prisma.user_User.findFirst({ where: { email: 'buyer@maysar.co.tz' }, select: { id: true } }).catch(() => null);
+  if (buyerRow) {
+    try {
+      // Cancel all non-terminal orders using raw SQL — covers any status case variation
+      await prisma.$executeRaw`
+        UPDATE orders
+        SET status = 'CANCELLED', "updatedAt" = NOW()
+        WHERE "buyerId" = ${buyerRow.id}
+          AND status NOT IN ('CANCELLED', 'DELIVERED')
+      `;
+      console.log(`  ↳ cancelled all stale non-terminal orders for buyer (COD eligibility + wallet lock reset)`);
+    } catch (orderCancelErr: any) {
+      // Fallback to Prisma ORM if raw SQL fails
+      try {
+        const openOrders = await prisma.order_Order.updateMany({
+          where: { buyerId: buyerRow.id, status: { in: ['PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_TRANSIT'] as any[] } },
+          data: { status: 'CANCELLED' as any }
+        });
+        if (openOrders.count > 0) {
+          console.log(`  ↳ cancelled ${openOrders.count} stale open order(s) via ORM fallback`);
+        }
+      } catch (ormErr: any) {
+        console.warn(`  ↳ Stale order cancel skipped: ${ormErr?.message?.split('\n')[0]}`);
+      }
     }
-  } catch (orderCancelErr: any) {
-    console.warn(`  ↳ Stale order cancel skipped: ${orderCancelErr?.message?.split('\n')[0]}`);
   }
 
   // Flush stale Redis wallet locks BEFORE user loop so they start clean
   await flushWalletLocks();
 
-  // Reset courier logistics status to 'online' so delivery creation tests find an available courier
-  await resetCourierLogisticsStatus();
+  // ── Per-user seed loop ──────────────────────────────────────────────────────
+  // Track real assigned IDs for seed-output.json
+  const seedOutput: SeedOutput = {
+    generatedAt: new Date().toISOString(),
+    users: [],
+    product: null,
+    delivery: null,
+  };
+
+  // Track courier real ID for delivery seeding
+  let courierRealId: string | null = null;
 
   for (const user of SEED_USERS) {
-    if (user !== SEED_USERS[0]) {
-      await registerUser(user);
+    let realUserId: string;
+
+    if (user.role === 'system') {
+      // Admin was already bootstrapped above
+      realUserId = realAdminId;
+    } else {
+      // Register and capture real ID
+      const returnedId = await registerUser(user);
+      if (returnedId) {
+        realUserId = returnedId;
+      } else {
+        // 409 re-run — look up by email
+        const row = await prisma.user_User.findFirst({ where: { email: user.email }, select: { id: true } }).catch(() => null);
+        if (!row) throw new Error(`Cannot resolve real ID for ${user.email}`);
+        realUserId = row.id;
+      }
+      // Activate the user
+      await activateUser(await loginAdmin(), realUserId);
     }
-    // Skip HTTP activation for the admin — it was already activated via Prisma bootstrap above.
-    // For all other users, use the admin token to activate via the HTTP admin endpoint.
-    if (user !== SEED_USERS[0]) {
-      await activateUser(await loginAdmin(), user.id);
-    }
+
     const token = await loginUser(user);
-    console.log(`✓ registered and logged in ${user.role}: ${user.email}`);
+    console.log(`✓ seeded ${user.role}: ${user.email} (id: ${realUserId})`);
+
+    // Record in output
+    seedOutput.users.push({ role: user.role, email: user.email, id: realUserId, phoneNumber: user.phoneNumber });
 
     if (user.role === 'seller') {
-      const seededProduct = await seedSellerProduct(user.id);
-      console.log(`  ↳ seeded product: ${String(seededProduct['title'] ?? seededProduct['name'] ?? SEED_PRODUCT_NAME)}`);
+      const seededProduct = await seedSellerProduct(realUserId);
+      console.log(`  ↳ seeded product: ${String(seededProduct['title'] ?? SEED_PRODUCT_NAME)}`);
+      const variants = seededProduct['variants'] as any[];
+      seedOutput.product = {
+        id: String(seededProduct['id']),
+        title: String(seededProduct['title'] ?? SEED_PRODUCT_NAME),
+        price: Number(seededProduct['price'] ?? 250000),
+        sellerId: String(seededProduct['sellerId']),
+        categoryId: String(seededProduct['categoryId']),
+        variantId: variants?.[0]?.id,
+      };
     }
 
     if (user.role === 'enabler') {
-      await seedEnablerProfile(user.id, token);
+      await seedEnablerProfile(realUserId, token);
     }
 
     if (user.role === 'courier') {
-      await seedCourierProfile(user);
-      await seedDelivery(user.id);
+      courierRealId = realUserId;
+      await seedCourierProfile(realUserId, user);
+      const deliveryId = await seedDelivery(realUserId);
+      if (deliveryId) {
+        seedOutput.delivery = { id: deliveryId };
+      }
     }
 
     if (user.walletTarget > 0) {
       const adminToken = await loginAdmin();
-      await ensureWalletBalance(adminToken, user.id, user.walletTarget);
+      await ensureWalletBalance(adminToken, realUserId, user.walletTarget);
       console.log(`  ↳ wallet set to at least ${user.walletTarget.toLocaleString()} TZS`);
     }
-
-    if (!token) {
-      throw new Error(`Missing token after login for ${user.email}`);
-    }
   }
+
+  // Reset courier logistics status now that we have the real ID
+  if (courierRealId) {
+    await resetCourierLogisticsStatus(courierRealId);
+  }
+
+  // Write seed output for Playwright consumption
+  fs.writeFileSync(SEED_OUTPUT_PATH, JSON.stringify(seedOutput, null, 2), 'utf-8');
+  console.log(`\n📄 Seed output written to: ${SEED_OUTPUT_PATH}`);
+  console.log('   Playwright tests should read this file to get real user IDs.\n');
+
+  // ── Post-seed: ensure verification flags are set on all user tables ─────────
+  // Build an id→phoneNumber map from the output
+  const phoneByRole: Record<string, string> = {
+    system:   '+255700000001',
+    buyer:    '+255700000002',
+    seller:   '+255700000003',
+    supplier: '+255700000004',
+    courier:  '+255700000005',
+    enabler:  '+255700000006',
+  };
+  for (const u of seedOutput.users) {
+    const phone = phoneByRole[u.role] ?? null;
+    // Update auth_users
+    try {
+      await prisma.user.update({
+        where: { id: u.id },
+        data: {
+          isEmailVerified: true,
+          isPhoneVerified: true,
+          ...(phone ? { phoneNumber: phone } : {}),
+          status: 'ACTIVE' as any
+        }
+      });
+    } catch { /* ignore if not found */ }
+    // Update users (user-service table)
+    try {
+      await prisma.user_User.update({
+        where: { id: u.id },
+        data: {
+          isEmailVerified: true,
+          isPhoneVerified: true,
+          status: 'ACTIVE' as any
+        }
+      });
+    } catch { /* ignore if not found */ }
+  }
+  console.log('  ↳ isEmailVerified=true, isPhoneVerified=true set on all seeded users (both tables)');
 
   console.log('Seed complete.');
 
   // Final flush: clear any wallet locks acquired during seed operations (top-ups)
-  // so the first test suite starts with no held locks.
   await flushWalletLocks();
 }
 

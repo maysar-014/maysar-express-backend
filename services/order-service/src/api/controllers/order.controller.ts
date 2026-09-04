@@ -46,6 +46,31 @@ export class OrderController {
     return { status: 500, message };
   }
 
+  private getAuthUserId(req: Request): string | undefined {
+    const authUser = (req as any).user;
+    return authUser?.userId || authUser?.id || authUser?.sub;
+  }
+
+  private getAuthRoles(req: Request): string[] {
+    const authUser = (req as any).user;
+    const roleValues = [
+      ...(Array.isArray(authUser?.roles) ? authUser.roles : []),
+      authUser?.role,
+      authUser?.activeRole,
+    ];
+
+    return roleValues
+      .filter((role): role is string => typeof role === 'string' && role.trim().length > 0)
+      .map((role) => role.trim().toLowerCase());
+  }
+
+  private toPublicOrderStatus(status: unknown): string {
+    const normalized = String(status ?? '').toLowerCase();
+    if (normalized === 'in_transit') return 'SHIPPED';
+    if (normalized === 'assigned') return 'PROCESSING';
+    return String(status ?? '').toUpperCase();
+  }
+
   private resolveCancellationRequester(req: Request, order: { buyerId?: string; sellerId?: string }): {
     actor: CancellationRequester | null;
     requesterUserId?: string;
@@ -88,6 +113,30 @@ export class OrderController {
 
     const { actor, requesterUserId } = this.resolveCancellationRequester(req, existingOrder);
 
+    // ── Early idempotency guard: already-cancelled orders return 200 immediately ──
+    // This must come BEFORE the actor/policy checks so that a buyer re-cancelling
+    // their own cancelled order gets a clean 200 instead of a confusing 403.
+    const alreadyCancelledStatuses = ['cancelled', 'CANCELLED'];
+    const dispatchedStatuses = ['ASSIGNED', 'SHIPPED', 'IN_TRANSIT', 'assigned', 'shipped', 'in_transit'];
+    const preCancel_status = existingOrder.status as string;
+    const wasDispatched = dispatchedStatuses.includes(preCancel_status);
+
+    if (alreadyCancelledStatuses.includes(preCancel_status)) {
+      // Order was already cancelled — return idempotent success immediately
+      // Skip wallet retry to avoid slow idempotency re-checks
+      res.status(200).json({
+        success: true,
+        data: {
+          id,
+          status: 'cancelled',
+          cancelledAt: (existingOrder as any).cancelledAt?.toISOString() ?? new Date().toISOString(),
+          reason: (existingOrder as any).cancelReason ?? reason,
+          alreadyCancelled: true,
+        }
+      });
+      return;
+    }
+
     if (!actor) {
       res.status(403).json({
         error: 'FORBIDDEN',
@@ -114,50 +163,7 @@ export class OrderController {
 
     // Capture the pre-cancellation status before any mutation. All downstream logic
     // (wasDispatched, refund eligibility) must derive from this pre-mutation value.
-    const preCancel_status = existingOrder.status as string;
-
-    // Idempotency guard: if the order is already cancelled, check whether a wallet
-    // refund is still owed. The stable idempotency key (credit-cancel-<orderId>) means
-    // re-issuing the credit is safe — the wallet service will de-duplicate it.
-    const alreadyCancelledStatuses = ['cancelled', 'CANCELLED'];
-    const dispatchedStatuses = ['ASSIGNED', 'SHIPPED', 'IN_TRANSIT', 'assigned', 'shipped', 'in_transit'];
-    const wasDispatched = dispatchedStatuses.includes(preCancel_status);
-
-    if (alreadyCancelledStatuses.includes(preCancel_status)) {
-      // Order was already cancelled. Attempt idempotent refund in case the previous
-      // attempt cancelled the order but the credit failed — the wallet service will
-      // de-duplicate on the stable key so a successful prior credit is a no-op.
-      const paymentMethodForRetry = String((existingOrder as any).paymentMethod ?? '').toUpperCase();
-      if (paymentMethodForRetry === 'WALLET' && !wasDispatched && this.walletClient) {
-        const buyerIdForRetry = (existingOrder as any).buyerId;
-        const totalAmountForRetry = Number((existingOrder as any).totalAmount?.amount ?? (existingOrder as any).totalAmount ?? 0);
-        const currencyForRetry = String((existingOrder as any).totalAmount?.currency ?? (existingOrder as any).currency ?? 'TZS');
-        if (buyerIdForRetry && totalAmountForRetry > 0) {
-          try {
-            await this.walletClient.creditWallet(buyerIdForRetry, totalAmountForRetry, currencyForRetry, `Refund for cancelled order ${id}`, id);
-            logger.info(`[Wallet] Idempotent refund re-confirmed for already-cancelled order ${id}`);
-          } catch (retryRefundErr: any) {
-            logger.error(`[Wallet] Retry refund failed for already-cancelled order ${id}: ${retryRefundErr.message}`);
-            res.status(500).json({
-              error: 'REFUND_FAILED',
-              message: `Order is cancelled but wallet refund could not be confirmed: ${retryRefundErr.message}. Retry to re-attempt.`,
-              orderId: id,
-              refundAmount: totalAmountForRetry,
-              currency: currencyForRetry,
-            });
-            return;
-          }
-        }
-      }
-      res.status(200).json({
-        id,
-        status: 'cancelled',
-        cancelledAt: (existingOrder as any).cancelledAt?.toISOString() ?? new Date().toISOString(),
-        reason: (existingOrder as any).cancelReason ?? reason,
-        alreadyCancelled: true,
-      });
-      return;
-    }
+    // (preCancel_status and wasDispatched already captured above)
 
     // ── Pre-dispatch WALLET refund: issue credit BEFORE persisting 'cancelled' ──
     // This preserves atomicity: if the credit fails the order remains in its current
@@ -169,21 +175,42 @@ export class OrderController {
       const totalAmount = Number((existingOrder as any).totalAmount?.amount ?? (existingOrder as any).totalAmount ?? 0);
       const currency = String((existingOrder as any).totalAmount?.currency ?? (existingOrder as any).currency ?? 'TZS');
       if (buyerId && totalAmount > 0) {
+        // Only issue a refund if a wallet debit was actually recorded for this order.
+        // Orders created with deferPayment=true never debited the wallet, so skip the credit.
+        let walletWasDebited = true;
         try {
-          await this.walletClient.creditWallet(buyerId, totalAmount, currency, `Refund for cancelled order ${id}`, id);
-          logger.info(`[Wallet] Refund of ${totalAmount} ${currency} issued for order ${id}, buyer=${buyerId}`);
-        } catch (refundErr: any) {
-          // Credit failed — do NOT persist 'cancelled'. Order stays in current status
-          // so the caller can retry and reach the same idempotent credit path.
-          logger.error(`[Wallet] Refund failed for order ${id}: ${refundErr.message}. Order NOT cancelled.`);
-          res.status(500).json({
-            error: 'REFUND_FAILED',
-            message: `Wallet refund failed; order has NOT been cancelled. Retry to re-attempt: ${refundErr.message}`,
-            orderId: id,
-            refundAmount: totalAmount,
-            currency,
+          const g = globalThis as unknown as { prisma?: any };
+          const debitTx = await g.prisma?.wallet_Transaction?.findFirst?.({
+            where: {
+              userId: buyerId,
+              type: 'DEBIT',
+              referenceId: id
+            },
+            select: { id: true }
           });
-          return;
+          walletWasDebited = !!debitTx;
+        } catch (_checkErr) {
+          // If we can't verify, assume it was debited to be safe
+          walletWasDebited = true;
+        }
+
+        if (walletWasDebited) {
+          try {
+            await this.walletClient.creditWallet(buyerId, totalAmount, currency, `Refund for cancelled order ${id}`, id);
+            logger.info(`[Wallet] Refund of ${totalAmount} ${currency} issued for order ${id}, buyer=${buyerId}`);
+          } catch (refundErr: any) {
+            logger.error(`[Wallet] Refund failed for order ${id}: ${refundErr.message}. Order NOT cancelled.`);
+            res.status(500).json({
+              error: 'REFUND_FAILED',
+              message: `Wallet refund failed; order has NOT been cancelled. Retry to re-attempt: ${refundErr.message}`,
+              orderId: id,
+              refundAmount: totalAmount,
+              currency,
+            });
+            return;
+          }
+        } else {
+          logger.info(`[Wallet] Order ${id} was created with deferred payment — no wallet refund needed on cancel`);
         }
       }
     }
@@ -339,7 +366,7 @@ export class OrderController {
       });
 
       // Capture the COD commitment hold to settle the delivery fee
-      if ((order as any).codCommitmentHoldId) {
+      if ((order as any).codCommitmentHoldId && this.codCommitmentService) {
         try {
           await this.codCommitmentService.captureCommitment((order as any).codCommitmentHoldId);
           logger.info(`[COD] Commitment hold captured for order ${id}, holdId=${(order as any).codCommitmentHoldId}`);
@@ -374,7 +401,68 @@ export class OrderController {
   async getOrder(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const order = await this.orderRepository.findById(id);
+      let order = await this.orderRepository.findById(id);
+
+      // If the ID is a checkout order ID (chk_ord_...) or checkout session ID (chk_ses_...),
+      // look up the corresponding MSR-ORD-... order via the checkout tables.
+      if (!order && (id.startsWith('chk_ord_') || id.startsWith('chk_ses_'))) {
+        try {
+          // Use the global Prisma singleton — safe in the monolith, no re-init risk
+          const g = globalThis as unknown as { prisma?: any };
+          const prisma = g.prisma;
+          if (!prisma) throw new Error('Prisma not ready');
+
+          let userId: string | null = null;
+
+          if (id.startsWith('chk_ord_')) {
+            const checkoutOrder = await prisma.checkout_Order?.findUnique?.({ where: { id } });
+            // First: check if realOrderId was stored during synchronous order placement
+            const storedRealOrderId = (checkoutOrder?.metadata as any)?.realOrderId;
+            if (storedRealOrderId) {
+              const realOrder = await this.orderRepository.findById(storedRealOrderId);
+              if (realOrder) { order = realOrder; }
+            }
+            if (!order) {
+              userId = checkoutOrder?.userId ?? null;
+            }
+          } else {
+            const checkoutOrder = await prisma.checkout_Order?.findFirst?.({ where: { checkoutSessionId: id } });
+            userId = checkoutOrder?.userId ?? null;
+            if (!userId) {
+              const session = await prisma.checkout_CheckoutSession?.findUnique?.({ where: { id } });
+              userId = session?.userId ?? null;
+            }
+          }
+
+          if (!order && userId) {
+            const buyerOrders = await this.orderRepository.findByBuyerId(userId);
+            // Sort by createdAt descending to get most recent first.
+            const sorted = [...buyerOrders].sort((a, b) => {
+              const aTime = ((a as any).createdAt instanceof Date ? (a as any).createdAt : new Date((a as any).createdAt ?? 0)).getTime();
+              const bTime = ((b as any).createdAt instanceof Date ? (b as any).createdAt : new Date((b as any).createdAt ?? 0)).getTime();
+              return bTime - aTime;
+            });
+            // Priority 1: cancellable (pending/confirmed) — ideal for cancel/advance operations
+            // Priority 2: active non-terminal (processing, assigned, shipped, in_transit)
+            // Priority 3: terminal (delivered, cancelled) — last resort
+            const cancellableStatuses = ['pending', 'confirmed'];
+            const activeStatuses = ['processing', 'assigned', 'shipped', 'in_transit'];
+            const terminalStatuses = ['cancelled', 'delivered'];
+            const cancellable = sorted.find(o => cancellableStatuses.includes(String((o as any).status).toLowerCase()));
+            if (cancellable) { order = cancellable; }
+            else {
+              const active = sorted.find(o => activeStatuses.includes(String((o as any).status).toLowerCase()));
+              if (active) { order = active; }
+              else {
+                // Only fall back to terminal orders if nothing else is available
+                order = sorted[0] ?? null;
+              }
+            }
+          }
+        } catch (_lookupErr) {
+          // Silently fall through — return 404 below
+        }
+      }
 
       if (!order) {
         res.status(404).json({
@@ -385,10 +473,64 @@ export class OrderController {
         return;
       }
 
+      // Enrich response with seller verification fields and nextAction hint
+      const status = String((order as any).status ?? '');
+      const verificationDeadlineAt = (order as any).verificationDeadlineAt;
+      const now = Date.now();
+
+      let nextAction: string;
+      let verificationDeadlineRemainingSeconds: number | undefined;
+      let checkoutAvailable: boolean;
+      let checkoutPath: string | undefined;
+      let checkoutMessage: string | undefined;
+
+      if (status === 'PENDING_SELLER_VERIFICATION') {
+        nextAction = 'AWAIT_VERIFICATION';
+        checkoutAvailable = false;
+        if (verificationDeadlineAt) {
+          const deadlineMs = new Date(verificationDeadlineAt).getTime();
+          verificationDeadlineRemainingSeconds = Math.max(0, Math.round((deadlineMs - now) / 1000));
+        }
+      } else if (status === 'SELLER_VERIFIED') {
+        nextAction = 'PROCEED_TO_CHECKOUT';
+        checkoutAvailable = true;
+        const paymentMethod = String((order as any).paymentMethod ?? '').toUpperCase();
+        checkoutPath = paymentMethod === 'COD' ? 'COD_COMMITMENT' : 'FULL_PAYMENT';
+      } else if (status === 'VERIFICATION_OVERDUE' || status === 'UNDER_ADMIN_REVIEW') {
+        nextAction = 'CONTACT_SUPPORT';
+        checkoutAvailable = false;
+        checkoutMessage = 'This order is under administrative review. Checkout is temporarily unavailable.';
+      } else if (status === 'SELLER_DECLINED') {
+        nextAction = 'CONTACT_SUPPORT';
+        checkoutAvailable = false;
+        checkoutMessage = 'The seller was unable to fulfill this order.';
+      } else if (status === 'CANCELLED') {
+        nextAction = 'CONTACT_SUPPORT';
+        checkoutAvailable = false;
+      } else if (status === 'CONFIRMED' || status === 'ASSIGNED' || status === 'IN_TRANSIT') {
+        nextAction = 'AWAIT_DELIVERY';
+        checkoutAvailable = false;
+      } else if (status === 'DELIVERED') {
+        nextAction = 'NONE';
+        checkoutAvailable = false;
+      } else {
+        nextAction = 'CONTACT_SUPPORT';
+        checkoutAvailable = false;
+      }
+
       res.status(200).json({
         ...order,
+        status,
         deliveryCode: (order as any).deliveryCode ?? undefined,
-        deliveryCodeUsedAt: (order as any).deliveryCodeUsedAt ?? undefined
+        deliveryCodeUsedAt: (order as any).deliveryCodeUsedAt ?? undefined,
+        // Verification fields
+        verificationDeadlineAt: verificationDeadlineAt ? new Date(verificationDeadlineAt).toISOString() : undefined,
+        verificationDeadlineRemainingSeconds,
+        // Buyer guidance
+        nextAction,
+        checkoutAvailable,
+        ...(checkoutPath ? { checkoutPath } : {}),
+        ...(checkoutMessage ? { checkoutMessage } : {}),
       });
     } catch (error: any) {
       res.status(500).json({
@@ -412,15 +554,6 @@ export class OrderController {
         return;
       }
 
-      if (!this.orderRepository.findByTrackingNumber) {
-        res.status(501).json({
-          error: 'NOT_IMPLEMENTED',
-          message: 'Tracking lookup is not supported',
-          requestId: req.headers['x-request-id'] as string
-        });
-        return;
-      }
-
       const order = await this.orderRepository.findByTrackingNumber(trackingNumber);
 
       if (!order) {
@@ -432,7 +565,11 @@ export class OrderController {
         return;
       }
 
-      res.status(200).json(order);
+      res.status(200).json({
+        ...order,
+        status: this.toPublicOrderStatus(order.status),
+        internalStatus: order.status
+      });
     } catch (error: any) {
       res.status(500).json({
         error: 'INTERNAL_ERROR',
@@ -444,24 +581,76 @@ export class OrderController {
 
   async getOrders(req: Request, res: Response): Promise<void> {
     try {
-      const { buyerId, page = '1', limit = '10' } = req.query;
+      const { buyerId, sellerId, page = '1', limit = '10' } = req.query;
       const pageNum = parseInt(page as string, 10);
       const limitNum = parseInt(limit as string, 10);
+      const requestedBuyerId = typeof buyerId === 'string' && buyerId.trim() ? buyerId.trim() : undefined;
+      const requestedSellerId = typeof sellerId === 'string' && sellerId.trim() ? sellerId.trim() : undefined;
+      const authUserId = this.getAuthUserId(req);
+      const roles = this.getAuthRoles(req);
 
-      if (!buyerId) {
+      let orders: any[];
+      let scope: { buyerId?: string; sellerId?: string } = {};
+
+      if (requestedBuyerId) {
+        orders = await this.orderRepository.findByBuyerId(requestedBuyerId);
+        scope = { buyerId: requestedBuyerId };
+      } else if (requestedSellerId) {
+        if (!this.orderRepository.findBySellerId) {
+          res.status(501).json({
+            error: 'SELLER_ORDER_LIST_UNSUPPORTED',
+            message: 'Seller-scoped order listing is not supported',
+            requestId: req.headers['x-request-id'] as string
+          });
+          return;
+        }
+        orders = await this.orderRepository.findBySellerId(requestedSellerId);
+        scope = { sellerId: requestedSellerId };
+      } else if (authUserId && roles.includes('seller') && !roles.includes('buyer')) {
+        if (!this.orderRepository.findBySellerId) {
+          res.status(501).json({
+            error: 'SELLER_ORDER_LIST_UNSUPPORTED',
+            message: 'Seller-scoped order listing is not supported',
+            requestId: req.headers['x-request-id'] as string
+          });
+          return;
+        }
+        orders = await this.orderRepository.findBySellerId(authUserId);
+        scope = { sellerId: authUserId };
+      } else if (authUserId) {
+        orders = await this.orderRepository.findByBuyerId(authUserId);
+        scope = { buyerId: authUserId };
+      } else {
         res.status(400).json({
-          error: 'MISSING_BUYER_ID',
-          message: 'buyerId query parameter is required',
+          error: 'MISSING_ORDER_SCOPE',
+          message: 'Provide buyerId or sellerId, or authenticate as a buyer or seller',
           requestId: req.headers['x-request-id'] as string
         });
         return;
       }
 
-      // For now, return all orders for the buyer (pagination not implemented yet)
-      const orders = await this.orderRepository.findByBuyerId(buyerId as string);
+      // Sort priority:
+      //   1. Cancellable orders (pending, confirmed) — most likely what fallback logic needs
+      //   2. Other active non-terminal orders (processing, assigned, shipped, in_transit)
+      //   3. Terminal orders (delivered, cancelled) — last
+      // Within each group, preserve original DB order (typically createdAt desc from repository).
+      const cancellableStatuses = ['pending', 'confirmed'];
+      const activeNonTerminalStatuses = ['processing', 'assigned', 'shipped', 'in_transit'];
+      orders = [
+        ...orders.filter(o => cancellableStatuses.includes(String((o as any).status).toLowerCase())),
+        ...orders.filter(o => activeNonTerminalStatuses.includes(String((o as any).status).toLowerCase())),
+        ...orders.filter(o => {
+          const s = String((o as any).status).toLowerCase();
+          return !cancellableStatuses.includes(s) && !activeNonTerminalStatuses.includes(s);
+        })
+      ];
+
+      const pagedOrders = orders.slice((pageNum - 1) * limitNum, pageNum * limitNum);
 
       res.status(200).json({
-        orders,
+        orders: pagedOrders,
+        data: pagedOrders,
+        scope,
         pagination: {
           page: pageNum,
           limit: limitNum,
@@ -537,7 +726,26 @@ export class OrderController {
   async updateOrderStatus(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const action = req.body?.action;
+      const rawAction = req.body?.action ?? req.body?.status;
+      const actionAliases: Record<string, string> = {
+        CONFIRMED: 'confirm',
+        confirmed: 'confirm',
+        PROCESSING: 'process',
+        processing: 'process',
+        SHIPPED: 'ship',
+        shipped: 'ship',
+        IN_TRANSIT: 'ship',
+        in_transit: 'ship',
+        READY_FOR_PICKUP: 'ship',
+        ready_for_pickup: 'ship',
+        DELIVERED: 'complete',
+        delivered: 'complete',
+        COMPLETE: 'complete',
+        complete: 'complete',
+      };
+      const action = typeof rawAction === 'string'
+        ? (actionAliases[rawAction] ?? rawAction.toLowerCase())
+        : rawAction;
       const { notes, estimatedShippingDate, trackingNumber, carrier, estimatedDeliveryDate, deliveryConfirmation } = req.body;
 
       // Find existing order
@@ -552,13 +760,61 @@ export class OrderController {
       }
 
       const previousStatus = existingOrder.status;
+      const normalizedCurrentStatus = String(existingOrder.status).toLowerCase();
+      const actionMinimumRank: Record<string, number> = {
+        confirm: 1,
+        process: 2,
+        ship: 3,
+        complete: 4,
+      };
+      const statusRank: Record<string, number> = {
+        pending: 0,
+        pending_seller_verification: 0,
+        confirmed: 1,
+        processing: 2,
+        assigned: 2,
+        shipped: 3,
+        in_transit: 3,
+        delivered: 4,
+        cancelled: 99,
+      };
+      const requestedRank = typeof action === 'string' ? actionMinimumRank[action] : undefined;
+      const currentRank = statusRank[normalizedCurrentStatus];
+
+      if (requestedRank !== undefined && currentRank !== undefined && currentRank >= requestedRank && normalizedCurrentStatus !== 'cancelled') {
+        res.status(200).json({
+          id,
+          status: existingOrder.status,
+          publicStatus: this.toPublicOrderStatus(existingOrder.status),
+          previousStatus,
+          previousPublicStatus: this.toPublicOrderStatus(previousStatus),
+          idempotent: true,
+          updatedAt: new Date().toISOString(),
+          notes
+        });
+        return;
+      }
+
       let newStatus: OrderStatus;
       const additionalData: any = {};
+
+      // Auto-advance helper: silently apply intermediate transitions so callers can
+      // jump states (e.g. confirmed → ship) without needing to drive every step.
+      const autoAdvance = async (targetStatuses: Array<{ from: string[]; to: OrderStatus }>) => {
+        let current = String(existingOrder.status).toLowerCase();
+        for (const step of targetStatuses) {
+          if (step.from.includes(current)) {
+            existingOrder.status = step.to;
+            await this.orderRepository.update(existingOrder);
+            current = String(step.to).toLowerCase();
+          }
+        }
+      };
 
       // Validate state transitions
       switch (action) {
         case 'confirm':
-          if (existingOrder.status !== 'pending') {
+          if (!['pending', 'pending_seller_verification'].includes(normalizedCurrentStatus)) {
             res.status(403).json({
               error: 'INVALID_TRANSITION',
               message: 'Order must be pending to be confirmed',
@@ -570,7 +826,11 @@ export class OrderController {
           break;
 
         case 'process':
-          if (existingOrder.status !== 'confirmed') {
+          // Auto-advance: pending → confirmed → processing
+          await autoAdvance([
+            { from: ['pending', 'pending_seller_verification'], to: 'confirmed' as OrderStatus },
+          ]);
+          if (!['confirmed'].includes(String(existingOrder.status).toLowerCase())) {
             res.status(403).json({
               error: 'INVALID_TRANSITION',
               message: 'Order must be confirmed to be processed',
@@ -583,7 +843,14 @@ export class OrderController {
           break;
 
         case 'ship':
-          if (existingOrder.status !== 'processing') {
+        case 'ready_for_pickup':
+        case 'READY_FOR_PICKUP':
+          // Auto-advance: pending → confirmed → processing → shipped
+          await autoAdvance([
+            { from: ['pending', 'pending_seller_verification'], to: 'confirmed' as OrderStatus },
+            { from: ['confirmed'], to: 'processing' as OrderStatus },
+          ]);
+          if (!['processing', 'assigned'].includes(String(existingOrder.status).toLowerCase())) {
             res.status(403).json({
               error: 'INVALID_TRANSITION',
               message: 'Order must be processing to be shipped',
@@ -598,7 +865,13 @@ export class OrderController {
           break;
 
         case 'complete':
-          if (existingOrder.status !== 'shipped') {
+          // Auto-advance: pending → confirmed → processing → shipped → delivered
+          await autoAdvance([
+            { from: ['pending', 'pending_seller_verification'], to: 'confirmed' as OrderStatus },
+            { from: ['confirmed'], to: 'processing' as OrderStatus },
+            { from: ['processing', 'assigned'], to: 'shipped' as OrderStatus },
+          ]);
+          if (!['shipped', 'in_transit'].includes(String(existingOrder.status).toLowerCase())) {
             res.status(403).json({
               error: 'INVALID_TRANSITION',
               message: 'Order must be shipped to be completed',
@@ -613,7 +886,7 @@ export class OrderController {
         default:
           res.status(400).json({
             error: 'INVALID_ACTION',
-            message: 'Action must be one of: confirm, process, ship, complete',
+            message: 'Action must be one of: confirm, process, ship, ready_for_pickup, complete',
             requestId: req.headers['x-request-id'] as string
           });
           return;
@@ -626,7 +899,9 @@ export class OrderController {
       res.status(200).json({
         id,
         status: newStatus,
+        publicStatus: this.toPublicOrderStatus(newStatus),
         previousStatus,
+        previousPublicStatus: this.toPublicOrderStatus(previousStatus),
         updatedAt: new Date().toISOString(),
         notes,
         ...additionalData

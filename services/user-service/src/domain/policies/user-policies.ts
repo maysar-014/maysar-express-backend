@@ -29,8 +29,12 @@ export class UserPolicies {
    * Business rules for user profile updates
    */
   static canUpdateProfile(user: User, updates: any): { allowed: boolean; reason?: string } {
-    // Only active users can update profiles
-    if (user.status !== UserStatus.ACTIVE) {
+    // Block only administratively restricted accounts.
+    // PENDING_VERIFICATION and LOCKED users can still manage their own profile
+    // (e.g. add addresses, set preferences) — blocking them here creates UX dead-ends
+    // especially for new registrations that haven't confirmed email yet.
+    const blockedStatuses: UserStatus[] = [UserStatus.SUSPENDED, UserStatus.DEACTIVATED, UserStatus.INACTIVE];
+    if (blockedStatuses.includes(user.status as UserStatus)) {
       return { allowed: false, reason: 'User account is not active' };
     }
 
@@ -163,13 +167,11 @@ export class UserPolicies {
    * Business rules for password changes
    */
   static canChangePassword(user: User): { allowed: boolean; reason?: string } {
-    // Only active users can change passwords
-    if (user.status !== UserStatus.ACTIVE) {
+    // Block only administratively restricted accounts from changing passwords
+    const blockedStatuses: UserStatus[] = [UserStatus.SUSPENDED, UserStatus.DEACTIVATED, UserStatus.INACTIVE];
+    if (blockedStatuses.includes(user.status as UserStatus)) {
       return { allowed: false, reason: 'User account is not active' };
     }
-
-    // TODO: Add password change frequency check once passwordChangedAt is added to User entity
-    // For now, allow password changes
 
     return { allowed: true };
   }

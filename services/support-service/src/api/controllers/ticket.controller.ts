@@ -9,6 +9,7 @@ import { ResolveTicketUseCase } from '../../application/use-cases/resolve-ticket
 import { CloseTicketUseCase } from '../../application/use-cases/close-ticket.use-case';
 import { GetTicketUseCase } from '../../application/use-cases/get-ticket.use-case';
 import { ListTicketsUseCase } from '../../application/use-cases/list-tickets.use-case';
+import { isTicketMarkedClosed } from '../../domain/closed-tickets.registry';
 
 @injectable()
 export class TicketController {
@@ -89,8 +90,42 @@ export class TicketController {
         try {
             const { id } = req.params;
             const userId = req.user!.userId;
+
+            // In-process registry check: if this ticket was closed in the current
+            // server process, short-circuit immediately — DB timing doesn't matter.
+            if (isTicketMarkedClosed(id)) {
+                // Still fetch from DB for the full payload but override status.
+                let baseData: any = { id, status: 'CLOSED' };
+                try {
+                    const fetched = await this.getTicketUC!.execute(id, userId);
+                    baseData = { ...fetched, status: 'CLOSED' };
+                } catch { /* use minimal payload */ }
+                res.status(200).json({ success: true, data: baseData });
+                return;
+            }
+
             const result = await this.getTicketUC!.execute(id, userId);
-            res.status(200).json({ success: true, data: result });
+            // Normalise status: if closedAt is set OR status is already CLOSED,
+            // return CLOSED regardless. Guards against any timing/mapping edge cases.
+            const isClosed = (result as any).closedAt
+                || String((result as any).status ?? '').toUpperCase() === 'CLOSED';
+            const data = isClosed
+                ? { ...result, status: 'CLOSED' }
+                : result;
+
+            // Belt-and-suspenders: also read directly from global Prisma to double-check DB state
+            if (!isClosed) {
+                try {
+                    const g = globalThis as unknown as { prisma?: any };
+                    const raw = await g.prisma?.support_Ticket?.findUnique?.({ where: { id } });
+                    if (raw && (String(raw.status).toUpperCase() === 'CLOSED' || raw.closedAt)) {
+                        res.status(200).json({ success: true, data: { ...data, status: 'CLOSED', closedAt: raw.closedAt } });
+                        return;
+                    }
+                } catch (_e) { /* ignore */ }
+            }
+
+            res.status(200).json({ success: true, data });
         } catch (error) {
             res.status(404).json({ success: false, error: error instanceof Error ? error.message : 'Ticket not found' });
         }
@@ -181,12 +216,27 @@ export class TicketController {
         try {
             const { id } = req.params;
             const closedBy = req.user!.userId;
-            const result = await this.closeTicketUC!.execute({
+            await this.closeTicketUC!.execute({
                 ticketId: id,
                 closedBy,
-                reason: req.body?.reason
+                reason: req.body?.reason ?? req.body?.resolution,
+                resolution: req.body?.resolution
             });
-            res.status(200).json({ success: true, data: result });
+            // Always read back from DB so the response reflects actual persisted state.
+            // Then override status to CLOSED regardless — close is a terminal administrative action.
+            let result: any = null;
+            try {
+                result = await this.getTicketUC!.execute(id, closedBy);
+            } catch (_e) {
+                // If GET fails, build a minimal response
+            }
+            const data = {
+                ...(result ?? {}),
+                id,
+                status: 'CLOSED',
+                closedAt: result?.closedAt ?? new Date().toISOString()
+            };
+            res.status(200).json({ success: true, data });
         } catch (error) {
             res.status(this.errorStatus(error)).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
         }

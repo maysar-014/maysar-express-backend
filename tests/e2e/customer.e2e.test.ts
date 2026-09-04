@@ -95,7 +95,12 @@ liveTestSuite('Customer Journeys — Flow Doc 02', () => {
   });
 
   it('[P0] [BUY-03] wallet payment order create + cancel round-trip restores balance', async () => {
-    // Read pre-order balance
+    // NOTE: Since the seller stock verification workflow was introduced, wallet orders
+    // are no longer debited at placement. The debit happens at buyer/confirm-checkout
+    // (after seller verifies stock). This test now validates:
+    //   1. Order is created in PENDING_SELLER_VERIFICATION status
+    //   2. Balance is unchanged at placement
+    //   3. Cancel from PENDING_SELLER_VERIFICATION restores balance (no debit = no refund needed)
     const balanceBefore = await getWalletBalance(buyerToken, SEEDED_USERS.buyer.id);
     const productId = String(seededProduct['id'] ?? seededProduct['productId'] ?? '');
     const unitPrice = extractProductPriceAmount(seededProduct);
@@ -130,21 +135,21 @@ liveTestSuite('Customer Journeys — Flow Doc 02', () => {
       orderId = String(orderBody['orderId'] ?? orderBody['id'] ?? '');
       expect(orderId).toBeTruthy();
 
-      // Balance should have decreased
+      // New flow: order starts in PENDING_SELLER_VERIFICATION — no wallet debit at placement
+      const status = String(orderBody['status'] ?? '');
+      expect(status).toBe('PENDING_SELLER_VERIFICATION');
+
+      // Balance must be UNCHANGED — debit deferred to buyer/confirm-checkout
       const balanceAfterOrder = await getWalletBalance(buyerToken, SEEDED_USERS.buyer.id);
-      expect(balanceAfterOrder).toBeLessThan(balanceBefore);
+      expect(balanceAfterOrder).toBe(balanceBefore);
     } finally {
-      // Always attempt cancel so we don't strand money
+      // Cancel — balance stays the same (nothing was debited)
       if (orderId) {
         const cancelResponse = await cancelOrder(buyerToken, orderId);
-        // Cancel should succeed; if it fails we log but don't mask the original failure
         if (!cancelResponse.ok) {
           console.warn(`[customer.e2e] Cancel of order ${orderId} returned ${cancelResponse.status}`);
         } else {
-          // Poll for balance restoration — saga compensation is async
-          const balanceAfterCancel = await pollUntilBalanceRestored(
-            SEEDED_USERS.buyer.id, balanceBefore, adminToken, 30_000
-          );
+          const balanceAfterCancel = await getWalletBalance(buyerToken, SEEDED_USERS.buyer.id);
           expect(balanceAfterCancel).toBe(balanceBefore);
         }
       }
@@ -155,7 +160,7 @@ liveTestSuite('Customer Journeys — Flow Doc 02', () => {
   // P1 — Daily CI tests
   // -------------------------------------------------------------------------
 
-  it('[P1] [BUY-03] order state read after creation matches orderId', async () => {
+  it('[P1] [BUY-03] order state read after creation matches orderId and shows PENDING_SELLER_VERIFICATION', async () => {
     const productId = String(seededProduct['id'] ?? seededProduct['productId'] ?? '');
     const unitPrice = extractProductPriceAmount(seededProduct);
     let orderId: string | null = null;
@@ -188,7 +193,10 @@ liveTestSuite('Customer Journeys — Flow Doc 02', () => {
       orderId = String(orderBody['orderId'] ?? orderBody['id'] ?? '');
       expect(orderId).toBeTruthy();
 
-      // Verify order can be read back
+      // New flow: order starts in PENDING_SELLER_VERIFICATION
+      expect(String(orderBody['status'] ?? '')).toBe('PENDING_SELLER_VERIFICATION');
+
+      // Verify order can be read back with the correct verification fields
       const getResponse = await requestJson(`/api/order/orders/${orderId}`, {
         headers: authHeader(buyerToken),
       });
@@ -198,6 +206,11 @@ liveTestSuite('Customer Journeys — Flow Doc 02', () => {
         getBody['orderId'] ?? getBody['id'] ?? (getBody['data'] as Record<string, unknown>)?.['id'] ?? ''
       );
       expect(returnedId).toBe(orderId);
+
+      // Verification fields must be present
+      expect(getBody['verificationDeadlineAt']).toBeDefined();
+      expect(getBody['nextAction']).toBe('AWAIT_VERIFICATION');
+      expect(getBody['checkoutAvailable']).toBe(false);
     } finally {
       if (orderId) {
         await cancelOrder(buyerToken, orderId);
@@ -205,7 +218,11 @@ liveTestSuite('Customer Journeys — Flow Doc 02', () => {
     }
   });
 
-  it('[P1] [BUY-05] saga: cancel after wallet order credits the full amount back', async () => {
+  it('[P1] [BUY-05] saga: cancel from PENDING_SELLER_VERIFICATION does not strand money (no debit occurred)', async () => {
+    // NOTE: Under the seller verification workflow, wallet debit only happens at
+    // buyer/confirm-checkout (after seller verifies). Cancelling from
+    // PENDING_SELLER_VERIFICATION therefore requires no wallet refund.
+    // This test confirms the balance is unchanged before and after.
     const productId = String(seededProduct['id'] ?? seededProduct['productId'] ?? '');
     const unitPrice = extractProductPriceAmount(seededProduct);
     const balanceBefore = await getWalletBalance(buyerToken, SEEDED_USERS.buyer.id);
@@ -236,19 +253,20 @@ liveTestSuite('Customer Journeys — Flow Doc 02', () => {
       expect(orderResponse.status).toBe(201);
       const orderBody = orderResponse.body as Record<string, unknown>;
       orderId = String(orderBody['orderId'] ?? orderBody['id'] ?? '');
+
+      // Status must be pending verification — no debit yet
+      expect(String(orderBody['status'] ?? '')).toBe('PENDING_SELLER_VERIFICATION');
     } finally {
       if (orderId) {
         const cancelResponse = await cancelOrder(buyerToken, orderId, 'e2e-test-saga-compensation-check');
         expect(cancelResponse.status).toBe(200);
 
-        // Saga compensation: poll until balance is fully restored (async)
-        const balanceAfterCancel = await pollUntilBalanceRestored(
-          SEEDED_USERS.buyer.id, balanceBefore, adminToken, 30_000
-        );
+        // Balance must be exactly the same — no debit happened, so no refund is expected
+        const balanceAfterCancel = await getWalletBalance(buyerToken, SEEDED_USERS.buyer.id);
         expect(balanceAfterCancel).toBe(balanceBefore);
       }
     }
-  }, 120_000);
+  }, 60_000);
 });
 
 // ---------------------------------------------------------------------------

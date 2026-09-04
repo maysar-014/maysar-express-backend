@@ -1,22 +1,41 @@
 /**
- * Description Generator Engine
- * Pure, stateless engine for generating structured product descriptions
+ * Evidence-based product description generator.
+ *
+ * Core principles:
+ *  - Only states facts explicitly supplied by the seller or category schema.
+ *  - Canonical product content (overview, features, specs) never contains
+ *    seller-specific offer data (price, location, delivery, COD).
+ *  - Seller-offer data is returned in a separate `sellerOffer` section so
+ *    callers can choose to display it alongside the product, not inside it.
+ *  - Attributes are normalised and alias-resolved before use so that
+ *    "Internal Memory" and "ROM" are treated as the same concept.
+ *  - Content ordering respects `descriptionPriority` metadata on the schema.
  */
-
-import { StructuredProductAttributes } from '../value-objects/product-attributes.value-object';
+import { StructuredProductAttributes, CategoryAttributeSchema, AttributePriority } from '../value-objects/product-attributes.value-object';
+import { AttributeAliasResolver } from './attribute-alias-resolver';
+import { NormalizationAlgorithm } from '../algorithms/normalization.algorithm';
 
 export interface GeneratedProductDescription {
   overview: string;
   keyFeatures: string[];
   specifications: Record<string, string>;
   usage: string;
+  /** @deprecated Delivery info is seller-offer data — use `sellerOffer.delivery` instead.
+   *  Retained as empty string for backward-compatibility with callers that expect the field. */
   delivery: string;
+  /** @deprecated Supplier info is seller-offer data — use `sellerOffer.supplierInfo` instead.
+   *  Retained as empty string for backward-compatibility. */
   supplierInfo: string;
+  /** Seller-specific offer data that must NOT appear in the canonical product description. */
+  sellerOffer: {
+    delivery: string;
+    supplierInfo: string;
+  };
 }
 
 export interface CategoryDescriptionTemplate {
   categorySlug: string;
-  sections: string[]; // e.g., ['overview', 'features', 'specs', 'usage', 'delivery']
+  sections: string[];
   overviewTemplate: string;
   featuresTemplate: string;
   specificationsTemplate: string;
@@ -24,140 +43,152 @@ export interface CategoryDescriptionTemplate {
   deliveryTemplate: string;
 }
 
-export class DescriptionGeneratorEngine {
-  private static readonly TEMPLATES: Record<string, CategoryDescriptionTemplate> = {
-    'food-grocery': {
-      categorySlug: 'food-grocery',
-      sections: ['overview', 'ingredients', 'shelf-life', 'storage', 'delivery'],
-      overviewTemplate: '{product_name} is a premium {category} offered by {brand}. This product comes in {packaging} and is suitable for {usage}.',
-      featuresTemplate: 'Key ingredients and features include {features}.',
-      specificationsTemplate: 'Shelf life: {shelf_life}, Storage: {storage_conditions}',
-      usageTemplate: 'Best used for {usage_context}.',
-      deliveryTemplate: 'Available from verified suppliers on Maysar marketplace across Tanzania.',
-    },
-    'electronics': {
-      categorySlug: 'electronics',
-      sections: ['overview', 'features', 'specs', 'warranty', 'packaging'],
-      overviewTemplate: '{product_name} is a premium {category} offered by {brand}. This device features {key_features}.',
-      featuresTemplate: 'Key features: {features}',
-      specificationsTemplate: 'Technical specifications: {specifications}',
-      usageTemplate: 'Ideal for {usage_context}.',
-      deliveryTemplate: 'Available from verified suppliers on Maysar marketplace across Tanzania.',
-    },
-    'construction-materials': {
-      categorySlug: 'construction-materials',
-      sections: ['overview', 'material-type', 'grade', 'usage', 'packaging'],
-      overviewTemplate: '{product_name} is a premium {category} offered by {brand}. Material type: {material_type}.',
-      featuresTemplate: 'Grade: {grade}, Quality: {quality}',
-      specificationsTemplate: 'Specifications: {specifications}',
-      usageTemplate: 'Suitable for {usage_context}.',
-      deliveryTemplate: 'Available from verified suppliers on Maysar marketplace across Tanzania.',
-    },
-    'cooking-oil': {
-      categorySlug: 'cooking-oil',
-      sections: ['overview', 'features', 'specs', 'usage', 'delivery'],
-      overviewTemplate: '{product_name} is a premium {category} offered by {brand}. Volume: {volume}.',
-      featuresTemplate: 'Key features: {features}',
-      specificationsTemplate: 'Specifications: {specifications}',
-      usageTemplate: 'Perfect for {usage_context}.',
-      deliveryTemplate: 'Available from verified suppliers on Maysar marketplace across Tanzania.',
-    },
-    '_default': {
-      categorySlug: '_default',
-      sections: ['overview', 'features', 'specs', 'usage', 'packaging', 'delivery'],
-      overviewTemplate: '{product_name} is a premium {category} offered by {brand}.',
-      featuresTemplate: 'Key features: {features}',
-      specificationsTemplate: 'Specifications: {specifications}',
-      usageTemplate: 'Suitable for {usage_context}.',
-      deliveryTemplate: 'Available from verified suppliers on Maysar marketplace across Tanzania.',
-    },
-  };
+/** Keys that belong to the seller offer, not the canonical product. */
+const SELLER_OFFER_KEYS = new Set([
+  'supplier_location', 'location', 'delivery', 'delivery_terms', 'shipping',
+]);
 
+/** Keys treated as usage context — appear in their own section. */
+const USAGE_KEYS = ['usage_context', 'usage', 'application', 'recommended_use'];
+
+/** Keys promoted to the specifications section regardless of schema metadata. */
+const SPEC_KEYS = new Set([
+  'weight', 'net_weight', 'dimensions', 'capacity', 'power', 'warranty',
+  'certification', 'grade', 'quality', 'volume', 'net_volume', 'pack_size',
+  'packaging', 'packaging_type', 'shelf_life', 'storage_conditions', 'expiry_date',
+]);
+
+export class DescriptionGeneratorEngine {
   static generate(
     attributes: StructuredProductAttributes,
     categorySlug: string,
     productName: string,
-    brand: string
+    brand: string,
+    schema?: CategoryAttributeSchema[],
   ): GeneratedProductDescription {
-    const template = this.TEMPLATES[categorySlug] || this.TEMPLATES['_default'];
-    const attrs = attributes.getAll();
+    // 1. Resolve aliases and normalize all attribute values
+    const rawAttrs = attributes.getAll();
+    const resolvedRaw = AttributeAliasResolver.resolveAll(rawAttrs);
+    const attrs: Record<string, string> = {};
+    for (const [key, value] of Object.entries(resolvedRaw)) {
+      const normalised = NormalizationAlgorithm.normalizeByAttributeKey(key, value);
+      if (normalised.trim()) attrs[key] = normalised.trim();
+    }
 
-    const overview = this.interpolate(template.overviewTemplate, {
-      product_name: productName,
-      brand,
-      category: categorySlug.replace(/-/g, ' '),
-      packaging: attrs['packaging'] || 'standard packaging',
-      usage: attrs['usage'] || 'general use',
-      key_features: attrs['key_features'] || 'premium quality',
-      material_type: attrs['material_type'] || 'standard',
-      volume: attrs['volume'] || 'standard size',
-    });
+    // 2. Separate canonical product attributes from seller-offer attributes
+    const offerAttrs: Record<string, string> = {};
+    const productAttrs: Record<string, string> = {};
+    for (const [key, value] of Object.entries(attrs)) {
+      if (SELLER_OFFER_KEYS.has(key)) {
+        offerAttrs[key] = value;
+      } else {
+        productAttrs[key] = value;
+      }
+    }
 
-    const keyFeatures = this.extractKeyFeatures(attrs);
+    // 3. Build content sections
+    const category = this.readableCategory(categorySlug);
+    const identity = [productName.trim(), brand.trim()].filter(Boolean).join(' by ');
+    const overview = identity
+      ? `${identity} is listed in ${category}. This listing is prepared from the seller-provided product information so buyers can compare the item with clear, factual details.`
+      : `This product is listed in ${category}. The listing is prepared from the seller-provided product information so buyers can compare the item with clear, factual details.`;
 
-    const specifications = this.extractSpecifications(attrs);
+    const keyFeatures = this.extractKeyFeatures(productAttrs, schema);
+    const specifications = this.extractSpecifications(productAttrs, schema);
+    const usageValue = this.firstValue(productAttrs, USAGE_KEYS);
 
-    const usage = this.interpolate(template.usageTemplate, {
-      usage_context: attrs['usage_context'] || 'general purposes',
-    });
-
-    const delivery = template.deliveryTemplate;
-
-    const supplierInfo = `Supplier: ${brand}. Location: ${attrs['supplier_location'] || 'Tanzania'}. Quality assured and verified on Maysar marketplace.`;
+    // 4. Seller-offer data — kept separate from canonical content
+    const deliveryValue = this.firstValue(offerAttrs, ['delivery', 'delivery_terms', 'shipping']);
+    const locationValue = this.firstValue(offerAttrs, ['supplier_location', 'location']);
 
     return {
       overview,
       keyFeatures,
       specifications,
-      usage,
-      delivery,
-      supplierInfo,
+      usage: usageValue ? `Use: ${usageValue}.` : '',
+      // Backward-compat: these fields now always empty in the canonical description
+      delivery: '',
+      supplierInfo: '',
+      sellerOffer: {
+        delivery: deliveryValue ? `Delivery: ${deliveryValue}.` : '',
+        supplierInfo: locationValue ? `Supplier location: ${locationValue}.` : '',
+      },
     };
   }
 
-  private static extractKeyFeatures(attrs: Record<string, string>): string[] {
-    const features: string[] = [];
+  private static extractKeyFeatures(
+    attrs: Record<string, string>,
+    schema?: CategoryAttributeSchema[],
+  ): string[] {
+    // Attributes explicitly excluded from features (handled elsewhere)
+    const excludedKeys = new Set([...SELLER_OFFER_KEYS, ...USAGE_KEYS, ...SPEC_KEYS]);
 
-    // Extract common feature attributes
-    const featureKeys = ['color', 'size', 'material', 'brand', 'warranty', 'certification'];
-    for (const key of featureKeys) {
-      if (attrs[key]) {
-        features.push(`${key.charAt(0).toUpperCase() + key.slice(1)}: ${attrs[key]}`);
-      }
+    const entries = Object.entries(attrs).filter(([key]) => !excludedKeys.has(key));
+
+    if (schema && schema.length > 0) {
+      // Sort by descriptionPriority: HIGH → MEDIUM → LOW → undefined
+      const priorityOrder: Record<AttributePriority | 'undefined', number> = {
+        HIGH: 0, MEDIUM: 1, LOW: 2, undefined: 3,
+      };
+      const schemaMap = new Map(schema.map(s => [
+        AttributeAliasResolver.resolve(s.name), s,
+      ]));
+
+      entries.sort(([aKey], [bKey]) => {
+        const aMeta = schemaMap.get(aKey);
+        const bMeta = schemaMap.get(bKey);
+        const aPriority = (aMeta?.descriptionPriority ?? 'undefined') as AttributePriority | 'undefined';
+        const bPriority = (bMeta?.descriptionPriority ?? 'undefined') as AttributePriority | 'undefined';
+        return priorityOrder[aPriority] - priorityOrder[bPriority];
+      });
     }
 
-    // If no features found, create from available attributes
-    if (features.length === 0) {
-      for (const [key, value] of Object.entries(attrs)) {
-        if (value && !['supplier_location', 'packaging', 'usage', 'usage_context'].includes(key)) {
-          features.push(`${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}`);
-        }
-      }
-    }
+    const features = entries
+      .slice(0, 10)
+      .map(([key, value]) => `${this.readableKey(key)}: ${value}`);
 
-    return features.slice(0, 5); // Limit to 5 features
+    return features.length > 0
+      ? features
+      : ['Product details are based on information provided by the seller'];
   }
 
-  private static extractSpecifications(attrs: Record<string, string>): Record<string, string> {
+  private static extractSpecifications(
+    attrs: Record<string, string>,
+    schema?: CategoryAttributeSchema[],
+  ): Record<string, string> {
     const specs: Record<string, string> = {};
 
-    const specKeys = ['weight', 'dimensions', 'capacity', 'power', 'warranty', 'certification', 'grade', 'quality'];
-    for (const key of specKeys) {
-      if (attrs[key]) {
-        specs[key] = attrs[key];
+    // Add attributes that match the hard-coded spec key list
+    for (const key of SPEC_KEYS) {
+      if (attrs[key]) specs[this.readableKey(key)] = attrs[key];
+    }
+
+    // Also include schema-annotated HIGH/MEDIUM priority attributes not already captured
+    if (schema) {
+      for (const s of schema) {
+        const canonical = AttributeAliasResolver.resolve(s.name);
+        if (
+          (s.descriptionPriority === 'HIGH' || s.descriptionPriority === 'MEDIUM') &&
+          attrs[canonical] &&
+          !specs[this.readableKey(canonical)]
+        ) {
+          specs[this.readableKey(canonical)] = attrs[canonical];
+        }
       }
     }
 
     return specs;
   }
 
-  private static interpolate(template: string, values: Record<string, string>): string {
-    let result = template;
-    for (const [key, value] of Object.entries(values)) {
-      result = result.replace(new RegExp(`{${key}}`, 'g'), value);
-    }
-    // Remove any remaining placeholders
-    result = result.replace(/{[^}]+}/g, '');
-    return result.trim();
+  private static firstValue(attrs: Record<string, string>, keys: string[]): string {
+    return keys.map((key) => attrs[key]).find(Boolean) || '';
+  }
+
+  private static readableCategory(categorySlug: string): string {
+    return categorySlug.replace(/[-_]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
+  private static readableKey(key: string): string {
+    return key.replace(/[-_]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 }

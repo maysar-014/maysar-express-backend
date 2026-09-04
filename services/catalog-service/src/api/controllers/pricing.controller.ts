@@ -104,6 +104,30 @@ export class PricingController {
     });
   }
 
+  async validatePricingRule(req: Request, res: Response): Promise<void> {
+    const rule = req.body?.rule ?? req.body ?? {};
+    const errors: string[] = [];
+
+    if (!rule.name || String(rule.name).trim().length === 0) {
+      errors.push('Rule name is required');
+    }
+    if (rule.margin !== undefined && (typeof rule.margin !== 'number' || rule.margin < 0 || rule.margin > 100)) {
+      errors.push('Margin must be a number between 0 and 100');
+    }
+    if (rule.status !== undefined && !['ACTIVE', 'REVIEW', 'DRAFT'].includes(String(rule.status).toUpperCase())) {
+      errors.push('Status must be one of ACTIVE, REVIEW, DRAFT');
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        valid: errors.length === 0,
+        errors
+      },
+      meta: { timestamp: new Date() }
+    });
+  }
+
   private sendNotImplemented(res: Response, message: string): void {
     const response: ApiResponse = {
       success: false,

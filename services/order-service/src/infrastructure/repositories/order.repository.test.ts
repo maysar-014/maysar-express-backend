@@ -99,16 +99,39 @@ describe('OrderRepositoryImpl', () => {
 
     const byId = await repository.findById('order-1');
     const byBuyer = await repository.findByBuyerId('buyer-1');
+    const bySeller = await repository.findBySellerId('seller-1');
     const byStatus = await repository.findByStatus(OrderStatus.SHIPPED);
     const count = await repository.count();
 
     expect(byId?.id).toBe('order-1');
     expect(byBuyer).toHaveLength(1);
+    expect(bySeller).toHaveLength(1);
     expect(byStatus).toHaveLength(1);
     expect(count).toBe(7);
     expect(prismaMock.order_Order.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        where: { sellerId: 'seller-1' }
+      })
+    );
+    expect(prismaMock.order_Order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
         where: { status: 'IN_TRANSIT' }
+      })
+    );
+  });
+
+  it('persists processing orders as assigned because the database enum has no processing state', async () => {
+    const prismaMock = createPrismaMock();
+    prismaMock.order_Order.updateMany.mockResolvedValue({ count: 1 });
+    const repository = new OrderRepositoryImpl(prismaMock as never);
+    const order = createOrder();
+    order.status = OrderStatus.PROCESSING;
+
+    await repository.update(order);
+
+    expect(prismaMock.order_Order.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'ASSIGNED' })
       })
     );
   });

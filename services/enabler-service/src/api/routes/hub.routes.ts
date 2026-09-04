@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import { requireAuth } from '@shared/middleware/auth-context.middleware';
-// import { BrowseEnablerHubUseCase } from '../../application/use-cases/browse-enabler-hub.use-case';
+import { ProductListingController } from '../controllers/product-listing.controller';
+import { BrowseEnablerHubUseCase } from '../../application/use-cases/browse-enabler-hub.use-case';
 
 const router = Router();
 router.use(requireAuth);
 
-// Placeholder for Hub routes (public browsing of enabler-eligible products)
-router.get('/products', (req, res) => {
-    res.status(200).json({ message: 'Browse Enabler Hub - To Be Implemented' });
-});
+const browseHubUseCase = new BrowseEnablerHubUseCase();
+const controller = new ProductListingController(undefined, undefined, browseHubUseCase);
+
+router.get('/products', (req, res) => controller.getHubProducts(req, res));
 
 export default router;

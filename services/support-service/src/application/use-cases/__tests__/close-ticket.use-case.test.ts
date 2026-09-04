@@ -10,6 +10,8 @@ describe('CloseTicketUseCase', () => {
         id: 'ticket-1',
         status: 'RESOLVED',
         close: jest.fn(),
+        closedAt: undefined as Date | undefined,
+        resolution: undefined as string | undefined,
     };
 
     const validDto: CloseTicketDto = {
@@ -20,6 +22,9 @@ describe('CloseTicketUseCase', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        mockTicket.status = 'RESOLVED';
+        mockTicket.closedAt = undefined;
+        mockTicket.resolution = undefined;
 
         mockTicketRepo = {
             findById: jest.fn().mockResolvedValue(mockTicket),
@@ -37,6 +42,40 @@ describe('CloseTicketUseCase', () => {
         expect(result).toBeDefined();
         expect(mockTicket.close).toHaveBeenCalled();
         expect(mockTicketRepo.update).toHaveBeenCalled();
+    });
+
+    it('returns the persisted closed ticket after direct close', async () => {
+        const persistedTicket = {
+            ...mockTicket,
+            status: 'CLOSED',
+            closedAt: new Date('2026-01-01T00:00:00.000Z')
+        };
+        mockTicketRepo.update.mockResolvedValueOnce(persistedTicket);
+
+        const result = await useCase.execute(validDto);
+
+        expect(mockTicketRepo.update).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'CLOSED',
+                closedAt: expect.any(Date)
+            })
+        );
+        expect(result.status).toBe('CLOSED');
+    });
+
+    it('records resolution sent directly to close endpoint', async () => {
+        await useCase.execute({
+            ...validDto,
+            reason: undefined,
+            resolution: 'Refund confirmed and customer notified'
+        });
+
+        expect(mockTicketRepo.update).toHaveBeenCalledWith(
+            expect.objectContaining({
+                resolution: 'Refund confirmed and customer notified'
+            })
+        );
+        expect(mockEventBus.publish).toHaveBeenCalledWith('TicketClosed', expect.any(Object));
     });
 
     it('should fail when ticket not found', async () => {

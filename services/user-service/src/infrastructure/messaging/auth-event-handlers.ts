@@ -69,6 +69,9 @@ const asUserRegistered = (value: unknown): AuthUserRegisteredPayload => {
     typeof rawProfile === 'object' && rawProfile !== null
       ? (rawProfile as Record<string, unknown>)
       : {};
+  // phoneNumber may come from profile.phoneNumber OR from a top-level phoneNumber field
+  const topLevelPhone = typeof parsed.phoneNumber === 'string' ? parsed.phoneNumber : undefined;
+  const profilePhone = typeof profile.phoneNumber === 'string' ? profile.phoneNumber : undefined;
   return {
     userId: typeof parsed.userId === 'string' ? parsed.userId : undefined,
     publicCode: typeof parsed.publicCode === 'string' ? parsed.publicCode : undefined,
@@ -77,7 +80,7 @@ const asUserRegistered = (value: unknown): AuthUserRegisteredPayload => {
     profile: {
       firstName: typeof profile.firstName === 'string' ? profile.firstName : undefined,
       lastName: typeof profile.lastName === 'string' ? profile.lastName : undefined,
-      phoneNumber: typeof profile.phoneNumber === 'string' ? profile.phoneNumber : undefined
+      phoneNumber: topLevelPhone ?? profilePhone
     }
   };
 };
@@ -90,6 +93,7 @@ const mapRole = (role: string | undefined): User_UserRole => {
     case 'courier':  return User_UserRole.COURIER;
     case 'enabler':  return User_UserRole.ENABLER;
     case 'system':   return User_UserRole.SYSTEM;
+    case 'admin':    return User_UserRole.SYSTEM;  // 'admin' is an alias for SYSTEM
     default:         return User_UserRole.BUYER;
   }
 };
@@ -188,10 +192,36 @@ export class AuthEventHandlers {
       const encryptedPhone = phoneNumber ? this.piiService.encrypt(phoneNumber) : null;
       const phoneHash = phoneNumber ? this.piiService.hash(phoneNumber) : null;
 
-      await prisma.user_User.upsert({
+      // ── FIX: read existing record so we can protect ACTIVE status ──────────
+      // Also check by email hash in case the row was created with a different ID
+      // (e.g., by userServiceClient.createUser before this event fired)
+      let existing = await prisma.user_User.findUnique({
         where: { id: payload.userId },
+        select: { id: true, status: true }
+      });
+
+      // If not found by ID, try to find by email hash (deduplication)
+      if (!existing && emailHash) {
+        const emailIndex = await prisma.user_UserIndex.findFirst({
+          where: { indexType: 'email', value: emailHash },
+          select: { userId: true }
+        });
+        if (emailIndex) {
+          existing = await prisma.user_User.findUnique({
+            where: { id: emailIndex.userId },
+            select: { id: true, status: true }
+          });
+        }
+      }
+
+      const statusIsActive = existing?.status === User_UserStatus.ACTIVE;
+      const existingId = existing?.id ?? payload.userId;
+      // ────────────────────────────────────────────────────────────────────────
+
+      await prisma.user_User.upsert({
+        where: { id: existingId },
         create: {
-          id: payload.userId,
+          id: existingId,
           email: encryptedEmail,        // ← PII-encrypted ✓
           publicCode: payload.publicCode ?? null,
           passwordHash: '',
@@ -206,8 +236,12 @@ export class AuthEventHandlers {
           // Never overwrite an existing encrypted email — the create path
           // already set it correctly via PrismaUserRepository.create().
           publicCode: payload.publicCode ?? null,
-          role: mapRole(payload.role),
-          status: User_UserStatus.PENDING_VERIFICATION
+          // FIX 1: only update role when the payload carries a role value —
+          // when absent, leave existing role untouched (prevents SYSTEM → BUYER demotion)
+          ...(payload.role ? { role: mapRole(payload.role) } : {}),
+          // FIX 2: never downgrade status from ACTIVE — only write PENDING_VERIFICATION
+          // when the existing record is NOT already ACTIVE
+          ...(statusIsActive ? {} : { status: User_UserStatus.PENDING_VERIFICATION })
         }
       });
 

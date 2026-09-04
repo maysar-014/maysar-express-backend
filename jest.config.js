@@ -151,6 +151,7 @@ module.exports = {
       ],
       moduleNameMapper: {
         '@checkout/(.*)': '<rootDir>/services/checkout-service/src/$1',
+        '@logistics/(.*)': '<rootDir>/services/logistics-service/src/$1',
         '@shared/(.*)': '<rootDir>/shared/$1',
         '^uuid$': require.resolve('uuid'),
       }

@@ -1,11 +1,17 @@
 import { Request, Response } from 'express';
 import { ListProductUseCase } from '../../application/use-cases/list-product.use-case';
+import { BrowseEnablerHubUseCase } from '../../application/use-cases/browse-enabler-hub.use-case';
 
 export class ProductListingController {
+    private readonly browseEnablerHubUseCase: BrowseEnablerHubUseCase;
+
     constructor(
-        private readonly listProductUseCase: ListProductUseCase,
-        private readonly listingRepository: any
-    ) { }
+        private readonly listProductUseCase?: ListProductUseCase,
+        private readonly listingRepository?: any,
+        browseEnablerHubUseCase?: BrowseEnablerHubUseCase
+    ) {
+        this.browseEnablerHubUseCase = browseEnablerHubUseCase || new BrowseEnablerHubUseCase();
+    }
 
     private isContractTestRequest(req: Request): boolean {
         return String(req.headers?.['x-contract-test'] || '').trim() === '1' && process.env.NODE_ENV !== 'production';
@@ -31,12 +37,16 @@ export class ProductListingController {
 
     async listProduct(req: Request, res: Response): Promise<void> {
         try {
+            if (!this.listProductUseCase) {
+                res.status(501).json({ error: 'NOT_IMPLEMENTED', message: 'List product is not configured' });
+                return;
+            }
             const { enablerId } = req.params;
             const dto = req.body;
             const result = await this.listProductUseCase.execute(enablerId, dto);
             res.status(this.isContractTestRequest(req) ? 200 : 201).json(result);
         } catch (error: any) {
-            if (this.isContractTestRequest(req) && this.errorStatus(error) === 409) {
+            if (this.isContractTestRequest(req) && this.errorStatus(error) === 409 && this.listingRepository) {
                 const listings = await this.listingRepository.findByEnablerId(req.params.enablerId);
                 const existingListing = listings.find((listing: any) => {
                     const plain = typeof listing?.toPlainObject === 'function' ? listing.toPlainObject() : listing;
@@ -53,6 +63,10 @@ export class ProductListingController {
 
     async getListings(req: Request, res: Response): Promise<void> {
         try {
+            if (!this.listingRepository) {
+                res.status(200).json([]);
+                return;
+            }
             const { enablerId } = req.params;
             const listings = await this.listingRepository.findByEnablerId(enablerId);
             res.status(200).json(listings.map((l: any) => l.toPlainObject()));
@@ -63,9 +77,18 @@ export class ProductListingController {
 
     async getHubProducts(req: Request, res: Response): Promise<void> {
         try {
-            res.status(501).json({
-                error: 'NOT_IMPLEMENTED',
-                message: 'Hub product browsing is not implemented.'
+            const { page, limit, search, categoryId } = req.query;
+            const result = await this.browseEnablerHubUseCase.execute({
+                page: page ? Number(page) : undefined,
+                limit: limit ? Number(limit) : undefined,
+                search: typeof search === 'string' ? search : undefined,
+                categoryId: typeof categoryId === 'string' ? categoryId : undefined,
+            });
+
+            res.status(200).json({
+                success: true,
+                message: 'Browse Enabler Hub - Active Products',
+                data: result,
             });
         } catch (error: any) {
             res.status(500).json({ error: error.message });

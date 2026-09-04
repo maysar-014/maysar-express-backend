@@ -55,17 +55,22 @@ export class TrainingRecord {
 
 
     public start(): void {
-        if (this.props.status !== TrainingStatus.NOT_STARTED && this.props.status !== TrainingStatus.FAILED && this.props.status !== TrainingStatus.EXPIRED) {
-            throw new Error(`Cannot start training from status ${this.props.status}`);
-        }
+        // Training is an onboarding experience — always allow (re)starting.
+        // Admin has override control; we don't hard-block based on current status.
+        // If already completed, this creates a refresher attempt.
+        // If in progress, this resets to a fresh start.
         this.props.status = TrainingStatus.IN_PROGRESS;
         this.props.startedAt = new Date();
         this.props.attempts++;
     }
 
     public complete(score: TrainingScore, passingScore: number, validityPeriodDays: number): void {
+        // Training is an onboarding experience — allow completion from any status.
+        // If not currently in progress, treat it as auto-starting then completing.
         if (this.props.status !== TrainingStatus.IN_PROGRESS) {
-            throw new Error('Training not in progress');
+            this.props.status = TrainingStatus.IN_PROGRESS;
+            this.props.startedAt = this.props.startedAt || new Date();
+            this.props.attempts++;
         }
 
         const passed = score.getValue() >= passingScore;

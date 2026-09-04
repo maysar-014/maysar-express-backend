@@ -14,6 +14,7 @@ import {
   UpdateProductUseCase,
   DeleteProductUseCase,
   PublishProductUseCase,
+  UnpublishProductUseCase,
   LoadCategoryAttributesUseCase,
   PreviewGeneratedDescriptionUseCase,
   ListCategoriesUseCase,
@@ -117,7 +118,8 @@ export class ProductController {
     config: Partial<ProductControllerConfig> = {},
     private readonly updateProductUseCase?: UpdateProductUseCase,
     private readonly deleteProductUseCase?: DeleteProductUseCase,
-    private readonly publishProductUseCase?: PublishProductUseCase
+    private readonly publishProductUseCase?: PublishProductUseCase,
+    private readonly unpublishProductUseCase?: UnpublishProductUseCase
   ) {
     this.config = { ...DEFAULT_PRODUCT_CONTROLLER_CONFIG, ...config };
   }
@@ -294,6 +296,7 @@ export class ProductController {
           name: product.name,
           price: product.price,
           categoryId: product.categoryId,
+          categoryName: (product as any).categoryName || (product as any).category?.name || null,
           sellerId: product.sellerId,
           supplierLocationId: product.supplierLocationId,
           supplierLocation: product.supplierLocation,
@@ -303,9 +306,12 @@ export class ProductController {
           thumbnailUrl: product.thumbnailUrl
             || product.media?.[0]?.url
             || product.mediaUrls?.[0],
+          mediaUrls: Array.isArray(product.mediaUrls) ? product.mediaUrls : (product.media || []).map((media: any) => media.url).filter(Boolean),
+          brand: (product as any).brand ?? null,
           inventoryStatus: product.inventory?.status,
-          inventoryAvailable: product.inventory?.available,
-          createdAt: product.createdAt
+          inventoryAvailable: product.inventory?.available ?? (product as any).inventoryAvailable ?? 0,
+          createdAt: product.createdAt,
+          publishedAt: product.status === 'published' ? (product.updatedAt ?? product.createdAt) : null
         }));
 
         const baseUrl = process.env.BASE_URL || 'https://maysar.co.tz';
@@ -499,6 +505,48 @@ export class ProductController {
   }
 
   /**
+   * Update Product Category
+   * PUT /api/products/:id/category
+   */
+  async updateProductCategory(req: Request, res: Response): Promise<void> {
+    try {
+      const productId = req.params.id;
+      const categoryId = req.body?.categoryId;
+
+      if (!productId || !categoryId) {
+        this.sendValidationError(res, ['Product ID and category ID are required']);
+        return;
+      }
+
+      if (!this.updateProductUseCase) {
+        this.sendNotImplemented(res, 'Update product category is not configured');
+        return;
+      }
+
+      const result = await this.updateProductUseCase.execute({ productId, categoryId } as any);
+      if (result.status === 'not_found') {
+        this.sendNotFoundError(res, 'Product not found');
+        return;
+      }
+      if (result.status === 'not_supported') {
+        this.sendNotImplemented(res, 'Update product category is not supported');
+        return;
+      }
+
+      const response: ApiResponse<{ productId: string; categoryId: string; updated: boolean }> = {
+        success: true,
+        data: { productId, categoryId, updated: true },
+        meta: { timestamp: new Date(), requestId: this.getRequestId(req) }
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('ProductController.updateProductCategory error:', error);
+      this.sendInternalError(res, error as Error);
+    }
+  }
+
+  /**
    * Delete Product
    * DELETE /api/products/:id
    */
@@ -581,6 +629,47 @@ export class ProductController {
   }
 
   /**
+   * Unpublish Product
+   * POST /api/products/:id/unpublish
+   */
+  async unpublishProduct(req: Request, res: Response): Promise<void> {
+    try {
+      const productId = req.params.id;
+
+      if (!productId) {
+        this.sendValidationError(res, ['Product ID is required']);
+        return;
+      }
+
+      if (!this.unpublishProductUseCase) {
+        this.sendNotImplemented(res, 'Unpublish product is not configured');
+        return;
+      }
+
+      const result = await this.unpublishProductUseCase.execute(productId);
+      if (result.status === 'not_found') {
+        this.sendNotFoundError(res, 'Product not found');
+        return;
+      }
+
+      const response: ApiResponse<{ productId: string; published: boolean }> = {
+        success: true,
+        data: { productId, published: false },
+        meta: {
+          timestamp: new Date(),
+          requestId: this.getRequestId(req)
+        }
+      };
+
+      res.status(200).json(response);
+
+    } catch (error) {
+      console.error('ProductController.unpublishProduct error:', error);
+      this.sendInternalError(res, error as Error);
+    }
+  }
+
+  /**
    * Get Product Analytics
    * GET /api/products/:id/analytics
    */
@@ -619,6 +708,111 @@ export class ProductController {
 
     } catch (error) {
       console.error('ProductController.getProductAnalytics error:', error);
+      this.sendInternalError(res, error as Error);
+    }
+  }
+
+  /**
+   * Get Product Listing Metrics
+   * GET /api/products/:id/metrics
+   */
+  async getProductMetrics(req: Request, res: Response): Promise<void> {
+    try {
+      const productId = req.params.id;
+      if (!productId) {
+        this.sendValidationError(res, ['Product ID is required']);
+        return;
+      }
+
+      const result = await this.getProductUseCase.execute({ productId, includeMedia: true });
+      if (result.status === 'not_found' || !result.product) {
+        this.sendNotFoundError(res, 'Product not found');
+        return;
+      }
+
+      const product: any = result.product;
+      const qualityScore = Number(product.qualityScore ?? 0);
+      const descriptionLength = (product.description ?? '').length;
+      const mediaCount = Array.isArray(product.media)
+        ? product.media.length
+        : Array.isArray(product.mediaUrls) ? product.mediaUrls.length : 0;
+      const attributeCount = Object.values(product.attributes ?? {}).filter(
+        (value: unknown) => value !== undefined && value !== null && String(value).trim() !== ''
+      ).length;
+      const inventoryStatus = product.inventory?.status ?? 'out_of_stock';
+      const stockHealth = inventoryStatus === 'in_stock'
+        ? 'healthy'
+        : inventoryStatus === 'low_stock' ? 'low_stock' : 'out_of_stock';
+
+      res.status(200).json({
+        success: true,
+        data: {
+          qualityScore,
+          titleCompleteness: (product.name ?? '').trim().length > 0 ? 100 : 0,
+          attributeCompleteness: attributeCount > 0 ? 100 : 0,
+          imageCompleteness: mediaCount > 0 ? 100 : 0,
+          descriptionLength,
+          publishReadiness: qualityScore >= 60 ? 100 : Math.max(0, Math.round((qualityScore / 60) * 100)),
+          stockHealth,
+          updatedAt: (product.updatedAt ?? new Date()).toISOString()
+        },
+        meta: { timestamp: new Date(), requestId: this.getRequestId(req) }
+      });
+    } catch (error) {
+      console.error('ProductController.getProductMetrics error:', error);
+      this.sendInternalError(res, error as Error);
+    }
+  }
+
+  /**
+   * Get Product Media
+   * GET /api/products/:id/media
+   */
+  async getProductMedia(req: Request, res: Response): Promise<void> {
+    try {
+      const productId = req.params.id;
+      if (!productId) {
+        this.sendValidationError(res, ['Product ID is required']);
+        return;
+      }
+
+      const result = await this.getProductUseCase.execute({ productId, includeMedia: true });
+      if (result.status === 'not_found' || !result.product) {
+        this.sendNotFoundError(res, 'Product not found');
+        return;
+      }
+
+      const product: any = result.product;
+      const rawMedia = Array.isArray(product.media) && product.media.length > 0
+        ? product.media
+        : (Array.isArray(product.mediaUrls) ? product.mediaUrls.map((url: string, index: number) => ({
+            id: `${productId}-media-${index}`,
+            url,
+            type: 'image',
+            order: index,
+            isPrimary: index === 0
+          })) : []);
+
+      const assets = rawMedia
+        .filter((item: any) => typeof item?.url === 'string' && item.url.trim().length > 0)
+        .map((item: any, index: number) => ({
+          url: String(item.url),
+          alt: product.name ?? '',
+          isPrimary: Boolean(item.isPrimary ?? index === 0)
+        }));
+
+      res.status(200).json({
+        success: true,
+        data: {
+          assets,
+          primaryUrl: product.thumbnailUrl ?? assets[0]?.url ?? '',
+          total: assets.length,
+          updatedAt: (product.updatedAt ?? new Date()).toISOString()
+        },
+        meta: { timestamp: new Date(), requestId: this.getRequestId(req) }
+      });
+    } catch (error) {
+      console.error('ProductController.getProductMedia error:', error);
       this.sendInternalError(res, error as Error);
     }
   }
@@ -799,8 +993,10 @@ export class ProductController {
       if (!body.categoryId) errors.push('Category ID is required');
       if (!body.brand) errors.push('Brand is required');
       if (!body.productName) errors.push('Product name is required');
-      if (!body.supplierLocationId || typeof body.supplierLocationId !== 'string' || body.supplierLocationId.trim().length === 0) {
-        errors.push('Supplier location ID is required');
+      const hasSupplierLocationId = typeof body.supplierLocationId === 'string' && body.supplierLocationId.trim().length > 0;
+      const hasSupplierLocation = typeof body.supplierLocation === 'string' && body.supplierLocation.trim().length > 0;
+      if (!hasSupplierLocationId && !hasSupplierLocation) {
+        errors.push('Supplier location is required');
       }
       if (!body.structuredAttributes) errors.push('Structured attributes are required');
       if (!body.mediaUrls || body.mediaUrls.length === 0) errors.push('At least one media URL is required');
@@ -926,8 +1122,11 @@ export class ProductController {
         name: body.name?.trim(),
         description: body.description?.trim(),
         price: body.price,
+        stock: body.stock,
         currency: body.currency,
         categoryId: body.categoryId,
+        brand: body.brand?.trim(),
+        mediaUrls: body.mediaUrls,
         supplierLocation: body.supplierLocation?.trim(),
         tags: body.tags,
         attributes: body.attributes,
@@ -995,6 +1194,7 @@ export class ProductController {
       categoryName: productDetails.categoryName,
       categoryPath: productDetails.categoryPath,
       type: productDetails.type,
+      brand: productDetails.brand,
       tags: productDetails.tags || [],
       attributes: productDetails.attributes || {},
       status: productDetails.status,
@@ -1011,6 +1211,9 @@ export class ProductController {
         count: 0,
         distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
       },
+      stock: productDetails.inventory?.available ?? productDetails.inventoryAvailable ?? 0,
+      publishedAt: productDetails.status === 'published' ? (productDetails.updatedAt ?? productDetails.createdAt) : null,
+      inventoryAvailable: productDetails.inventory?.available ?? productDetails.inventoryAvailable ?? 0,
       inventory: productDetails.inventory || {
         available: 0,
         reserved: 0,
@@ -1144,7 +1347,8 @@ export class ProductControllerFactory {
     config: Partial<ProductControllerConfig> = {},
     updateProductUseCase?: UpdateProductUseCase,
     deleteProductUseCase?: DeleteProductUseCase,
-    publishProductUseCase?: PublishProductUseCase
+    publishProductUseCase?: PublishProductUseCase,
+    unpublishProductUseCase?: UnpublishProductUseCase
   ): ProductController {
     return new ProductController(
       createProductUseCase,
@@ -1162,7 +1366,8 @@ export class ProductControllerFactory {
       config,
       updateProductUseCase,
       deleteProductUseCase,
-      publishProductUseCase
+      publishProductUseCase,
+      unpublishProductUseCase
     );
   }
 }

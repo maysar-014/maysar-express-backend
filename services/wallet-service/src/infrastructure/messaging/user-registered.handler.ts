@@ -30,13 +30,36 @@ export class UserRegisteredHandler {
             idempotencyKey,
             'UserRegisteredHandler',
             async () => {
-                try {
-                    const existing = await this.walletRepository.findByUserId(userId);
-                    if (existing) {
-                        console.log(`[UserRegisteredHandler] Wallet already exists for user ${userId} — skipping`);
-                        return;
-                    }
+                const existing = await this.walletRepository.findByUserId(userId);
+                if (existing) {
+                    console.log(`[UserRegisteredHandler] Wallet already exists for user ${userId} — skipping`);
+                    return;
+                }
 
+                const wallet = new Wallet({
+                    id: makeId(getModelPrefix('Wallet_Wallet')),
+                    userId,
+                    balance: 0,
+                    currency: 'TZS',
+                    status: WalletStatus.ACTIVE,
+                    frozenAmount: 0,
+                    codCommitmentLimit: 0,
+                    codCommitmentUsed: 0,
+                    codCommitmentCount: 0,
+                    version: 0,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                });
+
+                await this.walletRepository.save(wallet);
+                console.log(`[UserRegisteredHandler] Wallet created for user ${userId}`);
+            }
+        ).catch(async (idempotencyError) => {
+            // Idempotency infrastructure failed — attempt wallet creation directly as fallback
+            console.warn(`[UserRegisteredHandler] Idempotency error for user ${userId}, attempting direct wallet creation:`, idempotencyError?.message);
+            try {
+                const existing = await this.walletRepository.findByUserId(userId);
+                if (!existing) {
                     const wallet = new Wallet({
                         id: makeId(getModelPrefix('Wallet_Wallet')),
                         userId,
@@ -51,14 +74,12 @@ export class UserRegisteredHandler {
                         createdAt: new Date(),
                         updatedAt: new Date(),
                     });
-
                     await this.walletRepository.save(wallet);
-                    console.log(`[UserRegisteredHandler] Wallet created for user ${userId}`);
-                } catch (error) {
-                    console.error(`[UserRegisteredHandler] Failed to create wallet for user ${userId}:`, error);
-                    // Swallow error — a single bad event must not crash the event bus
+                    console.log(`[UserRegisteredHandler] Wallet created via fallback for user ${userId}`);
                 }
+            } catch (fallbackError) {
+                console.error(`[UserRegisteredHandler] Fallback wallet creation also failed for user ${userId}:`, fallbackError);
             }
-        );
+        });
     }
 }

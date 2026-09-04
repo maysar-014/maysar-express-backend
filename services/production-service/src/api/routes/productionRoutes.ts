@@ -100,6 +100,12 @@ export const createProductionRoutes = (controller: ProductionController): Router
         (req, res) => controller.updateStatus(req, res)
     );
 
+    router.get(
+        '/plans/:id',
+        requireAuth,
+        (req, res) => controller.getPlan(req, res)
+    );
+
     router.post(
         '/quality/checkpoints',
         requireAuth,

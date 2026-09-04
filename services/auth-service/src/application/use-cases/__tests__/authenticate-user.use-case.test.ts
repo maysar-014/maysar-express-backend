@@ -315,4 +315,85 @@ describe('AuthenticateUserUseCase', () => {
             expect(result.user?.role).toBe('admin');
         });
     });
+
+    describe('JWT role assignment — B4 fix: no implicit buyer injection', () => {
+        // Helper: decode JWT payload without verifying signature
+        const decodeJwtPayload = (token: string): Record<string, unknown> => {
+            const base64Payload = token.split('.')[1];
+            return JSON.parse(Buffer.from(base64Payload, 'base64').toString('utf8'));
+        };
+
+        const nonBuyerRoles = ['seller', 'courier', 'enabler', 'supplier'];
+
+        nonBuyerRoles.forEach((primaryRole) => {
+            it(`${primaryRole} account JWT must contain only ['${primaryRole}'], not ['buyer', '${primaryRole}']`, async () => {
+                mockUserRepository.findByEmail.mockResolvedValue(mockUser({ role: primaryRole }));
+
+                const result = await useCase.execute({
+                    email: 'test@example.com',
+                    password: 'password',
+                    ipAddress: '127.0.0.1',
+                    userAgent: 'test-agent'
+                });
+
+                expect(result.success).toBe(true);
+                const payload = decodeJwtPayload(result.accessToken!);
+                const roles = payload.roles as string[];
+
+                expect(roles).toEqual([primaryRole]);
+                expect(roles).not.toContain('buyer');
+            });
+        });
+
+        it('buyer account JWT must still contain ["buyer"]', async () => {
+            mockUserRepository.findByEmail.mockResolvedValue(mockUser({ role: 'buyer' }));
+
+            const result = await useCase.execute({
+                email: 'test@example.com',
+                password: 'password',
+                ipAddress: '127.0.0.1',
+                userAgent: 'test-agent'
+            });
+
+            expect(result.success).toBe(true);
+            const payload = decodeJwtPayload(result.accessToken!);
+            expect(payload.roles).toEqual(['buyer']);
+        });
+
+        it('system account JWT must still contain ["admin", "system"]', async () => {
+            mockUserRepository.findByEmail.mockResolvedValue(mockUser({ role: 'system' }));
+
+            const result = await useCase.execute({
+                email: 'test@example.com',
+                password: 'password',
+                ipAddress: '127.0.0.1',
+                userAgent: 'test-agent'
+            });
+
+            expect(result.success).toBe(true);
+            const payload = decodeJwtPayload(result.accessToken!);
+            const roles = payload.roles as string[];
+            expect(roles).toContain('admin');
+            expect(roles).toContain('system');
+        });
+
+        it('explicitly dual-role account (metadata roles) must keep both roles', async () => {
+            mockUserRepository.findByEmail.mockResolvedValue(
+                mockUser({ role: 'seller', metadata: { roles: ['buyer', 'seller'] } })
+            );
+
+            const result = await useCase.execute({
+                email: 'test@example.com',
+                password: 'password',
+                ipAddress: '127.0.0.1',
+                userAgent: 'test-agent'
+            });
+
+            expect(result.success).toBe(true);
+            const payload = decodeJwtPayload(result.accessToken!);
+            const roles = payload.roles as string[];
+            expect(roles).toContain('buyer');
+            expect(roles).toContain('seller');
+        });
+    });
 });

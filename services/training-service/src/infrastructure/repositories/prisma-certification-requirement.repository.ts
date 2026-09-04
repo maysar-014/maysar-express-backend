@@ -112,6 +112,74 @@ export class PrismaCertificationRequirementRepository implements ICertificationR
         }
     }
 
+    public async save(requirement: CertificationRequirement): Promise<void> {
+        const delegate = this.requirementDelegate;
+        if (!delegate) {
+            this.fallbackRequirements.set(requirement.module, requirement);
+            return;
+        }
+        try {
+            const data = {
+                module: requirement.module,
+                minimumScore: requirement.minimumScore,
+                validityPeriodDays: requirement.validityPeriodDays,
+                mandatory: requirement.mandatory,
+                maxAttempts: requirement.maxAttempts,
+            };
+            await (delegate as any).upsert({
+                where: { module: requirement.module },
+                create: data,
+                update: data,
+            });
+        } catch (error) {
+            if (process.env.NODE_ENV !== 'production') {
+                this.fallbackRequirements.set(requirement.module, requirement);
+                return;
+            }
+            throw error;
+        }
+    }
+
+    public async update(module: string, data: Partial<Record<string, unknown>>): Promise<CertificationRequirement | null> {
+        const delegate = this.requirementDelegate;
+        if (!delegate) {
+            const existing = this.fallbackRequirements.get(module);
+            if (!existing) return null;
+            const updated = CertificationRequirement.create({ ...this.toProps(existing), ...data } as any);
+            this.fallbackRequirements.set(module, updated);
+            return updated;
+        }
+        try {
+            const updated = await (delegate as any).update({
+                where: { module },
+                data,
+            });
+            return updated ? CertificationRequirement.create(this.toProps(updated)) : null;
+        } catch (error) {
+            if (process.env.NODE_ENV !== 'production') {
+                return this.fallbackRequirements.get(module) ?? null;
+            }
+            throw error;
+        }
+    }
+
+    public async delete(module: string): Promise<void> {
+        const delegate = this.requirementDelegate;
+        if (!delegate) {
+            this.fallbackRequirements.delete(module);
+            return;
+        }
+        try {
+            await (delegate as any).delete({ where: { module } });
+        } catch (error) {
+            if (process.env.NODE_ENV !== 'production') {
+                this.fallbackRequirements.delete(module);
+                return;
+            }
+            throw error;
+        }
+    }
+
     private get requirementDelegate(): CertificationRequirementDelegate | null {
         const client = this.prisma as unknown as Record<string, unknown>;
         const delegate = (client.certificationRequirement ??

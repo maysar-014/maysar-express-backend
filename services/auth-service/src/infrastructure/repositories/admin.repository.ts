@@ -263,6 +263,75 @@ export class AdminRepository {
       throw error;
     }
   }
+
+  /**
+   * Verify phone number for a user (admin bypass — no Firebase OTP required)
+   * Tries all three user tables to handle cross-service ID mismatches.
+   * The buyer ID usr_... may exist in auth_users, auth_user_sync, or users — we try all.
+   */
+  async verifyPhone(userId: string): Promise<{ userId: string; isPhoneVerified: boolean; updatedAt: Date }> {
+    try {
+      let updatedAt = new Date();
+      let found = false;
+
+      // 1. Try auth_users (prisma.user → @@map("auth_users"))
+      try {
+        const updated = await prisma.user.update({
+          where: { id: userId },
+          data: { isPhoneVerified: true }
+        });
+        updatedAt = updated.updatedAt;
+        found = true;
+      } catch (authUserErr: any) {
+        if (authUserErr?.code !== 'P2025') {
+          logger.warn('AdminRepository.verifyPhone: auth_users update failed', { userId, error: authUserErr?.message });
+        }
+      }
+
+      // 2. Try auth_user_sync (prisma.auth_User → @@map("auth_user_sync"))
+      try {
+        await prisma.auth_User.update({
+          where: { id: userId },
+          data: { isPhoneVerified: true }
+        });
+        found = true;
+      } catch (syncError: any) {
+        if (syncError?.code !== 'P2025') {
+          logger.warn('AdminRepository: auth_user_sync phone sync failed', { userId, error: syncError?.message });
+        }
+      }
+
+      // 3. Try user_User (prisma.user_User → @@map("users"))
+      try {
+        const userUserUpdated = await (prisma as any).user_User.update({
+          where: { id: userId },
+          data: { isPhoneVerified: true }
+        });
+        updatedAt = userUserUpdated.updatedAt ?? updatedAt;
+        found = true;
+      } catch (syncError: any) {
+        if (syncError?.code !== 'P2025') {
+          logger.warn('AdminRepository: user_User phone sync failed', { userId, error: syncError?.message });
+        }
+      }
+
+      if (!found) {
+        // User not found in any table — throw a structured not-found error
+        const err: any = new Error(`User ${userId} not found in any user table`);
+        err.code = 'P2025';
+        throw err;
+      }
+
+      return {
+        userId,
+        isPhoneVerified: true,
+        updatedAt
+      };
+    } catch (error) {
+      logger.error('AdminRepository.verifyPhone error', { error, userId });
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance

@@ -36,6 +36,15 @@ const normalizeDatabaseUrl = (url?: string): { url?: string; disableSsl?: boolea
 };
 
 export const createPrismaClient = (options?: Prisma.PrismaClientOptions): PrismaClient => {
+  // Singleton enforcement: when called without custom options (the common monolith case),
+  // reuse the single global client instead of opening a new connection pool.
+  // This eliminates the "Can't reach database server" race errors caused by services
+  // creating independent pools that haven't finished handshaking at startup.
+  const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+  if (!options && globalForPrisma.prisma) {
+    return globalForPrisma.prisma;
+  }
+
   const normalizedOptions: Prisma.PrismaClientOptions = { ...(options ?? {}) };
   const urlSource =
     options?.datasources?.db?.url ??
@@ -59,5 +68,12 @@ export const createPrismaClient = (options?: Prisma.PrismaClientOptions): Prisma
     }
   }
   const client = new PrismaClient(normalizedOptions);
-  return applyIdMiddleware(client);
+  const withMiddleware = applyIdMiddleware(client);
+
+  // Store the first no-options instance as the global singleton
+  if (!options && !globalForPrisma.prisma) {
+    globalForPrisma.prisma = withMiddleware;
+  }
+
+  return withMiddleware;
 };

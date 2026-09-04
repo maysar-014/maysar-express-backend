@@ -2,6 +2,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 import Joi from 'joi';
 import { OrderController } from '../controllers/order.controller';
 import { CODDisputeController } from '../controllers/cod-dispute.controller';
+import { VerificationController } from '../controllers/verification.controller';
 import { IdempotencyMiddleware } from '@shared/middleware/idempotency';
 import { requireAuth, requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 import { asyncHandler } from '@shared/middleware/async-handler';
@@ -40,13 +41,19 @@ const createOrderBodySchema = Joi.object({
   ).min(1).required(),
   deliveryAddress: Joi.object({
     street: safeVisibleString.required(),
-    city: safeVisibleString.required(),
+    // Tanzania canonical hierarchy (preferred)
+    ward: safeVisibleString.optional(),
+    district: safeVisibleString.optional(),
+    region: safeVisibleString.optional(),
+    // Legacy / international
+    city: safeVisibleString.optional(),
+    state: Joi.string().allow('').optional(),
     postalCode: safeVisibleString.required(),
     country: safeVisibleString.required(),
   }).unknown(false).required(),
-  deliveryFee: Joi.number().greater(0).when('paymentMethod', {
+  deliveryFee: Joi.number().min(0).when('paymentMethod', {
     is: 'COD',
-    then: Joi.required(),
+    then: Joi.number().greater(0).required(),
     otherwise: Joi.optional(),
   }),
 }).unknown(false);
@@ -59,13 +66,21 @@ const codValidationBodySchema = Joi.object({
   currency: currencyCodeSchema.optional(),
   deliveryAddress: Joi.object({
     street: safeVisibleString.required(),
-    city: safeVisibleString.required(),
+    ward: safeVisibleString.optional(),
+    district: safeVisibleString.optional(),
+    region: safeVisibleString.optional(),
+    city: safeVisibleString.optional(),
+    state: Joi.string().allow('').optional(),
     postalCode: safeVisibleString.required(),
     country: safeVisibleString.required(),
   }).unknown(false).required(),
   sellerAddress: Joi.object({
     street: safeVisibleString.required(),
-    city: safeVisibleString.required(),
+    ward: safeVisibleString.optional(),
+    district: safeVisibleString.optional(),
+    region: safeVisibleString.optional(),
+    city: safeVisibleString.optional(),
+    state: Joi.string().allow('').optional(),
     postalCode: safeVisibleString.required(),
     country: safeVisibleString.required(),
   }).unknown(false).required(),
@@ -83,6 +98,7 @@ const orderListQuerySchema = Joi.object({
   limit: Joi.number().integer().min(1).max(100).optional(),
   status: safeVisibleString.optional(),
   buyerId: safeVisibleString.optional(),
+  sellerId: safeVisibleString.optional(),
 }).unknown(false);
 
 const disputeResolveParamsSchema = Joi.object({
@@ -90,9 +106,11 @@ const disputeResolveParamsSchema = Joi.object({
 }).unknown(false);
 
 const disputeResolveBodySchema = Joi.object({
-  resolution: safeVisibleString.required(),
-  decision: safeVisibleString.required(),
-}).unknown(false);
+  resolution: safeVisibleString.optional(),
+  decision: safeVisibleString.optional(),  // required by use case but may come as 'notes' or 'resolvedBy'
+  notes: Joi.string().optional(),           // alias for resolution
+  resolvedBy: safeVisibleString.optional(), // audit field; accepted but not required by use case
+}).unknown(true);
 
 const cancelOrderParamsSchema = Joi.object({
   id: safeVisibleString.required(),
@@ -113,12 +131,12 @@ const ORDER_CACHE_TAGS = [
 ];
 
 const noCache = (_req: Request, _res: Response, next: NextFunction) => next();
-const orderListCache = cacheConfig.enabled ? cacheResponse({ ttl: 60, tags: ['orders', 'orders:list'] }) : noCache;
+const orderListCache = noCache;
 const orderDetailCache = cacheConfig.enabled ? cacheResponse({ ttl: 60, tags: ['orders', 'orders:detail'] }) : noCache;
 const orderSearchCache = cacheConfig.enabled ? cacheResponse({ ttl: 60, tags: ['orders', 'orders:search'] }) : noCache;
 const orderAnalyticsCache = cacheConfig.enabled ? cacheResponse({ ttl: 30, tags: ['orders', 'orders:analytics'] }) : noCache;
 
-export const setupOrderRoutes = (orderController: OrderController, codDisputeController: CODDisputeController) => {
+export const setupOrderRoutes = (orderController: OrderController, codDisputeController: CODDisputeController, verificationController?: VerificationController) => {
   router.use('/health', healthRoutes);
   router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
   router.use(requireAuth);
@@ -168,6 +186,69 @@ export const setupOrderRoutes = (orderController: OrderController, codDisputeCon
     validateJoiRequest({ body: codValidationBodySchema }),
     asyncHandler((req, res) => orderController.validateCODELigibility(req, res))
   );
+
+  // ── Verification workflow routes (MUST come before /orders/:id to avoid capture) ──
+
+  if (verificationController) {
+    // Admin dashboard endpoints
+    router.get(
+      '/orders/admin/pending-verification',
+      requireRoleOrService(['admin']),
+      asyncHandler((req, res) => verificationController.getPendingVerification(req, res))
+    );
+    router.get(
+      '/orders/admin/overdue',
+      requireRoleOrService(['admin']),
+      asyncHandler((req, res) => verificationController.getOverdue(req, res))
+    );
+
+    // Per-order history
+    router.get(
+      '/orders/:id/history',
+      requireRoleOrService(['admin']),
+      asyncHandler((req, res) => verificationController.getOrderHistory(req, res))
+    );
+
+    // Seller actions
+    router.post(
+      '/orders/:id/verify',
+      asyncHandler((req, res) => verificationController.sellerVerify(req, res))
+    );
+    router.post(
+      '/orders/:id/decline',
+      asyncHandler((req, res) => verificationController.sellerDecline(req, res))
+    );
+
+    // Buyer checkout after verification
+    router.post(
+      '/orders/:id/buyer/confirm-checkout',
+      asyncHandler((req, res) => verificationController.buyerConfirmCheckout(req, res))
+    );
+
+    // Admin actions
+    router.post(
+      '/orders/:id/admin/approve',
+      requireRoleOrService(['admin']),
+      asyncHandler((req, res) => verificationController.adminApprove(req, res))
+    );
+    router.post(
+      '/orders/:id/admin/cancel',
+      requireRoleOrService(['admin']),
+      asyncHandler((req, res) => verificationController.adminCancel(req, res))
+    );
+    router.post(
+      '/orders/:id/admin/review',
+      requireRoleOrService(['admin']),
+      asyncHandler((req, res) => verificationController.adminPlaceUnderReview(req, res))
+    );
+    router.post(
+      '/orders/:id/admin/override',
+      requireRoleOrService(['admin']),
+      asyncHandler((req, res) => verificationController.adminOverride(req, res))
+    );
+  }
+
+  // ── End verification routes ──
 
   // Get all orders (with pagination and filtering)
   router.get(

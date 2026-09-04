@@ -134,6 +134,10 @@ export class Payment {
         return this.props.version ?? 1;
     }
 
+    incrementVersion(): void {
+        this.props.version = (this.props.version ?? 0) + 1;
+    }
+
     // Business Methods
 
     /**

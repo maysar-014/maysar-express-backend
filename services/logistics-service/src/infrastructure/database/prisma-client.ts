@@ -54,14 +54,34 @@ export class DatabaseConnection {
   }
 
   static async initialize(): Promise<void> {
-    try {
-      logger.info('Initializing database connection...');
-      const ok = await this.testConnection();
-      if (!ok) throw new Error('Failed to establish database connection');
-      logger.info('Database connection initialized successfully');
-    } catch (error) {
-      logger.error('Failed to initialize database connection', { error });
-      throw error;
+    const MAX_RETRIES = 5;
+    const RETRY_DELAY_MS = 2000;
+
+    logger.info('Initializing database connection...');
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const ok = await this.testConnection();
+        if (!ok) throw new Error('Failed to establish database connection');
+        logger.info('Database connection initialized successfully');
+        return;
+      } catch (error: any) {
+        const isRetryable =
+          error?.code === 'P1001' || // Can't reach database
+          error?.code === 'P1002' || // Timed out
+          (typeof error?.message === 'string' && error.message.includes("Can't reach database"));
+
+        if (attempt < MAX_RETRIES && isRetryable) {
+          logger.warn(`Database connection attempt ${attempt}/${MAX_RETRIES} failed, retrying in ${RETRY_DELAY_MS}ms...`, {
+            error: error?.message
+          });
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+          continue;
+        }
+
+        logger.error('Failed to initialize database connection', { error });
+        throw error;
+      }
     }
   }
 

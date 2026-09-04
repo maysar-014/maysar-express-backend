@@ -164,6 +164,80 @@ export class PrismaTrainingModuleRepository implements ITrainingModuleRepository
         }
     }
 
+    public async save(module: TrainingModule): Promise<void> {
+        const delegate = this.moduleDelegate;
+        if (!delegate) {
+            this.fallbackModules.set(module.id, module);
+            return;
+        }
+        try {
+            const data = {
+                id: module.id,
+                name: module.name,
+                description: module.description,
+                contentType: module.contentType,
+                content: module.content as unknown,
+                durationMinutes: module.durationMinutes,
+                category: module.category,
+                prerequisites: module.prerequisites,
+                targetRoles: module.targetRoles,
+                isPublic: module.isPublic,
+                difficulty: module.difficulty,
+            };
+            await (delegate as any).upsert({
+                where: { id: module.id },
+                create: data,
+                update: data,
+            });
+        } catch (error) {
+            if (process.env.NODE_ENV !== 'production') {
+                this.fallbackModules.set(module.id, module);
+                return;
+            }
+            throw error;
+        }
+    }
+
+    public async update(id: string, data: Partial<Record<string, unknown>>): Promise<TrainingModule | null> {
+        const delegate = this.moduleDelegate;
+        if (!delegate) {
+            const existing = this.fallbackModules.get(id);
+            if (!existing) return null;
+            const updated = TrainingModule.create({ ...existing.toJSON?.() ?? {}, ...data, id } as any);
+            this.fallbackModules.set(id, updated);
+            return updated;
+        }
+        try {
+            const updated = await (delegate as any).update({
+                where: { id },
+                data,
+            });
+            return updated ? TrainingModuleMapper.toDomain(updated) : null;
+        } catch (error) {
+            if (process.env.NODE_ENV !== 'production') {
+                return this.fallbackModules.get(id) ?? null;
+            }
+            throw error;
+        }
+    }
+
+    public async delete(id: string): Promise<void> {
+        const delegate = this.moduleDelegate;
+        if (!delegate) {
+            this.fallbackModules.delete(id);
+            return;
+        }
+        try {
+            await (delegate as any).delete({ where: { id } });
+        } catch (error) {
+            if (process.env.NODE_ENV !== 'production') {
+                this.fallbackModules.delete(id);
+                return;
+            }
+            throw error;
+        }
+    }
+
     private get moduleDelegate(): TrainingModuleDelegate | null {
         const delegate = this.prisma.training_TrainingModule ?? this.prisma.trainingModule;
         if (!delegate) {

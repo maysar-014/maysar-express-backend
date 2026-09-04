@@ -130,7 +130,18 @@ export class CartController {
     let body: Record<string, unknown> = {};
     try {
       body = this.assertNoUnknownBodyFields(req.body, ['cartId', 'userId', 'productId', 'variantId', 'quantity', 'priceAtTime']);
-      const { cartId, userId, productId, variantId, quantity, priceAtTime } = body;
+      let { cartId, userId, productId, variantId, quantity, priceAtTime } = body;
+
+      // Auto-resolve cartId and userId from auth context when not provided
+      // This allows the test harness to call POST /api/cart/items without pre-fetching cart
+      const authenticatedUserId = this.getAuthenticatedUserId(req);
+      if (!userId && authenticatedUserId) {
+        userId = authenticatedUserId;
+      }
+      if (!cartId && userId) {
+        const resolvedCart = await this.resolveOrCreateCurrentCart(userId as string);
+        cartId = resolvedCart.cartId;
+      }
 
       validateCartRequest({ cartId, userId, productId, variantId, quantity, priceAtTime });
       const validatedCartId = cartId as string;

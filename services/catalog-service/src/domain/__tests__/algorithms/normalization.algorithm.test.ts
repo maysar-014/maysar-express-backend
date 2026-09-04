@@ -79,4 +79,99 @@ describe('NormalizationAlgorithm', () => {
             expect(NormalizationAlgorithm.normalizeCategory('')).toBe('');
         });
     });
+
+    describe('normalizeStorage', () => {
+        it('should normalise "256 GB" to "256GB"', () => {
+            expect(NormalizationAlgorithm.normalizeStorage('256 GB')).toBe('256GB');
+        });
+
+        it('should normalise "256gb" to "256GB"', () => {
+            expect(NormalizationAlgorithm.normalizeStorage('256gb')).toBe('256GB');
+        });
+
+        it('should normalise "1 TB" to "1TB"', () => {
+            expect(NormalizationAlgorithm.normalizeStorage('1 TB')).toBe('1TB');
+        });
+
+        it('should normalise "512 MB" to "512MB"', () => {
+            expect(NormalizationAlgorithm.normalizeStorage('512 MB')).toBe('512MB');
+        });
+    });
+
+    describe('normalizeWeight', () => {
+        it('should normalise "1.5 Kg" to "1.5kg"', () => {
+            expect(NormalizationAlgorithm.normalizeWeight('1.5 Kg')).toBe('1.5kg');
+        });
+
+        it('should normalise "500 g" to "500g"', () => {
+            expect(NormalizationAlgorithm.normalizeWeight('500 g')).toBe('500g');
+        });
+
+        it('should normalise "2 kgs" to "2kg"', () => {
+            expect(NormalizationAlgorithm.normalizeWeight('2 kgs')).toBe('2kg');
+        });
+    });
+
+    describe('normalizeDuration', () => {
+        it('should normalise "2 yrs" to "2 years"', () => {
+            expect(NormalizationAlgorithm.normalizeDuration('2 yrs')).toBe('2 years');
+        });
+
+        it('should normalise "Two years" to "2 years"', () => {
+            expect(NormalizationAlgorithm.normalizeDuration('Two years')).toBe('2 years');
+        });
+
+        it('should normalise "12 months" unchanged', () => {
+            expect(NormalizationAlgorithm.normalizeDuration('12 months')).toBe('12 months');
+        });
+
+        it('should normalise "1 yr" to "1 years"', () => {
+            expect(NormalizationAlgorithm.normalizeDuration('1 yr')).toBe('1 years');
+        });
+    });
+
+    describe('normalizeDisplaySize', () => {
+        it('should normalise "6.6 Inch" to "6.6 inch"', () => {
+            expect(NormalizationAlgorithm.normalizeDisplaySize('6.6 Inch')).toBe('6.6 inch');
+        });
+
+        it('should convert 6.6" to "6.6 inch"', () => {
+            expect(NormalizationAlgorithm.normalizeDisplaySize('6.6"')).toBe('6.6 inch');
+        });
+
+        it('should normalise "6.6 inches" to "6.6 inch"', () => {
+            expect(NormalizationAlgorithm.normalizeDisplaySize('6.6 inches')).toBe('6.6 inch');
+        });
+    });
+
+    describe('normalizeByAttributeKey', () => {
+        it('should apply storage normalisation for "storage" key', () => {
+            expect(NormalizationAlgorithm.normalizeByAttributeKey('storage', '256 GB')).toBe('256GB');
+        });
+
+        it('should apply storage normalisation for "internal_memory" key', () => {
+            expect(NormalizationAlgorithm.normalizeByAttributeKey('internal_memory', '256gb')).toBe('256GB');
+        });
+
+        it('should apply weight normalisation for "weight" key', () => {
+            expect(NormalizationAlgorithm.normalizeByAttributeKey('weight', '2 kgs')).toBe('2kg');
+        });
+
+        it('should apply duration normalisation for "warranty" key', () => {
+            expect(NormalizationAlgorithm.normalizeByAttributeKey('warranty', '2 yrs')).toBe('2 years');
+        });
+
+        it('should apply display normalisation for "display" key', () => {
+            expect(NormalizationAlgorithm.normalizeByAttributeKey('display', '6.6"')).toBe('6.6 inch');
+        });
+
+        it('should fall back to generic normalisation for unknown keys', () => {
+            expect(NormalizationAlgorithm.normalizeByAttributeKey('custom_attr', '  Hello World  ')).toBe('Hello World');
+        });
+
+        it('should return empty string for empty value', () => {
+            expect(NormalizationAlgorithm.normalizeByAttributeKey('storage', '')).toBe('');
+        });
+    });
 });
+

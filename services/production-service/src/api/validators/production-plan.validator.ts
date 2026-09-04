@@ -19,11 +19,17 @@ export const createProductionPlanSchema = z.object({
     }).strict()
 });
 
+// Accept both ULID-based system IDs and flexible plan IDs (e.g. plan-1783868429136)
+const flexiblePlanId = z.union([
+    zodId(),
+    z.string().min(1).max(100)
+]);
+
 export const updateProductionStatusSchema = z.object({
     params: z.object({
-        id: zodId()
-    }).strict(),
+        id: flexiblePlanId
+    }).strip(),
     body: z.object({
         status: z.nativeEnum(ProductionStatus)
-    }).strict()
+    }).strip()
 });

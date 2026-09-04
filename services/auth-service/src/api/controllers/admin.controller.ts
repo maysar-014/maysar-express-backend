@@ -430,6 +430,41 @@ export class AdminController {
       });
     }
   }
+
+  /**
+   * Admin bypass: mark a user's phone as verified without Firebase OTP.
+   * PATCH /api/v1/admin/users/:userId/verify-phone
+   */
+  async verifyPhone(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId } = req.params;
+      const result = await adminService.verifyPhone(userId);
+
+      const response: ApiResponse = {
+        success: true,
+        data: result,
+        message: 'Phone number verified successfully'
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      logger.error('AdminController.verifyPhone error', { error, userId: req.params.userId });
+      // P2025 = Prisma record not found — translate to 404
+      const isPrismaNotFound = (error as any)?.code === 'P2025'
+        || String((error as any)?.message || '').toLowerCase().includes('not found');
+      const info = isPrismaNotFound
+        ? { status: 404, code: 'USER_NOT_FOUND', message: `User ${req.params.userId} not found`, details: undefined }
+        : this.resolveError(error, 'ADMIN_PHONE_VERIFY_FAILED', 'Failed to verify phone number');
+      res.status(info.status).json({
+        success: false,
+        error: {
+          code: info.code,
+          message: info.message,
+          ...(info.details ? { details: info.details } : {})
+        }
+      });
+    }
+  }
 }
 
 // Export singleton instance

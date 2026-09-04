@@ -137,7 +137,7 @@ describe('CreateProductUseCase', () => {
     });
 
     expect(result.status).toBe('validation_error');
-    expect(result.violations).toContain('Supplier location ID is required');
+    expect(result.violations).toContain('Supplier location is required');
   });
 
   it('returns validation error when saved supplier location does not belong to seller', async () => {

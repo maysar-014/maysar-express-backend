@@ -52,7 +52,7 @@ describe('AuthController', () => {
       profile: { name: 'New User', firstName: 'New', lastName: 'User' }
     });
     expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith({ success: true, userId: 'new-user-id' });
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, userId: 'new-user-id' }));
   });
 
   it('register maps thrown errors to 400 responses', async () => {

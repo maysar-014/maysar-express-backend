@@ -353,7 +353,8 @@ export class SearchProductsUseCase {
     if (filters.category) repoFilters.categoryId = filters.category;
     if (filters.seller) repoFilters.sellerId = filters.seller;
     if (filters.productType) repoFilters.type = filters.productType;
-    if (filters.status) repoFilters.status = filters.status;
+    // Public search never exposes seller drafts or system-unpublished listings.
+    repoFilters.status = 'published';
     if (filters.priceRange) {
       repoFilters.priceMin = filters.priceRange.min;
       repoFilters.priceMax = filters.priceRange.max;

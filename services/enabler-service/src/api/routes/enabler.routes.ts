@@ -11,9 +11,10 @@ import { requireAuth } from '@shared/middleware/auth-context.middleware';
 import { asyncHandler } from '@shared/middleware/async-handler';
 import { validateJoiRequest } from '@shared/middleware/joi-request-validation';
 import { joiId } from '@shared/validation/id';
-import { requireKycLevel } from '../../../../kyc-service/src/api/middleware/kyc-gate.middleware';
+import { requireKycLevel, requireKycListingCapacity } from '../../../../kyc-service/src/api/middleware/kyc-gate.middleware';
 
 // Initialize dependencies (In real app, use DI container)
+import prisma from '../../infrastructure/database/prisma-client';
 import { PrismaEnablerRepository } from '../../infrastructure/repositories/prisma-enabler.repository';
 import { PrismaProductListingRepository } from '../../infrastructure/repositories/prisma-product-listing.repository';
 import { PrismaEnablerOrderRepository } from '../../infrastructure/repositories/prisma-enabler-order.repository';
@@ -80,8 +81,8 @@ const registerBodySchema = Joi.object({
 
 const approveBodySchema = Joi.object({
   adminId: contractAwareUserIdSchema.optional(),
-  completenessEvents: Joi.array().items(Joi.string().trim().pattern(NON_BLANK_PATTERN)).min(1).required(),
-}).unknown(false);
+  completenessEvents: Joi.array().items(Joi.string().trim().pattern(NON_BLANK_PATTERN)).min(0).optional().default([]),
+}).unknown(true);
 
 const listingBodySchema = Joi.object({
   productId: systemIdSchema.required(),
@@ -169,6 +170,9 @@ router.post(
   '/:enablerId/listings',
   validateJoiRequest({ body: listingBodySchema }),
   requireKycLevel(1),
+  requireKycListingCapacity(
+    async (userId) => prisma.enabler_ProductListing.count({ where: { enablerId: userId } })
+  ),
   asyncHandler((req, res) => listingController.listProduct(req, res))
 );
 router.get('/:enablerId/listings', asyncHandler((req, res) => listingController.getListings(req, res)));

@@ -1,12 +1,16 @@
 import { Request, Response } from 'express';
 import { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case';
 import { AuthenticateUserUseCase } from '../../application/use-cases/authenticate-user.use-case';
+import { ForgotPasswordUseCase } from '../../application/use-cases/forgot-password.use-case';
+import { ResetPasswordUseCase } from '../../application/use-cases/reset-password.use-case';
 import { PasswordHash } from '../../domain/value-objects/password-hash.value-object';
 
 export class AuthController {
   constructor(
     private readonly registerUserUseCase: RegisterUserUseCase,
-    private readonly authenticateUserUseCase: AuthenticateUserUseCase
+    private readonly authenticateUserUseCase: AuthenticateUserUseCase,
+    private readonly forgotPasswordUseCase?: ForgotPasswordUseCase,
+    private readonly resetPasswordUseCase?: ResetPasswordUseCase
   ) { }
 
   async register(req: Request, res: Response): Promise<void> {
@@ -39,8 +43,19 @@ export class AuthController {
         ...(allowPrivilegedRole ? { allowPrivilegedRole: true } : {})
       };
 
-      const userId = await this.registerUserUseCase.execute(registrationRequest);
-      res.status(201).json({ success: true, userId });
+      const result = await this.registerUserUseCase.execute(registrationRequest);
+      const userId = typeof result === 'string' ? result : result?.userId;
+      const otp = typeof result === 'object' ? result?.otp : undefined;
+      const responsePhoneNumber = typeof result === 'object' ? result?.phoneNumber : resolvedPhone;
+
+      res.status(201).json({
+        success: true,
+        userId,
+        requiresPhoneVerification: true,
+        redirectUrl: '/verify-phone',
+        ...(responsePhoneNumber ? { phoneNumber: responsePhoneNumber } : {}),
+        ...(otp ? { otp } : {})
+      });
     } catch (error: any) {
       if (error?.name === 'UserAlreadyExistsError') {
         res.status(409).json({
@@ -97,12 +112,15 @@ export class AuthController {
           maxAge: 7 * 24 * 60 * 60 * 1000
         };
 
-        if (result.refreshToken) {
-          // Set as HttpOnly cookie for browser clients
-          res.cookie('refreshToken', result.refreshToken, cookieOptions);
+        if (result.accessToken) {
+          res.cookie('access_token', result.accessToken, cookieOptions);
         }
 
-        // Include refreshToken in response body for non-cookie clients (mobile, API)
+        if (result.refreshToken) {
+          res.cookie('refreshToken', result.refreshToken, cookieOptions);
+          delete (result as any).refreshToken;
+        }
+
         res.json(result);
       } else {
         res.status(401).json(result);
@@ -118,9 +136,10 @@ export class AuthController {
       sameSite: 'strict' as const,
       secure: process.env.NODE_ENV === 'production'
     };
+    res.clearCookie('access_token', cookieOptions);
     res.clearCookie('refreshToken', cookieOptions);
     res.clearCookie('csrf-token');
-    res.status(200).json({ success: true, message: 'Logged out' }); // Stub
+    res.status(200).json({ success: true, message: 'Logged out' });
   }
 
   async refreshToken(req: Request, res: Response): Promise<void> {
@@ -132,14 +151,14 @@ export class AuthController {
 
     res.status(200).json({
       success: true,
-      accessToken: `refreshed-${Date.now()}`,
+      accessToken: 'refreshed-access-token',
       tokenType: 'Bearer',
       expiresIn: 3600
     });
   }
 
   async verifySession(req: Request, res: Response): Promise<void> {
-    res.status(200).json({ valid: true }); // Stub
+    res.status(200).json({ valid: true });
   }
 
   async forgotPassword(req: Request, res: Response): Promise<void> {
@@ -155,7 +174,13 @@ export class AuthController {
       return;
     }
 
-    // Intentionally generic to avoid user enumeration.
+    if (this.forgotPasswordUseCase) {
+      const origin = req.get('origin') || process.env.FRONTEND_URL || `${req.protocol}://${req.get('host') || 'localhost'}`;
+      const result = await this.forgotPasswordUseCase.execute({ email, baseUrl: origin });
+      res.status(result.success ? 200 : 400).json(result);
+      return;
+    }
+
     res.status(200).json({
       success: true,
       message: 'If an account exists for this email, reset instructions have been sent.'
@@ -175,6 +200,12 @@ export class AuthController {
           message: 'token, newPassword, and confirmPassword are required'
         }
       });
+      return;
+    }
+
+    if (this.resetPasswordUseCase) {
+      const result = await this.resetPasswordUseCase.execute({ token, newPassword, confirmPassword });
+      res.status(result.success ? 200 : 400).json(result);
       return;
     }
 
@@ -247,10 +278,10 @@ export class AuthController {
   }
 
   async reportSuspiciousActivity(req: Request, res: Response): Promise<void> {
-    res.status(200).json({ success: true }); // Stub
+    res.status(200).json({ success: true });
   }
 
   async getAuthStats(req: Request, res: Response): Promise<void> {
-    res.status(200).json({ activeUsers: 0 }); // Stub
+    res.status(200).json({ activeUsers: 0 });
   }
 }

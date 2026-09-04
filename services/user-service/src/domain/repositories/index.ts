@@ -9,7 +9,12 @@ export interface UserAddress {
   userId: string;
   type: 'home' | 'work' | 'billing' | 'shipping';
   street: string;
-  city: string;
+  // Tanzania canonical hierarchy (preferred over city)
+  ward?: string;
+  district?: string;
+  region?: string;
+  // Legacy / international
+  city?: string;
   state?: string;
   postalCode?: string;
   country: string;

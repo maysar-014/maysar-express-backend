@@ -223,6 +223,7 @@ export class User implements Entity {
     preferredLanguage?: string;
     preferredCurrency?: string;
     profilePicture?: string;
+    addresses?: Address[];
   }): User {
     return new User({
       ...this,

@@ -10,6 +10,9 @@ import { EventBusAdapter } from './src/infrastructure/messaging/event-bus.adapte
 import { CheckoutEventHandlers } from './src/application/handlers/checkout-event.handlers';
 import { CartController } from './src/api/controllers/cart.controller';
 import { CheckoutController } from './src/api/controllers/checkout.controller';
+import { QuoteValidationService } from './src/infrastructure/services/quote-validation.service';
+import { CatalogPriceValidatorService } from './src/infrastructure/services/catalog-price-validator.service';
+import { MultiSellerCheckoutUseCase } from './src/application/use-cases/multi-seller-checkout.use-case';
 import { register as metricsRegistry } from './src/infrastructure/monitoring/metrics';
 import { prisma } from './src/infrastructure/database/prisma-client';
 import { requireAuth, requireRoleOrService } from '@shared/middleware/auth-context.middleware';
@@ -23,9 +26,26 @@ export const CheckoutModule: Module = {
         const checkoutRepository = new PrismaCheckoutRepository(prisma);
         const checkoutOrderRepository = new PrismaCheckoutOrderRepository(prisma);
         const eventBus = new EventBusAdapter();
+        const quoteValidationService = new QuoteValidationService();
+        const catalogPriceValidator = new CatalogPriceValidatorService();
+
+        // Multi-seller checkout use case — exposed globally for checkout controller
+        const multiSellerCheckoutUseCase = new MultiSellerCheckoutUseCase(
+            quoteValidationService,
+            eventBus,
+        );
+        (globalThis as any).__multiSellerCheckoutUseCase = multiSellerCheckoutUseCase;
 
         const cartController = new CartController(cartRepository);
-        const checkoutController = new CheckoutController(checkoutRepository, eventBus, cartRepository);
+        const checkoutController = new CheckoutController(
+            checkoutRepository,
+            eventBus,
+            cartRepository,
+            undefined,
+            checkoutOrderRepository,
+            quoteValidationService,
+            catalogPriceValidator,
+        );
         new CheckoutEventHandlers(eventBus, checkoutRepository, checkoutOrderRepository);
 
         const router = Router();

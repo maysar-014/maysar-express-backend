@@ -16,14 +16,19 @@ const attachmentSchema = z.object({
 }).strict();
 
 export const createDisputeSchema = z.object({
-    orderId: z.string().trim().min(1).max(64),
+    orderId: z.string().trim().min(1).max(64).optional(),
+    ticketId: z.string().trim().min(1).max(64).optional(),
+    raisedBy: z.string().trim().min(1).max(64).optional(),
     reason: z.string().trim().min(3).max(500),
     description: z.string().trim().min(10).max(5000),
     subject: z.string().trim().min(5).max(120).optional(),
     category: z.string().trim().min(1).max(100).optional(),
     priority: z.nativeEnum(TicketPriority).optional(),
     attachments: z.array(attachmentSchema).max(10).optional()
-}).strict();
+}).strict().refine(value => Boolean(value.orderId) || Boolean(value.ticketId), {
+    message: 'orderId or ticketId is required',
+    path: ['orderId']
+});
 
 export const listDisputesSchema = z.object({
     status: z.nativeEnum(TicketStatus).optional(),

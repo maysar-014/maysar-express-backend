@@ -21,7 +21,11 @@ export const TrainingModule: Module = {
             res.end(await metricsRegistry.metrics());
         });
 
-        router.use('/api/v1/training', createTrainingRoutes(container.trainingController));
+        router.use('/api/v1/training', createTrainingRoutes(container.trainingController, {
+            moduleRepo: container.moduleRepo,
+            requirementRepo: container.requirementRepo,
+            trainingRecordRepo: container.trainingRecordRepo
+        }));
         router.use('/api/v1/modules', createModuleRoutes(container.moduleController));
         router.use('/api/health', createHealthRoutes(container.healthController));
         router.use(errorHandlerMiddleware);

@@ -483,7 +483,7 @@ model Product {
   isbn                  String?               @db.VarChar(13)
   fingerprint           String?               @db.VarChar(64)
   fingerprintVersion    Int                   @default(1)
-  slug                  String                @unique @db.VarChar(300)
+  slug                  String                @db.VarChar(300)
   seoTitle              String?               @db.VarChar(160)
   shortSeoDescription   String?               @db.VarChar(160)
   generatedDescription  String?
@@ -493,6 +493,9 @@ model Product {
   codAccepted           Boolean               @default(false)
   freeDelivery          Boolean               @default(false)
   condition             String                @default("new") @db.VarChar(20)
+  /// Current product lifecycle state. One of: DRAFT, VALIDATING, MATCH_REVIEW,
+  /// CONTENT_FAILED, QUALITY_FAILED, READY, PUBLISHED, UPDATED, REVALIDATION, ARCHIVED
+  lifecycleState        String                @default("DRAFT") @db.VarChar(32)
   createdAt             DateTime              @default(now()) @db.Timestamp(6)
   updatedAt             DateTime              @updatedAt @db.Timestamp(6)
   variants              ProductVariant[]
@@ -501,12 +504,14 @@ model Product {
   structuredAttributes  ProductAttribute[]
 
   @@unique([categoryId, fingerprint])
+  @@unique([sellerId, slug])
   @@index([gtin])
   @@index([mpn])
   @@index([isbn])
   @@index([brand, model, categoryId])
   @@index([slug])
   @@index([supplierLocationId])
+  @@index([lifecycleState])
   @@map("catalog_products")
 }
 
@@ -732,18 +737,35 @@ model Catalog_ReviewModerationLog {
 }
 
 model CategoryAttribute {
-  id           String             @id @default(cuid()) @db.VarChar(64)
-  categoryId   String             @db.VarChar(64)
-  name         String             @db.VarChar(100)
-  displayLabel String             @db.VarChar(150)
-  type         Catalog_AttributeType
-  options      Json?
-  isRequired   Boolean            @default(false)
-  displayOrder Int                @default(0)
-  placeholder  String?            @db.VarChar(200)
-  createdAt    DateTime           @default(now()) @db.Timestamp(6)
-  category     Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  productAttributes ProductAttribute[]
+  id                  String                @id @default(cuid()) @db.VarChar(64)
+  categoryId          String                @db.VarChar(64)
+  name                String                @db.VarChar(100)
+  displayLabel        String                @db.VarChar(150)
+  type                Catalog_AttributeType
+  options             Json?
+  isRequired          Boolean               @default(false)
+  displayOrder        Int                   @default(0)
+  placeholder         String?               @db.VarChar(200)
+  // ── Semantic Metadata ──────────────────────────────────────────────────────
+  /// Whether this attribute should feed the search index as a filter facet.
+  searchable          Boolean               @default(false)
+  /// Whether this attribute can be used in product comparison tables.
+  comparable          Boolean               @default(false)
+  /// Whether buyers can filter search results by this attribute.
+  filterable          Boolean               @default(false)
+  /// Priority in the generated product description. One of: HIGH, MEDIUM, LOW
+  descriptionPriority String?               @db.VarChar(10)
+  /// Priority in SEO title / meta description. One of: HIGH, MEDIUM, LOW
+  seoPriority         String?               @db.VarChar(10)
+  /// Priority in highlight/summary card displays. One of: HIGH, MEDIUM, LOW
+  highlightPriority   String?               @db.VarChar(10)
+  /// Logical grouping for the seller form and product page UI.
+  displayGroup        String?               @db.VarChar(100)
+  /// Whether this attribute contributes to canonical product identity for deduplication.
+  identityRelevant    Boolean               @default(false)
+  createdAt           DateTime              @default(now()) @db.Timestamp(6)
+  category            Category              @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  productAttributes   ProductAttribute[]
 
   @@index([categoryId])
   @@map("catalog_category_attributes")
@@ -827,6 +849,10 @@ model Checkout_CheckoutSession {
   paymentMethodId   String?
   paymentStatus     String?
   metadata          Json?
+  quoteId           String?  @db.VarChar(64)
+  pricingVersion    Int?
+  sellerQuotes      Json?    // { [sellerId: string]: { quoteId: string } } — multi-seller checkout
+  deliveryGroups    Json?    // { [groupId: string]: { quoteId: string, sellerOrderIds: string[], totalCost: number } }
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   expiresAt         DateTime @default(dbgenerated("(now() + '01:00:00'::interval)"))
@@ -1767,6 +1793,16 @@ model Order_Order {
   cancellationReason     String?
   deliveryCode           String?             @db.VarChar(6)
   deliveryCodeUsedAt     DateTime?
+  verificationDeadlineAt    DateTime?
+  verificationTimeoutMinutes Int?            @default(30)
+  orderSource            Order_OrderSource   @default(CART)
+  orderCompletionMethod  Order_OrderCompletionMethod?
+  chatConversationId     String?             @db.VarChar(64)
+  declineReason          String?             @db.Text
+  quoteId                String?             @db.VarChar(64)
+  pricingVersion         Int?
+  /// The seller location chosen as fulfillment pickup point at checkout
+  fulfillmentLocationId  String?             @db.VarChar(64)
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
   version                Int                 @default(0)
@@ -1774,12 +1810,32 @@ model Order_Order {
   items                  Order_OrderItem[]
   payments               Order_Payment[]
   settlements            Order_Settlement[]
+  verificationAuditLogs  Order_VerificationAuditLog[]
+  masterOrderItems       Order_MasterOrderItem[]      // back-reference for multi-seller
 
   @@index([buyerId])
   @@index([sellerId])
   @@index([status])
   @@index([createdAt])
   @@map("orders")
+}
+
+model Order_VerificationAuditLog {
+  id             String      @id @default(cuid()) @db.VarChar(64)
+  orderId        String      @db.VarChar(64)
+  entryType      String      @db.VarChar(32)
+  actorType      String      @db.VarChar(16)
+  actorId        String?     @db.VarChar(64)
+  previousStatus String      @db.VarChar(64)
+  newStatus      String      @db.VarChar(64)
+  reason         String?
+  notes          String?
+  timestamp      DateTime    @default(now())
+
+  order          Order_Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, timestamp])
+  @@map("order_verification_audit_logs")
 }
 
 model Order_CODDispute {
@@ -1818,6 +1874,7 @@ model Order_OrderItem {
 model Order_Payment {
   id            String              @id @default(cuid()) @db.VarChar(64)
   orderId       String @db.VarChar(64)
+  masterOrderId String? @db.VarChar(64)   // links payment to master order for multi-seller checkout
   amount        Decimal
   currency      String              @default("TZS")
   method        Order_PaymentMethod
@@ -1833,6 +1890,40 @@ model Order_Payment {
   @@index([status])
   @@map("order_payments")
 }
+
+// ─── Multi-Seller Master Order ────────────────────────────────────────────────
+// Groups N independent seller orders created from a single buyer checkout.
+// Business logic lives on the individual Order_Order records (unchanged).
+// This record exists purely for buyer UX — it is read-only after creation.
+
+model Order_MasterOrder {
+  id            String   @id @db.VarChar(64)  // MSR-MO-{YYYYMMDD}-{6alphanum}
+  buyerId       String   @db.VarChar(64)
+  totalAmount   Decimal  @db.Decimal(14, 2)
+  currency      String   @default("TZS") @db.VarChar(8)
+  paymentMethod String   @db.VarChar(32)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sellerOrders  Order_MasterOrderItem[]
+
+  @@index([buyerId])
+  @@index([createdAt])
+  @@map("order_master_orders")
+}
+
+model Order_MasterOrderItem {
+  masterOrderId String @db.VarChar(64)
+  sellerOrderId String @unique @db.VarChar(64)  // each seller order belongs to at most one master order
+
+  masterOrder   Order_MasterOrder @relation(fields: [masterOrderId], references: [id], onDelete: Cascade)
+  sellerOrder   Order_Order       @relation(fields: [sellerOrderId], references: [id], onDelete: Cascade)
+
+  @@id([masterOrderId, sellerOrderId])
+  @@index([sellerOrderId])
+  @@map("order_master_order_items")
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 model Order_Settlement {
   id                 String                 @id @default(cuid()) @db.VarChar(64)
@@ -2302,10 +2393,18 @@ model User_UserAddress {
   userId     String @db.VarChar(64)
   type       User_AddressType @default(HOME)
   street     String
-  city       String
+  // Tanzania geographic hierarchy (preferred)
+  ward       String?          // most precise unit — e.g. "Kivukoni"
+  district   String?          // e.g. "Ilala Cbd"
+  region     String?          // e.g. "Dar es Salaam"
+  // Legacy / international
+  city       String?
   state      String?
   postalCode String?
   country    String
+  // Geocoordinates (set when buyer provides lat/lng)
+  latitude   Decimal?         @db.Decimal(10, 7)
+  longitude  Decimal?         @db.Decimal(10, 7)
   isDefault  Boolean          @default(false)
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
@@ -3711,18 +3810,47 @@ enum Notification_TemplateStatus {
 }
 
 enum Order_OrderStatus {
+  DRAFT
   PENDING
   CONFIRMED
+  PROCESSING
   ASSIGNED
+  SHIPPED
   IN_TRANSIT
   DELIVERED
+  COMPLETED
   CANCELLED
+  PENDING_SELLER_VERIFICATION
+  SELLER_REVIEWING
+  SELLER_CONFIRMED
+  SELLER_VERIFIED
+  SELLER_REJECTED
+  SELLER_DECLINED
+  PAYMENT_PENDING
+  ORDER_PLACED
+  VERIFICATION_OVERDUE
+  UNDER_ADMIN_REVIEW
 }
 
 enum Order_PaymentMethod {
   COD
   WALLET
   CARD
+  MOBILE_MONEY
+  DIRECT_PAYMENT
+  SELLER_VERIFICATION
+}
+
+enum Order_OrderSource {
+  CART
+  DIRECT
+}
+
+enum Order_OrderCompletionMethod {
+  WALLET
+  DIRECT_PAYMENT
+  SELLER_VERIFICATION
+  COD
   MOBILE_MONEY
 }
 
@@ -4001,8 +4129,133 @@ enum Catalog_AssignmentType {
   EXPLORATION
 }
 
+// ─── Seller Location & Product Inventory ─────────────────────────────────────
 
-// ─── Chat System ─────────────────────────────────────────────────────────────
+enum Catalog_LocationType {
+  SHOP
+  WAREHOUSE
+  PICKUP_POINT
+  HOME_BASED
+  DISTRIBUTION_CENTER
+}
+
+enum Catalog_LocationStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum Catalog_StockTransferStatus {
+  PENDING
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+/// A seller-owned physical location (shop, warehouse, pickup point).
+/// Each location has accurate geocoordinates used as delivery pickup points.
+model Catalog_SellerLocation {
+  id             String                    @id @db.VarChar(64)
+  sellerId       String                    @db.VarChar(64)
+  name           String                    @db.VarChar(255)
+  type           Catalog_LocationType      @default(SHOP)
+  status         Catalog_LocationStatus    @default(ACTIVE)
+  // Tanzania canonical address
+  street         String
+  ward           String?
+  district       String?
+  region         String
+  postalCode     String?
+  country        String                    @default("Tanzania")
+  // Accurate geocoordinates (required)
+  latitude       Decimal                   @db.Decimal(10, 7)
+  longitude      Decimal                   @db.Decimal(10, 7)
+  // Meta
+  isPrimary      Boolean                   @default(false)
+  isActive       Boolean                   @default(true)
+  operatingHours Json?
+  notes          String?
+  createdAt      DateTime                  @default(now()) @db.Timestamp(6)
+  updatedAt      DateTime                  @updatedAt @db.Timestamp(6)
+
+  productLocations    Catalog_ProductLocation[]
+  stockTransfersFrom  Catalog_StockTransfer[]   @relation("TransferFrom")
+  stockTransfersTo    Catalog_StockTransfer[]   @relation("TransferTo")
+  fulfillmentSelections Catalog_FulfillmentSelection[]
+
+  @@index([sellerId])
+  @@index([sellerId, status])
+  @@index([latitude, longitude])
+  @@map("catalog_seller_locations")
+}
+
+/// Inventory of a product at a specific seller location.
+/// Products do NOT store addresses — this join table owns inventory.
+model Catalog_ProductLocation {
+  id                 String                 @id @db.VarChar(64)
+  productId          String                 @db.VarChar(64)
+  locationId         String                 @db.VarChar(64)
+  sellerId           String                 @db.VarChar(64)
+  quantityAvailable  Int                    @default(0)
+  quantityReserved   Int                    @default(0)
+  isAvailable        Boolean                @default(true)
+  createdAt          DateTime               @default(now()) @db.Timestamp(6)
+  updatedAt          DateTime               @updatedAt @db.Timestamp(6)
+
+  location           Catalog_SellerLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, locationId])
+  @@index([productId])
+  @@index([locationId])
+  @@index([sellerId])
+  @@map("catalog_product_locations")
+}
+
+/// Records stock movement between a seller's own locations.
+model Catalog_StockTransfer {
+  id             String                       @id @db.VarChar(64)
+  sellerId       String                       @db.VarChar(64)
+  productId      String                       @db.VarChar(64)
+  fromLocationId String                       @db.VarChar(64)
+  toLocationId   String                       @db.VarChar(64)
+  quantity       Int
+  status         Catalog_StockTransferStatus  @default(PENDING)
+  notes          String?
+  initiatedBy    String?                      @db.VarChar(64)
+  completedAt    DateTime?                    @db.Timestamp(6)
+  createdAt      DateTime                     @default(now()) @db.Timestamp(6)
+  updatedAt      DateTime                     @updatedAt @db.Timestamp(6)
+
+  fromLocation   Catalog_SellerLocation       @relation("TransferFrom", fields: [fromLocationId], references: [id])
+  toLocation     Catalog_SellerLocation       @relation("TransferTo",   fields: [toLocationId],   references: [id])
+
+  @@index([sellerId])
+  @@index([productId])
+  @@map("catalog_stock_transfers")
+}
+
+/// Audit log: which location was selected at checkout and why.
+model Catalog_FulfillmentSelection {
+  id             String                 @id @db.VarChar(64)
+  checkoutId     String                 @db.VarChar(64)
+  productId      String                 @db.VarChar(64)
+  sellerId       String                 @db.VarChar(64)
+  locationId     String                 @db.VarChar(64)
+  selectionBasis String                 @default("proximity")
+  buyerLat       Decimal?               @db.Decimal(10, 7)
+  buyerLng       Decimal?               @db.Decimal(10, 7)
+  distanceKm     Decimal?               @db.Decimal(8, 3)
+  stockAvailable Int?
+  createdAt      DateTime               @default(now()) @db.Timestamp(6)
+
+  location       Catalog_SellerLocation @relation(fields: [locationId], references: [id])
+
+  @@index([checkoutId])
+  @@map("catalog_fulfillment_selections")
+}
+
+
+
 
 enum Chat_ConversationType {
   BUYER_SELLER
@@ -4141,4 +4394,415 @@ model Chat_CheckoutLink {
   @@index([conversationId])
   @@index([expiresAt])
   @@map("chat_checkout_links")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Delivery Pricing Engine
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Logistics_Quote {
+  id                          String    @id @db.VarChar(64)
+  deliveryFee                 Decimal   @db.Decimal(12, 2)
+  courierCompensationEstimate Decimal   @db.Decimal(12, 2)
+  platformMarginAmount        Decimal   @db.Decimal(12, 2)
+  pricingVersion              Int
+  originLat                   Float
+  originLng                   Float
+  originAddress               String    @db.VarChar(500)
+  destinationLat              Float
+  destinationLng              Float
+  destinationAddress          String    @db.VarChar(500)
+  packageWeightKg             Float
+  deliveryZone                String?   @db.VarChar(20)
+  status                      String    @db.VarChar(30)
+  breakdown                   Json
+  unavailableReason           String?
+  issuedAt                    DateTime  @default(now())
+  expiresAt                   DateTime
+  consumedAt                  DateTime?
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+
+  auditRecord                 Logistics_PricingAuditRecord?
+
+  // ── Delivery consolidation fields (nullable for backward compat with solo quotes) ──
+  deliveryGroupId             String?   @db.VarChar(64)   // non-null when quote belongs to a delivery group
+  sellerOrderIds              Json?                       // string[] — seller order IDs in this group
+
+  @@index([status, expiresAt])
+  @@index([issuedAt])
+  @@map("logistics_quotes")
+}
+
+model Logistics_PricingConfig {
+  version                    Int       @id
+
+  // ── Platform margin ────────────────────────────────────────────────────────
+  platformMarginPct          Decimal   @db.Decimal(6, 4)
+
+  // ── Floor / ceiling / rounding ─────────────────────────────────────────────
+  floorPriceTzs              Decimal   @db.Decimal(12, 2)
+  ceilingPriceTzs            Decimal   @db.Decimal(12, 2)
+  roundingIncrementTzs       Int
+
+  // ── COD policy (independent of delivery economics) ─────────────────────────
+  codPolicy                  Json
+
+  // ── Strategy-specific pricing configs ──────────────────────────────────────
+  localUrban                 Json
+  metropolitan               Json
+  intercityCorridors         Json
+  intercityFallback          Json?
+  remoteUnavailable          Boolean   @default(false)
+
+  // ── Quote / cache settings ──────────────────────────────────────────────────
+  quoteValiditySeconds       Int
+  routingCacheTtlMs          Int
+
+  // ── Delivery consolidation parameters ───────────────────────────────────────
+  // All nullable for backward compatibility — defaults applied in application code
+  consolidationRadiusKm              Decimal?  @db.Decimal(6, 2)   // default 5.0 km
+  maxConsolidatedRouteOverheadPct    Decimal?  @db.Decimal(6, 4)   // default 1.40 (40%)
+  maxGroupWeightKg                   Decimal?  @db.Decimal(6, 2)   // default 20.0 kg
+  allocationAlgorithm                String?   @db.VarChar(32)     // default 'weight_proportional'
+
+  isActive                   Boolean   @default(false)
+  createdAt                  DateTime  @default(now())
+
+  @@index([isActive])
+  @@map("logistics_pricing_configs")
+}
+
+// ─── Delivery Consolidation Engine ───────────────────────────────────────────
+
+model Logistics_DeliveryGroup {
+  id                  String   @id @db.VarChar(64)  // DCG-{ULID}
+  masterOrderId       String   @db.VarChar(64)
+  sellerOrderIds      Json                           // string[] — ordered by pickup sequence
+  pickupSequence      Json                           // {lat, lng, address}[] — ordered
+  buyerDestination    Json                           // {lat, lng, address}
+  totalDeliveryCost   Decimal  @db.Decimal(12, 2)
+  pricingVersion      Int
+  allocationAlgorithm String   @default("weight_proportional") @db.VarChar(32)
+  status              String   @default("PENDING_PRICING") @db.VarChar(32)
+  quoteId             String?  @db.VarChar(64)       // set when QUOTE_ISSUED
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([masterOrderId])
+  @@index([status])
+  @@map("logistics_delivery_groups")
+}
+
+model Logistics_ConsolidationAudit {
+  id               String   @id @db.VarChar(64)
+  masterOrderId    String   @db.VarChar(64)
+  deliveryGroupIds Json                          // string[]
+  groupSizes       Json                          // number[] — one per group
+  rulesApplied     Json                          // {proximity, weight, routeEfficiency, timeWindow}
+  totalSavingsTzs  Decimal  @db.Decimal(12, 2)
+  fallbackReason   String?  @db.Text
+  pricingVersion   Int
+  consolidatedAt   DateTime @default(now())
+
+  @@index([masterOrderId])
+  @@map("logistics_consolidation_audits")
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Logistics_PricingAuditRecord {
+  id                          String    @id @db.VarChar(64)
+  orderId                     String?   @db.VarChar(64)
+  quoteId                     String    @unique @db.VarChar(64)
+  pricingVersion              Int
+  courierCompensationEstimate Decimal   @db.Decimal(12, 2)
+  buyerDeliveryFee            Decimal   @db.Decimal(12, 2)
+  platformMarginAmount        Decimal   @db.Decimal(12, 2)
+  deliveryZone                String?   @db.VarChar(20)
+  packageWeightKg             Float
+  distanceKm                  Float
+  durationMinutes             Float
+  recordedAt                  DateTime  @default(now())
+
+  quote                       Logistics_Quote @relation(fields: [quoteId], references: [id])
+
+  @@index([orderId])
+  @@index([pricingVersion])
+  @@index([recordedAt])
+  @@map("logistics_pricing_audit_records")
+}
+
+// ── Shipment domain (Phase 2) ────────────────────────────────────────────────
+
+/// The atomic unit of physical movement: one seller group's package from the
+/// seller's origin to the buyer's destination. One order produces one Shipment
+/// per seller group. Shipments are assigned to DeliveryJobs by the
+/// consolidation engine (deliveryJobId set on assignment).
+/// State machine (named transition methods only — no direct status writes):
+///   CREATED → PLANNED → ASSIGNED → DISPATCHED → DELIVERED → CONFIRMED → SETTLED
+///   PLANNED/ASSIGNED/DISPATCHED/DELIVERED → FAILED (with sub-reason)
+model Logistics_Shipment {
+  id                      String   @id @db.VarChar(64)  // SHP-{ULID}
+  orderId                 String   @db.VarChar(64)      // master/seller order reference
+  sellerId                String   @db.VarChar(64)
+  originLat               Float
+  originLng               Float
+  originAddress           String   @db.VarChar(255)
+  destinationLat          Float
+  destinationLng          Float
+  destinationAddress      String   @db.VarChar(255)
+  packageWeightKg         Float
+  packageDimensions       Json?                          // {lengthCm, widthCm, heightCm}
+  handlingRequirements    Json                           // {fragile, temperatureControlled, hazmat}
+  requestedDeliveryWindow Json?                          // {earliestAt, latestAt}
+  requiredVehicleClass    String?  @db.VarChar(20)       // MOTORCYCLE | PICKUP | VAN | TRUCK
+  status                  String   @default("CREATED") @db.VarChar(32)
+  failureReason           String?  @db.VarChar(40)       // set when status = FAILED
+  deliveryJobId           String?  @db.VarChar(64)       // set when assigned to a DeliveryJob
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([deliveryJobId])
+  @@map("logistics_shipments")
+}
+
+/// One physical courier operation. May contain multiple Shipments
+/// (consolidated). This is the entity assigned to a driver.
+/// State machine (named transition methods only — no direct status writes):
+///   PENDING → ASSIGNED → DRIVER_ACCEPTED → AT_PICKUP → LOADING → IN_TRANSIT
+///     → AT_DESTINATION → DELIVERED → CONFIRMED → SETTLED
+///   DRIVER_ACCEPTED/AT_PICKUP/LOADING → FAILED_PICKUP
+///   IN_TRANSIT/AT_DESTINATION → CUSTOMER_UNAVAILABLE
+model Logistics_DeliveryJob {
+  id                  String    @id @db.VarChar(64)  // DJB-{ULID}
+  shipmentIds         Json                           // string[] — shipments in this job
+  driverId            String?   @db.VarChar(64)
+  vehicleId           String?   @db.VarChar(64)
+  routeId             String?   @db.VarChar(64)
+  status              String    @default("PENDING") @db.VarChar(32)
+  failureReason       String?   @db.VarChar(40)      // FAILED_PICKUP | CUSTOMER_UNAVAILABLE
+  scheduledPickupAt   DateTime?
+  estimatedDeliveryAt DateTime?
+  actualPickupAt      DateTime?
+  actualDeliveryAt    DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([status])
+  @@index([driverId])
+  @@map("logistics_delivery_jobs")
+}
+
+/// A physical vehicle a driver operates. The optimizer needs real capability
+/// constraints (weight/volume, areas, hours) — the motorcycle-assumes-all
+/// model is retired. (Phase 2 §2.3)
+model Logistics_Vehicle {
+  id               String    @id @db.VarChar(64)  // VHL-{ULID}
+  driverId         String    @db.VarChar(64)
+  vehicleType      String    @db.VarChar(20)      // MOTORCYCLE | PICKUP | VAN | TRUCK
+  maxWeightKg      Float
+  maxVolumeM3      Float?                          // null = not volume-constrained
+  cargoDimensions  Json?                           // {maxLengthCm, maxWidthCm, maxHeightCm}
+  servesAreas      Json                            // string[] of region/district names
+  operatingHours   Json                            // [{dayOfWeek, startHour, endHour}]
+  hasRefrigeration Boolean   @default(false)
+  handlesFragile   Boolean   @default(false)
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  tariffs          Logistics_VehicleTariff[]
+
+  @@index([driverId])
+  @@index([vehicleType])
+  @@index([isActive])
+  @@map("logistics_vehicles")
+}
+
+/// Versioned operating tariff per vehicle. Never overwritten — historical
+/// orders reference the version at time of pricing. (Phase 2 §2.3)
+model Logistics_VehicleTariff {
+  id                        String               @id @db.VarChar(64)  // vtf-{ULID}
+  vehicleId                 String               @db.VarChar(64)
+  version                   Int                  // monotonic per vehicle (starts at 1)
+  baseOperatingCostTzs      Decimal              @db.Decimal(12, 2)
+  costPerKmTzs              Decimal              @db.Decimal(12, 2)
+  costPerHourTzs            Decimal              @db.Decimal(12, 2)
+  minimumJobCompensationTzs Decimal              @db.Decimal(12, 2)
+  loadingFeeTzs             Decimal              @db.Decimal(12, 2)
+  unloadingFeeTzs           Decimal              @db.Decimal(12, 2)
+  waitingRateTzsPerMinute   Decimal              @db.Decimal(12, 2)
+  freeWaitMinutes           Int                  @default(0)
+  isActive                  Boolean              @default(true)
+  effectiveFrom             DateTime             @default(now())
+  createdAt                 DateTime             @default(now())
+
+  vehicle                   Logistics_Vehicle    @relation(fields: [vehicleId], references: [id])
+
+  @@unique([vehicleId, version])
+  @@index([vehicleId, isActive])
+  @@index([isActive])
+  @@map("logistics_vehicle_tariffs")
+}
+
+// ── Four-concept cost model (Phase 3) ────────────────────────────────────────
+
+/// Immutable cost adjustment with attributed responsibility. Every logistics
+/// cost that deviates from the planned route/schedule gets one of these.
+/// Never updated after creation. (Phase 3 §3.2)
+model Logistics_CostAdjustment {
+  id               String   @id @db.VarChar(64)  // adj-{ULID}
+  deliveryJobId    String   @db.VarChar(64)
+  shipmentId       String?  @db.VarChar(64)
+  adjustmentType   String   @db.VarChar(32)      // WAITING | FAILED_DELIVERY_ATTEMPT | ROUTE_DEVIATION | LOADING_DELAY | DAMAGE | DISPUTE
+  amountTzs        Decimal  @db.Decimal(12, 2)
+  responsibleParty String   @db.VarChar(20)      // CUSTOMER | SUPPLIER | DRIVER | MAYSAR | EXTERNAL
+  reason           String   @db.Text             // free text for ops
+  evidenceUrl      String?  @db.VarChar(512)     // photo/document
+  recordedAt       DateTime @default(now())
+  recordedBy       String   @db.VarChar(64)
+
+  @@index([deliveryJobId])
+  @@index([responsibleParty])
+  @@map("logistics_cost_adjustments")
+}
+
+/// Append-only logistics ledger (Phase 3 §3.3). Settlement reads the ledger;
+/// it never re-derives amounts from current config. Rows are NEVER updated.
+model Logistics_LedgerEntry {
+  id             String   @id @db.VarChar(64)  // led-{ULID}
+  deliveryJobId  String   @db.VarChar(64)
+  shipmentId     String?  @db.VarChar(64)
+  entryType      String   @db.VarChar(40)      // BUYER_LOGISTICS_CHARGE | CARRIER_PAYABLE | SUPPLIER_LOGISTICS_CHARGE | MAYSAR_LOGISTICS_REVENUE | DISCOUNT_MAYSAR_FUNDED | DISCOUNT_SUPPLIER_FUNDED | PENALTY | REFUND | ADJUSTMENT | CONSOLIDATION_SAVING
+  amountTzs      Decimal  @db.Decimal(12, 2)   // positive: income to that party; negative: cost to that party
+  counterpartyId String   @db.VarChar(64)
+  pricingVersion Int                           // FK semantics: PricingConfig.version at time of pricing
+  tariffVersion  Int?                          // FK semantics: VehicleTariff.version at time of pricing
+  routingVersion String?  @db.VarChar(64)      // hash/version of the routing config used
+  calculatedAt   DateTime @default(now())
+  metadata       Json                          // full calculation inputs — enough to reproduce the result
+
+  @@index([deliveryJobId])
+  @@index([entryType])
+  @@index([counterpartyId])
+  @@map("logistics_ledger_entries")
+}
+
+/// Absolute price lock at checkout confirmation (Phase 3 §3.4). Post-
+/// confirmation optimization savings are Maysar's, never a buyer credit.
+model Logistics_FulfillmentCommitment {
+  id                String   @id @db.VarChar(64)  // cmt-{ULID}
+  checkoutSessionId String   @db.VarChar(64)
+  quoteId           String   @unique @db.VarChar(64)
+  buyerPriceTzs     Decimal  @db.Decimal(12, 2)   // locked — must not change
+  pricingVersion    Int
+  lockedAt          DateTime @default(now())
+  expiresAt         DateTime
+  status            String   @default("LOCKED") @db.VarChar(20)  // LOCKED | CONSUMED | EXPIRED
+
+  @@index([checkoutSessionId])
+  @@index([status])
+  @@map("logistics_fulfillment_commitments")
+}
+
+/// Versioned, operator-configurable optimization weights (Phase 4 §4.2).
+/// Weights must sum to 1.0 (validated at save). Config changes require a new
+/// version — no in-place overwrites. Also carries the Phase 3 §3.4
+/// CostVariancePolicy (deferred from Phase 3 per backlog).
+model Logistics_OptimizationConfig {
+  id                        String   @id @db.VarChar(64)  // opt-{ULID}
+  version                   Int      @unique
+  buyerCostWeight           Decimal  @db.Decimal(6, 4)
+  deliveryTimeWeight        Decimal  @db.Decimal(6, 4)
+  vehicleUtilizationWeight  Decimal  @db.Decimal(6, 4)
+  failureRiskWeight         Decimal  @db.Decimal(6, 4)
+  driverEfficiencyWeight    Decimal  @db.Decimal(6, 4)
+  maysarMarginWeight        Decimal  @db.Decimal(6, 4)
+  // CostVariancePolicy (Phase 3 §3.4)
+  maysarAbsorbsUpToTzs          Decimal @db.Decimal(12, 2) @default(0)
+  customerChargeableVarianceTypes Json  @default("[]")
+  isActive                  Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+
+  @@map("logistics_optimization_configs")
+}
+
+// ── Product Intelligence Engine ──────────────────────────────────────────────
+
+/// Seller-specific offer data, decoupled from the canonical product record.
+/// A product can have one offer per seller (marketplace model).
+model Catalog_SellerOffer {
+  id                      String   @id @db.VarChar(64)
+  productId               String   @db.VarChar(64)
+  sellerId                String   @db.VarChar(64)
+  price                   Decimal  @db.Decimal(12, 2) @default(0)
+  currency                String   @db.VarChar(10) @default("TZS")
+  minimumOrderQuantity    Int      @default(1)
+  codAccepted             Boolean  @default(false)
+  freeDelivery            Boolean  @default(false)
+  deliveryTerms           String?
+  condition               String   @db.VarChar(20) @default("new")
+  enablerEnabled          Boolean  @default(false)
+  enablerCommissionRate   Decimal? @db.Decimal(5, 4)
+  supplierLocationId      String?  @db.VarChar(64)
+  supplierLocationDisplay String?
+  isActive                Boolean  @default(true)
+  createdAt               DateTime @default(now()) @db.Timestamp(6)
+  updatedAt               DateTime @updatedAt @db.Timestamp(6)
+
+  @@unique([productId, sellerId])
+  @@index([productId])
+  @@index([sellerId])
+  @@index([productId, isActive])
+  @@map("catalog_seller_offers")
+}
+
+/// Named semantic section of a generated product description.
+/// Stored separately to allow per-section regeneration and independent rendering.
+model Catalog_ProductContentSection {
+  id                      String   @id @db.VarChar(64)
+  productId               String   @db.VarChar(64)
+  /// One of: OVERVIEW, KEY_FEATURES, SPECIFICATIONS, USAGE,
+  ///         SELLER_OFFER_DELIVERY, SELLER_OFFER_LOCATION
+  sectionType             String   @db.VarChar(40)
+  content                 String
+  /// One of: SELLER_ATTRIBUTE, DERIVED, CATEGORY_TEMPLATE
+  source                  String   @db.VarChar(30) @default("SELLER_ATTRIBUTE")
+  contributingAttributes  String[]
+  /// True for sections that must never appear in the canonical product description
+  isSellerOffer           Boolean  @default(false)
+  schemaVersion           String?  @db.VarChar(64)
+  contentVersion          Int      @default(1)
+  generatedAt             DateTime @default(now()) @db.Timestamp(6)
+  createdAt               DateTime @default(now()) @db.Timestamp(6)
+  updatedAt               DateTime @updatedAt @db.Timestamp(6)
+
+  @@unique([productId, sectionType])
+  @@index([productId])
+  @@index([productId, isSellerOffer])
+  @@map("catalog_product_content_sections")
+}
+
+/// Immutable audit log of product lifecycle state transitions.
+model Catalog_ProductLifecycleLog {
+  id           String   @id @db.VarChar(64)
+  productId    String   @db.VarChar(64)
+  /// Previous state (null for initial DRAFT creation)
+  fromState    String?  @db.VarChar(32)
+  /// New state after this transition
+  toState      String   @db.VarChar(32)
+  /// Machine-readable block reason codes
+  blockReasons String[]
+  /// Human-readable explanation
+  reason       String?
+  triggeredBy  String?  @db.VarChar(64)
+  createdAt    DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([productId])
+  @@index([productId, toState])
+  @@index([createdAt])
+  @@map("catalog_product_lifecycle_log")
 }

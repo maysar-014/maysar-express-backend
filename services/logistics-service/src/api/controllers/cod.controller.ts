@@ -49,24 +49,26 @@ export class CODController {
             const { deliveryId } = req.params;
             const { otp, location } = req.body;
 
-            if (!otp || !location || !location.lat || !location.lng) {
+            if (!otp) {
                 res.status(400).json({
                     success: false,
-                    error: 'Missing required verification data (otp, lat, lng)'
+                    error: 'Missing required verification data (otp)'
                 });
                 return;
             }
 
-            console.log(`[COD] Verifying delivery ${deliveryId} with OTP ${otp} at location ${location.lat}, ${location.lng}`);
+            // Location is optional — default to a placeholder if not provided
+            const verifyLocation = (location?.lat && location?.lng)
+                ? { lat: parseFloat(location.lat), lng: parseFloat(location.lng) }
+                : { lat: 0, lng: 0 };
+
+            console.log(`[COD] Verifying delivery ${deliveryId} with OTP ${otp}`);
 
             const verifyCODDeliveryUseCase = this.container.getVerifyCODDeliveryUseCase();
             await verifyCODDeliveryUseCase.execute({
                 deliveryId,
                 otp,
-                location: {
-                    lat: parseFloat(location.lat),
-                    lng: parseFloat(location.lng)
-                }
+                location: verifyLocation as any
             });
 
             res.status(200).json({

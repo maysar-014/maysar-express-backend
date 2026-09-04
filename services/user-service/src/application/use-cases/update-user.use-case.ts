@@ -1,5 +1,6 @@
 import { User, UserRole } from '../../domain/entities/user.entity';
 import { UserPreferences } from '../../domain/types/user.types';
+import { Address } from '../../domain/value-objects/address.value-object';
 import { IUserRepository } from '../../domain/repositories';
 import { UserPolicies } from '../../domain/policies/user-policies';
 import { UserProfileUpdatedEvent, IDomainEventPublisher } from '../../domain/events';
@@ -19,6 +20,7 @@ export interface UpdateUserInput {
     language?: string;
     timezone?: string;
     notificationsEnabled?: boolean;
+    addresses?: any[];
   };
   updatedBy: string; // User performing the update
 }
@@ -55,7 +57,7 @@ export class UpdateUserUseCase {
       });
 
       // Find the user
-      const user = await this.userRepository.findById(input.userId);
+      let user = await this.userRepository.findById(input.userId);
       if (!user) {
         return {
           user: null as any,
@@ -95,14 +97,14 @@ export class UpdateUserUseCase {
         oldValues.firstName = user.firstName;
         newValues.firstName = input.updates.firstName;
         changes.push('firstName');
-        user.updateProfile({ firstName: input.updates.firstName });
+        user = user.updateProfile({ firstName: input.updates.firstName });
       }
 
       if (input.updates.lastName !== undefined && input.updates.lastName !== user.lastName) {
         oldValues.lastName = user.lastName;
         newValues.lastName = input.updates.lastName;
         changes.push('lastName');
-        user.updateProfile({ lastName: input.updates.lastName });
+        user = user.updateProfile({ lastName: input.updates.lastName });
       }
 
       if (input.updates.dateOfBirth !== undefined) {
@@ -111,13 +113,42 @@ export class UpdateUserUseCase {
           oldValues.dateOfBirth = user.dateOfBirth;
           newValues.dateOfBirth = newDob;
           changes.push('dateOfBirth');
-          user.updateProfile({ dateOfBirth: newDob });
+          user = user.updateProfile({ dateOfBirth: newDob });
         }
       }
 
 
-      // TODO: Implement phone number update with validation
-      // This would require additional entity methods
+      if (input.updates.addresses !== undefined && Array.isArray(input.updates.addresses)) {
+        oldValues.addresses = user.addresses;
+        const newAddressList: Address[] = input.updates.addresses.map((addrInput: any) => {
+          if (addrInput instanceof Address) {
+            return addrInput;
+          }
+          const typeCandidate = addrInput.type === 'work' ? 'business' : (addrInput.type || 'home');
+          return Address.create({
+            id: addrInput.id,
+            userId: user!.id,
+            type: typeCandidate as 'billing' | 'shipping' | 'business' | 'home',
+            isPrimary: addrInput.isPrimary ?? addrInput.isDefault ?? false,
+            street: addrInput.street || '',
+            // Tanzania canonical fields — pass through if present
+            ward: addrInput.ward || undefined,
+            district: addrInput.district || undefined,
+            region: addrInput.region || undefined,
+            // Legacy city — only set if explicitly provided (empty string means absent)
+            city: addrInput.city || undefined,
+            state: addrInput.state,
+            postalCode: addrInput.postalCode || '',
+            country: addrInput.country || 'Tanzania',
+            coordinates: addrInput.coordinates,
+            createdAt: addrInput.createdAt || new Date(),
+            updatedAt: addrInput.updatedAt || new Date()
+          });
+        });
+        newValues.addresses = newAddressList;
+        changes.push('addresses');
+        user = user.updateProfile({ addresses: newAddressList });
+      }
 
       // Update preferences if provided
       if (input.updates.language !== undefined ||
@@ -177,7 +208,8 @@ export class UpdateUserUseCase {
       logger.error('Failed to update user', {
         userId: input.userId,
         updatedBy: input.updatedBy,
-        error
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
       });
       return {
         user: null as any,

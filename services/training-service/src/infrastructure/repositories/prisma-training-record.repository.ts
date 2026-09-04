@@ -197,6 +197,93 @@ export class PrismaTrainingRecordRepository implements ITrainingRecordRepository
         }
     }
 
+    public async findAllByModule(moduleId: string, options?: { limit?: number; offset?: number }): Promise<TrainingRecord[]> {
+        const delegate = this.recordDelegate;
+        const limit = options?.limit ?? 50;
+        const offset = options?.offset ?? 0;
+
+        if (!delegate) {
+            return Array.from(this.fallbackRecords.values())
+                .filter(r => r.moduleId === moduleId)
+                .slice(offset, offset + limit);
+        }
+
+        try {
+            const records = await delegate.findMany({
+                where: { moduleId },
+                take: limit,
+                skip: offset,
+                orderBy: { updatedAt: 'desc' }
+            } as any);
+            return records.map((record: unknown) => TrainingRecordMapper.toDomain(record));
+        } catch (error) {
+            if (process.env.NODE_ENV !== 'production') {
+                return Array.from(this.fallbackRecords.values())
+                    .filter(r => r.moduleId === moduleId)
+                    .slice(offset, offset + limit);
+            }
+            throw error;
+        }
+    }
+
+    public async findAllWithStatus(status: string, options?: { limit?: number; offset?: number }): Promise<TrainingRecord[]> {
+        const delegate = this.recordDelegate;
+        const limit = options?.limit ?? 50;
+        const offset = options?.offset ?? 0;
+
+        if (!delegate) {
+            return Array.from(this.fallbackRecords.values())
+                .filter(r => r.status === status)
+                .slice(offset, offset + limit);
+        }
+
+        try {
+            const records = await delegate.findMany({
+                where: { status },
+                take: limit,
+                skip: offset,
+                orderBy: { updatedAt: 'desc' }
+            } as any);
+            return records.map((record: unknown) => TrainingRecordMapper.toDomain(record));
+        } catch (error) {
+            if (process.env.NODE_ENV !== 'production') {
+                return Array.from(this.fallbackRecords.values())
+                    .filter(r => r.status === status)
+                    .slice(offset, offset + limit);
+            }
+            throw error;
+        }
+    }
+
+    public async countByModule(moduleId: string): Promise<number> {
+        const delegate = this.recordDelegate;
+        if (!delegate) {
+            return Array.from(this.fallbackRecords.values()).filter(r => r.moduleId === moduleId).length;
+        }
+        try {
+            return await (delegate as any).count({ where: { moduleId } });
+        } catch {
+            return Array.from(this.fallbackRecords.values()).filter(r => r.moduleId === moduleId).length;
+        }
+    }
+
+    public async deleteByLearnerId(learnerId: string): Promise<void> {
+        const delegate = this.recordDelegate;
+        if (!delegate) {
+            for (const [id, record] of this.fallbackRecords.entries()) {
+                if (record.learnerId === learnerId) this.fallbackRecords.delete(id);
+            }
+            return;
+        }
+        try {
+            await (delegate as any).deleteMany({ where: { learnerId } });
+        } catch {
+            for (const [id, record] of this.fallbackRecords.entries()) {
+                if (record.learnerId === learnerId) this.fallbackRecords.delete(id);
+            }
+        }
+    }
+
     private get recordDelegate(): TrainingRecordDelegate | null {
         const delegate = this.prisma.training_TrainingRecord ?? this.prisma.trainingRecord;
         if (!delegate) {

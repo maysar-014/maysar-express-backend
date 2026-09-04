@@ -36,7 +36,8 @@ export class UserRegisteredEvent implements DomainEvent {
     public readonly role: UserRole,
     public readonly registrationMethod: 'email' | 'phone' | 'social',
     publicCodeOrMetadata?: string | Record<string, any>,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
+    public readonly phoneNumber?: string
   ) {
     this.eventId = `user-registered-${aggregateId}-${Date.now()}`;
     this.occurredAt = new Date();

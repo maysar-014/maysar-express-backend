@@ -106,8 +106,10 @@ export interface UpdateProductDto {
   name?: string;
   description?: string;
   price?: number;
+  stock?: number;
   currency?: string;
   categoryId?: string;
+  brand?: string;
   supplierLocation?: string;
   tags?: string[];
   mediaUrls?: string[];

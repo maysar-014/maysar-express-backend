@@ -43416,6 +43416,40 @@ paths:
                   example: Africa/Dar_es_Salaam
                 notificationsEnabled:
                   type: boolean
+                addresses:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - type
+                      - isPrimary
+                      - street
+                      - city
+                      - postalCode
+                      - country
+                    properties:
+                      type:
+                        type: string
+                        enum: [billing, shipping, business, home]
+                      isPrimary:
+                        type: boolean
+                      street:
+                        type: string
+                      city:
+                        type: string
+                      state:
+                        type: string
+                      postalCode:
+                        type: string
+                      country:
+                        type: string
+                      coordinates:
+                        type: object
+                        properties:
+                          latitude:
+                            type: number
+                          longitude:
+                            type: number
             example:
               firstName: Contract
               language: en

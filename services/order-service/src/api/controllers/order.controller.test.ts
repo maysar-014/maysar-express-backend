@@ -6,6 +6,7 @@ import { OrderController } from './order.controller';
 const mockOrderRepository = {
   findById: jest.fn(),
   findByBuyerId: jest.fn(),
+  findBySellerId: jest.fn(),
   findByStatus: jest.fn(),
   update: jest.fn(),
   count: jest.fn()
@@ -88,7 +89,7 @@ describe('OrderController', () => {
     );
   });
 
-  it('requires buyerId for listing orders', async () => {
+  it('requires an order scope when listing without auth context', async () => {
     const req = {
       query: {},
       headers: { 'x-request-id': 'req-3' }
@@ -100,7 +101,53 @@ describe('OrderController', () => {
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        error: 'MISSING_BUYER_ID'
+        error: 'MISSING_ORDER_SCOPE'
+      })
+    );
+  });
+
+  it('infers buyer-scoped listing from the authenticated buyer', async () => {
+    const req = {
+      query: {},
+      user: { userId: 'buyer-1', roles: ['buyer'] },
+      headers: { 'x-request-id': 'req-3b' }
+    } as unknown as Request;
+    const res = createResponse();
+    const orders = [{ id: 'ord-1', buyerId: 'buyer-1', status: 'pending' }];
+    mockOrderRepository.findByBuyerId.mockResolvedValue(orders);
+
+    await controller.getOrders(req, res);
+
+    expect(mockOrderRepository.findByBuyerId).toHaveBeenCalledWith('buyer-1');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orders,
+        data: orders,
+        scope: { buyerId: 'buyer-1' }
+      })
+    );
+  });
+
+  it('infers seller-scoped listing from the authenticated seller', async () => {
+    const req = {
+      query: {},
+      user: { userId: 'seller-1', roles: ['seller'] },
+      headers: { 'x-request-id': 'req-3c' }
+    } as unknown as Request;
+    const res = createResponse();
+    const orders = [{ id: 'ord-2', sellerId: 'seller-1', status: 'confirmed' }];
+    mockOrderRepository.findBySellerId.mockResolvedValue(orders);
+
+    await controller.getOrders(req, res);
+
+    expect(mockOrderRepository.findBySellerId).toHaveBeenCalledWith('seller-1');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orders,
+        data: orders,
+        scope: { sellerId: 'seller-1' }
       })
     );
   });
@@ -123,6 +170,56 @@ describe('OrderController', () => {
         error: 'INVALID_ACTION'
       })
     );
+  });
+
+  it('accepts status aliases from E2E helpers when updating order status', async () => {
+    const req = {
+      params: { id: 'ord-3a' },
+      body: { status: 'confirm' },
+      headers: { 'x-request-id': 'req-4a' }
+    } as unknown as Request;
+    const res = createResponse();
+    const order = { id: 'ord-3a', status: 'pending' };
+    mockOrderRepository.findById.mockResolvedValue(order);
+
+    await controller.updateOrderStatus(req, res);
+
+    expect(mockOrderRepository.update).toHaveBeenCalledWith(expect.objectContaining({ status: 'confirmed' }));
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'confirmed', previousStatus: 'pending' }));
+  });
+
+  it('ships orders stored as assigned after processing persistence mapping', async () => {
+    const req = {
+      params: { id: 'ord-3b' },
+      body: { status: 'ship' },
+      headers: { 'x-request-id': 'req-4b' }
+    } as unknown as Request;
+    const res = createResponse();
+    const order = { id: 'ord-3b', status: 'ASSIGNED' };
+    mockOrderRepository.findById.mockResolvedValue(order);
+
+    await controller.updateOrderStatus(req, res);
+
+    expect(mockOrderRepository.update).toHaveBeenCalledWith(expect.objectContaining({ status: 'shipped' }));
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'shipped', previousStatus: 'ASSIGNED' }));
+  });
+
+  it('treats duplicate process requests as idempotent after assigned persistence mapping', async () => {
+    const req = {
+      params: { id: 'ord-3c' },
+      body: { status: 'process' },
+      headers: { 'x-request-id': 'req-4c' }
+    } as unknown as Request;
+    const res = createResponse();
+    mockOrderRepository.findById.mockResolvedValue({ id: 'ord-3c', status: 'ASSIGNED' });
+
+    await controller.updateOrderStatus(req, res);
+
+    expect(mockOrderRepository.update).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'ASSIGNED', idempotent: true }));
   });
 
   it('returns ineligible result when COD check throws', async () => {

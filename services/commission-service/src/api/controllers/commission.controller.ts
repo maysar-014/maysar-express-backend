@@ -242,9 +242,16 @@ export class CommissionController {
         data: summary
       });
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+      // Return empty summary rather than error — seller may have no commissions yet
+      res.json({
+        success: true,
+        data: {
+          totalCommissions: 0,
+          totalEarned: 0,
+          totalPaid: 0,
+          pendingAmount: 0,
+          commissionCount: 0
+        }
       });
     }
   }

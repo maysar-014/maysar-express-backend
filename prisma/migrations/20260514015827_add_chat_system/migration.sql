@@ -1,150 +1,6 @@
--- CreateEnum
-CREATE TYPE "Chat_ConversationType" AS ENUM ('BUYER_SELLER', 'SELLER_SUPPLIER', 'BUYER_COURIER', 'SELLER_TEAM');
+/*
+  Warnings:
 
--- CreateEnum
-CREATE TYPE "Chat_MessageType" AS ENUM ('TEXT', 'IMAGE', 'VOICE_NOTE', 'PRODUCT_CARD', 'ORDER_REFERENCE', 'LOCATION_PIN', 'QUICK_ACTION');
-
--- CreateEnum
-CREATE TYPE "Chat_ModerationStatus" AS ENUM ('ACTIVE', 'FLAGGED', 'BLOCKED', 'ARCHIVED');
-
--- CreateEnum
-CREATE TYPE "Chat_ParticipantRole" AS ENUM ('BUYER', 'SELLER', 'SUPPLIER', 'COURIER');
-
--- CreateTable
-CREATE TABLE "chat_conversations" (
-    "id" VARCHAR(64) NOT NULL,
-    "type" "Chat_ConversationType" NOT NULL,
-    "moderationStatus" "Chat_ModerationStatus" NOT NULL DEFAULT 'ACTIVE',
-    "relatedProductId" VARCHAR(64),
-    "relatedOrderId" VARCHAR(64),
-    "relatedShipmentId" VARCHAR(64),
-    "relatedSupplierRequestId" VARCHAR(64),
-    "metadata" JSONB,
-    "lastMessageAt" TIMESTAMP(6),
-    "createdAt" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(6) NOT NULL,
-
-    CONSTRAINT "chat_conversations_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "chat_conversation_participants" (
-    "conversationId" VARCHAR(64) NOT NULL,
-    "userId" VARCHAR(64) NOT NULL,
-    "role" "Chat_ParticipantRole" NOT NULL,
-    "lastReadAt" TIMESTAMP(6),
-    "isMuted" BOOLEAN NOT NULL DEFAULT false,
-    "joinedAt" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "chat_conversation_participants_pkey" PRIMARY KEY ("conversationId","userId")
-);
-
--- CreateTable
-CREATE TABLE "chat_messages" (
-    "id" VARCHAR(64) NOT NULL,
-    "conversationId" VARCHAR(64) NOT NULL,
-    "senderId" VARCHAR(64) NOT NULL,
-    "type" "Chat_MessageType" NOT NULL,
-    "content" TEXT,
-    "metadata" JSONB,
-    "moderationStatus" "Chat_ModerationStatus" NOT NULL DEFAULT 'ACTIVE',
-    "spamScore" INTEGER,
-    "isDisputeEvidence" BOOLEAN NOT NULL DEFAULT false,
-    "deletedAt" TIMESTAMP(6),
-    "createdAt" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "chat_messages_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "chat_user_blocks" (
-    "blockerId" VARCHAR(64) NOT NULL,
-    "blockedId" VARCHAR(64) NOT NULL,
-    "createdAt" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "chat_user_blocks_pkey" PRIMARY KEY ("blockerId","blockedId")
-);
-
--- CreateTable
-CREATE TABLE "chat_moderation_reports" (
-    "id" VARCHAR(64) NOT NULL,
-    "reporterId" VARCHAR(64) NOT NULL,
-    "messageId" VARCHAR(64) NOT NULL,
-    "conversationId" VARCHAR(64) NOT NULL,
-    "reason" TEXT NOT NULL,
-    "reportedAt" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "chat_moderation_reports_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "chat_spam_score_logs" (
-    "id" VARCHAR(64) NOT NULL,
-    "messageId" VARCHAR(64) NOT NULL,
-    "score" INTEGER NOT NULL,
-    "signals" JSONB NOT NULL,
-    "computedAt" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "chat_spam_score_logs_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "chat_checkout_links" (
-    "id" VARCHAR(64) NOT NULL,
-    "conversationId" VARCHAR(64) NOT NULL,
-    "messageId" VARCHAR(64) NOT NULL,
-    "checkoutUrl" TEXT NOT NULL,
-    "isUsed" BOOLEAN NOT NULL DEFAULT false,
-    "expiresAt" TIMESTAMP(6) NOT NULL,
-    "createdAt" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "chat_checkout_links_pkey" PRIMARY KEY ("id")
-);
-
--- CreateIndex
-CREATE INDEX "chat_conversations_relatedOrderId_idx" ON "chat_conversations"("relatedOrderId");
-
--- CreateIndex
-CREATE INDEX "chat_conversations_relatedProductId_idx" ON "chat_conversations"("relatedProductId");
-
--- CreateIndex
-CREATE INDEX "chat_conversations_lastMessageAt_idx" ON "chat_conversations"("lastMessageAt");
-
--- CreateIndex
-CREATE INDEX "chat_conversation_participants_userId_idx" ON "chat_conversation_participants"("userId");
-
--- CreateIndex
-CREATE INDEX "chat_messages_conversationId_createdAt_idx" ON "chat_messages"("conversationId", "createdAt");
-
--- CreateIndex
-CREATE INDEX "chat_messages_senderId_idx" ON "chat_messages"("senderId");
-
--- CreateIndex
-CREATE INDEX "chat_user_blocks_blockedId_idx" ON "chat_user_blocks"("blockedId");
-
--- CreateIndex
-CREATE INDEX "chat_moderation_reports_conversationId_idx" ON "chat_moderation_reports"("conversationId");
-
--- CreateIndex
-CREATE INDEX "chat_moderation_reports_reporterId_idx" ON "chat_moderation_reports"("reporterId");
-
--- CreateIndex
-CREATE INDEX "chat_spam_score_logs_messageId_idx" ON "chat_spam_score_logs"("messageId");
-
--- CreateIndex
-CREATE INDEX "chat_checkout_links_conversationId_idx" ON "chat_checkout_links"("conversationId");
-
--- CreateIndex
-CREATE INDEX "chat_checkout_links_expiresAt_idx" ON "chat_checkout_links"("expiresAt");
-
--- AddForeignKey
-ALTER TABLE "chat_conversation_participants" ADD CONSTRAINT "chat_conversation_participants_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "chat_conversations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "chat_messages" ADD CONSTRAINT "chat_messages_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "chat_conversations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "chat_spam_score_logs" ADD CONSTRAINT "chat_spam_score_logs_messageId_fkey" FOREIGN KEY ("messageId") REFERENCES "chat_messages"("id") ON DELETE CASCADE ON UPDATE CASCADE;
   - You are about to alter the column `id` on the `catalog_outbox_events` table. The data in that column could be lost. The data in that column will be cast from `Text` to `VarChar(64)`.
   - The primary key for the `catalog_product_attributes` table will be changed. If it partially fails, the table could be left without primary key constraint.
   - You are about to alter the column `id` on the `catalog_product_attributes` table. The data in that column could be lost. The data in that column will be cast from `Text` to `VarChar(64)`.
@@ -515,6 +371,9 @@ ALTER TABLE "analytics_seller_product_performance" DROP CONSTRAINT "analytics_se
 
 -- DropForeignKey
 ALTER TABLE "auth_audit_logs" DROP CONSTRAINT "auth_audit_logs_userId_fkey";
+
+-- DropForeignKey
+ALTER TABLE "auth_role_requests" DROP CONSTRAINT IF EXISTS "auth_role_requests_userId_fkey";
 
 -- DropForeignKey
 ALTER TABLE "auth_email_verification_tokens" DROP CONSTRAINT "auth_email_verification_tokens_userId_fkey";
@@ -1820,6 +1679,9 @@ ALTER TABLE "auth_email_verification_tokens" ADD CONSTRAINT "auth_email_verifica
 
 -- AddForeignKey
 ALTER TABLE "auth_audit_logs" ADD CONSTRAINT "auth_audit_logs_userId_fkey" FOREIGN KEY ("userId") REFERENCES "auth_users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "auth_role_requests" ADD CONSTRAINT "auth_role_requests_userId_fkey" FOREIGN KEY ("userId") REFERENCES "auth_users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "businessregistry_business_addresses" ADD CONSTRAINT "businessregistry_business_addresses_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "businessregistry_businesses"("id") ON DELETE CASCADE ON UPDATE CASCADE;

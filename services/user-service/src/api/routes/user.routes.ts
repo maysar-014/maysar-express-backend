@@ -90,10 +90,17 @@ const exampleDotComEmailSchema = Joi.string()
   .pattern(EXAMPLE_DOT_COM_EMAIL_PATTERN);
 
 const addressSchema = Joi.object({
-  type: Joi.string().valid('billing', 'shipping', 'business', 'home').required(),
+  // id is optional — present when updating an existing address, absent when adding a new one
+  id: Joi.string().trim().max(64).optional(),
+  type: Joi.string().valid('billing', 'shipping', 'business', 'home', 'work', 'other').required(),
   isPrimary: Joi.boolean().required(),
   street: safeVisibleString.required(),
-  city: safeVisibleString.required(),
+  // Tanzania geographic hierarchy: ward > district > region
+  ward: safeVisibleString.optional(),      // e.g. "Kivukoni" — most precise unit
+  district: safeVisibleString.optional(),  // e.g. "Ilala Cbd"
+  region: safeVisibleString.optional(),    // e.g. "Dar es Salaam"
+  // Legacy / international fields kept for compatibility
+  city: safeVisibleString.optional(),      // no longer required — ward/district/region preferred
   state: Joi.string().allow('').optional(),
   postalCode: safeVisibleString.required(),
   country: safeVisibleString.required(),
@@ -137,6 +144,7 @@ const updateUserBodySchema = Joi.object({
   language: Joi.string().min(2).max(10).pattern(SAFE_VISIBLE_STRING_PATTERN).optional(),
   timezone: safeVisibleString.optional(),
   notificationsEnabled: Joi.boolean().optional(),
+  addresses: Joi.array().items(addressSchema).optional(),
 }).unknown(false);
 
 const verifyEmailBodySchema = Joi.object({
@@ -321,6 +329,11 @@ export async function handleGetCODReputation(req: Request, res: Response): Promi
   await codReputationController.getReputation(req, res);
 }
 
+export async function handleDeleteAddress(req: Request, res: Response): Promise<void> {
+  initializeController();
+  await userController.deleteAddress(req, res);
+}
+
 function requireInternalCall(req: Request, res: Response): boolean {
   const caller = String(req.headers['x-internal-call'] || '');
   if (caller !== 'auth-service') {
@@ -410,6 +423,10 @@ export function createUserRoutes(): Router {
 
   // COD Reputation routes
   router.get('/:userId/cod-reputation', requireAuth, validateJoiRequest({ params: codReputationParamsSchema }), handleGetCODReputation);
+
+  // Address management routes
+  const addressParamsSchema = Joi.object({ id: nonEmptyId.required(), addressId: nonEmptyId.required() }).unknown(false);
+  router.delete('/:id/addresses/:addressId', requireAuth, validateJoiRequest({ params: addressParamsSchema }), handleDeleteAddress);
 
   return router;
 }

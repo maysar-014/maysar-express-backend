@@ -27,6 +27,7 @@ export interface UpdateUserProfileDto {
   preferredLanguage?: string;
   preferredCurrency?: string;
   profilePicture?: string;
+  addresses?: AddAddressDto[] | Address[];
 }
 
 /**

@@ -12,7 +12,8 @@ export const createTicketSchema = z.object({
 export const addMessageSchema = z.object({
     content: z.string().min(1).max(2000),
     isInternal: z.boolean().optional(),
-    senderType: z.string().optional()
+    senderType: z.string().optional(),
+    authorId: z.string().trim().min(1).max(100).optional()
 });
 
 export const assignTicketSchema = z.object({
@@ -24,7 +25,8 @@ export const resolveTicketSchema = z.object({
 });
 
 export const closeTicketSchema = z.object({
-    reason: z.string().optional()
+    reason: z.string().optional(),
+    resolution: z.string().min(5).optional()
 });
 
 const optionalNumber = (min?: number, max?: number) =>

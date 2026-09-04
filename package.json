@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "dev": "tsx watch src/main.ts",
+    "seed:category-attributes": "ts-node scripts/seed-category-attributes.ts",
     "postman:generate": "node scripts/postman/generate-monolith-e2e-collection.js && node scripts/postman/sync-openapi-collection.js",
     "postman:sync": "node scripts/postman/sync-openapi-collection.js",
     "postman:inventory": "node scripts/generate-postman-route-inventory.js",
@@ -61,6 +62,7 @@
     "test:security": "jest --testMatch '**/*.security.test.ts'",
     "test:e2e:live": "cross-env RUN_LIVE_E2E=true npm run seed:e2e && cross-env RUN_LIVE_E2E=true jest --selectProjects=e2e --runInBand",
     "seed:e2e": "cross-env PGSSLMODE=disable TS_NODE_TRANSPILE_ONLY=true npx ts-node -r tsconfig-paths/register scripts/seed-e2e-users.ts",
+    "seed:training": "cross-env TS_NODE_TRANSPILE_ONLY=true npx ts-node -r tsconfig-paths/register scripts/seed-training.ts",
     "test:flaky-check": "jest --detectOpenHandles --forceExit",
     "test:constitution:audit": "node scripts/testing/constitution-compliance-audit.js",
     "test:constitution:enforce": "node scripts/testing/constitution-compliance-audit.js --fail",

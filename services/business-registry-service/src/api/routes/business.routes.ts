@@ -120,6 +120,7 @@ function createConfiguredBusinessRoutes(mode: BusinessRouteMode): Router {
   }
 
   router.get('/search', (req, res, next) => controller.searchBusinesses(req, res).catch(next));
+  // Owner lookup MUST come before /:id to prevent "owner" being matched as a business ID
   router.get('/owner/:ownerId', (req, res, next) => controller.getBusinessesByOwner(req, res).catch(next));
   router.get('/:id', validateBusinessIdParam, (req, res, next) => controller.getBusinessById(req, res).catch(next));
   router.put('/:id', validateBusinessIdParam, validateUpdateBusiness, (req, res, next) => controller.updateBusiness(req, res).catch(next));

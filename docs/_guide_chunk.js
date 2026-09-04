@@ -1,0 +1,1 @@
+module.exports = require(String.fromCharCode(96)+String.fromCharCode(96)+String.fromCharCode(96))

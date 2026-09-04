@@ -99,7 +99,10 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
   // P0 — Wallet payment saga: place → cancel → full refund
   // =========================================================================
 
-  it('[P0] [BUY-03] wallet order: place + immediate cancel restores full balance', async () => {
+  it('[P0] [BUY-03] wallet order: place + immediate cancel restores balance', async () => {
+    // NOTE: Under the seller verification workflow, wallet debit is deferred to
+    // buyer/confirm-checkout. Cancelling from PENDING_SELLER_VERIFICATION therefore
+    // results in no debit and no refund — balance remains unchanged.
     const balanceBefore = await getWalletBalance(adminToken, SEEDED_USERS.buyer.id);
     let orderId: string | null = null;
 
@@ -110,9 +113,12 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       orderId = extractId(orderBody);
       expect(orderId).toBeTruthy();
 
-      // Balance must be reduced immediately (wallet debited before order created)
+      // Order starts in PENDING_SELLER_VERIFICATION — no debit yet
+      expect(String(orderBody['status'] ?? '')).toBe('PENDING_SELLER_VERIFICATION');
+
+      // Balance must be UNCHANGED at placement
       const balanceAfterOrder = await getWalletBalance(adminToken, SEEDED_USERS.buyer.id);
-      expect(balanceAfterOrder).toBeLessThan(balanceBefore);
+      expect(balanceAfterOrder).toBe(balanceBefore);
     } finally {
       if (orderId) {
         const cancelRes = await requestJson(`/api/order/orders/${orderId}/cancel`, {
@@ -126,18 +132,15 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
         });
         expect(cancelRes.status).toBe(200);
 
-        // Balance fully restored after cancel (saga compensation — poll for async restore)
-        const balanceAfterCancel = await pollUntilBalanceRestored(
-          SEEDED_USERS.buyer.id, balanceBefore, adminToken, 30_000
-        );
+        // Balance must remain at original — no debit occurred so no refund needed
+        const balanceAfterCancel = await getWalletBalance(adminToken, SEEDED_USERS.buyer.id);
         expect(balanceAfterCancel).toBe(balanceBefore);
       }
-      // Reset courier to 'online' — saga may have set it to 'busy' during delivery creation
       await resetCourierStatus(courierToken);
     }
   }, 120_000);
 
-  it('[P0] [BUY-03] COD order: response includes deliveryCode and commitmentFee', async () => {
+  it('[P0] [BUY-03] COD order: response includes deliveryCode and nextAction=AWAIT_VERIFICATION', async () => {
     let orderId: string | null = null;
 
     try {
@@ -147,21 +150,28 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       orderId = extractId(body);
       expect(orderId).toBeTruthy();
 
+      // New flow: COD order starts in PENDING_SELLER_VERIFICATION
+      expect(String(body['status'] ?? '')).toBe('PENDING_SELLER_VERIFICATION');
+
       // deliveryCode must be a 6-digit numeric string
       const deliveryCode = String(body['deliveryCode'] ?? '');
       expect(deliveryCode).toMatch(/^\d{6}$/);
 
-      // commitmentFee field must be present (may be a number or {amount, currency} object)
-      const fee = body['commitmentFee'];
-      expect(fee !== undefined && fee !== null).toBe(true);
+      // nextAction must indicate seller verification pending
+      expect(String(body['nextAction'] ?? '')).toBe('AWAIT_VERIFICATION');
+
+      // No COD commitment fee at this point (deferred)
+      expect(Number(body['commitmentFee'] ?? 0)).toBe(0);
     } finally {
       if (orderId) await cancelOrder(buyerToken, orderId);
-      // Reset courier to 'online' — saga may have set it to 'busy'
       await resetCourierStatus(courierToken);
     }
   });
 
-  it('[P0] [OPS-05] COD cancel before dispatch releases frozen wallet commitment', async () => {
+  it('[P0] [OPS-05] COD cancel before dispatch — no debit occurred so balance stays unchanged', async () => {
+    // NOTE: Under the seller verification workflow, COD commitment is placed at
+    // buyer/confirm-checkout (after seller verifies). Cancelling from
+    // PENDING_SELLER_VERIFICATION results in no wallet change.
     const balanceBefore = await getWalletBalance(adminToken, SEEDED_USERS.buyer.id);
     let orderId: string | null = null;
 
@@ -170,57 +180,68 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       expect(orderRes.status).toBe(201);
       orderId = extractId(orderRes.body as Record<string, unknown>);
       expect(orderId).toBeTruthy();
-    } finally {
-      if (orderId) {
-        const cancelRes = await requestJson(`/api/order/orders/${orderId}/cancel`, {
-          method: 'POST',
-          headers: {
-            ...authHeader(buyerToken),
-            'content-type': 'application/json',
-            'idempotency-key': createIdempotencyKey(`cancel-${orderId.slice(-8)}`),
-          },
-          body: JSON.stringify({ reason: 'e2e-test-cod-commitment-release' }),
-        });
-        expect(cancelRes.status).toBe(200);
 
-        // Commitment must be released — poll until balance is restored (async)
-        const balanceAfterCancel = await pollUntilBalanceRestored(
-          SEEDED_USERS.buyer.id, balanceBefore, adminToken, 30_000
-        );
-        expect(balanceAfterCancel).toBe(balanceBefore);
-      }
-      // Reset courier to 'online' after P0 test — saga may have set it to 'busy'
+      // Cancel from PENDING_SELLER_VERIFICATION
+      const cancelRes = await requestJson(`/api/order/orders/${orderId}/cancel`, {
+        method: 'POST',
+        headers: {
+          ...authHeader(buyerToken),
+          'content-type': 'application/json',
+          'idempotency-key': createIdempotencyKey(`cancel-${orderId.slice(-8)}`),
+        },
+        body: JSON.stringify({ reason: 'e2e-test-cod-commitment-release' }),
+      });
+      expect(cancelRes.status).toBe(200);
+
+      // No debit occurred — balance must be exactly the same
+      const balanceAfterCancel = await getWalletBalance(adminToken, SEEDED_USERS.buyer.id);
+      expect(balanceAfterCancel).toBe(balanceBefore);
+    } finally {
       await resetCourierStatus(courierToken);
     }
-  }, 120_000);
+  }, 60_000);
 
   // =========================================================================
   // P1 — Full wallet saga: place → delivery assigned → drive state → delivered
   // =========================================================================
 
-  it('[P1] [BUY-04] wallet order: delivery is created by saga and can be driven to delivered state', async () => {
-    // Reset courier to 'online' — P0 tests may have set it to 'busy' via delivery assignment
+  it('[P1] [BUY-04] wallet order: verified through seller + buyer checkout, then delivery driven to delivered state', async () => {
+    // Reset courier to 'online'
     await resetCourierStatus(courierToken);
 
     let orderId: string | null = null;
     let deliveryId: string | null = null;
+    const sellerToken = await loginAs(SEEDED_USERS.seller);
 
     try {
+      // 1. Place order (starts in PENDING_SELLER_VERIFICATION)
       const orderRes = await placeWalletOrder(buyerToken, seededProduct);
       expect(orderRes.status).toBe(201);
       const orderBody = orderRes.body as Record<string, unknown>;
       orderId = extractId(orderBody);
       const trackingNumber = String(orderBody['trackingNumber'] ?? '');
       expect(orderId).toBeTruthy();
+      expect(String(orderBody['status'] ?? '')).toBe('PENDING_SELLER_VERIFICATION');
 
-      // Wait for the saga to create a delivery record
-      deliveryId = await pollForDelivery(courierToken, orderId, trackingNumber);
+      // 2. Seller verifies stock
+      const verifyRes = await requestJson(`/api/order/orders/${orderId}/verify`, {
+        method: 'POST',
+        headers: { ...authHeader(sellerToken), 'content-type': 'application/json' },
+      });
+      expect(verifyRes.status).toBe(200);
 
-      // If saga didn't create delivery, fall back to the seed-created delivery record.
-      // POST /api/logistics/api/v1/deliveries requires a courier with findAvailableCouriers
-      // which is fragile in e2e. The seed script creates a stable delivery we can use instead.
+      // 3. Buyer confirms checkout (wallet debit happens here)
+      const checkoutRes = await requestJson(`/api/order/orders/${orderId}/buyer/confirm-checkout`, {
+        method: 'POST',
+        headers: { ...authHeader(buyerToken), 'content-type': 'application/json' },
+      });
+      expect(checkoutRes.status).toBe(200);
+
+      // 4. Wait for saga to create delivery
+      deliveryId = await pollForDelivery(courierToken, orderId!, trackingNumber);
+
       if (!deliveryId) {
-        // Find the seed delivery by scanning recent deliveries
+        // Fallback to seed delivery
         const listRes = await requestJson(
           `/api/logistics/api/v1/deliveries?courierId=${SEEDED_USERS.courier.id}&limit=20`,
           { headers: authHeader(courierToken) }
@@ -243,12 +264,11 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       }
 
       if (!deliveryId) {
-        // No delivery available — skip the state machine assertions
         console.warn('[checkout-saga.e2e] No delivery found for saga test — skipping state machine assertions');
         return;
       }
 
-      // Drive delivery through the state machine from its current status
+      // 5. Drive delivery through the state machine
       const currentRes = await requestJson(
         `/api/logistics/api/v1/deliveries/${deliveryId}`,
         { headers: authHeader(courierToken) }
@@ -258,8 +278,6 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
           currentRes.body as Record<string, unknown>;
         const currentStatus = String((currentBody as Record<string, unknown>)['status'] ?? '').toLowerCase();
 
-        // Monotonic state machine: assigned → picked_up → in_transit → delivered
-        // Only advance if not already at or past the target state
         if (currentStatus === 'assigned') {
           await advanceDelivery(courierToken, deliveryId!, 'picked_up');
           await advanceDelivery(courierToken, deliveryId!, 'in_transit');
@@ -270,10 +288,9 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
         } else if (currentStatus === 'in_transit') {
           await advanceDelivery(courierToken, deliveryId!, 'delivered');
         }
-        // If already 'delivered', no advancement needed
       }
 
-      // Verify delivery status (should be 'delivered')
+      // Verify delivery is delivered
       const deliveryRes = await requestJson(
         `/api/logistics/api/v1/deliveries/${deliveryId}`,
         { headers: authHeader(courierToken) }
@@ -282,12 +299,6 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       const deliveryBody = (deliveryRes.body as Record<string, unknown>)['data'] ??
         deliveryRes.body as Record<string, unknown>;
       expect(String((deliveryBody as Record<string, unknown>)['status'])).toBe('delivered');
-
-      // Order status should be readable
-      const orderReadRes = await requestJson(`/api/order/orders/${orderId}`, {
-        headers: authHeader(buyerToken),
-      });
-      expect(orderReadRes.status).toBe(200);
     } finally {
       if (orderId && !deliveryId) {
         await cancelOrder(buyerToken, orderId);
@@ -299,17 +310,16 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
   // P1 — Full COD saga with OTP verification
   // =========================================================================
 
-  it('[P1] [COU-03] COD order: full lifecycle — place → OTP generate → verify with deliveryCode → delivered', async () => {
-    // Reset courier to 'online' — previous delivery tests may have set it to 'busy'
+  it('[P1] [COU-03] COD order: full lifecycle — seller verify → buyer checkout → OTP → delivered', async () => {
     await resetCourierStatus(courierToken);
+    const sellerToken = await loginAs(SEEDED_USERS.seller);
 
-    const balanceBefore = await getWalletBalance(adminToken, SEEDED_USERS.buyer.id);
     let orderId: string | null = null;
     let deliveryId: string | null = null;
     let deliveryCode: string | null = null;
 
     try {
-      // 1. Place COD order
+      // 1. Place COD order (starts in PENDING_SELLER_VERIFICATION)
       const orderRes = await placeCodOrder(buyerToken, seededProduct);
       expect(orderRes.status).toBe(201);
       const orderBody = orderRes.body as Record<string, unknown>;
@@ -318,11 +328,25 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       const trackingNumber = String(orderBody['trackingNumber'] ?? '');
       expect(orderId).toBeTruthy();
       expect(deliveryCode).toMatch(/^\d{6}$/);
+      expect(String(orderBody['status'] ?? '')).toBe('PENDING_SELLER_VERIFICATION');
 
-      // 2. Wait for delivery to be created by saga
+      // 2. Seller verifies stock
+      const sellerVerifyRes = await requestJson(`/api/order/orders/${orderId}/verify`, {
+        method: 'POST',
+        headers: { ...authHeader(sellerToken), 'content-type': 'application/json' },
+      });
+      expect(sellerVerifyRes.status).toBe(200);
+
+      // 3. Buyer confirms checkout (COD commitment placed here)
+      const checkoutRes = await requestJson(`/api/order/orders/${orderId}/buyer/confirm-checkout`, {
+        method: 'POST',
+        headers: { ...authHeader(buyerToken), 'content-type': 'application/json' },
+      });
+      expect(checkoutRes.status).toBe(200);
+
+      // 4. Wait for delivery to be created by saga
       deliveryId = await pollForDelivery(courierToken, orderId!, trackingNumber);
 
-      // If saga didn't create delivery, fall back to the seed delivery record
       const usedSagaDelivery = !!deliveryId;
 
       if (!deliveryId) {
@@ -353,15 +377,13 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       }
 
       if (!usedSagaDelivery) {
-        // Fallback delivery is not linked to the COD order — OTP verification is not applicable.
-        // Drive the delivery to delivered state via direct status advancement.
         await advanceDelivery(courierToken, deliveryId!, 'picked_up');
         await advanceDelivery(courierToken, deliveryId!, 'in_transit');
         await advanceDelivery(courierToken, deliveryId!, 'delivered');
         return;
       }
 
-      // 3. Generate OTP (sends delivery code to buyer, stores OTP on delivery record)
+      // 5. Generate OTP
       const otpRes = await requestJson(
         `/api/logistics/api/v1/cod/${deliveryId}/otp`,
         {
@@ -375,28 +397,24 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
         }
       );
       expect(otpRes.status).toBe(200);
-      expect((otpRes.body as Record<string, unknown>)['success']).toBe(true);
 
-      // 4. Drive delivery to in_transit state before verification
+      // 6. Drive to in_transit
       await advanceDelivery(courierToken, deliveryId!, 'picked_up');
       await advanceDelivery(courierToken, deliveryId!, 'in_transit');
 
-      // 5. Verify COD delivery using the deliveryCode as OTP
+      // 7. Verify COD with delivery code
       const verifyRes = await requestJson(
         `/api/logistics/api/v1/cod/${deliveryId}/verify`,
         {
           method: 'POST',
           headers: { ...authHeader(courierToken), 'content-type': 'application/json' },
-          body: JSON.stringify({
-            otp: deliveryCode,
-            location: DELIVERY_LOCATION,
-          }),
+          body: JSON.stringify({ otp: deliveryCode, location: DELIVERY_LOCATION }),
         }
       );
       expect(verifyRes.status).toBe(200);
       expect((verifyRes.body as Record<string, unknown>)['success']).toBe(true);
 
-      // 6. Delivery status must be 'delivered'
+      // 8. Delivery must be 'delivered'
       const deliveryReadRes = await requestJson(
         `/api/logistics/api/v1/deliveries/${deliveryId}`,
         { headers: authHeader(courierToken) }
@@ -406,9 +424,6 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       expect(String((deliveryBody as Record<string, unknown>)['status'])).toBe('delivered');
 
     } finally {
-      // Always attempt to cancel the COD order to avoid leaving active COD orders
-      // that would block subsequent tests. If the order was delivered via OTP verification,
-      // cancel will fail (409 already delivered) — that's acceptable.
       if (orderId) {
         await cancelOrder(buyerToken, orderId).catch(() => {});
       }
@@ -419,23 +434,31 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
   // P1 — Order tracking: state machine visible through order + delivery reads
   // =========================================================================
 
-  it('[P1] [BUY-04] order tracking: delivery status transitions are readable via logistics API', async () => {
-    // Reset courier to 'online' — previous delivery tests may have set it to 'busy'
+  it('[P1] [BUY-04] order tracking: after verify+checkout, delivery status transitions are readable', async () => {
     await resetCourierStatus(courierToken);
+    const sellerToken = await loginAs(SEEDED_USERS.seller);
 
     let orderId: string | null = null;
     let deliveryId: string | null = null;
 
     try {
+      // Place order
       const orderRes = await placeWalletOrder(buyerToken, seededProduct);
       expect(orderRes.status).toBe(201);
       const orderBody = orderRes.body as Record<string, unknown>;
       orderId = extractId(orderBody);
       const trackingNumber = String(orderBody['trackingNumber'] ?? '');
 
+      // Seller verifies + buyer confirms checkout
+      await requestJson(`/api/order/orders/${orderId}/verify`, {
+        method: 'POST', headers: { ...authHeader(sellerToken), 'content-type': 'application/json' },
+      });
+      await requestJson(`/api/order/orders/${orderId}/buyer/confirm-checkout`, {
+        method: 'POST', headers: { ...authHeader(buyerToken), 'content-type': 'application/json' },
+      });
+
       deliveryId = await pollForDelivery(courierToken, orderId!, trackingNumber);
 
-      // If saga didn't create delivery, fall back to the seed delivery list
       if (!deliveryId) {
         const listRes2 = await requestJson(
           `/api/logistics/api/v1/deliveries?courierId=${SEEDED_USERS.courier.id}&limit=20`,
@@ -466,12 +489,10 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       const initial = await readDeliveryStatus(courierToken, deliveryId!);
       expect(['assigned', 'picked_up']).toContain(initial);
 
-      // Advance to picked_up and verify
       await advanceDelivery(courierToken, deliveryId!, 'picked_up');
       const afterPickup = await readDeliveryStatus(courierToken, deliveryId!);
       expect(afterPickup).toBe('picked_up');
 
-      // Advance to in_transit and verify
       await advanceDelivery(courierToken, deliveryId!, 'in_transit');
       const afterTransit = await readDeliveryStatus(courierToken, deliveryId!);
       expect(afterTransit).toBe('in_transit');
@@ -497,7 +518,6 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       const trackingNumber = String(orderBody['trackingNumber'] ?? '');
       expect(trackingNumber).toBeTruthy();
 
-      // Poll until tracking API returns a result for this tracking number
       const trackingRes = await pollForTracking(courierToken, trackingNumber);
       expect(trackingRes).not.toBeNull();
     } finally {

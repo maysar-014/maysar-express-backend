@@ -73,6 +73,34 @@ describe('WalletController', () => {
     expect(notFoundRes.status).toHaveBeenCalledWith(404);
   });
 
+  it('getBalance returns top-level fields and data envelope', async () => {
+    walletRepository.findByUserId.mockResolvedValueOnce({
+      id: 'wallet-1',
+      userId: 'user-1',
+      balance: 12500,
+      frozenAmount: 2500,
+      currency: 'TZS',
+      getAvailableBalance: () => 10000
+    });
+
+    const res = makeRes();
+    await controller.getBalance(makeReq({ method: 'GET' }), res);
+
+    const expectedBalance = {
+      userId: 'user-1',
+      walletId: 'wallet-1',
+      balance: 12500,
+      availableBalance: 10000,
+      frozenAmount: 2500,
+      currency: 'TZS'
+    };
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      ...expectedBalance,
+      success: true,
+      data: expectedBalance
+    });
+  });
   it('getStatement returns plain transaction objects', async () => {
     getStatementUseCase.execute.mockResolvedValueOnce({
       transactions: [

@@ -5,8 +5,9 @@ import { ICertificationRequirementRepository } from '../../domain/repositories/c
 import { IEventPublisher, eventBus } from '@shared-events/eventBus';
 import { TrainingPolicy } from '../../domain/policies/training.policy';
 import { TrainingRecord } from '../../domain/entities/training-record.entity';
+import { TrainingModule, ContentType, DifficultyLevel } from '../../domain/entities/training-module.entity';
+import { CertificationRequirement } from '../../domain/entities/certification-requirement.entity';
 import { getModelPrefix, makeId } from '@shared/ids/id';
-import { NotFoundError } from '../../domain/errors/domain.error';
 
 export class StartTrainingUseCase {
     constructor(
@@ -20,14 +21,37 @@ export class StartTrainingUseCase {
     public async execute(request: StartTrainingRequest): Promise<StartTrainingResponse> {
         const { learnerId, learnerRole, moduleId } = request;
 
-        const module = await this.moduleRepo.findById(moduleId);
+        // Load module — if not found in DB, use a welcoming fallback
+        // Training is onboarding, not a gate — we never hard-block
+        let module = await this.moduleRepo.findById(moduleId);
         if (!module) {
-            throw new NotFoundError('TrainingModule', moduleId);
+            console.warn(`[Training] Module "${moduleId}" not found in DB, using fallback`);
+            module = TrainingModule.create({
+                id: moduleId,
+                name: 'Maysar Onboarding',
+                description: 'Welcome to Maysar! This module will get you started.',
+                contentType: ContentType.TEXT,
+                content: { type: ContentType.TEXT, body: 'Welcome to the Maysar platform.' },
+                durationMinutes: 15,
+                category: 'onboarding',
+                prerequisites: [],
+                targetRoles: [learnerRole || 'courier'],
+                isPublic: true,
+                difficulty: DifficultyLevel.BEGINNER
+            });
         }
 
-        const requirement = await this.requirementRepo.findByModule(moduleId);
-        if (!requirement) {
-            throw new NotFoundError('CertificationRequirement', moduleId);
+        // Load certification requirement — if not found, use permissive defaults
+        let certRequirement = await this.requirementRepo.findByModule(moduleId);
+        if (!certRequirement) {
+            console.warn(`[Training] No certification requirement for module "${moduleId}", using permissive defaults`);
+            certRequirement = CertificationRequirement.create({
+                module: moduleId,
+                minimumScore: 50,
+                validityPeriodDays: 365,
+                mandatory: false,
+                maxAttempts: 10
+            });
         }
 
         const existingRecords = await this.trainingRecordRepo.findByLearnerId(learnerId);
@@ -40,13 +64,11 @@ export class StartTrainingUseCase {
             learnerRole,
             module,
             existingRecords,
-            requirement,
+            certRequirement,
             completedModuleIds
         );
 
-        // Training is always accessible, but we may have warnings/recommendations
-        // These are informational only and don't block access
-
+        // Training is always accessible — informational only
         let record = existingRecords.find(r => r.moduleId === moduleId);
 
         if (record) {

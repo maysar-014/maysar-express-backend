@@ -21,9 +21,10 @@ export class Logger {
     }
 
     logRequest(req: Request, res: Response, duration: number): void {
+        const reqAny = req as any;
         this.delegate.info(`API: ${req.method} ${req.url}`, {
-            requestId: req.requestId || req.get('X-Request-ID'),
-            correlationId: req.correlationId || req.get('X-Correlation-ID'),
+            requestId: reqAny.requestId || req.get('X-Request-ID'),
+            correlationId: reqAny.correlationId || req.get('X-Correlation-ID'),
             method: req.method,
             url: req.url,
             statusCode: res.statusCode,

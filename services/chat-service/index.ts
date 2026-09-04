@@ -44,6 +44,7 @@ import { healthRoutes } from './src/api/routes/health.routes';
 import { MarketplaceIntelligenceJob } from './src/infrastructure/jobs/marketplace-intelligence.job';
 import { RetentionJob } from './src/infrastructure/jobs/retention.job';
 import { ArchiveCourierConversationsJob } from './src/infrastructure/jobs/archive-courier-conversations.job';
+import { OrderChatHandler } from './src/infrastructure/jobs/order-chat.handler';
 
 const logger = new ServiceLogger('ChatService', 'chat-service');
 
@@ -194,6 +195,7 @@ export const ChatModule: Module = {
     const intelligenceJob = new MarketplaceIntelligenceJob(prismaClient);
     const retentionJob = new RetentionJob(prismaClient);
     const archiveJob = new ArchiveCourierConversationsJob(prismaClient);
+    const orderChatHandler = new OrderChatHandler({ prisma: prismaClient, pubSub });
 
     intelligenceJob.start();
     retentionJob.start();
@@ -204,6 +206,40 @@ export const ChatModule: Module = {
     // Subscribe to order status events for auto-archiving
     try {
       const { eventBus } = await import('../../shared/events/eventBus');
+
+      // ── Order lifecycle → chat messages ──────────────────────────────────────
+      void eventBus.subscribe('order.pending_seller_verification', async (envelope: any) => {
+        const data = envelope?.data ?? envelope;
+        await orderChatHandler.handleOrderPlaced({
+          orderId: data.orderId,
+          buyerId: data.buyerId,
+          sellerId: data.sellerId,
+          items: data.items,
+          verificationDeadlineAt: data.verificationDeadlineAt,
+          trackingNumber: data.trackingNumber,
+        });
+      });
+
+      void eventBus.subscribe('order.seller_verified', async (envelope: any) => {
+        const data = envelope?.data ?? envelope;
+        await orderChatHandler.handleOrderVerified({
+          orderId: data.orderId,
+          buyerId: data.buyerId,
+          sellerId: data.sellerId,
+        });
+      });
+
+      void eventBus.subscribe('order.seller_declined', async (envelope: any) => {
+        const data = envelope?.data ?? envelope;
+        await orderChatHandler.handleOrderDeclined({
+          orderId: data.orderId,
+          buyerId: data.buyerId,
+          sellerId: data.sellerId,
+          reason: data.reason,
+        });
+      });
+
+      // ── Auto-archive on delivery/cancellation ─────────────────────────────
       void eventBus.subscribe('OrderDelivered', async (envelope: { payload?: { orderId?: string }; data?: { orderId?: string } }) => {
         const orderId = envelope?.payload?.orderId ?? envelope?.data?.orderId;
         if (orderId) await archiveJob.handleOrderStatusChanged({ orderId, status: 'DELIVERED' });
@@ -212,6 +248,7 @@ export const ChatModule: Module = {
         const orderId = envelope?.payload?.orderId ?? envelope?.data?.orderId;
         if (orderId) await archiveJob.handleOrderStatusChanged({ orderId, status: 'CANCELLED' });
       });
+
       logger.info('chat-service subscribed to order status events');
     } catch (e) {
       logger.warn('chat-service: could not subscribe to order events', { e });

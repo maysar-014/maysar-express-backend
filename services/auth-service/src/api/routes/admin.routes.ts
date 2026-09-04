@@ -239,4 +239,16 @@ router.get(
   asyncHandler(adminController.getServiceHealth.bind(adminController))
 );
 
+/**
+ * Admin phone verification bypass
+ * PATCH /api/v1/admin/users/:userId/verify-phone
+ * Marks isPhoneVerified=true for any user without requiring Firebase OTP.
+ * Used by E2E setup scripts and admin tooling.
+ */
+router.patch(
+  '/users/:userId/verify-phone',
+  requireSystemId('userId'),
+  asyncHandler(adminController.verifyPhone.bind(adminController))
+);
+
 export { router as adminRoutes };
