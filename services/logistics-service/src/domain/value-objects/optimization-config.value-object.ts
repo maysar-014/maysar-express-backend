@@ -25,7 +25,16 @@ export interface CostVariancePolicy {
   customerChargeableVarianceTypes: string[];
 }
 
-export interface OptimizationConfigData extends OptimizationWeights, CostVariancePolicy {
+export interface FairnessThresholds {
+  /** Max allowed buyerPrice / fulfillmentCost (e.g. 1.5). */
+  maxBuyerPriceRatio: number;
+  /** Minimum TZS per active hour the driver must earn. */
+  minimumDriverHourlyRateTzs: number;
+  /** Fleet utilization alert threshold (0–1). */
+  minVehicleUtilizationTarget: number;
+}
+
+export interface OptimizationConfigData extends OptimizationWeights, CostVariancePolicy, FairnessThresholds {
   version: number;
   isActive: boolean;
 }
@@ -57,6 +66,15 @@ export class OptimizationConfig {
     if (data.maysarAbsorbsUpToTzs < 0) {
       throw new Error('OptimizationConfig invariant violation: maysarAbsorbsUpToTzs cannot be negative');
     }
+    if (!(data.maxBuyerPriceRatio > 0)) {
+      throw new Error('OptimizationConfig invariant violation: maxBuyerPriceRatio must be > 0');
+    }
+    if (!(data.minimumDriverHourlyRateTzs > 0)) {
+      throw new Error('OptimizationConfig invariant violation: minimumDriverHourlyRateTzs must be > 0');
+    }
+    if (!(data.minVehicleUtilizationTarget >= 0 && data.minVehicleUtilizationTarget <= 1)) {
+      throw new Error('OptimizationConfig invariant violation: minVehicleUtilizationTarget must be in [0, 1]');
+    }
     this.data = { ...data };
   }
 
@@ -64,6 +82,7 @@ export class OptimizationConfig {
     version?: number;
     weights: OptimizationWeights;
     variancePolicy?: Partial<CostVariancePolicy>;
+    fairness?: Partial<FairnessThresholds>;
     isActive?: boolean;
   }): OptimizationConfig {
     return new OptimizationConfig({
@@ -71,6 +90,9 @@ export class OptimizationConfig {
       ...params.weights,
       maysarAbsorbsUpToTzs: params.variancePolicy?.maysarAbsorbsUpToTzs ?? 0,
       customerChargeableVarianceTypes: params.variancePolicy?.customerChargeableVarianceTypes ?? [],
+      maxBuyerPriceRatio: params.fairness?.maxBuyerPriceRatio ?? 1.5,
+      minimumDriverHourlyRateTzs: params.fairness?.minimumDriverHourlyRateTzs ?? 3000,
+      minVehicleUtilizationTarget: params.fairness?.minVehicleUtilizationTarget ?? 0.5,
       isActive: params.isActive ?? true,
     });
   }
@@ -99,6 +121,13 @@ export class OptimizationConfig {
     return {
       maysarAbsorbsUpToTzs: this.data.maysarAbsorbsUpToTzs,
       customerChargeableVarianceTypes: [...this.data.customerChargeableVarianceTypes],
+    };
+  }
+  get fairness(): FairnessThresholds {
+    return {
+      maxBuyerPriceRatio: this.data.maxBuyerPriceRatio,
+      minimumDriverHourlyRateTzs: this.data.minimumDriverHourlyRateTzs,
+      minVehicleUtilizationTarget: this.data.minVehicleUtilizationTarget,
     };
   }
 

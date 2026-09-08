@@ -86,6 +86,13 @@ Central navigation for all Maysar platform documentation. These pages describe t
 - [Logistics Frontend Integration Guide](frontend/LOGISTICS_FRONTEND_INTEGRATION_GUIDE.md)
 - [Logistics Frontend UI Specifications](frontend/LOGISTICS_FRONTEND_UI_SPECIFICATIONS.md)
 
+## Logistics Engine
+
+- [Logistics Implementation Reference (as-built)](logistics/LOGISTICS_IMPLEMENTATION.md)
+- [Logistics Engineering Backlog (historical plan — 72/72 complete)](logistics/LOGISTICS_ENGINE_BACKLOG.md)
+- [Per-Seller Quote Flow](logistics/PER_SELLER_QUOTE_FLOW.md)
+- [Logistics & Escrow Flowcharts](operations/logistics-escrow-flowcharts.md)
+
 ## Service Modules
 
 | Service | README | OpenAPI |

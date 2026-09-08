@@ -1045,6 +1045,9 @@ erDiagram
 
 ## 12. Logistics Service
 
+> The `Logistics_*` models below are the **legacy** courier/delivery surface. The optimization-engine rollout (Phases 1–6) added the following models — full field lists in `prisma/schema.prisma`, and an as-built model map in [`docs/logistics/LOGISTICS_IMPLEMENTATION.md`](../logistics/LOGISTICS_IMPLEMENTATION.md) §2:
+> `Logistics_Quote`, `Logistics_PricingConfig`, `Logistics_PricingAuditRecord`, `Logistics_DeliveryGroup`, `Logistics_ConsolidationAudit`, `Logistics_Shipment`, `Logistics_DeliveryJob`, `Logistics_Vehicle`, `Logistics_VehicleTariff`, `Logistics_CostAdjustment`, `Logistics_LedgerEntry`, `Logistics_FulfillmentCommitment`, `Logistics_OptimizationConfig`, `Logistics_FairnessFlag`, `Logistics_BuyerProfile`, `Logistics_DriverMatchAudit`, `Logistics_RouteInsertionCandidate`, `Logistics_ShipmentPoolEntry`, `Logistics_PoolOptimizationRun`.
+
 ```mermaid
 erDiagram
     Logistics_Courier {

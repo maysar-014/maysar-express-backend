@@ -18,6 +18,7 @@ import { ShipmentRepository } from '../../domain/repositories/shipment.repositor
 import { PrismaShipmentRepository } from '../../infrastructure/repositories/prisma-shipment.repository';
 import { DeliveryJobRepository } from '../../domain/repositories/delivery-job.repository';
 import { PrismaDeliveryJobRepository } from '../../infrastructure/repositories/prisma-delivery-job.repository';
+import { ShipmentPoolService } from '../services/shipment-pool.service';
 
 export interface AssignShipmentsToJobsRequest {
   masterOrderId: string;
@@ -33,6 +34,7 @@ export interface AssignShipmentsToJobsResult {
 export class AssignShipmentsToJobsUseCase {
   private readonly shipmentRepo: ShipmentRepository = new PrismaShipmentRepository();
   private readonly jobRepo: DeliveryJobRepository = new PrismaDeliveryJobRepository();
+  private readonly pool = new ShipmentPoolService();
 
   async execute(request: AssignShipmentsToJobsRequest): Promise<AssignShipmentsToJobsResult> {
     if (!request?.shipmentOrderIds?.length) return { assigned: 0, createdJobs: 0 };
@@ -72,6 +74,13 @@ export class AssignShipmentsToJobsUseCase {
       updatable.assignToJob(job.id);
       await this.shipmentRepo.save(updatable);
       assigned += 1;
+
+      // Assigned shipments leave the opportunity pool (Phase 5 §5.3).
+      try {
+        await this.pool.remove(updatable.id);
+      } catch (poolErr: any) {
+        console.error('[AssignShipmentsToJobsUseCase] pool remove failed (non-fatal):', poolErr?.message);
+      }
     }
 
     return { assigned, createdJobs };

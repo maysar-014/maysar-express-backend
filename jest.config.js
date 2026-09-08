@@ -396,6 +396,18 @@ module.exports = {
       }
     },
     {
+      displayName: 'request-service',
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      testMatch: ['<rootDir>/services/request-service/**/*.test.ts'],
+      setupFilesAfterEnv: ['<rootDir>/tests/setup/request-service/setup.ts'],
+      moduleNameMapper: {
+        '@request/(.*)': '<rootDir>/services/request-service/src/$1',
+        '@shared/(.*)': '<rootDir>/shared/$1',
+        '^uuid$': require.resolve('uuid'),
+      }
+    },
+    {
       displayName: 'shared',
       preset: 'ts-jest',
       testEnvironment: 'node',

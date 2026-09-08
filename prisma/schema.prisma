@@ -851,6 +851,7 @@ model Checkout_CheckoutSession {
   metadata          Json?
   quoteId           String?  @db.VarChar(64)
   pricingVersion    Int?
+  deliveryWindowPreference String? @db.VarChar(16) // FLEXIBLE | STANDARD | EXPRESS (Phase 4 §4.1)
   sellerQuotes      Json?    // { [sellerId: string]: { quoteId: string } } — multi-seller checkout
   deliveryGroups    Json?    // { [groupId: string]: { quoteId: string, sellerOrderIds: string[], totalCost: number } }
   createdAt         DateTime @default(now())
@@ -1801,6 +1802,10 @@ model Order_Order {
   declineReason          String?             @db.Text
   quoteId                String?             @db.VarChar(64)
   pricingVersion         Int?
+  /// Idempotency anchor for Maysar Request → order conversion (§1.6).
+  /// One accepted Request quote → exactly one normal Order_Order; the unique
+  /// index makes a second conversion attempt return the existing order.
+  requestQuoteId         String?             @unique @db.VarChar(64)
   /// The seller location chosen as fulfillment pickup point at checkout
   fulfillmentLocationId  String?             @db.VarChar(64)
   createdAt              DateTime            @default(now())
@@ -1857,14 +1862,18 @@ model Order_CODDispute {
 }
 
 model Order_OrderItem {
-  id        String      @id @default(cuid()) @db.VarChar(64)
-  orderId   String @db.VarChar(64)
-  productId String @db.VarChar(64)
-  quantity  Int
-  price     Decimal
-  weight    Float
-  currency  String      @default("TZS")
-  order     Order_Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id          String      @id @default(cuid()) @db.VarChar(64)
+  orderId     String @db.VarChar(64)
+  productId   String @db.VarChar(64)
+  // Free-text line description — REQUIRED for non-catalog request items whose
+  // productId is synthetic (`req-item-<quoteId>-<index>`) and therefore has no
+  // catalog row to resolve names from (Maysar Request §B-1).
+  description String? @db.VarChar(255)
+  quantity    Int
+  price       Decimal
+  weight      Float
+  currency    String      @default("TZS")
+  order       Order_Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
   @@index([productId])
@@ -4588,12 +4597,53 @@ model Logistics_DeliveryJob {
   estimatedDeliveryAt DateTime?
   actualPickupAt      DateTime?
   actualDeliveryAt    DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  matchAudit           Json?                           // Phase 5 §5.1 — matching score + all input factors, stored for audit at assignment time
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   @@index([status])
   @@index([driverId])
   @@map("logistics_delivery_jobs")
+}
+
+/// Records every evaluated route-insertion opportunity so optimization
+/// quality can be analysed retrospectively. (Phase 5 §5.2)
+model Logistics_RouteInsertionCandidate {
+  id                        String    @id @db.VarChar(64)  // RIC-{ULID}
+  shipmentId                String    @db.VarChar(64)
+  deliveryJobId             String    @db.VarChar(64)
+  marginalCostTzs           Float
+  additionalDistanceKm      Float
+  additionalDurationMinutes Float
+  feasible                  Boolean
+  rejectionReason           String?   @db.VarChar(64)      // CAPACITY | THRESHOLD | VEHICLE_CLASS
+  evaluatedAt               DateTime  @default(now())
+
+  @@index([deliveryJobId])
+  @@index([shipmentId])
+  @@map("logistics_route_insertion_candidates")
+}
+
+/// Materialized snapshot of the continuous shipment opportunity pool —
+/// pending Shipments not yet assigned to a DeliveryJob. Refreshed on every
+/// Shipment state change and before each pool optimization run. (Phase 5 §5.3)
+model Logistics_ShipmentPoolEntry {
+  id                  String    @id @db.VarChar(64)  // SPL-{ULID}
+  shipmentId          String    @db.VarChar(64)
+  status              String    @db.VarChar(32)
+  originLat           Float
+  originLng           Float
+  destinationLat      Float
+  destinationLng      Float
+  packageWeightKg     Float
+  requiredVehicleClass String?  @db.VarChar(16)
+  windowEarliestAt    DateTime?
+  windowLatestAt      DateTime?
+  refreshedAt         DateTime  @default(now())
+
+  @@unique([shipmentId])
+  @@index([status])
+  @@map("logistics_shipment_pool")
 }
 
 /// A physical vehicle a driver operates. The optimizer needs real capability
@@ -4724,10 +4774,97 @@ model Logistics_OptimizationConfig {
   // CostVariancePolicy (Phase 3 §3.4)
   maysarAbsorbsUpToTzs          Decimal @db.Decimal(12, 2) @default(0)
   customerChargeableVarianceTypes Json  @default("[]")
+  // Fairness thresholds (Phase 6 §6.1) — versioned with the config
+  maxBuyerPriceRatio            Decimal @db.Decimal(6, 4)  @default(1.5)
+  minimumDriverHourlyRateTzs    Decimal @db.Decimal(12, 2) @default(3000)
+  minVehicleUtilizationTarget   Decimal @db.Decimal(6, 4)  @default(0.5)
   isActive                  Boolean  @default(true)
   createdAt                 DateTime @default(now())
 
   @@map("logistics_optimization_configs")
+}
+
+// ── Phase 6 — Fairness Engine & Operational Intelligence ─────────────────────
+
+/// Every failed fairness check is recorded here and surfaced to ops —
+/// flagged options never disappear from a list without a recorded reason.
+/// (Phase 6 §6.1)
+model Logistics_FairnessFlag {
+  id            String   @id @db.VarChar(64)  // FFL-{ULID}
+  optionId      String?  @db.VarChar(64)
+  deliveryJobId String?  @db.VarChar(64)
+  checkType     String   @db.VarChar(32)      // BUYER_PRICE_RATIO | DRIVER_EARNINGS | SUPPLIER_ATTRIBUTION | MAYSAR_SUSTAINABILITY
+  computedValue Decimal  @db.Decimal(12, 4)
+  threshold     Decimal  @db.Decimal(12, 4)
+  detail        String?  @db.VarChar(255)
+  flaggedAt     DateTime @default(now())
+  resolvedAt    DateTime?
+  resolvedBy    String?  @db.VarChar(64)
+
+  @@index([checkType])
+  @@index([resolvedAt])
+  @@map("logistics_fairness_flags")
+}
+
+/// Per-buyer logistics behavior record, updated on every DeliveryConfirmed /
+/// DeliveryFailed event. Feeds failure_probability in option ranking.
+/// (Phase 6 §6.3)
+model Logistics_BuyerProfile {
+  id                          String   @id @db.VarChar(64)  // byp-{ULID}
+  buyerId                     String   @unique @db.VarChar(64)
+  preferredDeliveryWindows    Json     @default("{}")
+  deliverySuccessRate         Decimal  @db.Decimal(4, 3)  @default(0.8)  // new-buyer default 0.80
+  completedDeliveries         Int      @default(0)
+  failedDeliveries            Int      @default(0)
+  typicalOrderWeightKg        Decimal  @db.Decimal(8, 3)  @default(0)
+  consolidationAcceptanceRate Decimal  @db.Decimal(4, 3)  @default(0)
+  pickupPreference            String   @default("DELIVERY") @db.VarChar(16)
+  lastUpdatedAt               DateTime @default(now())
+
+  @@map("logistics_buyer_profiles")
+}
+
+// ── Phase 5 — Driver Matching & Live Optimization ────────────────────────────
+
+// NOTE: Logistics_RouteInsertionCandidate is defined once above (next to the
+// delivery-job model) — it was created by migration 20260904060000 with
+// Float/DOUBLE PRECISION columns, so that is the canonical definition.
+
+/// Audit of every driver-matching run (Phase 5 §5.1). The matching score and
+/// all input factors are stored per candidate for audit — assignment decisions
+/// must be explainable after the fact. APPEND-ONLY.
+model Logistics_DriverMatchAudit {
+  id                       String   @id @db.VarChar(64)  // dma-{ULID}
+  deliveryJobId            String   @db.VarChar(64)
+  driverId                 String   @db.VarChar(64)
+  vehicleId                String?  @db.VarChar(64)
+  vehicleType              String   @db.VarChar(20)
+  score                    Decimal  @db.Decimal(8, 4)
+  eligible                 Boolean
+  exclusionReason          String?  @db.VarChar(50)
+  scoreComponents          Json     // proximity, capacityHeadroom, reliability, routeFit, eta, driverEconomics
+  estimatedCompensationTzs Decimal  @db.Decimal(12, 2)
+  etaMinutes               Int
+  distanceToPickupKm       Decimal  @db.Decimal(8, 2)
+  matchedAt                DateTime @default(now())
+
+  @@index([deliveryJobId])
+  @@index([driverId])
+  @@map("logistics_driver_match_audits")
+}
+
+/// Per-run analytics of the pool optimization job (Phase 5 §5.3).
+/// Feeds the Phase 6 fairness KPIs.
+model Logistics_PoolOptimizationRun {
+  id                          String   @id @db.VarChar(64)  // por-{ULID}
+  shipmentsEvaluated          Int
+  consolidationCandidatesFound Int
+  jobsCreated                 Int
+  averageSavingsPerJobTzs     Decimal  @db.Decimal(12, 2)
+  durationMs                  Int
+  ranAt                       DateTime @default(now())
+
+  @@map("logistics_pool_optimization_runs")
 }
 
 // ── Product Intelligence Engine ──────────────────────────────────────────────
@@ -4805,4 +4942,260 @@ model Catalog_ProductLifecycleLog {
   @@index([productId, toState])
   @@index([createdAt])
   @@map("catalog_product_lifecycle_log")
+}
+
+// ─── Maysar Request ─────────────────────────────────────────────────────────
+// Sourcing & assisted-commerce: customer describes a need, Maysar assesses,
+// sources, prices, and presents a fulfillable solution that converts into a
+// normal Maysar order. See docs/requests/MAYSAR_REQUEST_BACKLOG.md.
+//
+// Four-way separation (backlog rule §B-1):
+//   Catalog Product ≠ Request Item ≠ Procurement Source ≠ Maysar Seller
+
+model Request_Request {
+  id                  String   @id @db.VarChar(64)
+  customerId          String   @db.VarChar(64)
+  title               String   @db.VarChar(160)
+  description         String   @db.Text
+  deliveryAddress     Json
+  preferredDeliveryDate DateTime?
+  budgetTzs           Int?
+  attachments         Json?
+  status              String   @db.VarChar(32)
+  assignedProviderId  String?  @db.VarChar(64)
+  unfulfillableReason String?  @db.Text
+  orderId             String?  @db.VarChar(64)
+  convertedQuoteId    String?  @db.VarChar(64)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  messages            Request_Message[]
+  assessments         Request_Assessment[]
+  quotes              Request_Quote[]
+  accessLinks         Request_AccessLink[]
+  itemRows            Request_Item[]
+
+  @@index([customerId])
+  @@index([assignedProviderId])
+  @@index([status])
+  @@map("request_requests")
+}
+
+/// Conversation thread attached to a Request (append-only; no update/delete).
+model Request_Message {
+  id          String   @id @db.VarChar(64)
+  requestId   String   @db.VarChar(64)
+  authorType  String   @db.VarChar(32)
+  authorId    String?  @db.VarChar(64)
+  body        String   @db.Text
+  attachments Json?
+  createdAt   DateTime @default(now())
+
+  request     Request_Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, createdAt])
+  @@map("request_messages")
+}
+
+/// Provider assessment record (internal notes never leave the service).
+model Request_Assessment {
+  id                 String   @id @db.VarChar(64)
+  requestId          String   @db.VarChar(64)
+  providerId         String   @db.VarChar(64)
+  decision           String   @db.VarChar(32)
+  unfulfillableReason String?  @db.Text
+  internalNotes      String?  @db.Text
+  assessedAt         DateTime @default(now())
+
+  request            Request_Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@map("request_assessments")
+}
+
+/// A Maysar offer for a Request. Published quotes are immutable — any change
+/// creates a new version and supersedes the old one (§B-6).
+model Request_Quote {
+  id                  String   @id @db.VarChar(64)
+  requestId           String   @db.VarChar(64)
+  createdByProviderId String   @db.VarChar(64)
+  label               String   @db.VarChar(40)
+  status              String   @db.VarChar(24)
+  items               Json
+  /// Internal procurement cost — never exposed to the customer (§B-3).
+  procurementCostTzs  Int
+  logisticsCostTzs    Int
+  sellingPriceTzs     Int
+  deliveryDate        DateTime
+  warrantyNote        String?  @db.Text
+  explanation         String?  @db.Text
+  validUntil          DateTime
+  publishedAt         DateTime?
+  createdAt           DateTime @default(now())
+
+  request             Request_Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  accessLinks         Request_AccessLink[]
+  itemRows            Request_Item[]
+
+  @@index([requestId, status])
+  @@map("request_quotes")
+}
+
+/// Secure, single-use assessment/checkout link. Only the SHA-256 hash of the
+/// raw token is stored; the raw token is shown exactly once (§B-7).
+model Request_AccessLink {
+  id          String   @id @db.VarChar(64)
+  requestId   String   @db.VarChar(64)
+  quoteId     String   @db.VarChar(64)
+  customerId  String   @db.VarChar(64)
+  tokenHash   String   @unique @db.VarChar(128)
+  status      String   @db.VarChar(16)
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  request     Request_Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  quote       Request_Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([quoteId])
+  @@map("request_access_links")
+}
+
+/// A first-class line item on a Request (Phase 2 §2.1).
+/// §B-1: a request item never requires a catalog row. `sourceType` is the only
+/// source-of-truth for how the item is procured, and `catalogProductId` is only
+/// ever set for `CATALOG_PRODUCT` items.
+model Request_Item {
+  id               String   @id @db.VarChar(64)
+  requestId        String   @db.VarChar(64)
+  /// Nullable — items may exist at request level before quoting (quoteId is
+  /// bound when the provider includes the item in a quote).
+  quoteId          String?  @db.VarChar(64)
+  description      String   @db.VarChar(255)
+  quantity         Int
+  unitPriceTzs     Int
+  specifications   Json?
+  warranty         String?  @db.VarChar(255)
+  sourceType       String   @db.VarChar(24) /// CATALOG_PRODUCT | KNOWN_SUPPLIER | EXTERNAL_SUPPLIER | MAYSAR_INVENTORY
+  catalogProductId String?  @db.VarChar(64) /// set ONLY when sourceType = CATALOG_PRODUCT
+  fulfillmentNote  String?  @db.Text
+  createdAt        DateTime @default(now())
+
+  request      Request_Request    @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  quote        Request_Quote?     @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  sources      Request_Source[]
+  procurements Request_Procurement[]
+
+  @@index([requestId])
+  @@index([quoteId])
+  @@map("request_items")
+}
+
+/// A fulfillment source. Suppliers are NOT Maysar sellers — no auth account,
+/// never customer-facing (§2.2).
+model Request_Supplier {
+  id                     String   @id @db.VarChar(64)
+  name                   String   @db.VarChar(160)
+  contact                Json     /// { phone?, whatsapp?, email? }
+  source                 String   @db.VarChar(24) /// KNOWN | DISCOVERED
+  discoveredViaRequestId String?  @db.VarChar(64)
+  /// Phase 5 growth loop: PENDING → INVITE_READY (ops) → INVITED (event published)
+  inviteStatus           String   @default("PENDING") @db.VarChar(24)
+  isActive               Boolean  @default(true)
+  notes                  String?  @db.Text
+  createdAt              DateTime @default(now())
+
+  sources Request_Source[]
+  procurements Request_Procurement[]
+
+  @@index([source])
+  @@map("request_suppliers")
+}
+
+/// A sourcing record linking an item to a supplier (or to Maysar's own
+/// inventory when supplierId is null). Multiple sources may exist per item —
+/// the provider commits to one when the quote is published.
+model Request_Source {
+  id             String   @id @db.VarChar(64)
+  itemId         String   @db.VarChar(64)
+  supplierId     String?  @db.VarChar(64) /// null ONLY for MAYSAR_INVENTORY
+  agreedPriceTzs Int
+  availability   String   @db.VarChar(24) /// CONFIRMED | PENDING | UNAVAILABLE
+  availableUntil DateTime?
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  item     Request_Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  supplier Request_Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  procurements Request_Procurement[]
+
+  @@index([itemId])
+  @@index([supplierId])
+  @@map("request_sources")
+}
+
+/// Post-order map: Order → Item → Supplier. Maysar-internal; the customer
+/// never sees this (§2.3).
+model Request_Procurement {
+  id                String   @id @db.VarChar(64)
+  orderId           String   @db.VarChar(64)
+  itemId            String   @db.VarChar(64)
+  supplierId        String   @db.VarChar(64) /// MAYSAR_INVENTORY uses the canonical inventory supplier
+  sourceId          String?  @db.VarChar(64)
+  agreedPriceTzs    Int
+  procurementStatus String   @db.VarChar(24) /// PENDING → ORDERED → RECEIVED | FAILED
+  orderedAt         DateTime?
+  receivedAt        DateTime?
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now())
+
+  item     Request_Item      @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  supplier Request_Supplier? @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  source   Request_Source?   @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([itemId])
+  @@map("request_procurements")
+}
+
+/// Append-only outbox for Request-domain events (request.submitted,
+/// Append-only outbox for Request-domain events (request.submitted,
+/// request.converted, quote.published, ...). Same pattern as the logistics
+/// outbox — consumers reconcile from the tables if a row is missed.
+model Request_OutboxEvent {
+  id          String    @id @default(cuid()) @db.VarChar(64)
+  eventId     String    @unique
+  eventType   String
+  eventData   Json
+  status      String    @default("PENDING")
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+  attempts    Int       @default(0)
+  lastError   String?
+  nextRetryAt DateTime?
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@map("request_outbox_events")
+}
+
+
+/// Append-only audit trail (Phase 4 §4.3). Rows are written by the service on
+/// every mutation and are never updated or deleted — there is no mutation path
+/// by design. Read surface: provider/ops audit endpoint only.
+model Request_AuditLog {
+  id         String   @id @default(cuid()) @db.VarChar(64)
+  auditId    String   @unique
+  requestId  String
+  actorType  String
+  actorId    String?
+  action     String
+  fromStatus String?
+  toStatus   String?
+  detail     Json?
+  createdAt  DateTime @default(now())
+
+  @@index([requestId, createdAt])
+  @@map("request_audit_logs")
 }

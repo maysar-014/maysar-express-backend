@@ -6,7 +6,9 @@ import { DependencyContainer } from './src/infrastructure/container';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { requireAuth, requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 import { ConsolidationOrchestrator } from './src/application/services/consolidation-orchestrator.service';
-import { makeId } from '../shared/ids/id';
+import { GeoPoint } from './src/domain/value-objects/geopoint.value-object';
+
+import { makeId } from '../../shared/ids/id';
 
 export const LogisticsModule: Module = {
     name: 'logistics-service',
@@ -29,35 +31,69 @@ export const LogisticsModule: Module = {
             const haversineRoutingProvider = {
                 async getRoute(from: any, to: any) {
                     const dist = from.distanceTo(to);
-                    return { distanceKm: dist * 1.35, durationMinutes: Math.ceil(dist * 1.35 / 30 * 60) };
+                    return { distanceKm: dist * 1.35, durationMinutes: Math.ceil(dist * 1.35 / 30 * 60), source: 'fallback' as const };
                 },
             };
 
-            const quoteUseCase = new RequestDeliveryQuoteUseCase();
+            const { DeliveryPricingEngine } = await import('./src/domain/engines/delivery-pricing.engine');
+            const { CourierCostCalculator } = await import('./src/domain/engines/courier-cost-calculator');
+            const { ZoneClassifier } = await import('./src/domain/services/zone-classifier');
+            const { PrismaQuoteRepository } = await import('./src/infrastructure/repositories/prisma-quote.repository');
+            const { PrismaPricingConfigRepository } = await import('./src/infrastructure/repositories/prisma-pricing-config.repository');
+            const { PrismaPricingAuditRecordRepository } = await import('./src/infrastructure/repositories/prisma-pricing-audit-record.repository');
+
+            const quoteUseCase = new RequestDeliveryQuoteUseCase(
+                new DeliveryPricingEngine(),
+                new CourierCostCalculator(),
+                new ZoneClassifier(),
+                haversineRoutingProvider,
+                new PrismaQuoteRepository(),
+                new PrismaPricingConfigRepository(),
+                new PrismaPricingAuditRecordRepository(),
+            );
             const requestDeliveryQuote = async (params: {
-                pickupPoints: any[];
-                destination: any;
+                pickupPoints: GeoPoint[];
+                destination: GeoPoint;
                 totalWeightKg: number;
                 isCoD: boolean;
                 deliveryGroupId: string;
                 sellerOrderIds: string[];
-            }) => {
+            }): Promise<{ quoteId: string; deliveryFee: number; pricingVersion: number }> => {
+                const [origin, ...additionalPickupPoints] = params.pickupPoints;
                 const result = await quoteUseCase.execute({
-                    pickupPoints: params.pickupPoints,
-                    destination: params.destination,
-                    totalWeightKg: params.totalWeightKg,
+                    originLat: origin.getLatitude(),
+                    originLng: origin.getLongitude(),
+                    originAddress: origin.getAddress(),
+                    destinationLat: params.destination.getLatitude(),
+                    destinationLng: params.destination.getLongitude(),
+                    destinationAddress: params.destination.getAddress(),
+                    packageWeightKg: params.totalWeightKg,
                     isCoD: params.isCoD,
                     deliveryGroupId: params.deliveryGroupId,
-                    sellerOrderIds: params.sellerOrderIds,
+                    additionalPickupPoints: additionalPickupPoints.map((p: any) => ({ lat: p.getLatitude(), lng: p.getLongitude(), address: p.getAddress() })),
                 });
                 return {
                     quoteId: result.quoteId,
-                    deliveryFee: result.deliveryFee,
+                    deliveryFee: result.deliveryFee ?? 0,
                     pricingVersion: result.pricingVersion,
                 };
             };
 
-            const orchestrator = new ConsolidationOrchestrator(haversineRoutingProvider, requestDeliveryQuote);
+            // Append-only outbox publisher for consolidation analytics events —
+            // same logistics_OutboxEvent pattern as shipment.created. The
+            // orchestrator already .catch()es publish failures (non-fatal).
+            const outboxEventBus = {
+                async publish(type: string, data: any): Promise<void> {
+                    const prisma = (globalThis as any).prisma;
+                    if (!prisma?.logistics_OutboxEvent?.create) return;
+                    const { randomUUID } = await import('crypto');
+                    await prisma.logistics_OutboxEvent.create({
+                        data: { eventId: randomUUID(), eventType: type, eventData: data },
+                    });
+                },
+            };
+
+            const orchestrator = new ConsolidationOrchestrator(haversineRoutingProvider, requestDeliveryQuote, outboxEventBus);
             (globalThis as any).__consolidationOrchestrator = orchestrator;
             logger.info('ConsolidationOrchestrator registered on globalThis');
 
@@ -99,6 +135,56 @@ export const LogisticsModule: Module = {
         } catch (err: any) {
             logger.warn('ConsolidationOrchestrator initialization failed (non-fatal):', err?.message);
         }
+
+        // ── Register BuyerProfileService (Phase 6 §6.3) ──────────────────────
+        // Delivery-event consumers call __recordBuyerDeliveryOutcome on every
+        // DeliveryConfirmed / DeliveryFailed; the profile feeds failure-risk
+        // ranking. Non-fatal registration.
+        try {
+            const { BuyerProfileService } = await import('./src/application/services/buyer-profile.service');
+            const { PrismaBuyerProfileRepository } = await import('./src/infrastructure/repositories/prisma-buyer-profile.repository');
+            const buyerProfiles = new BuyerProfileService(new PrismaBuyerProfileRepository());
+            (globalThis as any).__recordBuyerDeliveryOutcome = async (params: {
+                buyerId: string;
+                success: boolean;
+                weightKg?: number;
+                windowBucket?: string;
+                choseShared?: boolean;
+            }) => buyerProfiles.recordDeliveryOutcome(params.buyerId, {
+                success: params.success,
+                weightKg: params.weightKg,
+                windowBucket: params.windowBucket,
+                choseShared: params.choseShared,
+            });
+            logger.info('BuyerProfileService registered on globalThis (__recordBuyerDeliveryOutcome)');
+        } catch (err: any) {
+            logger.warn('BuyerProfileService initialization failed (non-fatal):', err?.message);
+        }
+
+        // ── Register SettlementLifecycleService (Phase 3 runtime wiring) ──────
+        // Delivery-event consumers call __settlementService.recordAdjustment /
+        // writeJobCompletionLedger / settle. Non-fatal registration.
+        try {
+            const { SettlementLifecycleService } = await import('./src/application/services/settlement-lifecycle.service');
+            (globalThis as any).__settlementService = new SettlementLifecycleService();
+            logger.info('SettlementLifecycleService registered on globalThis (__settlementService)');
+        } catch (err: any) {
+            logger.warn('SettlementLifecycleService initialization failed (non-fatal):', err?.message);
+        }
+
+        // ── Start the PoolOptimizationJob (Phase 5 §5.3) ─────────────────────
+        // Scheduled scan of the shipment opportunity pool (configurable
+        // interval, default 5 min). Non-fatal on failure; stopped on shutdown.
+        try {
+            const { PoolOptimizationJob } = await import('./src/application/services/shipment-pool.service');
+            const intervalMs = Number(process.env.POOL_OPTIMIZATION_INTERVAL_MS) || undefined;
+            const poolJob = new PoolOptimizationJob(intervalMs);
+            poolJob.start();
+            (globalThis as any).__poolOptimizationJob = poolJob;
+            logger.info(`PoolOptimizationJob started (interval ${intervalMs ?? 300000}ms)`);
+        } catch (err: any) {
+            logger.warn('PoolOptimizationJob initialization failed (non-fatal):', err?.message);
+        }
     },
     routes: (() => {
         const router = Router();
@@ -119,12 +205,22 @@ export const LogisticsModule: Module = {
 
             // Delivery quote endpoints
             // Full path: POST /api/logistics/v1/quote  (module is mounted at /api/logistics by app.ts)
+            //            POST /api/logistics/v1/fulfillment-options (Phase 4 §4.1)
             router.use('/v1', publicQuoteRouter);
 
             // Internal service-to-service quote endpoints (no JWT — network-level protection)
             // Full path: GET  /api/logistics/internal/quotes/:quoteId
             //            PATCH /api/logistics/internal/quotes/:quoteId/consume
             router.use('/internal', internalQuoteRouter);
+
+            // Driver matching (Phase 5 §5.1) — internal, platform-only.
+            // Full path: POST /api/logistics/internal/jobs/:jobId/match-drivers
+            const { default: driverMatchingRoutes } = require('./src/api/routes/driver-matching.routes');
+            const { default: kpiRoutes } = require('./src/api/routes/kpi.routes');
+            router.use('/internal', requireRoleOrService(['admin', 'system']), driverMatchingRoutes);
+            // KPI snapshot (Phase 6 §6.2) — internal, platform-only.
+            // Full path: GET /api/logistics/internal/kpis
+            router.use('/internal', requireRoleOrService(['admin', 'system']), kpiRoutes);
         } catch (error) {
             logger.warn('Failed to mount logistics routes, falling back to degraded handler:', error);
             router.all('/api/v1/*', (_req, res) => {
@@ -139,6 +235,8 @@ export const LogisticsModule: Module = {
         return router;
     })(),
     shutdown: async () => {
+        const poolJob = (globalThis as any).__poolOptimizationJob;
+        if (poolJob?.stop) poolJob.stop();
         logger.info('Shutting down logistics-service module');
     }
 };

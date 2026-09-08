@@ -103,6 +103,7 @@ export class CheckoutController {
         orderSource,
         checkoutSource,
         quoteId,
+        deliveryWindowPreference,
       } = req.body;
       const shippingMethodId = rawShippingMethodId ?? paymentMethodId;
       const effectiveOrderSource = orderSource || checkoutSource || (items && items.length > 0 ? 'DIRECT' : 'CART');
@@ -135,7 +136,9 @@ export class CheckoutController {
         enablerCode,
         {
           items,
-          orderSource: effectiveOrderSource
+          orderSource: effectiveOrderSource,
+          // Phase 4 §4.1: buyer's delivery-window preference
+          deliveryWindowPreference,
         },
         quoteId,
       );
@@ -324,6 +327,9 @@ export class CheckoutController {
           paymentMethod: paymentMethodId,
           deliveryAddress,
           sellerQuotes,
+          // Phase 4 §4.1: buyer's delivery-window preference (request wins, then session).
+          deliveryWindowPreference:
+            body.deliveryWindowPreference ?? session.deliveryWindowPreference ?? session.metadata?.deliveryWindowPreference,
         });
 
         if (!msResult.success) {
@@ -532,6 +538,8 @@ export class CheckoutController {
                 packageWeightKg: session.items.reduce(
                   (sum: number, item: any) => sum + (item.weight ?? 0.5) * (item.quantity ?? 1), 0),
               }],
+              // Phase 4 §4.1: buyer's delivery-window preference → shipment window.
+              deliveryWindowPreference: body.deliveryWindowPreference ?? session.metadata?.deliveryWindowPreference,
             });
           }
         }

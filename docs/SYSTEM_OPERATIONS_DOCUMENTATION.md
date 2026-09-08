@@ -406,10 +406,20 @@ service-name/
 
 ### 7. Logistics Service Operations
 
-**Core Responsibilities**: Delivery operations, route optimization, courier management
+**Core Responsibilities**: Delivery operations, route optimization, courier management, driver matching, consolidation, and settlement
+
+> This section reflects the **full** logistics surface. Items marked *(legacy)* cover the pre-optimization-era `Logistics_Delivery` model; everything else reflects the Phase 1–6 implementation (source of truth: `docs/logistics/LOGISTICS_IMPLEMENTATION.md`).
 
 **Key Operations**:
-- **Delivery Scheduling**: Assign deliveries to couriers
+- **Delivery Pricing**: `POST /api/logistics/v1/quote` (single-seller, backward-compatible) runs the **three-engine path** (FulfillmentCost → DriverCompensation → BuyerPrice) when an active `VehicleTariff` exists, falling back to the 11-stage `DeliveryPricingEngine`. Every run is persisted to `Logistics_PricingAuditRecord`.
+- **Fulfillment Options**: `POST /api/logistics/v1/fulfillment-options` returns ranked options (`SUPPLIER_DELIVERY` / `MAYSAR_SHARED` / `MAYSAR_EXPRESS` / `CUSTOMER_PICKUP`), feasibility-gated first, ranked by the weighted `OptionRankingEngine`, then fairness-filtered (`FairnessEngine` → `Logistics_FairnessFlag` escalation).
+- **Consolidation**: `ConsolidationOrchestrator` clusters seller pickups (proximity / weight / route-overhead / vehicle-class), quotes each group, persists `Logistics_DeliveryGroup` + `Logistics_DeliveryJob`, audits savings, and emits `delivery.consolidated` outbox events.
+- **Shipments & Jobs**: `Logistics_Shipment` (atomic unit) and `Logistics_DeliveryJob` (one courier operation, bundles many Shipments) with named-transition state machines; `PoolOptimizationJob` (default 5 min) clusters pending shipments into candidate jobs.
+- **Driver Matching**: `POST /api/logistics/internal/jobs/:jobId/match-drivers` (admin/system) — ranked candidates via `DriverMatchingEngine` (hard filters first; **minimum-earnings gate**); every candidate audited to `Logistics_DriverMatchAudit`.
+- **Route Insertion**: `RouteInsertionEngine` marginal-cost evaluations persisted to `Logistics_RouteInsertionCandidate`; execution extends the job and issues a marginal-cost `FulfillmentCommitment`.
+- **Settlement (ledger-only)**: on job completion `RecordJobCompletionLedgerUseCase` appends `BUYER_LOGISTICS_CHARGE` / `CARRIER_PAYABLE` / `MAYSAR_LOGISTICS_REVENUE` / `CONSOLIDATION_SAVING` to `Logistics_LedgerEntry` (append-only, version-referenced); `SettleDeliveryJobUseCase` settles **from the ledger only**, applying `CostVariancePolicy` to `ADJUSTMENT` entries.
+- **Fairness & KPIs**: `FairnessEngine` four checks gate every returned option; `GET /api/logistics/internal/kpis` exposes buyer ratio, driver hourly, vehicle utilization, revenue/km, and consolidation-savings KPIs; `Logistics_BuyerProfile` feeds failure-risk ranking.
+- **Delivery Scheduling *(legacy)***: Assign deliveries to couriers
   - Intelligent courier selection (location, availability, performance)
   - Multi-stop route optimization from `locations/` ward and district centroids
 - **Route Optimization**: Calculate optimal delivery routes
@@ -427,30 +437,23 @@ service-name/
   - Rating system
 - **Delivery Analytics**: Performance metrics and insights
 
-**Events Published**:
-- `DeliveryScheduled`: Delivery assigned to courier
-- `DeliveryStarted`: Courier started delivery
-- `DeliveryCompleted`: Delivery finished
-- `DeliveryCancelled`: Delivery cancelled
-- `CourierLocationUpdated`: GPS location update
+**Events Published** (outbox `logistics_OutboxEvent`):
+- `shipment.created` — one per shipment on creation
+- `delivery.consolidated` — per ≥2-seller consolidated group
+- `DriverAssigned`, `GoodsLoaded`, `ShipmentDeparted`, `DeliveryAttempted`, `DeliveryCompleted`, `DeliveryFailed` — per `DeliveryJob` state transition
+- *(legacy)* `DeliveryScheduled`, `DeliveryStarted`, `DeliveryCompleted`, `DeliveryCancelled`, `CourierLocationUpdated`
 
 **Events Consumed**:
 - `OrderConfirmed`: Schedule delivery
 - `OrderCancelled`: Cancel delivery
 
 **Engines**:
-- **LogisticsEngine**: Delivery orchestration
-- **RouteOptimizationEngine**: Multi-algorithm routing
-- **RealTimeTrackingEngine**: GPS tracking and ETA
-- **PerformanceAnalyticsEngine**: Courier metrics
-- **EarningsManagementEngine**: Commission calculations
+- *(current)* `DeliveryPricingEngine` (fallback), `FulfillmentCostEngine`, `DriverCompensationEngine`, `BuyerPriceEngine`, `FulfillmentOptionEngine`, `OptionRankingEngine`, `FairnessEngine`, `DriverMatchingEngine`, `RouteInsertionEngine`, `consolidate()`, `clusterPoolEntries()`, `allocateByWeight()`, `resolveAttribution()`
+- *(legacy)* `LogisticsEngine`, `RouteOptimizationEngine`, `RealTimeTrackingEngine`, `PerformanceAnalyticsEngine`, `EarningsManagementEngine`
 
 **Database Tables**:
-- `Delivery`: Delivery records
-- `Courier`: Courier information
-- `Route`: Optimized routes
-- `DeliveryTracking`: GPS tracking history
-- `CourierEarnings`: Earnings records
+- *(current)* `Logistics_Shipment`, `Logistics_DeliveryJob`, `Logistics_Vehicle`, `Logistics_VehicleTariff`, `Logistics_Quote`, `Logistics_PricingConfig`, `Logistics_PricingAuditRecord`, `Logistics_DeliveryGroup`, `Logistics_ConsolidationAudit`, `Logistics_CostAdjustment`, `Logistics_LedgerEntry`, `Logistics_FulfillmentCommitment`, `Logistics_OptimizationConfig`, `Logistics_FairnessFlag`, `Logistics_BuyerProfile`, `Logistics_DriverMatchAudit`, `Logistics_RouteInsertionCandidate`, `Logistics_ShipmentPoolEntry`, `Logistics_PoolOptimizationRun`
+- *(legacy)* `Logistics_Delivery`, `Logistics_Courier`, `Logistics_Route`, `Logistics_LocationHistory`, `Logistics_Earning`
 
 ---
 

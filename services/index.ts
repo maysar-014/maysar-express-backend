@@ -16,6 +16,7 @@ export { OrderModule } from './order-service';
 export { PaymentModule } from './payment-service';
 export { PayoutModule } from './payout-service';
 export { ProductionModule } from './production-service';
+export { RequestModule } from './request-service';
 export { KycModule } from './kyc-service';
 // SessionModule merged into AuthModule
 // SmsModule merged into NotificationModule

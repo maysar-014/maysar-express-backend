@@ -413,4 +413,60 @@ describe('InitiateCheckoutUseCase', () => {
     expect(mockQuoteService.markConsumed).toHaveBeenCalledTimes(1);
     expect(mockQuoteService.markConsumed).toHaveBeenCalledWith(VALID_QUOTE_ID);
   });
+
+  // ── Delivery-window preference (Phase 4 §4.1) ──────────────────────────────
+
+  it('should persist a valid deliveryWindowPreference on the session', async () => {
+    await useCase.execute(
+      'cart-1',
+      'user-1',
+      'addr-1',
+      'addr-2',
+      'ship-1',
+      10,
+      undefined,
+      { items: undefined, orderSource: 'CART', deliveryWindowPreference: 'FLEXIBLE' },
+      VALID_QUOTE_ID,
+    );
+
+    const savedSession = mockCheckoutRepository.saveCheckoutSession.mock.calls[0][0];
+    expect(savedSession.deliveryWindowPreference).toBe('FLEXIBLE');
+    expect(savedSession.metadata.deliveryWindowPreference).toBe('FLEXIBLE');
+  });
+
+  it('should reject an invalid deliveryWindowPreference', async () => {
+    const result = await useCase.execute(
+      'cart-1',
+      'user-1',
+      'addr-1',
+      'addr-2',
+      'ship-1',
+      10,
+      undefined,
+      { items: undefined, orderSource: 'CART', deliveryWindowPreference: 'TOMORROW' as any },
+      VALID_QUOTE_ID,
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.errors?.[0]?.field).toBe('deliveryWindowPreference');
+    expect(mockCheckoutRepository.saveCheckoutSession).not.toHaveBeenCalled();
+    expect(mockQuoteService.markConsumed).not.toHaveBeenCalled();
+  });
+
+  it('should omit deliveryWindowPreference when the buyer does not choose one', async () => {
+    await useCase.execute(
+      'cart-1',
+      'user-1',
+      'addr-1',
+      'addr-2',
+      'ship-1',
+      10,
+      undefined,
+      { items: undefined, orderSource: 'CART' },
+      VALID_QUOTE_ID,
+    );
+
+    const savedSession = mockCheckoutRepository.saveCheckoutSession.mock.calls[0][0];
+    expect(savedSession.deliveryWindowPreference).toBeUndefined();
+  });
 });

@@ -25,6 +25,8 @@ import { RoutingCacheDecorator } from '../../infrastructure/providers/routing-ca
 import { PrismaQuoteRepository } from '../../infrastructure/repositories/prisma-quote.repository';
 import { PrismaPricingConfigRepository } from '../../infrastructure/repositories/prisma-pricing-config.repository';
 import { PrismaPricingAuditRecordRepository } from '../../infrastructure/repositories/prisma-pricing-audit-record.repository';
+import { GenerateFulfillmentOptionsUseCase } from '../../application/use-cases/generate-fulfillment-options.use-case';
+import { FulfillmentOptionsController } from '../controllers/fulfillment-options.controller';
 
 let quoteController: QuotePricingController | null = null;
 
@@ -64,6 +66,25 @@ publicQuoteRouter.post(
   '/quote',
   requireAuth,
   (req, res) => getController().requestQuote(req, res),
+);
+
+// ── Fulfillment options (Phase 4 §4.1) ──────────────────────────────────────
+// POST /api/logistics/v1/fulfillment-options — ranked fulfillment options for
+// a buyer's shipments. Backward-compatible: /quote remains for single-seller.
+let fulfillmentOptionsController: FulfillmentOptionsController | null = null;
+function getFulfillmentOptionsController(): FulfillmentOptionsController {
+  if (!fulfillmentOptionsController) {
+    fulfillmentOptionsController = new FulfillmentOptionsController(
+      new GenerateFulfillmentOptionsUseCase(),
+    );
+  }
+  return fulfillmentOptionsController;
+}
+
+publicQuoteRouter.post(
+  '/fulfillment-options',
+  requireAuth,
+  (req, res) => getFulfillmentOptionsController().generateOptions(req, res),
 );
 
 // ── Internal quote router (mounted at /internal) ───────────────────────────

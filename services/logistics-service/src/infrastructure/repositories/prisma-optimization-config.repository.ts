@@ -60,6 +60,9 @@ export class PrismaOptimizationConfigRepository {
         maysarMarginWeight: data.maysarMarginWeight,
         maysarAbsorbsUpToTzs: data.maysarAbsorbsUpToTzs,
         customerChargeableVarianceTypes: data.customerChargeableVarianceTypes,
+        maxBuyerPriceRatio: data.maxBuyerPriceRatio,
+        minimumDriverHourlyRateTzs: data.minimumDriverHourlyRateTzs,
+        minVehicleUtilizationTarget: data.minVehicleUtilizationTarget,
         isActive: true,
       },
     });
@@ -86,6 +89,9 @@ export class PrismaOptimizationConfigRepository {
       maysarMarginWeight: Number(row.maysarMarginWeight),
       maysarAbsorbsUpToTzs: Number(row.maysarAbsorbsUpToTzs ?? 0),
       customerChargeableVarianceTypes: (row.customerChargeableVarianceTypes ?? []) as string[],
+      maxBuyerPriceRatio: Number(row.maxBuyerPriceRatio ?? 1.5),
+      minimumDriverHourlyRateTzs: Number(row.minimumDriverHourlyRateTzs ?? 3000),
+      minVehicleUtilizationTarget: Number(row.minVehicleUtilizationTarget ?? 0.5),
       isActive: row.isActive ?? true,
     };
     return new OptimizationConfig(data);

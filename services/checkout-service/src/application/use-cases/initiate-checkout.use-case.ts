@@ -93,11 +93,23 @@ export class InitiateCheckoutUseCase {
     options?: {
       items?: Array<{ productId: string; variantId?: string; quantity: number; price?: number; priceAtTime?: number; weight?: number }>;
       orderSource?: 'CART' | 'DIRECT';
+      /** Buyer's delivery-window preference (Phase 4 §4.1): FLEXIBLE | STANDARD | EXPRESS. */
+      deliveryWindowPreference?: 'FLEXIBLE' | 'STANDARD' | 'EXPRESS';
     },
     quoteId?: string,
   ): Promise<CheckoutResult> {
     const errors: ValidationError[] = [];
     const isDirect = options?.orderSource === 'DIRECT' || (options?.items && options.items.length > 0);
+
+    // ── Delivery-window preference validation (Phase 4 §4.1) ────────────────
+    const VALID_WINDOW_PREFERENCES = ['FLEXIBLE', 'STANDARD', 'EXPRESS'] as const;
+    const deliveryWindowPreference = options?.deliveryWindowPreference;
+    if (deliveryWindowPreference && !VALID_WINDOW_PREFERENCES.includes(deliveryWindowPreference)) {
+      return {
+        success: false,
+        errors: [{ field: 'deliveryWindowPreference', message: 'deliveryWindowPreference must be one of FLEXIBLE, STANDARD or EXPRESS.' }],
+      };
+    }
 
     try {
       // ── Quote validation (security gate) ────────────────────────────────────
@@ -303,6 +315,8 @@ export class InitiateCheckoutUseCase {
         // Quote audit fields
         quoteId,
         pricingVersion: pricingVersion ?? null,
+        // Buyer's delivery-window preference (Phase 4 §4.1)
+        deliveryWindowPreference,
         status: 'initiated',
         subtotal: pricingResult.pricing!.subtotal.getAmount(),
         taxAmount: pricingResult.pricing!.taxAmount.getAmount(),
@@ -312,6 +326,7 @@ export class InitiateCheckoutUseCase {
         metadata: {
           items,
           orderSource: isDirect ? 'DIRECT' : 'CART',
+          ...(deliveryWindowPreference ? { deliveryWindowPreference } : {}),
           ...(resolvedEnabler
             ? {
               enablerId: resolvedEnabler.id,

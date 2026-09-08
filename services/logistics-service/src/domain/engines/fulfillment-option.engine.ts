@@ -187,3 +187,183 @@ export class FulfillmentOptionEngine {
       ? (request.flexibleWindowDiscountPct ?? DEFAULTS.flexibleWindowDiscountPct)
       : 0;
     const shipmentCount = request.shipments.length;
+
+    // ── SUPPLIER_DELIVERY: pass-through, minimal margin, no Maysar driver ────
+    if (has('SUPPLIER_DELIVERY')) {
+      const eta = this.etaMinutes(longestDistanceKm);
+      const cost = this.costEngine.compute({
+        distanceKm: longestDistanceKm, durationMinutes: eta, tariff: this.costTariff(request.tariff),
+      });
+      const price = this.priceEngine.compute({
+        fulfillmentCost: cost,
+        serviceFee: { marginPct: request.supplierDeliveryMarginPct ?? DEFAULTS.supplierDeliveryMarginPct },
+      });
+      options.push({
+        optionType: 'SUPPLIER_DELIVERY',
+        fulfillmentPlanId: makePlanId(),
+        shipmentIds: request.shipments.map(s => s.shipmentId),
+        sellerCount: shipmentCount,
+        estimatedPickupAt: new Date(nowMs + 60 * 60 * 1000),
+        estimatedDeliveryAt: new Date(nowMs + eta * 60 * 1000),
+        deliveryWindow: 'STANDARD',
+        buyerPriceTzs: price.finalBuyerPriceTzs,
+        driverCompensationTzs: 0, // seller's own carrier — outside Maysar settlement
+        maysarMarginTzs: price.maysarMarginTzs,
+        fulfillmentCostTzs: cost.totalFulfillmentCostTzs,
+        driverMeetsMinimumEarnings: true,
+        flexibleWindowDiscountApplied: false,
+        distanceKm: Math.round(longestDistanceKm * 100) / 100,
+        deliveryZone: this.zoneFor(longestDistanceKm, maxLocalRadiusKm),
+      });
+    }
+
+    // ── MAYSAR_EXPRESS: dedicated route, premium price, fastest ETA ──────────
+    if (has('MAYSAR_EXPRESS')) {
+      const eta = this.etaMinutes(longestDistanceKm) * DEFAULTS.expressEtaFactor;
+      const cost = this.costEngine.compute({
+        distanceKm: longestDistanceKm, durationMinutes: eta, tariff: this.costTariff(request.tariff),
+      });
+      const premiumCost: FulfillmentCostBreakdown = {
+        ...cost,
+        totalFulfillmentCostTzs: Math.round(cost.totalFulfillmentCostTzs * (request.expressPremiumPct ?? DEFAULTS.expressPremiumPct)),
+      };
+      const price = this.priceEngine.compute({
+        fulfillmentCost: premiumCost,
+        serviceFee: { marginPct: request.marginPct },
+      });
+      const comp = this.compEngine.compute({
+        distanceKm: longestDistanceKm,
+        durationMinutes: eta,
+        tariff: this.compTariff(request.tariff),
+        load: { weightKg: totalWeight },
+        stopCount: shipmentCount,
+      });
+      options.push({
+        optionType: 'MAYSAR_EXPRESS',
+        fulfillmentPlanId: makePlanId(),
+        shipmentIds: request.shipments.map(s => s.shipmentId),
+        sellerCount: shipmentCount,
+        estimatedPickupAt: new Date(nowMs + 30 * 60 * 1000),
+        estimatedDeliveryAt: new Date(nowMs + eta * 60 * 1000),
+        deliveryWindow: 'EXPRESS',
+        buyerPriceTzs: price.finalBuyerPriceTzs,
+        driverCompensationTzs: comp.totalCompensationTzs,
+        maysarMarginTzs: price.maysarMarginTzs,
+        fulfillmentCostTzs: premiumCost.totalFulfillmentCostTzs,
+        driverMeetsMinimumEarnings: comp.meetsMinimumEarnings,
+        flexibleWindowDiscountApplied: false,
+        distanceKm: Math.round(longestDistanceKm * 100) / 100,
+        deliveryZone: this.zoneFor(longestDistanceKm, maxLocalRadiusKm),
+      });
+    }
+    // ── MAYSAR_SHARED: consolidated, cheaper, less time-certain ──────────────
+    if (has('MAYSAR_SHARED')) {
+      const eta = this.etaMinutes(longestDistanceKm) * DEFAULTS.sharedEtaFactor;
+      const baseCost = this.costEngine.compute({
+        distanceKm: longestDistanceKm, durationMinutes: eta, tariff: this.costTariff(request.tariff),
+      });
+      // Indicative buyer share of the consolidated route cost (30% saving).
+      const sharedCost: FulfillmentCostBreakdown = {
+        ...baseCost,
+        totalFulfillmentCostTzs: Math.round(baseCost.totalFulfillmentCostTzs * DEFAULTS.sharedCostFactor),
+      };
+      const price = this.priceEngine.compute({
+        fulfillmentCost: sharedCost,
+        serviceFee: { marginPct: request.marginPct },
+        discountTzs: Math.round(sharedCost.totalFulfillmentCostTzs * flexibleDiscount),
+      });
+      const comp = this.compEngine.compute({
+        distanceKm: longestDistanceKm,
+        durationMinutes: eta,
+        tariff: this.compTariff(request.tariff),
+        load: { weightKg: totalWeight },
+        stopCount: shipmentCount,
+      });
+      options.push({
+        optionType: 'MAYSAR_SHARED',
+        fulfillmentPlanId: makePlanId(),
+        shipmentIds: request.shipments.map(s => s.shipmentId),
+        sellerCount: shipmentCount,
+        estimatedPickupAt: new Date(nowMs + 2 * 60 * 60 * 1000),
+        estimatedDeliveryAt: new Date(nowMs + eta * 60 * 1000),
+        deliveryWindow: windowPref === 'FLEXIBLE' ? 'FLEXIBLE' : 'STANDARD',
+        buyerPriceTzs: price.finalBuyerPriceTzs,
+        driverCompensationTzs: comp.totalCompensationTzs,
+        maysarMarginTzs: price.maysarMarginTzs,
+        fulfillmentCostTzs: sharedCost.totalFulfillmentCostTzs,
+        driverMeetsMinimumEarnings: comp.meetsMinimumEarnings,
+        flexibleWindowDiscountApplied: flexibleDiscount > 0,
+        distanceKm: Math.round(longestDistanceKm * 100) / 100,
+        deliveryZone: this.zoneFor(longestDistanceKm, maxLocalRadiusKm),
+      });
+    }
+
+    // ── CUSTOMER_PICKUP: TZS 0 delivery — buyer collects ─────────────────────
+    if (has('CUSTOMER_PICKUP')) {
+      options.push({
+        optionType: 'CUSTOMER_PICKUP',
+        fulfillmentPlanId: makePlanId(),
+        shipmentIds: request.shipments.map(s => s.shipmentId),
+        sellerCount: shipmentCount,
+        estimatedPickupAt: new Date(nowMs + 2 * 60 * 60 * 1000),
+        estimatedDeliveryAt: new Date(nowMs + 2 * 60 * 60 * 1000),
+        deliveryWindow: 'FLEXIBLE',
+        buyerPriceTzs: 0,
+        driverCompensationTzs: 0,
+        maysarMarginTzs: 0,
+        fulfillmentCostTzs: 0,
+        driverMeetsMinimumEarnings: true,
+        flexibleWindowDiscountApplied: false,
+        distanceKm: 0,
+        deliveryZone: 'local',
+      });
+    }
+
+    // ── Hierarchy 6: DRIVER ECONOMICS — hard gate: escalate, not dispatch ────
+    for (const option of [...options]) {
+      if (!option.driverMeetsMinimumEarnings) {
+        options.splice(options.indexOf(option), 1);
+        excluded.push({
+          optionType: option.optionType,
+          reason: `Driver compensation ${option.driverCompensationTzs} TZS below vehicle minimum — escalated, not offered`,
+        });
+      }
+    }
+
+    return { options, excluded };
+  }
+
+  private etaMinutes(distanceKm: number): number {
+    // 28 km/h average urban speed → minutes (documented estimate) + 5 min buffer.
+    return Math.ceil((distanceKm / 28) * 60) + 5;
+  }
+
+  private zoneFor(distanceKm: number, maxLocalRadiusKm: number): 'local' | 'metro' | 'intercity' {
+    if (distanceKm <= maxLocalRadiusKm) return 'local';
+    if (distanceKm <= 100) return 'metro';
+    return 'intercity';
+  }
+
+  private costTariff(t: VehicleTariff) {
+    return {
+      baseOperatingCostTzs: t.baseOperatingCostTzs,
+      costPerKmTzs: t.costPerKmTzs,
+      costPerHourTzs: t.costPerHourTzs,
+      loadingFeeTzs: t.loadingFeeTzs,
+      unloadingFeeTzs: t.unloadingFeeTzs,
+      waitingRateTzsPerMinute: t.waitingRateTzsPerMinute,
+      freeWaitMinutes: t.freeWaitMinutes,
+    };
+  }
+
+  private compTariff(t: VehicleTariff) {
+    return {
+      baseOperatingCostTzs: t.baseOperatingCostTzs,
+      costPerKmTzs: t.costPerKmTzs,
+      costPerHourTzs: t.costPerHourTzs,
+      minimumJobCompensationTzs: t.minimumJobCompensationTzs,
+      waitingRateTzsPerMinute: t.waitingRateTzsPerMinute,
+      freeWaitMinutes: t.freeWaitMinutes,
+    };
+  }
+}

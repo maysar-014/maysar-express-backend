@@ -34,6 +34,8 @@ export interface MultiSellerCheckoutRequest {
     country: string;
   };
   sellerQuotes: SellerQuoteMap;
+  /** Buyer's delivery-window preference (Phase 4 §4.1). */
+  deliveryWindowPreference?: 'FLEXIBLE' | 'STANDARD' | 'EXPRESS';
 }
 
 export interface SellerOrderResult {
@@ -277,6 +279,7 @@ export class MultiSellerCheckoutUseCase {
             address: addressParts || 'Dar es Salaam, Tanzania',
           },
           sellers,
+          deliveryWindowPreference: request.deliveryWindowPreference,
         });
       }
     } catch (shipErr: any) {

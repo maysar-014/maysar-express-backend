@@ -56,6 +56,7 @@ export class PrismaCheckoutRepository {
       paymentStatus: record.paymentStatus || undefined,
       metadata,
       items,
+      deliveryWindowPreference: (record.deliveryWindowPreference as CheckoutSession['deliveryWindowPreference']) || undefined,
       expiresAt: record.expiresAt,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt
@@ -100,6 +101,7 @@ export class PrismaCheckoutRepository {
         paymentMethodId: session.paymentMethodId || null,
         paymentStatus: session.paymentStatus || null,
         metadata: metadataJson,
+        deliveryWindowPreference: session.deliveryWindowPreference || null,
         expiresAt: session.expiresAt
       },
       create: {
@@ -120,6 +122,7 @@ export class PrismaCheckoutRepository {
         paymentMethodId: session.paymentMethodId || null,
         paymentStatus: session.paymentStatus || null,
         metadata: metadataJson,
+        deliveryWindowPreference: session.deliveryWindowPreference || null,
         expiresAt: session.expiresAt
       }
     });

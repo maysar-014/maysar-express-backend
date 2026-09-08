@@ -21,6 +21,8 @@ export interface CheckoutSession {
   paymentMethodId?: string;
   paymentStatus?: string;
   metadata?: Record<string, unknown>;
+  /** Buyer's delivery-window preference (Phase 4 §4.1): FLEXIBLE | STANDARD | EXPRESS. */
+  deliveryWindowPreference?: 'FLEXIBLE' | 'STANDARD' | 'EXPRESS';
   items?: Array<{
     productId: string;
     variantId?: string;

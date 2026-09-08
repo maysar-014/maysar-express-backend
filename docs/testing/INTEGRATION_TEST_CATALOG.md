@@ -338,23 +338,33 @@
 
 ### 7. Logistics Service
 **Endpoints**:
-- `POST /api/logistics/deliveries` - Create delivery
-- `GET /api/logistics/deliveries/:id` - Get delivery
-- `PUT /api/logistics/deliveries/:id/status` - Update delivery status
-- `POST /api/logistics/couriers` - Create courier
-- `GET /api/logistics/couriers/:id` - Get courier
-- `PUT /api/logistics/couriers/:id/location` - Update courier location
+- `POST /api/logistics/deliveries` - Create delivery *(legacy)*
+- `GET /api/logistics/deliveries/:id` - Get delivery *(legacy)*
+- `PUT /api/logistics/deliveries/:id/status` - Update delivery status *(legacy)*
+- `POST /api/logistics/couriers` - Create courier *(legacy)*
+- `GET /api/logistics/couriers/:id` - Get courier *(legacy)*
+- `PUT /api/logistics/couriers/:id/location` - Update courier location *(legacy)*
+- `POST /api/logistics/v1/quote` - Single-seller delivery quote (three-engine path, 11-stage fallback)
+- `POST /api/logistics/v1/fulfillment-options` - Ranked fulfillment options (feasibility-gated, fairness-filtered)
+- `GET /api/logistics/internal/quotes/:quoteId` - Fetch quote (validation/consume flow)
+- `PATCH /api/logistics/internal/quotes/:quoteId/consume` - Single-use consume
+- `POST /api/logistics/internal/jobs/:jobId/match-drivers` - Ranked driver candidates (admin/system)
+- `GET /api/logistics/internal/kpis` - Operational KPI snapshot (admin/system)
 
-**Events Published**:
-- `DeliveryAssigned.v1`
-- `DeliveryPickedUp.v1`
-- `DeliveryInTransit.v1`
-- `DeliveryCompleted.v1`
-- `DeliveryFailed.v1`
+**Events Published** (outbox `logistics_OutboxEvent`):
+- `shipment.created`
+- `delivery.consolidated`
+- `DriverAssigned`, `GoodsLoaded`, `ShipmentDeparted`, `DeliveryAttempted`, `DeliveryCompleted`, `DeliveryFailed` *(DeliveryJob transitions)*
+- *(legacy)* `DeliveryAssigned.v1`, `DeliveryPickedUp.v1`, `DeliveryInTransit.v1`, `DeliveryCompleted.v1`, `DeliveryFailed.v1`
 
 **Events Consumed**:
 - `OrderConfirmed.v1`
 - `PaymentSucceeded.v1`
+
+**Integration suites (opt-in, HQ-tests)**:
+- `services/checkout-service/src/tests/integration/multi-seller-consolidation.integration.test.ts` — consolidation orchestrator plan() + DeliveryGroup + `delivery.consolidated` (4/4)
+- `services/logistics-service/src/application/use-cases/__tests__/digest-settlement.test.ts` — settlement lifecycle: attribution → completion ledger → ledger-only settlement (4/4)
+- `services/logistics-service/src/api/routes/quote.routes.test.ts` — quote e2e over HTTP (7/7)
 
 ---
 

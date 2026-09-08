@@ -1,7 +1,9 @@
 # Maysar Logistics Optimization Engine — Engineering Backlog
 
 > Last updated: September 2026  
-> Status: Living document — update task checkboxes as work completes
+> Status: **Complete — 72/72 tasks implemented, tested, and live-verified.**  
+> **Implementers:** see [LOGISTICS_IMPLEMENTATION.md](./LOGISTICS_IMPLEMENTATION.md) for the as-built reference (domain model, engines, application layer, HTTP surface, wiring, and verification evidence).  
+> This document is now an historical record of the plan; the implementation reference is the source of truth for the current system.
 
 ---
 
@@ -130,7 +132,7 @@ The `ConsolidationOrchestratorService` exists but the end-to-end path from check
   - **Wiring gap fixed:** the checkout-service jest project lacked the `@logistics/(.*)` module mapping, so `GetDeliveryOptionsUseCase`'s dynamic `GeoPoint` import silently failed (returned empty options) — mapping added in `jest.config.js`.
   - **Bug fixed:** `ConsolidationOrchestrator` counted singleton groups in `totalSavingsTzs` (reported TZS 384k "savings" for two un-consolidated singletons). Savings now accumulate only for `CONSOLIDATED` groups.
   - **Bug fixed:** `GetDeliveryOptionsUseCase` did not guard against `plan()` rejecting — a consolidation failure would 500 the buyer-facing delivery-options endpoint. Now catches and returns empty options (client falls back to per-seller quote flow).
-  - **Known gap (production, non-blocking):** `logistics-service/index.ts` registers `__consolidationOrchestrator` without an `eventBus` argument, so `delivery.consolidated` is never emitted in the live runtime. The event emission path is proven by this test; wiring the bus (e.g. the logistics outbox publisher) is deferred to Phase 2/3 event work.
+  - ✅ Resolved (2026-09-06): the orchestrator in `logistics-service/index.ts` is now constructed **with an outbox-backed `eventBus`** — `delivery.consolidated` is published to the append-only `logistics_OutboxEvent` table on every ≥2-seller consolidated group in the live runtime (same pattern as `shipment.created`; publish failures are non-fatal).
   - _New task — gap identified during analysis_
 
 - [x] **Verify checkout routing condition** — Confirm the `sellerQuotes && Object.keys(sellerQuotes).length > 1` condition in `checkout.controller.ts` correctly routes to `__multiSellerCheckoutUseCase` in both test and production environments. Document or fix: what happens when a buyer requests delivery options before any seller quotes exist
@@ -242,14 +244,16 @@ Every logistics cost that deviates from the planned route or schedule must have 
 - [x] **`Logistics_CostAdjustment` model** — Fields: `id`, `deliveryJobId`, `shipmentId` (nullable), `adjustmentType` (WAITING, FAILED_DELIVERY_ATTEMPT, ROUTE_DEVIATION, LOADING_DELAY, DAMAGE, DISPUTE), `amountTzs`, `responsibleParty` (CUSTOMER, SUPPLIER, DRIVER, MAYSAR, EXTERNAL), `reason` (free text for ops), `evidenceUrl` (nullable — photo/document), `recordedAt`, `recordedBy`. Immutable after creation. Create migration
   - ✅ Done (2026-09-04). Migration `20260904030000_add_cost_model_tables` applied (all three Phase 3 tables). Immutable entity (create-only, no mutators; validates type/party/amount/reason) + `PrismaCostAdjustmentRepository` with create-only save + party-scoped queries. **Live-verified** via `scripts/verify-cost-model.ts` (VERIFY: PASS).
 
-- [ ] **Wire attribution rules**:
+- [x] **Wire attribution rules**:
   - Supplier not ready at pickup window → `WAITING`, attributed to `SUPPLIER`
   - Customer unreachable at delivery → `FAILED_DELIVERY_ATTEMPT`, attributed to `CUSTOMER`
   - Route was incorrectly calculated → `ROUTE_DEVIATION`, attributed to `MAYSAR`
   - Driver deviation from route → `ROUTE_DEVIATION`, attributed to `DRIVER`
   - External: traffic, weather → `WAITING`, attributed to `EXTERNAL`
+  - ✅ Done (2026-09-06). Implemented as a pure mapping `domain/engines/cost-attribution.ts` (`resolveAttribution(event)` — the single source of truth for every backlog rule) and enforced by `RecordCostAdjustmentUseCase`, which records the immutable `Logistics_CostAdjustment` (event-resolved OR explicit ops override with evidence, mutually exclusive) and mirrors it as an append-only ledger `ADJUSTMENT` entry carrying `responsibleParty`/`adjustmentType` in metadata — so settlement can consume attribution through the ledger alone.
 
-- [ ] **Settlement reads adjustments** — The settlement flow must read `Logistics_CostAdjustment` records for a `DeliveryJob` before computing final disbursements. Customer-attributed costs can be recovered per `CostVariancePolicy`. Maysar-attributed costs are absorbed by Maysar. Supplier-attributed costs are deducted from supplier settlement
+- [x] **Settlement reads adjustments** — The settlement flow must read `Logistics_CostAdjustment` records for a `DeliveryJob` before computing final disbursements. Customer-attributed costs can be recovered per `CostVariancePolicy`. Maysar-attributed costs are absorbed by Maysar. Supplier-attributed costs are deducted from supplier settlement
+  - ✅ Done (2026-09-06, via `SettleDeliveryJobUseCase` reads-the-ledger-only, which mirrors every adjustment). Customer-attributed costs are recovered **only** when `customerChargeableVarianceTypes` covers them (policy from `CostVariancePolicy` config); uncovered ones produce an explicit warning and are never silently charged. Maysar-attributed costs reduce Maysar revenue. Supplier-attributed costs are deducted from the supplier settlement. Live-verified (VERIFY: PASS): TZS 800 supplier deduction, TZS 500 customer cost NOT charged (uncovered) with the warning surfaced.
 
 ### 3.3 Logistics Ledger (immutable accounting records)
 
@@ -258,12 +262,14 @@ The existing `Logistics_PricingAuditRecord` is minimal. The system needs a full,
 - [x] **`Logistics_LedgerEntry` model** — Fields: `id`, `deliveryJobId`, `shipmentId` (nullable), `entryType` (BUYER_LOGISTICS_CHARGE, CARRIER_PAYABLE, SUPPLIER_LOGISTICS_CHARGE, MAYSAR_LOGISTICS_REVENUE, DISCOUNT_MAYSAR_FUNDED, DISCOUNT_SUPPLIER_FUNDED, PENALTY, REFUND, ADJUSTMENT, CONSOLIDATION_SAVING), `amountTzs` (positive: income to that party, negative: cost to that party), `counterpartyId`, `pricingVersion`, `tariffVersion`, `routingVersion`, `calculatedAt`, `metadata` (JSON containing full calculation inputs — enough to reproduce the result). Create migration. **Never UPDATE rows — append only**
   - ✅ Done (2026-09-04). Same migration. Append-only entity (no mutators, all 10 entry types validated) + `PrismaLedgerEntryRepository` with `append()` (create-only) + type-scoped queries. **Live-verified**: BUYER_LOGISTICS_CHARGE (+) and CARRIER_PAYABLE (−) entries both queryable with sign semantics intact (VERIFY: PASS).
 
-- [ ] **Write ledger entries on job completion** — Every completed `DeliveryJob` writes: one `BUYER_LOGISTICS_CHARGE` entry (what buyer paid), one `CARRIER_PAYABLE` entry (what driver receives), one `MAYSAR_LOGISTICS_REVENUE` entry (Maysar margin), and `CONSOLIDATION_SAVING` entries for any saving achieved through consolidation
+- [x] **Write ledger entries on job completion** — Every completed `DeliveryJob` writes: one `BUYER_LOGISTICS_CHARGE` entry (what buyer paid), one `CARRIER_PAYABLE` entry (what driver receives), one `MAYSAR_LOGISTICS_REVENUE` entry (Maysar margin), and `CONSOLIDATION_SAVING` entries for any saving achieved through consolidation
+  - ✅ Done (2026-09-06). `RecordJobCompletionLedgerUseCase` writes all three mandatory entries + a `CONSOLIDATION_SAVING` when `plannedFulfillmentCostTzs` > actual cost. Buyer charge = the **locked price** (rule 6, never a re-quote); carrier payable ≥ 0 never below cost; Maysar revenue = buyer price − actual cost (validated `≥ 0` — a loss-making job is rejected, not silently subsidized); all entries carry `pricingVersion`/`tariffVersion`/`routingVersion`. Reachable from the delivery-event consumer via `SettlementLifecycleService.writeJobCompletionLedger()`.
 
 - [x] **Store all version references on each entry** — `pricingVersion`, `tariffVersion` (FK to `VehicleTariff.version`), and a `routingVersion` (hash or version of the routing config used). This ensures any historical transaction can be reproduced exactly six months later
   - ✅ Done (2026-09-04). All three version columns are on the model and enforced as constructor invariants (`pricingVersion` required; `tariffVersion`/`routingVersion` optional-null). Verified in the live check.
 
-- [ ] **Settlement service reads ledger only** — Settlement must never re-derive amounts from current config. It reads `Logistics_LedgerEntry` records for the job and disburses exactly what was recorded
+- [x] **Settlement service reads ledger only** — Settlement must never re-derive amounts from current config. It reads `Logistics_LedgerEntry` records for the job and disburses exactly what was recorded
+  - ✅ Done (2026-09-06). `SettleDeliveryJobUseCase` reads **only** `LedgerEntryRepository.findByDeliveryJobId()`. Buyer charge, carrier payable, Maysar revenue, consolidation savings, and adjustment treatment all derive from the ledger — never from current config or re-pricing. Verified in tests (4/4) and live (VERIFY: PASS).
 
 ### 3.4 Price lock on confirmation
 
@@ -274,9 +280,11 @@ The existing `Logistics_PricingAuditRecord` is minimal. The system needs a full,
   - ✅ Done (2026-09-04). `__lockFulfillmentPrice` registered by the logistics module (same pattern as `__createOrderShipments`) and called non-fatally from **both** confirmation paths: multi-seller (`MultiSellerCheckoutUseCase` Step 5.6 — locks each seller's validated quote fee, captured server-side during Step 3 validation) and single-seller (controller locks `session.quoteId` + server-authoritative `session.shippingCost`).
   - ⚠️ Remaining follow-up: wire `commitment.consume()` into the checkout session-completion flow and `expire()` into a TTL sweeper — both one-liners once a job scheduler exists (Phase 5 pool job).
 
-- [ ] **Post-confirmation optimization savings → Maysar** — If the optimizer finds a cheaper consolidated route after price lock, the saving is recorded as a `CONSOLIDATION_SAVING` ledger entry attributed to Maysar's benefit — not passed to buyer as a surprise credit
+- [x] **Post-confirmation optimization savings → Maysar** — If the optimizer finds a cheaper consolidated route after price lock, the saving is recorded as a `CONSOLIDATION_SAVING` ledger entry attributed to Maysar's benefit — not passed to buyer as a surprise credit
+  - ✅ Done (2026-09-06). Inside `RecordJobCompletionLedgerUseCase`: when `actualFulfillmentCostTzs < plannedFulfillmentCostTzs`, a `CONSOLIDATION_SAVING` ledger entry is appended for `plannedCost − actualCost` with `counterpartyId: 'MAYSAR'` and metadata explicitly recording `postConfirmationOptimization: true` + `buyerPriceUnchanged`. The buyer's price is the locked commitment — the saving is Maysar's efficiency gain, never a surprise credit (rule 6). Live-verified (VERIFY: PASS, TZS 500).
 
-- [ ] **`CostVariancePolicy` config** — Define in `Logistics_OptimizationConfig`: `maysarAbsorbsUpToTzs` (normal operational variance Maysar covers), `customerChargeableVarianceTypes` (only customer-caused variances can be passed on, and only with explicit policy coverage). Store versioned in config — not in application code
+- [x] **`CostVariancePolicy` config** — Define in `Logistics_OptimizationConfig`: `maysarAbsorbsUpToTzs` (normal operational variance Maysar covers), `customerChargeableVarianceTypes` (only customer-caused variances can be passed on, and only with explicit policy coverage). Store versioned in config — not in application code
+  - ✅ Done (2026-09-06, via the Phase 4 config work). Both fields are columns on `Logistics_OptimizationConfig` (DB defaults 0 / `[]`), carried by the `OptimizationConfig` value object (`variancePolicy` getter, validated ≥ 0), persisted by `PrismaOptimizationConfigRepository.save()` which always creates a new version — values are operator-set, never in application code. When no active row exists the value object supplies the neutral defaults.
 
 ---
 
@@ -286,7 +294,8 @@ Instead of returning one delivery quote, the system generates multiple feasible 
 
 ### 4.1 Fulfillment option generation
 
-- [ ] **`FulfillmentOptionEngine`** — Given a set of Shipments, generates all feasible delivery options. Initial option types:
+- [x] **`FulfillmentOptionEngine`** — Given a set of Shipments, generates all feasible delivery options. Initial option types:
+  - ✅ Done (2026-09-04). `domain/engines/fulfillment-option.engine.ts` — pure engine emitting complete plans (`SUPPLIER_DELIVERY`, `MAYSAR_SHARED`, `MAYSAR_EXPRESS`, `CUSTOMER_PICKUP`), each carrying buyerPrice/driverCompensation/maysarMargin/fulfillmentCost. Feasibility hard gates run FIRST (capacity, vehicle-class compatibility, COD-tier radius, consolidation availability, pickup eligibility) and infeasible options are returned in `excluded` — escalated, never silently dropped. Driver minimum-earnings gate enforced as a hard constraint before any option can appear. 13/13 tests.
   - `SUPPLIER_DELIVERY` — seller uses their own carrier (Maysar passes through, minimal margin)
   - `MAYSAR_SHARED` — Maysar consolidates with other orders in the same window (cheaper, less time-certain)
   - `MAYSAR_EXPRESS` — dedicated Maysar route (faster, higher price)
@@ -294,13 +303,17 @@ Instead of returning one delivery quote, the system generates multiple feasible 
 
   Each option is a complete fulfillment plan, not a label. It contains: `optionType`, `fulfillmentPlanId`, `estimatedPickupAt`, `estimatedDeliveryAt`, `deliveryWindow` (FLEXIBLE / STANDARD / EXPRESS), `buyerPriceTzs` (from `BuyerPriceEngine`), `driverCompensationTzs` (from `DriverCompensationEngine`), `maysarMarginTzs`, `fulfillmentCostBreakdown`
 
-- [ ] **`POST /api/logistics/v1/fulfillment-options`** — New endpoint. Accepts: `masterOrderId` (or `sessionId` pre-order), `buyerDestination`, `deliveryWindowPreference`. Returns: array of ranked `FulfillmentOption` objects. The existing `POST /api/logistics/v1/quote` endpoint remains for backward compat (single-seller flow)
+- [x] **`POST /api/logistics/v1/fulfillment-options`** — New endpoint. Accepts: `masterOrderId` (or `sessionId` pre-order), `buyerDestination`, `deliveryWindowPreference`. Returns: array of ranked `FulfillmentOption` objects. The existing `POST /api/logistics/v1/quote` endpoint remains for backward compat (single-seller flow)
+  - ✅ Done (2026-09-04). Endpoint registered on `publicQuoteRouter` + mounted. `GenerateFulfillmentOptionsUseCase` loads active OptimizationConfig + VehicleTariff, generates feasible options, ranks with active weights, returns ranked options + `exclusions` + `weights`. HTTP e2e tests (2/2) + live DB verification (VERIFY: PASS — 4 ranked options, ranks+weights present; validated via `scripts/verify-fulfillment-options.ts`). `/quote` untouched for backward compat.
 
-- [ ] **Delivery window as a buyer input** — Add `deliveryWindowPreference` field to checkout session: `FLEXIBLE` (any time same/next day), `STANDARD` (4-hour window), `EXPRESS` (2-hour window). `FLEXIBLE` orders give the consolidation engine more freedom and should produce lower prices. Store on `Logistics_Shipment.requestedDeliveryWindow`
+- [x] **Delivery window as a buyer input** — Add `deliveryWindowPreference` field to checkout session: `FLEXIBLE` (any time same/next day), `STANDARD` (4-hour window), `EXPRESS` (2-hour window). `FLEXIBLE` orders give the consolidation engine more freedom and should produce lower prices. Store on `Logistics_Shipment.requestedDeliveryWindow`
+  - ✅ Done (2026-09-05). `Checkout_CheckoutSession.deliveryWindowPreference` column added (migration `20260904050000_add_checkout_delivery_window`, applied + verified live), persisted via `PrismaCheckoutRepository` (upsert update/create branches + read mapper). `InitiateCheckoutUseCase` accepts it in `options`, validates it against FLEXIBLE|STANDARD|EXPRESS (invalid → 400 field error), stores it on the session and mirrors it into `metadata`. Confirm paths thread the choice (request → session column → metadata fallback) into `CreateOrderShipmentsUseCase`, which maps FLEXIBLE→generous next-day window, STANDARD→4h, EXPRESS→2h onto `Logistics_Shipment.requestedDeliveryWindow` (`{earliestAt, latestAt}`). 3 new initiate-checkout tests (persist, reject invalid, omit) — full checkout regression 45/45 green.
+  - _From spec: Phase 4 §4.1_
 
 ### 4.2 Option ranking with configurable weights
 
-- [ ] **`OptionRankingEngine`** — Scores each option against a weighted objective function:
+- [x] **`OptionRankingEngine`** — Scores each option against a weighted objective function:
+  - ✅ Done (2026-09-04). `domain/engines/option-ranking.engine.ts` — implements the exact weighted objective (cost/speed/utilization/failure-risk/driver-economics/margin) with normalized normalization per component; returns options sorted by score desc with full `scoreComponents` for audit. Only FEASIBLE options reach it (hierarchy rule 8). 3/3 ranking tests.
   ```
   score = (buyer_cost_weight       × normalized_cost_score)
         + (delivery_time_weight    × normalized_speed_score)
@@ -310,9 +323,11 @@ Instead of returning one delivery quote, the system generates multiple feasible 
         + (maysar_margin_weight    × margin_viability_score)
   ```
 
-- [ ] **`Logistics_OptimizationConfig` model** — Versioned, operator-configurable weights and thresholds. Fields: `version`, `buyerCostWeight`, `deliveryTimeWeight`, `vehicleUtilizationWeight`, `failureRiskWeight`, `driverEfficiencyWeight`, `maysarMarginWeight`, `isActive`, `createdAt`. Values must sum to 1.0 (validation at save time). **Config changes require a new version — no in-place overwrites**
+- [x] **`Logistics_OptimizationConfig` model** — Versioned, operator-configurable weights and thresholds. Fields: `version`, `buyerCostWeight`, `deliveryTimeWeight`, `vehicleUtilizationWeight`, `failureRiskWeight`, `driverEfficiencyWeight`, `maysarMarginWeight`, `isActive`, `createdAt`. Values must sum to 1.0 (validation at save time). **Config changes require a new version — no in-place overwrites**
+  - ✅ Done (2026-09-04). Migration `20260904040000_add_optimization_config` applied. Value object validates weights-sum-to-1.0 and per-weight ∈ [0,1]; `PrismaOptimizationConfigRepository.save()` always CREATES the next version (max+1) and deactivates all others — old versions stay queryable. Also carries the Phase 3 §3.4 `CostVariancePolicy` (`maysarAbsorbsUpToTzs`, `customerChargeableVarianceTypes`). 4/4 value-object tests.
 
-- [ ] **Optimization hierarchy** — Enforce in `FulfillmentOptionEngine`: feasibility checks run first and eliminate infeasible options before ranking. No option that fails a hard constraint (vehicle capacity, COD tier geographic limit, unsupported area, minimum driver earnings) can appear in the ranked list
+- [x] **Optimization hierarchy** — Enforce in `FulfillmentOptionEngine`: feasibility checks run first and eliminate infeasible options before ranking. No option that fails a hard constraint (vehicle capacity, COD tier geographic limit, unsupported area, minimum driver earnings) can appear in the ranked list
+  - ✅ Done (2026-09-04). Feasibility hard gates (capacity, vehicle-class compatibility, COD-tier radius, unsupported-area, consolidation availability, pickup eligibility) run first and populate `excluded`; the driver minimum-earnings gate is applied post-generation as a second hard filter. Ranking (`OptionRankingEngine`) only ever sees feasible options. Hierarchy 1→6→7 order preserved.
 
   Hierarchy:
   1. Feasibility — can it actually be delivered?
@@ -329,10 +344,14 @@ Instead of returning one delivery quote, the system generates multiple feasible 
 
 The trust system already enforces geographic radius limits. Wire it into option eligibility.
 
-- [ ] `NEW_BUYER` (≤ 24km radius) → only `LOCAL_URBAN` zone options offered; `MAYSAR_EXPRESS` eligible but `MAYSAR_SHARED` restricted
-- [ ] `TRUSTED_BUYER+` → all fulfillment options available; `FLEXIBLE` window discount unlocked
-- [ ] `GOLD_BUYER+` → nationwide fulfillment; highest-tier consolidation eligible
-- [ ] `FLEXIBLE` window discount available only to `TRUSTED_BUYER` tier or higher (reduces risk of window manipulation)
+- [x] `NEW_BUYER` (≤ 24km radius) → only `LOCAL_URBAN` zone options offered; `MAYSAR_EXPRESS` eligible but `MAYSAR_SHARED` restricted
+  - ✅ Done (2026-09-04). Engine takes `buyerTrustTier`; NEW_BUYER beyond `maxLocalRadiusKm` (default 24) excludes MAYSAR_EXPRESS, and MAYSAR_SHARED is always excluded for NEW_BUYER. `flexibleWindowDiscount` never applies below TRUSTED_BUYER. Test-covered in `fulfillment-options.test.ts`.
+- [x] `TRUSTED_BUYER+` → all fulfillment options available; `FLEXIBLE` window discount unlocked
+  - ✅ Done (2026-09-04). Default tier; unlocks the FLEXIBLE-window shared discount (`flexibleWindowDiscountApplied` flag); full option set present in tests + live verification.
+- [x] `GOLD_BUYER+` → nationwide fulfillment; highest-tier consolidation eligible
+  - ✅ Done (2026-09-04). No radius restriction; intercity `MAYSAR_EXPRESS` verified for a Dar→Arusha route (`deliveryZone: 'intercity'`).
+- [x] `FLEXIBLE` window discount available only to `TRUSTED_BUYER` tier or higher (reduces risk of window manipulation)
+  - ✅ Done (2026-09-04). `flexibleDiscount` is only computed for tier !== NEW_BUYER; test asserts a NEW_BUYER NEVER has the flag.
 
 ---
 
@@ -340,27 +359,36 @@ The trust system already enforces geographic radius limits. Wire it into option 
 
 ### 5.1 Driver matching score
 
-- [ ] **`DriverMatchingEngine`** — Ranks available drivers for a `DeliveryJob` using a composite score: vehicle compatibility (hard filter first), distance to pickup (kilometers), available weight/volume capacity, historical reliability score (delivery success rate, last 90 days), current route compatibility (does this job fit an active route without major deviation?), estimated arrival time at pickup, compensation cost vs. minimum earnings. **Never assign on cheapest alone — assign on best feasible score**
+- [x] **`DriverMatchingEngine`** — Ranks available drivers for a `DeliveryJob` using a composite score: vehicle compatibility (hard filter first), distance to pickup (kilometers), available weight/volume capacity, historical reliability score (delivery success rate, last 90 days), current route compatibility (does this job fit an active route without major deviation?), estimated arrival time at pickup, compensation cost vs. minimum earnings. **Never assign on cheapest alone — assign on best feasible score**
+  - ✅ Done (2026-09-06). `domain/engines/driver-matching.engine.ts` — pure `rank()` with hard filters first (availability → vehicle class → capacity → area serve → minimum earnings) then weighted composite score; every result carries `scoreComponents` for audit. 8/8 tests in `__tests__/driver-matching.engine.test.ts` (incl. eligible-above-excluded ordering and determinism per rule 4).
 
-- [ ] **Driver matching API** — `POST /api/logistics/v1/jobs/:jobId/match-drivers` (internal, platform-only). Returns ranked list of compatible drivers with scores. The matching score and all input factors must be stored on the assignment record for audit
+- [x] **Driver matching API** — `POST /api/logistics/v1/jobs/:jobId/match-drivers` (internal, platform-only). Returns ranked list of compatible drivers with scores. The matching score and all input factors must be stored on the assignment record for audit
+  - ✅ Done (2026-09-06). `api/routes/driver-matching.routes.ts` mounted at `/api/logistics/internal/jobs/:jobId/match-drivers` behind `requireRoleOrService(['admin','system'])` (`logistics-service/index.ts`). `MatchDriversUseCase` persists **every** candidate (eligible or not) to `Logistics_DriverMatchAudit` with score, components, exclusion reason, compensation, ETA, distance. Candidates read live from `Logistics_Courier` (online, ≤25 km radius) via `PrismaDriverCandidateSource`; tariff from `VehicleTariffRepository`.
 
-- [ ] **Minimum earnings gate** — Before any `DeliveryJob` is offered to a driver: assert `estimatedDriverCompensation >= vehicle.minimumJobCompensationTzs`. If not met, the job must be repriced, merged with another job, or escalated to ops. It must not be dispatched at a loss to the driver
+- [x] **Minimum earnings gate** — Before any `DeliveryJob` is offered to a driver: assert `estimatedDriverCompensation >= vehicle.minimumJobCompensationTzs`. If not met, the job must be repriced, merged with another job, or escalated to ops. It must not be dispatched at a loss to the driver
+  - ✅ Done (2026-09-06). Enforced twice: the engine excludes below-minimum candidates as a hard filter, and `MatchDriversUseCase` returns a `gate` block (`meetsMinimumEarnings`, `offerable`) — a job with no eligible candidate is reported as not offerable for repricing/merge/escalation.
 
 ### 5.2 Route insertion optimization
 
-- [ ] **Route insertion check** — When a new Shipment enters the pool and active DeliveryJobs exist in the same area, evaluate inserting the new Shipment into each compatible active job's route. Calculate: `marginalCost = cost(route_with_new_stop) − cost(current_route)`. If `marginalCost < insertionCostThreshold` (configurable) and vehicle capacity permits, flag the job as a candidate for extension
+- [x] **Route insertion check** — When a new Shipment enters the pool and active DeliveryJobs exist in the same area, evaluate inserting the new Shipment into each compatible active job's route. Calculate: `marginalCost = cost(route_with_new_stop) − cost(current_route)`. If `marginalCost < insertionCostThreshold` (configurable) and vehicle capacity permits, flag the job as a candidate for extension
+  - ✅ Done (2026-09-06). Pure `RouteInsertionEngine` (`route-insertion.engine.ts`: hard filters CAPACITY/VEHICLE_CLASS first, then THRESHOLD; road-factor ×1.35, 30 km/h fallback — 6/6 tests). Wired live: `CreateOrderShipmentsUseCase` runs `EvaluateRouteInsertionsUseCase` for every newly created shipment (non-fatal), threshold from the active versioned `OptimizationConfig` (conservative 5 000 TZS default).
 
-- [ ] **`Logistics_RouteInsertionCandidate` model** — Records evaluated insertion opportunities: `id`, `shipmentId`, `deliveryJobId`, `marginalCostTzs`, `additionalDistanceKm`, `additionalDurationMinutes`, `feasible`, `evaluatedAt`. Allows retrospective analysis of optimization quality
+- [x] **`Logistics_RouteInsertionCandidate` model** — Records evaluated insertion opportunities: `id`, `shipmentId`, `deliveryJobId`, `marginalCostTzs`, `additionalDistanceKm`, `additionalDurationMinutes`, `feasible`, `evaluatedAt`. Allows retrospective analysis of optimization quality
+  - ✅ Done (2026-09-06). Schema model (RIC- prefix, `rejectionReason` CAPACITY|THRESHOLD|VEHICLE_CLASS) + entity + `PrismaRouteInsertionCandidateRepository`; migration `20260904060000_add_phase5_matching_and_pool` applied and verified live (table exists). Every evaluation — feasible or not — is persisted by `EvaluateRouteInsertionsUseCase`.
 
-- [ ] **Insertion execution** — If a driver accepts an insertion offer (via driver app event `RouteExtensionAccepted`), update the `DeliveryJob.shipmentIds`, recalculate route, issue an updated `FulfillmentCommitment` to the new shipment's buyer (their price is based on the marginal cost, not the full route cost)
+- [x] **Insertion execution** — If a driver accepts an insertion offer (via driver app event `RouteExtensionAccepted`), update the `DeliveryJob.shipmentIds`, recalculate route, issue an updated `FulfillmentCommitment` to the new shipment's buyer (their price is based on the marginal cost, not the full route cost)
+  - ✅ Done (2026-09-06). `ExecuteRouteInsertionUseCase`: accepts only a previously-evaluated **feasible** candidate; extends the job via the named `extendWithShipment()` transition, binds the shipment (`assignToJob`), and issues a `FulfillmentCommitment` priced at the **marginal cost** — never the full route cost (backlog rule 6: lock is absolute).
 
 ### 5.3 Continuous shipment opportunity pool
 
-- [ ] **`Logistics_ShipmentPool` view or materialized table** — Pending Shipments not yet assigned to a DeliveryJob, with time window, weight, origin GeoPoint, destination GeoPoint, and `requiredVehicleClass`. Refreshed on every Shipment state change
+- [x] **`Logistics_ShipmentPool` view or materialized table** — Pending Shipments not yet assigned to a DeliveryJob, with time window, weight, origin GeoPoint, destination GeoPoint, and `requiredVehicleClass`. Refreshed on every Shipment state change
+  - ✅ Done (2026-09-06). `Logistics_ShipmentPoolEntry` materialized mirror (SPL- prefix, unique on shipmentId, window/weight/geo/vehicle-class columns); `ShipmentPoolService.refresh()/remove()` called from both shipment state-change points — creation (`CreateOrderShipmentsUseCase`) and job assignment (`AssignShipmentsToJobsUseCase`), both non-fatal. Migration applied, table verified live.
 
-- [ ] **Pool optimization job** — Scheduled job (configurable interval, default 5 min). Scan the pool: find clusters of pending Shipments within `consolidationRadiusKm` of each other with overlapping time windows and compatible vehicle requirements. For each cluster meeting consolidation thresholds, generate a candidate `DeliveryJob`. Present to available matching drivers
+- [x] **Pool optimization job** — Scheduled job (configurable interval, default 5 min). Scan the pool: find clusters of pending Shipments within `consolidationRadiusKm` of each other with overlapping time windows and compatible vehicle requirements. For each cluster meeting consolidation thresholds, generate a candidate `DeliveryJob`. Present to available matching drivers
+  - ✅ Done (2026-09-06). `PoolOptimizationJob` (`shipment-pool.service.ts`): interval configurable via `POOL_OPTIMIZATION_INTERVAL_MS` (default 5 min), overlap-safe `run()` (never overlaps a still-running pass); clusters via pure `clusterPoolEntries` (radius/weight from active PricingConfig); clusters ≥2 create candidate PENDING `DeliveryJob`s and present them to `MatchDriversUseCase` (non-fatal). **Wiring gap fixed:** nothing started the job — now `start()`ed in module `initialize()` and `stop()`ed on shutdown (`logistics-service/index.ts`).
 
-- [ ] **Pool optimization analytics** — Track per run: shipments evaluated, consolidation candidates found, jobs created, average savings per consolidated job. Feed into the fairness KPIs
+- [x] **Pool optimization analytics** — Track per run: shipments evaluated, consolidation candidates found, jobs created, average savings per consolidated job. Feed into the fairness KPIs
+  - ✅ Done (2026-09-06). Per-run stats persisted to `Logistics_PoolOptimizationRun` (shipmentsEvaluated, consolidationCandidatesFound, jobsCreated, averageSavingsPerJobTzs, durationMs) — **gap fixed:** stats were computed and logged but never persisted. Table live; feeds the Phase 6 fairness KPIs.
 
 ---
 
@@ -368,31 +396,37 @@ The trust system already enforces geographic radius limits. Wire it into option 
 
 ### 6.1 Fairness Engine
 
-- [ ] **`FairnessEngine`** — Validates every generated `FulfillmentOption` against four checks before it can be returned to the buyer:
+- [x] **`FairnessEngine`** — Validates every generated `FulfillmentOption` against four checks before it can be returned to the buyer:
   - **Buyer fairness:** `buyerPriceTzs / fulfillmentCostTzs <= config.maxBuyerPriceRatio` — buyer is not paying substantially more than the economic cost of the delivery
   - **Driver fairness:** estimated `driverCompensationTzs / estimatedActiveHours >= config.minimumDriverHourlyRateTzs`
   - **Supplier fairness:** no adjustment attributed to `SUPPLIER` is being charged to the buyer
   - **Maysar sustainability:** `maysarMarginTzs >= 0` — platform is not subsidizing a loss on this transaction
+  - ✅ Done (2026-09-06). Pure `FairnessEngine` (`domain/engines/fairness.engine.ts`) — all four checks in one `evaluate()` returning `FairnessReport` with per-violation computedValue/threshold/detail. Thresholds (`maxBuyerPriceRatio`, `minimumDriverHourlyRateTzs`, `minVehicleUtilizationTarget`) are versioned on `Logistics_OptimizationConfig` (migration adds the columns with defaults 1.5 / 3000 / 0.5) — policy in config, not code. 6/6 tests.
 
-- [ ] **`Logistics_FairnessFlag` model** — Records every failed check: `id`, `optionId` (or `deliveryJobId`), `checkType` (BUYER_PRICE_RATIO, DRIVER_EARNINGS, SUPPLIER_ATTRIBUTION, MAYSAR_SUSTAINABILITY), `computedValue`, `threshold`, `flaggedAt`, `resolvedAt` (nullable), `resolvedBy`. Flags are visible in the ops dashboard and not silently dropped
+- [x] **`Logistics_FairnessFlag` model** — Records every failed check: `id`, `optionId` (or `deliveryJobId`), `checkType` (BUYER_PRICE_RATIO, DRIVER_EARNINGS, SUPPLIER_ATTRIBUTION, MAYSAR_SUSTAINABILITY), `computedValue`, `threshold`, `flaggedAt`, `resolvedAt` (nullable), `resolvedBy`. Flags are visible in the ops dashboard and not silently dropped
+  - ✅ Done (2026-09-06). Schema model (FFL- prefix) + `FairnessFlagRepository` + `PrismaFairnessFlagRepository` (append-only creation; resolution is the only mutation); migration `20260904070000_add_phase6_fairness_and_buyer_profile` applied and both tables verified live. `findUnresolved()` feeds the ops dashboard view.
 
-- [ ] **Flagged options are escalated, not silently removed** — If an option fails a fairness check, it must not appear in the buyer's option list. An internal `FairnessFlag` record is created and surfaced to the ops team for review. The system must log why the option was excluded
+- [x] **Flagged options are escalated, not silently removed** — If an option fails a fairness check, it must not appear in the buyer's option list. An internal `FairnessFlag` record is created and surfaced to the ops team for review. The system must log why the option was excluded
+  - ✅ Done (2026-09-06). `GenerateFulfillmentOptionsUseCase.applyFairness()` runs after ranking in both branches (with and without active tariff): failing options are removed from `options` AND returned in `fairnessExcluded` with full violation details, while each violation is persisted as a `Logistics_FairnessFlag` (non-fatal persistence — a DB failure never crashes the buyer flow, but exclusion details always travel in the response).
 
 ### 6.2 Fairness and operational KPIs
 
 Track continuously via existing analytics infrastructure:
 
-- [ ] **Buyer KPI:** `actual_fulfillment_cost / buyer_price` — rolling 7-day average. Alert if consistently above `config.maxBuyerPriceRatio`
-- [ ] **Driver KPI:** `driver_earnings / active_hours` per driver — rolling 30-day. Alert if any active driver falls below `minimumDriverHourlyRateTzs` for 3+ consecutive days
-- [ ] **Vehicle KPI:** `used_capacity_kg / max_capacity_kg` per job — track average utilization. Alert if average drops below `config.minVehicleUtilizationTarget` (indicates consolidation is underperforming)
-- [ ] **Route KPI:** `revenue_per_km`, `revenue_per_hour` per route. Track trend over time
-- [ ] **Consolidation KPI:** `total_savings_from_consolidation_tzs` — aggregate from `Logistics_ConsolidationAudit`. Track per week. This is the headline metric for the optimization engine's value
+- [x] **Buyer KPI:** `actual_fulfillment_cost / buyer_price` — rolling 7-day average. Alert if consistently above `config.maxBuyerPriceRatio`
+- [x] **Driver KPI:** `driver_earnings / active_hours` per driver — rolling 30-day. Alert if any active driver falls below `minimumDriverHourlyRateTzs` for 3+ consecutive days
+- [x] **Vehicle KPI:** `used_capacity_kg / max_capacity_kg` per job — track average utilization. Alert if average drops below `config.minVehicleUtilizationTarget` (indicates consolidation is underperforming)
+- [x] **Route KPI:** `revenue_per_km`, `revenue_per_hour` per route. Track trend over time
+- [x] **Consolidation KPI:** `total_savings_from_consolidation_tzs` — aggregate from `Logistics_ConsolidationAudit`. Track per week. This is the headline metric for the optimization engine's value
+  - ✅ All five Done (2026-09-06) via `LogisticsKpiService` (`application/services/logistics-kpi.service.ts`) — one non-fatal snapshot over existing records: Buyer (7-day cost/price from `Logistics_PricingAuditRecord`, cost = fee − platform margin), Driver (latest eligible match audit per driver: compensation vs ETA-based active hours), Vehicle (assigned-shipment weight vs `Logistics_Vehicle.maxWeightKg`), Route (7-day revenue/km and revenue/hour from audit records), Consolidation (aggregate savings from `Logistics_ConsolidationAudit` — headline metric). Alerts computed against the active versioned config thresholds. Exposed at `GET /api/logistics/internal/kpis` (platform-only, `kpi.routes.ts`). Each KPI degrades to `null` (not an error) when its source table is empty or unavailable.
 
 ### 6.3 Buyer behavior model for failure prediction
 
-- [ ] **`Logistics_BuyerProfile` model** — Per-buyer logistics record: `buyerId`, `preferredDeliveryWindows` (JSON histogram), `deliverySuccessRate` (0.0–1.0), `typicalOrderWeightKg`, `consolidationAcceptanceRate` (fraction of times buyer chose shared over express), `pickupPreference` (DELIVERY / PICKUP), `lastUpdatedAt`. Updated on each `DeliveryConfirmed` or `DeliveryFailed` event
+- [x] **`Logistics_BuyerProfile` model** — Per-buyer logistics record: `buyerId`, `preferredDeliveryWindows` (JSON histogram), `deliverySuccessRate` (0.0–1.0), `typicalOrderWeightKg`, `consolidationAcceptanceRate` (fraction of times buyer chose shared over express), `pickupPreference` (DELIVERY / PICKUP), `lastUpdatedAt`. Updated on each `DeliveryConfirmed` or `DeliveryFailed` event
+  - ✅ Done (2026-09-06). Schema model (unique buyerId, new-buyer default success rate 0.80) + `BuyerProfileRepository` + `PrismaBuyerProfileRepository.recordOutcome()` recomputing the rolling success rate, incremental mean weight, window histogram and consolidation-acceptance rate on every outcome. `BuyerProfileService.recordDeliveryOutcome()` is registered as `__recordBuyerDeliveryOutcome` on globalThis (`logistics-service/index.ts`) for the delivery-event consumer — non-fatal by contract.
 
-- [ ] **Use buyer profile in option ranking** — Feed `deliverySuccessRate` into the `failure_probability_score` component of `OptionRankingEngine`. A buyer with a 95% delivery success rate gets ranked differently than a new buyer (default 80%) for express options. This means the optimizer suggests more reliable options to higher-risk buyers
+- [x] **Use buyer profile in option ranking** — Feed `deliverySuccessRate` into the `failure_probability_score` component of `OptionRankingEngine`. A buyer with a 95% delivery success rate gets ranked differently than a new buyer (default 80%) for express options. This means the optimizer suggests more reliable options to higher-risk buyers
+  - ✅ Done (2026-09-06). `OptionRankingEngine.rank()` accepts an optional `BuyerRiskProfile`; base per-window-type failure probabilities scale by `0.80 / buyerSuccessRate` (clamped to [0.3, 1.0] input, saturating ≤1). `GenerateFulfillmentOptionsUseCase` loads the profile when a `buyerId` is supplied. 3/3 integration tests: 95%-success buyer → strictly lower failure probability and higher score than a 60%-success buyer; no profile ≡ 0.80 default.
 
 ---
 

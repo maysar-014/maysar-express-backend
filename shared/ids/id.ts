@@ -20,6 +20,7 @@ const DOMAIN_PREFIXES: Record<string, string> = {
   Payment: 'pay',
   Payout: 'pyo',
   Production: 'prd',
+  Request: 'req',
   Support: 'sup',
   Training: 'trn',
   User: 'usr',

@@ -193,6 +193,24 @@ export class DeliveryJob {
     return { ...this.data };
   }
 
+  /**
+   * Route insertion (Phase 5 §5.2): append an inserted shipment to this job.
+   * Named method only — no direct shipmentIds writes. Valid while the job is
+   * being worked (ASSIGNED … IN_TRANSIT); terminal/complete jobs cannot grow.
+   */
+  extendWithShipment(shipmentId: string): void {
+    if (!shipmentId) throw new Error('DeliveryJob.extendWithShipment requires a shipmentId');
+    const growable: DeliveryJobStatus[] = ['ASSIGNED', 'DRIVER_ACCEPTED', 'AT_PICKUP', 'LOADING', 'IN_TRANSIT'];
+    if (!growable.includes(this.data.status)) {
+      throw new Error(`DeliveryJob.extendWithShipment: job in status ${this.data.status} cannot accept new shipments`);
+    }
+    if (this.data.shipmentIds.includes(shipmentId)) {
+      throw new Error(`DeliveryJob.extendWithShipment: shipment ${shipmentId} already on job ${this.data.id}`);
+    }
+    this.data.shipmentIds = [...this.data.shipmentIds, shipmentId];
+    this.data.updatedAt = new Date();
+  }
+
   // ── Private ───────────────────────────────────────────────────────────────
 
   private transitionTo(next: DeliveryJobStatus): void {

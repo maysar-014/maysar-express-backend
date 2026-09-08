@@ -4,6 +4,8 @@
 > Status: Implemented and verified by `services/checkout-service/src/api/controllers/__tests__/multi-seller-routing.controller.test.ts`  
 > Last updated: September 2026
 
+> **Note (Phase 4+):** a newer, fuller alternative exists — `POST /api/logistics/v1/fulfillment-options` generates ranked options (including `MAYSAR_SHARED` / `MAYSAR_EXPRESS` / `CUSTOMER_PICKUP`) per buyer, feasibility-gated and fairness-filtered. This per-seller `quote` flow remains the backward-compatible single-seller path and the per-seller-consolidation primitive the multi-seller checkout still consumes. See [`LOGISTICS_IMPLEMENTATION.md`](./LOGISTICS_IMPLEMENTATION.md) §6.1.
+
 ---
 
 ## Overview
