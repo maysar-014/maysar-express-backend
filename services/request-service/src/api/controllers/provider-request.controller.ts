@@ -21,6 +21,7 @@ import { SetItemSourceUseCase } from '../../application/use-cases/set-item-sourc
 import { ListProcurementUseCase } from '../../application/use-cases/list-procurement.use-case';
 import { AdvanceProcurementUseCase } from '../../application/use-cases/advance-procurement.use-case';
 import { MarkSupplierInviteUseCase } from '../../application/use-cases/mark-supplier-invite.use-case';
+import { listRequestAudit } from '../../application/services/request-audit';
 import { GetDemandAnalyticsUseCase } from '../../application/use-cases/get-demand-analytics.use-case';
 
 export class ProviderRequestController {
@@ -208,6 +209,21 @@ export class ProviderRequestController {
     try {
       const result = await this.getDemandAnalytics.execute();
       res.json({ success: true, data: result, timestamp: new Date() });
+    } catch (error) {
+      this.handleError(error, res);
+    }
+  }
+
+  /** Append-only audit trail for a request (§4.3) — admin/provider/ops. */
+  async requestAudit(req: Request, res: Response): Promise<void> {
+    const requestId = req.params.requestId;
+    if (!requestId) {
+      res.status(400).json({ success: false, error: { code: 'REQUEST_ID_REQUIRED', message: 'requestId is required' } });
+      return;
+    }
+    try {
+      const entries = await listRequestAudit(requestId);
+      res.json({ success: true, data: { requestId, entries } });
     } catch (error) {
       this.handleError(error, res);
     }

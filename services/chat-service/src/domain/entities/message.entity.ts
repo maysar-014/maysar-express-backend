@@ -1,23 +1,23 @@
 export type MessageType =
-  | 'TEXT'
-  | 'IMAGE'
-  | 'VOICE_NOTE'
-  | 'PRODUCT_CARD'
-  | 'ORDER_REFERENCE'
-  | 'ORDER_CARD'
-  | 'LOCATION_PIN'
-  | 'QUICK_ACTION';
+  | "TEXT"
+  | "IMAGE"
+  | "VOICE_NOTE"
+  | "PRODUCT_CARD"
+  | "ORDER_REFERENCE"
+  | "ORDER_CARD"
+  | "LOCATION_PIN"
+  | "QUICK_ACTION";
 
 export type QuickActionType =
-  | 'CONFIRM_AVAILABILITY'
-  | 'REQUEST_QUOTE'
-  | 'TRACK_ORDER'
-  | 'ACCEPT_OFFER'
-  | 'DECLINE_OFFER'
-  | 'CONFIRM_ORDER'
-  | 'DECLINE_ORDER';
+  | "CONFIRM_AVAILABILITY"
+  | "REQUEST_QUOTE"
+  | "TRACK_ORDER"
+  | "ACCEPT_OFFER"
+  | "DECLINE_OFFER"
+  | "CONFIRM_ORDER"
+  | "DECLINE_ORDER";
 
-export type MessageModerationStatus = 'ACTIVE' | 'FLAGGED' | 'BLOCKED';
+export type MessageModerationStatus = "ACTIVE" | "FLAGGED" | "BLOCKED";
 
 export interface Message {
   id: string;
@@ -27,6 +27,10 @@ export interface Message {
   content: string | null;
   metadata: Record<string, unknown>;
   moderationStatus: MessageModerationStatus;
+  /** Human-readable explanation of why the message was flagged/blocked (shown to the sender). */
+  moderationReason: string | null;
+  /** Structured moderation signals (matched phrases, heuristics, score) for audit/UX. */
+  moderationSignals: Record<string, unknown> | null;
   spamScore: number | null;
   isDisputeEvidence: boolean;
   deletedAt: Date | null;

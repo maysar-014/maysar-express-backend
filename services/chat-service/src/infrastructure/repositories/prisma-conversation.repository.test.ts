@@ -102,28 +102,7 @@ describe('PrismaConversationRepository', () => {
     prisma.chat_ConversationParticipant.findMany
       .mockResolvedValueOnce([
         {
-          conversationId: 'conv-1',
-          userId: 'seller-1',
-          role: 'SELLER',
-          lastReadAt: new Date('2026-01-01T12:00:00.000Z'),
-          isMuted: false,
-          joinedAt: new Date('2026-01-01T00:00:00.000Z'),
-          conversation: {
-            id: 'conv-1',
-            type: 'BUYER_SELLER',
-            moderationStatus: 'ACTIVE',
-            relatedProductId: 'product-1',
-            relatedOrderId: null,
-            relatedShipmentId: null,
-            relatedSupplierRequestId: null,
-            metadata: {},
-            lastMessageAt: new Date('2026-01-02T00:00:00.000Z'),
-            createdAt: new Date('2026-01-01T00:00:00.000Z'),
-          },
-        },
-      ])
-      .mockResolvedValueOnce([
-        {
+          // findByParticipant → participantRows (conversation list for buyer-1)
           conversationId: 'conv-1',
           userId: 'buyer-1',
           role: 'BUYER',
@@ -146,6 +125,18 @@ describe('PrismaConversationRepository', () => {
       ])
       .mockResolvedValueOnce([
         {
+          // findByParticipant → allOtherParticipants (everyone except buyer-1)
+          conversationId: 'conv-1',
+          userId: 'seller-1',
+          role: 'SELLER',
+          lastReadAt: new Date('2026-01-01T12:00:00.000Z'),
+          isMuted: false,
+          joinedAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          // getParticipants
           conversationId: 'conv-1',
           userId: 'seller-1',
           role: 'SELLER',
@@ -171,7 +162,22 @@ describe('PrismaConversationRepository', () => {
       content: 'Hello buyer',
       type: 'TEXT',
     });
-    prisma.$queryRaw.mockResolvedValue([{ display_name: 'Seller One', email: 'seller@example.com' }]);
+    // findByParticipant issues three batched raw queries in this order:
+    // 1) unread counts per conversation, 2) last message per conversation,
+    // 3) display names for the other participants.
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ conversation_id: 'conv-1', unread_count: 2 }])
+      .mockResolvedValueOnce([
+        { conversation_id: 'conv-1', content: 'Hello buyer', type: 'TEXT' },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 'seller-1',
+          first_name: 'Seller',
+          last_name: 'One',
+          email: 'seller@example.com',
+        },
+      ]);
     prisma.chat_ConversationParticipant.findUnique.mockResolvedValueOnce({ id: 'participant-1' });
     prisma.chat_ConversationParticipant.findUnique.mockResolvedValueOnce(null);
 

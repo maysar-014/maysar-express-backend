@@ -1,11 +1,14 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma } from "@prisma/client";
 import type {
   MessageRepository,
   CreateMessageInput,
   PaginatedMessages,
-} from '../../domain/repositories/message.repository.interface';
-import type { Message, MessageModerationStatus } from '../../domain/entities/message.entity';
-import type { PaginationOptions } from '../../domain/repositories/conversation.repository.interface';
+} from "../../domain/repositories/message.repository.interface";
+import type {
+  Message,
+  MessageModerationStatus,
+} from "../../domain/entities/message.entity";
+import type { PaginationOptions } from "../../domain/repositories/conversation.repository.interface";
 
 // ─── Mapper ───────────────────────────────────────────────────────────────────
 
@@ -17,6 +20,8 @@ function mapMessage(row: {
   content: string | null;
   metadata: Prisma.JsonValue | null;
   moderationStatus: string;
+  moderationReason: string | null;
+  moderationSignals: Prisma.JsonValue | null;
   spamScore: number | null;
   isDisputeEvidence: boolean;
   deletedAt: Date | null;
@@ -26,10 +31,13 @@ function mapMessage(row: {
     id: row.id,
     conversationId: row.conversationId,
     senderId: row.senderId,
-    type: row.type as Message['type'],
+    type: row.type as Message["type"],
     content: row.content ?? null,
     metadata: (row.metadata as Record<string, unknown>) ?? {},
     moderationStatus: row.moderationStatus as MessageModerationStatus,
+    moderationReason: row.moderationReason ?? null,
+    moderationSignals:
+      (row.moderationSignals as Record<string, unknown>) ?? null,
     spamScore: row.spamScore ?? null,
     isDisputeEvidence: row.isDisputeEvidence,
     deletedAt: row.deletedAt ?? null,
@@ -50,7 +58,11 @@ export class PrismaMessageRepository implements MessageRepository {
         type: data.type as never,
         content: data.content ?? null,
         metadata: (data.metadata ?? {}) as Prisma.InputJsonValue,
-        moderationStatus: (data.moderationStatus ?? 'ACTIVE') as never,
+        moderationStatus: (data.moderationStatus ?? "ACTIVE") as never,
+        moderationReason: data.moderationReason ?? null,
+        moderationSignals: (data.moderationSignals ?? undefined) as
+          | Prisma.InputJsonValue
+          | undefined,
         spamScore: data.spamScore ?? null,
       },
     });
@@ -76,7 +88,7 @@ export class PrismaMessageRepository implements MessageRepository {
           conversationId,
           ...(cursorDate ? { createdAt: { gt: cursorDate } } : {}),
         },
-        orderBy: { createdAt: 'asc' },
+        orderBy: { createdAt: "asc" },
         take: limit,
       }),
       this.prisma.chat_Message.count({ where: { conversationId } }),
@@ -84,7 +96,9 @@ export class PrismaMessageRepository implements MessageRepository {
 
     const messages = rows.map(mapMessage);
     const nextCursor =
-      rows.length === limit ? rows[rows.length - 1].createdAt.toISOString() : null;
+      rows.length === limit
+        ? rows[rows.length - 1].createdAt.toISOString()
+        : null;
 
     return { messages, nextCursor, total };
   }
@@ -93,7 +107,7 @@ export class PrismaMessageRepository implements MessageRepository {
     await this.prisma.chat_Message.update({
       where: { id },
       data: {
-        content: '[message deleted]',
+        content: "[message deleted]",
         deletedAt: new Date(),
       },
     });
@@ -116,6 +130,20 @@ export class PrismaMessageRepository implements MessageRepository {
       data: {
         moderationStatus: status as never,
         spamScore: score,
+      },
+    });
+  }
+
+  async setModerationDecision(
+    id: string,
+    status: MessageModerationStatus,
+    reason: string | null,
+  ): Promise<void> {
+    await this.prisma.chat_Message.update({
+      where: { id },
+      data: {
+        moderationStatus: status as never,
+        moderationReason: reason,
       },
     });
   }

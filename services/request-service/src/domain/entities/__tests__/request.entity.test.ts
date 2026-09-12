@@ -88,6 +88,14 @@ describe('RequestEntity state machine — legal transitions', () => {
     expect(r.orderId).toBe('order_1');
   });
 
+  it('FULFILLABLE / QUOTE_PUBLISHED → ASSESSING (quote-expiry reassessment, §4.1)', () => {
+    for (const status of ['FULFILLABLE', 'QUOTE_PUBLISHED'] as RequestStatus[]) {
+      const r = make(status);
+      r.returnToAssessing();
+      expect(r.status).toBe('ASSESSING');
+    }
+  });
+
   it('customer can cancel from all four cancellable states', () => {
     for (const status of ['SUBMITTED', 'ASSESSING', 'NEEDS_CLARIFICATION', 'QUOTE_PUBLISHED'] as RequestStatus[]) {
       const r = make(status);
@@ -133,6 +141,11 @@ describe('RequestEntity state machine — illegal transitions throw', () => {
   it('CANCELLED is terminal', () => {
     const r = make('CANCELLED');
     expect(() => r.markAssessing()).toThrow('not a legal transition');
+  });
+
+  it('returnToAssessing is illegal from terminal states', () => {
+    const r = make('CANCELLED');
+    expect(() => r.returnToAssessing()).toThrow('not a legal transition');
   });
 
   it('markUnfulfillable with a blank reason throws', () => {

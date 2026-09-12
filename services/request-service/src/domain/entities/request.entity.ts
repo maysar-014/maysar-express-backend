@@ -69,9 +69,9 @@ const VALID_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
   SUBMITTED:            ['ASSESSING', 'CANCELLED', 'EXPIRED'],
   ASSESSING:            ['NEEDS_CLARIFICATION', 'FULFILLABLE', 'UNFULFILLABLE', 'CANCELLED', 'EXPIRED'],
   NEEDS_CLARIFICATION:  ['ASSESSING', 'CANCELLED', 'EXPIRED'],
-  FULFILLABLE:          ['QUOTE_PUBLISHED', 'EXPIRED'],
+  FULFILLABLE:          ['QUOTE_PUBLISHED', 'EXPIRED', 'ASSESSING'],
   UNFULFILLABLE:        [],
-  QUOTE_PUBLISHED:      ['CONVERTED', 'CANCELLED', 'EXPIRED'],
+  QUOTE_PUBLISHED:      ['CONVERTED', 'CANCELLED', 'EXPIRED', 'ASSESSING'],
   CONVERTED:            [],
   CANCELLED:            [],
   EXPIRED:              [],
@@ -142,6 +142,13 @@ export class RequestEntity {
 
   // ── Named transitions ─────────────────────────────────────────────────────
   markAssessing(): void { this.transition('ASSESSING'); }
+
+  /**
+   * Phase 4 §4.1 — quote expiry returns the request to ASSESSING so the
+   * provider re-prices and publishes a fresh quote. Legal from FULFILLABLE
+   * and QUOTE_PUBLISHED (the states that hold a live/published quote).
+   */
+  returnToAssessing(): void { this.transition('ASSESSING'); }
   markNeedsClarification(): void { this.transition('NEEDS_CLARIFICATION'); }
   markFulfillable(): void { this.transition('FULFILLABLE'); }
   markUnfulfillable(reason: string): void {

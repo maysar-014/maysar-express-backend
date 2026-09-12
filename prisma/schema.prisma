@@ -2120,6 +2120,8 @@ model Payment_Payment {
   method         Payment_PaymentMethod
   provider       String                @db.VarChar(50)
   providerRef    String?               @db.VarChar(255)
+  environment    String                @default("SANDBOX") @db.VarChar(10)
+  idempotencyKey String?               @db.VarChar(128)
   status         Payment_PaymentStatus @default(PENDING)
   description    String?               @db.VarChar(500)
   metadata       Json?
@@ -2127,15 +2129,18 @@ model Payment_Payment {
   completedAt    DateTime?             @db.Timestamp(6)
   failedAt       DateTime?             @db.Timestamp(6)
   failureReason  String?
+  failureCode    String?               @db.VarChar(50)
   refundedAmount Decimal               @default(0) @db.Decimal(10, 2)
   createdAt      DateTime              @default(now()) @db.Timestamp(6)
   updatedAt      DateTime              @updatedAt @db.Timestamp(6)
   version        Int                   @default(0)
 
+  @@unique([idempotencyKey])
   @@index([orderId])
   @@index([userId])
   @@index([status])
   @@index([createdAt])
+  @@index([environment])
   @@map("payments")
 }
 
@@ -3882,6 +3887,7 @@ enum Payment_PaymentMethod {
   MPESA
   AIRTEL_MONEY
   TIGO_PESA
+  MIXX_BY_YAS
   HALOPESA
   WALLET
   BANK_TRANSFER
@@ -4342,6 +4348,8 @@ model Chat_Message {
   content           String?
   metadata          Json?
   moderationStatus  Chat_ModerationStatus @default(ACTIVE)
+  moderationReason  String?               @db.VarChar(1000)
+  moderationSignals Json?
   spamScore         Int?
   isDisputeEvidence Boolean               @default(false)
   deletedAt         DateTime?             @db.Timestamp(6)
@@ -4403,6 +4411,89 @@ model Chat_CheckoutLink {
   @@index([conversationId])
   @@index([expiresAt])
   @@map("chat_checkout_links")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Chat Moderation — Admin oversight, configurable suspicious phrases, dynamic patterns
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum Chat_AdminReviewAction {
+  APPROVE
+  CONFIRM_BLOCK
+  DELETE
+}
+
+enum Chat_PhraseMatchType {
+  SUBSTRING
+  REGEX
+}
+
+enum Chat_PhraseLanguage {
+  EN
+  SW
+  OTHER
+}
+
+enum Chat_PhraseAction {
+  FLAG
+  BLOCK
+}
+
+enum Chat_PhraseSource {
+  SEED
+  ADMIN
+  AUTO
+}
+
+enum Chat_EmergingPatternStatus {
+  PENDING
+  PROMOTED
+  DISMISSED
+}
+
+model Chat_ModerationAction {
+  id        String                 @id @default(cuid()) @db.VarChar(64)
+  messageId String                 @db.VarChar(64)
+  adminId   String                 @db.VarChar(64)
+  action    Chat_AdminReviewAction
+  notes     String?                @db.VarChar(500)
+  createdAt DateTime               @default(now()) @db.Timestamp(6)
+
+  @@index([messageId])
+  @@map("chat_moderation_actions")
+}
+
+model Chat_SuspiciousPhrase {
+  id           String               @id @default(cuid()) @db.VarChar(64)
+  phrase       String               @unique @db.VarChar(300)
+  matchType    Chat_PhraseMatchType @default(SUBSTRING)
+  language     Chat_PhraseLanguage  @default(EN)
+  category     String               @db.VarChar(64)
+  description  String?              @db.VarChar(500)
+  weight       Int                  @default(70)
+  action       Chat_PhraseAction    @default(FLAG)
+  isActive     Boolean              @default(true)
+  source       Chat_PhraseSource    @default(ADMIN)
+  timesMatched Int                  @default(0)
+  createdAt    DateTime             @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime             @updatedAt @db.Timestamp(6)
+
+  @@index([isActive])
+  @@index([category])
+  @@map("chat_suspicious_phrases")
+}
+
+model Chat_EmergingPattern {
+  id                String                     @id @default(cuid()) @db.VarChar(64)
+  phrase            String                     @unique @db.VarChar(300)
+  occurrences       Int                        @default(0)
+  conversationCount Int                        @default(0)
+  sampleMessageIds  Json?
+  status            Chat_EmergingPatternStatus @default(PENDING)
+  firstSeenAt       DateTime                   @default(now()) @db.Timestamp(6)
+  lastSeenAt        DateTime                   @default(now()) @db.Timestamp(6)
+
+  @@map("chat_emerging_patterns")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

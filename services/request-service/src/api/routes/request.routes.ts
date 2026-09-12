@@ -155,6 +155,8 @@ export function createRequestRoutes(): Router {
   providerRouter.get('/quotes/:quoteId', (req, res) => provider.quoteDetail(req, res));
   providerRouter.post('/quotes/:quoteId/publish', (req, res) => provider.publishQuote(req, res));
   providerRouter.post('/quotes/:quoteId/assessment-link', (req, res) => provider.generateAssessmentLink(req, res));
+  // §4.3 — append-only audit trail per request (static, MUST precede /:requestId)
+  providerRouter.get('/:requestId/audit', (req, res) => provider.requestAudit(req, res));
   providerRouter.get('/', (req, res) => provider.list(req, res));
   providerRouter.get('/:requestId', (req, res) => provider.get(req, res));
   providerRouter.post('/:requestId/assignment', (req, res) => provider.assign(req, res));

@@ -15,6 +15,8 @@
 
 import { recordRequestAudit } from './request-audit';
 import { publishRequestEvent } from '../../infrastructure/messaging/request-outbox';
+import { RequestEntity, RequestData } from '../../domain/entities/request.entity';
+import { RequestMessage } from '../../domain/entities/request-message.entity';
 
 const DEFAULT_INTERVAL_MS = 5 * 60 * 1000;
 const DEFAULT_TTL_DAYS = 30;
@@ -113,6 +115,10 @@ export class RequestExpirationSweeper {
             detail: { quoteId: q.quoteId },
           });
           await publishRequestEvent('quote.expired', { quoteId: q.quoteId, requestId: q.requestId });
+          // §4.1 expiry semantics: expired quote → request returns to ASSESSING
+          // for reassessment + a STATUS conversation message. Never touches a
+          // request that is CONVERTED / CANCELLED / EXPIRED.
+          await this.reassessRequest(prisma, q.requestId, q.quoteId);
           stats.quotesExpired += 1;
         } catch (err: any) {
           console.error('[RequestSweeper] quote expiry failed:', err?.message);
@@ -121,6 +127,70 @@ export class RequestExpirationSweeper {
     } catch (err: any) {
       console.error('[RequestSweeper] quote scan failed:', err?.message);
     }
+  }
+
+  private async reassessRequest(prisma: any, requestId: string, quoteId: string): Promise<void> {
+    const row = await prisma.request_Request?.findUnique?.({ where: { id: requestId } });
+    if (!row) return;
+    // Never reassess a terminal/finished request.
+    if (row.status === 'CONVERTED' || row.status === 'CANCELLED' || row.status === 'EXPIRED') return;
+    const entity = new RequestEntity(this.rowToRequestData(row));
+    try {
+      entity.returnToAssessing();
+    } catch {
+      return; // defensive — not in a reassessable state
+    }
+    await prisma.request_Request.update({
+      where: { id: requestId },
+      data: { status: entity.status, updatedAt: new Date() },
+    });
+    const detail = { quoteId };
+    const msg = RequestMessage.create({
+      requestId,
+      authorType: 'STATUS',
+      authorId: null,
+      body: 'Quote expired — reassessment required',
+    });
+    const d = msg.toJSON();
+    await prisma.request_Message.create({
+      data: {
+        id: d.id,
+        requestId: d.requestId,
+        authorType: d.authorType,
+        authorId: d.authorId,
+        body: d.body,
+        attachments: d.attachments,
+        createdAt: d.createdAt,
+      },
+    });
+    await recordRequestAudit({
+      requestId,
+      actorType: 'SYSTEM',
+      action: 'STATUS_CHANGED',
+      fromStatus: row.status,
+      toStatus: entity.status,
+      detail,
+    });
+  }
+
+  private rowToRequestData(row: any): RequestData {
+    return {
+      id: row.id,
+      customerId: row.customerId,
+      title: row.title,
+      description: row.description,
+      deliveryAddress: row.deliveryAddress ?? { city: '', region: '' },
+      preferredDeliveryDate: row.preferredDeliveryDate,
+      budgetTzs: row.budgetTzs,
+      attachments: row.attachments,
+      status: row.status,
+      assignedProviderId: row.assignedProviderId,
+      unfulfillableReason: row.unfulfillableReason,
+      orderId: row.orderId,
+      convertedQuoteId: row.convertedQuoteId,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    };
   }
 
   private async notifyExpiringQuotes(now: Date, stats: SweepStats): Promise<void> {
@@ -148,15 +218,31 @@ export class RequestExpirationSweeper {
 
   private async expireLinks(now: Date, stats: SweepStats): Promise<void> {
     const prisma = (globalThis as any).prisma;
-    if (!prisma?.request_AccessLink?.updateMany) return;
+    if (!prisma?.request_AccessLink?.findMany || !prisma?.request_AccessLink?.update) return;
     try {
-      const res = await prisma.request_AccessLink.updateMany({
+      const stale = await prisma.request_AccessLink.findMany({
         where: { status: 'ACTIVE', expiresAt: { lt: now } },
-        data: { status: 'EXPIRED' },
+        select: { id: true, requestId: true, quoteId: true },
+        take: 200,
       });
-      stats.linksExpired = res?.count ?? 0;
+      for (const l of stale) {
+        try {
+          await prisma.request_AccessLink.update({
+            where: { id: l.id },
+            data: { status: 'EXPIRED' },
+          });
+          await publishRequestEvent('link.expired', {
+            linkId: l.id,
+            requestId: l.requestId,
+            quoteId: l.quoteId,
+          });
+          stats.linksExpired += 1;
+        } catch (err: any) {
+          console.error('[RequestSweeper] link expiry failed:', err?.message);
+        }
+      }
     } catch (err: any) {
-      console.error('[RequestSweeper] link expiry failed:', err?.message);
+      console.error('[RequestSweeper] link expiry scan failed:', err?.message);
     }
   }
 

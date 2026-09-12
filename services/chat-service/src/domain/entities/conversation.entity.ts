@@ -1,12 +1,12 @@
 export type ConversationType =
-  | 'BUYER_SELLER'
-  | 'SELLER_SUPPLIER'
-  | 'BUYER_COURIER'
-  | 'SELLER_TEAM';
+  | "BUYER_SELLER"
+  | "SELLER_SUPPLIER"
+  | "BUYER_COURIER"
+  | "SELLER_TEAM";
 
-export type ModerationStatus = 'ACTIVE' | 'FLAGGED' | 'BLOCKED' | 'ARCHIVED';
+export type ModerationStatus = "ACTIVE" | "FLAGGED" | "BLOCKED" | "ARCHIVED";
 
-export type ParticipantRole = 'BUYER' | 'SELLER' | 'SUPPLIER' | 'COURIER';
+export type ParticipantRole = "BUYER" | "SELLER" | "SUPPLIER" | "COURIER";
 
 export interface Conversation {
   id: string;

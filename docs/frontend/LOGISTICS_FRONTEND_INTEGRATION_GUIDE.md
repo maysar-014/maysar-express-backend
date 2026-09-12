@@ -182,7 +182,7 @@ Body: `{ "status", "location"?, "recipientName"?, "notes"?, "reason"? }` — sta
 Generates a COD OTP and sends it to the buyer.
 
 - `200` → `{ "success": true, "message": "OTP generated and sent to buyer" }`
-- `404` / `400` → `{ "success": false, "error": "<message>" }` (note: `error` is a **string** on this legacy endpoint, not an object)
+- `404` / `400` → `{ "success": false, "error": "<message>" }` (**note:** `error` is a **string** on this legacy endpoint, not an object — this is a known exception to the standard `{ code, message }` envelope)
 
 ### 3.7 `POST /cod/:deliveryId/verify`
 Body: `{ "otp": "...", "location": { "lat", "lng" } }` — `otp` required; `location` optional (defaults to `{0,0}` if omitted).

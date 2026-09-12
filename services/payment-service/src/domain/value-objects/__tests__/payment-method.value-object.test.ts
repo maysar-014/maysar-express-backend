@@ -36,7 +36,7 @@ describe('PaymentMethod Value Object', () => {
         });
 
         it('should check if requires bank account', () => {
-            const bank = new PaymentMethod(PaymentMethodType.BANK_TRANSFER, PaymentProvider.PAYMENT_GATEWAY);
+            const bank = new PaymentMethod(PaymentMethodType.BANK_TRANSFER, PaymentProvider.INTERNAL_BANK_TRANSFER);
             expect(bank.requiresBankAccount()).toBe(true);
             expect(mpesa.requiresBankAccount()).toBe(false);
         });

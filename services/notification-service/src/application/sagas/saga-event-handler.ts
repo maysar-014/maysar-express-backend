@@ -52,6 +52,41 @@ export class SagaEventHandler {
     eventBus.subscribe('order.verification_overdue', async (envelope: EventEnvelope) => {
       await this.handleVerificationOverdue(envelope.data ?? envelope);
     });
+
+    // ── Maysar Request Events (§4.2, request-service outbox) ────────────
+    eventBus.subscribe('request.submitted', async (envelope: EventEnvelope) => {
+      await this.handleRequestSubmitted(envelope.data ?? envelope);
+    });
+    eventBus.subscribe('request.assessing', async (envelope: EventEnvelope) => {
+      await this.handleRequestAssessing(envelope.data ?? envelope);
+    });
+    eventBus.subscribe('request.needs_clarification', async (envelope: EventEnvelope) => {
+      await this.handleRequestNeedsClarification(envelope.data ?? envelope);
+    });
+    eventBus.subscribe('request.fulfillable', async (envelope: EventEnvelope) => {
+      await this.handleRequestFulfillable(envelope.data ?? envelope);
+    });
+    eventBus.subscribe('request.unfulfillable', async (envelope: EventEnvelope) => {
+      await this.handleRequestUnfulfillable(envelope.data ?? envelope);
+    });
+    eventBus.subscribe('request.cancelled', async (envelope: EventEnvelope) => {
+      await this.handleRequestCancelled(envelope.data ?? envelope);
+    });
+    eventBus.subscribe('quote.published', async (envelope: EventEnvelope) => {
+      await this.handleQuotePublished(envelope.data ?? envelope);
+    });
+    eventBus.subscribe('quote.expiring_soon', async (envelope: EventEnvelope) => {
+      await this.handleQuoteExpiringSoon(envelope.data ?? envelope);
+    });
+    eventBus.subscribe('quote.expired', async (envelope: EventEnvelope) => {
+      await this.handleQuoteExpired(envelope.data ?? envelope);
+    });
+    eventBus.subscribe('request.converted', async (envelope: EventEnvelope) => {
+      await this.handleRequestConverted(envelope.data ?? envelope);
+    });
+    eventBus.subscribe('supplier.invite_recommended', async (envelope: EventEnvelope) => {
+      await this.handleSupplierInviteRecommended(envelope.data ?? envelope);
+    });
   }
 
   /** Notify seller that a new order requires stock confirmation */

@@ -68,6 +68,7 @@ export class AssessRequestUseCase {
     // (or re-assessing after clarification) enters ASSESSING.
     if (request.status === 'SUBMITTED' || request.status === 'NEEDS_CLARIFICATION') {
       request.markAssessing();
+      await publishRequestEvent('request.assessing', { requestId: request.id, providerId });
     }
 
     switch (input.decision) {

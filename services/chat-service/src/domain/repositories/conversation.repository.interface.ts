@@ -1,4 +1,10 @@
-import type { Conversation, ConversationParticipant, ModerationStatus, ConversationType, ParticipantRole } from '../entities/conversation.entity';
+import type {
+  Conversation,
+  ConversationParticipant,
+  ModerationStatus,
+  ConversationType,
+  ParticipantRole,
+} from "../entities/conversation.entity";
 
 export interface PaginationOptions {
   limit: number;
@@ -46,13 +52,28 @@ export interface CreateConversationInput {
 export interface ConversationRepository {
   create(data: CreateConversationInput): Promise<Conversation>;
   findById(id: string): Promise<Conversation | null>;
-  findExisting(buyerId: string, sellerId: string, productId: string): Promise<Conversation | null>;
-  findByParticipant(userId: string, options: PaginationOptions): Promise<PaginatedConversations>;
+  findExisting(
+    buyerId: string,
+    sellerId: string,
+    productId: string,
+  ): Promise<Conversation | null>;
+  findByParticipant(
+    userId: string,
+    options: PaginationOptions,
+  ): Promise<PaginatedConversations>;
   updateLastMessageAt(id: string, at: Date): Promise<void>;
   updateModerationStatus(id: string, status: ModerationStatus): Promise<void>;
   updateMetadata(id: string, metadata: Record<string, unknown>): Promise<void>;
   getParticipants(conversationId: string): Promise<ConversationParticipant[]>;
   isParticipant(conversationId: string, userId: string): Promise<boolean>;
-  updateLastReadAt(conversationId: string, userId: string, at: Date): Promise<void>;
-  setMuted(conversationId: string, userId: string, muted: boolean): Promise<void>;
+  updateLastReadAt(
+    conversationId: string,
+    userId: string,
+    at: Date,
+  ): Promise<void>;
+  setMuted(
+    conversationId: string,
+    userId: string,
+    muted: boolean,
+  ): Promise<void>;
 }

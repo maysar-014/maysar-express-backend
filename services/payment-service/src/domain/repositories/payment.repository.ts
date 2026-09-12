@@ -4,64 +4,73 @@
  * Implementation will be in infrastructure layer
  */
 
-import { Payment } from '../entities/payment.entity';
+import { Payment } from "../entities/payment.entity";
 
 export interface IPaymentRepository {
-    /**
-     * Save a new payment
-     */
-    save(payment: Payment): Promise<void>;
+  /**
+   * Save a new payment
+   */
+  save(payment: Payment): Promise<void>;
 
-    /**
-     * Find payment by ID
-     */
-    findById(id: string): Promise<Payment | null>;
+  /**
+   * Find payment by ID
+   */
+  findById(id: string): Promise<Payment | null>;
 
-    /**
-     * Find payment by order ID
-     */
-    findByOrderId(orderId: string): Promise<Payment | null>;
+  /**
+   * Find payment by order ID
+   */
+  findByOrderId(orderId: string): Promise<Payment | null>;
 
-    /**
-     * Find all payments for a user
-     */
-    findByUserId(userId: string, limit?: number, offset?: number): Promise<Payment[]>;
+  /**
+   * Find all payments for a user
+   */
+  findByUserId(
+    userId: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<Payment[]>;
 
-    /**
-     * Find payment by provider reference
-     */
-    findByProviderReference(providerRef: string): Promise<Payment | null>;
+  /**
+   * Find payment by provider reference
+   */
+  findByProviderReference(providerRef: string): Promise<Payment | null>;
 
-    /**
-     * Update existing payment
-     */
-    update(payment: Payment): Promise<void>;
+  /**
+   * Find payment by caller-supplied idempotency key (duplicate-initiation protection)
+   */
+  findByIdempotencyKey(idempotencyKey: string): Promise<Payment | null>;
 
-    /**
-     * Get total payment amount for user in time window
-     */
-    getTotalAmountByUserId(
-        userId: string,
-        startDate: Date,
-        endDate: Date
-    ): Promise<number>;
+  /**
+   * Update existing payment
+   */
+  update(payment: Payment): Promise<void>;
 
-    /**
-     * Get payment count for user in time window
-     */
-    getPaymentCountByUserId(
-        userId: string,
-        startDate: Date,
-        endDate: Date
-    ): Promise<number>;
+  /**
+   * Get total payment amount for user in time window
+   */
+  getTotalAmountByUserId(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<number>;
 
-    /**
-     * Find payments by status
-     */
-    findByStatus(status: string, limit?: number): Promise<Payment[]>;
+  /**
+   * Get payment count for user in time window
+   */
+  getPaymentCountByUserId(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<number>;
 
-    /**
-     * Find pending payments older than specified date
-     */
-    findPendingOlderThan(date: Date): Promise<Payment[]>;
+  /**
+   * Find payments by status
+   */
+  findByStatus(status: string, limit?: number): Promise<Payment[]>;
+
+  /**
+   * Find pending payments older than specified date
+   */
+  findPendingOlderThan(date: Date): Promise<Payment[]>;
 }
